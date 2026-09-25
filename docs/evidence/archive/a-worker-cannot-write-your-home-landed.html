@@ -7,14 +7,14 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-worker-cannot-write-your-home-landed">
   <meta name="plan-title" content="A Worker Cannot Write Your Home &mdash; landed evidence">
-  <meta name="plan-summary" content="One section per node: the launch argv is wrapped in a read-only filesystem fence (§1).">
+  <meta name="plan-summary" content="One section per node: the launch argv is wrapped in a read-only filesystem fence (§1), and each run owns the harness home its worker writes in (§2).">
   <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
-  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s1">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s1,reckon:a-worker-cannot-write-your-home#s2">
   <meta name="plan-recorded-at" content="2026-09-23">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python project venv; detached git worktree">
-  <meta name="plan-commits" content="9125b986">
-  <meta name="plan-artifacts" content="reckon/_backends.py,tests/test_launch_plan_fences_the_home.py,tests/test_backends.py,docs/figures/a-worker-cannot-write-your-home/fence-layering.svg">
+  <meta name="plan-commits" content="9125b986,c72c460e,ed6f3f3c,7bdadce0,d31707b5,dc52fa08,5f570af2">
+  <meta name="plan-artifacts" content="reckon/_backends.py,tests/test_launch_plan_fences_the_home.py,tests/test_backends.py,tests/test_each_run_owns_its_harness_home.py,docs/figures/a-worker-cannot-write-your-home/fence-layering.svg,docs/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg,tests/test_launch_plan_attaches_images.py,tests/test_backend_environment.py,tests/test_backend_sandbox_delivery.py,docs/figures/a-worker-cannot-write-your-home/gate-base.txt,docs/figures/a-worker-cannot-write-your-home/gate-head.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-neighbour-argv.txt,docs/figures/a-worker-cannot-write-your-home/reproduction-symlink-bind-refused.txt,docs/figures/a-worker-cannot-write-your-home/repaired-composition-real-home.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-symlink-bind.txt,docs/figures/a-worker-cannot-write-your-home/gate-symlink-base.txt,docs/figures/a-worker-cannot-write-your-home/gate-symlink-head.txt,docs/figures/a-worker-cannot-write-your-home/reproduction-ancestor-bind-refused.txt,docs/figures/a-worker-cannot-write-your-home/real-home-launch.txt,docs/figures/a-worker-cannot-write-your-home/real-home-execution.txt,docs/figures/a-worker-cannot-write-your-home/lint-symlink-ancestor.txt,docs/figures/a-worker-cannot-write-your-home/gate-symlink-ancestor.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-ancestor-leaf-only.txt">
   <title>A Worker Cannot Write Your Home &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -93,6 +93,596 @@ claude sentinel exists unfenced: False</pre>
     <code>3 failed, 60 passed</code>. Lint delta is zero on both touched files
     (<code>_backends.py</code> 6&nbsp;&rarr;&nbsp;6, <code>test_backends.py</code>
     4&nbsp;&rarr;&nbsp;4, the new test file 0).</p>
+  </section>
+
+  <section id="s2">
+    <h2>&sect;2 &mdash; A worker's own harness state lives in its run</h2>
+    <p><strong>Node:</strong> <code>each-run-owns-its-harness-home</code>.</p>
+
+    <p><strong>What landed.</strong> <code>launch_plan</code> now points the harness at
+    a home inside the run: <code>CLAUDE_CONFIG_DIR</code> at
+    <code>&lt;run&gt;/harness</code> for the claude and clive dialects, and
+    <code>CODEX_HOME</code> at <code>&lt;run&gt;/codex-home</code> for codex. Each home is
+    seeded with the directory alone, and only when the manifest's parent directory
+    already exists &mdash; a preview composes a plan before anything has been created,
+    and a run with nowhere to keep a transcript is not given a variable pointing at
+    one. The operator's <code>~/.codex/auth.json</code> is bound read-only into the
+    codex home rather than copied, so a worker cannot shadow a login the operator
+    refreshes. With both homes in place the fence is now composed by default
+    (<code>fence=True</code>), which is what &sect;1 was waiting for.</p>
+
+    <p><strong>The lock directory, an addition to the granted roots.</strong> Every plan
+    write serialises through <code>&lt;config&gt;/locks/&lt;namespace&gt;/&lt;hash&gt;.lock</code>,
+    and opening that file is a write. A worker editing the copy of a plan in its own
+    worktree takes the same lock as one editing the main checkout, so a sealed lock
+    directory refuses a fenced worker <em>every</em> plan write it could make. The
+    directory is therefore seeded and granted writable, beside the run directory the
+    fence already re-opened inside a sealed config home. Measured under the fence
+    before the grant: <code>mkdir</code> of an existing directory succeeds, while
+    opening a lock file and creating a new directory both fail
+    <q>Read-only file system</q>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg"
+           alt="The run directory and the two harness homes it owns, the two routes a fenced worker's edit_plan takes, and the declared negative control.">
+      <figcaption>A run owns its own harness home, and a plan write has two routes out
+      &mdash; only one of which lands in the worker's worktree.</figcaption>
+    </figure>
+
+    <p><strong>Method.</strong> <code>tests/test_each_run_owns_its_harness_home.py</code>
+    stands a home, a main checkout, a worktree and a live run directory in a temp tree,
+    composes the plan through <code>launch_plan</code>, asserts the environment and the
+    composed argv, and then executes the argv with a stub in place of the harness. The
+    stub writes its own state where its own variable points, attempts to remove the
+    codex login, and optionally starts reckon's MCP server as a child of the fenced
+    process and calls <code>edit_plan</code> twice &mdash; once without
+    <code>checkout_path</code> and once naming the worktree.</p>
+
+    <h3>The reproduction, quoted</h3>
+    <pre>harness-state-write ok /tmp/&hellip;/crew/runs/r1/harness/session-probe.txt
+edit no-checkout-path refused=True isError=True path=None detail=Error executing tool edit_plan: [Errno 30] Read-only file system: '/tmp/&hellip;/Code/proj/docs/plan-a.html.tmp'
+edit checkout-path refused=False isError=False path=/tmp/&hellip;/.worktrees/wt/docs/plan-a.html detail={ "ok": true, "message": "Updated plan plan-a to version 1." &hellip; }</pre>
+    <p>The refusal names the target path and not the lock, because the lock is taken:
+    the write into the sealed main checkout then fails on its own temp file. The main
+    checkout's plan file is byte-identical afterwards (sha256 compared before and
+    after), and the worktree's copy carries the replacement text. So the fence holds
+    the route that goes live for every session through the editable install, while the
+    worker keeps the route it exists to take.</p>
+
+    <h3>Negative control</h3>
+    <p>Declared mutation: <em>leave CLAUDE_CONFIG_DIR unset so the fenced stub writes
+    under the stand-in ~/.claude</em>. Applied, the harness state write is refused
+    there under <q>Read-only file system</q> instead of landing in
+    <code>&lt;run&gt;/harness/</code>, and the stand-in <code>~/.claude</code> holds
+    only its sentinel &mdash; so the state write's success in the main measure is
+    attributable to the harness home and not to a fence that happened to allow it. The
+    plan-write half of the measure is unmoved by the mutation, which is the check that
+    the two are independent. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/negative-control-harness-home.txt</code>,
+    whose first line is the declared mutation verbatim.</p>
+
+    <h3>Gate</h3>
+    <p>Base revision <code>d753e65b</code> and the head were run on an
+    <code>all_debug</code> partition over the declared selection &mdash;
+    <code>tests/test_backends.py</code>, <code>tests/test_launch_plan_fences_the_home.py</code>
+    and this node's new file (absent at base). Both report the same three pre-existing
+    budget-parsing failures with identical ids: <code>3 failed, 42 passed</code> at base
+    and <code>3 failed, 48 passed</code> at the head, so zero failures were added. Lint
+    over the touched paths adds nothing (<code>_backends.py</code> 7&nbsp;&rarr;&nbsp;6
+    from a pre-existing long line the reformat removed, <code>test_backends.py</code>
+    5&nbsp;&rarr;&nbsp;4, the new test file clean).</p>
+
+    <p><strong>Out of scope, reported not patched.</strong> Four failures in neighbouring
+    files are newly visible at the head, all of them assertions that pin an exact argv or
+    an exact plan environment and therefore meet the new default:
+    <code>test_launch_plan_attaches_images.py</code> (two tests),
+    <code>test_backend_environment.py</code> (one) and
+    <code>test_backend_sandbox_delivery.py</code> (one). &sect;2's own falsifier &mdash; a
+    real clive worker, fenced, completing a node with a <code>session_id</code>, resumed
+    by <code>crew resume</code> with nothing added under <code>~/.claude/projects</code> &mdash;
+    needs a dispatched run and was not exercised here. Both belong to that section and
+    run in one bound, at a size that fits one turn.</p>
+
+    <h3>Node: fenced-launch-neighbour-tests &mdash; the four neighbouring tests, repaired</h3>
+    <p>The four failures the previous node reported as out of scope are repaired here. They
+    are not one defect: three pin the <em>dialect's own</em> argument vector, and one is an
+    environment assertion that must not be loosened. A test that pins an exact argv is
+    measuring the vector the dialect builds, so the three argv pins pass
+    <code>fence=False</code> explicitly &mdash; the fence is a wrapper composed
+    <em>around</em> that vector and is asserted by
+    <code>tests/test_launch_plan_fences_the_home.py</code>. The environment test is the
+    case where the fence cannot be taken out of the measurement, because the harness home
+    the run owns is part of the plan's environment; it is therefore repaired by naming the
+    exact key set rather than by relaxing to a subset comparison, which any mapping would
+    satisfy.</p>
+
+    <table>
+      <thead>
+        <tr><th>test</th><th>what it pins</th><th>repair</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>test_no_figures_emit_no_flag</code></td>
+          <td>the dialect argv of a figureless codex and claude launch</td>
+          <td><code>fence=False</code> &mdash; measures the dialect vector, not the wrapper</td>
+        </tr>
+        <tr>
+          <td><code>test_a_text_only_lane_with_no_figures_is_unaffected</code></td>
+          <td>the dialect argv a figureless claude lane composes</td>
+          <td><code>fence=False</code> &mdash; same measurement</td>
+        </tr>
+        <tr>
+          <td><code>test_codex_read_only_argv_is_unchanged</code></td>
+          <td>codex's read-only argv, byte for byte</td>
+          <td><code>fence=False</code> &mdash; the sandbox tier is the subject</td>
+        </tr>
+        <tr>
+          <td><code>test_run_record_agent_configuration_excludes_environment</code></td>
+          <td>the plan environment, and that the record carries none of it</td>
+          <td>exact key set: the declared key plus <code>CODEX_HOME</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>No figure accompanies this node's record: the decision is a table of four tests and
+    the layer each measures, which the graphics mandate explicitly excludes from images,
+    and the argv nesting itself is already drawn by
+    <code>/reckon/figures/a-worker-cannot-write-your-home/fence-layering.svg</code>.</p>
+
+    <h3>Gate</h3>
+    <p>Base <code>f073da71</code> and the head <code>7bdadce0</code>, each captured once on
+    an <code>all_debug</code> partition, over the same selection &mdash; the three repaired
+    files plus <code>tests/test_backends.py</code>,
+    <code>tests/test_each_run_owns_its_harness_home.py</code> and
+    <code>tests/test_launch_plan_fences_the_home.py</code>. Base
+    <code>7 failed / 62 passed</code>; head <code>3 failed / 66 passed</code>. The four
+    repaired tests move to passing and <strong>no failure is added</strong>; the three that
+    remain are the pre-existing rate-limit budget-parsing failures with identical ids. Lint
+    over the touched paths adds nothing (7&nbsp;&rarr;&nbsp;5 across the three files, all
+    pre-existing), and <code>ruff format --check</code> reports the three already
+    formatted.</p>
+
+    <h3>Negative control</h3>
+    <p>Declared mutation: <em>revert the fix in tests/test_backend_environment.py so its
+    assertion compares plan.environment to the one-key mapping again, and that test
+    fails</em>. Applied, the test fails on the entry the strict comparison exists to name:</p>
+    <pre>E       AssertionError: assert {'API_TOKEN':...a/codex-home'} == {'API_TOKEN':...enter-ledger'}
+E         Left contains 1 more item:
+E         {'CODEX_HOME': '&hellip;/runs/r-&hellip;-node-a/codex-home'}</pre>
+    <p>So the repair is load-bearing: the exact comparison is what detects the harness home
+    the run now owns, and a one-key comparison would have passed silently against a mapping
+    the launcher no longer produces. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/negative-control-neighbour-argv.txt</code>,
+    whose first line is the declared mutation verbatim.</p>
+
+    <h3>Node: unfenced-codex-keeps-its-login &mdash; an unfenced launch keeps the operator's home</h3>
+    <p><strong>What changed.</strong> <code>launch_plan</code> adopted the run's codex home
+    on both paths, so an unfenced codex launch was handed
+    <code>CODEX_HOME=&lt;run&gt;/codex-home</code> &mdash; a directory that exists to answer
+    the fence, and therefore holds no login, because the operator's
+    <code>~/.codex/auth.json</code> is bound into it only when the fence composes. The run
+    home displaced the operator's login with nothing. The codex home is now adopted only
+    where the fence composes it, so an unfenced launch keeps the operator's own home. The
+    claude-shaped harness is unchanged: its home is a transcript home the harness needs
+    whichever way the worker was launched, and only the codex home is a fence artefact.</p>
+
+    <table>
+      <thead>
+        <tr><th>launch</th><th><code>CODEX_HOME</code></th><th>login</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>codex, fenced</td>
+          <td><code>&lt;run&gt;/codex-home</code>, seeded</td>
+          <td>bound read-only into the run home</td>
+        </tr>
+        <tr>
+          <td>codex, unfenced</td>
+          <td>not set &mdash; the operator's own home is kept</td>
+          <td>the operator's, unaltered</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>No figure accompanies this record: the change is the two-row branch above, which is
+    a table rather than a picture, and the homes themselves are already drawn by
+    <code>/reckon/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg</code>.</p>
+
+    <h3>Gate</h3>
+    <p>Base <code>27e11161</code> and the node head (this change, uncommitted at the time of
+    the run) over the launch-plan files &mdash;
+    <code>tests/test_each_run_owns_its_harness_home.py</code>,
+    <code>tests/test_launch_plan_fences_the_home.py</code>,
+    <code>tests/test_launch_plan_attaches_images.py</code>,
+    <code>tests/test_backend_environment.py</code> and
+    <code>tests/test_backend_sandbox_delivery.py</code>. Base <code>26 passed</code>, head
+    <code>27 passed</code>; the extra test is this node's, and <strong>no failure is
+    added</strong>. Lint over the two touched paths is unchanged
+    (<code>_backends.py</code> 8&nbsp;&rarr; 8) and <code>ruff format --check</code> reports
+    both already formatted. Run in place on the fleet allocation.</p>
+
+    <h3>Negative control</h3>
+    <p>Declared mutation: <em>set CODEX_HOME unconditionally; the fence=False absence
+    assertion must fail</em>. Applied in a scratch copy of the tree
+    (<code>adopts_harness_home = True</code>), the new assertion fails on exactly the entry
+    the change removes:</p>
+    <pre>E       AssertionError: assert 'CODEX_HOME' not in {'CODEX_HOME': '&hellip;/runs/r1/codex-home'}</pre>
+    <p>So the absence is load-bearing rather than incidental: once the guard is removed the
+    launch really does invent the variable unfenced. The log the manifest names is
+    <code>logs/negative-control-codex-home-unconditional.red.log</code>.</p>
+  <h3 id="s2-launch-refused">The launch, measured: a symlinked protected path stops the fence before the worker starts</h3>
+
+    <p><strong>Node:</strong> <code>fenced-workers-smoke</code>. Two one-file nodes
+    &mdash; one on clive, one on codex &mdash; were dispatched through
+    <code>reckon crew dispatch --no-watch</code>,
+    with the package pinned to <code>51d80b95</code> by <code>PYTHONPATH</code> and with
+    <code>RECKON_HOME</code> pointing at a temporary directory holding a synthetic git
+    project registered only there. <strong>Neither launch reached a harness
+    process.</strong> Both run directories hold a 0-byte <code>stream.jsonl</code>, no
+    <code>session_id</code> and an empty transcript home; both <code>stderr.log</code>
+    files carry the same one line:</p>
+
+    <pre>bwrap: Can't create file at /home/ITER/mcintos/.gitconfig: No such file or directory</pre>
+
+    <p><strong>Cause, isolated to one bind.</strong> <code>protected_paths()</code>
+    filters with <code>Path.exists()</code>, which follows symlinks, so
+    <code>~/.gitconfig</code> &mdash; a symlink to
+    <code>Code/dotfiles/git/gitconfig</code> &mdash; qualifies;
+    <code>fence_argv</code> then emits <code>--ro-bind ~/.gitconfig ~/.gitconfig</code>,
+    and bubblewrap 0.4.1 cannot create a mount point over a symlink destination on this
+    host. A matched pair over the composed argv with the harness replaced by a
+    stub: as composed <code>rc=1</code>; with that single pair dropped <code>rc=0</code>,
+    and inside that fence a write into <code>~/.claude</code> is refused
+    <q>Read-only file system</q> with the probe absent afterwards. The offending bind is
+    redundant here: a write into <code>~/.gitconfig</code> is refused with the same
+    message when only the <code>Code/dotfiles</code> overlay is applied, and
+    <code>/proc/self/mounts</code> reads that overlay back as <code>ro</code>. Of the
+    thirteen named protected paths, <code>~/.gitconfig</code> is the only symlink at this
+    home, and every other bind in the argv is accepted.</p>
+
+    <p><strong>What the smoke did establish.</strong> The real
+    <code>~/.claude/projects</code> listing filtered to the smoke's own worktree path is
+    empty and identical before and after; the real
+    <code>~/.config/reckon/crew/live</code> and <code>crew/runs</code> listings moved only
+    by other sessions' run ids, neither smoke run id appearing in either; the real
+    <code>~/.codex/auth.json</code> sha256 is unchanged; and the codex home's login bind,
+    read from <em>inside</em> the fence, where alone it exists, is byte-identical to the
+    operator's.</p>
+
+    <p><strong>What remains unattained, and is not evidence.</strong> No worker completed
+    a node, so there is no <code>session_id</code>, no transcript under
+    <code>&lt;run&gt;/harness</code>, no resume, and no worker ever attempted a sentinel
+    write &mdash; the sentinels' absence therefore attests to nothing about the fence. The
+    section's owed falsifier is untouched and is now blocked on the repair.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/fence-launch-refused.svg"
+           alt="The composed argv's bind sequence with the symlink bind marked, and the counterfactual with that one bind dropped.">
+      <figcaption>The composed argv aborts at the one bind whose destination is a
+      symlink; dropping it starts, and the fence then holds.</figcaption>
+    </figure>
+
+    <p>Evidence: <code>smoke.log</code>, <code>report.json</code> (11 of 16 checks; the
+    five failures are the five positive claims above), <code>diag.json</code>, and both
+    run directories under
+    <code>~/.config/reckon/crew/reports/reckon/s21-coord/fenced-workers-smoke/artifacts/</code>.
+    The path enters the argv at <code>9125b986</code>, which introduced the protected set,
+    and is used by default from <code>c72c460e</code>, which composed the fence for every
+    real launch. That block was measured before the repair and is kept as it stood; the
+    composition it was blocked on is repaired and measured
+    <a href="#s2-symlink-protected-path">below</a>.</p>
+
+    <h3 id="s2-symlink-protected-path">The repair, measured: the composition resolves a symlinked protected path instead of binding it</h3>
+
+    <p><strong>Node:</strong> <code>a-symlinked-protected-path-cannot-block-launch</code>,
+    base <code>4088c1ae</code>, on the node's own allocation. The defect the
+    <a href="#s2-launch-refused">refused launch</a> above isolated is repaired in the
+    composition itself, and the section's owed real-worker falsifier is consequently
+    unblocked &mdash; this node did not run it.</p>
+
+    <p><strong>The defect, reproduced from the composition alone.</strong> With the base
+    tree's <code>launch_plan</code> and this host's real home, the composed argv carries
+    <code>--ro-bind /home/ITER/mcintos/.gitconfig /home/ITER/mcintos/.gitconfig</code>, a
+    destination that is a symlink, and the launch is refused before the stub runs:</p>
+
+    <pre>protected_paths symlinks: ['/home/ITER/mcintos/.gitconfig']
+bwrap: Can't create file at /home/ITER/mcintos/.gitconfig: No such file or directory
+stub exit: 1</pre>
+
+    <p>Log: <code>docs/figures/a-worker-cannot-write-your-home/reproduction-symlink-bind-refused.txt</code>.</p>
+
+    <p><strong>The repair, and the two cases it distinguishes.</strong>
+    <code>protected_read_only_binds</code> resolves each protected entry that is a symlink.
+    A target already inside another protected path needs no overlay of its own, because the
+    directory it lands in is sealed already &mdash; the real host's <code>~/.gitconfig</code>
+    resolves into the protected <code>Code/dotfiles</code>, so it now contributes
+    <em>no</em> bind and the whole launch composes:</p>
+
+    <pre>resolved binds (protected_read_only_binds):
+  /home/ITER/mcintos/.claude
+  /home/ITER/mcintos/.claude.json
+  &hellip;
+  .gitconfig: resolves into a protected path, no bind emitted
+stub exit: 0</pre>
+
+    <p>A target outside every protected path is bound read-only at the resolved target,
+    because the link's own path cannot be a mount destination; a dangling symlink is
+    skipped; and no overlay is ever composed with a symlink for its destination.
+    Because the destinations are the resolved paths, write-root containment is tested
+    against the paths the overlays actually land on, so a grant inside a symlinked
+    protected tree is re-opened writable rather than disappearing with the link. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/repaired-composition-real-home.txt</code>.</p>
+
+    <h4>Proved by executing the argv</h4>
+
+    <p><code>tests/test_launch_plan_fences_the_home.py</code> gains a
+    <code>SymlinkFence</code> home holding both shapes at once: <code>.gitconfig</code> a
+    symlink into the protected <code>Code/dotfiles</code>, and <code>.netrc</code> a symlink
+    to a file outside every protected path. Both tests execute the composed argv with a
+    stub in place of the harness:</p>
+
+    <ul>
+      <li><code>test_a_symlinked_protected_path_does_not_stop_the_launch</code> asserts the
+      launch exits 0, no <code>--ro-bind</code> destination is a symlink, the
+      <code>.gitconfig</code> link carries no overlay of its own while the outside target
+      does, a write through <em>either</em> link is refused <q>Read-only file system</q>,
+      and every granted root plus the worktree is writable.</li>
+      <li><code>test_the_negative_control_binds_a_symlink_and_the_launch_is_refused</code>
+      asserts the mutation applied (link in argv, target absent), then that the launch is
+      refused.</li>
+    </ul>
+
+    <p><strong>Declared negative control.</strong> <em>remove the symlink resolution so a
+    symlinked protected path is bound at its own path; the stub launch must exit nonzero</em>
+    &mdash; applied by rewriting the resolved triple back to the link, the composed argv
+    carries the overlay at the link, bubblewrap refuses that mount, the stub never runs and
+    the exit is 1:</p>
+
+    <pre>stub exit: 1
+stub stderr: bwrap: Can't create file at /tmp/&hellip;/home/.netrc: No such file or directory
+the stub ran: False</pre>
+
+    <p>So the refusal is attributable to the resolution rather than to the fence happening
+    to fail. Log: <code>docs/figures/a-worker-cannot-write-your-home/negative-control-symlink-bind.txt</code>.
+    Both red-log entry points remain runnable from the file itself
+    (<code>python tests/test_launch_plan_fences_the_home.py symlink-resolution</code> prints
+    the mutated mutation line and the observed refusal).</p>
+
+    <h4>Gate and lint</h4>
+
+    <p>The six launch-plan test files (<code>test_launch_plan_fences_the_home.py</code>,
+    <code>test_launch_plan_attaches_images.py</code>, <code>test_backend_environment.py</code>,
+    <code>test_backend_sandbox_delivery.py</code>, <code>test_each_run_owns_its_harness_home.py</code>,
+    <code>test_backends.py</code>), run with the root environment's interpreter and
+    <code>PYTHONPATH</code> pinned to the tree under test:</p>
+
+    <table>
+      <tr><th>arm</th><th>revision</th><th>module served</th><th>result</th></tr>
+      <tr><td>base</td><td><code>4088c1ae</code></td><td><code>/tmp/reckon-base-4088c1ae/reckon/_backends.py</code></td><td><code>3 failed, 67 passed</code></td></tr>
+      <tr><td>head</td><td><code>dc52fa08</code></td><td><code>&lt;worktree&gt;/reckon/_backends.py</code></td><td><code>3 failed, 69 passed</code></td></tr>
+    </table>
+
+    <p>The three failures are identical in both arms &mdash; the pre-existing budget-parsing
+    failures <code>test_one_backend_reports_headroom_with_a_reset_time</code>,
+    <code>test_an_empty_rate_limit_mapping_is_not_a_measurement</code> and
+    <code>test_known_headroom_answers_the_exhaustion_question</code> &mdash; so this change
+    adds none, and the two new tests are the two-passing delta. Each arm's log opens with its
+    revision, its cwd, its exact command and a discriminator proving which tree served the
+    run (<code>module.__file__</code>, plus
+    <code>has protected_read_only_binds</code>: <code>False</code> at the base,
+    <code>True</code> at the head), because <code>python -c</code> puts the working directory
+    on <code>sys.path</code> and a header read from the wrong tree would make the pair
+    vacuous. Logs:
+    <code>docs/figures/a-worker-cannot-write-your-home/gate-symlink-base.txt</code> and
+    <code>&hellip;/gate-symlink-head.txt</code>. Lint over the two touched paths on a complete
+    <code>git archive</code> tree is unchanged, <code>_backends.py</code>
+    6&nbsp;&rarr;&nbsp;6 with the test file contributing zero in both arms. (An earlier note
+    here recorded <code>8&nbsp;&rarr;&nbsp;8</code>; the count was re-measured on a complete
+    tree with this repository's own <code>ruff</code> over its own <code>pyproject</code>
+    configuration, and 6 is the figure that measurement gives.)
+    <code>ruff format --check</code> reports both already formatted. Instrument and log:
+    <code>docs/figures/a-worker-cannot-write-your-home/lint-symlink-ancestor.txt</code>.</p>
+
+    <h3 id="s2-symlink-ancestor-resolution">The second repair, measured: every ancestor is resolved, not only the leaf</h3>
+
+    <p><strong>Reproduced.</strong> The first repair asked <code>is_symlink()</code> of the
+    protected path <em>itself</em>, so a path whose <em>ancestor</em> is the link kept its
+    unresolved path as a mount destination and bubblewrap refused the launch with
+    <code>Can't mkdir</code>, exit&nbsp;1 &mdash; a different refusal from the leaf case's
+    <code>Can't create file</code> that the first repair answered. Hand-built against
+    bubblewrap&nbsp;0.4.1, the leaf of the refused destination is not itself a link and the
+    highest link sits above it, <code>.config &rarr; realconfig</code>:</p>
+
+    <pre>$ bwrap --dev-bind / / --ro-bind &hellip;/home/.config/reckon &hellip;/home/.config/reckon /bin/true
+bwrap: Can't mkdir &hellip;/home/.config/reckon: No such file or directory
+exit: 1
+
+$ bwrap --dev-bind / / --ro-bind &hellip;/home/realconfig/reckon &hellip;/home/realconfig/reckon /bin/true
+exit: 0</pre>
+
+    <p>So the leaf's own <code>is_symlink()</code> is not the trigger: the mount fails because a
+    link sits above the destination, and <code>resolved_destination</code> now resolves the
+    whole ancestry. A destination whose path carries a symlink at any level is never composed.
+    The write roots are resolved with the overlays, so a grant inside a symlinked protected
+    tree stays writable instead of vanishing into the containment test. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/reproduction-ancestor-bind-refused.txt</code>.</p>
+
+    <p><strong>Measured on this host's real home.</strong> The fence composed for this host's
+    <code>HOME</code> is executed with <code>/bin/true</code> in place of the harness. At base
+    <code>4088c1ae</code> it exits&nbsp;1 with 64 mount destinations, one of them
+    (<code>~/.gitconfig</code>) carrying a link; at head <code>5f570af2</code> it exits&nbsp;0
+    with 63 destinations and no linked one. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/real-home-execution.txt</code>.</p>
+
+    <p><strong>The declared negative control.</strong> The mutation <em>restore leaf-only
+    resolution so a protected path below a symlinked directory is bound at its unresolved
+    path; the stub launch must exit nonzero</em> is applied in a scratch tree and logged. With
+    resolution restored to the leaf, <code>test_launch_plan_fences_the_home.py</code> gives
+    <code>1 failed, 6 passed</code>: the failure is the new test's destination assertion,
+    <code>assert not _has_symlink_component(destination)</code>, on the destination below the
+    link &mdash; and the symlinked-leaf test still passes, so the new test isolates exactly the
+    newly-required shape rather than restating the old one. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/negative-control-ancestor-leaf-only.txt</code>.</p>
+
+    <p><strong>A second control for the skip.</strong> Skipping a target an already-sealed
+    directory covers has no effect a live run can observe, because bubblewrap accepts a
+    redundant duplicate bind &mdash; so the observable is taken from the argv itself: no
+    <code>--ro-bind</code> destination may sit inside another destination. The declared
+    mutation <em>remove the inside-a-protected-path skip so a path an already-sealed directory
+    covers is bound a second time; the redundant-overlay check must catch it</em> flips that
+    observable from <code>[]</code> to one entry and the check fires.</p>
+
+    <p>The ancestor repair is committed at <code>5f570af2</code>, on top of
+    <code>dc52fa08</code>.</p>
+
+    <h3 id="s2-smoke-repaired-tree">The smoke, run again on the repaired composition: both real workers hold, and neither touches the operator's home</h3>
+
+    <p><strong>Node:</strong> <code>fenced-workers-smoke</code>, rerun with the package pinned by
+    <code>PYTHONPATH</code> to the repaired tree at
+    <code>edc04cc542b84e45694c0aaa3b4760bdcd0a680e</code> &mdash; whole-ancestry resolution of
+    protected-path destinations &mdash; and with <code>RECKON_HOME</code> pointing at a temporary
+    directory holding a synthetic git project registered only there. Where the
+    <a href="#s2-launch-refused">first attempt</a> never reached a harness process, both of these
+    launches did, and both workers completed their one-file nodes.</p>
+
+    <p><strong>clive.</strong> Run <code>r-20260925T120722338762-fence-smoke-clive</code>, phase
+    <code>complete</code>, session <code>6f696595-ae29-48e6-8bef-094a58b1553a</code>; the
+    transcript lies under that run's
+    <code>harness/projects/-tmp-fenced-workers-smoke-worktrees-&hellip;fence-smoke-clive/</code>.
+    The node's declared falsifier is the sentinel write, and the worker committed it verbatim:</p>
+
+    <pre>touch: cannot touch '/home/ITER/mcintos/.claude/fence-smoke-sentinel-clive': Read-only file system</pre>
+
+    <p>The sentinel is absent before and after, and the worker's own instrument check shows
+    <code>touch</code> succeeding in a writable directory, so the refusal is specific to the
+    fenced path rather than a dead probe. The operator's real <code>~/.claude/projects</code>
+    listing filtered to this smoke's worktree path is empty and identical before and after &mdash;
+    the harness home, not the operator's, received the transcript.</p>
+
+    <p><strong>codex.</strong> Run <code>r-20260925T131240901465-fence-smoke-codex</code>, phase
+    <code>complete</code>, session <code>01a0d8b2-6191-72e2-a9fd-cca53470caeb</code>. Its probe
+    records the same refusal for its own sentinel, absent before and after. The run seeded a
+    <code>codex-home</code> inside its run directory; its composed argv binds the operator's login
+    read-only into that home, and read from <em>inside</em> the fence &mdash; where alone that bind
+    exists &mdash; <code>codex-home/auth.json</code> is byte-identical to the operator's. The real
+    <code>~/.codex/auth.json</code> sha256 is unchanged across the smoke. Its stderr carries one
+    unrelated warning about PATH aliases under <code>/tmp</code>.</p>
+
+    <p><strong>The operator's listings moved only by other sessions.</strong> Neither smoke run id
+    appears in the real <code>crew/live</code> or <code>crew/runs</code> listing, before or after.
+    The live listing moved by 24 additions and 11 removals, the runs listing by 32 additions, every
+    id itemised in <code>report.json</code> and none of them this smoke's. The composed fence was
+    also exercised directly: <code>as composed rc=0</code>, a stub write into
+    <code>~/.claude</code> refused <q>Read-only file system</q> with the probe absent afterwards,
+    the <code>Code/dotfiles</code> overlay reading back <q>ro</q>, and a write through the
+    <code>~/.gitconfig</code> symlink refused.</p>
+
+    <p><strong>What the smoke found still broken: a resumed fenced run composes the fence binary
+    as its harness.</strong> A resume of the clive run produced no turn at all &mdash;
+    <code>resume-1.jsonl</code> is 0 bytes and <code>resume-1.stderr.log</code> holds
+    <code>bwrap: Unknown option -p</code>, reproduced on a second attempt. A matched pair over the
+    composed argv isolates it: the fence prefix is identical on both sides of the <code>--</code>,
+    and only the command after it differs. The dispatch argv carries
+    <code>clive -p --output-format stream-json --verbose &hellip;</code>; the resume argv carries
+    <code>/usr/bin/bwrap -p --output-format stream-json --verbose --resume &lt;id&gt; --add-dir
+    &lt;worktree&gt;</code>, so the fence wraps the fence binary and bubblewrap refuses its own
+    harness flag.</p>
+
+    <p>The mechanism is one field. The run record's <code>command</code> field is written from the
+    composed <code>argv[0]</code>, and the resume path feeds that field back as the harness
+    command; <code>resolve_launch_executable</code> takes <code>plan.argv[0]</code> the same way.
+    That was a valid harness command only while the composition was opt-in;
+    <code>c72c460e</code>, which composes the fence for every real launch, made it the fence
+    binary. Fresh dispatch is unaffected &mdash; these two runs are the live demonstration of
+    that &mdash; but every resume of a fenced run composes the fence around <code>bwrap</code> and
+    produces no turn. This node's role is <code>test</code>, so it did not repair it; the
+    candidate commit is <code>c72c460e</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/fence-resume-composition.svg"
+           alt="Two argv rows with an identical bwrap fence prefix; the dispatch row names clive and runs, the resume row names /usr/bin/bwrap and writes no turn.">
+      <figcaption>The same fence prefix and two harness commands: a dispatch names the harness and
+      runs; a resume names the fence binary and exits before a turn is written.</figcaption>
+    </figure>
+
+    <p><strong>Not attained:</strong> the check <q>clive resume continued the same
+    session_id</q> &mdash; 15 of 16 pass, and that is the one failure. The section's owed
+    real-worker falsifier is otherwise attained: both harnesses ran inside the fence, both
+    sentinel writes were refused by the read-only overlay with the paths left absent, and neither
+    the operator's home nor the fleet's listings moved. Evidence: <code>smoke.log</code>,
+    <code>report.json</code>, <code>diag.json</code>, <code>snapshot-before.json</code>,
+    <code>snapshot-after.json</code>, <code>dispatch-clive.json</code>,
+    <code>dispatch-codex.json</code>, <code>verify-clive.json</code>, <code>verify-codex.json</code>,
+    <code>resume.json</code>, <code>cleanup.json</code>, and the four run directories under
+    <code>~/.config/reckon/crew/reports/reckon/s21-coord/fenced-workers-smoke/artifacts/</code>.</p>
+  </section>
+  <section id="s2-fenced-resume" data-reckon="section">
+    <h2>&sect;2 follow-up &mdash; a fenced resume reaches its harness</h2>
+
+    <p><strong>The defect reproduced at base <code>18a89e6f</code>.</strong> A dispatch built
+    through <code>launch_plan(fence=True)</code> and recorded the way dispatch records it
+    &mdash; <code>command</code> from the composed <code>argv[0]</code> &mdash; then asked for its
+    resume: the dispatch argv's inner command is <code>clive</code>, the resume argv's is
+    <code>/usr/bin/bwrap</code>, and the resume record's <code>command</code> field is
+    <code>/usr/bin/bwrap</code>. Reproduced with the composition alone at base
+    (<code>docs/figures/a-worker-cannot-write-your-home/repro-fenced-resume-base.txt</code>), which
+    is the same argv shape the smoke saw in a real run. At head <code>49ecff80</code> the same
+    procedure at the same lane yields <code>clive</code> behind a single fence element
+    (<code>repro-fenced-resume-after.txt</code>).</p>
+
+    <p><strong>The repair.</strong> <code>_backend_settings</code> refuses a recorded command that
+    names the fence binary and recovers the harness from the run's own composed argv, searching
+    after the fence element so a placed launch's scheduler options cannot be mistaken for the
+    fence's own separator. A resume therefore composes the fence around the harness exactly as a
+    dispatch does, and the run's own harness home &mdash; including its per-run
+    <code>CODEX_HOME</code>, where a codex session rollout lives &mdash; is the home it reuses.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/fence-resume-repaired.svg"
+           alt="Three argv rows: the dispatch row names clive and runs; the base resume row names bwrap inside a bwrap fence and writes no turn; the head resume row names clive inside one fence and runs.">
+      <figcaption>The command after the fence separator, three ways. The fence prefix is identical
+      in all three; the repair changes only the command after the separator, from the fence binary
+      to the harness.</figcaption>
+    </figure>
+
+    <p><strong>Measure.</strong> <code>tests/test_fenced_resume_reaches_its_harness.py</code> states
+    four properties and passes (4 passed): a fenced clive resume yields a fenced argv whose inner
+    command is <code>clive</code>, carrying <code>--resume</code> and the recorded session id, with
+    exactly one fence element and the fence never handed <code>-p</code>; a fenced codex resume
+    sets <code>CODEX_HOME</code> to the run's own <code>codex-home</code> and names
+    <code>codex exec &hellip; resume</code>; a placed record's <code>command</code> field is still
+    read as the harness, so a reader does not translate the scheduler; and the declared negative
+    control trips.</p>
+
+    <p><strong>Gate.</strong> Twelve launch-plan, dispatch-resume and fence test files on this
+    node's own allocation, each arm run from its own tree so the <code>reckon</code> imported is
+    the tree under test (base module
+    <code>/tmp/fenced-resume-base-1405962/reckon/__init__.py</code>, head module under the
+    worktree root, both named on the log headers): base <code>18a89e6f</code>
+    <code>6 failed, 114 passed</code>, head <code>49ecff80</code> <code>6 failed, 118 passed</code>
+    &mdash; the same six ids in both arms, so this change adds no failure and adds the four new
+    tests (<code>docs/figures/a-worker-cannot-write-your-home/gate-fenced-resume-base.txt</code>,
+    <code>gate-fenced-resume-head.txt</code>). The six are pre-existing and confined to
+    <code>tests/test_a_resume_does_not_inherit_its_baseline.py</code>, outside this node's declared
+    scope; see follow-ons.</p>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>resume_plan reads the
+    harness command from the run record command field as today; the fenced clive case must yield
+    bwrap as the inner command and fail.</em> Applied by restoring the field-as-harness reading:
+    the fenced clive resume then composes two fence elements, its inner command is the fence binary
+    and the fence is handed its own <code>-p</code>
+    (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-fenced-resume.txt</code>).
+    Without the control the suite would pass against a wiring that never removed the nested
+    fence.</p>
+
+    <p><strong>Lint and format delta, measured on complete trees.</strong>
+    <code>reckon/crew/dispatch.py</code> is <em>unchanged</em> in both: 7 lint findings and the same
+    6 unformatted sites at base and at head, this change adding none; the new test file is
+    formatted and clean (0 findings). Commit <code>49ecff80</code>. Evidence:
+    <code>docs/figures/a-worker-cannot-write-your-home/repro-fenced-resume-base.txt</code>,
+    <code>repro-fenced-resume-after.txt</code>, <code>negative-control-fenced-resume.txt</code>,
+    <code>gate-fenced-resume-base.txt</code>, <code>gate-fenced-resume-head.txt</code>, figure
+    <code>/reckon/figures/a-worker-cannot-write-your-home/fence-resume-repaired.svg</code>.</p>
   </section>
 </main>
 </body>

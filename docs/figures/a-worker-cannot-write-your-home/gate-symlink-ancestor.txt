@@ -1,0 +1,28 @@
+# The six launch-plan test files, base 4088c1ae vs head 5f570af2.
+# interpreter: /home/ITER/mcintos/Code/reckon/.venv/bin/python   command: python -m pytest -p no:cacheprovider -q <six files>
+
+## base arm — git archive of 4088c1ae at /tmp/reckon-lint-base
+# cwd: /tmp/reckon-lint-base
+# module.__file__: /tmp/reckon-lint-base/reckon/_backends.py
+# has resolved_destination: False
+E        +      where Observation(backend='b', session_id='7c49fef5-2fc0-46c7-87ad-0c69347d6d6d', phase='complete', terminal=True, exit_stat... separately by the backend; utilisation divided by the stream window 1000000'}, events=4, malformed_lines=0, detail='') = _observe({'launch': 'cli', 'command': 'claude', 'sandbox': 'worktree-full'}, 'claude-turn.jsonl')
+
+tests/test_backends.py:498: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_backends.py::test_one_backend_reports_headroom_with_a_reset_time
+FAILED tests/test_backends.py::test_an_empty_rate_limit_mapping_is_not_a_measurement
+FAILED tests/test_backends.py::test_known_headroom_answers_the_exhaustion_question
+3 failed, 67 passed in 10.70s
+
+## head arm — this worktree
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/a-symlinked-protected-path-cannot-block-launch  head: 5f570af22f8bca9acb41cb9c76fff138bfdeeb86
+# module.__file__: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/a-symlinked-protected-path-cannot-block-launch/reckon/_backends.py
+# has resolved_destination: True
+E        +      where Observation(backend='b', session_id='7c49fef5-2fc0-46c7-87ad-0c69347d6d6d', phase='complete', terminal=True, exit_stat... separately by the backend; utilisation divided by the stream window 1000000'}, events=4, malformed_lines=0, detail='') = _observe({'launch': 'cli', 'command': 'claude', 'sandbox': 'worktree-full'}, 'claude-turn.jsonl')
+
+tests/test_backends.py:498: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_backends.py::test_one_backend_reports_headroom_with_a_reset_time
+FAILED tests/test_backends.py::test_an_empty_rate_limit_mapping_is_not_a_measurement
+FAILED tests/test_backends.py::test_known_headroom_answers_the_exhaustion_question
+3 failed, 72 passed in 13.12s

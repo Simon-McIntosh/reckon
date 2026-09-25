@@ -1,0 +1,18 @@
+# A protected path whose ANCESTOR is a symlink, composed and executed.
+# home: /tmp/reckon-ancestor-4pwx/home   protected path under test: /tmp/reckon-ancestor-4pwx/home/.config/reckon
+#   leaf is a symlink: False
+#   highest link in the path: /tmp/reckon-ancestor-4pwx/home/.config -> /tmp/reckon-ancestor-4pwx/home/realconfig
+# bwrap 0.4.1, run directly against the two compositions:
+
+## bound at the path as the fence spelled it (leaf-only resolution)
+$ bwrap --dev-bind / / --ro-bind /tmp/reckon-ancestor-4pwx/home/.config/reckon /tmp/reckon-ancestor-4pwx/home/.config/reckon /bin/true
+bwrap: Can't mkdir /tmp/reckon-ancestor-4pwx/home/.config/reckon: No such file or directory
+exit: 1
+
+## bound at the resolved path (this repair)
+$ bwrap --dev-bind / / --ro-bind /tmp/reckon-ancestor-4pwx/home/realconfig/reckon /tmp/reckon-ancestor-4pwx/home/realconfig/reckon /bin/true
+exit: 0
+
+# So the leaf's own is_symlink() is not the trigger: the mount fails because a
+# link sits ABOVE the destination, and resolving the whole ancestry is what
+# makes it launchable.

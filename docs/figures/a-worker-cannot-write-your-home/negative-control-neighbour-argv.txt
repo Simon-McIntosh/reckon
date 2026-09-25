@@ -1,0 +1,23 @@
+revert the fix in tests/test_backend_environment.py so its assertion compares plan.environment to the one-key mapping again, and that test fails
+slurmstepd: error: Unable to create TMPDIR [/run/user/39486]: Permission denied
+slurmstepd: error: Setting TMPDIR to /tmp
+            node=_node(manifest_path=""),
+            project="proj",
+            repo=repo,
+            config=config,
+            session="sess",
+            launcher=launcher,
+        )
+    
+>       assert launched["plan"].environment == {"API_TOKEN": "must-not-enter-ledger"}
+E       AssertionError: assert {'API_TOKEN':...a/codex-home'} == {'API_TOKEN':...enter-ledger'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'CODEX_HOME': '/tmp/pytest-of-mcintos/pytest-3284/test_run_record_agent_configur0/config/crew/runs/r-20260923T170947901609-node-a/codex-home'}
+E         Use -v to get more diff
+
+tests/test_backend_environment.py:236: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_backend_environment.py::test_run_record_agent_configuration_excludes_environment
+1 failed in 2.13s

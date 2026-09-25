@@ -86,10 +86,12 @@ def test_a_figure_precedes_the_resume_subcommand():
 
 
 def test_no_figures_emit_no_flag():
-    plan = _plan(CODEX, ())
+    """The dialect argv itself, so the fence wrapper is not composed here: the
+    fence is a wrapper around a launch and is asserted on its own elsewhere."""
+    plan = _plan(CODEX, (), fence=False)
 
     assert "-i" not in plan.argv
-    assert _plan(CLAUDE, ()).argv[0] == "claude"
+    assert _plan(CLAUDE, (), fence=False).argv[0] == "claude"
 
 
 @pytest.mark.parametrize(
@@ -116,7 +118,7 @@ def test_a_lane_that_cannot_carry_the_figure_refuses_by_name(
 def test_a_text_only_lane_with_no_figures_is_unaffected():
     """The refusal is a response to the figure, never to the lane: a text-only
     lane serving a figureless node composes its argv exactly as before."""
-    plan = _plan(CLAUDE, ())
+    plan = _plan(CLAUDE, (), fence=False)
 
     assert plan.argv[0] == "claude"
     assert "review the figure" not in plan.argv

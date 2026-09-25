@@ -233,7 +233,14 @@ def test_run_record_agent_configuration_excludes_environment(home, repo) -> None
         launcher=launcher,
     )
 
-    assert launched["plan"].environment == {"API_TOKEN": "must-not-enter-ledger"}
+    # The plan's environment carries every declared entry whole and, beside
+    # them, only the harness home the run owns for itself: nothing declared is
+    # dropped, and nothing undeclared is invented. The record below carries
+    # neither, so the comparison is exact on both the key set and the value.
+    environment = launched["plan"].environment
+    assert environment["API_TOKEN"] == "must-not-enter-ledger"
+    assert set(environment) == {"API_TOKEN", "CODEX_HOME"}
+    assert environment["CODEX_HOME"].endswith("codex-home")
     assert record["agent"] == {
         "backend": "alpha",
         "launch": "cli",
