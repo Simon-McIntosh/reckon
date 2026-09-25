@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="58">
+<meta name="plan-version" content="59">
 <meta name="plan-impl" content="0.33">
 </head>
 <body>
@@ -754,6 +754,11 @@
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §4</pre>
     <p class="r-fu-outcome">Landed as promotion-releases-its-worktree on codex-luna (c676b011, ed020ee5, c35d6f7e, 5069a24d, ad2cc9ad, b08b27ca), merged at f45260c4. The dsv4.1 review scored 86 and found the release unreachable for runs holding a live session, plus a dropped failed-promotion signal; both were repaired and the re-review scored 95. Three legacy retention tests were updated to the new rule, with no added failures.</p>
     </article>
+<article class="r-fu" data-id="f-acpewio-worker-retired-at-acceptance" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A worker is retired once its work is accepted</h4>
+    <div class="r-fu-body"><p>Lead directive, 2026-09-25: no slot limit, and a worker is removed once its work is accepted (reviewed and promoted). The dispatch half is new-work-gets-a-new-worker §4 (S22): each no-member dispatch gets a disposable identity recorded on the run, and nothing is registered in the committed roster. This node is the acceptance half, in <code>reckon/crew/promotion.py</code>. It runs after S22's ledger §1b and its never-amend corrective, so the three changes to that file land one after another. <b>Measured defect:</b> today's workers kept their process alive 1–2 h after writing a terminal manifest. For example, the review of the design scout and the review-node-utility review were still running long after their final records, holding their member slot the whole time. <b>The change:</b> promotion's release step deletes the run's disposable identity, and it signals and reaps any process group still alive for that run, printing what it stopped. Separately, a worker whose manifest turns terminal exits within a bounded grace period without waiting for promotion. That second part may sit in the supervisor; if so, the node names the file. <b>Done when</b> a test drives a stub run through terminal manifest, then promotion, and asserts four things: the process has exited within the grace period after the terminal manifest (measured from the manifest's terminal write to process exit, not only the state at promotion); the disposable identity is gone after promotion; an explicitly named member is not deleted; and a blocked run's process and identity are kept for resume. The negative control skips the release step's identity deletion, and the disposable-identity case then fails.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §4</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T062557423973-review-of-a-crew-process-ends-with-its-owner" data-who="reckon-ship" data-when="2026-09-24T06:45:20.039Z">
@@ -823,7 +828,7 @@
     <div class="r-comment-body"><p>a passing promotion of a complete run releases its integrated, clean, unreferenced worktree; re-review 95; merged f45260c4</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260925T104257218002-re-review-of-promotion-releases-its-worktree" data-who="reckon-build" data-when="2026-09-25T11:25:46.320Z">
-    <div class="r-comment-body"><p>review stored; findings routed to the implementer&#x27;s repair round</p></div>
+    <div class="r-comment-body"><p>review stored; findings routed to the implementer's repair round</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260925T092500-liveness-gate" data-who="reckon-build s21-coord" data-when="2026-09-25T07:25:00Z">
     <div class="r-comment-body">Gate for a wider fleet release (lead, 2026-09-25): no live run reads as dead or finished. One node on reckon/crew/recovery.py, dispatched when S22's tail-window run frees the file, covers three misreads that share the classifier. (1) f-acpewio-first-commit-gone, and its duplicate f-asrswtwl-live-worker-read-dead on a-stalled-row-says-whether-the-worker-lives: a live worker reads 'process gone, worktree carries N commits' after its first commit. It hit every implement run on 2026-09-24/25 across S21, S22 and S23, clive and codex alike. At 09:13–09:17 the producer (pid 853019, same host as the workers) classified two live workers as dead-pid-with-retained-work while crew(view=live) read them alive. The interruption branch fires only once commits_beyond_base is nonzero and the stored or probed liveness reads false. So the defect is in how the producer derives process_alive for a run whose pointer pid is the supervisor while the worker's pid lives in worker.json; the node finds which. (2) f-adrwiw-launch-flicker: a run whose supervisor is alive but has not yet spawned (no worker.json) reads 'abandoned'. (3) A resumed run inherits its previous manifest's complete status and reads 'unpromoted' while the resume process is alive and working. Seen on every S21 resume. Done when one test module drives the producer's classification over four stub runs and asserts none reads abandoned, dead or unpromoted: a live supervisor with no worker.json yet; a live worker with commits beyond base; a resumed run whose resume process is alive and whose old manifest reads complete; and a codex run whose pid is a wrapper process. A genuinely dead worker with commits still reads dead-pid-with-retained-work. A negative control per case is executed and logged.</div>
