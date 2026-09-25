@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-worker-can-take-a-brief">
+  <meta name="plan-title" content="A Worker Can Take A Brief">
+  <meta name="plan-summary" content="Dispatch accepts a stored, contract-checked brief in place of a committed plan section, so probes and reviews need no plan edit first.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="7.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-sprint" content="S24">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-standalone" content="Relaxes one dispatch precondition; nothing upstream must land first, and the files it writes are sequenced by live claims rather than a plan edge.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <title>A Worker Can Take A Brief | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">reckon &middot; dispatch</p>
+      <h1>A worker can take a brief</h1>
+      <p class="lead">Every background worker must name a plan and a section, and that section must already be committed at the dispatch base. Otherwise dispatch refuses with <code>plan-unavailable</code>, exit 4. That is right for work that changes a plan's product. It is friction for a read-only probe, a measurement, a review or an investigation. For those, a coordinator has to write, audit, commit and push a plan edit first, only to give a worker a place to read its brief from. On 2026-09-25 the lead asked for a brief in place of a plan, holding the same requirements and dropping only the committed file.</p>
+    </header>
+
+    <h2 id="s1">&sect;1 &mdash; Assessment and design</h2>
+    <p><strong>The direction is right.</strong> The committed-plan rule does two jobs:</p>
+    <ul>
+      <li>The worker reads its authority from its own tree, so no second, stale store of instructions exists.</li>
+      <li>Every run's evidence traces back to durable text a later reader can open.</li>
+    </ul>
+    <p>A brief can do both, provided it is itself durable and checked. The rule's cost, a plan edit before every probe, is paid most by the runs that change nothing.</p>
+    <p>The design:</p>
+    <ul>
+      <li><strong>Same contract.</strong> <code>reckon crew dispatch --brief &lt;file&gt;</code> replaces <code>--plan</code> and <code>--section</code>. <code>--goal</code>, <code>--done-when</code>, <code>--write-path</code>, <code>--spec-level</code> and <code>--time-budget</code> are still required, and the same eight-property validator runs.</li>
+      <li><strong>The brief is durable.</strong> It is copied into the run directory at dispatch, and its sha256 and path are recorded on the live pointer and on the promoted ledger row. The composed prompt embeds it where a plan section would sit. A promoted row therefore still points at the exact text the worker read.</li>
+      <li><strong>Any role may take a brief.</strong> Investigate, review, documentation and test roles need nothing more. An implement-role brief run is tagged <code>unplanned</code>. Its promotion must pass <code>--plan-link &lt;slug&gt;</code>, naming the plan whose product it changed, or <code>--unplanned-reason &lt;text&gt;</code>. Either lands on the ledger row, so a product change never lands without a stated owner.</li>
+      <li><strong>Nothing else loosens.</strong> Scope claims, fences, the review reflex, the review-before-promotion guard, the budget fence and the watcher requirement all apply unchanged. The impl-move guard is skipped for a brief run, because there is no plan <code>impl</code> to move.</li>
+    </ul>
+
+    <h2 id="s2">&sect;2 &mdash; Dispatch accepts a brief</h2>
+    <p><code>reckon/cli.py</code> and <code>reckon/crew/dispatch.py</code> accept <code>--brief</code> as mutually exclusive with <code>--plan</code>/<code>--section</code>. The committed-section check is skipped for a brief. The brief is copied into the run directory, and its digest is recorded on the pointer.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test dispatches (with <code>--dry-run</code> and with a stub launcher) using a brief file and no plan. It asserts a pointer carrying <code>brief.sha256</code> and <code>brief.path</code>, and the copied brief under the run directory.</li>
+      <li>A brief dispatch missing <code>--done-when</code> is refused with <code>not-dispatchable</code>, exactly as a plan dispatch is.</li>
+      <li>Passing both <code>--brief</code> and <code>--plan</code> is refused.</li>
+      <li>The declared mutation, restoring the committed-plan check for a brief, is applied, and the brief test is observed to fail with <code>plan-unavailable</code>. The log is recorded.</li>
+    </ul>
+
+    <h2 id="s3">&sect;3 &mdash; The prompt carries the brief where the plan section was</h2>
+    <p><code>reckon/crew/prompts.py</code> composes the worker prompt from the brief text in place of the plan-section read instruction. The prompt keeps every other part of the contract: fences, manifest shape and the landing rule. For a brief run, the landing record goes to the run directory, not to a plan.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test composes the prompts for a plan dispatch and for a brief dispatch of the same node. It asserts that the brief prompt contains the brief text and the manifest contract, and contains no plan-section read instruction or plan-landing instruction.</li>
+      <li>The plan prompt is byte-identical to its output before the change.</li>
+    </ul>
+
+    <h2 id="s4">&sect;4 &mdash; Promotion records a brief run's owner</h2>
+    <p><code>reckon/crew/promotion.py</code> promotes a brief run with <code>plan: null</code> and the brief digest on its ledger row, and skips the impl-move guard. An implement-role brief run is refused unless <code>--plan-link</code> or <code>--unplanned-reason</code> is given. The refusal names both discharges.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>Promotion tests assert that an investigate brief run promotes with no extra flag.</li>
+      <li>An implement brief run without either flag is refused, naming both.</li>
+      <li>With <code>--plan-link</code>, the row carries <code>plan_link</code>; with <code>--unplanned-reason</code>, it carries <code>unplanned_reason</code>.</li>
+      <li>The declared mutation, dropping the implement-role check, is observed to fail. The log is recorded.</li>
+    </ul>
+
+    <h2 id="s5">&sect;5 &mdash; The skill says when a brief is the right carrier</h2>
+    <p><code>reckon-build</code> SKILL.md &sect;3b currently says "there is deliberately no flag for passing prose to a worker". It is rewritten: a probe, measurement, review or investigation may carry a brief, and work that changes a plan's product carries its plan. The brief meets the same eight properties, and the done-when is still the specification. <code>crew(view="runs")</code> shows brief runs with <code>plan</code> null and their brief digest.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>The skill text no longer states the retired rule.</li>
+      <li>Every test that greps <code>skills/</code> passes.</li>
+      <li>A runs-view test shows a promoted brief run's row carrying its brief digest.</li>
+    </ul>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="implement-role-briefs" data-choice="allowed-with-owner" data-by="lead directive, 2026-09-25" data-when="2026-09-25">
+        <p class="r-dec-q">May an implement-role worker take a brief instead of a plan?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="allowed-with-owner">Allowed; promotion names a plan link or an unplanned reason</button>
+          <button class="r-opt" data-value="read-only-only">Only read-only roles may take a brief</button>
+        </p>
+        <p class="r-dec-rat">The lead asked for the committed-plan requirement to be lifted for background work generally. Requiring a stated owner at promotion keeps every product change traceable without forcing a plan edit before the work starts.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-awctab-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-09-25"
+               data-recommends-skill="/reckon-build a-worker-can-take-a-brief"
+               data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Land &sect;2&ndash;&sect;5</h4>
+        <div class="r-fu-body"><p>&sect;2 comes first. &sect;3 and &sect;4 can then run in parallel, and &sect;5 follows once they have landed.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-worker-can-take-a-brief</pre>
+      </article>
+    </section>
+
+    <section data-reckon="comments" id="comments" class="r-comments">
+      <h2><span class="sec">§</span> Comments</h2>
+    </section>
+  </main>
+</body>
+</html>

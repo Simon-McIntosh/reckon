@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-sprint-is-live-while-a-crew-works-it">
+  <meta name="plan-title" content="A Sprint Is Live While A Crew Works It">
+  <meta name="plan-summary" content="A sprint's liveness is derived from the crews implementing it, the one-active cap is removed, and every summary lists open and recently closed sprints.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-sprint" content="S24">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-standalone" content="Replaces a stored scheduling marker with a derived signal; nothing upstream must land first. It supersedes the one-active invariant work-scheduling-surface holds, recorded as a lead directive rather than a plan edge.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <title>A Sprint Is Live While A Crew Works It | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">reckon &middot; sprint state</p>
+      <h1>A sprint is live while a crew works it</h1>
+      <p class="lead">On 2026-09-25, <code>read_plan(project="reckon")</code> reported <code>active_sprint_id: "S12"</code>. That value was written by hand weeks ago. Meanwhile S21, S22 and S23 each had a coordinator and live workers. The lead's directive that day: a live sprint is a sprint with a live crew implementing it, and the hard cap of one active sprint is removed. A stored marker says what someone once decided; a live crew says what is happening now, and that is the signal an agent needs.</p>
+    </header>
+
+    <h2 id="s1">&sect;1 &mdash; What the surfaces say today</h2>
+    <p>The cap comes from four places:</p>
+    <ul>
+      <li>The <code>push</code> op makes one sprint <code>active</code> and demotes the rest to <code>open</code>.</li>
+      <li>The audit reports <code>multiple-active-sprints</code> as an error.</li>
+      <li><code>active_sprint_id</code> is derived from the one sprint whose stored status is <code>active</code>.</li>
+      <li>The <code>work-scheduling-surface</code> plan (S22) records the invariant.</li>
+    </ul>
+    <p>None of this consults the crew. Discovery returns a <code>state</code> block with counts <code>by_sprint</code>, but no sprint list. <code>roadmap(view="summary")</code> lists <code>open_sprints</code> ids and nothing about sprints closed recently.</p>
+    <p>The live crew is already readable. Every live pointer names its project and plan, and every plan names its sprint.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Liveness is derived from live crews</h2>
+    <p>A sprint is <strong>live</strong> when at least one live pointer in its project serves a plan whose <code>plan-sprint</code> is that sprint, and that pointer is classified as working, starting or dispatched. A blocked or unpromoted pointer counts as <em>held</em>, not live. Liveness is computed at read time from the same classification <code>crew(view="live")</code> uses, and is never written to any resource.</p>
+    <p>Each sprint row carries four fields:</p>
+    <ul>
+      <li><code>live</code></li>
+      <li><code>live_runs</code></li>
+      <li><code>live_sessions</code>: the coordinator session ids</li>
+      <li><code>last_activity_at</code>: the newest stream write among its runs</li>
+    </ul>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test with a synthetic config home, holding live pointers for plans in two sprints and a terminal pointer for a third, asserts that exactly those two sprints read <code>live: true</code> with the right run and session counts.</li>
+      <li>The third sprint reads <code>live: false</code>.</li>
+      <li>No resource file changes as a result of the read.</li>
+      <li>The declared mutation, reading the stored <code>active</code> status instead of pointers, is applied, and the test is observed to fail. The log is recorded.</li>
+    </ul>
+
+    <h2 id="s3">&sect;3 &mdash; Every summary lists open and recently closed sprints</h2>
+    <p>Discovery's <code>read_plan(project)</code> and <code>roadmap(view="summary")</code> both gain a compact <code>sprints</code> list:</p>
+    <ul>
+      <li>every sprint not <code>done</code> or <code>shipped</code></li>
+      <li>every sprint closed within <code>sprint_recent_days</code>, which defaults to 14 and is configurable in flight config</li>
+    </ul>
+    <p>Each row gives the sprint id, theme, stored status, the &sect;2 liveness fields, member and pending counts, completion percentage, and <code>closed_at</code> for a closed sprint. Rows are ordered live first, then open, then recently closed.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test on a synthetic project with one live, one open idle, one closed 3 days ago and one closed 40 days ago asserts that the first three appear, in that order, and the fourth does not.</li>
+      <li>The recorded length of the reckon project's discovery summary at the worktree head stays under the response budget.</li>
+    </ul>
+
+    <h2 id="s4">&sect;4 &mdash; The one-active cap is removed</h2>
+    <p>The changes:</p>
+    <ul>
+      <li><code>push</code> no longer demotes other sprints. It sets <code>active</code> on its target as a scheduling hint and leaves every other sprint's status alone.</li>
+      <li>The <code>multiple-active-sprints</code> audit finding is retired.</li>
+      <li><code>active_sprint_id</code> stays as a compatibility field. It now names the live sprint with the most recent activity, or the stored <code>active</code> sprint when no sprint is live. It sits beside a new <code>live_sprint_ids</code> list.</li>
+    </ul>
+    <p>The <code>reckon-sprint</code> skill text and the roadmap's <code>active_sprint_id</code> description are updated to match. The S22 coordinator is told, because <code>work-scheduling-surface</code> records the old invariant.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test pushes two sprints and asserts both keep <code>active</code>.</li>
+      <li>The audit on that project reports no <code>multiple-active-sprints</code> finding.</li>
+      <li><code>active_sprint_id</code> follows the live sprint when crews exist, and falls back to the stored status when none do.</li>
+      <li>Every existing sprint test that asserted demotion is updated to the new contract in the same commit. Each such change is named in the landing record.</li>
+    </ul>
+
+    <h2 id="s5">&sect;5 &mdash; The skills teach liveness, not the marker</h2>
+    <p><code>reckon-sprint</code> SKILL.md's "One pushed sprint" section, and every <code>reckon-build</code> sentence that tells a coordinator to read <code>active_sprint_id</code>, are rewritten to the &sect;2 definition. The <code>push</code> op is described as a hint.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li><code>grep -rn "exactly one sprint\|one active sprint\|demotes" skills/</code> returns no line that states the retired invariant.</li>
+      <li>Every test that greps <code>skills/</code> passes.</li>
+    </ul>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-asilwacwi-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-09-25"
+               data-recommends-skill="/reckon-build a-sprint-is-live-while-a-crew-works-it"
+               data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Land &sect;2&ndash;&sect;5</h4>
+        <div class="r-fu-body"><p>&sect;3 reads &sect;2's fields. &sect;4 and &sect;5 follow &sect;2.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-sprint-is-live-while-a-crew-works-it</pre>
+      </article>
+    </section>
+
+    <section data-reckon="comments" id="comments" class="r-comments">
+      <h2><span class="sec">§</span> Comments</h2>
+    </section>
+  </main>
+</body>
+</html>

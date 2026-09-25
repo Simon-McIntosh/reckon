@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-landing-beat-needs-no-hand-edit">
+  <meta name="plan-title" content="A Landing Beat Needs No Hand Edit">
+  <meta name="plan-summary" content="edit_plan can collapse a landed section and append to a cumulative evidence record, so a coordinator edits plan HTML by hand only by exception.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-sprint" content="S24">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-standalone" content="Adds two edit_plan ops on top of the section records S22 landed; nothing upstream must land first, and the op table it writes is sequenced by live claims.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <title>A Landing Beat Needs No Hand Edit | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">reckon &middot; write surface</p>
+      <h1>A landing beat needs no hand edit</h1>
+      <p class="lead">The lead's rule is that editing a plan by hand should be rare but still allowed. The S23 coordinator ran fifteen landing beats on 2026-09-24 and 25. Every write went through <code>edit_plan</code> except two kinds, and those two had no op.</p>
+    </header>
+
+    <h2 id="s1">&sect;1 &mdash; The hand edits that remained</h2>
+    <ul>
+      <li><strong>Evidence records.</strong> A correction appended to <code>a-worker-knows-it-is-on-compute-landed.html</code> after the review found a vacuous mutation control. Also two add/add merges where two nodes each created the same cumulative evidence file, which had to be spliced by hand. <code>edit_plan</code> writes plan state; it has no op for an evidence resource's anchored sections.</li>
+      <li><strong>Collapse on landing.</strong> <code>reckon-build</code> &sect;6b tells a coordinator to replace a shipped section's body with a two-to-four-line landed card. No op does that, so the only routes are a text-mode edit anchored on the section's own prose or a direct file edit.</li>
+      <li><strong>Inserting a section.</strong> Solved on 2026-09-25 by <code>insert_section</code>, in <code>the-mcp-answers-within-its-ceiling</code> &sect;7.</li>
+    </ul>
+
+    <h2 id="s2">&sect;2 &mdash; An op appends an anchored section to an evidence record</h2>
+    <p><code>edit_plan</code> accepts <code>{op:"append_evidence", plan, anchor, title, body}</code>. It targets the cumulative record <code>docs/evidence/archive/&lt;plan&gt;-landed.html</code>.</p>
+    <ul>
+      <li>If the record is missing, the op creates it with <code>reckon-type=evidence</code> and <code>plan-evidence-for</code>.</li>
+      <li>It appends one <code>&lt;section id=anchor&gt;</code> before <code>&lt;/main&gt;</code>.</li>
+      <li>It refuses an anchor that already exists, so two writers never overwrite each other.</li>
+    </ul>
+    <p>A second writer's append lands beside the first, removing the add/add splice.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>Tests assert creation with the required meta, an append beside an existing anchor, refusal of a duplicate anchor, and <code>reckon audit-doc</code> passing on the result.</li>
+      <li>The declared mutation, dropping the duplicate-anchor refusal, is applied and observed to fail. The log is recorded.</li>
+    </ul>
+
+    <h2 id="s3">&sect;3 &mdash; An op collapses a landed section</h2>
+    <p><code>edit_plan</code> accepts <code>{op:"collapse_section", section, summary, evidence_anchor}</code>. It replaces the authored body under that section's h2 with the &sect;6b landed card, which carries the <code>&#10003; landed</code> badge, the summary and the evidence link. It keeps the h2 id, and it sets that section's declaration to <code>done</code> in the same versioned write.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>Tests assert that the body is replaced, the heading and id are kept, the declaration reads <code>done</code>, structured-state regions are untouched, and a missing section is refused.</li>
+      <li>The result passes <code>reckon audit-doc</code> with no <code>header-duplicate</code> finding.</li>
+      <li>The declared mutation, leaving the declaration unchanged, is observed to fail. The log is recorded.</li>
+    </ul>
+
+    <h2 id="s4">&sect;4 &mdash; The skills name the ops and the exception</h2>
+    <p><code>reckon-build</code> &sect;6b and &sect;7, and <code>reckon-edit</code>, name <code>collapse_section</code>, <code>append_evidence</code> and <code>insert_section</code> as the landing-beat writes. They say a direct HTML edit is the exception, announced in the reply as the existing bypass rule already requires. <code>_OP_VOCAB</code> lists both new ops.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>Every test that greps <code>skills/</code> passes.</li>
+      <li>The vocabulary-completeness test from <code>the-mcp-answers-within-its-ceiling</code> &sect;8 passes with both ops present.</li>
+    </ul>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-albnnhe-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-09-25"
+               data-recommends-skill="/reckon-build a-landing-beat-needs-no-hand-edit"
+               data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Land &sect;2&ndash;&sect;4</h4>
+        <div class="r-fu-body"><p>&sect;2 and &sect;3 both write <code>reckon/_store.py</code> and run in order. &sect;4 follows them.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-landing-beat-needs-no-hand-edit</pre>
+      </article>
+    </section>
+
+    <section data-reckon="comments" id="comments" class="r-comments">
+      <h2><span class="sec">§</span> Comments</h2>
+    </section>
+  </main>
+</body>
+</html>

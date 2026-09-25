@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="reckon-reads-answer-in-seconds">
+  <meta name="plan-title" content="Reckon Reads Answer In Seconds">
+  <meta name="plan-summary" content="A warm project audit, roadmap summary and discovery answer in seconds rather than approaching the 30 s storage deadline.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-sprint" content="S24">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-informs" content="a-page-load-reads-each-file-once">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <title>Reckon Reads Answer In Seconds | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">reckon &middot; MCP latency</p>
+      <h1>Reckon reads answer in seconds</h1>
+      <p class="lead">An agent that waits half a minute for a routine read stops using the tool. The lead asked, on 2026-09-25, for the reads to answer without a large pause.</p>
+    </header>
+
+    <h2 id="s1">&sect;1 &mdash; What the reads cost today</h2>
+    <p>Each tool body was called twice in one process on clu-2058, in fleet job 1277272, at 2026-09-25 about 08:40 local. That mirrors the resident MCP server's cold first call and warm second call.</p>
+    <table>
+      <thead><tr><th>Read</th><th>Cold</th><th>Warm</th><th>Answer size</th></tr></thead>
+      <tbody>
+        <tr><td><code>audit(project="reckon")</code></td><td>30.5 s</td><td>28.9 s</td><td>824 characters</td></tr>
+        <tr><td><code>read_plan(project="reckon")</code>, discovery</td><td>26.2 s</td><td>9.0 s</td><td>7,427</td></tr>
+        <tr><td><code>roadmap(project="reckon", view="summary")</code></td><td>8.0 s</td><td>7.9 s</td><td>946</td></tr>
+        <tr><td><code>crew(view="directory")</code></td><td>5.7 s</td><td>5.7 s</td><td>20,015</td></tr>
+      </tbody>
+    </table>
+    <p>The warm audit sits one second under the 30 s storage deadline. Under load it crosses the deadline and returns <code>storage-slow</code>. The roadmap and audit do not get faster when warm, so nothing is cached between calls.</p>
+    <p>S21's <code>a-page-load-reads-each-file-once</code> makes discovery parse each file once for the <em>served</em> web loader. This plan covers the MCP tools and must reuse that plan's memo rather than add a second cache.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Profile the three slow reads</h2>
+    <p>This is an investigation. Its deliverable is <code>docs/research/reckon-read-latency-profile.html</code>. It profiles the warm <code>audit</code>, <code>roadmap</code> summary and discovery calls on the reckon project, for example with cProfile, and names the top five cumulative-time call sites of each by file and line at a named revision.</p>
+    <p>For each read it states:</p>
+    <ul>
+      <li>whether the time is parsing, filesystem walking, git subprocesses or computation</li>
+      <li>which existing memo, such as <code>reckon.file_memo</code>, the S21 discovery memo or <code>memoized</code>, could carry it</li>
+      <li>the expected warm latency if it did</li>
+    </ul>
+    <p><strong>Done when:</strong> the report tabulates, for each of the three reads, its top five call sites with cumulative seconds, the category of each, and the reuse candidate. It records the profiling command and the revision. No product file changes.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Warm reads answer under five seconds</h2>
+    <p><strong>Trigger:</strong> deferred until &sect;2's report names the call sites. The fix reuses the named memo, and its done-when is set from the report. The minimum is that the warm <code>audit(project="reckon")</code>, roadmap summary and discovery each answer under 5 s on this host, each measured three times and recorded.</p>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+      <h2><span class="sec">§</span> Evidence gates</h2>
+      <div class="r-gate" data-id="g-read-profile-landed" data-section="s3" data-gated-sections="s3" data-status="open" data-verdict="">
+        <h4 class="r-gate-measure">Each slow read's top call sites are named with their cost and a reuse candidate</h4>
+        <p class="r-gate-required-evidence">reckon-reads-answer-in-seconds#s2</p>
+      </div>
+    </section>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-rraiss-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-09-25"
+               data-recommends-skill="/reckon-build reckon-reads-answer-in-seconds §2"
+               data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Profile the slow reads</h4>
+        <div class="r-fu-body"><p>&sect;2 is an investigation, and &sect;3 waits on it.</p></div>
+        <pre class="r-fu-prompt">/reckon-build reckon-reads-answer-in-seconds §2</pre>
+      </article>
+    </section>
+
+    <section data-reckon="comments" id="comments" class="r-comments">
+      <h2><span class="sec">§</span> Comments</h2>
+    </section>
+  </main>
+</body>
+</html>
