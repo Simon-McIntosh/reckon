@@ -2694,7 +2694,6 @@ def _observed_phase(
     worker_alive: bool | None,
     ended_exit: Mapping[str, Any] | None,
     manifest_status: str,
-    stream_present: bool,
     commits_beyond_base: int,
 ) -> str:
     """The phase a run's own evidence supports, not the last writer's label.
@@ -2702,9 +2701,10 @@ def _observed_phase(
     A pointer's phase is written by the launcher: a supervisor sets it at spawn,
     and a run whose launch was interrupted can keep a pre-spawn label for its
     whole life. Where the stored phase is still one of those labels, the run's
-    own evidence decides instead — a live worker record, a stream, or retained
-    commits show the launch got past starting. A live supervisor alone does not:
-    it may still be between admission and worker spawn. A terminal verdict on a
+    own evidence decides instead — a live worker record or retained commits
+    show the launch got past starting. A live supervisor or stream alone does
+    not: the supervisor may still be between admission and worker spawn, and a
+    stream can be inherited from an earlier attempt. A terminal verdict on a
     gone process shows it finished. With no evidence at all the label stands:
     nothing has happened yet, and inventing an advance would be as wrong as
     inventing an end.
@@ -2715,7 +2715,7 @@ def _observed_phase(
         return "complete"
     if ended_exit is not None:
         return "complete"
-    if worker_alive is True or stream_present or commits_beyond_base:
+    if worker_alive is True or commits_beyond_base:
         return "working"
     return phase
 
@@ -3307,8 +3307,8 @@ def classify_pointer(
     # then answers for a process that is gone while the work continues — so a
     # dead pointer pid is not proof the work is gone. The worker record is asked
     # next, and only its answer may let a run read as dead.
-    worker_alive = _worker_record_liveness(record) if alive is not True else None
-    if worker_alive is True:
+    worker_alive = _worker_record_liveness(record)
+    if alive is not True and worker_alive is True:
         alive = True
         liveness_proven = True
     # The run's own supervisor records the worker's exit in the run directory,
@@ -4104,7 +4104,6 @@ def classify_pointer(
         worker_alive=worker_alive,
         ended_exit=ended_exit,
         manifest_status=manifest_status,
-        stream_present=stream_reading is not None,
         commits_beyond_base=commits_beyond_base,
     )
     classified = {

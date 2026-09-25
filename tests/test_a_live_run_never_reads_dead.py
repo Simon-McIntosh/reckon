@@ -466,6 +466,7 @@ def test_a_pointer_phase_advances_from_starting_to_working_to_complete(
         )
         started_row = _classify(started)
         started_snapshot = _snapshot(started)
+        _write_worker_record(run_id, supervisor_pid)
         working = _pointer(tmp_path, run_id, pid=supervisor_pid, phase="starting")
         working_row = _classify(working)
         working_snapshot = _snapshot(working)
