@@ -967,6 +967,8 @@ def _write_state_locked(
             raise OpError(f"append_evidence: no docs dir for project {project!r}")
         _apply_evidence_appends(docs_dir, project, evidence_appends, root)
     authored_text_changed = source_text != text
+    if state_type == "plan":
+        _require_heading_for_section_records(source_text, new_data.get("sections"))
     new_text = _plan_html.write_state(source_text, new_data)
 
     # Idempotency guard: if the patch carries no real content change (e.g. a
@@ -1203,6 +1205,49 @@ def _new_section_record(working: dict, section: dict) -> dict:
         ).model_dump(by_alias=True, exclude_none=True)
     except ValidationError as exc:
         raise OpError(_section_contract_refusal(str(exc))) from exc
+
+
+def _carries_authored_prose(item: dict) -> bool:
+    """Whether an append item writes a heading and body, or only a record.
+
+    ``body`` is the discriminator: an item carrying one is authored work
+    entering the file, and one that omits it is the typed record a reader
+    already holds for a section whose heading is in the file.
+    """
+    return "body" in item
+
+
+def _require_heading_for_section_records(html_text: str, sections: Any) -> None:
+    """Refuse a typed record whose id has no authored h2 to attach to.
+
+    A record rides with a ``section`` heading: the write regenerates the record
+    span beside it and leaves the heading's text and the prose around it
+    byte-identical, so an id with no heading has nothing to attach to. The
+    refusal names the id, because the writer's next move — authoring the
+    heading and prose — is a different call from the one it attempted.
+    """
+    from bs4 import BeautifulSoup
+
+    if not isinstance(sections, list):
+        return
+    heading_ids = {
+        str(heading.get("id"))
+        for heading in BeautifulSoup(html_text, "html.parser").find_all("h2", id=True)
+    }
+    missing = sorted(
+        str(record.get("id"))
+        for record in sections
+        if isinstance(record, dict) and str(record.get("id")) not in heading_ids
+    )
+    if missing:
+        raise OpError(
+            _section_contract_refusal(
+                f"no authored h2 heading with id {missing[0]!r} to attach a section "
+                "record to (a record rides with an existing section heading; supply "
+                "'title' and 'body' in the same append to write the heading and "
+                "prose as well)"
+            )
+        )
 
 
 def _require_new_section_contracts(before_html: str, after_html: str) -> None:
@@ -2056,10 +2101,14 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         record = _new_section_record(working, item)
         sections = working.setdefault("sections", [])
         _refuse_duplicate_id(sections, target, record["id"])
-        try:
-            _queue_authored_section(working, item)
-        except OpError as exc:
-            raise OpError(_section_contract_refusal(str(exc))) from exc
+        # An item carrying no body attaches the typed record to a heading the
+        # file already holds and writes nothing else; one carrying a body
+        # authors the heading and prose too, which is the create route.
+        if _carries_authored_prose(item):
+            try:
+                _queue_authored_section(working, item)
+            except OpError as exc:
+                raise OpError(_section_contract_refusal(str(exc))) from exc
         sections.append(record)
         working.setdefault("section_declarations", {})[record["id"]] = record["status"]
         return

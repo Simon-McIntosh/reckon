@@ -239,6 +239,41 @@
       enumerated deliverables, because no followup states an effort.</figcaption>
     </figure>
 
+    <p><strong>The record attaches where the heading already is, 2026-09-25.</strong> Commit
+    <code>25baddea8ad92a0f82b787851b4221201762559d</code> makes the state-mode
+    <code>append</code> target <code>sections</code> discriminate on the item. One carrying a
+    <code>body</code> authors the heading and its prose as before — the create route, unchanged.
+    One carrying only the typed record attaches that record beside the <code>&lt;h2 id&gt;</code>
+    the file already holds and writes nothing else, so the heading, its attributes and the
+    surrounding prose stay byte-identical; the one span written is the
+    <code>data-reckon="section"</code> element on the line after the heading, which is where the
+    reader recovers it from. A plan whose sections predate the contract can therefore be
+    converted in place, one record at a time, without rewriting the headings it already has.</p>
+    <p>A record whose id has no authored heading is refused at the write boundary naming that id
+    and carrying the same worked append example the other contract refusals carry, pointing at the
+    create shape the caller needs. The refusal replaces the splice's internal
+    <em>expected exactly one matching h2</em> error, which named the failure mode rather than the
+    action. A second record for an id that already carries one stays refused as a duplicate, and
+    the op vocabulary now names <code>effort_hours</code>, <code>capability</code> and
+    <code>links</code> as required on both state write routes, so a reader composing an attach from
+    the vocabulary alone has the fields it must supply. Seven cases pin the behaviour: the attach
+    and its byte-identical heading and prose, the audit finding clearing once the record lands,
+    both refusals, the declared status carried onto the attached record, the create route
+    unchanged, and the vocabulary wording. The focused cohort reads <strong>1 failed, 188
+    passed</strong> at base <code>185ba385</code> and <strong>1 failed, 195 passed</strong> at the
+    head — zero added failures, the single failure being the pre-existing
+    <code>append_evidence</code> vocabulary gap, reported for its owner. Making the attach route
+    require a body, as <code>insert_section</code> does, turns five of the seven red with the
+    attach case first. Receipts:
+    <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#record-attaches-to-existing-heading">the attach record</a>.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/record-attach-or-create.svg"
+           alt="A state-mode append of a section item is validated as a typed record first. An item carrying a body then authors the heading and its prose, which is the create route. An item carrying only the record attaches that record beside the h2 the file already holds, leaving the heading, its attributes and the surrounding prose byte-identical. An id with no authored h2 is refused before any byte is written, naming the id and showing a worked append example.">
+      <figcaption>One append target, two write paths, one record validation. The body is the
+      discriminator: an item that carries one is authored work entering the file, and one that
+      omits it is the record a reader already holds for a heading that is already there.</figcaption>
+    </figure>
+
     <h2 id="s3">§3 — impl is computed from section effort, never authored</h2>
     <p>impl becomes the sum of effort over sections whose status is done, divided by that sum plus the predicted
     effort of every remaining implementable section; deferred sections are outside the denominator, as the

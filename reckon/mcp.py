@@ -1304,14 +1304,14 @@ _DOS_DONTS = {
 #: The edit_plan op vocabulary, inlined for the context injector.
 _OP_VOCAB = {
     "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars, decisions.<key>.<field>, followups.<id>.prompt; one top-level field on a sprint/milestone/blocker/project resource; review scalars and the priority list. impl clamps to 0..1, plan-only.",
-    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events; review findings. followup prompt is one /reckon-build line.",
+    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events; review findings. target 'sections' writes a section (item: id, title, body) or attaches a record to an <h2 id> already in the file (item: id, no body); effort_hours, capability and links are required on either shape. followup prompt is one /reckon-build line.",
     "resolve": "{op:'resolve', target:'followups'|'questions'|'findings', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution; finding status derives from resolved_at.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
     "gate": "{op:'gate', id, section, gated_sections:[...], measure, required_evidence} — declares one open evidence gate.",
     "pass": "{op:'pass', id, evidence} — closes a declared gate as passed; evidence is required when gates.require_evidence is enabled.",
     "fail": "{op:'fail', id, evidence} — closes a declared gate as failed while preserving negative evidence.",
     "retire_prose": "{op:'retire_prose', preimage:'<exact authored HTML>'} — removes one authored fragment outside every section[data-reckon], atomically with the batch's structured ops.",
-    "insert_section": "{op:'insert_section', id, title, body}",
+    "insert_section": "{op:'insert_section', id, title, body, effort_hours, capability, links} — writes a new h2 with its typed section record; effort_hours, capability and links are required.",
     "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions, preserves item metadata.",
     "push": "{op:'push'} — marks the selected sprint active (pushed) and demotes any other active sprint to open in the same versioned write.",
     "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource by doc_type.",
