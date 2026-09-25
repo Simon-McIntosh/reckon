@@ -314,6 +314,47 @@
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T090349791305-a-live-run-never-reads-dead/negative-controls-final-3.log</code>.
       Base named-gate receipt:
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T090349791305-a-live-run-never-reads-dead/baseline-named-gate.log</code>.</p>
+      <section id="s10-every-attempt-is-supervised">
+        <h3>Every resumed or redispatched attempt is supervised</h3>
+        <p><strong>Outcome.</strong> Commit <code>ce1f6281</code> routes both
+        <code>crew resume</code> and lane-change redispatch through the same per-run supervisor
+        as a fresh dispatch. The live pointer names that supervisor; the worker pid lives in
+        <code>worker.json</code>. Each supervisor writes immutable
+        <code>attempt-&lt;n&gt;-worker.json</code> and
+        <code>attempt-&lt;n&gt;-exit.json</code> receipts carrying the attempt number. The
+        canonical <code>worker.json</code> and <code>exit.json</code> names expose only the
+        attempt named by <code>attempt.json</code>; when another attempt begins, the prior
+        canonical receipts are archived and a late prior supervisor cannot reclaim them.</p>
+        <figure>
+          <img src="/reckon/figures/a-crew-process-ends-with-its-owner/attempt_supervision_sequence.svg"
+               alt="A dispatch, resume or redispatch starts a per-attempt supervisor, which starts one worker and writes attempt-numbered worker and exit receipts. Prior receipts remain archived while canonical worker and exit names expose only the current attempt to the classifier and review reflex.">
+          <figcaption>The run identity stays fixed while the process and evidence identity
+          advance by attempt. The archival edge is deliberately one-way: superseded receipts
+          remain readable but cannot become current again.</figcaption>
+        </figure>
+        <table>
+          <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Focused gate</td><td><strong>5 passed in 5.57 s</strong> on <code>ce1f6281</code></td></tr>
+            <tr><td>Harness and attempt population</td><td>Claude/Clive-shaped and Codex-shaped stubs, each exercised by resume and redispatch; all four pointer pids named <code>__supervise__</code></td></tr>
+            <tr><td>Worker and exit receipts</td><td>attempt 1 archived; attempt 2 canonical and immutable receipts agree; a killed resumed worker records <code>SIGKILL</code></td></tr>
+            <tr><td>Old completion while repair is live</td><td>a live attempt with a predecessor's complete manifest and a dirty worktree classifies <code>running</code>, is neither scoring nor promotable, and dispatches no reflex review</td></tr>
+            <tr><td>Existing dispatch/resume/recovery population at base</td><td>270 passed, 3 failed, 1 skipped</td></tr>
+            <tr><td>Same population plus this gate at head</td><td>275 passed, the same 3 failed, 1 skipped; <strong>zero added failures</strong></td></tr>
+            <tr><td>Declared direct-launch mutation</td><td>5 failed; the dedicated killed-resume case reports that no current-attempt exit record appeared within its bound</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Receipts.</strong> Focused gate:
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131110241464-every-attempt-is-supervised/gate.log</code>.
+        Base and after comparison:
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131110241464-every-attempt-is-supervised/baseline-suite.log</code>
+        and <code>after-suite.log</code>. Declared mutation:
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131110241464-every-attempt-is-supervised/negative-control.log</code>.
+        The three unchanged failures are
+        <code>test_a_lane_hold_always_states_its_reset[2026-09-08T10:00:00Z]</code>,
+        <code>test_a_lane_hold_always_states_its_reset[None]</code>, and
+        <code>test_ticker_carries_the_recovery_verb_in_an_actionable_row</code>.</p>
+      </section>
       <section id="s10-ticker-fixture-reads-withdrawn">
         <h3>Ledger-backed ticker departure fixtures</h3>
         <p>The ticker test fixtures now follow the liveness contract at the base revision.
