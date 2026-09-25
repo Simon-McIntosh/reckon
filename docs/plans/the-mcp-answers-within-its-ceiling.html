@@ -195,6 +195,32 @@
     <p>Evidence: <a href="/reckon/evidence/archive/the-mcp-answers-within-its-ceiling-landed#s5-a-single-run-read-answers-in-two-seconds">the landed record</a>.</p>
     </div>
 
+    <div class="r-note" data-reckon="landed" data-node="mcp-crew-runs-forwards-run-id" data-when="2026-09-25">
+    <p><strong>Outcome — the MCP crew tool forwards the run id.</strong> Commit
+    <code>1de67ffb</code> <em>feat(mcp): forward the run id from the crew runs view</em> adds
+    <code>run_id=run_id</code> to the <code>view="runs"</code> branch's call to
+    <code>runs_view</code>, so the narrow read above is reached from the MCP tool and not only from
+    a direct caller. Before it, the argument was accepted and dropped, and a one-run read through
+    the tool was the full fleet walk. No other line of <code>reckon/mcp.py</code> changes.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li><strong>The named row alone.</strong> On a synthetic configuration home holding two live
+      runs, <code>_crew(project=&hellip;, view="runs", source="live", run_id=&hellip;)</code>
+      returns <code>count: 1</code> for the named run; the same call without a run id returns
+      both.</li>
+      <li><strong>The id reaches <code>runs_view</code>.</strong> With
+      <code>reckon.mcp.crew_runs_view</code> patched, the spy receives the <code>run_id</code>, so
+      the narrowing is the bridge's own rather than a later in-memory filter.</li>
+      <li><strong>Timing under 2 s.</strong>
+      <code>_crew(project="reckon", view="runs", run_id="r-20260924T204759725667-s23-reuse-map")</code>
+      at the head returns that row in <strong>0.2558 s</strong>. 2 tests pass in
+      <code>tests/test_mcp_crew_runs_run_id.py</code>.</li>
+      <li><strong>The declared mutation fails the row test:</strong> removing the forward reports
+      <code>assert 2 == 1</code> — both live runs come back — with the log beside the run.</li>
+    </ul>
+    <p>Evidence: <a href="/reckon/evidence/archive/the-mcp-answers-within-its-ceiling-landed#s5-mcp-forwards-the-run-id">the landed record</a>.</p>
+    </div>
+
     <h2 id="s6">&sect;6 &mdash; A plan can be read one section at a time</h2>
     <p>Reading a single section today means pulling the whole plan or parsing HTML in bash. <code>read_plan(view="section", section="s3")</code> should return that section's heading, its plain text, its HTML, its declaration and the comments anchored to it. Discovery search should match the plans whose body text contains the query, not only sprint rows.</p>
     <p><strong>Done when:</strong></p>
