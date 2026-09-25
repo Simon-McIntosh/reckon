@@ -8,11 +8,11 @@ taller than the window leaves the window entirely inside that record, no line
 in it parses, and the reader answers "no last record". The run then reads as
 working with no death clause — the stale row this reporting exists to remove.
 
-The window is a floor rather than a limit: the read extends backwards until the
-chunk holds a record boundary, so the last complete record is read whatever its
-size. The common case — a last record of a few hundred bytes behind any length
-of stream — still costs one window, because a chunk holding a newline holds
-every complete record that ends in it.
+The window is a floor rather than a limit: the read extends backwards until it
+parses a complete record, not merely until a chunk contains a newline. The last
+complete record is therefore read whatever its size. The common case — a last
+record of a few hundred bytes behind any length of stream — still costs one
+window, because that chunk contains the complete record itself.
 
 The sizes here bracket the window. Each case pads the final record's text
 field, and the record's own wrapper adds a fixed overhead, so the 64.5 KiB case
