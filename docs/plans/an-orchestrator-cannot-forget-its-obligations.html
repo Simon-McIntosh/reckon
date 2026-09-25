@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="an-orchestrator-cannot-forget-its-obligations">
   <meta name="plan-title" content="An Orchestrator Cannot Forget Its Obligations">
-  <meta name="plan-summary" content="A coordinator's pending duties are derived from state, re-raised on a heartbeat, injected into every turn, and enforced when it tries to stop.">
+  <meta name="plan-summary" content="A coordinator&#x27;s pending duties are derived from state, re-raised on a heartbeat, injected into every turn, and enforced when it tries to stop.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
@@ -21,10 +21,12 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-fleet-counters-count-the-fleet">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>An Orchestrator Cannot Forget Its Obligations | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -32,7 +34,7 @@
       <p class="eyebrow">reckon &middot; coordinator duty</p>
       <h1>An orchestrator cannot forget its obligations</h1>
       <p class="lead">On 2026-09-25 the lead watched a follower show <code>3u</code> for twenty minutes, and asked why the unpromoted jobs were not being treated. One of the three had no review in flight. Its worker had been resumed and had committed a new head, the reflex had reviewed only the old head, and the coordinator did not notice for about ten minutes. The lead asked for a root-cause fix: a heartbeat of pending tasks, or a checklist the orchestrator must review and maintain, linked to the task list the agent harness already has.</p>
-      <p><strong>Fleet-release gate.</strong> The lead directed on 2026-09-25 that this plan belongs to the fleet-release gate wave, beside the S21 and S22 gates. Large-scale dispatch waits on &sect;2, &sect;4 and &sect;5: coordinators must not lose track of returning work before the fleet widens. &sect;3 and &sect;6 ship with them but do not gate. Every node here is sequenced as gate work, ahead of non-gate S24 nodes that contend for the same files.</p>
+      <p><strong>Fleet-release gate.</strong> The lead directed on 2026-09-25 that this plan belongs to the fleet-release gate wave, beside the S21 and S22 gates. Large-scale dispatch waits on &sect;2 and &sect;5: coordinators must not lose track of returning work before the fleet widens. &sect;3 and &sect;6 ship with them but do not gate. A repeating heartbeat line was considered and rejected, because a signal that repeats gets ignored. Every node here is sequenced as gate work, ahead of non-gate S24 nodes that contend for the same files.</p>
     </header>
 
     <h2 id="s1">&sect;1 &mdash; Root cause</h2>
@@ -54,7 +56,7 @@
       <li><code>promotable-stale</code>: complete and unpromoted beyond the grace period</li>
       <li><code>worktree-held</code>: a promoted run whose worktree is still registered</li>
     </ul>
-    <p>The list is computed from live pointers, the review store and the ledger, so it cannot drift from the fleet. Nothing is stored.</p>
+    <p>The list is computed from live pointers, the review store and the ledger, so it cannot drift from the fleet. Nothing is stored. <strong>It adds no classifier of its own.</strong> The kinds are read from <code>reckon.crew.recovery.recover</code>'s per-run classification: <code>scoring</code> gives <code>review-missing</code>, <code>promotable</code> gives <code>review-ready</code>, and <code>blocked</code> and <code>needs-help</code> map to themselves. The closure figure is the drain view's <code>unreconciled_runs</code>. Each item carries identity and age, never a bare total, which satisfies the rule in <code>an-orchestrator-is-bound-by-its-inbox</code> &sect;4: the oldest item's age, plus a count of items unchanged since the last read. The <code>turn-ended-early</code> and <code>blocked</code> kinds inherit the classifier's false-liveness defect until S21's liveness fix lands; &sect;5 is gated on that fix for exactly that reason.</p>
     <p><strong>Done when:</strong></p>
     <ul>
       <li>A test with a synthetic config home covers one run of each kind, plus one healthy working run and one promoted run. It asserts exactly the six obligations appear, each with its kind, age and next command.</li>
@@ -67,10 +69,7 @@
     <p><code>reckon crew ack --run X --reason "&hellip;" --until &lt;iso-time&gt;</code> records a deliberate deferral, for example "waiting for S21 to release dispatch.py". It removes that obligation from the list until the deferral expires. The acknowledgement is stored beside the drain dispositions, and the obligations view shows acknowledged items in a separate block.</p>
     <p><strong>Done when:</strong> tests assert that an acknowledged obligation leaves the list, returns when its <code>--until</code> passes, and reads <code>--reason</code> back.</p>
 
-    <h2 id="s4">&sect;4 &mdash; The follower re-raises obligations on a heartbeat</h2>
-    <p>The follower emits <code>NEEDS YOU (n): &lt;kind&gt; &lt;node&gt; &lt;age&gt; &hellip;</code> whenever the session's obligations change, and every ten minutes while <em>n</em> is above zero. The line reads the &sect;2 view. It replaces the standing line planned in <code>the-fleet-counters-count-the-fleet</code> &sect;5 rather than adding a second one.</p>
-    <p><strong>Trigger:</strong> this lands with that plan's ticker node, once S21 releases <code>reckon/crew/recovery.py</code>.</p>
-    <p><strong>Done when:</strong> a follower test with a synthetic fleet asserts the line appears on an obligation's arrival, repeats at the cadence while it persists, and stops once the obligation is promoted.</p>
+    
 
     <h2 id="s5">&sect;5 &mdash; The harness is bound to the list</h2>
     <p>A Claude Code hook script, <code>reckon/hooks/coordinator_obligations.py</code>, reads the hook's JSON input and maps the Claude session to the crew session registered by that session's follower. It has two modes:</p>
@@ -78,7 +77,9 @@
       <li><strong><code>--hook prompt</code></strong> is used as the UserPromptSubmit and SessionStart hook. It returns the unacknowledged obligations as a checklist in <code>additionalContext</code>, with the line "mirror these into your task list; reckon's list is the authority". The current duties therefore open every turn and survive compaction.</li>
       <li><strong><code>--hook stop</code></strong> is used as the Stop hook. It returns <code>{"decision": "block", "reason": &lt;checklist&gt;}</code> while unacknowledged obligations remain, so the agent cannot end its turn into forgotten work. The block does not fire again once the agent has continued once for the same list (<code>stop_hook_active</code>), which avoids a loop.</li>
     </ul>
-    <p><code>reckon-sync</code> gains an opt-in installer that prints the settings snippet and writes it only when asked. Enabling it changes the operator's harness configuration, so it is never automatic.</p>
+    <p>The hooks are installed in <code>~/.claude/settings.json</code>, the lead's decision on 2026-09-25, so every project's coordinator gets them. The hook resolves the reckon project from the session's working directory through the mounts, and it exits silently with no output when that directory is not a mounted project or no follower is registered. A session that is not coordinating reckon work therefore sees nothing.</p>
+    <p><code>reckon hooks install --scope user</code> prints the settings snippet and merges it into <code>~/.claude/settings.json</code> only with <code>--write</code>. It preserves existing hooks, and refuses when an entry with the same command already exists.</p>
+    <p><strong>Gate:</strong> the Stop-hook half waits on S21's false-liveness fix (the first-commit "process gone" rows), so the hook never blocks a turn on a phantom obligation.</p>
     <p><strong>Done when:</strong></p>
     <ul>
       <li>Tests drive the script with recorded hook JSON: a session with obligations, one with none, one acknowledged, and a stop hook with <code>stop_hook_active</code> true.</li>
@@ -96,34 +97,32 @@
     <p><strong>Done when:</strong> every test that greps <code>skills/</code> passes, and the harness reference names both hook modes.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="hook-install-scope" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Where is the coordinator-obligations hook installed?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="user-settings">User settings (~/.claude/settings.json), for every project</button>
-          <button class="r-opt" data-value="repo-settings">Each repository's .claude/settings.json, via reckon-sync</button>
-          <button class="r-opt" data-value="opt-in-only">Opt-in only; print the snippet and let each operator add it</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="hook-install-scope" data-choice="user-settings" data-by="lead" data-when="2026-09-25T07:38:01+00:00">
+    <p class="r-dec-q">Where is the coordinator-obligations hook installed?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="user-settings">User settings (~/.claude/settings.json), for every project</button>
+      <button class="r-opt" data-value="repo-settings">Each repository&#x27;s .claude/settings.json, via reckon-sync</button>
+      <button class="r-opt" data-value="opt-in-only">Opt-in only; print the snippet and let each operator add it</button>
+      </p>
+    <p class="r-dec-rat">The lead chose ~/.claude/settings.json on 2026-09-25 so every project&#x27;s coordinators benefit, not only reckon&#x27;s.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-aocfio-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-09-25"
-               data-recommends-skill="/reckon-build an-orchestrator-cannot-forget-its-obligations"
-               data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Land &sect;2&ndash;&sect;6</h4>
-        <div class="r-fu-body"><p>&sect;2 comes first. &sect;3 and &sect;5 build on it. &sect;4 lands with the counters ticker node. &sect;6 comes last. Where the hook is installed is the lead's decision.</p></div>
-        <pre class="r-fu-prompt">/reckon-build an-orchestrator-cannot-forget-its-obligations</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-aocfio-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build an-orchestrator-cannot-forget-its-obligations" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §2–§6</h4>
+    <div class="r-fu-body"><p>§2 comes first. §3 and §5 build on it. §4 lands with the counters ticker node. §6 comes last. Where the hook is installed is the lead's decision.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-orchestrator-cannot-forget-its-obligations</pre>
+    </article>
+</section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-      <h2><span class="sec">§</span> Comments</h2>
-    </section>
+<div class="r-comment" data-section="s1" data-id="c-20260925-no-heartbeat" data-who="reckon-build" data-when="2026-09-25T07:55:00Z">
+    <div class="r-comment-body"><p>The lead's review on 2026-09-25 made two changes.</p><ul><li><strong>No heartbeat.</strong> The planned §4, a <code>NEEDS YOU</code> line repeating every ten minutes, is retired. A line that repeats trains its reader to ignore it. Obligations reach the coordinator through the §5 hooks instead: once per turn, where they cannot be skipped. The follower keeps reporting transitions, and the needs-you line folded into <code>the-fleet-counters-count-the-fleet</code> §5 fires on change only.</li><li><strong>Home install.</strong> The hooks go in <code>~/.claude/settings.json</code>, so every project benefits.</li></ul><p>The S22 coordinator added two reuse conditions:</p><ul><li>the kinds derive from <code>reckon.crew.recovery.recover</code>'s classification and the drain view's unreconciled-runs figure</li><li>the Stop hook waits on S21's false-liveness fix</li></ul></div>
+</div>
+</section>
   </main>
 </body>
 </html>
