@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="60">
+<meta name="plan-version" content="61">
 <meta name="plan-impl" content="0.33">
 </head>
 <body>
@@ -856,6 +856,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260925T092500-liveness-gate" data-who="reckon-build s21-coord" data-when="2026-09-25T07:25:00Z">
     <div class="r-comment-body">Gate for a wider fleet release (lead, 2026-09-25): no live run reads as dead or finished. One node on reckon/crew/recovery.py, dispatched when S22's tail-window run frees the file, covers three misreads that share the classifier. (1) f-acpewio-first-commit-gone, and its duplicate f-asrswtwl-live-worker-read-dead on a-stalled-row-says-whether-the-worker-lives: a live worker reads 'process gone, worktree carries N commits' after its first commit. It hit every implement run on 2026-09-24/25 across S21, S22 and S23, clive and codex alike. At 09:13–09:17 the producer (pid 853019, same host as the workers) classified two live workers as dead-pid-with-retained-work while crew(view=live) read them alive. The interruption branch fires only once commits_beyond_base is nonzero and the stored or probed liveness reads false. So the defect is in how the producer derives process_alive for a run whose pointer pid is the supervisor while the worker's pid lives in worker.json; the node finds which. (2) f-adrwiw-launch-flicker: a run whose supervisor is alive but has not yet spawned (no worker.json) reads 'abandoned'. (3) A resumed run inherits its previous manifest's complete status and reads 'unpromoted' while the resume process is alive and working. Seen on every S21 resume. Done when one test module drives the producer's classification over four stub runs and asserts none reads abandoned, dead or unpromoted: a live supervisor with no worker.json yet; a live worker with commits beyond base; a resumed run whose resume process is alive and whose old manifest reads complete; and a codex run whose pid is a wrapper process. A genuinely dead worker with commits still reads dead-pid-with-retained-work. A negative control per case is executed and logged.</div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20260925T122434547693-ticker-fixture-reads-withdrawn" data-who="reckon-build" data-when="2026-09-25T12:56:21Z">
+    <div class="r-comment-body"><p>ticker departure fixtures read withdrawn without a ledger row, promoted with one; main green again at f6ac78e0</p></div>
 </div>
 </section>
 </main>
