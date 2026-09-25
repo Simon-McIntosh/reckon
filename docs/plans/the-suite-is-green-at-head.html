@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-impl" content="0.89">
-<meta name="plan-version" content="76">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.96">
+<meta name="plan-version" content="77">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
 </head>
@@ -1147,10 +1147,16 @@
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §1</pre>
     <p class="r-fu-outcome">§1 landed: 208 failing ids plus one hang at bafcd4cc, recorded in Suite Failures At Head with a nine-node repair partition.</p>
     </article>
-<article class="r-fu" data-id="f-sgh-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-09-24" data-recommends-skill="/reckon-build the-suite-is-green-at-head §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-sgh-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-09-24" data-recommends-skill="/reckon-build the-suite-is-green-at-head §2" data-resolved-at="2026-09-25T06:38:25+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Repair every failing file through the nine §2 nodes</h4>
     <div class="r-fu-body"><p>One node per row of the research record's repair partition; product defects surface as separate nodes.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
+    <p class="r-fu-outcome">§2 and §3 landed: 27 nodes (9 repair, 5 peer-carried product fixes, 13 corrective and bounds nodes) merged and verified at their integrated heads; the suite runs in 486-699 s under -n 8 with two deterministic failures left for the lead's decision.</p>
+    </article>
+<article class="r-fu" data-id="f-sgh-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-09-25" data-recommends-skill="/reckon-build the-suite-is-green-at-head" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Decide the two ids this plan cannot repair on its own authority</h4>
+    <div class="r-fu-body"><p><strong>authority-required.</strong> <code>test_schema::test_cross_project_conformance[imas-ambix:dsv41-flash-four-card-throughput-landed]</code> fails because imas-ambix/docs/evidence/archive/dsv41-flash-four-card-throughput-landed.html:40 cites sha <code>da64c5cb</code>, which resolves in no mounted repository. Either the peer record is corrected, or reckon's suite stops depending on another repository's data. <code>test_spa_module_scope</code> fails because the fleet compute node has no headless browser. Either browser tests run on a host that has one, or they are recorded as environment-gated. Once both are decided, the plan can close at impl 1.0.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -1369,6 +1375,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260925T060932564292-review-of-test-ledger-reads-only-its-own-state" data-who="reckon-build" data-when="2026-09-25T06:24:11.022Z">
     <div class="r-comment-body"><p>Review of test-ledger-reads-only-its-own-state stored at 718d7838: total 89, one finding on a log path.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260925T0845-final" data-who="reckon-build" data-when="2026-09-25T06:45:00Z">
+    <div class="r-comment-body"><p><strong>Confirming full run at <code>9c3bb751</code></strong>, with all §2 and §3 nodes merged: <code>-n 8</code>, pytest's default temp root, the repository's 300 s timeout. It took <strong>486 s</strong> and gave 6,301 passed, 72 skipped and 13 failed. Eleven of the 13 are not defects:</p><ul><li>Ten in <code>test_nested_launch.py</code> expect <code>&lt;tree&gt;/.venv/bin/python</code>, and the detached verification worktree had no <code>.venv</code> link. All ten pass at the main checkout.</li><li><code>test_crew.py::test_no_reader_promotes_a_run_without_commit_or_manifest</code> saw an extra <code>scoring</code> state under load and passes alone. It joins the load-sensitive family.</li></ul><p>Two ids remain red deterministically, and both need the lead's decision rather than a repair here:</p><ul><li><code>test_schema::test_cross_project_conformance[imas-ambix:dsv41-flash-four-card-throughput-landed]</code>: another repository's evidence record cites a sha that resolves nowhere.</li><li><code>test_spa_module_scope</code>: the compute node has no headless browser.</li></ul><p><strong>Drain ledger</strong>, rows: 5; foldable remaining: 0; unreconciled runs: 0.</p><ul><li>The two ids above: <em>authority-required</em>. The lead decides whether the cross-project test keeps reading a peer repository and where browser tests run.</li><li>The follower's mtime-only reload anomaly: <em>foreign-owner</em>, <code>a-crew-process-ends-with-its-owner</code>.</li><li>The roster-provisioning retry with no pause: <em>foreign-owner</em>, <code>new-work-gets-a-new-worker</code>.</li><li>The unmerged docs worktree <code>redispatch-delivery-test-is-deterministic</code>: kept deliberately. Its only commit, <code>f5a8ef23</code>, is a record this plan chose not to merge.</li></ul></div>
 </div>
 </section>
 </main>
