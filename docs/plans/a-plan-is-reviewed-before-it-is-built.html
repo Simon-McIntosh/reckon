@@ -23,6 +23,8 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -78,21 +80,21 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="declined-finding-recurrence" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="declined-finding-recurrence" data-choice="surface-recurrence" data-by="lead" data-when="2026-09-25T08:32:15+00:00">
     <p class="r-dec-q">When an author declines a finding, is that final, or does a finding declined across several plans surface to the lead?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="final">Declined is final</button>
-      <button class="r-opt" data-value="surface-recurrence">A finding declined in three or more plans surfaces to the lead</button>
+      <button class="r-opt chosen" data-value="surface-recurrence">A finding declined in three or more plans surfaces to the lead</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">A finding type declined in three or more plans surfaces to the lead. A repeated decline means either the rubric or a practice is wrong, and both are the lead&#x27;s to rule on.</p>
     </div>
-<div class="r-dec" data-key="review-storage" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="review-storage" data-choice="review-store" data-by="lead" data-when="2026-09-25T08:32:15+00:00">
     <p class="r-dec-q">Where do plan reviews live?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="plan-comments">As plan comments, which are simple and already rendered</button>
-      <button class="r-opt" data-value="review-store">In a review store that can be queried across plans and projects</button>
+      <button class="r-opt chosen" data-value="review-store">In a review store that can be queried across plans and projects</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Plan reviews go in the crew review store, keyed by plan and version, with a one-line pointer on the plan. That makes them queryable across plans and projects and reuses the code-review machinery. The 2026-09-25 review-utility census found its measures blocked by unjoinable records, so plan reviews must be joinable from the start.</p>
     </div>
 </section>
 
@@ -100,10 +102,15 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-apirbiib-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Settle the two decisions, then build the review loop</h4>
-    <div class="r-fu-body"><p>The storage decision gates &sect;2's record shape; settle it with the lead first. &sect;2 is the loop (trigger, debounce, rubric, record, surface). &sect;3 reuses the loop with its own rubric. The vision review of figures is deliberately out of scope for now, at the lead's word.</p></div>
+    <div class="r-fu-body"><p>The storage decision gates §2's record shape; settle it with the lead first. §2 is the loop (trigger, debounce, rubric, record, surface). §3 reuses the loop with its own rubric. The vision review of figures is deliberately out of scope for now, at the lead's word.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-plan-is-reviewed-before-it-is-built</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-20260925T1035-plan-review-gate" data-who="" data-when="">
+    <div class="r-comment-body"><p>Lead decision, 2026-09-25, which revises §2's 'nothing blocks': <b>a review must exist; its findings stay advisory.</b> The first implementation dispatch against a plan version is refused until a plan review of that version exists and the author has acted on or declined, with a reason, each of its findings. The findings themselves never block. The aim is to catch reasoning errors before work is submitted, without making the rubber duck a veto. Ownership: this plan moved from s22-coord to s21-coord with s22's agreement (it still counts toward S22 in the rollup). Rubric input from s22's measurement the same day: code-review findings were acted on about 12 times in 20, and the misses were semantic (a reuse-map misattribution, a contract break) caught later by gates. So pilots and the rubric score a finding on whether it would have changed the plan, not on finding count. It ties to scoring-should-stop-a-promotion §2i's blocking/advisory split.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
