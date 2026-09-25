@@ -128,6 +128,61 @@
         and requires exit&nbsp;0 with no <code>ERROR</code> lines.
       </p>
     </section>
+
+    <section id="fixed-read-set-extraction">
+      <h2>Conditional guidance restored the fixed-read budget</h2>
+
+      <p>
+        The full-session <code>reckon-build</code> skill had crossed its bound: the focused
+        contract test measured <strong>18,670 estimated tokens</strong> against a
+        <strong>17,000-token</strong> budget. The repair retained the hard rules, all three
+        fences, the launch-kind table, and the closure/drain contract in the skill while moving
+        explanatory history, worked recovery paths, and exhaustive operating detail to one
+        conditional reference.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Decision point retained in the skill</th>
+            <th>Conditional material moved to the reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Session continuity, stopping, and prerequisite refusal</td>
+            <td><code>conditional-guidance.md</code> — continuity and prerequisite diagnosis</td>
+          </tr>
+          <tr>
+            <td>Local-lane measure design and capacity choice</td>
+            <td><code>conditional-guidance.md</code> — specification and capacity rationale</td>
+          </tr>
+          <tr>
+            <td>Run-state reads, integrated gates, and follower recovery</td>
+            <td><code>conditional-guidance.md</code> — lifecycle, views, and follower mechanics</td>
+          </tr>
+          <tr>
+            <td>Worker verification and incomplete-delivery recovery</td>
+            <td><code>conditional-guidance.md</code> — verification depth and recovery procedure</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        The new estimate is <strong>14,339 tokens</strong>, a reduction of
+        <strong>4,331 tokens</strong>. The budget is now <strong>15,000 tokens</strong>,
+        leaving 661 tokens of deliberate headroom. The contract test now checks that every
+        relative conditional-reference link resolves and that the five extracted sections remain
+        present. The focused contract suite passed <strong>55 tests</strong>.
+      </p>
+
+      <p>
+        The declared negative control restored the base skill while retaining the lowered budget;
+        <code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code> then failed at
+        18,670 against 15,000 as required. Commit <code>11348097</code> carries the skill split,
+        reference, contract coverage, and the current command inventory.
+      </p>
+    </section>
   </main>
 </body>
 </html>

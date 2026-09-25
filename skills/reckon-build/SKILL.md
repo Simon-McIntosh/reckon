@@ -81,26 +81,10 @@ prefer pausing the node.
 
 ### Continuity — who receives the next piece of work
 
-Route the next piece of work by what it *is*, not by whichever worker is
-convenient. **A session continues the task it began and nothing else** — a
-dispatch that inherits another task's transcript pays for it on every turn.
-Measured 2026-09-23: 312 of 2,089 local runs resumed another task's session and
-inherited a median 81,957 tokens on their first turn, and 1,315 of 3,105 codex
-runs (42%) resumed one. Three reuses are valid and kept deliberately —
-`crew resume` of the same run (answer a `NEEDS-HELP:` brief, ride out an
-outage, recover a turn that ended early), `crew redispatch` of the same run
-(same run, new lane), and a new run on the same task (a repair of the same
-node, or a re-review of the same reviewed run). Every other dispatch — a new
-node, new scope, a wider file set — starts a fresh session. The routing table,
-the task-identity rule and the member-serial rule are in
-`references/sprint-orchestration.md` §Continuity.
+A session continues the task it began. Only resume, redispatch, repair, or re-review of that same run may reuse its session; every new node, widened scope, or new task starts fresh.
 
-### These are not valid reasons to stop
+For the reuse rationale and stopping triage, read [conditional guidance: Continuity, stopping, and prerequisite diagnosis](references/conditional-guidance.md#continuity-stopping-and-prerequisite-diagnosis) only when evaluating an exception.
 
-The enumeration of invalid stopping rationalizations — "this is risky",
-"the approach needs confirming", "a worker stopped at its fence", and the
-rest — and the one test that separates a hiccup from a blocker are in
-`references/sprint-orchestration.md` §Role of stopping.
 
 ## Fast path
 
@@ -298,49 +282,12 @@ measured instances: `~/.agents/AGENTS.md`, *Name The Target*.
 
 ## §Prerequisite blocking — STOP and ask for authorization
 
-On a single-plan target, an unshipped prerequisite remains a hard stop unless the user
-authorises implementing or overriding it. On a sprint target, actionable
-same-project prerequisites become nodes in the execution DAG automatically.
-Stop for cross-project, unavailable, abandoned, or authority-expanding
-prerequisites.
+On a single-plan target, an unshipped prerequisite is a hard stop unless the user authorises implementation or override. On a sprint target, actionable same-project prerequisites join the DAG; stop for cross-project, unavailable, abandoned, or authority-expanding prerequisites.
 
-`depends_on` entries may be EXTERNAL — `project:slug[#stage]` refs into
-another mounted project (bare slugs stay local). `read_plan(project, slug)`
-returns a computed `deps` list resolving every ref (`scope`, `found`,
-`status`, `impl`); gate on that instead of assuming a bare slug is local. An
-unshipped external prerequisite is a hard stop like any other, but its work
-belongs to the OTHER project's checkout — never implement it in this one;
-surface it as `/reckon-build <project>:<slug>`.
+Gate on the computed `deps` list rather than assuming a bare reference is local. Repair error-level `roadmap.wiring_findings` before classifying a prerequisite, and never ask the user to override a relationship Reckon identifies as malformed.
 
-Before applying this stop, inspect `roadmap.wiring_findings`. A research or
-evidence artifact in `depends_on` belongs in `informs`; a plan that only
-consumes another plan's landed evidence is `informs` too, and a single section
-that must wait for that evidence is a **gate** (`{"op":"gate", "section",
-"gated_sections", "measure", "required_evidence"}`) on that section, so the
-roadmap's `gate_blockers` carry the rule instead of a comment nobody reads
-(nova, 2026-09-16: two plans blocked for an hour by a `depends_on` that meant
-`informs`, and one promotion rule recorded as prose). A superseded umbrella,
-dangling slug, cycle, or sprint-order inversion is a plan-state defect. Repair
-through `reckon-edit` when authorized, re-run `roadmap`, and only then classify
-the remaining rows as true prerequisites. Never ask the user to override a
-relationship Reckon identifies as malformed.
+For relationship diagnosis and the exact plan-mode authorization prompt, read [conditional guidance: Continuity, stopping, and prerequisite diagnosis](references/conditional-guidance.md#continuity-stopping-and-prerequisite-diagnosis) only when the prerequisite stop applies.
 
-For a plan-mode stop, ask for explicit user authorization:
-
-```
-⛔ BLOCKED: cannot implement <slug> — prerequisite unmet
-
-The plan '<slug>' depends on '<prereq-slug>' which is currently status='<status>'.
-
-To proceed, one of the following is needed:
-  A) Implement '<prereq-slug>' first: run /reckon-build <prereq-slug>
-  B) Manually mark '<prereq-slug>' as done if it is already complete
-  C) Override the dependency (confirm you want to proceed without it)
-
-Please authorize one of the above before I continue.
-```
-
-Wait for the user's response before doing anything else. If the user authorizes option A, switch to implementing the prerequisite first, then return to the blocked plan.
 
 ## Workflow
 
@@ -537,60 +484,12 @@ reckon flight --project P --pretty
 
 #### The done-when is the specification, and on this lane that is literal
 
-**A worker is graded on the measure, not on the prose around it.** Anything a
-goal claims that its done-when does not measure is work the node will not do,
-and no amount of intent in the goal recovers it.
+**A worker is graded on the measure.** Every goal claim must emit evidence in the done-when; state removals as a negative measurement; and require the declared mutation, named failure, and recorded log in that measure. Keep nodes narrow enough that their evidence and context are independently reviewable.
 
-Measured 2026-09-21: a node whose GOAL named three call sites that must resolve
-through a new shared module, and whose DONE-WHEN named two of them, landed
-exactly two. The third kept its duplicate. The worker was not wrong — it
-implemented the measure and then named the gap in its own follow-ons, which is
-the correct behaviour. The defect was in the node.
+Treat a published lane capacity as advisory. Inspect its derivation and observed pressure before turning its headroom into a hold.
 
-That failure is available on any backend. What makes it worth its own rule here
-is the shape of a locally served lane: it tends to implement the stated measure
-precisely and does not infer the unstated. That is a virtue exactly when the
-measure is complete, and a trap exactly when it is not — so the coordinator's
-share of the work moves from steering to specifying.
+For measure reviews, removal checks, negative-control execution, and capacity rationale, read [conditional guidance: Local-lane specification and capacity rationale](references/conditional-guidance.md#local-lane-specification-and-capacity-rationale) only when designing a local-lane node.
 
-Three rules follow, and they cost one line each at authoring time:
-
-- **Every claim in the goal appears in the done-when as something that emits
-  evidence.** If the goal names three call sites, the done-when names three.
-  Read the pair back before dispatch and ask which sentence of the goal is
-  unmeasured; that sentence is what will be missing.
-- **State the negative.** A done-when that asserts only what must now exist
-  cannot see what should have stopped existing: a test proving the new module
-  works passes just as well while the old duplicate sits beside it. Removals
-  need their own measure — "no module outside the new one still defines the
-  superseded helper" is a grep, and it is the only thing that makes a
-  de-duplication node falsifiable.
-- **Put the negative control IN the done-when, not only in `--negative-control`.**
-  The flag records the mutation a node's checks must fail against, and recording
-  it is not running it. Measured 2026-09-21 across one five-node wave: three of
-  four workers wrote good code and green tests and never executed the mutation
-  their own dispatch declared, so their guards were assertions rather than
-  evidence and every one was refused at promotion. The declaration was in each
-  prompt; it was absent from each measure. Write the execution into the
-  done-when — "the declared mutation is applied, the named check is observed to
-  fail, and the log is recorded" — and it happens on the first pass.
-- **Spend the lane's cheapness on more nodes, not bigger ones.** A free lane
-  invites broad nodes and should not. Node width is also a capacity property:
-  a lane's concurrency is its token pool divided by the mean context its
-  workers carry, so an over-large node costs width twice — it cannot run beside
-  its siblings, and while it runs it consumes the pool that would have carried
-  them. One module and one fixture per node keeps both the specification and
-  the fleet tractable.
-
-**Read a lane's published capacity as advisory, not as a ceiling.** A lane
-document may divide its pool by an occupancy target well below one; that target
-is a guard against preemption, not a measurement of what the hardware will
-carry. Measured on this workstation the same day: a coordinator held its fleet
-at two workers against a published headroom of zero, while the lane's own
-figures put a full pool at roughly thirty-nine concurrent and the operator's
-experience at twenty-four, with no retraction, pause or preemption ever
-recorded. Before treating a headroom figure as a stop, read what it was derived
-from and whether the pressure it guards against has ever been observed.
 
 ### 4. Dispatch workers
 
@@ -678,247 +577,77 @@ read an absent budget signal as exhaustion.**
 
 ### Reading run state — MCP owns reads, the CLI owns actions
 
-**To see how the fleet is doing, call the `crew` MCP tool. Do not shell out.**
-The split is a locked decision, not a style preference: the CLI exists for the
-things that change the world — `dispatch`, `attach`, `resume`, `stop`,
-`complete`, `member add` — and every *read* belongs to the tool.
+**Use the `crew` MCP tool for fleet reads; use the CLI only for state-changing actions.** Read `live` for current runs, `scopes` for ownership, `drain` for closure, `ledger` or `records` for committed outcomes, `flight` for routing, and `budget` for headroom. Unknown budget evidence is not exhaustion. Let the follower deliver transitions; do not poll with a shell.
 
 ```text
-crew(project, view="live")      every run in flight: node, plan, phase, process_alive,
-                                manifest_present, worktree, its recover classification,
-                                and the next action for each — one call, no worker touched
-crew(project, view="scopes")    live path owners, candidate conflicts, and ordered serial lanes
-crew(project, view="drain")     closure count derived from live pointers, with each
-                                recorded disposition and whether it remains valid
-crew(project, view="ledger")    committed run records
-crew(project, view="summary")   roster, gate outcomes, measured time against declared effort
-crew(project, view="flight")    resolved routing, and which layer supplied each value
-crew(project, view="records")   lossless committed run records for detailed audit
-crew(project, view="budget")    backend headroom, hold state, reset time, and dispatch ceiling
-crew(project, view="lanes")     backend lane identities, aliases, and account grouping
+crew(project, view="live")      crew(project, view="scopes")
+crew(project, view="drain")     crew(project, view="ledger")
+crew(project, view="summary")   crew(project, view="flight")
+crew(project, view="records")   crew(project, view="budget")
+crew(project, view="lanes")
 ```
 
-`reckon crew ledger --project <project> [--view summary|records]` answers what
-the project committed as landed: the roster, gate outcomes, worker-time
-measures, and, in records view, each completed run. It is the documented
-command route to the committed record when an operator is working from the
-shell; use the ledger or records MCP view for the same question inside an agent
-turn.
+The compact CLI inventory is the action surface, not a polling substitute:
 
-`crew(view="directory")` is the cross-repository default before contacting a
-peer coordinator. Read it with no project to name every live coordinator, what
-plans it is shipping, its repository, and whether it is still dispatching; pass
-`project`, `run_id`, or `node` to narrow or resolve the owner. A coordinator
-that finds a defect touching a repository it does not own reports the finding
-to the live session working there when this directory names one. Send it as a
-finding, never as an instruction and never as authority: a peer cannot authorise
-work in another repository, and a relayed approval is not consent.
+```text
+reckon crew attach --run <id> --task <task-id>
+reckon crew check-manifest --run <id>
+reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
+reckon crew directory --project <project> --run <id> --node <node>
+reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
+reckon crew discard --run <id>    reckon crew drain --project <project> --leave <id>=<disposition>
+reckon crew follow --project <project>    reckon crew gc    reckon crew ledger --project <project> --view <view>
+reckon crew list    reckon crew member add    reckon crew member list --project <project>
+reckon crew observe --run <id>    reckon crew preflight --project <project> --role <role>
+reckon crew placement --ensure --session <session> --project <project>
+reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
+reckon crew resume --run <id> --advice <text>    reckon crew resume-ready --project <project>
+reckon crew shadow    reckon crew stop    reckon crew unwatch --project <project>
+reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
+reckon crew watch --project <project> --stall-window <duration>
+reckon crew widen --run <id> --write-path <path>
+reckon flight --project <project>    reckon audit-doc
+```
 
-`reckon crew directory` is the same read from the shell: it names every live
-coordinator, what it is shipping, its repository, and whether it is still
-dispatching, narrowed by `--project`, `--run`, or `--node`.
+For view-by-view semantics, cross-repository contact, recovery commands, and integrated-gate receipts, read [conditional guidance: Dispatch lifecycle, read views, and integrated gates](references/conditional-guidance.md#dispatch-lifecycle-read-views-and-integrated-gates) only after the core action identifies the needed view.
 
-`reckon crew redispatch --run <id> [--backend <name>] [--reason "<why>"]`
-moves a working run to another backend without replacing its identity — the
-same run, member, and worktree — and is the recovery when a lane is spent
-mid-flight. `reckon crew member list` shows the registered members; dispatch
-refuses a member that already owns a non-terminal in-flight run, so
-independent concurrent work uses distinct members.
-
-`view="live"` answers "are my background workers alive, and where are they" for
-the whole fleet at once; `reckon crew list`, stream-file `stat`s, and `ps`
-greps give less. Two caveats: **`phase` lags the stored record** (a working run
-reads `starting` until an `observe` folds its stream; `process_alive` and
-`log_age_seconds` stay fresh), and **`observe` is what captures token usage** —
-promoting without it records `tokens: null`.
-
-**The read split governs a turn, not a shell loop.** Background scripts cannot
-call MCP, so use `reckon crew follow` for transitions and `reckon crew list` for
-classified snapshots. Let `follow` wake the session, then read
-`crew(project, view="live")` at turn time; manifest polling remains weaker
-because a worker can die without writing one.
 
 ### One producer for the project, one follower for your session
 
-**Nothing tells you a worker stopped.** Run state is pull-only: a worker that
-finishes, blocks, or dies changes a file, and you find out when you next look.
-Two separate things have to be true before you find out promptly, and conflating
-them is the measured cause of finished runs sitting unnoticed for hours:
+A producer turns project pointer changes into transitions; a follower delivers this session's transitions. **That producer is not your wake-up.** Arm the payload's `attach_line` before the first dispatch and confirm `session_attached`, not merely producer liveness.
 
-| | What it is | Who owns it |
-|---|---|---|
-| **Producer** | one `reckon crew watch --project P` per project, turning pointer changes into transitions | dispatch arms it detached; never arm a second |
-| **Follower** | `reckon crew follow --project P --session S` per **session**, delivering that session's runs to *you* | you, once per session |
+**Exactly one monitor per session.** A session arms and attaches exactly ONE monitor: one `reckon crew follow --project P --session S` follower, one per session. A second follower on the same session is a defect, not redundancy. To watch more than your own runs, name them on the one follower with `--observe-session`; **Never arm a second follower.**
 
-**Exactly one monitor per session.** A session arms and attaches exactly ONE
-monitor: the single `reckon crew follow --project P --session S` follower, one
-per session. A second follower on the same session is a defect, not
-redundancy — registration is single-holder and a second streams read-only, so it
-delivers nothing and adds no safety.
+Read `references/orchestrator-harness/<harness>.md` before arming. The follower **produces lines, not an exit**: attach its bare, coloured command through the host's line-delivery primitive. A CLI dispatch without its follower is refused before a worktree exists; use `reckon crew watch --ensure --project P` only when the refusal names a missing producer, and use `--no-watch` only for a synchronous one-off whose waiver reaches the promoted ledger record.
 
-**To watch more than your own runs, name them on the one follower with
-`--observe-session`, repeated per session. Never arm a second follower.**
+When transitions go quiet, call `crew(project, view="live")`; zero `working` with non-zero `blocked` or `unpromoted`, or a non-terminal in-flight run with no process, is not a completed fleet. Read gate evidence before promotion, then reconcile old terminal pointers before opening more work.
 
-```bash
-reckon crew follow --project <project> --session <yours> \
-  --observe-session <peer-a> --observe-session <peer-b>
-```
+The live classifier reads the manifest's recorded status: `complete` is
+`completed_unpromoted`, while `blocked` and `failed` remain terminal evidence.
 
-Observed rows arrive in the same pane carrying an owner glyph, so a row that is
-not yours is visible as such at a glance. **Observing registers nothing for the
-named session:** it does not vouch for delivery, that session's own dispatch
-still meets `watcher-required` without a follower of its own, and it is not a
-substitute for one. Reach for it when you inherit a peer's runs, when a
-coordinator hands over, or when you need a peer's fleet beside your own — which
-is exactly when a second follower is most tempting and least useful.
+For observer replacement, project-wide counts, stream flags, colour, and pointer-classification details, read [conditional guidance: Follower mechanics and stalled-fleet recovery](references/conditional-guidance.md#follower-mechanics-and-stalled-fleet-recovery) only while operating or recovering a follower.
 
-**Replacing a follower is how you change what it observes.** There is no
-command to attach a session to a running one: arm the replacement with the
-fuller flag set, then stop the old one. The replacement streams read-only until
-the first holder goes and takes over the registration within a poll, so the
-order is safe in either direction and no line is lost.
-
-**The trailing figures are the project's fleet, and `--session` does not narrow
-them.** The rows are scoped and the counts are not, so a scoped follower reading
-`8w` may be showing you a peer's workers. Measured 2026-09-18 across two
-projects: one coordinator reported sixteen live workers in a sprint that had
-eight, and a reader whose own last worker had stopped saw a non-zero working
-count and waited for a transition that could never come. **Never read the
-posture line as your own inventory** — call `crew(project, view="live")` and
-count the runs whose session is yours.
-
-**A live producer is not your wake-up.** The seat is project-global and delivery
-is session-local, so `watcher_live` and `seat_held` read true while this session
-hears nothing — including when the seat belongs to a peer session, or to a
-producer dispatch armed on your behalf. Read them as "a producer exists", never
-as "I am attached". The field that answers the second question is
-`session_attached`, and dispatch enforces it:
-
-```json
-{
-  "watch": {
-    "arming_line": "reckon crew watch --project <project>",
-    "attach_line": "reckon crew follow --project <project> --session <session>",
-    "watcher_live": true,
-    "session_attached": true
-  }
-}
-```
-
-**Arm the `attach_line` before your first dispatch.** A CLI-launching dispatch
-whose session has no delivering follower is refused with `watcher-required`
-(exit 8) before a worktree exists, naming the command to arm. `--no-watch` is
-the explicit waiver for a genuinely synchronous one-off, and records on the run
-that nobody was listening.
-
-**A refusal for a missing watcher process is repaired by starting one.** The
-`watcher-required` refusal names the repair for its own cause: a session with no
-delivering follower needs the `attach_line` above, while a project with no live
-watcher process needs `reckon crew watch --ensure --project P`. `--ensure` is
-idempotent — it starts nothing when the project's unit already carries the
-current definition and restarts it when the definition has changed — so it is
-safe to run against a watcher already up.
-
-**How to arm it is a property of your host harness, and it is the step that
-goes wrong.** Read `references/orchestrator-harness/<harness>.md` — the one for
-the host you are running inside — *before* arming, not after. The rule that
-matters in every harness: the follower **produces lines, not an exit**, so a
-mechanism that reports only when a command exits delivers nothing at all, and
-its silence reads exactly like a quiet fleet. Reckon measures which one you
-used, from the descriptor its lines are written to, and a follower whose lines
-end in a file is not registered as delivery.
-
-**Arm the line as it is given.** It is one bare command and it needs no
-pipeline: `--session` selects your own runs inside the follower. A shell filter
-around it has three ways to lose the ticker silently — an unbuffered stage
-withholds every line until exit, an unanchored pattern matches the fleet summary
-that trails each line, and a trailing `|| true` turns a refusal into a success
-with no output.
-
-Follower stream mechanics — why the follower carries no state filter, the
-`N working · N blocked · N unpromoted` line format, and what each bucket means —
-are in `references/sprint-orchestration.md` §15.
-
-**Silence after a drain is ambiguous.** The follower reports transitions; nothing
-reports the *absence* of further transitions, so a fleet that has gone quiet looks
-identical to one still working.
-
-Until the follower emits a drain line itself, compensate: **after any wave, when
-transitions stop arriving, call `crew(project, view="live")` rather than waiting.**
-The state to watch for is not an empty fleet but **zero `working` with `blocked` or
-`unpromoted` non-zero** — that is the one a coordinator mistakes for finished, and
-it is what §4d's closure fence exists to catch at the end. Also check
-`process_alive` against `manifest_status`: a non-terminal pointer whose process is
-gone is precisely the case no transition will ever announce.
-
-Follower flag variants — `--run <id>`, `--json`, and the no-`--session`
-whole-fleet form — are in `references/sprint-orchestration.md` §15.
-
-**Registration is what dispatch checks, and streaming is not registration.** A
-second follower for the same session is legitimate only as a replacement: it
-streams read-only while the first holds the registration, then takes it over
-within a poll once that holder goes, so stopping an old follower after arming a
-new one self-corrects rather than leaving lines arriving at an unregistered
-reader. A deliberate second — armed for extra coverage, not to replace — is the
-defect the one-monitor rule refuses; extend the one follower instead. The fact
-that matters reaches whoever tries to dispatch.
-
-**One arming covers the session, not one wave.** The producer's seat is released
-when a wave drains and dispatch arms a fresh one for the next; the follower
-waits for it, re-derives the fleet on re-attach, and reports only what changed —
-so it neither repeats itself nor goes deaf between waves. Attaching late loses
-nothing either: it opens with a baseline of every live run before streaming.
-
-```bash
-reckon crew watch --project <project> [--stall-window 15m]     # producer
-reckon crew watch --ensure --project <project>                 # start or restart it as a user service
-reckon crew follow --project <project> --session <session>        # you
-```
-
-**Arm the follower with colour.** Never pass `--no-color`: the ticker's colour
-set carries each row's state, and a monochrome stream hides it (lead, 2026-09-16).
-
-A second concurrent producer exits immediately with `event: watcher-live` and
-the current watcher metadata. `--once` returns after a single event and
-**releases the seat**, so a coordinator using it must re-arm before its next
-dispatch; reach for it only when something genuinely wants one event. Releasing
-a seat on purpose is `reckon crew unwatch --project <project>` — to replace a
-producer, never to quiet a running fleet.
-
-The live classifier reads the manifest's recorded status — `complete` becomes
-`completed_unpromoted`, `blocked`/`failed` are retained, missing terminal
-manifests become `abandoned` — but that does not prove the gate; read its
-evidence before promotion.
-Dispatch consumes that signal too: once a complete or blocked manifest is older
-than `fences.unreconciled_run_grace`, new work for the project is refused with
-every run's resolving command. Reconcile the rows before continuing. If one
-must deliberately remain, pass `--allow-unreconciled-runs`; the new run records
-the exact backlog it waived. A row that must never become evidence is dropped
-with `reckon crew discard --run <id>`, which removes a non-running pointer
-without a ledger record; stop a running row first.
 
 ### Concurrency — the roster is the whole authority
 
 **There is no slot pool and no numeric worker cap anywhere in Reckon.** The one
 binding rule is per-member serialisation: dispatch refuses a member that
 already owns a non-terminal live pointer, so the concurrency ceiling is exactly
-the number of registered members with no run in flight. The coordinator raises
+the number of registered members with no run in flight: **free members are the
+only ceiling.** The coordinator raises
 concurrency by registering more members (`reckon crew member add`) — a
 one-line, reversible act — and lowers it by dispatching fewer. Backend
 `concurrency:` keys in flight config are retired and ignored. Never treat
 "the pool is loaded" as a constraint, a reason to queue ready independent
 work, or a reason to route around the crew system: if ready nodes outnumber
-free members, add members.
+free members, add members. The coordinator **registers enough members to meet
+it**, then redispatch each member as soon as its finished node is verified. No
+dependent node builds on unverified work; no dependent node builds on
+unverified work. Do not wait for the slowest active node.
 
 ### Advisory fleet-size guide
 
-**This table is advisory.** It shapes the active fleet; it never decides whether
-to delegate. That is
-already settled for all targets — every ready node goes to an appropriately
-capable worker, one-item and cross-cutting nodes included, rather than making the
-coordinator the implementation owner. Dependency independence, file scopes,
-gates, budgets, and runtime limits shape the useful fleet size; none of them is
-a slot pool.
+**This table is advisory.** It shapes the active fleet; it never decides whether to delegate. Dependency independence, file scopes, gates, budgets, and runtime limits shape the useful fleet size; none of them is a slot pool.
 
 | Items | Strategy |
 |---|---|
@@ -927,32 +656,8 @@ a slot pool.
 | > 8 | Reader fan-out followed by one synthesis/integration owner |
 | Cross-cutting / strategic | One highest-capability worker; do not fragment context |
 
-Apply the model, effort, and concurrency routing stated by the current user
-prompt. If it is not specified, the coordinator chooses it explicitly for each
-node from the available runtime workers and records the choice in the dispatch
-prompt — as a `--set` override on the dispatch call, so the choice is data rather
-than prose. Reckon does not infer a relative tier from the coordinator model.
-Choose the override from the node's declared specification level
-(`--spec-level exact|guided|open`) using `references/effort-routing.md` — it
-maps who owns the design to how much worker effort the node still needs, and
-gates the small-model lane. Use `references/lane-routing.md` for named-lane
-selection, roster re-reads, refusal conditions, and selection evidence. An
-unproven configuration earns its lane through
-`reckon crew shadow`, which re-runs a committed node at its recorded base as
-never-merged evidence; it never carries live work.
-Worker prompts reference the live plan and carry only the portable runtime
-safety contract; §05 followups remain one-line session invocations.
+Apply explicit prompt routing; otherwise choose and record the runtime override from the declared specification level. Use `references/effort-routing.md` for effort and `references/lane-routing.md` for named-lane choice, refusal conditions, and selection evidence.
 
-Use background mode when the runtime supports it. The current user prompt or
-coordinator sets an explicit concurrency target before dispatch from the ready
-nodes, file-scope conflicts, and dependency structure — and registers enough
-members to meet it, since free members are the only ceiling. Dispatch every
-ready independent node, then redispatch each member as soon as its finished
-node is verified and a ready independent node exists. Do not wait for the
-slowest active node. The safety
-rule is: **no dependent node builds on unverified work**. A dependent waits for
-its predecessor's verification, integration, and landing beat; unrelated ready
-work does not.
 
 ### 4b. The gate fence — work does not cross a closed gate
 
@@ -1064,94 +769,12 @@ visibly incomplete rather than plausibly done. Completion and hold examples:
 
 ### 5. Verify every worker — MANDATORY
 
-Verify each finished worker before integrating its result or releasing dependent
-work. Independent active workers do not form a barrier: no dependent node builds
-on unverified work, while any free slot may refill from the ready queue.
+Verify each finished worker before integration or releasing a dependent node: read its manifest, confirm its commit and clean worktree, compare `git show --stat` with declared scope, open the named gate log, then read the diff by anomaly. Fold final stream state with `reckon crew observe --run <id>` and promote only with `reckon crew complete --run <id> --gate <verdict> --commit <sha>` after the evidence is coherent. The landing is a **review of an authored record, not a transcription of a manifest**. Workers author their own landing record in the same beat, while the orchestrator writes shared state. Never mutate the shared project index, sprint state, or another plan from a worker record. Immediately perform that review and plan write before another promotion; dispatching an unrelated ready node is outside this freeze.
 
-**Read the manifest path returned by dispatch, not just the message.** Dispatch
-defaults it to the durable run directory under the Reckon config home; omit
-`--manifest` unless an absolute durable override is required. A background worker
-can finish and still end its turn without delivering a report — the manifest on
-disk removes that failure mode; see "Durable delivery" in
-`references/sprint-orchestration.md`.
+A provider refusal or an idle worker without a report is not automatically a failed implementation: inspect its recorded deliverables and resume or request them before redispatching. A genuine incomplete result receives a corrective worker in its original scope; dependent work remains closed.
 
-For each completed agent:
-1. Read the worker's manifest file. Use the runtime's result/wait tool as a
-   convenience — never wait on it as the sole channel
-2. Check the manifest for success/failure
-3. Run `git show --stat <sha>` — confirm ONLY assigned paths appear
-4. Dispatch a test worker and audit its compact result manifest
-5. Confirm the worker returned commit, test, artifact, and evidence inputs.
-   The orchestrator writes plan/index state after integration.
-6. Fold final state in with `reckon crew observe --run <id>`, then promote:
-   `reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome
-   "<one line>" [--tests-added N] [--scope-changed]`. `observe` captures token
-   usage and only a non-passing gate requires `--outcome`, so the passing path
-   is where an unobserved promotion records `tokens: null` with nothing refusing
-   it. State both on every verdict. This is the moment the transient
-   pointer becomes committed evidence in the repository's ledger, and the last
-   moment `--tests-added` and `--scope-changed` can still be stated — a
-   scope-changed node measures neither the estimate nor the worker, so saying so
-   keeps it out of calibration instead of averaging it in.
-7. **In the same landing beat, perform the plan write in §7.** Immediately after
-   `reckon crew complete`, and before another promotion or merge, read the
-   worker's committed record — its plan section comment and its evidence anchor —
-   merge it, and may edit or append to it. The landing beat is a review of an
-   authored record, not a transcription of a manifest: the worker's record comes
-   in with its merge, and the plan write adds only shared index state and
-   closure facts the worker cannot see. Workers author
-   their own landing record in the same beat — the prompt embeds the contract
-   verbatim: "Append your landing record to your own section of the plan and
-   your evidence anchor to the cumulative evidence record; both live in this
-   worktree and both go into your final commit." The shared-state ban narrows
-   with it: "Never mutate the shared project index, sprint state, or a plan
-   other than the one you are landing against. Do not edit the plan-version or
-   plan-modified meta lines: every worker touching them makes every merge
-   conflict there." Two limits hold even though the worker authors its own
-   record, and both are about what it can see rather than about merge mechanics:
-   it must not resolve its own driving followup and must not set a terminal
-   status, because only the coordinator observes the other nodes — a worker
-   knows its node landed, not whether the section closed. Dispatching an
-   unrelated ready node is outside this freeze and may refill a free slot.
+For the seven cheap checks, review-depth selection, and provider or report recovery, read [conditional guidance: Verification depth and incomplete worker reports](references/conditional-guidance.md#verification-depth-and-incomplete-worker-reports) only when evidence needs diagnosis.
 
-**A `blocked` manifest from a provider refusal is not a worker failure and is
-never redispatched.** Its session usually still exists and its worktree is
-untouched; inspect the worktree, then resume the session, and reconcile
-(promote or discard) only once resume is impossible — promoting first
-deletes the pointer a resume depends on. `reckon crew resume-ready` sweeps and
-resumes every run whose provider hold or declared external wait has ended, and
-`reckon crew follow` runs it on a cadence for you. A long-lived follower reloads
-the installed code when it advances, preserving its process and session
-registration; a failed reload reports explicitly in the pane. The full order,
-the two counter-instincts that have both been followed and were both wrong, and
-the verified commands are in `references/outage-recovery.md`.
-
-An agent that signals idle WITHOUT a report has probably not failed. Before
-redispatching: check the manifest path, then required test logs/artifacts, then
-ask it to write the deliverable to the named path. Redispatch is the last step —
-a duplicate run of a node that already succeeded wastes a member and, with
-write scope, risks a conflicting second commit.
-
-**A report opening `NEEDS-HELP:` is not a failure — it is a decision brief, and
-answering it is cheaper than any alternative.** It carries four fields: `tried:`,
-`options:`, `leaning:`, `cost-if-wrong:`. Answer it yourself by default; escalate
-only genuinely user-owned decisions such as scope trade-offs and irreversible
-choices. Then resume the **same** session, because the advice only makes sense to
-a worker that still remembers what it tried:
-
-```bash
-reckon crew resume --run <run-id> --advice "<the answer>"
-```
-
-If an agent genuinely FAILS or produces incomplete work:
-- Dispatch a corrective worker; pause the node only if no capable worker
-  backend exists. A repair inside the failed node's own scope goes back to its roster
-  member, so the fix reaches a worker that remembers the attempt
-- Do NOT proceed to the next section while a failed section's work is outstanding
-
-Inspect only the summary, scoped diff, and evidence needed to diagnose the
-failure. Sprint coordinators do not repair worker code themselves. Do not
-advance the dependency wave with incomplete work.
 
 ### 5b. Read what the worker produced — the gate is not the evidence
 
