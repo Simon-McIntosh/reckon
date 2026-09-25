@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -282,6 +282,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260925T052500571923-review-of-the-isolation-test-plants-at-the-default" data-who="reckon-build" data-when="2026-09-25T05:45:21.901Z">
     <div class="r-comment-body"><p>review of the isolation re-cut and its resolver base stored at 93, no findings</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260925T082500-lead-refresh-timer" data-who="reckon-build s21-coord" data-when="2026-09-25T06:25:00Z">
+    <div class="r-comment-body">Lead decision, 2026-09-25: the five-minute refresh is a systemd user timer installed by reckon, the same way the crew watch unit is. `python -m reckon.crew.paid_lanes --install-timer` writes a oneshot service running `python -m reckon.crew.paid_lanes --once` with the checkout's interpreter, plus a timer at OnUnitActiveSec=5min and OnBootSec=1min, under the user's systemd directory, then enables and starts the timer. It is idempotent: re-running with an unchanged definition changes nothing. The node's test uses a temporary XDG_CONFIG_HOME and a stub systemctl, never the real user manager. Installing it on this host is a separate step after the merge.</div>
 </div>
 </section>
 </main>
