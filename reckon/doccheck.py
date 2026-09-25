@@ -1502,11 +1502,81 @@ def _audit_review_resource(
     return findings
 
 
+def _doc_relative(path: Path, docs_dir: Path) -> str:
+    """Return ``path`` relative to the docs root, or its own text if outside it."""
+    try:
+        return path.resolve().relative_to(docs_dir.resolve()).as_posix()
+    except (OSError, ValueError):
+        return str(path)
+
+
+def slug_collision_findings(
+    path: Path, *, docs_dir: Path, project: str
+) -> list[Finding]:
+    """Report a slug a different resource type in the same project carries.
+
+    ``resolve_resource`` resolves one slug per project, so when a plan and a
+    resource of another type share a slug it raises "ambiguous across types"
+    and every slug-only ``edit_plan`` on the plan fails — while a per-file
+    audit of either document passes. The project's resource map already indexes
+    every resource by type and slug, so the collision is read from that map
+    rather than from a second tree scan. The finding names both documents, and
+    either one reports it when audited, so no side depends on being named.
+    """
+    from reckon.resources import canonical_type, resource_map
+
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    soup = BeautifulSoup(text, "html.parser")
+    slug_meta = soup.find("meta", attrs={"name": "plan-slug"})
+    slug = ((slug_meta.get("content") if slug_meta else "") or "").strip()
+    if not slug:
+        return []
+    type_meta = soup.find("meta", attrs={"name": "reckon-type"})
+    own_type = canonical_type((type_meta.get("content") if type_meta else "") or "plan")
+    own_relative = _doc_relative(path, docs_dir)
+    others = [
+        resource
+        for resource in resource_map(
+            docs_dir, project, include_archived=False, ignore_invalid=True
+        ).values()
+        if resource.slug == slug
+        and resource.type != own_type
+        and _doc_relative(resource.path, docs_dir) != own_relative
+    ]
+    if not others:
+        return []
+    other = min(others, key=lambda item: (item.type, str(item.relative_path)))
+    return [
+        Finding(
+            "error",
+            "slug-collision",
+            f"{own_relative} carries plan-slug {slug!r}, also carried by"
+            f" {other.type} {other.relative_path} — a slug-only lookup cannot"
+            " tell them apart; give one a distinct slug",
+        )
+    ]
+
+
 def run(
     paths: list[str], *, project: str | None = None, check_links: bool = False
 ) -> int:
     """Audit each path; print findings; return process exit code (0 = no errors)."""
     path_objs = [Path(raw).expanduser() for raw in paths]
+
+    # Cross-type slug collisions, read from the project's resource map. Only a
+    # project-aware run has a docs root to resolve the map from, so a bare
+    # per-file audit stays exactly as it was.
+    collision_findings: dict[Path, list[Finding]] = {}
+    if project is not None:
+        docs_dir = _load_mounts().get(project)
+        if docs_dir is not None and docs_dir.is_dir():
+            for p in path_objs:
+                found = slug_collision_findings(p, docs_dir=docs_dir, project=project)
+                if found:
+                    collision_findings[p] = found
 
     # Build corpus for link check if requested.
     link_findings: dict[Path, list[Finding]] = {}
@@ -1520,8 +1590,8 @@ def run(
     any_error = False
     for p in path_objs:
         findings = audit_file(p, project=project)
-        # Merge in link findings for this path.
-        findings = findings + link_findings.get(p, [])
+        # Merge in link and cross-type slug-collision findings for this path.
+        findings = findings + link_findings.get(p, []) + collision_findings.get(p, [])
         # Re-sort worst-first.
         findings.sort(key=lambda f: SEVERITIES.index(f.severity))
 
