@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.5">
@@ -503,6 +503,11 @@
     <h4 class="r-fu-title">Land the declared harness-home carry, qualify each lane, then lift the codex pause</h4>
     <div class="r-fu-body"><p>Node harness-home-carries-the-operator-config (r-20260925T165045662374) makes each backend declare in flight config the operator-home files its harness reads, because the harness, not the model, loads instructions and runs hooks. Shipped defaults: for the claude dialect, which covers clive whatever open-weight model it serves, settings.json filtered to its hooks key, and CLAUDE.md. For the codex dialect, AGENTS.md, a writable config.toml and rules/, since codex reads AGENTS.md and never CLAUDE.md. The same node copies a pre-fence session into the run home on resume. After it merges: imas-ambix runs the D4 qualification on a fenced clive launch (global-memory marker, Stop-hook marker, PreToolUse guard marker, first-request size); one controlled fenced codex launch confirms AGENTS.md reaches its first request and that its CODEX_HOME is the run's own; the smoke is redispatched fresh for its resume check. Only then is the codex pause lifted: remove the codex entries from the host review_excluded_backends and tell the peers.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §2</pre>
+    </article>
+<article class="r-fu" data-id="f-awcwyh-plan-write-stays-in-the-worktree" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-25" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A worker&#x27;s plan write lands in its own worktree</h4>
+    <div class="r-fu-body"><p>Measured 2026-09-25 at 22:50, while workers launch unfenced (39fd7a28). imas-ambix worker r-20260925T203357366663-s18-pause-cut-flag called the reckon MCP <code>edit_plan</code> without <code>checkout_path</code>. The write landed in the main checkout's <code>docs/plans/local-lane-admission-control.html</code> (plan version 86 to 87, with an unreviewed "landed" paragraph), not in the worker's worktree, and every dispatch refused with <code>plan-unavailable</code> until it was reverted. Under the fence that write failed; unfenced, nothing stops it.</p><p>A plan write made from inside a crew run must stay in that run's worktree. When <code>RECKON_RUN_ID</code> is set (dispatch exports it to every worker, and the MCP server a worker's harness starts inherits it) and no <code>checkout_path</code> is given, <code>edit_plan</code> and the other plan-writing MCP entry points resolve the write to the run's recorded worktree when the plan belongs to the run's own project, and refuse it, naming the run and the path it would have written, when the plan belongs to another project or the run has no worktree. A caller that passes <code>checkout_path</code> explicitly keeps today's behaviour. A coordinator, with no <code>RECKON_RUN_ID</code>, is unaffected.</p><p>Tests, against a synthetic repository and run pointer, never the real ones: a run-scoped write with no checkout path lands in the worktree and leaves the main checkout's plan byte-identical; a write to another project's plan is refused; a coordinator write is unchanged. Each red at base.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home f-awcwyh-plan-write-stays-in-the-worktree</pre>
     </article>
 </section>
 
