@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 520" role="img" aria-labelledby="t d">
+  <title id="t">The worker Stop hook's decision flow</title>
+  <desc id="d">A Stop payload resolves a run manifest; without one the hook exits silently. With one, a terminal status allows the stop, an unfinished manifest is refused up to three times, and the fourth stop is allowed.</desc>
+  <style>
+    .box { fill: #f6f8fb; stroke: #33506e; stroke-width: 1.5; rx: 6; }
+    .dia { fill: #fdf3e3; stroke: #a9701a; stroke-width: 1.5; }
+    .term { fill: #eaf6ec; stroke: #2f7d43; stroke-width: 1.5; }
+    .open { fill: #fdecec; stroke: #a33; stroke-width: 1.5; }
+    .lbl { font: 13px/1.3 system-ui, sans-serif; fill: #1c2836; text-anchor: middle; }
+    .sm  { font: 11px system-ui, sans-serif; fill: #62748a; text-anchor: middle; }
+    .ln  { stroke: #33506e; stroke-width: 1.5; fill: none; marker-end: url(#a); }
+    .yn  { font: 11px system-ui, sans-serif; fill: #62748a; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#33506e"/>
+    </marker>
+  </defs>
+
+  <rect class="box" x="300" y="16" width="240" height="52" rx="6"/>
+  <text class="lbl" x="420" y="39">Stop payload on stdin</text>
+  <text class="sm" x="420" y="56">cwd, hook_event_name=Stop</text>
+
+  <path class="ln" d="M420 68 L420 104"/>
+
+  <rect class="box" x="270" y="106" width="300" height="60"/>
+  <text class="lbl" x="420" y="131">resolve the run manifest</text>
+  <text class="sm" x="420" y="150">RECKON_MANIFEST, else live pointer by cwd</text>
+
+  <path class="ln" d="M420 166 L420 200"/>
+
+  <polygon class="dia" points="420,200 520,238 420,276 320,238"/>
+  <text class="lbl" x="420" y="234">run resolved?</text>
+  <text class="sm" x="420" y="252">manifest path known</text>
+
+  <path class="ln" d="M520 238 L650 238"/>
+  <text class="yn" x="560" y="230">no</text>
+  <rect class="term" x="652" y="212" width="180" height="52" rx="6"/>
+  <text class="lbl" x="742" y="235">exit 0, no output</text>
+  <text class="sm" x="742" y="252">coordinator or interactive</text>
+
+  <path class="ln" d="M420 276 L420 312"/>
+  <text class="yn" x="430" y="300">yes</text>
+
+  <rect class="box" x="300" y="314" width="240" height="48" rx="6"/>
+  <text class="lbl" x="420" y="343">read the status: line</text>
+
+  <path class="ln" d="M420 362 L420 396"/>
+
+  <polygon class="dia" points="420,398 530,436 420,474 310,436"/>
+  <text class="lbl" x="420" y="432">status terminal?</text>
+  <text class="sm" x="420" y="450">complete / blocked / failed</text>
+
+  <path class="ln" d="M310 436 L180 436"/>
+  <text class="yn" x="250" y="428">no</text>
+  <rect class="open" x="20" y="406" width="160" height="60"/>
+  <text class="lbl" x="100" y="430">block, reason names</text>
+  <text class="sm" x="100" y="448">the manifest and the gap</text>
+  <text class="sm" x="100" y="462">(unless 3 blocks done)</text>
+
+  <path class="ln" d="M530 436 L700 436"/>
+  <text class="yn" x="600" y="428">yes</text>
+  <rect class="term" x="702" y="410" width="140" height="52" rx="6"/>
+  <text class="lbl" x="772" y="433">exit 0</text>
+  <text class="sm" x="772" y="450">stop allowed</text>
+</svg>
