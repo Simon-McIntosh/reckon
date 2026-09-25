@@ -6,8 +6,8 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from reckon import budget
-from reckon.crew import paid_lanes, window_reading
+from reckon import budget, crew
+from reckon.crew import paid_lanes
 
 NOW = datetime(2026, 9, 25, 13, 40, tzinfo=UTC)
 
@@ -66,9 +66,11 @@ def _lane_fixture(path: Path) -> None:
     )
 
 
-def _claude_reading() -> window_reading.WindowReading:
-    return window_reading.read_windows(
-        [
+def _write_claude_stream(root: Path) -> None:
+    path = root / "claude-run" / "stream.jsonl"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        json.dumps(
             {
                 "type": "rate_limit_event",
                 "timestamp": (NOW - timedelta(minutes=4)).isoformat(),
@@ -85,8 +87,8 @@ def _claude_reading() -> window_reading.WindowReading:
                     }
                 },
             }
-        ],
-        now=NOW,
+        )
+        + "\n"
     )
 
 
@@ -96,13 +98,11 @@ def test_publish_reads_codex_rollout_claude_stream_and_local_lane(
     rollout_root = tmp_path / "sessions"
     lane_path = tmp_path / "lane.json"
     output_path = tmp_path / "paid-lanes.json"
+    stream_root = tmp_path / "crew-runs"
     _write_rollout(rollout_root)
     _lane_fixture(lane_path)
-    monkeypatch.setattr(
-        budget,
-        "_newest_stream_reading",
-        lambda runs, *, moment: _claude_reading() if runs else None,
-    )
+    _write_claude_stream(stream_root)
+    monkeypatch.setattr(crew, "run_dir", lambda run_id: stream_root / run_id)
 
     pointers = [
         {
@@ -199,3 +199,29 @@ def test_local_lane_uses_its_published_shelf_life(tmp_path: Path) -> None:
 
     assert reading["age_seconds"] == 1800.0
     assert reading["stale"] is True
+
+
+def test_removing_stream_reader_makes_claude_account_unknown(
+    tmp_path: Path, monkeypatch
+) -> None:
+    stream_root = tmp_path / "crew-runs"
+    _write_claude_stream(stream_root)
+    monkeypatch.setattr(crew, "run_dir", lambda run_id: stream_root / run_id)
+    monkeypatch.setattr(budget, "_newest_stream_reading", lambda *a, **k: None)
+    sources = paid_lanes.gather_sources(
+        ["claude"],
+        project="demo",
+        pointers=[
+            {
+                "project": "demo",
+                "backend": "claude",
+                "run_id": "claude-run",
+                "observed_at": (NOW - timedelta(minutes=4)).isoformat(),
+            }
+        ],
+        moment=NOW,
+    )
+
+    document = paid_lanes.compose_document(["claude"], sources=sources, moment=NOW)
+
+    assert document["accounts"]["claude"]["state"] == paid_lanes.UNKNOWN
