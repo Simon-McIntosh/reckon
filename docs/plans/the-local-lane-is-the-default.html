@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="10.0">
-  <meta name="plan-impl" content="0.22">
+  <meta name="plan-impl" content="0.25">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -222,6 +222,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260924T223840873587-rereview-of-paid-headroom-is-published" data-who="reckon-build" data-when="2026-09-24T23:26:58.149Z">
     <div class="r-comment-body"><p>re-review of paid-headroom-is-published stored at 87; production callers unwired (carried), stale contract sentence (corrected at landing), --help publishes (queued)</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260925T025400-help-landed" data-who="reckon-build s21-coord" data-when="2026-09-25T00:54:00Z">
+    <div class="r-comment-body">The --help fix merged at 90b858f3 (commits 4e13061a, 08a8733d): python -m reckon.crew.paid_lanes --help and -h print usage and write nothing. tests/test_paid_lanes_document.py: 10 passed. The declared negative control, treating --help as --once, fails the new case. Review 93, with two findings. (1) The case drives only --help, so -h is unguarded even though it sits in the same tuple; add -h to the case's argv when the wiring node next touches this file. (2) The gate log's header names the base revision rather than the tree it measured. §5 still needs the production preflight wiring, queued behind S22's reckon/cli.py claim and S23's reckon/mcp.py claim, and then the refresh deployment.</div>
 </div>
 </section>
 </main>
