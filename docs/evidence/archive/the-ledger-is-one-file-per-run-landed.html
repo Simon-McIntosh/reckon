@@ -126,6 +126,82 @@
       paths remain owned by the later writer/roster/migration work named in the audit.</p>
     </section>
 
+    <section id="append-writer">
+      <h2>§1 — One append creates one immutable run file</h2>
+      <p><strong>Implementation:</strong> <code>e7b5051de4b66e29642c2c3bc7a757ae4b6b95ec</code>;
+      contract tests: <code>8db7ee860f32522b22f2ec3cfea03a56bb985fed</code>.
+      The dispatch base is <code>e160b02da36e795399de72503f197180c1fd993c</code>.
+      The source changes are confined to <code>reckon/ledger.py</code> and
+      <code>reckon/run_store.py</code>; the new tests are in
+      <code>tests/test_append_run_writes_one_run_file.py</code>.
+      <code>reckon/crew/promotion.py</code> is unchanged.</p>
+      <figure>
+        <img src="/reckon/figures/the-ledger-is-one-file-per-run/append-flow.svg"
+             alt="Concurrent appends preserve crew.json and create separate run files before updating the shared rebuildable index."
+             style="width:100%;max-width:1000px;height:auto">
+        <figcaption>Exclusive target creation arbitrates a reused id. An index failure cannot undo the file, and observing index lag cannot conceal the failure by rebuilding the cache.</figcaption>
+      </figure>
+      <p><strong>Defect reproduced before repair.</strong> The receipt reports
+      <code>crew_bytes_changed: true</code>, <code>new_run_file_exists: false</code>, and
+      <code>index_write_before_file: true</code>. The new byte-preservation assertion also
+      fails against the unmodified source with
+      <code>AssertionError: crew.json bytes changed during append</code>.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Observed contract</th></tr></thead>
+        <tbody>
+          <tr><td>Two concurrent processes, different ids</td><td>Both succeed; each opens only its own run file once in exclusive mode and attempts one index insert. No retry, aggregate write, staged path or commit.</td></tr>
+          <tr><td>Two concurrent processes, same id</td><td>Exactly one succeeds; the other refuses and names <code>runs/r-alpha.json</code>.</td></tr>
+          <tr><td>Existing file, directory or dangling symlink</td><td>Each refuses before aggregate reads or index writes and names the existing target path.</td></tr>
+          <tr><td>Top-level legacy row</td><td><code>r-historical</code> refuses and names the temporary project's <code>crew.json</code>; no new run file is created.</td></tr>
+          <tr><td>Nested id and byte-scan miss</td><td>A nested id triggers one parse without a false refusal. A miss parses no aggregate JSON and opens no unrelated run file, even one containing malformed JSON.</td></tr>
+          <tr><td>Complete record</td><td>Canonical Unicode serialization retains wide fields, omits only <code>store_write</code>, and leaves the caller's mapping untouched.</td></tr>
+          <tr><td>Index failure</td><td>The full file exists before the deliberate exception. Append returns <code>status: failed</code> in its store outcome without raising; lag reads 1 twice, index bytes unchanged, then 0 after a reader rebuild.</td></tr>
+          <tr><td>Missing index</td><td>Returns <code>no index</code> without creating an index or its parent directory.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>New contract gate:</strong> 17 passed in 10.88 seconds. The focused log contains
+      the actual same-id, existing-target and legacy-row refusal messages, including their
+      absolute temporary paths. The regression gate also includes this new module.</p>
+      <p><strong>Negative control:</strong>
+      <q>make append_run rewrite crew.json with the new row appended instead of writing one run file; the crew.json-untouched assertion in tests/test_append_run_writes_one_run_file.py must fail</q>.
+      The driver loads the actual dispatch-base <code>append_run</code> body into an isolated
+      test process. Its one selected case fails at the byte-preservation assertion with
+      <code>AssertionError: crew.json bytes changed during append</code>, exit 1. The current
+      worker source remains unchanged by the mutation.</p>
+      <p><strong>Regression delta:</strong> the dispatch base passed 247 tests with zero failures
+      in 187.73 seconds. At the implementation commit the same five modules plus the new
+      contract module report <strong>42 failed, 222 passed in 205.39 seconds</strong>:
+      42 added failing ids, none in the new contract module. All failures are in
+      <code>tests/test_ledger.py</code> or
+      <code>tests/test_a_promotion_never_creates_a_ledger.py</code>, both outside this node's
+      write scope. The full failure-id census is in <code>after-command.json</code> and
+      the manifest; the baseline census is empty. Existing assertions include aggregate
+      creation, shared version increments and committed <code>store_write</code>, and the
+      separate promotion stager is unchanged. These failures are retained as follow-ons
+      without editing or triaging those paths. <strong>The zero-added-failures measure is
+      unmet; this worker delivery is blocked.</strong> The coordinator must reconcile the
+      companion writer/test work and dispatch the merged verification before closure.</p>
+      <p><strong>Interface and integration boundary.</strong> <code>append_run</code> returns the
+      new per-run path, the record without <code>store_write</code>, and the single index
+      outcome under <code>store</code>. The retained <code>version</code> key is
+      <code>None</code> because no shared version is incremented; <code>attempts</code> is
+      accepted for call compatibility but does not trigger retries. The history guard for
+      an absent aggregate is retained while legacy rows remain unsplit. No live promotion
+      or migration was executed. The existing promotion stager and old-contract test
+      updates require their separate owners before integration can be verified.</p>
+      <p><strong>Durable receipts:</strong> all logs and the manifest are under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T074635678902-append-run-writes-one-run-file/</code>:
+      <code>reproduction.log</code>, <code>reproduction-test.log</code>,
+      <code>baseline.log</code>, <code>baseline-command.json</code>,
+      <code>focused.log</code>, <code>after.log</code>, <code>after-command.json</code>,
+      <code>negative-control.log</code>, <code>negative-control-driver.py</code>,
+      <code>lint-before.log</code>, <code>lint-after.log</code>, and
+      <code>committed-markers.log</code>. Baseline and head lint both report the same 13
+      pre-existing findings, with zero added. Gate logs name the revision, tree and command.
+      The committed-marker receipt verifies exclusive creation and the new lag API directly
+      from the committed source.</p>
+    </section>
+
   </main>
 </body>
 </html>

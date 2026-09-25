@@ -111,6 +111,20 @@
       promotion landed and moves index lag from zero to one, and a rebuild returns it to zero. The negative control makes
       <code>append_run</code> rewrite one shared file, and the two concurrent promotions must then show
       a repeated write or a conflict.</p>
+      <aside id="append-file-landing">
+        <h3>Append implementation recorded in the worker checkout</h3>
+        <p><strong>2026-09-25.</strong> Commit <code>e7b5051de4b66e29642c2c3bc7a757ae4b6b95ec</code>
+        creates one run file exclusively, scans aggregate bytes before parsing any matching id,
+        and attempts the index once after closing the file. New records omit <code>store_write</code>;
+        <code>index_lag</code> observes existing index membership without rebuilding it.</p>
+        <p>All 17 new append cases pass. The declared negative control executes the base
+        aggregate writer and fails the exact <code>crew.json bytes changed during append</code>
+        assertion. The regression gate has added failures outside this node's write scope;
+        its result and full failure inventory are retained in
+        <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#append-writer">the append evidence</a>.
+        The zero-added-failures measure remains unmet. Promotion staging, integrated verification,
+        and section closure remain separate coordinator-owned work.</p>
+      </aside>
     </section>
 
     <section id="s2" data-reckon="section">
