@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 from reckon import sprint_liveness as sl
+from reckon.crew import recovery, runs
 from reckon.crew.runs import list_live
 from reckon.project_state import create_project_state, write_resource
 from reckon.resources import read_sprint_record
@@ -195,6 +196,80 @@ def test_the_default_pointer_read_finds_the_synthetic_home(
 
     assert defaulted == explicit
     assert [sid for sid, row in defaulted.items() if row["live"]] == ["S100", "S101"]
+
+
+def test_recorded_stream_state_wins_over_pointer_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The latest watcher event supplies liveness without reclassification."""
+    home, docs = _fixture(tmp_path)
+    _write_plan(docs, "plan-alpha", "S100")
+    pointer = _write_pointer(
+        home,
+        "run-a1",
+        "plan-alpha",
+        "s-a1",
+        phase="failed",
+        alive=False,
+        manifest_status="failed",
+    )
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    stream = runs.watch_stream_path(PROJECT)
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    stream.write_text(
+        json.dumps(
+            {
+                "event": "baseline",
+                "project": PROJECT,
+                "run_id": pointer["run_id"],
+                "session": pointer["session"],
+                "to_state": "working",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    def no_reclassification(*_args, **_kwargs):
+        pytest.fail("recorded state should not re-classify a pointer")
+
+    monkeypatch.setattr(recovery, "_watch_snapshot", no_reclassification)
+    monkeypatch.setattr(recovery, "classify_pointer", no_reclassification)
+
+    result = sl.sprint_liveness(PROJECT, docs, [pointer])
+
+    assert result["S100"]["live"] is True
+    assert result["S100"]["live_runs"] == ["run-a1"]
+    assert result["S100"]["live_sessions"] == ["s-a1"]
+
+
+def test_unrecorded_pointer_uses_bounded_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A recent stream and non-terminal manifest keep an unrecorded run live."""
+    home, docs = _fixture(tmp_path)
+    _write_plan(docs, "plan-alpha", "S100")
+    pointer = _write_pointer(
+        home,
+        "run-a1",
+        "plan-alpha",
+        "s-a1",
+        phase="working",
+        alive=True,
+        manifest_status="in-progress",
+    )
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    def no_reclassification(*_args, **_kwargs):
+        pytest.fail("fallback should not re-classify a pointer")
+
+    monkeypatch.setattr(recovery, "_watch_snapshot", no_reclassification)
+    monkeypatch.setattr(recovery, "classify_pointer", no_reclassification)
+
+    result = sl.sprint_liveness(PROJECT, docs, [pointer])
+
+    assert result["S100"]["live"] is True
+    assert result["S100"]["live_runs"] == ["run-a1"]
 
 
 def test_a_stored_active_sprint_status_does_not_make_it_live(

@@ -12,33 +12,103 @@ is not consulted.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from reckon._plan_html import parse_meta
+from reckon.crew import runs
 from reckon.crew.node import DEFAULT_WATCH_STALL_WINDOW, parse_duration
-from reckon.crew.recovery import (
-    _run_stream_mtime,
-    _utc_seconds,
-    _watch_snapshot,
-    classify_pointer,
-)
+from reckon.crew.recovery import _run_stream_mtime, _utc_seconds
 from reckon.crew.runs import list_live
 
 # The fleet reducer's words for a pointer that is carrying its sprint right now:
 # "dispatched" is a run still in its starting phase and "working" one that has
 # advanced past it. Every other state — complete, blocked, stalled, waiting,
 # abandoned — names a crew that is not at work on the sprint.
-LIVE_STATES = frozenset({"working", "dispatched"})
+LIVE_STATES = frozenset({"working", "starting", "dispatched"})
 
 # A pointer that is on the sprint but not working it and not done with it either:
 # a blocked run waiting on a person, or a completion nobody has promoted yet.
 # These are held, the middle reading between live and finished.
 HELD_CLASSIFICATIONS = frozenset(
-    {"blocked", "completed_unpromoted", "promotable", "scoring"}
+    {
+        "blocked",
+        "unpromoted",
+        "completed_unpromoted",
+        "complete",
+        "promotable",
+        "scoring",
+    }
 )
+
+_STATUS_LINE = re.compile(r"^status:\s*(\S+)")
+_FALLBACK_SCAN_LINES = 64
+
+
+def _recorded_states(project: str) -> dict[str, str]:
+    """Read the watcher's latest state for each run in one stream pass."""
+    path = runs.watch_stream_path(project)
+    if not path.is_file():
+        return {}
+    latest: dict[str, str] = {}
+    try:
+        with path.open(encoding="utf-8") as stream:
+            for line in stream:
+                event = runs.parse_stream_line(line)
+                if event is None or event.get("legacy"):
+                    continue
+                run_id = str(event.get("run_id") or "")
+                state = str(event.get("to_state") or "")
+                if run_id and state:
+                    latest[run_id] = state
+    except OSError:
+        return {}
+    return latest
+
+
+def _manifest_status(record: Mapping[str, Any]) -> str:
+    """Read only the bounded status prefix needed by the fallback."""
+    path = Path(str(record.get("manifest_path") or ""))
+    if not path.is_file():
+        return ""
+    try:
+        with path.open(encoding="utf-8") as manifest:
+            for _ in range(_FALLBACK_SCAN_LINES):
+                line = manifest.readline(4096)
+                if not line:
+                    break
+                match = _STATUS_LINE.match(line)
+                if match:
+                    return match.group(1).strip("'\"")
+    except OSError:
+        return ""
+    return ""
+
+
+def _fallback_state(
+    record: Mapping[str, Any], *, moment: float, stall_seconds: int
+) -> str:
+    """Infer a cheap state while a watcher has not recorded this run."""
+    status = _manifest_status(record)
+    if status == "blocked":
+        return "blocked"
+    if status in {"complete", "completed", "promotable", "scoring"}:
+        return "unpromoted"
+    if status == "failed":
+        return "failed"
+
+    stream_mtime = _run_stream_mtime(record)
+    recent = stream_mtime is not None and moment - stream_mtime <= stall_seconds
+    phase = str(record.get("phase") or "")
+    if recent and record.get("process_alive") is not False:
+        if phase == "starting":
+            return "dispatched"
+        if phase in {"working", "running"} or not phase:
+            return "working"
+    return "unknown"
 
 
 def _record_plan(record: Mapping[str, Any]) -> str:
@@ -106,6 +176,7 @@ def sprint_liveness(
         live_records = list_live(project=project)
     moment = _utc_seconds()
     stall_seconds = parse_duration(DEFAULT_WATCH_STALL_WINDOW)
+    recorded = _recorded_states(project)
 
     rows: dict[str, dict[str, Any]] = {}
     for record in live_records:
@@ -120,15 +191,12 @@ def sprint_liveness(
             if row["last_activity_at"] is None or stamp > row["last_activity_at"]:
                 row["last_activity_at"] = stamp
 
-        state = str(
-            _watch_snapshot(record, moment=moment, stall_seconds=stall_seconds).get(
-                "state"
-            )
-            or ""
+        run_id = str(record.get("run_id") or "")
+        state = recorded.get(run_id) or _fallback_state(
+            record, moment=moment, stall_seconds=stall_seconds
         )
         if state in LIVE_STATES:
             row["live"] = True
-            run_id = str(record.get("run_id") or "")
             if run_id and run_id not in row["live_runs"]:
                 row["live_runs"].append(run_id)
             session = str(record.get("session") or "")
@@ -136,10 +204,7 @@ def sprint_liveness(
                 row["live_sessions"].append(session)
             continue
 
-        classification = str(
-            classify_pointer(record, now_seconds=moment).get("classification") or ""
-        )
-        if classification in HELD_CLASSIFICATIONS:
+        if state in HELD_CLASSIFICATIONS:
             row["held_runs"] += 1
 
     for row in rows.values():
