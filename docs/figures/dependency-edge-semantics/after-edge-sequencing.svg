@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" role="img"
+     aria-labelledby="t d" font-family="system-ui, sans-serif">
+  <title id="t">What each edge kind does to the ready set</title>
+  <desc id="d">Three panels. A depends_on edge holds the carrier out of ready_now
+  until its target lands. An after edge keeps the carrier in ready_now, sorts it
+  behind the rest of the ready work, and annotates it with the targets it is
+  sequenced behind. An informs edge leaves the carrier untouched.</desc>
+  <rect width="900" height="360" fill="#ffffff"/>
+  <text x="450" y="34" text-anchor="middle" font-size="19" font-weight="600" fill="#1b1b1f">One target, three relations</text>
+  <text x="450" y="56" text-anchor="middle" font-size="13" fill="#5b5b66">X is the plan each carrier names; all three carriers are otherwise ready to dispatch</text>
+
+  <!-- panel 1: depends_on -->
+  <g>
+    <rect x="24" y="76" width="268" height="228" rx="10" fill="#fdf2f2" stroke="#e0b4b4"/>
+    <text x="158" y="104" text-anchor="middle" font-size="16" font-weight="600" fill="#8a2b2b" font-family="ui-monospace, monospace">depends_on</text>
+    <rect x="104" y="120" width="108" height="30" rx="6" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="158" y="140" text-anchor="middle" font-size="13" fill="#33333a">X (unshipped)</text>
+    <line x1="158" y1="150" x2="158" y2="176" stroke="#8a2b2b" stroke-width="2" marker-end="url(#red)"/>
+    <rect x="104" y="180" width="108" height="30" rx="6" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="158" y="200" text-anchor="middle" font-size="13" fill="#33333a">carrier</text>
+    <rect x="104" y="226" width="108" height="26" rx="13" fill="#8a2b2b"/>
+    <text x="158" y="244" text-anchor="middle" font-size="13" fill="#ffffff">held back</text>
+    <text x="158" y="278" text-anchor="middle" font-size="12" fill="#5b5b66">out of ready_now</text>
+    <text x="158" y="294" text-anchor="middle" font-size="12" fill="#5b5b66">until X ships</text>
+  </g>
+
+  <!-- panel 2: after -->
+  <g>
+    <rect x="316" y="76" width="268" height="228" rx="10" fill="#f2f8f2" stroke="#a9cba9"/>
+    <text x="450" y="104" text-anchor="middle" font-size="16" font-weight="600" fill="#2f6b36" font-family="ui-monospace, monospace">after</text>
+    <rect x="396" y="120" width="108" height="30" rx="6" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="450" y="140" text-anchor="middle" font-size="13" fill="#33333a">X (unshipped)</text>
+    <line x1="450" y1="150" x2="450" y2="176" stroke="#2f6b36" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#green)"/>
+    <rect x="396" y="180" width="108" height="30" rx="6" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="450" y="200" text-anchor="middle" font-size="13" fill="#33333a">carrier</text>
+    <rect x="380" y="226" width="140" height="26" rx="13" fill="#2f6b36"/>
+    <text x="450" y="244" text-anchor="middle" font-size="13" fill="#ffffff">ready, sequenced</text>
+    <text x="450" y="278" text-anchor="middle" font-size="12" fill="#5b5b66">stays in ready_now, sorts below</text>
+    <text x="450" y="294" text-anchor="middle" font-size="12" fill="#5b5b66">the unsequenced work, named in the hint</text>
+  </g>
+
+  <!-- panel 3: informs -->
+  <g>
+    <rect x="608" y="76" width="268" height="228" rx="10" fill="#f5f5f7" stroke="#c9c9d1"/>
+    <text x="742" y="104" text-anchor="middle" font-size="16" font-weight="600" fill="#4a4a55" font-family="ui-monospace, monospace">informs</text>
+    <rect x="688" y="120" width="108" height="30" rx="6" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="742" y="140" text-anchor="middle" font-size="13" fill="#33333a">X (unshipped)</text>
+    <line x1="742" y1="150" x2="742" y2="176" stroke="#9a9aa5" stroke-width="1.5" stroke-dasharray="2 5"/>
+    <rect x="688" y="180" width="108" height="30" rx="6" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="742" y="200" text-anchor="middle" font-size="13" fill="#33333a">carrier</text>
+    <rect x="672" y="226" width="140" height="26" rx="13" fill="#6b6b76"/>
+    <text x="742" y="244" text-anchor="middle" font-size="13" fill="#ffffff">ready, unaffected</text>
+    <text x="742" y="278" text-anchor="middle" font-size="12" fill="#5b5b66">no order and no hint:</text>
+    <text x="742" y="294" text-anchor="middle" font-size="12" fill="#5b5b66">X need not be read until needed</text>
+  </g>
+
+  <text x="450" y="334" text-anchor="middle" font-size="13" fill="#33333a">Litmus: would this plan's first section be wrong to start before X ships? No &#8594; after. Yes, on one section &#8594; a gate.</text>
+  <defs>
+    <marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8a2b2b"/>
+    </marker>
+    <marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2f6b36"/>
+    </marker>
+  </defs>
+</svg>

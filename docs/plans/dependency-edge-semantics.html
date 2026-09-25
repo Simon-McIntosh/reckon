@@ -308,6 +308,26 @@
       <code>after</code> as <code>depends_on</code>, makes the stays-ready case fail. The write paths
       are <code>reckon/roadmap.py</code>, <code>reckon/_plan_html.py</code>,
       <code>reckon/_schema.py</code>, <code>skills/reckon-create/SKILL.md</code> and that test.</p>
+    <p><strong>Landed</strong> <code>4ce2d39b</code>. <code>plan-after</code> is parsed and written with
+      the other relation metas, declared on the plan schema beside <code>depends_on</code>, and resolved
+      by the roadmap into per-plan <code>after</code> rows with <code>came_after</code> hints; the edge
+      appears in no blocker list, so an unshipped target leaves the carrier in <code>ready_now</code>,
+      sorts it below the unsequenced work, and names the targets it is sequenced behind. An unresolvable
+      ref produces a <code>warn</code> wiring finding rather than a blocker, and a landed target neither
+      ranks nor hints. The reckon-create checklist carries the fourth question and the litmus. Gate:
+      <code>tests/test_after_edge_orders_without_blocking.py</code> (8 passed) plus the relation-and-schema
+      subset run at both arms — one new failure, <code>docs/_shared/plan.schema.json</code> needing
+      regeneration for the added field, which lies outside this node's write scope and is recorded as a
+      follow-on. Negative control: treating the edge as a blocker removes the carrier from the ready set
+      and fails the stays-ready case first, at
+      <code>assert 'aa-consumer' in ['mm-unshipped', 'zz-ready']</code>.
+      Evidence and logs: <code>docs/evidence/archive/dependency-edge-semantics-landed.html#s7</code>.</p>
+    <figure>
+      <img src="/reckon/figures/dependency-edge-semantics/after-edge-sequencing.svg"
+           alt="Three panels over one unshipped target: depends_on holds the carrier out of the ready set, after keeps it ready and sorts it behind the rest with a hint naming the target, informs leaves it untouched.">
+      <figcaption>One target, three relations. Only <code>depends_on</code> withholds
+      dispatchability; <code>after</code> changes the order and the annotation.</figcaption>
+    </figure>
 
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
