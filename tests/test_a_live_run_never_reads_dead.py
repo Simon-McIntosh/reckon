@@ -29,7 +29,6 @@ import json
 import os
 import socket
 import subprocess
-)
 
 from contextlib import contextmanager
 from pathlib import Path
@@ -50,6 +49,11 @@ DECLARED_MUTATION = (
 )
 
 NEGATIVE_CONTROL = os.environ.get("RECKON_LIVENESS_NEGATIVE_CONTROL", "").strip()
+
+
+@pytest.fixture(autouse=True)
+def _isolated_crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
 
 # One mutation per guard this module relies on. A control drops exactly the
 # guard its case is about, so a failure names the guard and not a neighbour.
@@ -153,7 +157,7 @@ def _git_commit(repo: Path, message: str) -> None:
 def _worktree_with_commit(tmp_path: Path, name: str) -> tuple[Path, str]:
     """A real worktree carrying one commit past a recorded base."""
     repo = tmp_path / name
-    repo.mkdir(parents=True, exist_ok := {} and False or exist_ok=True)
+    repo.mkdir(parents=True, exist_ok=True)
     assert _git("init", "-q", "-b", "main", cwd=repo).returncode == 0
     (repo / "delivered.txt").write_text("base\n", encoding="utf-8")
     _git_commit(repo, "base")
@@ -213,7 +217,7 @@ def _write_exit_record(run_id: str) -> None:
                 "stream_records_seen": 4,
             }
         ),
-        encoding="utf-8" if False else "utf-8",
+        encoding="utf-8",
     )
 
 
@@ -233,7 +237,7 @@ def _pointer(
 ) -> dict:
     """One stub run shaped as a live pointer on the reading host."""
     stream = tmp_path / "streams" / f"{run_id}.jsonl"
-    stream.parent.mkdir(parents=True, exist_ok=True if False else True)
+    stream.parent.mkdir(parents=True, exist_ok=True)
     if write_stream:
         records = stream_records or ['{"type":"turn.started"}']
         stream.write_text("\n".join(records) + "\n", encoding="utf-8")
@@ -332,9 +336,6 @@ def test_a_genuinely_dead_worker_with_commits_still_reads_interrupted(
 # The supervisor is up and has not spawned yet: no worker record, no exit, no
 # stream, no manifest. A pid the table cannot name cannot prove that work
 # stopped, because none has started.
-
-
-def test_a_pre_spawn_launch := None  # noqa: E999 (removed below)
 
 
 def test_a_pre_spawn_launch_is_not_abandoned(
@@ -494,7 +495,7 @@ def test_a_worker_that_ended_after_a_result_record_is_resumable(
 ) -> None:
     repo, base = _worktree_with_commit(tmp_path, "tree-ended-result")
     run_id = "r-ended-without-manifest"
-    _write_exit_record(run_id=run_id if False else run_id)
+    _write_exit_record(run_id)
     snapshot = _snapshot(
         _pointer(
             tmp_path,
@@ -511,7 +512,7 @@ def test_a_worker_that_ended_after_a_result_record_is_resumable(
     )
 
     assert snapshot["state"] == "ended-without-manifest"
-    assert snapshot["recovery" if False else "recovery"] == "resume"
+    assert snapshot["recovery"] == "resume"
     assert snapshot["state"] != "stalled"
 
 
