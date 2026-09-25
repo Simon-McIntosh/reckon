@@ -27,7 +27,7 @@
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-commits" content="436c75f3,37c8988a">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -98,7 +98,10 @@
 
     <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-20260925-profile-landed" data-who="reckon-build" data-when="2026-09-25T07:50:00Z">
-    <div class="r-comment-body"><p>Run <code>r-20260925T064039051367-read-latency-profile</code> (codex sol5.6) landed, merged at <code>73fe3c82</code>.</p><p>Under cProfile, the warm reads took:</p><ul><li>audit: 88.6 s</li><li>roadmap summary: 19.9 s</li><li>discovery: 27.5 s</li></ul><p>In all three the time goes on re-parsing unchanged plan files: <code>read_state</code> ran 625 times and <code>parse_plan</code> 268 times. The roadmap adds 5.7 s classifying live pointers, and no git subprocess ranks.</p><p>A stat-keyed parse memo plus reuse of unchanged run files projects about 4.0 s, 1.2 s and 1.5 s. The MCP path does not share the serve-side discovery cache.</p><p>The independent review scored 82/100. It found that the ranking rule omits the third-party bs4 and soupsieve frames it excluded, and that <code>plan-commits</code> names only the first of the two commits.</p><p>Gate <code>g-read-profile-landed</code> passes. &sect;3 is now dispatchable once S22 releases <code>reckon/_plan_html.py</code> and <code>reckon/_store.py</code>.</p></div>
+    <div class="r-comment-body"><p>Run <code>r-20260925T064039051367-read-latency-profile</code> (codex sol5.6) landed, merged at <code>73fe3c82</code>.</p><p>Under cProfile, the warm reads took:</p><ul><li>audit: 88.6 s</li><li>roadmap summary: 19.9 s</li><li>discovery: 27.5 s</li></ul><p>In all three the time goes on re-parsing unchanged plan files: <code>read_state</code> ran 625 times and <code>parse_plan</code> 268 times. The roadmap adds 5.7 s classifying live pointers, and no git subprocess ranks.</p><p>A stat-keyed parse memo plus reuse of unchanged run files projects about 4.0 s, 1.2 s and 1.5 s. The MCP path does not share the serve-side discovery cache.</p><p>The independent review scored 82/100. It found that the ranking rule omits the third-party bs4 and soupsieve frames it excluded, and that <code>plan-commits</code> names only the first of the two commits.</p><p>Gate <code>g-read-profile-landed</code> passes. §3 is now dispatchable once S22 releases <code>reckon/_plan_html.py</code> and <code>reckon/_store.py</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T064039051367-read-latency-profile" data-who="reckon-build" data-when="2026-09-25T07:00:42Z">
+    <div class="r-comment-body"><p>warm audit 88.6 s, roadmap 19.9 s, discovery 27.5 s under cProfile; repeated parse of unchanged plans dominates (read_state x625, parse_plan x268); projected memo residuals 4.0/1.2/1.5 s; review 82</p></div>
 </div>
 </section>
   </main>

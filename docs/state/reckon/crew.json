@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T09:44:31",
+  "updated": "2026-09-25T09:44:33",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -401778,6 +401778,286 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T064039051367-read-latency-profile",
+        "plan": "reckon-reads-answer-in-seconds",
+        "section": "\u00a72",
+        "node": "read-latency-profile",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1362,
+                "cached_input_tokens": 761307,
+                "input_tokens": 762671,
+                "output_tokens": 1100,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 763771,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+            "session_id": "s23-coord"
+          },
+          "done_when": "docs/research/reckon-read-latency-profile.html (reckon-type research, plan-informs reckon-reads-answer-in-seconds) tabulates for each of audit(project='reckon'), roadmap(project='reckon', view='summary') and read_plan(project='reckon') the warm top five cumulative-time call sites with seconds, file:line at a named revision, the category (parse, filesystem walk, git subprocess, compute) and the existing memo that could carry it (reckon.file_memo, memoized, the a-page-load-reads-each-file-once discovery memo), records the profiling command, and states the expected warm latency; profiling runs in place on this compute node; git diff --stat names no file outside docs/research/ and the plan landing record",
+          "estimated_hours": null,
+          "goal": "profile the warm audit, roadmap summary and discovery reads on the reckon project and name each one's top call sites",
+          "id": "read-latency-profile",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-25T06:40:39Z",
+            "read_at": "2026-09-25T06:40:41Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 11.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T064039051367-read-latency-profile/manifest.md",
+          "negative_control": "",
+          "plan": "reckon-reads-answer-in-seconds",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a72",
+          "spec_level": "open",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/research/reckon-read-latency-profile.html",
+            "docs/evidence/archive/reckon-reads-answer-in-seconds-landed.html",
+            "docs/figures/reckon-reads-answer-in-seconds",
+            "docs/plans/reckon-reads-answer-in-seconds.html"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "open",
+        "member": "codex-h",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-25T06:40:54Z",
+        "completed_at": "2026-09-25T07:00:42Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1188,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1188,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "ac231ab23c991fc574799a28645ecaccd97cde24",
+        "commits": [
+          "436c75f32d918cad81349350ff423c86f53378e4",
+          "37c8988ae55d21dc036f8ecc0f9b24b7c61a1c62"
+        ],
+        "changed_lines": {
+          "added": 223,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon audit-doc --project reckon docs/research/reckon-read-latency-profile.html",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T064039051367-read-latency-profile/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T064039051367-read-latency-profile/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d74d-009c-7ee3-aafb-e351b2c5ebf4",
+        "session_harness": "codex",
+        "session_model": "gpt-5.6-sol",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 9244672,
+            "cached_input_tokens_cumulative": 9244672,
+            "input_tokens": 9441591,
+            "input_tokens_cumulative": 9441591,
+            "output_tokens": 40010,
+            "output_tokens_cumulative": 40010,
+            "reasoning_output_tokens": 14466,
+            "reasoning_output_tokens_cumulative": 14466
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-25T07:00:42Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 12.0,
+              "resets_at": 1790869123,
+              "observed_at": "2026-09-25T07:00:42Z"
+            }
+          ],
+          "notional_cost_usd": 38.5666,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-sol",
+            "input_per_million": 4.0,
+            "output_per_million": 20.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 10,
+            "evidence": 15,
+            "fit": 19,
+            "goal_fidelity": 18,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 82
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 9244672,
+          "cumulative_input_tokens": 9441591,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 54476,
+          "generation_seconds": 842.265,
+          "machine_seconds": 257.344,
+          "tokens_per_second": 64.68
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/read-latency-profile",
+          "session_id": "01a0d74d-009c-7ee3-aafb-e351b2c5ebf4",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T07:00:42Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T07:00:43Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-25T06:42:22Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T064039051367-read-latency-profile",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 320,
+          "worker_pid": 3758806
+        },
+        "promoted_revision": "37c8988ae55d21dc036f8ecc0f9b24b7c61a1c62",
+        "impl_move": {
+          "plan": "reckon-reads-answer-in-seconds",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:documentation"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "codex",
+          "burn_multiple": 1.2293364377182772,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'codex' is projected to exhaust at 2026-09-30T11:06:30Z, which is after this node's 2700s horizon ending 2026-09-25T07:25:41.270861+00:00",
+          "horizon_ends_at": "2026-09-25T07:25:41.270861+00:00",
+          "horizon_seconds": 2700,
+          "metered": true,
+          "observed_at": "2026-09-25T06:40:39Z",
+          "precedes_horizon": false,
+          "projected_exhaustion_at": "2026-09-30T11:06:30Z",
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 550683,
+          "state": "quiet",
+          "utilisation_pct": 11.0
+        },
+        "lane_declaration": {
+          "backend": "codex",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-25T06:40:39Z",
+          "read_at": "2026-09-25T06:40:41Z",
+          "resolved_backend": "codex",
+          "utilisation_pct": 11.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 119.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -402090,6 +402370,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2730
+    "_version": 2731
   }
 }
