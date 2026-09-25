@@ -27,7 +27,7 @@
   review records under <code>/home/ITER/mcintos/.config/reckon/crew/reviews/</code> and
   the run directories under <code>/home/ITER/mcintos/.config/reckon/crew/runs/</code>.
   The filter accepted JSON objects carrying all five review score dimensions and a
-  <code>reviewed_run_id</code>: <strong>678 distinct review records</strong>, across
+  <code>reviewed_run_id</code>: <strong>679 distinct review records</strong>, across
   <strong>imas-ambix, imas-codex, imas-efit, nova and reckon</strong>. The raw census is
   reproducible with <code>review_metrics.py</code>; its row-level output is
   <code>review-rows.jsonl</code>, its grouped output is <code>review-summary.tsv</code>,
@@ -39,7 +39,7 @@
   repair and score counts but contributes no invented wall time, turn count or model.
   That leaves <strong>207 reviewer-run joins</strong>, <strong>183 reviews with a
   timestamped review wall</strong>, and <strong>154 latency joins</strong>. The missing
-  271 model labels and the missing timing are not filled from a profile, scheduler or
+  272 model labels and the missing timing are not filled from a profile, scheduler or
   filename. This distinction matters: a coverage number is evidence about the instrument,
   not evidence that the unjoined reviews cost zero.</p>
 
@@ -98,11 +98,11 @@
 
   <h2 id="s3">§3 — Findings, repairs and later defects</h2>
 
-  <p><strong>588 of 678 distinct reviews (86.7%) carried at least one finding.</strong> A repair is
+  <p><strong>589 of 679 distinct reviews (86.7%) carried at least one finding.</strong> A repair is
   credited only where the run record shows a later distinct review of the same implement run
   with a different reviewed head or findings, or the reviewed run's manifest carries a commit
   after the reviewed head; duplicate twins never qualify. On that definition,
-  <strong>58 of 588 finding-bearing reviews (9.9%) led to an observable repair</strong>.
+  <strong>58 of 589 finding-bearing reviews (9.8%) led to an observable repair</strong>.
   The complement is not “no repair”: it is either promoted unchanged or lacks a durable
   later receipt, so the latter must remain visible rather than being folded into success.</p>
 
@@ -112,7 +112,7 @@
     <tbody>
       <tr><td>docs or evidence only</td><td>97</td><td>84/97 = <strong>86.6%</strong></td><td>2/84 = <strong>2.4%</strong></td><td>1,446 s</td><td>110</td><td>56</td></tr>
       <tr><td>test-only</td><td><strong>0</strong></td><td>not measured</td><td>not measured</td><td>not measured</td><td>not measured</td><td>not measured</td></tr>
-      <tr><td>source change</td><td>502</td><td>432/502 = <strong>86.1%</strong></td><td>56/432 = <strong>13.0%</strong></td><td>1,572 s</td><td>98</td><td>51</td></tr>
+      <tr><td>source change</td><td>503</td><td>433/503 = <strong>86.1%</strong></td><td>56/433 = <strong>12.9%</strong></td><td>1,572 s</td><td>98</td><td>51</td></tr>
       <tr><td>unknown</td><td>79</td><td>72/79 = 91.1%</td><td>0/72 = 0.0%</td><td>3,523 s</td><td>102.5</td><td>50.5</td></tr>
     </tbody>
   </table>
@@ -139,7 +139,7 @@
     <thead><tr><th>Band</th><th>Reviews</th><th>Median score</th><th>Finding share</th><th>Repair share among findings</th></tr></thead>
     <tbody>
       <tr><td>low (≤80)</td><td>83</td><td>77</td><td>81/83 = <strong>97.6%</strong></td><td><strong>14.8%</strong></td></tr>
-      <tr><td>middle (81–89)</td><td>230</td><td>86</td><td>220/230 = <strong>95.7%</strong></td><td><strong>11.4%</strong></td></tr>
+      <tr><td>middle (81–89)</td><td>231</td><td>86</td><td>221/231 = <strong>95.7%</strong></td><td><strong>11.3%</strong></td></tr>
       <tr><td>high (≥90)</td><td>365</td><td>94</td><td>287/365 = <strong>78.6%</strong></td><td><strong>7.3%</strong></td></tr>
     </tbody>
   </table>
@@ -170,7 +170,7 @@
     <tbody>
       <tr><td>docs or evidence only</td><td>86.6%; 2.4% repaired</td><td>1,446 s / 110 turns / 56 tool steps</td><td>A review often finds durable-record defects, but the observed repair yield is lower; use a bounded evidence/readability review when the artifact is consequential.</td></tr>
       <tr><td>test-only</td><td>no sample</td><td>no sample</td><td>Do not infer a review depth or cost from source nodes; collect a dedicated test-only cohort first.</td></tr>
-      <tr><td>source change</td><td>86.1%; 13.0% repaired</td><td>1,572 s / 98 turns / 51 tool steps</td><td>The highest measured repair yield; a review with mutation/refusal evidence is justified when promotion risk is material.</td></tr>
+      <tr><td>source change</td><td>86.1%; 12.9% repaired</td><td>1,572 s / 98 turns / 51 tool steps</td><td>The highest measured repair yield; a review with mutation/refusal evidence is justified when promotion risk is material.</td></tr>
       <tr><td>unknown</td><td>91.1%; 0.0% repaired</td><td>3,523 s / 102.5 turns / 50.5 tool steps</td><td>Repair the manifest/classification receipt before using this stratum to choose review depth.</td></tr>
     </tbody>
   </table>
@@ -185,17 +185,19 @@
 
   <p><strong>Correction note.</strong> The original file-level census counted duplicate review
   stores as separate records and allowed a duplicate twin to satisfy the repair relation. The
-  pinned capture hashes <strong>5,167 files</strong>, selects 845 review-shaped files,
-  collapses <strong>166 byte-identical</strong> and <strong>1 semantic</strong> re-store, and
-  measures 678 distinct records. The old rule gave 185 repair credits; the distinct-review or
-  post-head rule gives 58 and removes 127 credits. This changes every absolute table and figure
+  pinned capture hashes <strong>5,169 files</strong>, selects 847 review-shaped files,
+  collapses <strong>167 byte-identical</strong> and <strong>1 semantic</strong> re-store, and
+  measures 679 distinct records. The old rule gave 186 repair credits; the distinct-review or
+  post-head rule gives 58 and removes 128 credits. This changes every absolute table and figure
   because the original denominator was not a review count.</p>
 
   <p>The analysis script is <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/review_metrics.py</code>.
   The pinned file list and SHA-256 content hashes are in
   <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/corpus-manifest.json</code>,
-  captured at <code>2026-09-25T12:17:24.237696+02:00</code>. The script's complete stdout
+  captured at <code>2026-09-25T12:23:05.713099+02:00</code>. The script's complete stdout
   is preserved in <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/measurement.log</code>.
+  The manifest SHA-256 is <code>75a20f1fe03f2cc186965ac7ee41625df0e5f6c4d5d9fba403dc47734be1ecb5</code>
+  and the measurement-log SHA-256 is <code>53514dddac3cec75960d6346291656ed00f6c58ebd07a05e61044ac4f2ff27fd</code>.
   Its other outputs are <code>review-summary.json</code>, <code>review-summary.tsv</code> and
   <code>review-rows.jsonl</code> in the same directory.
   The two figures are stored under <code>docs/figures/review-node-utility/</code> and are
