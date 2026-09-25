@@ -1,0 +1,381 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "d8dc247d42dbe5244a4146d349cdb77996283aee",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 7675717,
+      "input_tokens_cumulative": 7675717,
+      "output_tokens": 42475,
+      "output_tokens_cumulative": 42475,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 451,
+    "files": 6,
+    "removed": 6
+  },
+  "commit_resolution": null,
+  "commits": [
+    "2bafddb13fd63058b1a575850b4310d5de06d217",
+    "3789cf473604d4870c7ebbf90fcc38f79b99ca8e"
+  ],
+  "completed_at": "2026-09-25T16:20:20.077Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-25T16:00:59Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_follower_reload_is_safe.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T160042678741-follower-reloads-only-into-importable-changed-code/gate-head.log"
+  },
+  "impl_move": {
+    "at_complete": 0.7,
+    "at_dispatch": 0.7,
+    "plan": "the-fleet-counters-count-the-fleet",
+    "reason": "a reliability corrective inside section 4, whose impl the plan already counts",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-25T16:55:43.186096+00:00",
+    "horizon_seconds": 3300,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-25T16:00:43Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 1,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 13,
+    "mean_context": 120000,
+    "observed_at": "2026-09-25T16:00:42Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-25T16:20:20.077Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T160042678741-follower-reloads-only-into-importable-changed-code/manifest.md",
+  "member": "crew-resume-evidence",
+  "negative_control": {
+    "declaration": "re-execute a reloaded follower without first checking that the new image imports",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T160042678741-follower-reloads-only-into-importable-changed-code/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T160042678741-follower-reloads-only-into-importable-changed-code/negative-control.log",
+    "test_paths": [
+      "tests/test_follower_reload_is_safe.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "follower-reloads-only-into-importable-changed-code",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2209,
+          "cached_input_tokens": 390692,
+          "input_tokens": 392903,
+          "output_tokens": 1766,
+          "reasoning_output_tokens": 204,
+          "total_tokens": 394669,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+      "session_id": "s23-coord"
+    },
+    "done_when": "a test touching a module without changing it sees no reload, a test writing a syntax error into a follower module sees the follower keep delivering and print the deferred line, both red at base and green at head, and the follow, watch, re-arm and freshness test files show no added failures against base",
+    "estimated_hours": null,
+    "goal": "a follower reloads only when a module content changed and the new image imports, per the first two items of followup f-tfcctf-follower-reliability on this plan, keeping the current image and printing one dim deferred line when the import check fails",
+    "id": "follower-reloads-only-into-importable-changed-code",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-25T16:00:43Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 1,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 13,
+      "mean_context": 120000,
+      "observed_at": "2026-09-25T16:00:42Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T160042678741-follower-reloads-only-into-importable-changed-code/manifest.md",
+    "negative_control": "re-execute a reloaded follower without first checking that the new image imports",
+    "plan": "the-fleet-counters-count-the-fleet",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§4",
+    "spec_level": "exact",
+    "time_budget": "55m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/runs.py",
+      "reckon/cli.py",
+      "tests/test_follower_reload_is_safe.py",
+      "docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html",
+      "docs/figures/the-fleet-counters-count-the-fleet",
+      "docs/plans/the-fleet-counters-count-the-fleet.html"
+    ]
+  },
+  "orientation_input_tokens": 1478435.0,
+  "outcome": "",
+  "plan": "the-fleet-counters-count-the-fleet",
+  "plan_impl_at_dispatch": 0.7,
+  "promoted_revision": "3789cf473604d4870c7ebbf90fcc38f79b99ca8e",
+  "release": {
+    "process_signalled": false,
+    "process_withheld": "process is not alive",
+    "worktree_audit": {
+      "counts": {
+        "dirty": 0,
+        "disposable": 0,
+        "integrated": 0,
+        "live-referenced": 0,
+        "retained-for-resume": 0,
+        "unintegrated": 0
+      },
+      "worktrees": [
+        {
+          "available": false,
+          "detail": "tree is no longer available",
+          "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/follower-reloads-only-into-importable-changed-code"
+        }
+      ]
+    },
+    "worktree_released": true
+  },
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 17,
+      "evidence": 16,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 90
+  },
+  "role": "implement",
+  "run_id": "r-20260925T160042678741-follower-reloads-only-into-importable-changed-code",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§4",
+  "session_harness": "claude",
+  "session_id": "baa8ff1b-f269-49bc-92ba-73676f39179f",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 7675717,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 1137.091,
+    "generated_tokens": 42475,
+    "generation_seconds": 804.289,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 30.4,
+    "machine_seconds": 332.802,
+    "peak_input_tokens": 145747,
+    "tokens_per_second": 52.81,
+    "wall_tokens_per_second": 37.35
+  },
+  "time_budget": "55m",
+  "tool_steps": 70.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3000,
+        "classification": "promotable",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+        "effective_phase": "working",
+        "elapsed_seconds": 1380,
+        "exit_record": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T10:45:04Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T09:22:56Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T092209664940-active-sprint-follows-the-live-crew",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 7641,
+          "worker_pid": 140581
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "promote",
+          "recovery_classification": "promotable",
+          "state": "complete"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 5871,
+        "log_fresh": false,
+        "manifest_commits": [
+          "bec9f24a7ea1c947ceae690d32d5290ccf0353f7",
+          "efbefca7c04bdd12dbf94f1c058c0030dd943d78",
+          "d4b764eab0941fff1f175cd8aea951c52a7831a4"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "369a43585c1270420337db778ee0b6fea7f7330739839ba205dd8d21423816b3",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T092209664940-active-sprint-follows-the-live-crew/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew complete --run r-20260925T092209664940-active-sprint-follows-the-live-crew --gate <verdict> --commit bec9f24a7ea1c947ceae690d32d5290ccf0353f7 --commit efbefca7c04bdd12dbf94f1c058c0030dd943d78 --commit d4b764eab0941fff1f175cd8aea951c52a7831a4",
+        "node": "active-sprint-follows-the-live-crew",
+        "phase": "working",
+        "plan": "a-sprint-is-live-while-a-crew-works-it",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "promote",
+        "recovery_classification": "promotable",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": true,
+        "review_status": "parsed",
+        "run_id": "r-20260925T092209664940-active-sprint-follows-the-live-crew",
+        "session": "s23-coord",
+        "terminal_age_seconds": 6369,
+        "terminal_at": "2026-09-25T14:14:35Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/active-sprint-follows-the-live-crew"
+      }
+    ]
+  },
+  "wall_seconds": 1161,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-25T16:20:20Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-25T16:01:20Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260925T160042678741-follower-reloads-only-into-importable-changed-code",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 6201,
+    "worker_pid": 1646021
+  },
+  "worker_seconds": 1129,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
