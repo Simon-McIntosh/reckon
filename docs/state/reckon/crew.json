@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T03:01:49",
+  "updated": "2026-09-25T03:02:04",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -368928,6 +368928,297 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T233052030320-measurement-keys-are-declared",
+        "plan": "work-does-not-fall-to-the-coordinator",
+        "section": "\u00a711",
+        "node": "measurement-keys-are-declared",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 938,
+                "cached_input_tokens": 439899,
+                "input_tokens": 440839,
+                "output_tokens": 932,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 441771,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "_MANIFEST_SCHEMA in reckon/crew/reports.py gains measurement_module and measurement_cwd, each with _TEXT_SHAPE, beside orientation_worktree. New tests/test_manifest_measurement_keys_declared.py asserts both keys are in _MANIFEST_FIELD_KEYS, that a manifest carrying them with text values parses with no finding, and that a manifest carrying either as a list is reported with the shape finding the schema gives any off-shape field. The declared negative control is executed and logged: removing the two schema entries makes the declared-key and off-shape cases fail. Every existing test file importing reckon.crew.reports passes at your head, judged by delta against the base revision, and your landing record is appended to docs/plans/work-does-not-fall-to-the-coordinator.html \u00a711. No figure.",
+          "estimated_hours": null,
+          "goal": "The manifest schema declares the measurement_module and measurement_cwd keys the template now asks for",
+          "id": "measurement-keys-are-declared",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-24T23:30:52Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 2,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 11,
+            "mean_context": 90000,
+            "observed_at": "2026-09-24T23:30:50Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T233052030320-measurement-keys-are-declared/manifest.md",
+          "negative_control": "remove the measurement_module and measurement_cwd entries from _MANIFEST_SCHEMA in reckon/crew/reports.py; the declared-key and off-shape cases must fail",
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a711",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/reports.py",
+            "tests/test_manifest_measurement_keys_declared.py",
+            "docs/plans/work-does-not-fall-to-the-coordinator.html",
+            "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html",
+            "docs/figures/work-does-not-fall-to-the-coordinator"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-manifest-keys",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-24T23:31:01Z",
+        "completed_at": "2026-09-25T00:39:34.532Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4008,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4113,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "11dfbe67c2144b5b25fe3b2ca40f013393d06b16",
+        "commits": [
+          "5755dfec51a61f123178e59d8a785ca1d2bb5e72",
+          "b6117492b915541f9c5eedee9f86f8de9265c3e6"
+        ],
+        "changed_lines": {
+          "added": 190,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 --dist loadfile tests/test_manifest_measurement_keys_declared.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T233052030320-measurement-keys-are-declared/logs/cohort-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T233052030320-measurement-keys-are-declared/manifest.md",
+        "scope_changed": false,
+        "session_id": "1b3474c5-74de-46a5-a48a-32e162a7b6cb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6313687,
+            "input_tokens_cumulative": 6313687,
+            "output_tokens": 67166,
+            "output_tokens_cumulative": 67166,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T00:39:34.532Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 16,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 93
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6480267,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 4026.108,
+          "generated_tokens": 73452,
+          "generation_seconds": 3237.888,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.4,
+          "machine_seconds": 788.22,
+          "peak_input_tokens": 165280,
+          "tokens_per_second": 22.69,
+          "wall_tokens_per_second": 18.24
+        },
+        "follow_on_paths": [
+          "tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/measurement-keys-are-declared",
+          "session_id": "1b3474c5-74de-46a5-a48a-32e162a7b6cb",
+          "session_source": "stream",
+          "retained_at": "2026-09-25T00:39:34.532Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T00:39:34Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-24T23:32:25Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T233052030320-measurement-keys-are-declared",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 15761,
+          "worker_pid": 1772674
+        },
+        "promoted_revision": "b6117492b915541f9c5eedee9f86f8de9265c3e6",
+        "plan_impl_at_dispatch": 1.0,
+        "impl_move": {
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "at_dispatch": 1.0,
+          "at_complete": 1.0,
+          "verdict": "waived",
+          "reason": "the plan's impl is already 1.0; \u00a711 closes with this node"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_manifest_measurement_keys_declared.py"
+          ],
+          "declaration": "remove the measurement_module and measurement_cwd entries from _MANIFEST_SCHEMA in reckon/crew/reports.py; the declared-key and off-shape cases must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T233052030320-measurement-keys-are-declared/logs/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T233052030320-measurement-keys-are-declared/logs/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T00:10:52.841630+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-24T23:30:52Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 2,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 11,
+          "mean_context": 90000,
+          "observed_at": "2026-09-24T23:30:50Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 73.0,
+        "orientation_input_tokens": 2487703.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -369240,6 +369531,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2596
+    "_version": 2597
   }
 }
