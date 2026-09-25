@@ -60,6 +60,37 @@ def _wait_for_registration(project: str, session: str) -> dict:
     return state
 
 
+def _probe_event(number: int) -> dict:
+    """A throwaway transition, named so no measured run can be mistaken for it."""
+    event = _event(number)
+    event["run_id"] = f"attach-probe-run-{number}"
+    event["node"] = f"attach-probe-{number}"
+    return event
+
+
+def _await_attached(
+    stream_path: Path, lines: queue.Queue, *, attempts: int = 20
+) -> str:
+    """Return the first row once the follower is reading the stream.
+
+    A follower fixes its read offset to the stream's length at the instant it
+    attaches, so a record already written when it arrives sits behind that
+    offset and is never rendered. The first record a caller appends can
+    therefore be lost to the attach, which makes a plain append-then-read racy:
+    the offset is taken while the caller is appending. Appending a throwaway
+    probe until one is rendered proves the follower is reading before the
+    transitions under measurement are seeded, so none of them is behind the
+    offset.
+    """
+    for number in range(attempts):
+        runs._append_watch_lines(stream_path, [_probe_event(number)])
+        try:
+            return lines.get(timeout=1.0)
+        except queue.Empty:
+            continue
+    raise AssertionError("the follower never rendered a transition")
+
+
 def test_running_follower_reloads_without_stream_or_registration_gap(
     isolated_home, tmp_path
 ) -> None:
@@ -109,23 +140,22 @@ def test_running_follower_reloads_without_stream_or_registration_gap(
             original_pid = first_registration["follower"]["pid"]
             stream_path = Path(registration["stream_path"])
 
-            runs._append_watch_lines(stream_path, [_event(0)])
-            first_line = lines.get(timeout=5)
-            assert "node-0" in first_line
-            assert not first_line.startswith("fresh:")
-
-            renderer = copied_package / "crew" / "recovery.py"
-            original = renderer.read_text()
-            return_line = (
-                "return (ticker or _PLAIN).render(event, with_session=with_session)"
+            attached_line = _await_attached(stream_path, lines)
+            assert not attached_line.startswith("fresh:"), (
+                "the unmodified package renders without the reload marker"
             )
-            assert original.count(return_line) == 1
+
+            # The seam is a module-level override appended to the copied
+            # module: writing the file advances the stamp the follower reloads
+            # on, and the override is what its re-imported module serves. The
+            # rewrite names no source line, so it survives any change to how a
+            # transition is rendered.
+            renderer = copied_package / "crew" / "recovery.py"
             renderer.write_text(
-                original.replace(
-                    return_line,
-                    "return 'fresh:' + (ticker or _PLAIN).render("
-                    "event, with_session=with_session)",
-                )
+                renderer.read_text()
+                + "\n\n_render_watch_transition = format_watch_transition\n\n\n"
+                + "def format_watch_transition(event, **kwargs):\n"
+                + "    return 'fresh:' + _render_watch_transition(event, **kwargs)\n"
             )
 
             expected_nodes = {f"node-{number}" for number in range(1, 19)}

@@ -545,6 +545,57 @@
       delta and the order-independent age cell</a>.</p>
     </section>
 
+    <section id="s2-the-freshness-test-hooks-a-stable-seam" class="node-landing">
+      <h3>the-freshness-test-hooks-a-stable-seam &mdash; the follower-freshness test reloads through a seam that survives the render fix</h3>
+      <p><strong>Cause group repaired:</strong> two test-side defects in one id,
+      <code>test_running_follower_reloads_without_stream_or_registration_gap</code>. First, the test
+      patched the copied package by replacing an exact source line &mdash; the literal
+      <code>return (ticker or _PLAIN).render(...)</code> &mdash; and the per-render ticker fix in
+      <code>reckon/crew/recovery.py</code> removed <code>_PLAIN</code>, so the anchor matched zero
+      times and the test's own guard (<code>assert original.count(return_line) == 1</code>) refused
+      the copy before the reload under test could run. Second, the test appended its first event
+      straight after registration and read the stream, but a follower fixes its read offset to the
+      stream's length at the instant it attaches (<code>watch_stream_cursor</code>), so an append
+      whose bytes land before that offset is behind it and never rendered &mdash; the append raced
+      the attach and the read timed out. Class: <em>test defect</em>, both; the product was correct
+      and <code>reckon/crew/recovery.py</code> needed no change, so this node carries no product
+      diff and no text-patch shim.</p>
+      <p><strong>Reproduction, before repair.</strong> In the node's tree at
+      <code>2848d3c9</code>, the base test's anchor has zero matches in the head source while the
+      actual render line has one: <code>base test anchor count in head source: 0</code>,
+      <code>actual render line count in head source: 1</code>, <code>_PLAIN count in head source:
+      0</code>. Running the id in the head tree with the base test file gives
+      <code>1 failed, 8 passed</code>, the failure a <code>_queue.Empty</code> raised from the read
+      that follows the raced append. A timing probe confirmed the second defect independently: with
+      the append delayed 1.0&nbsp;s after registration, the follower's cursor offset is
+      <code>0</code> and the first event renders.</p>
+      <p><strong>Measure.</strong> The repaired id reports <code>9 passed</code> at the node's head
+      on three consecutive runs (11.95&nbsp;s, 9.64&nbsp;s, 8.95&nbsp;s), and <code>1 failed, 8
+      passed</code> at <code>2848d3c9</code>; both logged. The seam is now a module-level override
+      appended to the copied module &mdash; writing the file advances the stamp the follower reloads
+      on, and the override is what its re-imported module serves &mdash; so the rewrite names no
+      source line and survives any change to how a transition is rendered. Determinism comes from
+      probing with throwaway records until one is rendered before the measured transitions are
+      seeded, so none sits behind the attach offset. Declared negative control, applied and logged:
+      <em>leave the copied package unmodified; the fresh-code assertion must fail</em> &mdash; the
+      red log's first line repeats that string verbatim and the failure is exactly the fresh-code
+      assertion, <code>assert any(line.startswith("fresh:"))</code>, not a timeout or an unrelated
+      error. Across the 60 files that import <code>reckon.crew.recovery</code>, the run gives 3
+      failed / 145 passed with all three reds in <code>tests/test_crew_recovery.py</code>; the
+      single modified file is this test, which is not among those importers, so against
+      <code>2848d3c9</code> the added-failure count is zero. No test was skipped, xfailed, deleted
+      or weakened and no product file was touched. Both arms ran on the fleet compute node
+      <code>98dci4-clu-2058</code> in one process each, every log header naming the revision, tree,
+      command and imported <code>recovery.__file__</code>.</p>
+      <p><strong>One follow-on.</strong> The three reds in <code>tests/test_crew_recovery.py</code>
+      are red at base and at head and are not this node's to repair; they are named for the
+      coordinator rather than triaged here. They are recorded in full in the
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-the-freshness-test-hooks-a-stable-seam">landed
+      evidence</a> beside the figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/follower-attach-seam.png">the racing attach
+      and the probing seam that replaces it</a>.</p>
+    </section>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">

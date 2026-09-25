@@ -1117,6 +1117,115 @@ docs/state/proj/crew.json; commit or discard that roster write before retrying</
         <figcaption>Zero added in the gate, and the age cell the fix makes order-independent.</figcaption>
       </figure>
     </section>
+  <section id="node-the-freshness-test-hooks-a-stable-seam">
+      <h2>the-freshness-test-hooks-a-stable-seam &mdash; the follower-freshness test reloads through a seam that survives the render fix</h2>
+      <p><strong>Cause, named with file and line.</strong> Two test-side defects in the id
+      <code>tests/test_freshness_hooks_a_stable_seam</code>'s target,
+      <code>test_running_follower_reloads_without_stream_or_registration_gap</code>, in
+      <code>tests/test_follower_freshness.py</code>. First, the test proved the follower had loaded
+      fresh code by replacing an exact source line in the copied package &mdash; the literal
+      <code>return (ticker or _PLAIN).render(event, with_session=with_session)</code> &mdash; and the
+      per-render grid fix in the sibling node <code>a-watch-row-renders-the-same-in-any-order</code>
+      removed <code>_PLAIN</code> from <code>reckon/crew/recovery.py</code>. The test guards its
+      anchor with <code>assert original.count(return_line) == 1</code>, so with zero matches it
+      refused the copy before the reload under test could run &mdash; the anchor was a fuse on a
+      line the product was entitled to change. Second, the test appended its first event
+      immediately after the registration was observed and then read the stream. A follower fixes
+      its read offset to the stream's length at the instant it attaches
+      (<code>watch_stream_cursor</code>, <code>reckon/crew/runs.py</code>), so an append whose bytes
+      are already written when the offset is taken sits <em>behind</em> the offset and is never
+      rendered: the append raced the attach, and the read raised <code>_queue.Empty</code>. Both are
+      test defects; the product was correct, so this node carries no product diff and no
+      text-patch shim.</p>
+
+      <h3>Reproduction, quoted before repair</h3>
+      <p>In the node's tree at the base revision, the base test's anchor has zero matches in the
+      source it copies, while the render line it meant to match has one:</p>
+      <pre><code>revision: 2848d3c916460044ccb3269bc70f318b2d4a21d0
+base test anchor count in head source: 0
+actual render line count in head source: 1
+`_PLAIN` count in head source: 0</code></pre>
+      <p>Running the id in the head tree with the base test file gives <code>1 failed, 8
+      passed</code>, the failure a <code>_queue.Empty</code> from the read that follows the raced
+      append:</p>
+      <pre><code>F........                                                                [100%]
+&gt;                       raise Empty
+E                       _queue.Empty
+FAILED tests/test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap
+1 failed, 8 passed in 6.61s</code></pre>
+      <p>The second defect was confirmed independently by a timing probe: with the append delayed
+      1.0&nbsp;s after registration is observed, the follower's cursor offset reads <code>0</code>
+      and the first event renders; appended with no delay it is lost.</p>
+
+      <h3>Repair</h3>
+      <p>The seam is now a module-level override appended to the copied module rather than a
+      replacement of a known fully-qualified line. The test writes
+      <code>_render_watch_transition = format_watch_transition</code> followed by a new
+      <code>def format_watch_transition(event, **kwargs)</code> that returns
+      <code>'fresh:' + _render_watch_transition(event, **kwargs)</code>. Writing the file advances
+      the stamp the follower reloads on, and the override is what its re-imported module serves, so
+      the rewrite names no source line and survives any change to how a transition returns.
+      Determinism comes from <code>_await_attached</code>, which appends throwaway probe records
+      (named <code>attach-probe-*</code> so no measured run can be mistaken for one) until one is
+      rendered, proving the follower is reading before the measured transitions are seeded &mdash;
+      none then sits behind the attach offset. <code>reckon/crew/recovery.py</code> is not
+      modified.</p>
+
+      <h3>Measure &mdash; the done-when</h3>
+      <table>
+        <thead><tr><th>Check</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Repaired id at the node's head</td>
+            <td><strong>9 passed</strong> on three consecutive runs (11.95&nbsp;s, 9.64&nbsp;s,
+            8.95&nbsp;s)</td></tr>
+          <tr><td>Base test file at the base revision</td>
+            <td><strong>1 failed, 8 passed</strong> (<code>_queue.Empty</code>)</td></tr>
+          <tr><td>Negative control &mdash; copied package left unmodified</td>
+            <td><strong>1 failed</strong> on exactly the fresh-code assertion; log line 1 is the
+            declared string</td></tr>
+          <tr><td>Zero added, 60 files importing <code>reckon.crew.recovery</code></td>
+            <td>3 failed / 145 passed, all three in <code>tests/test_crew_recovery.py</code>, none
+            importing the one modified file</td></tr>
+          <tr><td>Text-patch shim in the product</td>
+            <td>none; no product file is touched</td></tr>
+        </tbody>
+      </table>
+      <p>Every arm ran on the fleet compute node <code>98dci4-clu-2058</code>, one pytest process
+      per arm with <code>-p no:cacheprovider</code>, and each log header names the revision, the
+      tree, the command, the imported <code>reckon.crew.recovery.__file__</code> and the resolved
+      working directory. No test was skipped, xfailed, deleted or weakened.</p>
+
+      <h3>Negative control</h3>
+      <p>Declared mutation: <em>leave the copied package unmodified; the fresh-code assertion must
+      fail</em>. Applied and logged: the red log's first line repeats that string verbatim, and the
+      failure is exactly the fresh-code assertion, not a timeout or an unrelated error:</p>
+      <pre><code>leave the copied package unmodified; the fresh-code assertion must fail
+&gt;           assert any(line.startswith("fresh:") for line in subsequent), (
+E           AssertionError: the replacement stayed alive but did not perform the changed behaviour
+FAILED .../test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap
+1 failed, 8 passed in 8.47s</code></pre>
+
+      <h3>Follow-on &mdash; three reds in the recovery test file</h3>
+      <p>Named for the coordinator, not repaired here. <code>tests/test_crew_recovery.py</code>
+      &mdash; which this node may not write &mdash; is red at base and at head under the importer
+      selection: <code>test_refusal_recovery_remedy_survives_promotion</code>,
+      <code>test_legacy_log_line_renders_and_new_line_renders_two_cells</code>, and
+      <code>test_a_resumed_runs_line_carries_measured_values_not_markers</code>. All three are red
+      at base, and the only file this node modifies is
+      <code>tests/test_follower_freshness.py</code>, which is not among the importers, so the
+      added-failure count is zero. <code>test_legacy_log_line_renders_and_new_line_renders_two_cells</code>
+      fails with a whitespace comparison at <code>tests/test_crew_recovery.py:2545</code>
+      (<code>assert '       ' == '2:00:00'</code>), the same stale-expectation shape the sibling
+      node <code>a-watch-row-renders-the-same-in-any-order</code> reported for
+      <code>test_refusal_recovery_remedy_survives_promotion</code>.</p>
+
+      <figure>
+        <img src="/reckon/figures/the-suite-is-green-at-head/follower-attach-seam.png"
+             alt="Top: an event appended before the follower attaches lands behind its read offset, which is set to the stream's length at attach, and is never rendered. Bottom: throwaway probe records are appended until one is rendered, proving the attach, after which the measured transitions are all read.">
+        <figcaption>The racing append that loses its record, and the probing seam that replaces
+        it.</figcaption>
+      </figure>
+    </section>
   </main>
 </body>
 </html>
