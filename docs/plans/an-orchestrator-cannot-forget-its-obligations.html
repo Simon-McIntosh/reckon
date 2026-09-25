@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 </head>
 <body>
   <main class="plan-doc">
@@ -172,6 +172,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260925T080904634390-obligations-hook-binds-the-harness" data-who="reckon-build" data-when="2026-09-25T10:56:15.551Z">
     <div class="r-comment-body"><p>coordinator hook injects obligations each turn and blocks a turn from ending while they remain; nothing installed; review 90, stop-mode no-follower gap routed to hook-stop-mode-silent-without-follower</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260925T104523198788-review-of-obligations-hook-binds-the-harness" data-who="reckon-build" data-when="2026-09-25T11:43:47.456Z">
+    <div class="r-comment-body"><p>review stored: 90, stop-mode test gap routed to a follow-on node</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260925-no-heartbeat" data-who="reckon-build" data-when="2026-09-25T07:55:00Z">
     <div class="r-comment-body"><p>The lead's review on 2026-09-25 made two changes.</p><ul><li><strong>No heartbeat.</strong> The planned §4, a <code>NEEDS YOU</code> line repeating every ten minutes, is retired. A line that repeats trains its reader to ignore it. Obligations reach the coordinator through the §5 hooks instead: once per turn, where they cannot be skipped. The follower keeps reporting transitions, and the needs-you line folded into <code>the-fleet-counters-count-the-fleet</code> §5 fires on change only.</li><li><strong>Home install.</strong> The hooks go in <code>~/.claude/settings.json</code>, so every project benefits.</li></ul><p>The S22 coordinator added two reuse conditions:</p><ul><li>the kinds derive from <code>reckon.crew.recovery.recover</code>'s classification and the drain view's unreconciled-runs figure</li><li>the Stop hook waits on S21's false-liveness fix</li></ul></div>
