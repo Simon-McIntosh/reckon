@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-impl" content="0.8">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1009,6 +1009,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260925T0440-launcher" data-who="reckon-build" data-when="2026-09-25T02:40:00Z">
     <div class="r-comment-body"><p>a-launcher-oserror-is-a-refusal (peer session s21-coord): landed at <code>90942b97</code>. A launcher <code>OSError</code> now surfaces as a <code>CrewError</code> refusal (fix <code>bdfff7f4</code>, review 89). <code>test_crew.py::test_a_failed_launch_leaves_no_worktree_holding_write_scope</code> encoded the old contract and now expects <code>CrewError</code> with the <code>OSError</code> as its <code>__cause__</code> (<code>c11eaf2f</code>, review 95). Both tests pass at <code>ccc2571c</code>, and all 83 source sections of the evidence record are intact after the peer's merge. §3 has also landed the leaked-producer session check (<code>2382142b</code>, review 90). Disposed: §1, 16 §2 nodes and 3 §3 nodes, which is 20 of 25.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T015136574071-review-of-the-freshness-test-hooks-a-stable-seam" data-who="reckon-build" data-when="2026-09-25T02:49:39.568Z">
+    <div class="r-comment-body"><p>review of the-freshness-test-hooks-a-stable-seam stored at 89; probe-row leak under a follower stall, two record inaccuracies; sent back by resume</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
