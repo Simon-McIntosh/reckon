@@ -18,9 +18,12 @@ from __future__ import annotations
 
 import json
 import os
+import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
 from reckon import cli, crew
 from reckon.crew import follow_checkpoint, recovery, runs
@@ -132,6 +135,18 @@ def _event(
     }
 
 
+def _iso(epoch: float) -> str:
+    """An epoch as the stream writes one, so a chosen stamp round-trips."""
+    return datetime.fromtimestamp(epoch, tz=UTC).isoformat()
+
+
+def _append_stream(stream_path: Path, events: list[dict]) -> None:
+    """Add transitions to the stream as a producer would, at the given stamps."""
+    with stream_path.open("a", encoding="utf-8") as handle:
+        for event in events:
+            handle.write(f"{json.dumps(event)}\n")
+
+
 def _replace_stream(stream_path: Path, events: list[dict]) -> None:
     """Put a fresh stream at the same path, so its identity changes with it."""
     replacement = stream_path.with_name(stream_path.name + ".replacement")
@@ -170,33 +185,57 @@ def test_a_rearm_delivers_the_gap_with_the_stream_timestamps_and_no_baseline(
         assert {event["run_id"] for event in first} == {RUN_A, RUN_B}, first
         before = len(_read_stream(stream_path))
 
-        _deliver(home, RUN_A, "complete")
-        crew.list_live(project=PROJECT)
+        early = time.time() - 25 * 60
+        later = time.time() - 12 * 60
+        a_stamp = _iso(early)
+        b_stamp = _iso(later)
+        assert ticker_module.local_clock(a_stamp) != ticker_module.local_clock(b_stamp)
+        _append_stream(
+            stream_path,
+            [
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="abandoned",
+                    observed_at=a_stamp,
+                    previous="dispatched",
+                ),
+                _event(
+                    RUN_B,
+                    "node-b",
+                    state="blocked",
+                    observed_at=b_stamp,
+                    previous="working",
+                ),
+            ],
+        )
         gap = _gap_events(stream_path, before)
-        assert [event["run_id"] for event in gap] == [RUN_A], gap
-        recorded_at = str(gap[0]["observed_at"])
+        assert [str(event["run_id"]) for event in gap] == [RUN_A, RUN_B], gap
 
         second = _arm(resume=None)
 
-    assert [event["run_id"] for event in second] == [RUN_A], (
-        f"only the run whose state moved may be re-announced; got {second!r}"
+    assert [event["run_id"] for event in second] == [RUN_A, RUN_B], (
+        f"the gap is delivered in order; got {second!r}"
     )
     assert all(event.get("event") != "baseline" for event in second), (
         f"a continuation emits no baseline; got {second!r}"
     )
-    row = second[0]
-    assert str(row["observed_at"]) == recorded_at, (
-        f"the replayed row is stamped with the stream's own time, not the "
-        f"attach time; recorded {recorded_at!r}, got {row['observed_at']!r}"
-    )
-    # The stamp is the row's rendered clock, not merely a confusingly equal
-    # field: the line a reader sees carries the recorded time.
-    line = recovery.format_watch_transition(row)
-    assert line.startswith(ticker_module.local_clock(recorded_at)), (
-        f"the rendered row does not carry the recorded time; {line!r}"
+    assert [str(event["observed_at"]) for event in second] == [a_stamp, b_stamp], (
+        f"the replayed rows carry the stream's own past stamps, not the attach "
+        f"time; wanted {[a_stamp, b_stamp]!r}, got "
+        f"{[event['observed_at'] for event in second]!r}"
     )
     # The state is the one the stream recorded, not a re-derived verdict.
-    assert str(row["to_state"]) == str(gap[0]["to_state"]), row
+    assert [str(event["to_state"]) for event in second] == ["abandoned", "blocked"], (
+        second
+    )
+    # The stamp reaches the reader as the line's own clock, not merely as a field
+    # beside it: a row stamped with the attach time would render today's second.
+    for row, stamp in zip(second, (a_stamp, b_stamp), strict=True):
+        line = recovery.format_watch_transition(row)
+        assert line.startswith(ticker_module.local_clock(stamp)), (
+            f"the rendered row does not carry the run's recorded time; {line!r}"
+        )
 
 
 def test_a_rearm_with_nothing_new_prints_nothing(home) -> None:
@@ -373,3 +412,363 @@ def test_the_real_follower_directory_is_untouched(home) -> None:
     # The temp home did receive the checkpoint, so the absence above is not a
     # checkpoint that was never written anywhere.
     assert follow_checkpoint.checkpoint_path(PROJECT, SESSION).exists()
+
+
+# ── The pane's memory across a re-arm ───────────────────────────────────────
+#
+# A re-arm starts with an empty pane, so without a log of what was already drawn
+# the reader's view empties every time the host re-arms it. The log holds each
+# rendered row's own bytes, the stamp it carried and the run and state it drew;
+# the re-arm replays those rows above its own fresh ones, framed, in one write.
+
+HISTORY_HEADER = "── history"
+HISTORY_SEPARATOR = "── re-armed"
+
+
+@pytest.fixture()
+def follow_lines(monkeypatch):
+    """Capture the follower command's own lines instead of writing them out."""
+    lines: list[str] = []
+
+    def capture(line, *, stream=None):
+        lines.append(line)
+
+    monkeypatch.setattr(cli, "_echo_follow_line", capture)
+    return lines
+
+
+def _run_follow() -> None:
+    """Arm the real follower command once, to its own short lifetime."""
+    result = CliRunner().invoke(
+        cli.crew,
+        [
+            "follow",
+            "--project",
+            PROJECT,
+            "--session",
+            SESSION,
+            "--lifetime",
+            "1s",
+            "--no-color",
+            "--width",
+            "200",
+        ],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0, result.output
+
+
+def _clock_of(row: dict) -> str:
+    """The clock a stored row's own stamp renders as."""
+    return time.strftime("%H:%M", time.localtime(row["at"]))
+
+
+def _fleet_lines(lines: list[str]) -> list[str]:
+    """The drawn fleet rows, without the pane's framing or the follower's end."""
+    return [
+        line
+        for line in lines
+        if not line.startswith(HISTORY_HEADER)
+        and HISTORY_SEPARATOR not in line
+        and follow_checkpoint.FORMAT_CHANGED_TEXT not in line
+        and "follower end" not in line
+    ]
+
+
+def test_a_rearm_replays_the_framed_history_in_one_write(home, follow_lines) -> None:
+    """A re-arm restores the pane: header, the rows in order, one separator.
+
+    Framing, order and the single write are asserted together because they are
+    one property: the reader is handed its whole view as one event, and the rows
+    inside it are the ones it last saw, oldest first, under their own clocks.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+        assert acquired
+        crew.list_live(project=PROJECT)
+        _run_follow()
+        stored = follow_checkpoint.read_history(PROJECT, SESSION)
+        assert len(stored) == 2, stored
+        follow_lines.clear()
+
+        _run_follow()
+
+    bursts = [line for line in follow_lines if line.startswith(HISTORY_HEADER)]
+    assert len(bursts) == 1, (
+        f"the whole replay is one write, so exactly one header reaches the "
+        f"reader; got {bursts!r}"
+    )
+    block = bursts[0]
+    lines = block.split("\n")
+    assert lines[0] == (
+        f"── history {_clock_of(stored[0])}–{_clock_of(stored[-1])} · 2 rows ──"  # noqa: RUF001 - the pane's span separator is an en dash
+    ), lines[0]
+    assert lines[1:-1] == [row["text"] for row in stored], (
+        f"the replayed rows are the stored ones, in the order they were drawn, "
+        f"under their own bytes; got {lines[1:-1]!r}"
+    )
+    assert lines[-1] == f"── re-armed {time.strftime('%H:%M')} · live below ──", lines[
+        -1
+    ]
+    assert block.count(HISTORY_SEPARATOR) == 1, block
+
+
+def test_a_first_arming_replays_no_history(home, follow_lines) -> None:
+    """A pane that was never armed has nothing to restore, and says nothing.
+
+    The framing lines are the pane's, not the fleet's: an arming that begins a
+    session must draw its rows without a header above them.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+        assert acquired
+        crew.list_live(project=PROJECT)
+        _run_follow()
+
+    assert _fleet_lines(follow_lines), "the first arming draws the baseline"
+    assert not [line for line in follow_lines if line.startswith(HISTORY_HEADER)], (
+        follow_lines
+    )
+    assert not [line for line in follow_lines if HISTORY_SEPARATOR in line], (
+        follow_lines
+    )
+
+
+def test_a_rearm_with_nothing_new_replays_only_the_history(home, follow_lines) -> None:
+    """The replayed pane is the whole view when the stream has not moved."""
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+        assert acquired
+        crew.list_live(project=PROJECT)
+        _run_follow()
+        follow_lines.clear()
+        _run_follow()
+
+    assert len([line for line in follow_lines if line.startswith(HISTORY_HEADER)]) == 1
+    assert _fleet_lines(follow_lines) == [], (
+        f"a re-arm with no intervening transition draws no fleet row; "
+        f"got {follow_lines!r}"
+    )
+
+
+def test_a_reload_marks_the_format_switch_and_re_emits_nothing(
+    home, follow_lines, monkeypatch
+) -> None:
+    """One dim line explains why the rows below differ, and no row returns.
+
+    A follower that reloads onto new code mid-stream has its rows already on
+    screen, so it re-emits nothing; the marker stands where the format changed.
+    The rows drawn before it stay in the log above it, so a later re-arm replays
+    them exactly as the format that drew them left them.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+        assert acquired
+        crew.list_live(project=PROJECT)
+        _run_follow()
+        record = follow_checkpoint.read(PROJECT, SESSION)
+        assert record, "the first arming leaves a place behind"
+        follow_lines.clear()
+
+        monkeypatch.setenv(
+            cli._FOLLOWER_CHECKPOINT_ENV,
+            json.dumps({"project": PROJECT, "checkpoint": record}),
+        )
+        _run_follow()
+        monkeypatch.delenv(cli._FOLLOWER_CHECKPOINT_ENV, raising=False)
+
+        log = follow_checkpoint.read_history(PROJECT, SESSION)
+
+    markers = [
+        line for line in follow_lines if follow_checkpoint.FORMAT_CHANGED_TEXT in line
+    ]
+    assert len(markers) == 1, (
+        f"exactly one line marks the format switch; got {markers!r}"
+    )
+    assert _fleet_lines(follow_lines) == [], (
+        f"a reload re-emits nothing; got {follow_lines!r}"
+    )
+    assert not [line for line in follow_lines if line.startswith(HISTORY_HEADER)], (
+        f"a reload already has the pane; it restores no history; got {follow_lines!r}"
+    )
+    assert [row["kind"] for row in log][-1] == follow_checkpoint.FORMAT_CHANGED_KIND, (
+        f"the log records where the format changed, so a later re-arm keeps the "
+        f"rows above the marker as the old format drew them; got {log!r}"
+    )
+
+
+def test_both_history_caps_apply_and_either_governs() -> None:
+    """The log is bounded by rows and by age, whichever admits fewer. The
+    window is applied first, so a burst written inside one second cannot carry a
+    session past a window it has already aged out of."""
+    now = 1_800_000_000.0
+    rows = [
+        {"kind": "row", "at": now - 600 + 60 * index, "text": f"t{index}"}
+        for index in range(11)
+    ]
+    by_rows = follow_checkpoint.cap_history(
+        rows, now=now, max_rows=3, max_seconds=10**9
+    )
+    assert [row["text"] for row in by_rows] == ["t8", "t9", "t10"]
+    by_window = follow_checkpoint.cap_history(
+        rows, now=now, max_rows=100, max_seconds=180
+    )
+    assert [row["text"] for row in by_window] == ["t7", "t8", "t9", "t10"]
+    both = follow_checkpoint.cap_history(rows, now=now, max_rows=2, max_seconds=180)
+    assert [row["text"] for row in both] == ["t9", "t10"]
+
+
+def test_the_history_caps_come_from_flight_config(monkeypatch) -> None:
+    """A configured pane overrides both caps; an unreadable config falls back."""
+
+    class Resolved:
+        def __init__(self) -> None:
+            self.config = {"ticker": {"history_rows": 7, "history_window": "2h"}}
+
+    monkeypatch.setattr("reckon.flight.resolve", lambda *args, **kwargs: Resolved())
+    assert cli._follow_history_caps(PROJECT) == (7, 2 * 60 * 60)
+
+    def explode(*args, **kwargs):
+        raise RuntimeError("no configuration layer is readable here")
+
+    monkeypatch.setattr("reckon.flight.resolve", explode)
+    assert cli._follow_history_caps(PROJECT) == (
+        follow_checkpoint.DEFAULT_HISTORY_ROWS,
+        follow_checkpoint.DEFAULT_HISTORY_SECONDS,
+    )
+
+
+def test_the_replayed_rows_are_dimmed_with_the_tickers_own_escape() -> None:
+    """A restored row is marked dim, and the mark is the ticker's own pair.
+
+    The mark is applied around the row's bytes rather than woven into them, so a
+    replayed row carries exactly the bytes it was first drawn with, and the two
+    escapes cannot drift from the ones the ticker paints with.
+    """
+    assert cli.HISTORY_DIM == ticker_module._DIM
+    assert cli.HISTORY_RESET == ticker_module._RESET
+    assert cli._dim_history_line("plain row") == (
+        f"{ticker_module._DIM}plain row{ticker_module._RESET}"
+    )
+    block = cli._follow_history_burst(
+        [{"kind": "row", "at": 0.0, "text": "plain row"}], dim=cli._dim_history_line
+    )
+    assert f"{cli.HISTORY_DIM}plain row{cli.HISTORY_RESET}" in block, block
+
+
+def test_the_pane_memory_suppresses_a_state_it_already_showed(home) -> None:
+    """A run at the state the pane last drew is not a transition.
+
+    The stream's own record says the run moved; the pane's memory of what it
+    drew says the reader has already seen that state. The memory governs, which
+    is what keeps a run's rows chaining across a re-arm rather than restarting
+    from the producer's record.
+
+    The same stream is armed twice, once with the memory present and once
+    without, so the suppression is shown to be the memory's doing rather than
+    the row never having been deliverable. Both arms start from the same
+    checkpoint, so the checkpoint cannot be the thing doing the suppressing.
+    """
+    a_stamp = _iso(time.time() - 30 * 60)
+    b_stamp = _iso(time.time() - 20 * 60)
+    stream_events = [
+        _event(
+            RUN_A,
+            "node-a",
+            state="working",
+            observed_at=a_stamp,
+            previous="dispatched",
+        ),
+        _event(
+            RUN_B,
+            "node-b",
+            state="blocked",
+            observed_at=b_stamp,
+            previous="working",
+        ),
+    ]
+
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        _two_live_runs(home)
+        _append_stream(stream_path, stream_events)
+        follow_checkpoint.write(
+            PROJECT,
+            SESSION,
+            stream_path=stream_path,
+            offset=0,
+            reported={RUN_A: "working"},
+        )
+
+        without_memory = _arm(resume=None)
+        assert [str(event["run_id"]) for event in without_memory] == [RUN_B], (
+            f"the control arm draws the run the checkpoint does not name; "
+            f"got {without_memory!r}"
+        )
+
+        # The pane's memory: the row it drew for RUN_B at the state it holds now.
+        follow_checkpoint.append_history(
+            PROJECT,
+            SESSION,
+            text="drawn earlier",
+            at=time.time(),
+            run_id=RUN_B,
+            state="blocked",
+        )
+        follow_checkpoint.write(
+            PROJECT,
+            SESSION,
+            stream_path=stream_path,
+            offset=0,
+            reported={RUN_A: "working"},
+        )
+        with_memory = _arm(resume=None)
+
+    assert with_memory == [], (
+        f"a run at the state the pane last drew is not a transition; "
+        f"got {with_memory!r}"
+    )
+
+
+def test_the_checkpoint_carries_the_identity_of_the_file_it_read(home) -> None:
+    """A checkpoint pairs its offset with the file that offset was read from.
+
+    The identity is taken from the open handle, never re-derived from the path
+    at write time: a replacement landing in that window would record the new
+    file's inode beside the old file's offset, and the next arming would seek
+    into a stream that offset never named. The replacement here is empty, so a
+    continuation would find nothing and the run would look quiet.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        stream_path.write_text('{"event":"baseline"}\n', encoding="utf-8")
+        with stream_path.open(encoding="utf-8") as stream:
+            stream.readline()
+            offset = stream.tell()
+            identity = follow_checkpoint.identity_of(stream)
+            # The path now names a different file than the handle does.
+            _replace_stream(stream_path, [])
+        follow_checkpoint.write(
+            PROJECT,
+            SESSION,
+            stream_path=stream_path,
+            offset=offset,
+            reported={RUN_A: "working"},
+            identity=identity,
+        )
+        record = follow_checkpoint.read(PROJECT, SESSION)
+        replacement_identity = follow_checkpoint.stream_identity(stream_path)
+
+    assert record["stream_identity"] == {
+        "dev": identity["dev"],
+        "ino": identity["ino"],
+    }, f"the record must pair the offset with the file it came from; got {record!r}"
+    assert record["stream_identity"] != replacement_identity, (
+        "the replacement is a different file, so its identity must not be recorded"
+    )
+    assert follow_checkpoint.continues(record, stream_path) is False, (
+        "a replaced stream cannot be continued, so the next arming restarts"
+    )

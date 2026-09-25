@@ -803,6 +803,17 @@
                         }
                     ]
                 },
+                "ticker": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/TickerConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back."
+                },
                 "version": {
                     "description": "Schema version of this configuration document.",
                     "minimum": 1,
@@ -1297,6 +1308,30 @@
             "title": "SummaryOccasion",
             "type": "string"
         },
+        "TickerConfig": {
+            "additionalProperties": false,
+            "description": "Bounds on the follower pane's own memory. The follower keeps the rows it rendered so a re-arm can restore a reader's view rather than opening empty; the caps decide how much of that view comes back.",
+            "properties": {
+                "history_rows": {
+                    "description": "Most rows a follower re-emits as history when it re-arms. A pane restored from a long outage should show recent work rather than the whole session, so the cap counts rendered rows and is applied with `history_window`, whichever admits fewer.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "history_window": {
+                    "description": "Oldest history row a follower re-emits when it re-arms, written as an integer followed by a unit \u2014 `s`, `m` or `h`. Trimmed against `history_rows`, whichever admits fewer, so a quiet session's short log is not replayed in full after a long gap.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "title": "TickerConfig",
+            "type": "object"
+        },
         "WorktreeCleanup": {
             "description": "How aggressively finished worktrees are removed.",
             "enum": [
@@ -1422,6 +1457,17 @@
                     "type": "null"
                 }
             ]
+        },
+        "ticker": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/TickerConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back."
         },
         "version": {
             "description": "Schema version of this configuration document.",
