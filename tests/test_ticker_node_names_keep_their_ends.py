@@ -21,9 +21,9 @@ BANKED_SEAM = "review-of-sgc-sweep-control-at-the-banked-seam"
 FOUR_OF_TWENTY = "review-of-sgc-sweep-control-at-the-four-of-twenty"
 
 # Two names a middle cut still renders as one text: they agree at both ends and
-# differ only where the cut falls. Their run ids are the fleet's own shape,
-# minted a second apart, and their last four characters differ so the suffix a
-# row carries is checkable on the row.
+# differ only where the cut falls. The ids below end differently, which is the
+# case the suffix separates; ids that end alike separate nothing, and a run id
+# minted by the fleet ends with its own node name.
 REPAIR = "review-of-sgc-sweep-repair-at-the-banked-seam"
 CENSUS = "review-of-sgc-sweep-census-at-the-banked-seam"
 REPAIR_ID = "r-20260925T011629068862-repair"
