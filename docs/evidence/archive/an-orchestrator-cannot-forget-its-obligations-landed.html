@@ -131,6 +131,22 @@
       <p>The declared mutation for the revision — the final allowed stop leaving the manifest unchanged — was applied and reverted. The fourth-stop test and the missing-manifest creation test both failed; the receipt <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/negative-control.log</code> records it, first line verbatim. Twelve focused tests pass, including a subdirectory cwd and an indented nested status. The install snippet above is unchanged: the command's target and shape are the same.</p>
     </section>
 
+    <section id="obligations-mcp-view-gate-at-head">
+      <h2>The MCP view's own gate at the integrated head</h2>
+      <p>The gate runs the named command in a tree at exactly <code>f97cd292</code>: <code>pytest -p no:cacheprovider -q tests/test_mcp_crew_obligations.py</code>. Result: <strong>1 failed, 1 passed</strong>, exit 1. The failure is <code>test_obligations_view_returns_the_derived_items_unchanged</code> — <code>AssertionError: assert [] == ['review-ready', 'review-missing']</code> at <code>tests/test_mcp_crew_obligations.py:116</code>.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-mcp-view-gate.svg" alt="The test line and the code line meet at the purity-fix merge: the identical test file is green where obligations() calls recover and red where classify_pointer replaced it.">
+        <figcaption>The recover patch stops sitting on the call path at the purity fix, not at the merge — the same test file is green on the base arm and red at the head.</figcaption>
+      </figure>
+      <p>The test still patches <code>recovery.recover</code> (the <code>derived</code> fixture, lines 68&#8211;89), and that patch is <strong>inert</strong>: <code>obligations()</code> reaches classification through <code>_classified_rows</code> (<code>reckon/crew/obligations.py:88-93</code>), which calls <code>recovery.classify_pointer</code>; <code>recover</code> is not on the path. Both sides of the view equality are then computed from the real classifier against a synthetic home with no live pointers, so the equality holds vacuously at <code>[] == []</code> and only the kinds assertion fires. The failing run is its own positive control that the inertness is specific to one symbol: <code>summary.unreconciled_runs</code> reads <code>2</code> — the value only the <code>runs.drain</code> stub supplies — so the drain patch is still live while the recover patch is not.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Test file</th><th><code>obligations()</code> calls</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>base</td><td><code>7c4be2b6</code> (merge first parent)</td><td>identical to head</td><td><code>recovery.recover</code></td><td>2 passed, exit 0</td></tr>
+          <tr><td>head</td><td><code>f97cd292</code></td><td>&#8212;</td><td><code>recovery.classify_pointer</code></td><td>1 failed, 1 passed, exit 1</td></tr>
+        </tbody>
+      </table>
+    </section>
   </main>
 </body>
 </html>
