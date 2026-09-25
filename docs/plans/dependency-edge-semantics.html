@@ -227,6 +227,44 @@
       <code>reckon/serve.py</code>, <code>reckon/mcp_views.py</code>, <code>reckon/roadmap.py</code>
       and that test.</p>
 
+    <aside id="closure-split-reads-alike">
+      <p><strong>Worker implementation, 2026-09-25:</strong> all three readers now take the
+      roadmap's split. Reproduced at base <code>0bd7a7c9</code> by a test that builds a
+      three-plan project in a temporary tree: with the unfiltered call in place the
+      closure-gate plan's served row carried the gate as a blocker, and the
+      decision-gate plan never reached <code>ready_now</code>.</p>
+      <p><code>reckon/roadmap.py</code> now publishes the split as
+      <code>execution_gates</code>, <code>closure_blockers</code> and
+      <code>unsettled_decisions</code>; a decision held by a pending decision-lockable
+      gate reports status <code>gated</code> rather than <code>open</code>, so it stays
+      visible in the reported decision set and still withholds a graph's ship verdict
+      while no longer idling its own plan. <code>reckon/serve.py</code> and
+      <code>reckon/mcp_views.py</code> call <code>execution_gates</code> at the site
+      that previously blocked on every gate, and the served payload publishes the two
+      named lists beside its blocker list.</p>
+      <p><strong>Declared negative control:</strong> restoring
+      <code>unpassed_gate_blockers(plan.get("gates") or [])</code> in
+      <code>reckon/serve.py</code> fails the closure case (2 failed, 1 passed) and the
+      scope-control case still passes; reverted, the three cases pass. <strong>Cohort
+      by delta:</strong> every existing test file importing <code>reckon.serve</code>,
+      <code>reckon.mcp_views</code> or <code>reckon.roadmap</code> (70 files at base,
+      plus the new test) — head 1 failed / 834 passed / 21 skipped; base (a
+      <code>git archive</code> export) 2 failed / 826 passed / 21 skipped / 4 errors.
+      <strong>Added failure IDs: zero.</strong> The single head failure and both base
+      failure groups are environmental: no headless browser is installed, and the export
+      has no git metadata for the build tests' version resolution.</p>
+      <p><strong>Budget limit found, not repaired:</strong> the MCP summary cannot carry
+      the two named lists. Its payload is held under 60% of the raw response and its
+      response schema under 24 KiB, and both sit at the limit — adding the keys took the
+      summary to 718 bytes against an allowed 587, and the schema to 24,832 against an
+      allowed 24,576. The projection therefore reads the split as a blocker set and an
+      effective status that agree with the roadmap, and the named closure and decision
+      edges live on the roadmap row and the served payload. Widening either budget is a
+      design decision outside this section.</p>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#closure-split-reads-alike">comparison, negative-control and cohort logs</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
+    </aside>
+
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
       Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout
