@@ -7,11 +7,11 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-sprint-is-live-while-a-crew-works-it-landed">
   <meta name="plan-title" content="A Sprint Is Live While A Crew Works It — landed record">
-  <meta name="plan-summary" content="Liveness is derived at read time from a project&#x27;s live crew pointers (§2), and the sprint push op no longer demotes other sprints (§4).">
+  <meta name="plan-summary" content="Liveness is derived at read time from a project&#x27;s live crew pointers (§2), the sprint push op no longer demotes other sprints (§4), and the sprint skill teaches that definition (§5).">
   <meta name="plan-evidence-for" content="a-sprint-is-live-while-a-crew-works-it">
-  <meta name="plan-verifies" content="a-sprint-is-live-while-a-crew-works-it#s2,a-sprint-is-live-while-a-crew-works-it#s4">
+  <meta name="plan-verifies" content="a-sprint-is-live-while-a-crew-works-it#s2,a-sprint-is-live-while-a-crew-works-it#s4,a-sprint-is-live-while-a-crew-works-it#s5">
   <meta name="plan-verdict" content="pass">
-  <meta name="plan-commits" content="6c92861d,0ad5a171">
+  <meta name="plan-commits" content="6c92861d,0ad5a171,21077dfa">
   <title>A Sprint Is Live While A Crew Works It — landed record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -168,6 +168,17 @@
       derived <code>live_sprint_ids</code> list — is a read-side derivation, not a write-side
       change, and is outside this node's write scope.</li>
     </ul>
+    </section>
+    <section id="s5">
+      <h2>&sect;5 &mdash; The skill teaches liveness, not the marker</h2>
+      <p>The skill now teaches the crew-derived definition: a pointer&#x27;s own classification decides its sprint&#x27;s live state, and the stored marker is only a scheduling hint.</p>
+      <ul>
+        <li>Section landed in <code>21077dfa</code>: one file, 46 insertions, 33 deletions.</li>
+        <li>Retired-invariant grep at that revision: no output, exit 1.</li>
+        <li>The same grep at the base revision: five statements, SKILL.md lines 50, 65, 137, 190, 192.</li>
+        <li>Skill contract tests at the edited revision: 71 passed, exit 0.</li>
+        <li>Required statements present: all ten, with whole lines reporting the retired word zero.</li>
+      </ul>
     </section>
   </main>
 </body>

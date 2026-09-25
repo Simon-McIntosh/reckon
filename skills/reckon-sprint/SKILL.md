@@ -40,30 +40,42 @@ HTML and are never persisted in a sprint.
 
 `read_plan(project, view="summary")` is the preferred compact composed view.
 `read_plan(project, "index")` remains a read-only compatibility view.
-It returns `source_format`, `resource_versions`, and the active sprint derived
-from the unique sprint whose status is `active`. Never write the aggregate
-index after distributed activation.
+It returns `source_format`, `resource_versions`, and the compatibility
+`active_sprint_id` (defined under *Liveness is derived from the crews* below).
+Never write the aggregate index after distributed activation.
 
-### One pushed sprint: `open` versus `active`
+### Liveness is derived from the crews; `active` is a hint
 
-Sprint status is `planned | open | active | done | shipped`. **`active` means
-pushed**, and exactly one sprint per project may carry it — that sprint is the
-work the project is scheduling now. **`open`** means work remains and this is
-not the pushed sprint, so a project with several live sprints has one `active`
-and the rest `open`. `planned` is for work not yet started. The roadmap reports
-the pushed sprint as `active_sprint_id`, lists the other live sprints in
-`open_sprint_ids`, and derives a sprint's state from its members: one whose
-members have started is `derived_state: "in-progress"` — member progress
-describes the work inside a sprint, not the sprint's own scheduling status, so a
-started member is not drift against a stored `open` or `active` status. It *is*
-drift against `planned`, because that status says the work has not begun.
+Sprint status is `planned | open | active | done | shipped`. **`active` is a
+scheduling hint**: it names the sprint the project is scheduling now, and
+several sprints may carry it at once. **`open`** means work remains. `planned`
+is for work not yet started. Nothing about the marker is exclusive, and no
+surface treats a second `active` sprint as a defect.
 
-Use the **push op** to change which sprint is active; never set `status` to
-`active` directly. A bare `set` promotes one sprint and leaves the previous one
-active too, which the audit reports as `multiple-active-sprints` at error
-severity and which makes the derived `active_sprint_id` ambiguous. `push`
-promotes and demotes in one versioned write, so the invariant cannot be broken
-by a two-step edit.
+**Live is derived at read time and never stored.** A sprint is *live* when at
+least one live run pointer in its project serves a plan whose `plan-sprint` is
+that sprint and that pointer is classified as working, starting or dispatched.
+A blocked or unpromoted pointer counts as *held*, not live. Liveness comes from
+the same classification `crew(view="live")` uses, and is computed on every read
+— never written to any resource — so it tracks the crews as they start, stall
+and finish. Each sprint row carries `live`, `live_runs`, `live_sessions` (the
+coordinator session ids) and `last_activity_at`.
+
+Several sprints may be active, and several may be live, at once. The roadmap's
+`active_sprint_id` is a compatibility field: it follows the most recently active
+live sprint and falls back to the stored `active` sprint when no sprint is live,
+so treat it as a hint rather than as evidence that anyone is working.
+`live_sprint_ids` lists every live sprint. The roadmap also derives a sprint's
+state from its members: one whose members have started is
+`derived_state: "in-progress"` — member progress describes the work inside a
+sprint, not the sprint's own scheduling status, so a started member is not drift
+against a stored `open` or `active` status. It *is* drift against `planned`,
+because that status says the work has not begun.
+
+Use the **push op** to record which sprint the project schedules next: it sets
+`active` on its target and leaves every other sprint's status alone, in one
+versioned write. A stale `expected_version` or an unknown sprint id changes no
+sprint.
 
 Check `summary["state"]["source_format"]` before writing. In
 `distributed` mode, read and edit the named resource. In `legacy-index` mode,
@@ -107,7 +119,7 @@ sprint = read_plan(
     resource={"project": "imas-ambix", "type": "sprint", "id": "S5"},
     view="raw",
 )
-# sprint_cards["state"]["active_sprint_id"], sprint["data"], sprint["version"]
+# sprint_cards["state"]["live_sprint_ids"] / ["active_sprint_id"], sprint["data"], sprint["version"]
 ```
 
 ## Create a sprint
@@ -124,7 +136,7 @@ edit_plan(
 )
 ```
 
-## Push a sprint (make it the active one)
+## Push a sprint (record the scheduling hint)
 
 ```python
 edit_plan(
@@ -134,9 +146,9 @@ edit_plan(
 )
 ```
 
-`push` marks `S5` active and demotes whichever sprint was active to `open`, in
-one versioned write. A stale `expected_version` or an unknown sprint id changes
-neither sprint.
+`push` marks `S5` active as a scheduling hint and leaves every other sprint's
+status alone, in one versioned write. A stale `expected_version` or an unknown
+sprint id changes no sprint.
 
 ## Add item to sprint
 
@@ -187,9 +199,10 @@ edit_plan(
 5. Order the `critical_path` prerequisite-first, then alternative `open_paths`.
    Within each ready wave use the analyzer's immediate order.
 6. Partition into sprints; each item carries `why_now` and `done_when`. Every
-   actionable plan must either belong to exactly one sprint with matching
+   actionable plan must either belong to a single sprint with matching
    `plan-sprint`, or carry an explicit backlog decision.
-7. Keep **one active sprint** at a time: push it with the `push` op, and leave
+7. Push the sprint the project schedules next; several sprints may be active,
+   and liveness rather than the marker says which ones crews are working. Leave
    every other sprint that still holds work `open`. Reserve `planned` for a
    sprint whose work has not started. Closing a sprint and opening a future one
    is not a membership change, so nothing moves between sprints.
@@ -237,11 +250,11 @@ created = edit_plan(
             "category": "sprint",
             "severity": "error",
             "subject": {"kind": "sprint", "id": "current"},
-            "evidence": ["Project pointer names a sprint that is not active."],
+            "evidence": ["Project pointer names a sprint that is neither scheduled nor live."],
             "recommended_action": {
                 "verb": "repair-pointer",
                 "owner_skill": "/reckon-sprint",
-                "detail": "Point the project at the uniquely active sprint.",
+                "detail": "Point the project at the scheduled sprint, or at the sprint its crews work.",
             },
             "validated": "confirmed",
             "checked_at": "2026-08-26",

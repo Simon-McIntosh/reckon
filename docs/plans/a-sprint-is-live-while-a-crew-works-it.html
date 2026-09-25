@@ -130,6 +130,27 @@
       <li>Every test that greps <code>skills/</code> passes.</li>
     </ul>
 
+    <div class="r-note" data-reckon="landed" data-node="sprint-skill-teaches-liveness" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; the skill teaches the crew definition.</strong> Commit
+      <code>21077dfa</code>. The section once titled "One pushed sprint" now states that a
+      sprint is live when at least one live run pointer in its project serves a plan whose
+      <code>plan-sprint</code> is that sprint and the pointer is classified working, starting
+      or dispatched; a blocked or unpromoted pointer is held, not live; liveness is derived
+      at read time from the same classification the live crew view uses and is never stored.
+      <code>push</code> is taught as a scheduling hint that leaves every other sprint's
+      status alone, several sprints may be active or live at once, and
+      <code>active_sprint_id</code> is a compatibility field following the most recently
+      active live sprint.</p>
+      <p><strong>Measured.</strong> The retired-invariant grep returns no line at the edited
+      revision (exit 1), against five at the base (SKILL.md lines 50, 65, 137, 190, 192; the
+      fifth is a plan-membership line reworded to "a single sprint" and disclosed in the
+      evidence record, since the grep cannot distinguish the two uses).
+      <code>tests/test_skill_contracts.py</code> and
+      <code>tests/test_skill_contract_parity.py</code>: 71 passed, exit 0. No file outside
+      <code>skills/</code> was changed by the code commit. Evidence:
+      <code>docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html</code>.</p>
+    </div>
+
     
 
     <section data-reckon="followups" id="followups" class="r-followups">
