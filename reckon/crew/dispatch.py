@@ -5287,6 +5287,39 @@ def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
         return {"captured": False, "member": None, "detail": str(exc)}
 
 
+def _names_the_fence(command: str) -> bool:
+    """Whether a recorded command names the fence wrapper rather than a harness.
+
+    The fence binary's own name is matched, bare or absolute.
+    """
+    return bool(command) and Path(command).name == _backends.FENCE_BINARY
+
+
+def _harness_behind_the_fence(argv: Any) -> str:
+    """The harness command a composed, fenced argv carries, or "".
+
+    A fenced launch is ``<fence> <binds...> -- <harness> ...``, optionally
+    behind a scheduler a placement prefixed. The fence element is located first
+    and the separator searched for after it, because a scheduler's own options
+    may carry a bare ``--`` and its separator is not the fence's. An argv with
+    no fence element is not a fenced composition this can read.
+    """
+    if not isinstance(argv, (list, tuple)):
+        return ""
+    start = next(
+        (
+            index
+            for index, token in enumerate(argv)
+            if Path(str(token)).name == _backends.FENCE_BINARY
+        ),
+        None,
+    )
+    if start is None or "--" not in argv[start:]:
+        return ""
+    tail = argv[argv.index("--", start) + 1 :]
+    return str(tail[0]).strip() if tail else ""
+
+
 def _backend_settings(
     record: Mapping[str, Any], config: Mapping[str, Any] | None
 ) -> dict[str, Any]:
@@ -5294,8 +5327,11 @@ def _backend_settings(
 
     Two authorities carry different parts of the rebuild, and dropping either
     corrupts the reading. The recorded command is the ground truth for the
-    harness, so a run stays observable after its config layer changes. The
-    configured lane supplies the window, the model and the effort, without
+    harness, so a run stays observable after its config layer changes — except
+    where it names the fence, which is a wrapper rather than a harness: the
+    composed argv's first element and the harness are different commands, and
+    a rebuild of a command line around the fence is a rebuild of the harness.
+    The configured lane supplies the window, the model and the effort, without
     which a stream-announced window substitutes as the utilisation's
     denominator and a resumed turn launches without its recorded model. The two
     are merged rather than one derived from the other, and a value the row
@@ -5316,8 +5352,25 @@ def _backend_settings(
     command = str(record.get("command") or "").strip()
     if not command and isinstance(argv, list) and argv:
         command = str(argv[0])
+    # The field is written from the composed argv's first element, which is the
+    # fence binary for every launch since the fence became the composition
+    # default. Feeding that back as the harness composes a fence inside a fence
+    # — bubblewrap is handed its own harness flags and the worker never starts
+    # — so the fence name is refused here rather than translated. The field
+    # stays authoritative for a run launched unfenced and for a placed launch,
+    # where it is the only place the harness was recorded beside the scheduler.
+    if _names_the_fence(command):
+        command = ""
+    # The record's own composition is the second authority, ahead of the
+    # configured lane: the harness the argv carries behind its fence is the
+    # same fact the explicit field holds for a run that was not fenced, and a
+    # lane whose command has since changed must not redefine what an in-flight
+    # run was launched as.
+    inner_harness = _harness_behind_the_fence(argv)
     if command:
         settings: dict[str, Any] = {"launch": "cli", "command": command}
+    elif inner_harness:
+        settings = {"launch": "cli", "command": inner_harness}
     elif isinstance(configured, Mapping):
         settings = dict(configured)
     else:
