@@ -854,6 +854,110 @@
       <p><strong>Follow-ons.</strong> None.</p>
     </div>
 
+    <section id="s2-a-watch-row-renders-the-same-in-any-order" class="node-landing">
+      <h3>a-watch-row-renders-the-same-in-any-order &mdash; a transition renders the same whatever preceded it</h3>
+      <p><strong>Cause group repaired:</strong> the product defect named by
+      <code>rendered-and-skill-contracts-match</code> in <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-rendered-and-skill-contracts-match">&sect;2's
+      landed evidence</a>: <code>format_watch_transition</code> rendered through one module-level
+      <code>Ticker</code>, whose per-run bucket-entry stamps and claimed hues carried across calls,
+      so the same baseline row printed an empty unpromoted age cell as a pane's first row and
+      <code>0mu</code> once a transition preceded it. <code>reckon/crew/recovery.py</code> is the
+      file both this line and <code>rendered-and-skill-contracts-match</code> point at, and this node
+      was cut for it. Class: <em>product defect</em>; the grid's state was made per call, not the
+      assertion moved.</p>
+      <p><strong>Measure.</strong> The monitor-output id
+      <code>test_three_followers_receive_each_subsequent_transition_once</code> fails at the node's
+      base and passes at its head. A recorded check renders the identical baseline event before and
+      after another transition: the two rows are identical and the age cell is <code>0mu</code> both
+      times. Declared negative control, applied and logged: with the shared module-level grid
+      restored, the monitor-output id fails and the order check's age cell differs
+      (<code>0mu</code> then <code>1mu</code>). Across the 59 files that import
+      <code>reckon.crew.recovery</code>, base 7&nbsp;failed/905&nbsp;passed becomes head
+      6&nbsp;failed/906&nbsp;passed, the only movement being the monitor-output id fail&nbsp;&rarr;&nbsp;pass;
+      zero added. Both arms ran on the fleet compute node <code>98dci4-clu-2058</code> in identical
+      scratch trees, one process set per arm with a private <code>--basetemp</code>, each log header
+      naming the revision, tree, command, imported <code>recovery.__file__</code> and resolved cwd.
+      No test file is edited; the residual six reds are red at base and at head.</p>
+      <p><strong>One follow-on.</strong> Running the gate with <code>--basetemp</code> inside the
+      worktree let the failing id <code>test_refusal_recovery_remedy_survives_promotion</code> write a
+      synthetic repository and have a promotion commit two of its files into the enclosing worktree
+      repository. The dangling commit was unwound and the scratch removed, so this node's head carries
+      only its own change. It is a test-isolation defect &mdash; a promote inside a test reaching a
+      checkout above the temporary root &mdash; named for the coordinator rather than repaired here,
+      and recorded in full in the <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-a-watch-row-renders-the-same-in-any-order">landed
+      evidence</a> beside the figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/watch-row-order-independence.png">the gate
+      delta and the order-independent age cell</a>.</p>
+    </section>
+
+    <section id="s2-the-freshness-test-hooks-a-stable-seam" class="node-landing">
+      <h3>the-freshness-test-hooks-a-stable-seam &mdash; the follower-freshness test reloads through a seam that survives the render fix</h3>
+      <p><strong>Cause group repaired:</strong> two test-side defects in one id,
+      <code>test_running_follower_reloads_without_stream_or_registration_gap</code>. First, the test
+      appended its first event straight after registration and read the stream, but a follower fixes
+      its read offset to the stream's length at the instant it attaches
+      (<code>watch_stream_cursor</code>), so an append whose bytes land before that offset is behind
+      it and never rendered &mdash; the append raced the attach. Second, the test proved the reload
+      by replacing an exact source line &mdash; the literal
+      <code>return (ticker or _PLAIN).render(...)</code> &mdash; and the per-render ticker fix in
+      <code>reckon/crew/recovery.py</code> removed <code>_PLAIN</code>, so the anchor matched zero
+      times and the test's own guard (<code>assert original.count(return_line) == 1</code>) would
+      refuse the copy before the reload under test could run. The race fires first &mdash; the
+      append and the read sit above the anchor block &mdash; so the guard refusal is what the run
+      would meet once the read is deterministic, not what the base run observed. Class: <em>test
+      defect</em>, both; the product was correct and <code>reckon/crew/recovery.py</code> needed no
+      change, so this node carries no product diff and no text-patch shim.</p>
+      <p><strong>Reproduction, before repair.</strong> Both logged base runs fail at the raced first
+      read, not at the anchor: running the id in the head tree with the base test file gives
+      <code>1 failed, 8 passed</code>, the failure a <code>_queue.Empty</code> raised from the read
+      that follows the raced append, at the base test's line&nbsp;113. That is the observed cause,
+      and it is why the anchor's refusal is stated above as what would follow: the anchor block sits
+      below the failing read, so the base run never reached it. The anchor's own staleness is
+      measured separately, in the node's tree at <code>2848d3c9</code>: <code>base test anchor count
+      in head source: 0</code>, <code>actual render line count in head source: 1</code>,
+      <code>_PLAIN count in head source: 0</code>. A timing probe confirmed the race independently:
+      with the append delayed 1.0&nbsp;s after registration, the follower's cursor offset is
+      <code>0</code> and the first event renders.</p>
+      <p><strong>Measure.</strong> The file reports <code>9 passed</code> at <code>483b2839</code>
+      on three consecutive runs (11.95&nbsp;s, 9.64&nbsp;s, 8.95&nbsp;s), and <code>10 passed</code>
+      at the node's final head <code>092e61f9</code>, which adds the two-probe case. At
+      <code>2848d3c9</code> the base file reports <code>1 failed, 8 passed</code>, and that failure
+      is the raced first read (<code>_queue.Empty</code>), not a refusal of the patched line; both
+      logged. The seam is now a module-level override
+      appended to the copied module &mdash; writing the file advances the stamp the follower reloads
+      on, and the override is what its re-imported module serves &mdash; so the rewrite names no
+      source line and survives any change to how a transition is rendered. Determinism comes from
+      probing with throwaway records until one is rendered before the measured transitions are
+      seeded, so none sits behind the attach offset; the wait ends only on a row carrying the probe
+      node, and every remaining queued probe row is then drained, so a stalled attach cannot hand a
+      probe row to the measure. A case queues two probe rows ahead of the first measured transition
+      and asserts both that the attach drains them and that the measured row is unaffected.
+      Declared negative control, applied and logged: <em>leave the copied package unmodified; the
+      fresh-code assertion must fail</em> &mdash; the red log's first line repeats that string
+      verbatim and the failure is exactly the fresh-code assertion,
+      <code>assert any(line.startswith("fresh:"))</code>, not a timeout or an unrelated error. A
+      second declared negative control, applied and logged: <em>remove the probe-row drain from the
+      attach; the two-probe case must fail</em> &mdash; it fails on exactly
+      <code>assert lines.empty()</code>, "the attach drained every probe row it queued". Across the 60 files that import <code>reckon.crew.recovery</code>, the run gives 3
+      failed / 145 passed with all three reds in <code>tests/test_crew_recovery.py</code>; the
+      single modified file is this test, which is not among those importers, so against
+      <code>2848d3c9</code> the added-failure count is zero. No test was skipped, xfailed, deleted
+      or weakened and no product file was touched. Every arm ran on the fleet compute node
+      <code>98dci4-clu-2058</code> in one process each. Which logs carry which header, exactly: the
+      base arm, both negative controls and the two head gate logs produced for this node's final
+      head carry the full header &mdash; revision, tree, command,
+      <code>module_under_test</code> and cwd; the importer-selection logs carry revision, tree and
+      command; the three head-run logs, the base-file run and the earlier combined gate are bare
+      pass/fail lines; the anchor reproduction carries the revision and what it measures.</p>
+      <p><strong>One follow-on.</strong> The three reds in <code>tests/test_crew_recovery.py</code>
+      are red at base and at head and are not this node's to repair; they are named for the
+      coordinator rather than triaged here. They are recorded in full in the
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-the-freshness-test-hooks-a-stable-seam">landed
+      evidence</a> beside the figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/follower-attach-seam.png">the racing attach
+      and the probing seam that replaces it</a>.</p>
+    </section>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">

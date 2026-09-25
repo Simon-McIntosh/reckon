@@ -60,6 +60,87 @@ def _wait_for_registration(project: str, session: str) -> dict:
     return state
 
 
+PROBE_NODE_PREFIX = "attach-probe-"
+
+
+def _probe_event(number: int) -> dict:
+    """A throwaway transition, named so no measured run can be mistaken for it."""
+    event = _event(number)
+    event["run_id"] = f"{PROBE_NODE_PREFIX}run-{number}"
+    event["node"] = f"{PROBE_NODE_PREFIX}{number}"
+    return event
+
+
+def _is_probe_row(line: str) -> bool:
+    """Whether a rendered row belongs to a throwaway attach probe."""
+    return PROBE_NODE_PREFIX in line
+
+
+def _drain_probe_rows(lines: queue.Queue) -> None:
+    """Discard every probe row already queued, so the measure starts clean.
+
+    A follower polls the stream faster than the read below times out, but a
+    stalled attach can still render more than one probe before the first is
+    read. Those rows prove the attach and are not transitions under
+    measurement, so none of them is left for the measured reads to count.
+    """
+    while True:
+        try:
+            row = lines.get_nowait()
+        except queue.Empty:
+            return
+        assert _is_probe_row(row), f"a measured row arrived before the measure: {row!r}"
+
+
+def _await_attached(
+    stream_path: Path, lines: queue.Queue, *, attempts: int = 20
+) -> str:
+    """Return the probe row that proves the follower is reading the stream.
+
+    A follower fixes its read offset to the stream's length at the instant it
+    attaches, so a record already written when it arrives sits behind that
+    offset and is never rendered. The first record a caller appends can
+    therefore be lost to the attach, which makes a plain append-then-read racy:
+    the offset is taken while the caller is appending. Appending a throwaway
+    probe until one is rendered proves the follower is reading before the
+    transitions under measurement are seeded, so none of them is behind the
+    offset. Only a probe row ends the wait, and the rows it may have queued
+    alongside it are drained before the caller seeds anything.
+    """
+    for number in range(attempts):
+        runs._append_watch_lines(stream_path, [_probe_event(number)])
+        try:
+            row = lines.get(timeout=1.0)
+        except queue.Empty:
+            continue
+        if _is_probe_row(row):
+            _drain_probe_rows(lines)
+            return row
+    raise AssertionError("the follower never rendered a transition")
+
+
+def _measured_rows(
+    lines: queue.Queue, count: int, *, timeout: float = 5.0
+) -> list[str]:
+    """Read ``count`` rows carrying a measured node, ignoring any probe row.
+
+    A probe row is evidence of the attach and not a transition under
+    measurement, so it is skipped rather than counted: a row left over from
+    proving the attach can never stand in for a measured one.
+    """
+    rows: list[str] = []
+    deadline = time.monotonic() + timeout
+    while len(rows) < count:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise AssertionError(f"only {len(rows)} of {count} measured rows arrived")
+        row = lines.get(timeout=remaining)
+        if _is_probe_row(row):
+            continue
+        rows.append(row)
+    return rows
+
+
 def test_running_follower_reloads_without_stream_or_registration_gap(
     isolated_home, tmp_path
 ) -> None:
@@ -109,23 +190,22 @@ def test_running_follower_reloads_without_stream_or_registration_gap(
             original_pid = first_registration["follower"]["pid"]
             stream_path = Path(registration["stream_path"])
 
-            runs._append_watch_lines(stream_path, [_event(0)])
-            first_line = lines.get(timeout=5)
-            assert "node-0" in first_line
-            assert not first_line.startswith("fresh:")
-
-            renderer = copied_package / "crew" / "recovery.py"
-            original = renderer.read_text()
-            return_line = (
-                "return (ticker or _PLAIN).render(event, with_session=with_session)"
+            attached_line = _await_attached(stream_path, lines)
+            assert not attached_line.startswith("fresh:"), (
+                "the unmodified package renders without the reload marker"
             )
-            assert original.count(return_line) == 1
+
+            # The seam is a module-level override appended to the copied
+            # module: writing the file advances the stamp the follower reloads
+            # on, and the override is what its re-imported module serves. The
+            # rewrite names no source line, so it survives any change to how a
+            # transition is rendered.
+            renderer = copied_package / "crew" / "recovery.py"
             renderer.write_text(
-                original.replace(
-                    return_line,
-                    "return 'fresh:' + (ticker or _PLAIN).render("
-                    "event, with_session=with_session)",
-                )
+                renderer.read_text()
+                + "\n\n_render_watch_transition = format_watch_transition\n\n\n"
+                + "def format_watch_transition(event, **kwargs):\n"
+                + "    return 'fresh:' + _render_watch_transition(event, **kwargs)\n"
             )
 
             expected_nodes = {f"node-{number}" for number in range(1, 19)}
@@ -137,7 +217,7 @@ def test_running_follower_reloads_without_stream_or_registration_gap(
                 )
                 time.sleep(0.12)
 
-            subsequent = [lines.get(timeout=5) for _ in expected_nodes]
+            subsequent = _measured_rows(lines, len(expected_nodes))
 
         assert any(line.startswith("fresh:") for line in subsequent), (
             "the replacement stayed alive but did not perform the changed behaviour"
@@ -161,6 +241,30 @@ def test_running_follower_reloads_without_stream_or_registration_gap(
     finally:
         process.terminate()
         process.wait(timeout=5)
+
+
+def test_two_probe_rows_queued_at_the_attach_leave_the_measure_unaffected(
+    monkeypatch, tmp_path
+) -> None:
+    """A stalled attach leaves nothing behind for the first measured read.
+
+    The follower polls faster than the read below times out, but a stall can
+    still render two probe rows before the first is read, and the second was
+    once handed to the measure as a measured row — which then failed the node
+    set with a message about the transitions rather than about the probe. Both
+    rows are drained at the attach, and any that survives is skipped by the
+    measured reads.
+    """
+    lines: queue.Queue[str] = queue.Queue()
+    for number in (7, 8):
+        lines.put(f"{PROBE_NODE_PREFIX}{number} rendered")
+    monkeypatch.setattr(runs, "_append_watch_lines", lambda *_args, **_kwargs: None)
+
+    _await_attached(tmp_path / "stream.jsonl", lines)
+
+    assert lines.empty(), "the attach drained every probe row it queued"
+    lines.put("node-1 rendered")
+    assert _measured_rows(lines, 1) == ["node-1 rendered"]
 
 
 def test_failed_reexec_reports_once_and_keeps_the_registration(
