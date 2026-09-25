@@ -30,6 +30,17 @@ The settings fragment is data. :func:`build_hook_snippet` composes it, and
   directory and moved into place, and a settings file that changed between the
   read and the write is not overwritten.
 
+The obligations hook imports this package, so its command names the interpreter
+that can import it: the checkout's own ``.venv/bin/python``, resolved beside
+this module. Launched instead through the script's own ``env python3`` shebang
+the hook fails with ``No module named 'reckon'`` and does nothing, so the
+command is what binds the hook to the package it reads its duties from. The
+worker stop hook is standard-library only and keeps its bare script command.
+
+The merge counts an entry whose command runs the same hook script, with the same
+arguments, as registered whatever interpreter launches it: a settings file
+installed before the interpreter was added is not given a second copy.
+
 Standard-library only, and it imports neither hook script nor any other module
 of this package: the caller may be the CLI before the package's own imports are
 exercised, and the fragment names each hook script by path.
@@ -62,6 +73,10 @@ STOP_MODE = "stop"
 PROMPT_EVENTS = ("UserPromptSubmit", "SessionStart")
 STOP_EVENT = "Stop"
 
+# What identifies a command as one of this fragment's entries: the hook script it
+# runs, whatever interpreter launches it and however the command is quoted.
+HOOK_SCRIPT_NAMES = (COORDINATOR_HOOK_SCRIPT_NAME, WORKER_STOP_SCRIPT_NAME)
+
 
 class HookInstallError(RuntimeError):
     """Raised when a settings file cannot carry the hook fragment."""
@@ -92,6 +107,17 @@ def worker_stop_script_path() -> Path:
     return Path(__file__).resolve().with_name(WORKER_STOP_SCRIPT_NAME)
 
 
+def interpreter_path() -> Path:
+    """Return the interpreter the coordinator hook commands run under.
+
+    Resolved from the checkout that carries this module, so the command names
+    the environment of the same repository as the script it launches: the
+    obligations hook imports this package, and no other interpreter resolves
+    that import.
+    """
+    return Path(__file__).resolve().parents[2] / ".venv" / "bin" / "python"
+
+
 def user_settings_path() -> Path:
     """Return the user-scope settings file the hooks install into."""
     return Path("~/.claude/settings.json").expanduser()
@@ -100,8 +126,9 @@ def user_settings_path() -> Path:
 def build_hook_snippet(script_path: Path | str | None = None) -> dict[str, Any]:
     """Return the settings fragment, as it would be merged, for every hook script."""
     script = Path(script_path) if script_path is not None else hook_script_path()
-    prompt_command = shlex.join([str(script), "--hook", PROMPT_MODE])
-    stop_command = shlex.join([str(script), "--hook", STOP_MODE])
+    interpreter = str(interpreter_path())
+    prompt_command = shlex.join([interpreter, str(script), "--hook", PROMPT_MODE])
+    stop_command = shlex.join([interpreter, str(script), "--hook", STOP_MODE])
     worker_stop_command = shlex.join([str(worker_stop_script_path())])
     entries: dict[str, Any] = {
         event: [_command_group(prompt_command)] for event in PROMPT_EVENTS
@@ -222,12 +249,13 @@ def _merge_settings(
             raise HookInstallError(
                 f"cannot update harness settings {path}: {event} must be a list"
             )
-        registered = _registered_commands(current)
+        registered = _registered_identities(current)
         kept = list(current)
         for group in groups:
             commands = _group_commands(group)
             labels = [f"{event}: {command}" for command in commands]
-            if commands and all(command in registered for command in commands):
+            identities = [_command_identity(command) for command in commands]
+            if commands and all(identity in registered for identity in identities):
                 skipped.extend(labels)
                 continue
             kept.append(group)
@@ -246,9 +274,31 @@ def _entry_labels(snippet: dict[str, Any]) -> list[str]:
     return labels
 
 
-def _registered_commands(groups: list[Any]) -> set[str]:
-    """Return every command already registered under one event."""
-    return {command for group in groups for command in _group_commands(group)}
+def _registered_identities(groups: list[Any]) -> set[str]:
+    """Return the identity of every hook already registered under one event."""
+    return {
+        _command_identity(command)
+        for group in groups
+        for command in _group_commands(group)
+    }
+
+
+def _command_identity(command: str) -> str:
+    """Return what the command runs, past the interpreter that launches it.
+
+    Which interpreter launches a hook is how the fragment was composed rather
+    than which hook the command is, so the interpreter is not part of a
+    command's identity when a hook script of this fragment follows it: the form
+    this module now writes and the bare form an earlier install left in a
+    settings file are one entry, and quoting is normalised with them.
+    """
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        return command
+    if len(tokens) >= 2 and Path(tokens[1]).name in HOOK_SCRIPT_NAMES:
+        tokens = tokens[1:]
+    return shlex.join(tokens) if tokens else command
 
 
 def _group_commands(group: Any) -> list[str]:
