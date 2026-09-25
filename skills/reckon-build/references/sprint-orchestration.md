@@ -115,8 +115,8 @@ review requires, edit product/source/test files, run tests, run paid domain
 pipelines, run any operational pipeline, or repair worker code. Represent
 every implementation, investigation, test execution, operational pipeline run,
 and corrective repair as a worker node. Delegate every ready node; there is
-no slot pool — a busy roster is grounds to register another member, never to
-hold ready work. Cross-cutting work changes the task requirements
+no slot pool — concurrency comes from the free members a project already has,
+so a busy roster means ready work waits for a member rather than moving inline. Cross-cutting work changes the task requirements
 and scope; it never makes the sprint coordinator the implementation owner.
 
 On worker failure, add and dispatch a corrective node with the failed
@@ -125,8 +125,8 @@ implementation in coordinator context. If no capable worker backend exists,
 prefer pausing the node and continuing independent ready work. Inline fallback
 is allowed only after reporting all of the following before implementation:
 
-- why no worker backend is capable (member scarcity never qualifies — members
-  are registered on demand);
+- why no worker backend is capable (member scarcity never qualifies — a busy
+  roster means the node waits for a free member);
 - why pausing would prevent useful progress;
 - the exact node and write scope;
 - the estimated context cost and the coordinator context remaining after it;
@@ -224,9 +224,10 @@ they do not select a model.
 Set an explicit concurrency target in the current prompt or coordinator
 checkpoint before dispatch. Derive it from dependency independence, file-scope
 conflicts, and operational limits; Reckon defines no fixed default and no slot
-pool — the only binding rule is one live run per roster member, so meet the
-target by registering members. Use the single advisory fleet-size table in
-`../SKILL.md`; do not restate it in this reference.
+pool — the only binding rule is one live run per roster member, so concurrency
+comes from the free members a project already has and a busy roster means the
+wave waits. Use the single advisory fleet-size table in `../SKILL.md`; do not
+restate it in this reference.
 
 Runtime routing is prompt-owned:
 
@@ -684,8 +685,9 @@ A node authored from stale text executes its defects faithfully.
 **Dispatch a prior-art scout in the background.** One read-only
 investigate-role node, dispatched through `reckon crew dispatch` exactly like
 every other node — never a harness-native background agent (that bypasses the
-run ledger, manifest contract, and calibration) and never inline; register a
-fresh roster member if every existing one is busy. Launch it at pre-flight so
+run ledger, manifest contract, and calibration) and never inline; dispatch it
+on a free member, and let a busy roster hold it until one frees up. Launch it
+at pre-flight so
 it runs while the coordinator finishes reading state. Its single deliverable is
 a REUSE MAP: the modules, symbols, tests and data already in reach that solve
 the problem in whole or part, each with a one-line fitness verdict. It searches
