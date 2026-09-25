@@ -1,0 +1,21 @@
+# gate: worker-git-guard cross-checkout guard
+# revision: 2cd573f1 (base), tree: /tmp/wgg-base-2329838 (git archive of base)
+# command: cd /tmp/wgg-base-2329838 && PYTHON check + pytest -p no:cacheprovider -q tests/test_worker_git_guard.py
+module.__file__ /tmp/wgg-base-2329838/reckon/__init__.py
+cwd /tmp/wgg-base-2329838
+
+==================================== ERRORS ====================================
+_______________ ERROR collecting tests/test_worker_git_guard.py ________________
+ImportError while importing test module '/tmp/wgg-base-2329838/tests/test_worker_git_guard.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/home/ITER/mcintos/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_worker_git_guard.py:19: in <module>
+    from reckon.hooks import worker_git_guard as guard
+E   ImportError: cannot import name 'worker_git_guard' from 'reckon.hooks' (/tmp/wgg-base-2329838/reckon/hooks/__init__.py)
+=========================== short test summary info ============================
+ERROR tests/test_worker_git_guard.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.49s

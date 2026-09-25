@@ -121,6 +121,31 @@ def _is_worker_message_guard_group(group: Any) -> bool:
     return path.name == "worker_message_guard.py" and path.parent.name == "hooks"
 
 
+def _worker_git_guard_path() -> Path:
+    """Resolve the worker git guard shipped with the installed package."""
+    return _crew_guard_path("worker_git_guard.py")
+
+
+def _is_worker_git_guard_group(group: Any) -> bool:
+    """Return whether one harness hook group manages the worker git guard."""
+    if not isinstance(group, dict) or group.get("matcher") != "Bash":
+        return False
+    hooks = group.get("hooks")
+    if not isinstance(hooks, list) or len(hooks) != 1:
+        return False
+    hook = hooks[0]
+    if not isinstance(hook, dict) or hook.get("type") != "command":
+        return False
+    try:
+        command = shlex.split(str(hook.get("command") or ""))
+    except ValueError:
+        return False
+    if len(command) != 1:
+        return False
+    path = Path(command[0])
+    return path.name == "worker_git_guard.py" and path.parent.name == "hooks"
+
+
 def _write_json_atomically(path: Path, payload: dict, original: bytes | None) -> None:
     """Write JSON without exposing a partial file or overwriting a concurrent edit."""
     encoded = (json.dumps(payload, indent=2, ensure_ascii=False) + "\n").encode()
@@ -159,8 +184,18 @@ def _write_json_atomically(path: Path, payload: dict, original: bytes | None) ->
         ) from exc
 
 
-def _configure_crew_guards(settings_path: Path, *, remove: bool) -> bool:
-    """Install or remove the reckon-owned harness hook groups."""
+def _configure_crew_guards(
+    settings_path: Path, *, remove: bool, include_git_guard: bool = False
+) -> bool:
+    """Install or remove the reckon-owned harness hook groups.
+
+    ``include_git_guard`` adds the ``Bash`` group that binds the worker git
+    guard, which see every Bash call to refuse a mutating git verb a crew
+    worker aims at another checkout. It is off by default, matching the
+    installer fragment's own opt-in: the native-agent and worker-message guards
+    are benign to install unasked, while a guard that can refuse a command is
+    the operator's decision.
+    """
     settings_path = settings_path.expanduser().resolve()
     original: bytes | None = None
     settings: dict[str, Any] = {}
@@ -199,6 +234,7 @@ def _configure_crew_guards(settings_path: Path, *, remove: bool) -> bool:
         for group in pre_tool_use
         if not _is_native_agent_guard_group(group)
         and not _is_worker_message_guard_group(group)
+        and not _is_worker_git_guard_group(group)
     ]
     if not remove:
         retained.append(
@@ -223,6 +259,18 @@ def _configure_crew_guards(settings_path: Path, *, remove: bool) -> bool:
                 ],
             }
         )
+        if include_git_guard:
+            retained.append(
+                {
+                    "matcher": "Bash",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": shlex.join([str(_worker_git_guard_path())]),
+                        }
+                    ],
+                }
+            )
 
     updated_hooks = dict(hooks)
     if retained:
@@ -4456,6 +4504,13 @@ def service_uninstall():
     default=False,
     help="Remove reckon's native background-agent guard from harness settings.",
 )
+@click.option(
+    "--include-git-guard",
+    is_flag=True,
+    default=False,
+    help="Also bind the worker git guard, which refuses a crew run's mutating git "
+    "against another checkout.",
+)
 def sync(
     docs_path,
     project,
@@ -4464,6 +4519,7 @@ def sync(
     generate_ci,
     claude_settings,
     remove_native_agent_guard,
+    include_git_guard,
 ):
     """Register a project and copy reckon UI files into its docs directory.
 
@@ -4638,7 +4694,9 @@ def sync(
     settings_path = claude_settings or Path.home() / ".claude" / "settings.json"
     if remove_native_agent_guard or _crew_state_exists(docs_dir, proj_name):
         changed = _configure_crew_guards(
-            settings_path, remove=remove_native_agent_guard
+            settings_path,
+            remove=remove_native_agent_guard,
+            include_git_guard=include_git_guard,
         )
         action = "removed" if remove_native_agent_guard else "installed"
         state = action if changed else f"already {action}"

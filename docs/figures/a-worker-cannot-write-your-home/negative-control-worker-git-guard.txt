@@ -1,0 +1,55 @@
+allow a mutating git verb whose -C target is another checkout
+# negative control for worker-git-guard: applied to a scratch copy of the head tree
+# tree: /tmp/wgg-head2-2338796  (mutation: _git_target no longer reads a -C value as the target)
+# command: cd /tmp/wgg-head2-2338796 && PYTHONPATH=$PWD pytest -p no:cacheprovider -q tests/test_worker_git_guard.py
+module.__file__ /tmp/wgg-head2-2338796/reckon/__init__.py
+F.....F                                                                  [100%]
+=================================== FAILURES ===================================
+___________ test_a_mutating_verb_against_another_checkout_is_denied ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11142/test_a_mutating_verb_against_a0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fb43e98f490>
+
+    def test_a_mutating_verb_against_another_checkout_is_denied(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        worktree, other = _fenced(tmp_path, monkeypatch)
+    
+        by_option = guard.decide(
+            _payload(f"git -C {other} checkout -- docs/plans/x.html", worktree)
+        )
+        by_cd = guard.decide(
+            _payload(f"cd {other} && git checkout -- docs/plans/x.html", worktree)
+        )
+    
+        for allowed, message in (by_option, by_cd):
+>           assert allowed is False
+E           assert True is False
+
+tests/test_worker_git_guard.py:70: AssertionError
+________ test_main_denies_a_cross_checkout_command_with_a_deny_payload _________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11142/test_main_denies_a_cross_check0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fb43ea29950>
+capsys = <_pytest.capture.CaptureFixture object at 0x7fb43ea1d940>
+
+    def test_main_denies_a_cross_checkout_command_with_a_deny_payload(
+        tmp_path: Path, monkeypatch, capsys
+    ) -> None:
+        import sys
+    
+        worktree, other = _fenced(tmp_path, monkeypatch)
+        payload = _payload(f"git -C {other} reset --hard HEAD~1", worktree)
+        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+    
+        exit_code = guard.main()
+    
+        captured = capsys.readouterr()
+>       assert exit_code == 2
+E       assert 0 == 2
+
+tests/test_worker_git_guard.py:190: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_worker_git_guard.py::test_a_mutating_verb_against_another_checkout_is_denied
+FAILED tests/test_worker_git_guard.py::test_main_denies_a_cross_checkout_command_with_a_deny_payload
+2 failed, 5 passed in 0.21s

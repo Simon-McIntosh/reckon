@@ -365,6 +365,89 @@
         <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-fence-opt-in</code>,
         figure <code>/reckon/figures/a-worker-cannot-write-your-home/fence-opt-in.svg</code>.</p></div>
       </div>
+
+      <div class="r-comment" data-section="s2" data-id="c-20260925T2325-worker-git-guard" data-who="node worker-git-stays-in-its-worktree" data-when="2026-09-25T23:25:00+02:00">
+        <div class="r-comment-body"><p><strong>Landed in this section.</strong> A worker can no
+        longer run a mutating git verb against another checkout. <code>reckon/hooks/worker_git_guard.py</code>
+        is a PreToolUse Bash guard that is in scope only when <code>RECKON_RUN_ID</code> is set, so a
+        coordinator is untouched. It splits the command at its shell separators, tracks a
+        <code>cd</code> so a later segment's working directory is the one the <code>cd</code> left
+        behind, and resolves each <code>git</code> invocation's target from <code>-C</code>,
+        <code>--git-dir</code> or <code>--work-tree</code> (or the segment's cwd otherwise, read
+        against the run's worktree from its live pointer). A mutating verb &mdash; checkout, restore,
+        reset, clean, stash, commit, merge, rebase, pull, push, add, rm, mv, switch, cherry-pick,
+        revert, am, apply &mdash; whose target resolves outside the run's own worktree is denied, and
+        the refusal names the run, the worktree and the target. Read-only verbs and any verb outside
+        that set stay allowed everywhere.</p>
+
+        <p><strong>Measure.</strong> <code>tests/test_worker_git_guard.py</code> carries the
+        followup's four tests: a mutating verb against another checkout by <code>-C</code> and by
+        <code>cd &amp;&amp;</code> is denied; the same verb in the run's worktree is allowed; a
+        read-only verb is allowed anywhere; with no <code>RECKON_RUN_ID</code> everything is allowed.
+        Red at base <code>2cd573f1</code> (the module is absent, so the file errors at collection,
+        <code>docs/figures/a-worker-cannot-write-your-home/gate-worker-git-guard-base.txt</code>),
+        green at the head (<code>7 passed</code>,
+        <code>gate-worker-git-guard-head.txt</code>). The installer gains an opt-in
+        <code>include_git_guard</code> PreToolUse Bash entry while the default fragment is unchanged;
+        the test asserts the user-scope <code>~/.claude/settings.json</code> is byte-identical around
+        a dry run, so nothing is installed. <code>tests/test_hook_installer.py</code>,
+        <code>tests/test_guard_install.py</code> and <code>tests/test_worker_stop_hook.py</code> are
+        <code>36 passed</code> at base and at head, so this change adds no failures. Lint on complete
+        trees is 466&nbsp;&rarr;&nbsp;466. Declared negative control &mdash; <em>allow a mutating git
+        verb whose -C target is another checkout</em> &mdash; applied to a scratch copy fails exactly
+        the <code>-C</code> case (<code>2 failed, 5 passed</code>) and the reverted run is
+        <code>7 passed</code>.</p>
+
+        <p><strong>Not installed, and outside this node.</strong> Installing the guard into
+        <code>~/.claude/settings.json</code> needs the lead's explicit approval in the coordinating
+        session; this node delivered the guard, its tests and the installer entry and performed no
+        install. Verifying the merged result belongs to a separately dispatched test node. Commit
+        <code>8d515f5e</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-worker-git-guard</code>,
+        figure <code>/reckon/figures/a-worker-cannot-write-your-home/worker-git-guard-decision.svg</code>.</p></div>
+      </div>
+
+      <div class="r-comment" data-section="s2" data-id="c-20260926T0430-worker-git-guard-gaps" data-who="node worker-git-stays-in-its-worktree" data-when="2026-09-26T04:30:00+02:00">
+        <div class="r-comment-body"><p><strong>Review closed four gaps in the guard.</strong> A review
+        of <code>8d515f5e</code> scored it 88 and named four ways a mutating verb still reached
+        another checkout. Each is closed with a test that is red before the fix. A verb the command
+        aliases with <code>-c alias.&lt;name&gt;=&hellip;</code> was neither a known mutating verb nor a
+        known read-only one, so it passed; the guard now resolves the verb through the command's own
+        alias settings and, when it cannot be expanded, refuses an unknown verb aimed at another
+        checkout rather than assuming it harmless. A leading <code>GIT_DIR</code> or
+        <code>GIT_WORK_TREE</code> assignment was stripped before the invocation was read; both now
+        name the target, with a command-line option overriding them. Command substitutions,
+        backtick substitutions, <code>bash -c</code>&thinsp;/&thinsp;<code>sh -c</code> scripts and
+        brace groups were not scanned at all; each is now scanned on its own terms and tracks its own
+        <code>cd</code>. A command form the tokeniser cannot split confidently is refused when it
+        carries a mutating verb, instead of being allowed unexamined.</p>
+
+        <p><strong>The installer entry is now on a path an operator runs.</strong>
+        <code>reckon/cli.py</code>'s <code>_configure_crew_guards</code>, which composes the sibling
+        native-agent and worker-message guards, previously knew nothing of this one, so the
+        <code>install.py</code> entry was reachable from tests and from nothing a person runs. A
+        <code>--include-git-guard</code> option on <code>reckon sync</code> now passes the opt-in
+        through, and a remove takes the group back out because it is reckon's own. Nothing is
+        written to <code>~/.claude/settings.json</code>: the test fingerprints that file around both
+        the default and the opted-in call and asserts it byte-identical, and the install itself still
+        waits on the lead's explicit approval.</p>
+
+        <p><strong>Measure.</strong> <code>tests/test_worker_git_guard.py</code> grows from 7 to 13
+        tests; the six new ones are red at the pre-fix head against the new file (<code>6 failed,
+        7 passed</code>, <code>gate-worker-git-guard-gaps-base.txt</code>) and all 13 pass at
+        <code>9db0672b</code> (<code>gate-worker-git-guard-gaps-head.txt</code>). The companion
+        suites (<code>test_hook_installer</code>, <code>test_guard_install</code>,
+        <code>test_worker_stop_hook</code>, <code>test_sync_hook_wiring</code>) are
+        <code>39 passed</code> at base <code>2cd573f1</code> and at head, so no failures are added.
+        Lint on complete trees of <code>reckon</code> is 233&nbsp;&rarr;&nbsp;233 and the three
+        changed source paths are formatted; the two remaining findings in <code>cli.py</code> are
+        present at base. The declared negative control &mdash; <em>allow a mutating git verb whose -C
+        target is another checkout</em> &mdash; is re-run against the gap-fixed tree: the
+        <code>-C</code> resolution is mutated so the value is consumed but not resolved, and the
+        suite reports <code>5 failed, 8 passed</code>, then <code>13 passed</code> with the mutation
+        reverted. Commit <code>9db0672b</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-worker-git-guard</code>.</p></div>
+      </div>
     </section>
 
     <p><strong>Smoke: the fence does not start a worker on this host.</strong>

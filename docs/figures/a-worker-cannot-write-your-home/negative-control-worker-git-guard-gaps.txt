@@ -1,0 +1,129 @@
+allow a mutating git verb whose -C target is another checkout
+# negative control for worker-git-guard: applied to a scratch copy of the head tree
+# tree: /tmp/wgg-nc-gaps-2430570  (mutation: _git_target consumes a -C value but no longer resolves the base against it)
+# command: python -m pytest -p no:cacheprovider -q tests/test_worker_git_guard.py
+module.__file__ /tmp/wgg-nc-gaps-2430570/reckon/hooks/worker_git_guard.py
+F...FF.F....F                                                            [100%]
+=================================== FAILURES ===================================
+___________ test_a_mutating_verb_against_another_checkout_is_denied ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11182/test_a_mutating_verb_against_a0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f27ec4dc8a0>
+
+    def test_a_mutating_verb_against_another_checkout_is_denied(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        worktree, other = _fenced(tmp_path, monkeypatch)
+    
+        by_option = guard.decide(
+            _payload(f"git -C {other} checkout -- docs/plans/x.html", worktree)
+        )
+        by_cd = guard.decide(
+            _payload(f"cd {other} && git checkout -- docs/plans/x.html", worktree)
+        )
+    
+        for allowed, message in (by_option, by_cd):
+>           assert allowed is False
+E           assert True is False
+
+tests/test_worker_git_guard.py:71: AssertionError
+________________ test_a_verb_aliased_in_the_command_is_resolved ________________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11182/test_a_verb_aliased_in_the_com0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f27ec7a1480>
+
+    def test_a_verb_aliased_in_the_command_is_resolved(tmp_path: Path, monkeypatch) -> None:
+        worktree, other = _fenced(tmp_path, monkeypatch)
+    
+        mutating = guard.decide(
+            _payload(f"git -c alias.co=checkout -C {other} co -- docs/plans/x.html", worktree)
+        )
+        read_only = guard.decide(_payload(f"git -c alias.st=status -C {other} st", worktree))
+        inside = guard.decide(
+            _payload(f"git -c alias.co=checkout -C {worktree} co -- docs/plans/x.html", worktree)
+        )
+    
+>       assert mutating[0] is False
+E       assert True is False
+
+tests/test_worker_git_guard.py:141: AssertionError
+_______ test_a_verb_the_command_does_not_define_is_not_assumed_read_only _______
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11182/test_a_verb_the_command_does_n0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f27ec6c1f50>
+
+    def test_a_verb_the_command_does_not_define_is_not_assumed_read_only(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        """An alias configured outside the command cannot be expanded here.
+    
+        ``co`` may be a mutating alias in the operator's git config. The guard
+        cannot read that config, so an unknown verb aimed at another checkout is
+        refused rather than assumed harmless.
+        """
+        worktree, other = _fenced(tmp_path, monkeypatch)
+    
+        unknown = guard.decide(_payload(f"git -C {other} co -- docs/plans/x.html", worktree))
+        read_only = guard.decide(_payload(f"git -C {other} status --porcelain", worktree))
+    
+>       assert unknown[0] is False
+E       assert True is False
+
+tests/test_worker_git_guard.py:161: AssertionError
+____________ test_a_mutating_verb_inside_a_nested_script_is_denied _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11182/test_a_mutating_verb_inside_a_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f27ec534230>
+
+    def test_a_mutating_verb_inside_a_nested_script_is_denied(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        worktree, other = _fenced(tmp_path, monkeypatch)
+    
+        substitution = guard.decide(
+            _payload(f'echo "$(git -C {other} checkout -- docs/plans/x.html)"', worktree)
+        )
+        backtick = guard.decide(
+            _payload(f"echo `git -C {other} checkout -- docs/plans/x.html`", worktree)
+        )
+        shell_c = guard.decide(
+            _payload(f"bash -c 'cd {other} && git reset --hard HEAD~1'", worktree)
+        )
+        inside = guard.decide(
+            _payload(f"bash -c 'cd {worktree} && git commit -m wip'", worktree)
+        )
+    
+        for allowed, message in (substitution, backtick, shell_c):
+>           assert allowed is False
+E           assert True is False
+
+tests/test_worker_git_guard.py:215: AssertionError
+________ test_main_denies_a_cross_checkout_command_with_a_deny_payload _________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11182/test_main_denies_a_cross_check0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f27ec4ed310>
+capsys = <_pytest.capture.CaptureFixture object at 0x7f27ec3ba660>
+
+    def test_main_denies_a_cross_checkout_command_with_a_deny_payload(
+        tmp_path: Path, monkeypatch, capsys
+    ) -> None:
+        import sys
+    
+        worktree, other = _fenced(tmp_path, monkeypatch)
+        payload = _payload(f"git -C {other} reset --hard HEAD~1", worktree)
+        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+    
+        exit_code = guard.main()
+    
+        captured = capsys.readouterr()
+>       assert exit_code == 2
+E       assert 0 == 2
+
+tests/test_worker_git_guard.py:356: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_worker_git_guard.py::test_a_mutating_verb_against_another_checkout_is_denied
+FAILED tests/test_worker_git_guard.py::test_a_verb_aliased_in_the_command_is_resolved
+FAILED tests/test_worker_git_guard.py::test_a_verb_the_command_does_not_define_is_not_assumed_read_only
+FAILED tests/test_worker_git_guard.py::test_a_mutating_verb_inside_a_nested_script_is_denied
+FAILED tests/test_worker_git_guard.py::test_main_denies_a_cross_checkout_command_with_a_deny_payload
+5 failed, 8 passed in 0.27s
