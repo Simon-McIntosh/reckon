@@ -180,6 +180,150 @@ def _committed_scope(*, cwd: Path, commits: Sequence[str]) -> _CumulativeDiff:
     )
 
 
+def _uncommitted_paths(tree: Path) -> list[str]:
+    """Return the tree's own report of the paths it holds uncommitted.
+
+    Untracked paths count: a deliverable written but never staged is exactly
+    the work a promotion must not record as landed, so the reading is what the
+    working tree holds rather than what the index knows about it. A tree git
+    cannot read reports nothing, and the caller treats that as unmeasured
+    rather than as clean.
+    """
+    result = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=tree,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        return []
+    paths: list[str] = []
+    for line in result.stdout.splitlines():
+        entry = line[3:].strip()
+        if not entry:
+            continue
+        if " -> " in entry:
+            entry = entry.rsplit(" -> ", 1)[1]
+        paths.append(entry.strip('"'))
+    return paths
+
+
+def _declared_repository_roots(
+    record: Mapping[str, Any], *, tree: Path
+) -> tuple[Path, ...]:
+    """Return the paths this run declared it would write or change.
+
+    A promotion may only charge a run with dirt it declared: a shared checkout
+    and a fleet worktree both carry other sessions' uncommitted work, so an
+    undeclared stray path is not this run's evidence and not this run's
+    deliverable. The node's declared write paths and a fresh manifest's changed
+    paths are the two declarations a run makes, and a declaration outside the
+    repository contributes no root here.
+    """
+    declared = [
+        str(path) for path in ((record.get("node") or {}).get("write_paths") or ())
+    ]
+    manifest_present, fresh = _manifest_freshness(record)
+    if manifest_present and fresh:
+        try:
+            manifest = parse_manifest(
+                Path(str(record.get("manifest_path") or "")).read_text(encoding="utf-8")
+            )
+        except (OSError, KeyError, ValueError):
+            manifest = {}
+        declared += [
+            str(path) for path in _changed_paths_inside_repository(manifest, record)
+        ]
+    return _repository_scope_paths(
+        declared,
+        worktree=_scope_worktree(record, tree),
+        repository=Path(str(record.get("repo") or tree)),
+    )
+
+
+def _require_commits_beyond_base(
+    run_id: str,
+    record: Mapping[str, Any],
+    commits: Sequence[str],
+) -> None:
+    """Refuse a promotion whose citations are not work this run made.
+
+    A ledger row asserts what a run produced beyond the base it was dispatched
+    against, and two states make that assertion false while still looking true.
+    A citation of the base itself, or of any commit behind it, satisfies every
+    ancestry question a later sweep asks — so a run reads as landed while
+    nothing it did is in the repository, which is the same
+    true-statement-for-the-needed-fact shape a promoted revision exists to
+    avoid. And a commitless promotion over a tree still holding the run's
+    declared work records the run as complete while its deliverable exists in
+    no commit at all, which the release step then takes with the worktree.
+
+    The comparison is made in the run's own tree, so a citation that resolves
+    to an abbreviated revision still equals the base it names, and a citation
+    that resolves nowhere is left to the guard whose refusal names the
+    repository it consulted rather than answered here with this one. A tree
+    git cannot read, or a base that does not resolve in it, leaves the guard
+    silent: an unmeasured citation is not a defect in the citation.
+    """
+    base = str(record.get("base_sha") or "").strip()
+    tree = Path(str(record.get("worktree") or ""))
+    if not tree.is_dir():
+        tree = Path(str(record.get("repo") or ""))
+    if not base or not tree.is_dir():
+        return
+    canonical_base = _commit_canonical_id(tree, base)
+    if canonical_base is None:
+        return
+    for revision in commits:
+        cited = str(revision).strip()
+        if not cited:
+            continue
+        canonical = _commit_canonical_id(tree, cited)
+        if canonical is None:
+            continue
+        if canonical == canonical_base:
+            raise CrewError(
+                f"run {run_id!r} cites {canonical} as its own work, but that is "
+                f"the base it was dispatched against ({base}). A promotion "
+                "records what the run made beyond its base, and a citation of "
+                "the base itself would read as landed work that predates the "
+                "run. Cite the commit the run committed on top of the base, or "
+                "pass --no-commit '<why>' when it produced none"
+            )
+        if not _revision_is_ancestor(tree, canonical_base, canonical):
+            raise CrewError(
+                f"run {run_id!r} cites {canonical}, which is not a commit this "
+                f"run made beyond its base {base}: the run's work is what it "
+                "committed on top of the base, so this citation belongs to "
+                "another branch or predates the run. Cite the run's own commit, "
+                "or pass --no-commit '<why>' when it produced none"
+            )
+    if commits:
+        return
+    uncommitted = _uncommitted_paths(tree)
+    if not uncommitted:
+        return
+    roots = _declared_repository_roots(record, tree=tree)
+    if not roots:
+        return
+    held = [
+        path
+        for path in uncommitted
+        if any(Path(path) == root or Path(path).is_relative_to(root) for root in roots)
+    ]
+    if not held:
+        return
+    raise CrewError(
+        f"run {run_id!r} cites no commit beyond its base {base} while its "
+        "worktree holds its own declared work uncommitted: "
+        + ", ".join(sorted(held))
+        + ". Promoting it would record the run as landed with that work in no "
+        "commit, and the release step takes the worktree with it. Commit the "
+        "work and cite the commit, so the row points at something the run made"
+    )
+
+
 def _registered_repository_roots() -> list[Path]:
     """Return the repository root of every registered project mount."""
     path = _store._mounts_path()
@@ -2577,6 +2721,10 @@ def complete(
             commits=commit_list,
             no_commit_reason=no_commit,
         )
+        # The citations themselves must be the run's own work, judged before
+        # any store is written so a run that cannot be asserted truthfully is
+        # refused with nothing landed and nothing to unwind.
+        _require_commits_beyond_base(run_id, record, commit_list)
         _require_gate_log_agrees(run_id, gate_check, verdict=verdict)
         from reckon.crew.recovery import classify_pointer
 

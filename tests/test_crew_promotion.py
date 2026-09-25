@@ -661,13 +661,13 @@ def test_complete_manifest_with_changed_paths_requires_commits_field(
 def test_complete_manifest_with_changed_paths_and_commit_promotes(
     repository: Path, tmp_path: Path
 ) -> None:
-    _base, commit = _repository_with_candidate(repository)
+    base, commit = _repository_with_candidate(repository)
     run_id = "r-changed-manifest-with-commit"
     _write_complete_manifest_pointer(
         repository,
         tmp_path,
         run_id,
-        base=commit,
+        base=base,
         changed_paths="candidate.txt",
         commits=commit,
     )
