@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 460" width="940" height="460" font-family="Helvetica, Arial, sans-serif">
+  <title>The installed Stop array carries the coordinator and worker hooks</title>
+  <rect x="0" y="0" width="940" height="460" fill="#ffffff" font-size="13" fill-opacity="0"/>
+  <text x="24" y="34" font-size="19" font-weight="bold" fill="#1c2330">The snippet binds both hooks, and both commands resolve inside the repository</text>
+
+  <text x="24" y="72" font-size="13" font-weight="bold" fill="#1c2330">1. The fragment build_hook_snippet returns</text>
+
+  <rect x="24" y="86" width="286" height="86" rx="6" fill="#eef3fb" stroke="#5b7fbd" stroke-width="1.2"/>
+  <text x="40" y="110" font-size="13" font-weight="bold" fill="#1c2330">UserPromptSubmit</text>
+  <text x="40" y="132" font-size="12" fill="#33415c">coordinator_obligations.py</text>
+  <text x="40" y="150" font-size="12" fill="#33415c">--hook prompt</text>
+
+  <rect x="330" y="86" width="286" height="86" rx="6" fill="#eef3fb" stroke="#5b7fbd" stroke-width="1.2"/>
+  <text x="346" y="110" font-size="13" font-weight="bold" fill="#1c2330">SessionStart</text>
+  <text x="346" y="132" font-size="12" fill="#33415c">coordinator_obligations.py</text>
+  <text x="346" y="150" font-size="12" fill="#33415c">--hook prompt</text>
+
+  <rect x="636" y="86" width="280" height="150" rx="6" fill="#fdf1e3" stroke="#c98a3c" stroke-width="1.4"/>
+  <text x="652" y="110" font-size="13" font-weight="bold" fill="#1c2330">Stop</text>
+  <rect x="650" y="120" width="252" height="46" rx="4" fill="#ffffff" stroke="#c98a3c" stroke-width="1"/>
+  <text x="662" y="140" font-size="12" fill="#33415c">entry 1: coordinator_obligations.py</text>
+  <text x="662" y="157" font-size="12" fill="#33415c">--hook stop</text>
+  <rect x="650" y="174" width="252" height="46" rx="4" fill="#ffffff" stroke="#c98a3c" stroke-width="1"/>
+  <text x="662" y="194" font-size="12" fill="#33415c">entry 2: worker_stop.py</text>
+  <text x="662" y="211" font-size="12" fill="#33415c">no argument</text>
+
+  <text x="24" y="278" font-size="13" font-weight="bold" fill="#1c2330">2. Each command names a script resolved from the installer module's own location</text>
+
+  <rect x="24" y="294" width="240" height="70" rx="6" fill="#f3f4f7" stroke="#8a93a5" stroke-width="1.2"/>
+  <text x="40" y="318" font-size="12" fill="#1c2330">&lt;repo&gt;/reckon/hooks/install.py</text>
+  <text x="40" y="338" font-size="12" fill="#5b6474">Path(__file__).resolve()</text>
+  <text x="40" y="355" font-size="12" fill="#5b6474">.parent</text>
+
+  <line x1="264" y1="329" x2="330" y2="329" stroke="#8a93a5" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a93a5"/>
+    </marker>
+  </defs>
+
+  <rect x="336" y="286" width="252" height="58" rx="6" fill="#e8f4ec" stroke="#4d9161" stroke-width="1.2"/>
+  <text x="352" y="310" font-size="12" fill="#1c2330">&lt;repo&gt;/reckon/hooks/</text>
+  <text x="352" y="330" font-size="12" fill="#33415c">coordinator_obligations.py</text>
+
+  <rect x="336" y="356" width="252" height="58" rx="6" fill="#e8f4ec" stroke="#4d9161" stroke-width="1.2"/>
+  <text x="352" y="380" font-size="12" fill="#1c2330">&lt;repo&gt;/reckon/hooks/</text>
+  <text x="352" y="400" font-size="12" fill="#33415c">worker_stop.py</text>
+
+  <rect x="636" y="286" width="280" height="128" rx="6" fill="#f7eef1" stroke="#a4576f" stroke-width="1.2"/>
+  <text x="652" y="310" font-size="13" font-weight="bold" fill="#1c2330">The test checks the same place</text>
+  <text x="652" y="334" font-size="12" fill="#33415c">tests/test_hook_installer.py</text>
+  <text x="652" y="353" font-size="12" fill="#33415c">Path(__file__).resolve().parents[1]</text>
+  <text x="652" y="372" font-size="12" fill="#33415c">/ "reckon" / "hooks" / name</text>
+  <text x="652" y="396" font-size="12" fill="#5b6474">computed without reading the</text>
+  <text x="652" y="410" font-size="12" fill="#5b6474">installer's own helper</text>
+
+  <text x="24" y="443" font-size="12" fill="#5b6474">A command naming a path outside that location fails the case, so the snippet can never install a hook from another checkout.</text>
+</svg>
