@@ -153,8 +153,8 @@ FAILED tests/test_plan_review_prompt.py::test_prompt_names_every_item_and_every_
   <section id="plan-review-dispatch-gate">
     <h2>&sect;2 &mdash; The dispatch gate</h2>
     <p><strong>Node:</strong> <code>plan-review-dispatch-gate</code>. <strong>State:</strong>
-    implemented and committed; the compatibility fixture update is outstanding and is reported as a
-    scope request rather than taken, because those files lie outside this node's fence.</p>
+    implemented and committed, with the compatibility fixtures brought to the new contract in the
+    same node.</p>
     <figure>
       <img src="/reckon/figures/a-plan-is-reviewed-before-it-is-built/dispatch-gate.svg"
         alt="The gate's decision path: exempt role or recorded waiver admits immediately; otherwise the plan is fingerprinted and its review read by fingerprint, admitting when every finding is answered and refusing when no review matches or a finding is unanswered.">
@@ -193,26 +193,36 @@ FAILED tests/test_plan_review_prompt.py::test_prompt_names_every_item_and_every_
     <p>The mutation was then reverted and the module re-read to prove the gate refuses again. The red
     log's first line is the declared string verbatim:
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/negative-control.log</code>.</p>
-    <h3>Outstanding: three fixtures encode the previous contract</h3>
+    <h3>The compatibility fixtures brought to the new contract</h3>
     <p>The compatibility gate &mdash; the dispatch-guard, routing-visibility and refusal-visibility
-    suites &mdash; goes from 49 passed at base to 20 failed and 29 passed. Every failure is the
-    intended refusal reaching a fixture that predates it, and each classifies as one of two causes.
-    Eighteen are implementation nodes dispatched against minimal plan fixtures carrying no stored
-    review, so the gate refuses them; those fixtures and this gate's own refusal case are
-    shape-identical (same project mount, same plan slug, implementation role, no review record), so no
-    predicate can refuse the one the specification requires be refused and admit the others. Two are
-    the refusal census, which enumerates the family set as <code>range(1, 23)</code> and asserts the
-    source calls the shared formatter only for families in that set, so a new family fails both of its
-    assertions until the census grows.</p>
-    <p>The fixture update &mdash; a stored answered review per fixture plan, or the waiver, plus the
-    new family id in <code>CONVERTED_REFUSAL_FAMILIES</code> &mdash; lands in
-    <code>tests/test_crew_dispatch_guard.py</code>,
-    <code>tests/test_crew_routing_visibility.py</code> and
-    <code>tests/test_crew_refusal_visibility.py</code>, none of which this node may write and none of
-    which any concurrent node claims. The detail, and the classification of all twenty failures, is
-    in the run manifest:
-    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/manifest.md</code>.
-    Commit <code>557fb583</code>.</p>
+    suites &mdash; first went from <strong>49 passed</strong> at base to <strong>20 failed and 29
+    passed</strong>. Every failure was the intended refusal reaching a fixture that predates it, and
+    each classified as one of two causes. Eighteen were implementation nodes dispatched against
+    minimal plan fixtures carrying no stored review, so the gate refused them; those fixtures and this
+    gate's own refusal case are shape-identical (same project mount, same plan slug, implementation
+    role, no review record), so no predicate can refuse the one the specification requires be refused
+    and admit the others. Two were the refusal census, which enumerated the family set as
+    <code>range(1, 23)</code> and asserted the source calls the shared formatter only for families in
+    that set.</p>
+    <p>The repair gives each fixture plan an answered review of its current content, stored at the
+    crew review store root the gate reads through and joined by
+    <code>plan_review.plan_fingerprint</code>, so the fixture still tests what it tested before rather
+    than being waived past the gate; the refusal census grows to the new family id in the same pass.
+    The gate itself is unchanged &mdash; the fixtures now satisfy it instead of avoiding it. The
+    compatible gate is re-run against base <code>ea867750</code>: <strong>50 passed, exit 0</strong>,
+    against the base arm's <strong>49 passed, exit 0</strong>, so <strong>zero added failures</strong>.
+    (The one-test rise is the new family id joining the parametrised census case.) Both arms are
+    logged:</p>
+    <ul>
+      <li>base: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/baseline-suite.log</code>
+      (<code>revision=ea867750&hellip;</code>, 49 passed, EXIT=0)</li>
+      <li>after: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/compat-after.log</code>
+      (50 passed, EXIT=0)</li>
+    </ul>
+    <p>Lint and format add no finding on the three files against the base archive tree: the dispatch
+    guard carries one pre-existing <code>I001</code> and one pre-existing formatting hunk at base and
+    after, and the other two files are clean either side. Commits <code>557fb583</code> (the gate) and
+    <code>e95c1d6d</code> (the fixtures).</p>
   </section>
 </section>
 </main>
