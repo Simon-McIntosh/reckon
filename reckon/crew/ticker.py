@@ -29,6 +29,13 @@ from typing import Any
 
 CLOCK = 8
 NODE = 36
+# A node name wider than its cell is cut from the middle, so the end that
+# distinguishes it from the rest of its wave survives the cut. Two names can
+# still land on one text, and a row is the only place a reader can tell them
+# apart, so each then carries the last four characters of its run id, appended
+# inside the cell: the name is cut a little tighter to make the room rather
+# than the suffix pushing the columns after the node cell.
+NODE_ID_TAIL = 4
 # One glyph, not a name. The only decision-relevant thing about the owning
 # session is whether the row is the reader's to act on, and a run id spelled in
 # full — a shadow's least of all, since it is synthesised from its primary's —
@@ -510,9 +517,25 @@ def single_clause(value: Any, *, limit: int = 96) -> str:
     return clause[:boundary].rstrip(" ,:") + "…"
 
 
-def elide(text: str, width: int) -> str:
-    """Fit text to a column, marking the cut so a reader knows it was one."""
-    return text if len(text) <= width else text[: width - 1] + "…"
+def elide(text: str, width: int, *, keep_end: bool = False) -> str:
+    """Fit text to a column, marking the cut so a reader knows it was one.
+
+    The cut keeps the head by default, which is where a state word, a model id
+    and a reason clause carry what distinguishes them. A node name is the
+    exception: the runs of one wave share a long head and differ at the end, so
+    ``keep_end`` cuts from the middle and keeps both ends, one column of
+    ellipsis between them, and a column too narrow to show two ends falls back
+    to the head cut rather than dropping the mark of the cut.
+    """
+    if width <= 0:
+        return ""
+    if len(text) <= width:
+        return text
+    if not keep_end or width < 3:
+        return text[: width - 1] + "…"
+    tail = width // 2
+    head = width - 1 - tail
+    return text[:head] + "…" + text[len(text) - tail :]
 
 
 # The prefix the fleet surface prints ahead of the bound that is binding. A
@@ -801,6 +824,12 @@ class Ticker:
         # the convention; any non-empty value disables.
         self.color = bool(color) and not os.environ.get("NO_COLOR")
         self._hues: dict[str, int] = {}
+        # The node texts this pane has rendered, by the name that claimed each
+        # of them, and the names whose texts collided. Both live as long as the
+        # pane: a name seen once cannot be un-seen, and a later attach replays
+        # its baselines through this same grid.
+        self._node_claims: dict[str, str] = {}
+        self._colliding_nodes: set[str] = set()
 
     def _model_width(self, project: str | None) -> int:
         """The model cell's width for ``project``, resolved once and remembered.
@@ -827,6 +856,38 @@ class Ticker:
             palette = PALETTE[self.theme]
             self._hues[node] = palette[len(self._hues) % len(palette)]
         return self._hues[node]
+
+    def _node_cell(self, node: str, run_id: str) -> str:
+        """The node name fitted to its cell, marked when two names read alike.
+
+        The name is cut from the middle so its end survives, because the node
+        column answers *which worker is this?* and the peers of a wave share a
+        long head — a right-hand cut renders every one of them as the same
+        string, which is a reader attributing a row to the wrong worker. The
+        hue cannot repair that: hues are handed out per name, so two names that
+        cut to one text are two entries and two colours reading as one name.
+
+        A cut that keeps both ends still lands two names on one text when they
+        differ in the middle, and the row is the only place they can be told
+        apart, so the second name to claim a text marks both: each then carries
+        the last four characters of its own run id after the name, spaced so
+        the suffix reads as an identifier rather than as the name's own tail.
+        The claim is remembered rather than applied once, because the copy
+        already written to a pane cannot be recalled — a row for either name
+        rendered after the collision carries its own suffix.
+        """
+        text = elide(node, NODE, keep_end=True)
+        claimed = self._node_claims.get(text)
+        if claimed is None:
+            self._node_claims[text] = node
+        elif claimed != node:
+            self._colliding_nodes.update((claimed, node))
+        if node not in self._colliding_nodes:
+            return text
+        tail = run_id[-NODE_ID_TAIL:]
+        if not tail:
+            return text
+        return f"{elide(node, NODE - NODE_ID_TAIL - 1, keep_end=True)} {tail}"
 
     def render(self, event: Mapping[str, Any], *, with_session: bool = False) -> str:
         """One transition as one line, exactly ``width`` visible characters.
@@ -873,7 +934,10 @@ class Ticker:
             (" " * GAP, None),
             (f"{role:<{ROLE}}", "dim"),
             (" " * GAP, None),
-            (f"{elide(node, NODE):<{NODE}}", self.hue(node)),
+            (
+                f"{self._node_cell(node, str(event.get('run_id') or '')):<{NODE}}",
+                self.hue(node),
+            ),
         ]
         if with_session:
             owner = FOREIGN_OWNER if str(event.get("session") or "") else " "
