@@ -2106,7 +2106,11 @@ def launch_plan(
         if run_directory is None or not run_directory.is_dir()
         else harness_home(dialect.name, run_directory)
     )
-    adopts_harness_home = dialect.name != "codex" or fence
+    # A run adopts its own harness home only when fenced. An unfenced run keeps
+    # the operator's home, where the user hooks, user memory and every session
+    # recorded before the run existed already live; a per-run home that carries
+    # none of them silently drops the hooks and orphans those sessions.
+    adopts_harness_home = fence
     if harness is not None and adopts_harness_home:
         seed_harness_home(harness)
         environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
@@ -2122,9 +2126,11 @@ def launch_plan(
     )
     # Every dialect, every entry point — fresh dispatch, resume and redispatch
     # all build their argv here — so the fence is applied once and cannot be
-    # left off for one of the three. It is composed by default: the per-run
-    # harness home above means a read-only operator home no longer stops a
-    # worker writing its own transcript, which was the reason it was off.
+    # left off for one of the three. It is opt-in: the read-only overlay seals
+    # every checkout under the operator's code root, which also seals a
+    # worktree's git directory and the shared object store, so a fenced worker
+    # cannot commit until those are granted writable; and its harness home does
+    # not yet carry the operator's hooks or instruction files.
     if fence:
         # The run's write roots are the caller's grants plus the lock directory
         # every plan write serialises through: a worker with a read-only lock

@@ -122,6 +122,13 @@ _INOTIFY_EVENTS = 0x00000100 | 0x00000008 | 0x00000080
 # defect rather than which process won the scheduler.
 WATCHER_LOAD_BOUND_SECONDS = 30.0
 
+# Workers launch unfenced. The fence's read-only overlay seals every checkout
+# under the operator's code root, and with it each worktree's git directory and
+# the shared object store, so a fenced worker cannot commit; and a fenced run's
+# own harness home does not yet carry the operator's hooks or instruction
+# files. Turn this on only once both are granted and carried.
+FENCE_WORKERS = False
+
 
 # Arming spawns a detached supervisor on purpose: a coordinator's producer has
 # to outlive the process that armed it. Under a test the same act is a leak —
@@ -4018,6 +4025,7 @@ def dispatch(
                         writable_directories=resolution.sandbox_write_roots or (),
                         final_message_path=str(final_path),
                         resume_session=reuse_session,
+                        fence=FENCE_WORKERS,
                     ),
                     facts=dispatch_host,
                 )
@@ -6537,6 +6545,7 @@ def resume_plan(
             manifest_path=str(record.get("manifest_path") or ""),
             writable_directories=record.get("sandbox_write_roots") or (),
             resume_session=session_id or None,
+            fence=FENCE_WORKERS,
         )
     )
     plan = _worker_runtime_plan(
@@ -6885,6 +6894,7 @@ def change_lane(
                 writable_directories=resolution.sandbox_write_roots or (),
                 final_message_path=str(final_path),
                 resume_session=session_id if continued else None,
+                fence=FENCE_WORKERS,
             )
         )
         target_plan = _worker_runtime_plan(

@@ -245,6 +245,7 @@ def _request_lane_availability(
             prompt=AVAILABILITY_PROBE_PROMPT,
             worktree=worktree,
             final_message_path=final_path,
+            fence=False,
         )
         completed = subprocess.run(
             plan.argv,
