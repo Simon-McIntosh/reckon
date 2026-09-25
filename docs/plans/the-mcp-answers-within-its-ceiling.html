@@ -240,6 +240,32 @@
       <li>An inserted section lands before the first <code>data-reckon</code> region, with the plan still passing <code>reckon audit-doc</code>.</li>
     </ul>
 
+    <div class="r-note" data-reckon="landed" data-node="edit-plan-writes-one-section" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; one section can be written without replacing its neighbours.</strong>
+      Commit <code>25845dc8</code> accepts
+      <code>set section_declarations.&lt;id&gt;</code>, validates the value against
+      <code>implementable</code>, <code>deferred</code> and <code>done</code>, and changes only the
+      addressed declaration. If that id has an opt-in typed section record, its duplicated status
+      moves with the declaration so the record remains schema-consistent.</p>
+      <p>The new <code>insert_section</code> state operation accepts an id, a title and an authored
+      HTML body. Its version-checked write places the generated <code>h2</code> block immediately
+      before the first structured collection. Adjacent <code>data-reckon="section"</code> metadata
+      stays beside the heading it describes; gates, followups and comments remain after the new
+      authored section. A duplicate id, nested <code>h2</code>, structured-state body or plan meta
+      is refused.</p>
+      <figure>
+        <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/section-write-boundary.svg"
+             alt="Existing authored sections retain adjacent typed records, the new authored section is inserted at the boundary, and structured collections remain after it.">
+        <figcaption>The insertion point is derived from structured collections, not from a prose preimage.</figcaption>
+      </figure>
+      <p>Eight focused and adjacent edit-plan tests pass. Removing the dotted declaration branch
+      makes the new regression fail with
+      <code>unsupported plan set path 'section_declarations.s2'</code>. Ruff reports the same 14
+      inherited findings in <code>reckon/_store.py</code> at base and head, with none in the new
+      test. Evidence:
+      <a href="/reckon/evidence/archive/the-mcp-answers-within-its-ceiling-landed#s7-section-writes-one-section">&sect;7 landed record</a>.</p>
+    </div>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-section-record-landed" data-section="s7" data-gated-sections="s7" data-status="closed" data-verdict="passed">
