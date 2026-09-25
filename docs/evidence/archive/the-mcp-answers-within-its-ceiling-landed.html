@@ -232,6 +232,47 @@
       failures.
     </p>
 
+    <h3 id="s5-mcp-forwards-the-run-id">The MCP crew tool forwards the run id</h3>
+    <p>
+      Commit <code>1de67ffb</code> in the <code>mcp-crew-runs-forwards-run-id</code> worktree, base
+      revision <code>2a72458c</code>. The <code>crew</code> tool already accepted
+      <code>run_id</code>, but its <code>view="runs"</code> branch dropped it, so the caller's run
+      id never reached the narrow read above and the tool still walked the fleet. The branch now
+      passes <code>run_id</code> through to <code>runs_view</code>. No other line of
+      <code>reckon/mcp.py</code> changes.
+    </p>
+
+    <h3>The MCP gate measure, as executed</h3>
+    <p>
+      <code>tests/test_mcp_crew_runs_run_id.py</code> calls <code>_crew</code> against a synthetic
+      configuration home holding two live runs. Two tests, both passing at head
+      <code>1de67ffb</code>:
+    </p>
+    <ul>
+      <li><strong>The named row alone.</strong>
+        <code>_crew(project="alpha", view="runs", source="live", run_id="r-target-run")</code>
+        returns <code>count: 1</code> carrying <code>r-target-run</code>; the same call without a
+        run id returns both rows.</li>
+      <li><strong>The id reaches <code>runs_view</code>.</strong> The test patches
+        <code>reckon.mcp.crew_runs_view</code> and asserts the spy received
+        <code>run_id="r-target-run"</code>, so the narrowing is the bridge's own and not a later
+        in-memory filter.</li>
+    </ul>
+    <p>
+      <strong>The recorded timing, under 2 s.</strong>
+      <code>_crew(project="reckon", view="runs",
+      run_id="r-20260924T204759725667-s23-reuse-map")</code> at the worktree head returns exactly
+      that row in <strong>0.2558 s</strong> (<code>count: 1</code>).
+    </p>
+
+    <h3>MCP negative control, as declared and executed</h3>
+    <p>
+      Declared: <em>remove the run_id forward so the runs view walks every run.</em> Applied to
+      <code>reckon/mcp.py</code> and run over the row test, it fails at
+      <code>assert result["count"] == 1</code> with <code>assert 2 == 1</code> — both live runs come
+      back. The control was reverted and the tree returned to <code>1de67ffb</code>.
+    </p>
+
   <section id="s2-sprint-summary-lists-pending-record">
 
   <section id="s2-sprint-summary-lists-pending">
