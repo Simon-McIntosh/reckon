@@ -237,6 +237,36 @@
       <p><strong>Declared mutation:</strong> the stop mode was made to block regardless of <code>stop_hook_active</code> in a scratch copy of the committed tree. The continuation assertion failed as declared and no other case moved (1 failed, 6 passed). The receipt is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080904634390-obligations-hook-binds-the-harness/negative-control-stop-hook-active.log</code>, whose first line records the declared mutation verbatim.</p>
       <p><strong>Scope retained:</strong> the installer half of the section (<code>reckon hooks install</code> prints the snippet and writes nothing) belongs to a separate node, and the acknowledged case waits on &sect;3's deferral store; neither is asserted here. The real settings home and config home were read before and after every run and required unchanged, because the hook must be provably unable to touch them.</p>
     </section>
+
+    <section id="installer-carries-the-worker-stop-hook">
+      <h2>The installed snippet carries the worker Stop hook</h2>
+      <p>Commit <code>0a1ccdec972cac49bea9f035e40d97b0e0d3b54c</code> makes the installer's Stop array carry two entries: the coordinator's obligations hook in stop mode, and the worker stop hook with no argument, so the settings fragment binds a worker's turn end to its run manifest as well as a coordinator's duties. The prompt events are unchanged. Both hook script names now live in named constants, and each command is resolved beside the installer module, so the snippet always names the scripts of the checkout that composed it &mdash; never another checkout's <code>worker_stop.py</code>.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/stop-array-carries-both-hooks.svg" alt="The fragment carries the obligations hook under both prompt events and, under Stop, an entry for the obligations hook in stop mode and an entry for the worker stop hook; every command path is resolved beside the installer module and re-checked against the same repository location computed from the test file.">
+        <figcaption>The Stop array carries both hooks, and the test recomputes the scripts' repository location from its own file rather than from the installer's helper.</figcaption>
+      </figure>
+      <p>The contract for this node is the installed command path, as recorded in <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/hook-install/worker-entries.json</code>: a <code>Stop</code> entry whose command is <code>worker_stop.py</code> resolved from the repository root, in the same <code>Stop</code> array as the coordinator entry. <code>tests/test_hook_installer.py</code> now resolves both scripts from its own location &mdash; <code>Path(__file__).resolve().parents[1] / "reckon" / "hooks"</code> &mdash; and asserts every command in the snippet names one of those files, so a snippet pointing anywhere else fails rather than agreeing with the installer's own computation. The dry-run byte-identical case and the real-settings-untouched case are unchanged and still pass.</p>
+      <table>
+        <thead><tr><th>Case</th><th>Observed</th></tr></thead>
+        <tbody>
+          <tr><td>Snippet shape</td><td>Three events; <code>UserPromptSubmit</code> and <code>SessionStart</code> carry the prompt command alone, <code>Stop</code> carries two entries. 11 tests in <code>tests/test_hook_installer.py</code>.</td></tr>
+          <tr><td>Command paths</td><td>Every command's program, read from the snippet with <code>shlex.split</code>, equals its repository location and <code>is_file()</code>: <code>reckon/hooks/coordinator_obligations.py</code>, <code>reckon/hooks/worker_stop.py</code>.</td></tr>
+          <tr><td>Write merge</td><td>A pre-existing <code>Stop</code> command survives at index 0 and both snippet entries follow it; unrelated keys and hook groups are still preserved.</td></tr>
+          <tr><td>Real user settings file</td><td><code>mtime 1790337853, size 5197, sha256 d594d599834fb153&#8230;</code> identical before and after the gate run.</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Hooks test files at the dispatch base</td><td>63 passed, 0 failed, exit 0</td><td>Scratch tree at <code>15fa121b</code>; the log's module line resolves <code>reckon/hooks/install.py</code> inside that tree, so the base reading is a claim about the base tree and not about the worktree.</td></tr>
+          <tr><td>Hooks test files at the committed head</td><td>64 passed, 0 failed, exit 0</td><td>Same file list at <code>0a1ccdec</code>, in the worktree; the module line names the worktree's own <code>install.py</code>. <strong>Added failures: 0.</strong> The one added test is the path case.</td></tr>
+          <tr><td>Declared mutation: the coordinator hook path nested one directory deeper, keeping its filename</td><td>1 failed, 10 passed, exit 1</td><td>Applied in a scratch mutant tree with <code>HOME</code> isolated. The failing case is <code>test_snippet_commands_name_the_hook_scripts_this_repository_carries</code>; its diff shows <code>&#8230;/reckon/hooks/nested/coordinator_obligations.py</code> against the repository's <code>&#8230;/reckon/hooks/coordinator_obligations.py</code>. Log: <code>runs/r-20260925T114234476907-installer-carries-the-worker-stop-hook/negative-control.log</code>.</td></tr>
+          <tr><td><code>ruff check</code> and <code>ruff format --check</code></td><td>passed</td><td>Clean on both changed files; the mutation never touched the worktree.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>An earlier mutation attempt was a no-op and the probe said so.</strong> The first mutant used <code>with_name</code> on the nested directory, which replaces the directory with the filename instead of nesting under it: the command path was unchanged and all 11 tests passed. The log's <code>mutated-command-path</code> line showed the unnested path, which is what made the no-op visible rather than an apparent control that "passed". A mutation that applies textually can still be a no-op semantically, so this node's receipt names the mutated command path as well as the failing case.</p>
+      <p><strong>Scope retained, deliberately.</strong> The CLI verb that calls this module remains another node's, so no user-facing surface is added here, and the merged snippet's effect at the lead's real settings file is the coordinator's decision, not this node's &mdash; the file was fingerprinted before and after every run and left unchanged. The driving followup is not resolved and no terminal status is set: a worker does not close its own node. Evidence path: this section, <code>installer-carries-the-worker-stop-hook</code>.</p>
+    </section>
   </main>
 </body>
 </html>
