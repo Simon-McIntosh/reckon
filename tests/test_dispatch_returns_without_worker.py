@@ -78,7 +78,12 @@ SUPERVISOR_ENTRY = "__supervise__"
 # dispatch which waited for it would blow its return bound.
 WORKTREE_COUNT = 30
 
-DISPATCH_EXIT_BOUND = 5.0
+# Dispatch's own return bound, on dispatch's clock. It is set well above the
+# two to four seconds dispatch needs for its own work even when the case runs
+# beside seven siblings over four workers, and far below the roughly thirty
+# seconds the held scan lasts, so a dispatch that waited for the supervisor's
+# scan blows it decisively while ordinary contention does not.
+DISPATCH_EXIT_BOUND = 8.0
 MARKER_BOUND = 60.0
 EXIT_RECORD_BOUND = 10.0
 SPAWN_BOUND = 60.0
