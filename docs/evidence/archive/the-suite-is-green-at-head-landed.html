@@ -1027,6 +1027,76 @@ docs/state/proj/crew.json; commit or discard that roster write before retrying</
       is likewise red at base and at head under the same selection, and belongs to the
       <code>test_ledger</code> node.</p>
     </section>
+  <section id="node-a-launcher-oserror-is-a-refusal">
+      <h2>a-launcher-oserror-is-a-refusal &mdash; the worker spawn sat outside the refusal wrap</h2>
+      <p><strong>A dispatch whose worker launch cannot start now returns a <code>CrewError</code>
+      launch refusal instead of an <code>OSError</code> traceback, and its teardown still leaves no
+      pointer, run directory or worktree.</strong> Commit <code>bdfff7f4</code>
+      <em>fix(crew): refuse a dispatch whose worker launch cannot start</em>, one file:
+      <code>reckon/crew/dispatch.py</code>.</p>
+
+      <h3>Cause, named with file and line</h3>
+      <p><code>dispatch</code> wraps the launch-plan resolution to convert a
+      <code>BackendError</code>, a <code>flight.FlightConfigError</code> or an <code>OSError</code>
+      raised while building the plan into a refusal
+      (<code>reckon/crew/dispatch.py:3983-4002</code>). The spawn itself &mdash;
+      <code>_start_supervisor</code> and the caller-supplied <code>launcher</code> seam at
+      <code>reckon/crew/dispatch.py:4100-4110</code> &mdash; was outside that wrap. A harness
+      executable that is absent or not executable, a refused fork or an exhausted process table
+      therefore reached the caller as an <code>OSError</code> traceback where the command surface
+      owed a refusal naming its resolving action. The spawn now sits inside the same wrap, so its
+      <code>OSError</code> becomes <code>format_refusal("D22", ...)</code>, and because the raise
+      happens inside the existing unwind the pointer, run directory and worktree are still removed
+      on the way out. The spill of the two paths:
+      <a href="/reckon/figures/the-suite-is-green-at-head/launcher-oserror-refusal.png">where the
+      launcher OSError lands</a>.</p>
+
+      <h3>Measure</h3>
+      <ul>
+        <li><strong>Target, red at base:</strong>
+        <code>tests/test_refused_dispatch_leaves_no_pointer.py::test_a_pre_pointer_spawn_refusal_leaves_no_trace</code>
+        fails at base with <code>OSError: no exec</code> escaping through
+        <code>reckon/crew/dispatch.py</code> where the test requires <code>crew.CrewError</code>
+        (base revision <code>6f1c8e4b</code>).</li>
+        <li><strong>Target, green at head:</strong> the same id passes at head; the whole file and
+        <code>tests/test_dispatch_spawns_through_the_fleet.py</code> pass together (12 passed).</li>
+        <li><strong>Set delta over the importing files:</strong> the 89 test files that import
+        <code>reckon.crew.dispatch</code> were run once at the base revision and once at the head
+        revision, both on the fleet node <code>98dci4-clu-2058</code>, in their own
+        process with their own <code>--basetemp</code>. Base: 14 failed / 1217 passed; head: 13
+        failed / 1218 passed. One id is repaired (the target) and one id is <strong>added</strong>,
+        below.</li>
+        <li><strong>The added id, outside this node's scope:</strong>
+        <code>tests/test_crew.py::test_a_failed_launch_leaves_no_worktree_holding_write_scope</code>
+        pins the old contract with <code>pytest.raises(OSError)</code> around a launcher that raises
+        <code>OSError("no such executable")</code>, which is exactly the object this change converts
+        to a refusal. <code>tests/test_crew.py</code> is a concurrent node's exclusive write path, so
+        the assertion is named for its owner rather than moved here. No test file is edited.</li>
+      </ul>
+
+      <h3>Negative control</h3>
+      <p>Declared mutation: <em>unwrap the launcher call so its <code>OSError</code> propagates as
+      <code>OSError</code>; the pre-pointer refusal test must fail</em>. With the <code>except
+      OSError</code> clause reduced to a bare <code>raise</code>, the target id fails again with
+      <code>OSError: no exec</code> from the launcher. Log:
+      <code>~/.cache/a-launcher-oserror/negative-control.log</code>, first line the mutation verbatim.</p>
+
+      <h3>Follow-on</h3>
+      <p><strong>Not this node's to move.</strong>
+      <code>tests/test_crew.py::test_a_failed_launch_leaves_no_worktree_holding_write_scope</code>
+      asserts <code>pytest.raises(OSError)</code> where the launch now raises
+      <code>crew.CrewError</code>; the assertion moves from <code>OSError</code> to
+      <code>crew.CrewError</code> and its clean-trace assertions stay as they are. The file belongs
+      to another node's scope, which holds the change. This is the one added id in the delta above.</p>
+
+      <h3>Logs</h3>
+      <p><code>~/.cache/a-launcher-oserror/base-target.log</code>,
+      <code>~/.cache/a-launcher-oserror/head-target.log</code>,
+      <code>~/.cache/a-launcher-oserror/base-set.log</code>,
+      <code>~/.cache/a-launcher-oserror/head-set.log</code>,
+      <code>~/.cache/a-launcher-oserror/negative-control.log</code>.</p>
+    </section>
+
   </main>
 </body>
 </html>
