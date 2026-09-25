@@ -778,7 +778,7 @@ def _read_plan_tool(
     ``view`` names the response shape for a typed resource read: ``'summary'``
     (the default), ``'detail'``, ``'history'``, ``'version'``, ``'raw'``,
     ``'schema'`` and ``'section'``. ``view='section'`` returns one authored h2
-    section selected by its positional ``section`` argument (the section id),
+    section selected by its ``section`` argument (the section id),
     and refuses with ``section_not_found`` when that id is absent. Request
     ``view='raw'`` explicitly for the lossless storage response. The explicit
     legacy schema injector remains unchanged for callers using ``with_schema``.
@@ -1302,18 +1302,18 @@ _DOS_DONTS = {
 
 #: The edit_plan op vocabulary, inlined for the context injector.
 _OP_VOCAB = {
-    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars, decisions.<key>.<field>, or followups.<id>.prompt; one top-level field on a selected sprint/milestone/blocker/project resource; or review scalars and the whole priority list. impl clamps to 0..1 and is plan-only.",
-    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events; review findings. followup prompt is one /reckon-build invocation line.",
-    "resolve": "{op:'resolve', target:'followups'|'questions'|'findings', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution; finding status is derived from resolved_at.",
+    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars, decisions.<key>.<field>, followups.<id>.prompt; one top-level field on a sprint/milestone/blocker/project resource; review scalars and the priority list. impl clamps to 0..1, plan-only.",
+    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events; review findings. followup prompt is one /reckon-build line.",
+    "resolve": "{op:'resolve', target:'followups'|'questions'|'findings', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution; finding status derives from resolved_at.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
     "gate": "{op:'gate', id, section, gated_sections:[...], measure, required_evidence} — declares one open evidence gate.",
     "pass": "{op:'pass', id, evidence} — closes a declared gate as passed; evidence is required when gates.require_evidence is enabled.",
     "fail": "{op:'fail', id, evidence} — closes a declared gate as failed while preserving negative evidence.",
-    "retire_prose": "{op:'retire_prose', preimage:'<exact authored HTML>'} — removes one exact authored fragment outside every section[data-reckon], atomically with the batch's structured ops.",
-    "insert_section": "{op:'insert_section', id, title, body} — appends one authored h2 section before the first structured-state region and after any data-reckon='section' records.",
-    "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions and preserves item metadata.",
-    "push": "{op:'push'} — selected sprint resource; marks it active (pushed) and demotes any other active sprint to open in the same versioned write.",
-    "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource selected by doc_type.",
+    "retire_prose": "{op:'retire_prose', preimage:'<exact authored HTML>'} — removes one authored fragment outside every section[data-reckon], atomically with the batch's structured ops.",
+    "insert_section": "{op:'insert_section', id, title, body}",
+    "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions, preserves item metadata.",
+    "push": "{op:'push'} — marks the selected sprint active (pushed) and demotes any other active sprint to open in the same versioned write.",
+    "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource by doc_type.",
 }
 
 
