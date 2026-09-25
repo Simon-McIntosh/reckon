@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import json
 import os
 import re
 import subprocess
@@ -114,6 +115,11 @@ RELOAD_EXIT_WITHIN_SECONDS = 3.0
 # argv the test arms, so finding it on the process is direct evidence that the
 # image was replaced.
 RELOAD_LAUNCHER_MARKER = "sys.path.insert"
+
+# What the reload trigger appends to the source. A comment, and one whose every
+# prefix is also a comment, so the module parses with the change in place and a
+# reader that imports it mid-window is unaffected.
+_SOURCE_CHANGE_BYTES = b"\n# follower reload probe\n"
 
 # The stub process stands for one arming session. It starts one follower and
 # then waits to be killed, so the follower's owner is a real parent the test can
@@ -304,41 +310,14 @@ def _wait_until_gone(pid: int, *, tag: str) -> None:
 def _wait_until_reloaded_then_exited(pid: int, *, tag: str) -> tuple[bool, float]:
     """Wait for the replacement image, then for the process to leave.
 
-    The reload and the exit are two states of one pid, and the replacement lives
-    only as long as its own imports take, so its command line is sampled tightly
-    rather than once per wait-pass. The clock for the exit starts when the
-    launcher appears, so the reload's own cost is not charged against the
+    The reload and the exit are two states of one pid, so each is waited for by
+    the helper that owns it. The clock for the exit starts when the launcher
+    appears, so the replacement's own import cost is not charged against the
     owner-exit bound. Returns whether the replacement was seen and how long it
     took to leave after that.
     """
-    reload_deadline = time.monotonic() + RELOAD_WITHIN_SECONDS
-    while time.monotonic() < reload_deadline:
-        if RELOAD_LAUNCHER_MARKER in _process_argv(pid):
-            break
-        if _exited(pid):
-            pytest.fail(
-                f"{tag}: the follower left without replacing its image, so the "
-                "owner's survival across a reload was not exercised; "
-                f"argv={_process_argv(pid)!r}"
-            )
-        time.sleep(SAMPLE_SECONDS)
-    else:
-        pytest.fail(
-            f"{tag}: the follower did not replace its image; "
-            f"argv={_process_argv(pid)!r}"
-        )
-
-    started = time.monotonic()
-    while time.monotonic() - started < RELOAD_EXIT_WITHIN_SECONDS:
-        if _exited(pid):
-            return True, time.monotonic() - started
-        time.sleep(SAMPLE_SECONDS)
-    pytest.fail(
-        f"{tag}: the replacement image was still running "
-        f"{RELOAD_EXIT_WITHIN_SECONDS!r}s after it was observed, so the owner it "
-        "resolved is alive: the arming's owner was not carried across the reload; "
-        f"argv={_process_argv(pid)!r}"
-    )
+    _observe_reload(pid, tag=tag)
+    return True, _wait_until_left_after_reload(pid, tag=tag)
 
 
 def _arm(home: Path, owner: tuple[int, str] | None) -> subprocess.Popen:
@@ -509,36 +488,108 @@ def _process_argv(pid: int) -> str:
     return raw.replace(b"\x00", b" ").decode("utf-8", "replace")
 
 
-def _wait_until_reloaded(pid: int, *, tag: str) -> None:
+def _observe_reload(pid: int, *, tag: str) -> None:
     """Wait for the replacement image, identified by its own launcher.
 
     The replacement's command line carries the launcher that inserts the import
     root, which the armed argv does not. An image replacement is the only thing
-    that can put it there, so this is the reload rather than a proxy.
+    that can put it there, so this is the reload rather than a proxy. A follower
+    that leaves before the launcher appears fails here rather than passing by
+    measuring the first image alone. Its command line is sampled tightly rather
+    than once per wait-pass, because the replacement is identified by that line
+    and lives only as long as its own imports take.
     """
     deadline = time.monotonic() + RELOAD_WITHIN_SECONDS
     while time.monotonic() < deadline:
         if RELOAD_LAUNCHER_MARKER in _process_argv(pid):
             return
         if _exited(pid):
-            break
-        time.sleep(POLL_SECONDS)
+            pytest.fail(
+                f"{tag}: the follower left without replacing its image, so the "
+                "owner's survival across a reload was not exercised; "
+                f"argv={_process_argv(pid)!r}"
+            )
+        time.sleep(SAMPLE_SECONDS)
     pytest.fail(
-        f"{tag}: the follower did not replace its image, so the owner's survival "
-        f"across a reload was not exercised; argv={_process_argv(pid)!r}"
+        f"{tag}: the follower did not replace its image; argv={_process_argv(pid)!r}"
     )
 
 
-def _force_source_change() -> tuple[int, int]:
-    """Advance the follower's source stamp, and hand back what to restore."""
+def _wait_until_left_after_reload(pid: int, *, tag: str) -> float:
+    """Wait for the replacement image to leave; return how long it took.
+
+    The window carries the replacement's own interpreter and package import
+    cost, which the owner-exit bound is not about, so it is measured and bounded
+    on its own. Never killed to make it so: the property under measure is that a
+    dead owner ends the replacement, and a killed process would answer a
+    different question. The clock starts once the caller has observed the
+    owner's death.
+    """
+    started = time.monotonic()
+    while time.monotonic() - started < RELOAD_EXIT_WITHIN_SECONDS:
+        if _exited(pid):
+            return time.monotonic() - started
+        time.sleep(SAMPLE_SECONDS)
+    pytest.fail(
+        f"{tag}: the replacement image was still running "
+        f"{RELOAD_EXIT_WITHIN_SECONDS!r}s after its owner was killed, so the "
+        "owner it resolved is alive: the arming's owner was not carried across "
+        f"the reload; argv={_process_argv(pid)!r}"
+    )
+
+
+def _wait_until_looping(home: Path, pid: int, *, tag: str) -> None:
+    """Wait until the follower's stream loop has entered its first wait pass.
+
+    The registration record is written as the follower enters its stream loop,
+    and the reloader fixes its source baseline partway through that entry, so a
+    source change made the moment the record appears can be captured as the
+    baseline itself and never seen as a change: the follower then runs on with a
+    stale image and the case measures nothing. The loop's first pass records a
+    recovery status naming the sweeping pid, and no earlier pass can write it, so
+    that record is the barrier — once it names this follower, the baseline was
+    fixed before this function returned and a change made after it is a change.
+    """
+    status_path = home / "crew" / "recovery" / f"{PROJECT}.status.json"
+    deadline = time.monotonic() + ARM_WITHIN_SECONDS
+    while time.monotonic() < deadline:
+        try:
+            record = json.loads(status_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            record = None
+        if record is not None and str(record.get("swept_by_pid")) == str(pid):
+            return
+        if _exited(pid):
+            pytest.fail(f"{tag}: the follower ended before it entered its wait loop")
+        time.sleep(POLL_SECONDS)
+    pytest.fail(
+        f"{tag}: the follower never recorded a wait pass, so its source baseline "
+        "was not known to be fixed before this case changed the source"
+    )
+
+
+def _force_source_change() -> tuple[bytes, int, int]:
+    """Advance the follower's source stamp with a real content change.
+
+    The stamp covers each source file's size and its mtime together, and an edit
+    advances both, which is the change the follower exists to notice. The appended
+    line is a comment, and every prefix of it, so the module parses while the
+    change is in place. A change made before the follower has fixed its baseline
+    is captured as the baseline and never seen at all, so the caller waits for
+    ``_wait_until_looping`` first. What to restore is handed back with it.
+    """
     stat = FOLLOWER_SOURCE.stat()
-    now = time.time()
-    os.utime(FOLLOWER_SOURCE, (now, now))
-    return stat.st_atime_ns, stat.st_mtime_ns
+    original = FOLLOWER_SOURCE.read_bytes()
+    with FOLLOWER_SOURCE.open("ab") as handle:
+        handle.write(_SOURCE_CHANGE_BYTES)
+    return original, stat.st_atime_ns, stat.st_mtime_ns
 
 
-def _restore_source_times(times: tuple[int, int]) -> None:
-    os.utime(FOLLOWER_SOURCE, ns=(times[0], times[1]))
+def _restore_source_bytes(restore: tuple[bytes, int, int]) -> None:
+    """Put the source back byte for byte, and its timestamps back with it."""
+    original, atime_ns, mtime_ns = restore
+    FOLLOWER_SOURCE.write_bytes(original)
+    os.utime(FOLLOWER_SOURCE, ns=(atime_ns, mtime_ns))
 
 
 def test_a_read_only_follower_leaves_when_its_own_owner_dies(home) -> None:
@@ -629,7 +680,7 @@ def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(home) -> 
 
     owner: subprocess.Popen | None = None
     follower_pid: int | None = None
-    restore: tuple[int, int] | None = None
+    restore: tuple[bytes, int, int] | None = None
     try:
         owner, pid_path = _start_stub(home, home, "reload")
         follower_pid = _follower_pid(pid_path, owner, "reload")
@@ -637,24 +688,26 @@ def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(home) -> 
             follower_pid, deadline=time.monotonic() + ARM_WITHIN_SECONDS, tag="reload"
         )
 
+        _wait_until_looping(home, follower_pid, tag="reload")
+
         restore = _force_source_change()
-        _wait_until_reloaded(follower_pid, tag="reload")
+        _observe_reload(follower_pid, tag="reload")
 
         _kill_and_reap(owner)
-        elapsed = _wait_until_exited(follower_pid, tag="reloaded follower")
+        elapsed = _wait_until_left_after_reload(follower_pid, tag="reloaded follower")
     finally:
         if follower_pid is not None and not _exited(follower_pid):
             with contextlib.suppress(ProcessLookupError):
                 os.kill(follower_pid, 9)
         _kill(owner)
         if restore is not None:
-            _restore_source_times(restore)
+            _restore_source_bytes(restore)
 
     assert _tree(real_dir) == before == set(), (
         "a follower pointed at a temporary home must leave the real follower "
         "directory untouched"
     )
-    assert elapsed <= EXIT_WITHIN_SECONDS
+    assert elapsed <= RELOAD_EXIT_WITHIN_SECONDS
 
 
 def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
@@ -684,13 +737,14 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
     subreaper: subprocess.Popen | None = None
     follower_pid: int | None = None
     stub_pid: int | None = None
-    restore: tuple[int, int] | None = None
+    restore: tuple[bytes, int, int] | None = None
     try:
         subreaper, stub_pid_path, pid_path = _start_subreaper_stub(home, home, "orphan")
         follower_pid = _follower_pid(pid_path, subreaper, "orphan")
         _wait_until_holder(
             follower_pid, deadline=time.monotonic() + ARM_WITHIN_SECONDS, tag="orphan"
         )
+        _wait_until_looping(home, follower_pid, tag="orphan")
 
         os.kill(follower_pid, SIGSTOP)
         _wait_until_stopped(follower_pid, tag="orphan")
@@ -721,7 +775,7 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
                 os.kill(stub_pid, 9)
         _kill(subreaper)
         if restore is not None:
-            _restore_source_times(restore)
+            _restore_source_bytes(restore)
 
     assert _tree(real_dir) == before == set(), (
         "a follower pointed at a temporary home must leave the real follower "
