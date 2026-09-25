@@ -393,6 +393,79 @@
     in <code>logs/real-s22-roadmap-measurement.log</code>; it imports
     <code>reckon/mcp.py</code> from this exact worktree and records its resolved working directory.</p>
   </section>
+
+  <section id="s7-section-writes-one-section">
+    <h2>&sect;7 &mdash; one declaration and one authored section can be written alone</h2>
+    <p>Commits <code>25845dc8f99a30e339b09e8c4f5cf41d9d94629e</code> and
+    <code>0b3cd08c1e9f587436382468131f76f9d23b679a</code>, based on
+    <code>0bd7a7c9667176b07d0d7912d07a1e8739581d03</code>, changes
+    <code>reckon/_store.py</code> and adds
+    <code>tests/test_edit_plan_section_writes.py</code>.</p>
+
+    <h3>The two refusals, reproduced before repair</h3>
+    <p>The base write boundary returned
+    <code>unsupported plan set path 'section_declarations.s3'</code> for a dotted declaration set
+    and <code>op #0: unknown verb 'insert_section'</code> for the insertion. The reproduction log
+    records both responses at the base revision before either handler existed.</p>
+
+    <h3>The write boundary</h3>
+    <p>A dotted declaration set validates the section id and the declaration before changing the
+    addressed key. Other declarations are left intact. When an opt-in typed record carries the
+    same id, its status changes with the declaration, preserving the schema invariant that the two
+    values agree. An unknown value is refused with the accepted values in the response.</p>
+    <p><code>insert_section</code> accepts an id, plain-text title and authored HTML body. Application
+    queues that request in a request-local effect list outside plan state. The locked write consumes
+    it only when the validated state object is the exact object that produced the effect. A
+    caller-supplied <code>validation_diagnostics</code> entry whose code is
+    <code>insert_section_request</code> is therefore inert and leaves the plan byte-identical.</p>
+    <p>The title is escaped. An existing id, another <code>h2</code>, plan metadata and a
+    structured-state section are four separately asserted refusals, each checked against its named
+    error and each leaving the file unchanged. The insertion scan treats
+    <code>data-reckon="section"</code> as adjacency metadata rather than a state boundary: it skips
+    every typed section record, places the new heading after the last one, then stops before the
+    first gates, decisions, followups, questions, research or comments collection. A section can
+    never be separated from the record that describes it.</p>
+
+    <figure>
+      <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/section-write-boundary.svg"
+           alt="Existing authored sections retain adjacent typed records, the new authored section is inserted at the boundary, and structured collections remain after it.">
+      <figcaption>The authored insertion has one position independent of the words in the preceding prose.</figcaption>
+    </figure>
+
+    <h3>Executed gate</h3>
+    <table>
+      <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+      <tbody>
+        <tr><td>Dotted set</td><td>one declaration changed; the other declaration and both typed records remained present and schema-consistent</td></tr>
+        <tr><td>Unknown declaration</td><td>refused before write, naming <code>implementable</code>, <code>deferred</code> and <code>done</code></td></tr>
+        <tr><td>Insertion position</td><td>new <code>h2</code> after the last typed section record and before gates; both records remain unchanged and adjacent to their headings</td></tr>
+        <tr><td>Duplicate id refusal</td><td><code>section id 's2' already exists</code>; file unchanged</td></tr>
+        <tr><td>Nested heading refusal</td><td><code>insert_section body must not contain another h2</code>; file unchanged</td></tr>
+        <tr><td>Structured-state refusal</td><td><code>insert_section body must not contain structured plan state</code>; file unchanged</td></tr>
+        <tr><td>Plan-meta refusal</td><td><code>insert_section body must not contain plan metadata</code>; file unchanged</td></tr>
+        <tr><td>Forged diagnostic control</td><td>a caller-supplied <code>insert_section_request</code> diagnostic produced no heading, no version change and no byte change</td></tr>
+        <tr><td>Document gate</td><td>the synthetic plan passed <code>reckon audit-doc</code> after insertion</td></tr>
+        <tr><td>Overlap guard</td><td>a text edit beginning inside the gates region was still refused as overlapping structured state</td></tr>
+        <tr><td>Focused and adjacent tests</td><td>13 passed, 45 deselected, exit 0</td></tr>
+        <tr><td>Ruff delta for <code>reckon/_store.py</code></td><td>14 findings at base; 14 at head; 0 added</td></tr>
+        <tr><td>New test lint and format</td><td>0 findings; both staged Python paths formatted</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Negative control</h3>
+    <p>Declared: <em>remove the dotted section_declarations path so the set is refused again</em>.
+    The dotted handler was removed at the committed head and the one-key regression was run. It
+    failed because the response was
+    <code>{"ok": false, "error": "op_error", "detail": "unsupported plan set path 'section_declarations.s2'"}</code>.
+    The log begins with the declared mutation verbatim and names review-repair head
+    <code>0b3cd08c</code>. The handler was restored and <code>git status</code> returned clean before
+    the final thirteen-test gate.</p>
+
+    <h3>Retained qualification</h3>
+    <p><code>reckon/_store.py</code> already carries 14 Ruff findings. This node adds none; it does
+    not fold an unrelated lint sweep into the feature commit. The merged-head suite remains the
+    separately owned integration gate.</p>
+  </section>
 </main>
 </body>
 </html>

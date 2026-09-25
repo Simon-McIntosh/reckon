@@ -59,6 +59,7 @@ mutators, serve.py, single-checkout agents) are completely unaffected.
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 import json
 import os
 import re
@@ -504,6 +505,77 @@ def _add_north_star_diagnostic(
 #: comparable at all.
 _STATE_STAMPS = frozenset(["version", "modified"])
 
+# Authored HTML insertions are write effects, not plan state. ``apply_ops`` and
+# ``write_plan`` run in the same request context, while ContextVar keeps
+# concurrent requests isolated. Holding the working dict by identity also means
+# an effect can only be consumed by the exact validated object that produced it.
+_SECTION_INSERTIONS: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None] = (
+    ContextVar("reckon_section_insertions", default=None)
+)
+
+
+def _begin_write_effects(working: dict[str, Any]) -> None:
+    """Start an empty out-of-band effect collection for one op batch."""
+    _SECTION_INSERTIONS.set((working, []))
+
+
+def _queue_section_insertion(working: dict[str, Any], request: dict[str, str]) -> None:
+    """Attach one insertion to the current batch without changing plan state."""
+    pending = _SECTION_INSERTIONS.get()
+    if pending is None or pending[0] is not working:
+        raise OpError("insert_section has no active write-effect collection")
+    pending[1].append(request)
+
+
+def _consume_section_insertions(data: dict[str, Any]) -> list[dict[str, str]]:
+    """Return effects produced by this exact state object, then clear them."""
+    pending = _SECTION_INSERTIONS.get()
+    if pending is None or pending[0] is not data:
+        return []
+    _SECTION_INSERTIONS.set(None)
+    return list(pending[1])
+
+
+def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
+    """Insert one authored h2 block immediately before structured plan state."""
+    from html import escape
+
+    from bs4 import BeautifulSoup
+
+    section_id = request["id"]
+    title = request["title"]
+    body = request["body"]
+    soup = BeautifulSoup(html_text, "html.parser")
+    if soup.find(id=section_id) is not None:
+        raise OpError(f"section id {section_id!r} already exists")
+
+    body_soup = BeautifulSoup(body, "html.parser")
+    if body_soup.find("h2") is not None:
+        raise OpError("insert_section body must not contain another h2")
+    if body_soup.select_one("section[data-reckon]") is not None:
+        raise OpError("insert_section body must not contain structured plan state")
+    if body_soup.select_one('meta[name^="plan-"]') is not None:
+        raise OpError("insert_section body must not contain plan metadata")
+
+    boundary = None
+    for candidate in re.finditer(r"<section\b[^>]*>", html_text, re.IGNORECASE):
+        element = BeautifulSoup(candidate.group(), "html.parser").find("section")
+        if element is not None and element.get("data-reckon") not in {None, "section"}:
+            boundary = candidate
+            break
+    if boundary is None:
+        raise OpError("insert_section requires a structured-state region")
+
+    line_start = html_text.rfind("\n", 0, boundary.start()) + 1
+    indentation = html_text[line_start : boundary.start()]
+    if indentation.strip():
+        indentation = ""
+    fragment = f'<h2 id="{escape(section_id, quote=True)}">{escape(title)}</h2>\n'
+    if body.strip():
+        fragment += body.strip() + "\n"
+    fragment += "\n" + indentation
+    return html_text[: boundary.start()] + fragment + html_text[boundary.start() :]
+
 
 def _plan_write_target(
     project: str,
@@ -663,6 +735,7 @@ def _write_state_locked(
             raise VersionConflict(expected_version, cur_version, cur_state)
         data = {**dict(data), "comments": merged_comments}
 
+    section_insertions = _consume_section_insertions(data)
     new_data = dict(data)
     state_type = canonical_type(new_data.get("type"))
     if selected_resource_type and state_type != selected_resource_type:
@@ -698,6 +771,8 @@ def _write_state_locked(
                 "",
                 selector_name="retire_prose preimage",
             )
+        for request in section_insertions:
+            source_text = _insert_authored_section(source_text, request)
     except ValueError as exc:
         raise OpError(str(exc)) from exc
     authored_text_changed = source_text != text
@@ -1428,6 +1503,31 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         raise OpError(f"unsupported index set path {path!r}")
 
     # ── plan set ──
+    if head == "section_declarations" and len(parts) == 2:
+        from reckon._schema import SECTION_DECLARATION_ENUM
+
+        section_id = parts[1]
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", section_id):
+            raise OpError(
+                "section declaration id must match "
+                f"[A-Za-z0-9][A-Za-z0-9._-]*; got {section_id!r}"
+            )
+        if value not in SECTION_DECLARATION_ENUM:
+            raise OpError(
+                f"section declaration must be one of {SECTION_DECLARATION_ENUM}; "
+                f"got {value!r}"
+            )
+        declarations = working.setdefault("section_declarations", {})
+        if not isinstance(declarations, dict):
+            raise OpError("plan has no section declarations map")
+        declarations[section_id] = value
+        sections = working.get("sections")
+        if isinstance(sections, list):
+            for section in sections:
+                if isinstance(section, dict) and section.get("id") == section_id:
+                    section["status"] = value
+                    break
+        return
     if head == "decisions" and len(parts) >= 3:
         decisions = working.setdefault("decisions", {})
         if not isinstance(decisions, dict):
@@ -1877,6 +1977,35 @@ def _apply_retire_prose(
         raise OpError("retire_prose op requires a non-empty string 'preimage'")
 
 
+def _apply_insert_section(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
+    """Queue one authored h2 block for the atomic HTML write."""
+    if is_index or str(working.get("type", "plan") or "plan") != "plan":
+        raise OpError("insert_section op is plan-only")
+    section_id = op.get("id")
+    title = op.get("title")
+    body = op.get("body")
+    if not isinstance(section_id, str) or not re.fullmatch(
+        r"[A-Za-z0-9][A-Za-z0-9._-]*", section_id
+    ):
+        raise OpError(
+            "insert_section op requires an 'id' matching [A-Za-z0-9][A-Za-z0-9._-]*"
+        )
+    if not isinstance(title, str) or not title.strip():
+        raise OpError("insert_section op requires a non-empty string 'title'")
+    if not isinstance(body, str):
+        raise OpError("insert_section op requires a string 'body'")
+    _queue_section_insertion(
+        working,
+        {
+            "id": section_id,
+            "title": title.strip(),
+            "body": body,
+        },
+    )
+
+
 def _apply_move(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
     if not is_index:
         raise OpError("move op is index-only")
@@ -1923,6 +2052,7 @@ _OP_DISPATCH = {
     "pass": _apply_gate_verdict,
     "fail": _apply_gate_verdict,
     "retire_prose": _apply_retire_prose,
+    "insert_section": _apply_insert_section,
     "move": _apply_move,
 }
 
@@ -2091,6 +2221,7 @@ def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
 
     previous_decisions = deepcopy(working.get("decisions") or {})
     warnings: list[str] = []
+    _begin_write_effects(working)
     for n, op in enumerate(ops):
         if not isinstance(op, dict):
             raise OpError(f"op #{n} is not an object")
