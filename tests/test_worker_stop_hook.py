@@ -112,6 +112,12 @@ def test_fourth_stop_is_allowed_after_three_blocks(tmp_path, monkeypatch) -> Non
     assert decisions == [True, True, True, False]
     assert (run / hook.COUNTER_NAME).read_text().strip() == "3"
 
+    text = manifest.read_text()
+    assert hook.read_status(manifest) == "blocked"
+    assert "blocker: turn ended without a terminal manifest after 3 refusals" in text
+    assert "node: sample" in text
+    assert "checkpoint: x" in text
+
 
 def test_no_resolvable_run_allows_with_empty_output(tmp_path, monkeypatch) -> None:
     monkeypatch.delenv("RECKON_MANIFEST", raising=False)
@@ -219,3 +225,51 @@ def test_negative_control_settings_without_hook_allows(tmp_path) -> None:
 
     assert _registered_stop_commands(settings) == []
     assert runs == []
+
+
+def test_capped_stop_creates_a_missing_manifest_with_the_record(
+    tmp_path, monkeypatch
+) -> None:
+    run = _run_dir(tmp_path)
+    manifest = run / "manifest.md"
+    _bind(monkeypatch, manifest, tmp_path / "config")
+
+    decisions = [hook.decide(_stop_payload(run))[0] for _ in range(4)]
+
+    assert decisions == [True, True, True, False]
+    assert manifest.is_file()
+    assert hook.read_status(manifest) == "blocked"
+    assert (
+        "blocker: turn ended without a terminal manifest after 3 refusals"
+        in manifest.read_text()
+    )
+
+
+def test_indented_status_is_not_the_manifest_status(tmp_path, monkeypatch) -> None:
+    run = _run_dir(tmp_path)
+    manifest = run / "manifest.md"
+    manifest.write_text("node: sample\nnested:\n  status: complete\n")
+    _bind(monkeypatch, manifest, tmp_path / "config")
+
+    assert hook.read_status(manifest) is None
+    blocked, _ = hook.decide(_stop_payload(run))
+    assert blocked is True
+
+
+def test_subdirectory_cwd_resolves_the_run(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("RECKON_MANIFEST", raising=False)
+    home = tmp_path / "home"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    worktree = tmp_path / "worktree"
+    sub = worktree / "reckon" / "hooks"
+    sub.mkdir(parents=True)
+    manifest = _write_manifest(worktree, "in-progress")
+    live = home / "crew" / "live"
+    live.mkdir(parents=True)
+    record = {"worktree": str(worktree), "manifest_path": str(manifest)}
+    (live / "r-sub.json").write_text(json.dumps(record))
+
+    blocked, reason = hook.decide(_stop_payload(sub))
+
+    assert blocked is True
+    assert str(manifest) in (reason or "")

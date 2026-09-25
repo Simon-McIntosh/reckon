@@ -13,10 +13,13 @@ the live crew run pointers on this host. When no run resolves it writes nothing
 and exits 0, so a coordinator or an interactive session is never affected.
 
 When a run does resolve, the hook blocks while the manifest is absent or its
-``status:`` line does not name a terminal value. The reason names the manifest
-path and what is missing. So a worker that genuinely cannot finish is never
-trapped, the hook blocks at most three times for a run, counting in a file
-unlikely to collide with a manifest block key.
+top-level ``status:`` line does not name a terminal value. The reason names the
+manifest path and what is missing. So a worker that genuinely cannot finish is
+never trapped, the hook blocks at most three times for a run, counting in a file
+unlikely to collide with a manifest block key. The stop allowed once that cap is
+reached is not silent: the hook writes the terminal record itself, setting the
+manifest's top-level status to ``blocked`` and appending the blocker line that
+names why, so a capped run never reads as an ordinary stop.
 """
 
 from __future__ import annotations
@@ -44,7 +47,11 @@ def _config_home() -> Path:
 
 
 def _manifest_from_pointer(cwd: Path) -> Path | None:
-    """Manifest of the live crew run whose worktree resolves to ``cwd``."""
+    """Manifest of the live crew run whose worktree holds ``cwd``.
+
+    Matched when ``cwd`` is the worktree or any directory inside it, so a
+    worker running in a subdirectory of its own worktree still resolves its run.
+    """
     live_dir = _config_home() / "crew" / "live"
     if not live_dir.is_dir():
         return None
@@ -62,7 +69,7 @@ def _manifest_from_pointer(cwd: Path) -> Path | None:
             resolved = Path(str(worktree)).expanduser().resolve()
         except OSError:
             continue
-        if resolved != cwd:
+        if cwd != resolved and not cwd.is_relative_to(resolved):
             continue
         manifest = record.get("manifest_path")
         if manifest:
@@ -84,7 +91,11 @@ def resolve_manifest(payload: dict[str, Any]) -> Path | None:
 
 
 def read_status(manifest: Path) -> str | None:
-    """The manifest's declared ``status:`` value, or None."""
+    """The manifest's top-level ``status:`` value, or None.
+
+    Only a line starting at column zero counts. A ``status:`` line indented
+    under another key is a nested value, not the manifest's own status.
+    """
     if not manifest.is_file():
         return None
     try:
@@ -92,10 +103,41 @@ def read_status(manifest: Path) -> str | None:
     except OSError:
         return None
     for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("status:"):
-            return stripped.split(":", 1)[1].strip() or None
+        if line.startswith("status:"):
+            return line.split(":", 1)[1].strip() or None
     return None
+
+
+def _write_terminal_record(manifest: Path) -> None:
+    """Set the manifest's top-level status to ``blocked`` with the reason.
+
+    Preserves every other line the worker wrote. Creates the manifest when it is
+    absent. Written atomically through a temp file in the same directory."""
+    blocker = "blocker: turn ended without a terminal manifest after 3 refusals"
+    try:
+        text = manifest.read_text()
+    except OSError:
+        text = ""
+    lines = text.splitlines()
+    out: list[str] = []
+    replaced = False
+    for line in lines:
+        if not replaced and line.startswith("status:"):
+            out.append("status: blocked")
+            replaced = True
+        else:
+            out.append(line)
+    if not replaced:
+        out.insert(0, "status: blocked")
+    if blocker not in out:
+        out.append(blocker)
+    try:
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        tmp = manifest.parent / f".{manifest.name}.tmp"
+        tmp.write_text("\n".join(out) + "\n")
+        os.replace(tmp, manifest)
+    except OSError:
+        pass
 
 
 def decide(payload: dict[str, Any]) -> tuple[bool, str | None]:
@@ -118,6 +160,7 @@ def decide(payload: dict[str, Any]) -> tuple[bool, str | None]:
     except (OSError, ValueError):
         count = 0
     if count >= BLOCK_LIMIT:
+        _write_terminal_record(manifest)
         return False, None
     try:
         counter.parent.mkdir(parents=True, exist_ok=True)
