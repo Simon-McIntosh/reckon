@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T03:20:15",
+  "updated": "2026-09-25T03:21:58",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -372564,6 +372564,244 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T002039204752-review-of-launch-failed-wakes-a-follower",
+        "plan": "the-suite-is-green-at-head",
+        "section": "\u00a72",
+        "node": "review-of-launch-failed-wakes-a-follower",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1102,
+                "cached_input_tokens": 590597,
+                "input_tokens": 591701,
+                "output_tokens": 1018,
+                "reasoning_output_tokens": 249,
+                "total_tokens": 592719,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "the review for r-20260924T234000569820-launch-failed-wakes-a-follower stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete",
+          "estimated_hours": null,
+          "goal": "attach an independent review to run r-20260924T234000569820-launch-failed-wakes-a-follower",
+          "id": "review-of-launch-failed-wakes-a-follower",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T00:20:39Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 10,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 6,
+            "mean_context": 104615,
+            "observed_at": "2026-09-25T00:20:29Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T002039204752-review-of-launch-failed-wakes-a-follower/manifest.md",
+          "negative_control": "",
+          "plan": "the-suite-is-green-at-head",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T234000569820-launch-failed-wakes-a-follower.json",
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T234000569820-launch-failed-wakes-a-follower.at-5ce3090751a216f0bf95e021a145047fca6ee935.json"
+          ]
+        },
+        "role": "review",
+        "spec_level": "exact",
+        "member": "review-seat-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T00:20:49Z",
+        "completed_at": "2026-09-25T01:20:35.779Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3469,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3586,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "5c1d84504f7bbe6d1461ea8945936dbea104507d",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T002039204752-review-of-launch-failed-wakes-a-follower/manifest.md",
+        "scope_changed": false,
+        "session_id": "17823ffa-2e02-470c-be77-7f5a02b9d44a",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T01:20:35.779Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "follow_on_paths": [
+          "tests/test_receipt_after_release.py::test_a_writer_that_never_stops_cannot_hang_the_folded_promotion",
+          "2.0",
+          "3.99s",
+          "log/record"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": "review node: the deliverable is the stored review record outside the repository",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/review-of-launch-failed-wakes-a-follower",
+          "session_id": "17823ffa-2e02-470c-be77-7f5a02b9d44a",
+          "session_source": "stream",
+          "retained_at": "2026-09-25T01:20:35.779Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 143,
+          "exited_at": "2026-09-25T01:20:37Z",
+          "last_record_type": "system",
+          "launched_at": "2026-09-25T00:22:11Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T002039204752-review-of-launch-failed-wakes-a-follower",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 20298,
+          "worker_pid": 2017524
+        },
+        "promoted_revision": "5c1d84504f7bbe6d1461ea8945936dbea104507d",
+        "plan_impl_at_dispatch": 0.72,
+        "impl_move": {
+          "plan": "the-suite-is-green-at-head",
+          "at_dispatch": 0.72,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:review"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T01:05:39.670964+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T00:20:39Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 10,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 6,
+          "mean_context": 104615,
+          "observed_at": "2026-09-25T00:20:29Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 70.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -372876,6 +373114,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2610
+    "_version": 2611
   }
 }
