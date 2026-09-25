@@ -140,6 +140,30 @@
     <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#s2">&sect;2
     of the landed evidence record</a>.</p>
 
+    <h3 id="s2-tail-window">Landed &mdash; node <code>death-row-reads-any-final-record</code></h3>
+    <p><strong>Landed</strong> (<code>c5b2e184</code>). The last-record read above took one fixed
+    64 KiB window from the end of the stream, which answers only while the record the stream ends with
+    fits inside it. A worker killed mid-turn whose final record is larger left that window entirely
+    inside the single record, so no line in it parsed and the reader answered "no last record": the row
+    stayed in the working column carrying no death clause, which is the stale row &sect;2 exists to
+    remove. The window is now a floor rather than a limit — the read reaches further back in geometric
+    steps until the chunk begins where a record begins, and a chunk beginning at a record boundary
+    holds only complete lines, so a scan that finds nothing in it is the stream's answer and the read
+    stops rather than reaching further back. One window still answers the common case, where the last
+    record is a few hundred bytes behind any length of stream.</p>
+    <p><strong>Evidence:</strong> <code>tests/test_death_row_reads_any_final_record.py</code>
+    (5 passed) drives a killed worker with a non-terminal manifest whose final record is padded to
+    about 1 KiB, 64.5 KiB, 65.5 KiB and 512 KiB, and requires every size to yield the record's type
+    and the death clause naming it; the two middle sizes are asserted to straddle the window. A further
+    case measures the bytes the file handle returned, and is first shown reading a multi-megabyte
+    stream whole before requiring the reader's own read to stay within one window. The declared
+    negative control was executed and logged: with the single fixed window restored, the 65.5 KiB and
+    512 KiB cases fail at <code>assert None == 'assistant'</code>. Every test file referencing
+    <code>reckon.crew.recovery</code> passes at this head (1440 passed, 4 skipped, 0 failed, exit 0),
+    so the added-failure delta against the dispatch base is zero. Figure and measurements in
+    <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#s2-tail-window">&sect;2
+    of the landed evidence record</a>.</p>
+
     <h2 id="s3">&sect;3 &mdash; A stalled row says alive or gone</h2>
     <p>Every row entering <code>stalled</code> carries the process state in its reason, in words:
     <code>alive, quiet 46m</code> or <code>process gone, quiet 15m</code>. The words carry the
