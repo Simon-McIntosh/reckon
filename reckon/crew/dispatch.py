@@ -62,11 +62,10 @@ from reckon.crew.routing import (
     _budget_verdict,
     _competence_verdict,
     _create_worktree,
-    _register_session_member,
+    _disposable_member_id,
     _fleet_script,
     _remove_worktree,
     _repository_tree_snapshot,
-    _session_member_id,
     _signal_process_group,
     _workspace_roots,
     mounted_repository_projects,
@@ -3435,9 +3434,10 @@ def dispatch(
     task back with :func:`attach`.
 
     Naming a roster ``member`` routes the node into that member's long-lived
-    session. Omitting it provisions a private member derived from the dispatching
-    session, so independent coordinators never shop from a shared free list. A
-    member whose worker session is still null gets one captured on its first run.
+    session, and that member's own in-flight run refuses a second dispatch to
+    it. Omitting it makes the dispatch disposable: the run carries its own
+    identity and registers no roster row, so no unrelated task is refused for
+    the member another run in flight happens to hold.
 
     A node whose backend has no headroom left is *held* rather than dispatched:
     :class:`BudgetHold` is raised before any worktree exists, so the node stays
@@ -3671,8 +3671,19 @@ def dispatch(
         idle_window=str(fences.get("member_idle_window") or DEFAULT_MEMBER_IDLE_WINDOW),
     )
     named_member = bool(member)
-    effective_member = member or _session_member_id(worktree_identity)
-    roster_member = ledger.member(project, effective_member, root=ledger_root)
+    # An unnamed dispatch is disposable: it carries a per-run identity instead
+    # of the dispatching session's shared one, and it gets no roster row. So
+    # two unnamed dispatches of one coordinator — every reflex review among
+    # them — are never serialised against each other, and one run in flight
+    # cannot refuse an unrelated task with `member-in-flight`. A named member
+    # remains a deliberate route to a durable worker, so it keeps the roster
+    # lookup, the D14 check and the refusal.
+    effective_member = member or _disposable_member_id(run_id)
+    roster_member = (
+        ledger.member(project, effective_member, root=ledger_root)
+        if named_member
+        else None
+    )
     if named_member:
         if roster_member is None:
             raise CrewError(
@@ -4085,20 +4096,12 @@ def dispatch(
         wired_peer_run_ids = list(record["peer_channel"]["peers"])
         record["watch"] = watch_state(project, session=session)
         _write_json(pointer_path(run_id), record)
-        if roster_member is None:
-            _register_session_member(
-                project,
-                effective_member,
-                backend=backend_name,
-                role=node.role,
-                root=ledger_root,
-            )
         # Starting the supervisor is dispatch's last repository-facing step.
-        # Every write dispatch makes inside a repository — the worktree, the
-        # member-registration commit above, every pointer write — is complete
-        # before this point, so the boundary baseline can follow it with no
-        # handshake: there is nothing left for dispatch to write that the
-        # baseline must follow. After this dispatch writes only the pointer,
+        # Every write dispatch makes inside a repository — the worktree, and
+        # nothing else now that no dispatch registers a member of its own — is
+        # complete before this point, so the boundary baseline can follow it
+        # with no handshake: there is nothing left for dispatch to write that
+        # the baseline must follow. After this dispatch writes only the pointer,
         # which lives under the configuration home outside every repository.
         # Dispatch waits for neither the snapshot nor the spawn.
         if launch_kind == "cli" and plan is not None:

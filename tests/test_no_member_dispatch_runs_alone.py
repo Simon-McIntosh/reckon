@@ -130,10 +130,28 @@ def _scoring_pointer(config_home: Path, repo: Path, run_id: str) -> dict:
     return record
 
 
+def _live_view() -> tuple[list[str], dict[str, bytes]]:
+    """Name what the real config home and the real roster hold right now.
+
+    A dispatcher that wrote outside the temporary home would leave a live
+    pointer, a run directory or a roster row here, so the comparison is a
+    write-side check rather than a read of code that never touched them.
+    """
+    live = Path.home() / ".config" / "reckon" / "crew" / "live"
+    pointers = sorted(entry.name for entry in live.iterdir()) if live.is_dir() else []
+    checkout = Path(__file__).resolve().parents[1]
+    rosters = {
+        str(path): path.read_bytes()
+        for path in sorted(checkout.glob("docs/state/*/crew.json"))
+    }
+    return pointers, rosters
+
+
 def test_two_unnamed_reviews_launch_with_disposable_members(
     isolated_project: tuple[Path, Path],
 ) -> None:
     config_home, repo = isolated_project
+    live_before = _live_view()
     first_source = _scoring_pointer(config_home, repo, "r-first")
     second_source = _scoring_pointer(config_home, repo, "r-second")
     roster_path = ledger.ledger_path("sample", repo)
@@ -164,6 +182,9 @@ def test_two_unnamed_reviews_launch_with_disposable_members(
     assert roster_path.is_file() is (roster_before is not None)
     if roster_before is not None:
         assert roster_path.read_bytes() == roster_before
+    assert _live_view() == live_before
+    assert first_pointer["member"].startswith("disposable-")
+    assert second_pointer["member"].startswith("disposable-")
 
 
 def test_explicit_member_still_refuses_a_live_second_dispatch(
