@@ -13,7 +13,7 @@
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux compute node; Python project venv; detached git worktree">
-  <meta name="plan-commits" content="b906f66b">
+  <meta name="plan-commits" content="b906f66b,b0027963">
   <meta name="plan-artifacts" content="reckon/crew/plan_review.py,tests/test_plan_review_store.py,docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-store.svg">
   <title>A plan is reviewed before it is built &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -44,11 +44,28 @@
     <code>version</code> on every write, including the impl-only edit that must not produce a
     review, so a record keyed to the integer would be orphaned at the first impl bump and
     no review could clear the later gate. The record is therefore joined to plan content by
-    <code>plan_fingerprint</code>, which drops exactly the ten server-managed metadata
-    scalars (<code>version, modified, impl, status, roi, effort_hours, owner, sprint, tags,
-    archived</code>) and digests the authored content. An authored edit moves the fingerprint
-    and a metadata-only edit does not, so the review-due rule and the dispatch gate agree by
-    construction.</p>
+    <code>plan_fingerprint</code>, which digests two components: the parsed state with the
+    exclusion set removed, and the document's authored prose. An authored edit moves the
+    fingerprint and a metadata-only edit does not, so the review-due rule and the dispatch
+    gate agree by construction.</p>
+    <p><strong>The exclusion set is two sets.</strong> Dropping the ten server-managed
+    metadata scalars (<code>version, modified, impl, status, roi, effort_hours, owner,
+    sprint, tags, archived</code>) proved insufficient, and the review of this node found
+    it: the parser derives further state from those scalars, so writing the named effort
+    field to a plan that carried only the legacy effort letter moved the derived
+    calibration flag and the diagnostics list, changing the fingerprint on a metadata-only
+    write and orphaning a review on exactly the plans that predate the named field. A sweep
+    of every document under <code>docs/</code> named the two keys and no others; both are
+    now excluded as <code>PLAN_DERIVED_SCALARS</code>, named beside the scalar set with the
+    reason for each.</p>
+    <p><strong>The prose is digested separately, because the state has none.</strong> The
+    parsed state carries no section prose at all &mdash; <code>read_state</code> reads the
+    metas, the typed section records and the reckon-owned blocks, and the paragraphs a
+    reader sees under each heading are never part of it. A fingerprint over state alone
+    therefore did not move when a plan's prose was rewritten, leaving the one edit a review
+    exists to catch invisible. The digest now also covers the body text outside every
+    <code>data-reckon</code> block (whitespace-normalised), with the head skipped so a
+    metadata write cannot reach it through the title.</p>
 
     <figure>
       <img src="/reckon/figures/a-plan-is-reviewed-before-it-is-built/plan-review-store.svg"
@@ -56,8 +73,8 @@
       <figcaption>One write, one fingerprint, one durable record per reviewed version; a
       finding type declined across three distinct plans surfaces to the lead.</figcaption>
     </figure>
-    <h3>Method and the five named cases</h3>
-    <p><code>tests/test_plan_review_store.py</code> runs five cases, each named for the
+    <h3>Method and the six named cases</h3>
+    <p><code>tests/test_plan_review_store.py</code> runs six cases, each named for the
     property it holds:</p>
     <ul>
       <li><code>test_two_versions_of_one_plan_are_two_records</code> &mdash; reviews of
@@ -75,29 +92,41 @@
       <li><code>test_recurrence_counts_distinct_plans</code> &mdash; one type declined in
       three distinct plans surfaces (<code>plan_count 3, surfaced true</code>) and in two does
       not; a plan carrying two declines of one type still counts once.</li>
+      <li><code>test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it</code>
+      &mdash; the boundary against the real corpus, not a fixture: each excluded scalar is
+      written in turn to a legacy plan (<code>reckon-mcp-plan.html</code>, which carries the
+      legacy effort letter and the derived uncalibrated flag) and to a current plan
+      (<code>a-plan-is-reviewed-before-it-is-built.html</code>), the edit is asserted to have
+      landed in the parsed state, and the fingerprint is asserted unchanged; an authored
+      paragraph inside a section then moves it on both plans.</li>
     </ul>
     <h3>Gate</h3>
     <p>The gate is <code>pytest -q tests/test_plan_review_store.py</code>, run in the
-    worktree at revision <code>8877d879</code> with the root project interpreter. It reports
-    <code>5 passed</code> (exit 0). Log:
+    worktree at revision <code>98cbbaeb</code> with the root project interpreter. It reports
+    <code>6 passed</code> (exit 0). Log:
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/gate-plan-review-store.log</code>,
     whose header names the revision, the tree, the command and the imported
     <code>module.__file__</code>. This measures only this node's own change; both touched
     files are clean under <code>ruff check</code> and <code>ruff format --check</code>.</p>
 
     <h3>Negative control</h3>
-    <p><strong>Declared mutation:</strong> <em>plan_fingerprint folds in the version meta,
-    so the metadata-only case must fail</em>. Applied &mdash; <code>"version"</code> removed
-    from <code>PLAN_METADATA_SCALARS</code> &mdash; the metadata-only case fails at its first
-    assertion, and for that reason:</p>
-    <pre>assert module.plan_fingerprint(base) == module.plan_fingerprint(edited)
-E  AssertionError: assert '8f34a50a748c...443e3909cc2fd' == '76f6ef0be68b...c2ff058413926'
-FAILED tests/test_plan_review_store.py::test_metadata_only_edit_keeps_the_fingerprint
-1 failed in 0.55s</pre>
+    <p><strong>Declared mutation:</strong> <em>plan_fingerprint folds the derived calibration
+    flag into the digest, so the legacy plan's metadata-only case must fail</em>. Applied
+    &mdash; <code>"effort_calibrated"</code> removed from
+    <code>PLAN_DERIVED_SCALARS</code> &mdash; the legacy plan's <code>effort_hours</code>
+    case fails at its first assertion, and for that reason:</p>
+    <pre>AssertionError: reckon-mcp-plan.html: effort_hours is metadata, so the fingerprint must not move
+assert '3e7e6496d697...3691bf3c877f2' == '0fa3d0b6b200...08dbdd9a86223'
+FAILED tests/test_plan_review_store.py::test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it
+1 failed in 0.62s</pre>
     <p>The mutation was then reverted and the file's sha256 re-checked against its
-    pre-mutation digest (<code>64c8bfcf&hellip;30a4b1</code>), and the gate re-run green.
+    pre-mutation digest (<code>6afdda30&hellip;04f5ec68</code>), and the gate re-run green.
     The red log's first line is the declared mutation verbatim:
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/negative-control-plan-review-store.log</code>.</p>
+    <p>The node's earlier control, whose red log is superseded by this one, declared
+    <em>plan_fingerprint folds in the version meta, so the metadata-only case must fail</em>
+    and removed <code>"version"</code> from <code>PLAN_METADATA_SCALARS</code>; that leaf
+    case is still held by <code>test_metadata_only_edit_keeps_the_fingerprint</code>.</p>
   </section>
 </main>
 </body>

@@ -1,23 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 330" width="990" height="330" role="img" aria-label="The plan-review pipeline: a plan write is fingerprinted with the metadata scalars dropped, stored keyed by version and blob, answered per finding, and counted for recurrence across distinct plans.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 350" width="990" height="350" role="img" aria-label="The plan-review pipeline: a plan write is fingerprinted with the metadata scalars and the keys derived from them dropped and the authored section prose digested, stored keyed by version and blob, answered per finding, and counted for recurrence across distinct plans.">
 <style>.box{fill:#fff;stroke:#37506b;stroke-width:1.6}.lbl{font:600 14px system-ui,sans-serif;fill:#1d2b3a}.sub{font:12px system-ui,sans-serif;fill:#49617c}.cap{font:12px system-ui,sans-serif;fill:#5b6b7d}.arw{stroke:#37506b;stroke-width:1.6;fill:none;marker-end:url(#a)}</style>
 <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#37506b"/></marker></defs>
-<rect x="8" y="20" width="974" height="290" rx="12" fill="none" stroke="#c9d4e0"/>
+<rect x="8" y="20" width="974" height="310" rx="12" fill="none" stroke="#c9d4e0"/>
 <text class="cap" x="24" y="46">The plan-review record: one write, one fingerprint, one durable record per version.</text>
 <rect class="box" x="8" y="96" width="210" height="76" rx="8"/>
 <text class="lbl" x="113" y="127" text-anchor="middle">plan write</text>
-<text class="sub" x="113" y="149" text-anchor="middle">MCP &middot; POST &middot; commit</text>
+<text class="sub" x="113" y="149" text-anchor="middle">MCP · POST · commit</text>
 <rect class="box" x="260" y="96" width="210" height="76" rx="8"/>
 <text class="lbl" x="365" y="127" text-anchor="middle">plan_fingerprint()</text>
-<text class="sub" x="365" y="149" text-anchor="middle">10 metadata scalars dropped</text>
+<text class="sub" x="365" y="149" text-anchor="middle">metadata + derived keys dropped</text>
 <path class="arw" d="M218 134 H256"/>
 <rect class="box" x="512" y="96" width="210" height="76" rx="8"/>
 <text class="lbl" x="617" y="127" text-anchor="middle">store &amp; respond</text>
-<text class="sub" x="617" y="149" text-anchor="middle">plan-&lt;slug&gt;.v&lt;N&gt;.json &middot; .at-&lt;blob8&gt;</text>
+<text class="sub" x="617" y="149" text-anchor="middle">plan-&lt;slug&gt;.v&lt;N&gt;.json · .at-&lt;blob8&gt;</text>
 <path class="arw" d="M470 134 H508"/>
 <rect class="box" x="764" y="96" width="210" height="76" rx="8"/>
 <text class="lbl" x="869" y="127" text-anchor="middle">declined_recurrence()</text>
-<text class="sub" x="869" y="149" text-anchor="middle">&ge;3 distinct plans &rarr; lead</text>
+<text class="sub" x="869" y="149" text-anchor="middle">≥3 distinct plans → lead</text>
 <path class="arw" d="M722 134 H760"/>
-<text class="cap" x="24" y="232">Excluded from the digest: version, modified, impl, status, roi, effort_hours, owner, sprint, tags, archived.</text>
-<text class="cap" x="24" y="254">Digested: declarations, sections, decisions, followups, relationships, comments &mdash; so an archived edit keeps the review and an authored edit demands one.</text>
+<text class="cap" x="24" y="212">Excluded from the digest: version, modified, impl, status, roi, effort_hours, owner, sprint, tags, archived — and the keys the parser derives from them.</text>
+<text class="cap" x="24" y="232">effort_calibrated says how the effort field was supplied and compatibility_warnings quotes the metadata it read; the data-reckon blocks the store regenerates are covered</text>
+<text class="cap" x="24" y="252">by the state digest already, so none of them can orphan a review on a metadata-only write.</text>
+<text class="cap" x="24" y="280">Digested: declarations, section records, decisions, followups, comments, relationships — and the authored section prose a reader sees,</text>
+<text class="cap" x="24" y="300">which the parsed state omits entirely. An archived edit keeps the review; an authored edit demands one.</text>
 </svg>
