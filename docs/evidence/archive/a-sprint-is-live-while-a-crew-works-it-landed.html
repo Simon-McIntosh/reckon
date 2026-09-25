@@ -9,9 +9,9 @@
   <meta name="plan-title" content="A Sprint Is Live While A Crew Works It — landed record">
   <meta name="plan-summary" content="Liveness is derived at read time from a project&#x27;s live crew pointers (§2), the sprint push op no longer demotes other sprints (§4), and the sprint skill teaches that definition (§5).">
   <meta name="plan-evidence-for" content="a-sprint-is-live-while-a-crew-works-it">
-  <meta name="plan-verifies" content="a-sprint-is-live-while-a-crew-works-it#s2,a-sprint-is-live-while-a-crew-works-it#s4,a-sprint-is-live-while-a-crew-works-it#s5">
+  <meta name="plan-verifies" content="a-sprint-is-live-while-a-crew-works-it#s2,a-sprint-is-live-while-a-crew-works-it#s4,a-sprint-is-live-while-a-crew-works-it#s4-focus,a-sprint-is-live-while-a-crew-works-it#s5">
   <meta name="plan-verdict" content="pass">
-  <meta name="plan-commits" content="6c92861d,0ad5a171,21077dfa">
+  <meta name="plan-commits" content="6c92861d,0ad5a171,21077dfa,bec9f24a">
   <title>A Sprint Is Live While A Crew Works It — landed record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -168,6 +168,115 @@
       derived <code>live_sprint_ids</code> list — is a read-side derivation, not a write-side
       change, and is outside this node's write scope.</li>
     </ul>
+    </section>
+    <section id="s4-focus">
+      <h2 id="s4-focus">§4 — The focus follows the live crew, and what it costs</h2>
+
+      <p><strong>Verdict: blocked on cost.</strong> The behaviour is complete, tested and committed
+      at <code>bec9f24a</code>. It is not promotable as it stands, because it makes
+      <code>roadmap(view="summary")</code> about three times slower, against a budget of one
+      second; the cost belongs to the liveness reader, which is another node's module. The
+      measurements are below.</p>
+
+      <p><code>active_sprint_id</code> names the live sprint with the liveness reader's newest
+      <code>last_activity_at</code>, and falls back to the stored <code>active</code> sprint when no
+      pointer is live. A new <code>live_sprint_ids</code> list carries the live sprints, newest
+      activity first. Both the composed project state
+      (<code>reckon/project_state.py</code>) and the roadmap report
+      (<code>reckon/roadmap.py</code>) expose both, and each composition reads liveness once rather
+      than once per sprint.</p>
+
+      <p>Three helpers in <code>reckon/project_state.py</code> carry it:
+      <code>live_sprint_ids(liveness)</code> orders the live rows itself;
+      <code>focus_sprint_id(sprint_rows, liveness)</code> resolves the focus; and
+      <code>_has_unfinished_items</code> supplies the deterministic tie-break. They live in
+      <code>project_state</code> and not in <code>sprint_liveness</code> so that the module deriving
+      liveness stays the only place that derives it — <code>roadmap</code> imports the two resolvers
+      from <code>project_state</code>, and neither new dependency closes a cycle.</p>
+
+      <h3>The deterministic choice when several sprints are stored active</h3>
+      <p>The live sprint wins whenever one is live. With none live and more than one sprint stored
+      <code>active</code>, the focus is the first stored-active sprint that still carries an
+      unfinished item; failing that, the first stored-active sprint; failing that, the earliest
+      sprint with unfinished work. The rule is written into <code>focus_sprint_id</code>'s
+      docstring and is what keeps the pre-existing
+      <code>test_default_sprint_focus_is_earliest_incomplete_and_never_persisted</code> true — the
+      earlier contract preferred the earliest incomplete sprint and would otherwise have been
+      contradicted.</p>
+
+      <table>
+        <thead><tr><th>Check</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Live pointers on two <code>open</code> sprints, S2's stream newer</td>
+            <td>composed and roadmap both <code>active_sprint_id = S2</code>,
+            <code>live_sprint_ids = [S2, S1]</code></td></tr>
+          <tr><td>No live pointer, one sprint stored <code>active</code></td>
+            <td><code>active_sprint_id = S1</code>, <code>live_sprint_ids = []</code></td></tr>
+          <tr><td>The read leaves the workstation's real crew home untouched</td>
+            <td>asserted before and after each test against
+            <code>~/.config/reckon/crew/live</code></td></tr>
+          <tr><td>Gate — new test, <code>test_sprint_push_status.py</code>,
+            <code>test_sprint_liveness.py</code>, roadmap and project-state tests</td>
+            <td>153 passed, exit 0</td></tr>
+          <tr><td>Declared mutation — <code>active_sprint_id</code> ignores liveness and reads only
+            stored status</td>
+            <td><code>test_focus_follows_the_live_crew_on_every_surface</code> FAILED
+            (<code>assert 'S1' == 'S2'</code>), and nothing else</td></tr>
+          <tr><td>Scoped ruff on the four edited files</td>
+            <td>13 findings before, 13 after; identical finding set — no new findings</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="s4-focus-measure">The measure — the added cost of the focus</h3>
+      <p>Two samples of the same read taken hours apart cannot distinguish the change from the host,
+      and the host on this workstation moves. Both trees were therefore built and run in the same
+      minutes: the base is a <code>git archive</code> of <code>be8f1330</code>, the head is the
+      worktree, and the interpreter is the same in both invocations. Each row warms the read, then
+      times it three times; the table gives the fastest of the three.</p>
+
+      <table>
+        <thead><tr><th>Round</th><th>Base (s)</th><th>Head (s)</th><th>Head − Base</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>12.7</td><td>36.1</td><td>+23.4</td></tr>
+          <tr><td>2</td><td>10.8</td><td>35.2</td><td>+24.4</td></tr>
+        </tbody>
+      </table>
+
+      <p>The budget the node was given is <em>at most one second</em>. The change lands a read that
+      costs about three times what it did, so the node is blocked rather than complete. The cost is
+      not in the resolution logic: it is in the reader the focus now depends on.</p>
+
+      <table>
+        <thead><tr><th>Measurement</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>sprint_liveness("reckon", docs_dir)</code>, called directly</td>
+            <td>11.594 s — 34 pointers, 4 live sprints (S21–S24), ~340 ms per pointer</td></tr>
+          <tr><td><code>sprint_liveness</code> calls inside one <code>_roadmap(reckon,
+            summary)</code></td>
+            <td>2 calls, 24.298 s of a 68.623 s read</td></tr>
+          <tr><td>where an 11.6 s call goes (cProfile)</td>
+            <td><code>classify_pointer</code> 29.19 s of 29.32 s profiled, dominated by
+            <code>_terminal_stream_data</code> / <code>_stream_completion_stamp</code> parsing
+            2 330 655 JSON lines</td></tr>
+          <tr><td>keys the summary projection returns</td>
+            <td>no <code>active_sprint_id</code>, no <code>live_sprint_ids</code> — the read pays
+            for both and shows neither</td></tr>
+        </tbody>
+      </table>
+
+      <figure>
+        <img src="/reckon/figures/a-sprint-is-live-while-a-crew-works-it/roadmap-liveness-cost.png"
+             alt="Three panels: an interleaved base-versus-head roadmap summary latency comparison showing 12.7 and 10.8 seconds at base against 36.1 and 35.2 seconds at head; a stacked bar showing 24.3 of 68.6 seconds spent in two sprint_liveness calls; and a bar showing 6.7 of an 11.6 second liveness call spent parsing 2.33 million JSON lines.">
+        <figcaption>Left: the same read at base and at head, minutes apart on one host. Middle: two
+        <code>sprint_liveness</code> calls are 24.3 s of the head read. Right: a single call is
+        dominated by parsing every live run's stream.</figcaption>
+      </figure>
+
+      <p><strong>What unblocks it.</strong> Classify a pointer from a bounded part of its stream
+      rather than the whole of it, or derive the focus from a liveness snapshot the fleet records
+      once. Both touch <code>reckon/sprint_liveness.py</code> and the stream readers it composes,
+      which this node does not own; the behaviour above is complete and needs no further change
+      once the read is cheap.</p>
     </section>
     <section id="s5">
       <h2>&sect;5 &mdash; The skill teaches liveness, not the marker</h2>
