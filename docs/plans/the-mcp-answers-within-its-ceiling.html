@@ -19,14 +19,14 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>The MCP Answers Within Its Ceiling | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="21">
-<meta name="plan-commits" content="20258e3a,8bc09a50,39dee90a,8db64fe6,d5773b49,215821ed,9e02b5f6,2122207b,c8eab419,0c021526,1de67ffb,29016e25,25845dc8,dfa424c3,0b3cd08c,06642dc7,5fad6a7c,ae64e502">
-<meta name="plan-impl" content="0.83">
+<meta name="plan-version" content="23">
+<meta name="plan-commits" content="20258e3a,8bc09a50,39dee90a,8db64fe6,d5773b49,215821ed,9e02b5f6,2122207b,c8eab419,0c021526,1de67ffb,29016e25,25845dc8,dfa424c3,0b3cd08c,06642dc7,5fad6a7c,ae64e502,7659c019,f05c311d,0eba4849,806c0737">
+<meta name="plan-impl" content="0.86">
 </head>
 <body>
   <main class="plan-doc">
@@ -310,6 +310,19 @@
       <a href="/reckon/evidence/archive/the-mcp-answers-within-its-ceiling-landed#s7-section-writes-one-section">&sect;7 landed record</a>.</p>
     </div>
 
+    <h2 id="s8">&sect;8 &mdash; The op vocabulary names every op an agent can send</h2>
+    <p>&sect;7 added an <code>insert_section</code> op to <code>edit_plan</code>, and &sect;6 added the <code>section</code> view to <code>read_plan</code>. An agent discovers <code>edit_plan</code>'s ops from <code>_OP_VOCAB</code> and <code>read_plan</code>'s views from the tool's docstring. Neither names these additions, so the capability exists but no agent can find it. Two things should change:</p>
+    <ul>
+      <li><code>_OP_VOCAB</code> in <code>reckon/mcp.py</code> lists <code>insert_section</code> with its keys (<code>id</code>, <code>title</code>, <code>body</code>). It says the op lands the section before the first structured-state region, after any <code>data-reckon="section"</code> records.</li>
+      <li>The <code>read_plan</code> docstring names <code>view="section"</code> and its <code>section</code> argument.</li>
+    </ul>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test asserts that every op in <code>reckon/_store.py</code>'s <code>_OP_DISPATCH</code> has an entry in <code>_OP_VOCAB</code>, and that every view <code>read_plan</code> accepts appears in its docstring.</li>
+      <li>Removing the <code>insert_section</code> entry is observed to fail that test, and the log is recorded.</li>
+      <li>Lint on <code>reckon/mcp.py</code> adds no findings.</li>
+    </ul>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-section-record-landed" data-section="s7" data-gated-sections="s7" data-status="closed" data-verdict="passed">
@@ -392,7 +405,10 @@
     <div class="r-comment-body"><p>re-review of edit-plan-writes-one-section at ae64e502 scored 96/100 with no findings</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260925T051236819828-review-of-read-plan-reads-one-section" data-who="reckon-build" data-when="2026-09-25T05:41:27.566Z">
-    <div class="r-comment-body"><p>review of read-plan-reads-one-section scored 92/100: two untested boundaries (prose after a section record; terminal section bleed); returned to the node&#x27;s session</p></div>
+    <div class="r-comment-body"><p>review of read-plan-reads-one-section scored 92/100: two untested boundaries (prose after a section record; terminal section bleed); returned to the node's session</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260925-s6-landed" data-who="reckon-build" data-when="2026-09-25T05:52:00Z">
+    <div class="r-comment-body"><p>Run <code>r-20260925T044753199067-read-plan-reads-one-section</code> (codex sol5.6) landed. It was merged at <code>7534d608</code>, with boundary tests at <code>be12834d</code>.</p><ul><li><code>read_plan(view="section", section=&lt;id&gt;)</code> returns the section's heading, text, HTML, declaration, typed record and anchored comments.</li><li>A missing section returns <code>section_not_found</code> with the available ids.</li><li>Discovery search matches plan body text.</li><li>The splitter lives in <code>mcp_views.py</code>; <code>_plan_html.py</code> was claimed by an S22 run.</li></ul><p>The review scored 92/100. It found two untested boundaries: prose after a section record, and records bleeding into the last section. Both were added and each was observed to fail under its mutation. The gate is 58 passed.</p><p>One measured caveat: the section view of <code>a-worker-knows-it-is-on-compute</code> s3 is 11,354 characters against the plan's raw state view of 7,357, because it carries both text and HTML plus the comments.</p><p>&sect;8 is folded in from this landing: the new op and view are undiscoverable until the vocabulary names them.</p></div>
 </div>
 </section>
   </main>
