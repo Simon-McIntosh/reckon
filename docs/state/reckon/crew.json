@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T11:31:39",
+  "updated": "2026-09-25T11:33:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -413750,6 +413750,369 @@
           "reason": null,
           "finding": null
         }
+      },
+      {
+        "run_id": "r-20260925T080620790999-review-of-a-symlinked-protected-path-cannot-block-launch",
+        "plan": "a-worker-cannot-write-your-home",
+        "section": "\u00a72",
+        "node": "review-of-a-symlinked-protected-path-cannot-block-launch",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 480,
+                "cached_input_tokens": 276868,
+                "input_tokens": 277350,
+                "output_tokens": 772,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 278122,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "the review for r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete",
+          "estimated_hours": null,
+          "goal": "attach an independent review to run r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch",
+          "id": "review-of-a-symlinked-protected-path-cannot-block-launch",
+          "lane_declaration": {
+            "backend": "clive",
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T08:06:21Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 23,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 8,
+            "mean_context": 82500,
+            "observed_at": "2026-09-25T08:05:58Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080620790999-review-of-a-symlinked-protected-path-cannot-block-launch/manifest.md",
+          "negative_control": "",
+          "plan": "a-worker-cannot-write-your-home",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch.json",
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch.at-72e0ff488115257435dcd31d53a13c0c33956e9a.json"
+          ]
+        },
+        "role": "review",
+        "spec_level": "exact",
+        "member": "crew-monitor-invocation",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T08:06:31Z",
+        "completed_at": "2026-09-25T09:32:42.673Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5122,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5171,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "f2bfdd6971c2d0cec8def0fc9bc9907f004f449f",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080620790999-review-of-a-symlinked-protected-path-cannot-block-launch/manifest.md",
+        "scope_changed": false,
+        "session_id": "7748e2ba-3c1b-46fc-aedc-e31fd4b81d41",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no rate-limit event in the stream yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T09:32:42.673Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: the fence refuses to launch any worker on this host. At base 51d80b95; with ~/.gitconfig the only symlink among the thirteen named protected paths at this home; both dispatched nodes died in bubblewrap before a harness process existed (stream.jsonl 0 bytes; empty harness and codex-home; no session_id). Reproduce with `bwrap --dev-bind / / --ro-bind ~/.gitconfig ~/.gitconfig -- /bin/true`; which exits 1 with the same message; with no reckon process involved.",
+              "effective_phase": "starting",
+              "elapsed_seconds": 2962,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:13:38Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T06:25:55Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 21822,
+                "worker_pid": 3666579
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 3164,
+              "log_fresh": false,
+              "manifest_commits": [
+                "4088c1ae05ee2de968547377ea80cb013d3de7ee"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "a61eba31d7f454aff87081f11b6395ac935d9c2d36dd62a2952dd3f537a24ea1",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md; resolve the blocker before resuming the run",
+              "node": "fenced-workers-smoke",
+              "phase": "starting",
+              "plan": "a-worker-cannot-write-your-home",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+              "session": "s21-coord",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "session_id": "eb46c4e0-0ac6-4891-b9b6-6fd5fb4773e4",
+                "source": "stream"
+              },
+              "terminal_age_seconds": 3202,
+              "terminal_at": "2026-09-25T07:13:01Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fenced-workers-smoke"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "starting",
+              "elapsed_seconds": 1763,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:46:59Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T07:19:15Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 9469,
+                "worker_pid": 3903304
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1165,
+              "log_fresh": false,
+              "manifest_commits": [
+                "dc52fa08 72e0ff48"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "317c71c73baaa3cd17f800fc0fc874bcbd4dd7f241a070c33e1f3817964c775d",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-worker-cannot-write-your-home --section '\u00a72' --role review --spec-level exact --node review-of-a-symlinked-protected-path-cannot-block-launch --goal 'attach an independent review to run r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch' --done-when 'the review for r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch.at-72e0ff488115257435dcd31d53a13c0c33956e9a.json --time-budget 60m --session s21-coord --allow-unreconciled-runs --backend clive",
+              "node": "a-symlinked-protected-path-cannot-block-launch",
+              "phase": "starting",
+              "plan": "a-worker-cannot-write-your-home",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch",
+              "session": "s21-coord",
+              "terminal_age_seconds": 1211,
+              "terminal_at": "2026-09-25T07:46:13Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/a-symlinked-protected-path-cannot-block-launch"
+            }
+          ]
+        },
+        "review": null,
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": "review node: its deliverable is the review record outside the repository",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/review-of-a-symlinked-protected-path-cannot-block-launch",
+          "session_id": "7748e2ba-3c1b-46fc-aedc-e31fd4b81d41",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T09:32:42.673Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "f2bfdd6971c2d0cec8def0fc9bc9907f004f449f",
+        "plan_impl_at_dispatch": 0.25,
+        "impl_move": {
+          "plan": "a-worker-cannot-write-your-home",
+          "at_dispatch": 0.25,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:review"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T08:51:21.416055+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": "clive",
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T08:06:21Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 23,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 8,
+          "mean_context": 82500,
+          "observed_at": "2026-09-25T08:05:58Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 56.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -414062,6 +414425,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2763
+    "_version": 2764
   }
 }
