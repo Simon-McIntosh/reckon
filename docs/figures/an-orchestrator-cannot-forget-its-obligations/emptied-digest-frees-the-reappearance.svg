@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" width="980" height="560" role="img" aria-labelledby="title desc">
+  <title id="title">Coordinator obligations hook: an emptied duty list clears the per-session record, so a duty that returns is injected again</title>
+  <desc id="desc">Three drives over one session and one follower registration. Drive 1, a blocked run present, injects the checklist and records the digest of the (kind, run_id) set. Drive 2, with the run's pointer gone, sees an empty list: it prints nothing and clears the record. Drive 3, with the same run recorded again, carries a set identical to drive 1's, and speaks again because the record it compares against is empty. Left in place, drive 1's record would match drive 3's identical set and print nothing. Either mode clears the record on an empty list, because whichever event first sees the emptying is the last that can notice it.</desc>
+
+  <rect x="0" y="0" width="980" height="560" fill="#ffffff"/>
+  <text x="30" y="34" font-family="sans-serif" font-size="19" font-weight="bold" fill="#1f2933">An emptied duty list clears the record, so a returned duty speaks</text>
+  <text x="30" y="56" font-family="sans-serif" font-size="13" fill="#52606d">The duty set decides whether the turn opens with the checklist; the record is what the last injection left behind.</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="strokeWidth" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#7b8794"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="86" width="280" height="40" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="58" y="112" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1f2933">drive 1 &#8212; duty present</text>
+
+  <rect x="42" y="134" width="276" height="120" rx="8" fill="#ffffff" stroke="#7b8794" stroke-width="1.5"/>
+  <text x="58" y="156" font-family="monospace" font-size="12" fill="#1f2933">set: {(blocked, run-1)}</text>
+  <text x="58" y="177" font-family="monospace" font-size="12" fill="#52606d">record before: none</text>
+  <text x="58" y="200" font-family="sans-serif" font-size="13" fill="#2c6ea8">emits the checklist</text>
+  <text x="58" y="220" font-family="monospace" font-size="12" fill="#52606d">record after:</text>
+  <text x="58" y="238" font-family="monospace" font-size="12" fill="#1f2933">sha256 of the set</text>
+
+  <line x1="322" y1="194" x2="352" y2="194" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="356" y="86" width="288" height="40" rx="8" fill="#fff6d6" stroke="#b8860b" stroke-width="2"/>
+  <text x="374" y="112" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1f2933">drive 2 &#8212; the list empties</text>
+
+  <rect x="358" y="134" width="284" height="120" rx="8" fill="#ffffff" stroke="#b8860b" stroke-width="2"/>
+  <text x="374" y="156" font-family="monospace" font-size="12" fill="#1f2933">set: {} (empty)</text>
+  <text x="374" y="177" font-family="monospace" font-size="12" fill="#52606d">record before: sha256</text>
+  <text x="374" y="200" font-family="sans-serif" font-size="13" fill="#2f6b4f">prints nothing</text>
+  <text x="374" y="220" font-family="monospace" font-size="12" fill="#52606d">record after:</text>
+  <text x="374" y="238" font-family="monospace" font-size="12" font-weight="bold" fill="#7b5e00">cleared</text>
+
+  <line x1="646" y1="194" x2="676" y2="194" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="680" y="86" width="260" height="40" rx="8" fill="#eaf3fb" stroke="#2c6ea8" stroke-width="2"/>
+  <text x="698" y="112" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1f2933">drive 3 &#8212; the same duty returns</text>
+
+  <rect x="682" y="134" width="256" height="120" rx="8" fill="#ffffff" stroke="#2c6ea8" stroke-width="2"/>
+  <text x="698" y="156" font-family="monospace" font-size="12" fill="#1f2933">set: {(blocked, run-1)}</text>
+  <text x="698" y="174" font-family="sans-serif" font-size="12" fill="#52606d">same kind, same run id</text>
+  <text x="698" y="196" font-family="monospace" font-size="12" fill="#52606d">record before: cleared</text>
+  <text x="698" y="220" font-family="sans-serif" font-size="13" font-weight="bold" fill="#2c6ea8">emits the checklist</text>
+  <text x="698" y="240" font-family="monospace" font-size="12" fill="#52606d">record after: sha256</text>
+
+  <rect x="40" y="282" width="900" height="86" rx="8" fill="#fbf1f1" stroke="#a8323a" stroke-width="1.5"/>
+  <text x="60" y="306" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1f2933">With the record left in place: drive 3 matches what drive 1 left and says nothing</text>
+  <text x="60" y="328" font-family="monospace" font-size="12" fill="#52606d">drive 3 compares sha256{(blocked, run-1)} against sha256{(blocked, run-1)} &#8594; equal</text>
+  <text x="60" y="350" font-family="sans-serif" font-size="13" fill="#a8323a">the returned duty is never injected &#8212; the reappearance case in tests/test_coordinator_obligations_hook.py names it</text>
+
+  <rect x="40" y="392" width="900" height="66" rx="8" fill="#f2f6f3" stroke="#2f6b4f" stroke-width="1.5"/>
+  <text x="60" y="416" font-family="sans-serif" font-size="14" fill="#1f2933">Either mode clears it: prompt and stop both act on a resolved, empty list</text>
+  <text x="60" y="437" font-family="sans-serif" font-size="13" fill="#52606d">a duty drained over a stop and returned before the next prompt is the same swallow, so the emptying is cleared wherever it is first seen</text>
+
+  <rect x="40" y="484" width="900" height="56" rx="8" fill="#f7f3fb" stroke="#6b4fa8" stroke-width="1.5"/>
+  <text x="60" y="508" font-family="sans-serif" font-size="14" fill="#1f2933">A non-empty list still speaks on change alone, and its command still follows the local lane</text>
+  <text x="60" y="528" font-family="sans-serif" font-size="13" fill="#52606d">an age that moved without the set moving stays silent; a stop&#8217;s verdict never consults the record</text>
+</svg>

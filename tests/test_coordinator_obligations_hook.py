@@ -23,7 +23,11 @@ import pytest
 
 from reckon.crew import recovery, runs
 from reckon.crew.obligations import obligations as obligations_view
-from reckon.hooks.coordinator_obligations import digest_path, format_checklist
+from reckon.hooks.coordinator_obligations import (
+    digest_path,
+    duty_digest,
+    format_checklist,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOK = REPO_ROOT / "reckon" / "hooks" / "coordinator_obligations.py"
@@ -763,6 +767,96 @@ def test_the_digest_does_not_silence_the_stop_mode(
     assert prompting.stdout, "the prompt drive must inject for this case to bite"
     assert stopping.returncode == 0
     assert json.loads(stopping.stdout)["decision"] == "block"
+
+
+def test_a_duty_that_empties_and_returns_is_injected_again(
+    repository: Path, tmp_path: Path, config_home: Path
+) -> None:
+    """A returned duty must speak, so an emptied list must clear the record.
+
+    Three drives over one registration and one session: the first injects a
+    blocked duty and records its digest, the second is silent because the run's
+    pointer is gone and the session owes nothing, and the third must inject the
+    same duty again. The reappearance is the same duty in the digest's own
+    terms -- the digest of the restored set is compared against the recorded
+    one before the third drive -- because the defect is precisely that a
+    returning duty matches the record the emptied list left behind and is
+    never spoken again.
+    """
+    _blocked_run(repository, tmp_path)
+    digest_file = digest_path(PROJECT, SESSION)
+    pointer = runs.pointer_path(RUN_ID)
+
+    with runs.follower_claim(PROJECT, SESSION):
+        first = _hook("prompt", _prompt_payload(repository, "harness-session"))
+        assert first.stdout, "the first drive must inject for this case to bite"
+        recorded = digest_file.read_text(encoding="utf-8").strip()
+        assert recorded == duty_digest(
+            obligations_view(PROJECT, SESSION)["obligations"]
+        ), "the record must be the digest of the set that was injected"
+
+        pointer.unlink()
+        assert obligations_view(PROJECT, SESSION)["obligations"] == [], (
+            "the removed run must leave the session owing nothing, or the "
+            "second drive's silence proves nothing"
+        )
+        emptied = _hook("prompt", _prompt_payload(repository, "harness-session"))
+
+        assert emptied.returncode == 0
+        assert emptied.stdout == ""
+        assert emptied.stderr == ""
+
+        _blocked_run(repository, tmp_path)
+        assert (
+            duty_digest(obligations_view(PROJECT, SESSION)["obligations"]) == recorded
+        ), (
+            "the reappearing duty must be digest-identical to the injected one, "
+            "or this case cannot show a stale record swallowing it"
+        )
+        returned = _hook("prompt", _prompt_payload(repository, "harness-session"))
+
+    assert returned.returncode == 0
+    assert returned.stderr == ""
+    assert returned.stdout, "the returned duty must be injected again"
+    checklist = json.loads(returned.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert RUN_ID in checklist
+
+
+def test_an_emptied_list_seen_first_by_the_stop_mode_still_frees_the_injection(
+    repository: Path, tmp_path: Path, config_home: Path
+) -> None:
+    """The event that sees the list empty is whichever fires first, so both clear.
+
+    The prompt is not guaranteed to be the mode that observes the emptying: a
+    duty can be drained, the turn ended over an empty list, and the same duty
+    return before the next prompt. The record is cleared on the empty list in
+    either mode, so the stop drive's silence over nothing does not become the
+    prompt drive's silence over something.
+    """
+    _blocked_run(repository, tmp_path)
+    digest_file = digest_path(PROJECT, SESSION)
+    pointer = runs.pointer_path(RUN_ID)
+
+    with runs.follower_claim(PROJECT, SESSION):
+        first = _hook("prompt", _prompt_payload(repository, "harness-session"))
+        assert first.stdout, "the first drive must inject for this case to bite"
+
+        pointer.unlink()
+        stopping = _hook("stop", _stop_payload(repository, "harness-session"))
+        assert stopping.returncode == 0
+        assert stopping.stdout == "", "a stop over no duties is not a verdict"
+        assert digest_file.read_text(encoding="utf-8").strip() == "", (
+            "the stop that sees the emptied list must clear the record too"
+        )
+
+        _blocked_run(repository, tmp_path)
+        returned = _hook("prompt", _prompt_payload(repository, "harness-session"))
+
+    assert returned.returncode == 0
+    assert returned.stderr == ""
+    assert returned.stdout, "the returned duty must be injected again"
+    checklist = json.loads(returned.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert RUN_ID in checklist
 
 
 def test_a_review_command_in_the_checklist_follows_the_local_lane(
