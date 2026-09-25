@@ -1301,6 +1301,81 @@ env -C /tmp/other-reckon-surface PYTHONPATH= &lt;worktree&gt;/.venv/bin/python -
       pytest processes ran on the same node during the measured run, so the wall times here are upper
       bounds; the attribution of time to a frame is unaffected.</p>
     </section>
+
+    <section id="slow-dispatch-tests-wait-on-events">
+      <h2>Dispatch and arming cases await an observed event instead of a fixed sleep</h2>
+      <p class="landed-summary">Head <code>34e1b0d2</code> on fleet job <code>1277272</code>. Two test
+      files changed; no <code>reckon/</code> file edited; no test skipped, xfailed, deleted or
+      weakened. Serial <code>--durations=0</code>: <strong>8 passed in 46.81 s</strong>. Under
+      <code>-n 4</code> with pytest's default basetemp: <strong>8 passed in 25.75 s</strong>.</p>
+
+      <h3>The event in place of the shim's sleep</h3>
+      <p><code>tests/test_dispatch_returns_without_worker.py</code> no longer defines
+      <code>SHIM_SLEEP_SECONDS</code>. The shim charges a <code>git status</code> call as before, but a
+      call charged from a working directory under the worktree root now writes a
+      <code>scanning</code> signal and then waits, up to a bounded number of polls, for the case to
+      touch a <code>release</code> file. <code>_start_dispatch(scan_gate=True)</code> wires the signal,
+      release and poll bound into the child environment. The
+      <code>test_dispatch_returns_once_its_supervisor_runs</code> case starts dispatch with the gate
+      armed, waits for the signal under <code>SPAWN_BOUND</code>, asserts the marker is absent while
+      the scan is held, then releases it and awaits the marker under <code>MARKER_BOUND</code>.</p>
+      <p>The discriminator is measured, not assumed. The supervisor's boundary scan
+      (<code>reckon/crew/routing.py</code> &rarr; <code>subprocess.run(["git","status",...], cwd=&lt;worktree&gt;)</code>)
+      runs with its working directory set to each registered worktree; dispatch's own pre-return
+      charged call is <code>git -C &lt;repo&gt; status --porcelain=v1 ... docs/state/sample/crew.json</code>
+      run from the repository root. Gating on cwd-under-the-worktree-root therefore holds the scan
+      without holding dispatch. <code>_run_supervisor</code> takes the boundary snapshot before it
+      spawns the worker, so a marker absent while the scan is held proves the ordering the shim
+      exists to test.</p>
+
+      <h3>The event in place of the arming sleep</h3>
+      <p><code>tests/test_server_listens_before_it_watches.py</code> drops
+      <code>_ARM_SECONDS_PER_TREE</code>. The patched watch constructor signals an
+      <code>arming_started</code> event and waits, bounded, on a <code>release_arming</code> event
+      before it builds the real watch. The answer-time case waits for <code>arming_started</code>
+      before it measures the port, so the answer is measured against a genuinely open arming window;
+      the arming case releases and still asserts <code>_ARMED_WITHIN_S</code>. Teardown releases any tree
+      still held so the arming thread is never left blocked.</p>
+
+      <h3>Per-test duration, base <code>587adf48</code> to head <code>34e1b0d2</code></h3>
+      <table>
+        <thead><tr><th>test</th><th>base (s)</th><th>head (s)</th><th>halved?</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_a_discarded_run_is_not_recreated</code></td><td>48.93</td><td>13.03</td><td>yes</td></tr>
+          <tr><td><code>test_a_delegated_launch_records_a_boundary_snapshot</code></td><td>43.15</td><td>7.05</td><td>yes</td></tr>
+          <tr><td><code>test_sigkill_to_the_worker_is_recorded</code></td><td>42.55</td><td>7.97</td><td>yes</td></tr>
+          <tr><td><code>test_sigkill_to_dispatch_leaves_the_worker_marker</code></td><td>39.30</td><td>8.11</td><td>yes</td></tr>
+          <tr><td><code>test_every_tree_is_armed_within_the_bound</code></td><td>15.03</td><td>0.06</td><td>yes</td></tr>
+        </tbody>
+      </table>
+      <p><code>test_dispatch_returns_once_its_supervisor_runs</code> failed its wall bound at the base
+      (6.53 s against 5.0 s, because the driver's interpreter startup was charged against dispatch's
+      wait). It now passes: the wall bound attributes the driver's measured
+      <code>startup_seconds</code>, and dispatch's own clock is still asserted directly against
+      <code>DISPATCH_EXIT_BOUND</code>.</p>
+
+      <h3>Both bounds still fail when violated</h3>
+      <table>
+        <thead><tr><th>mutation</th><th>observed</th></tr></thead>
+        <tbody>
+          <tr><td>6 s sleep injected into a scratch copy of <code>reckon/crew/dispatch.py</code></td>
+            <td>return case fails on <code>DISPATCH_EXIT_BOUND</code>: exit 10.70 s vs 8.04 s allowed;
+            log <code>logs/negative-control.log</code>, first line the declared control string</td></tr>
+          <tr><td>every tree held open past the arming bound</td>
+            <td>arming case fails: <q>only 0 of 3 trees were armed within 20.0 s</q>; log
+            <code>logs/negative-control-arming-bound.log</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Evidence and figure</h3>
+      <p>Run record
+      <code>~/.config/reckon/crew/runs/r-20260925T021111262413-slow-dispatch-tests-wait-on-events/</code>:
+      <code>logs/base-durations.log</code> (base), <code>logs/after-durations-serial.log</code>,
+      <code>logs/after-durations-n4.log</code>, and the two negative-control logs above. Figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/event-wait-durations.png">per-test before and
+      after with both violated-bound results</a>. This gate measures only this node's own two files;
+      the merged result is a separate test node's measure.</p>
+    </section>
   </main>
 </body>
 </html>
