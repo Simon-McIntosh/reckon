@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T06:14:31",
+  "updated": "2026-09-25T06:15:50",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -386704,6 +386704,294 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T033137525290-closure-split-narrowings-are-guarded",
+        "plan": "dependency-edge-semantics",
+        "section": "\u00a76",
+        "node": "closure-split-narrowings-are-guarded",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 4345,
+                "cached_input_tokens": 720553,
+                "input_tokens": 724900,
+                "output_tokens": 1407,
+                "reasoning_output_tokens": 66,
+                "total_tokens": 726307,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "tests/test_transition_gates_read_alike.py gains two cases against the review at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T011148256501-surfaces-read-the-closure-split.json: one asserting that a plan whose only open decision is gated by a transition edge keeps an effective_status that is not blocked on that decision (guarding the narrowing of the effective_status blocker list to open_decisions in reckon/roadmap.py), and one asserting that the roadmap payload's decision_readiness tally does not count that gated decision as open (guarding the narrowing to open_decisions_report). The declared negative control is executed and logged for each: restoring decision_blockers in the effective_status computation makes the first case fail, and restoring decision_blockers_report in the tally makes the second fail. No source file changes; tests/test_transition_gates_read_alike.py and tests/test_closure_gates.py pass at your head.",
+          "estimated_hours": null,
+          "goal": "A test fails if either roadmap narrowing that keeps a transition gate out of the decision blockers is reverted",
+          "id": "closure-split-narrowings-are-guarded",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T03:31:38Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 1,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 9,
+            "mean_context": 106667,
+            "observed_at": "2026-09-25T03:31:37Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033137525290-closure-split-narrowings-are-guarded/manifest.md",
+          "negative_control": "restore decision_blockers in the effective_status computation and decision_blockers_report in the decision tally in reckon/roadmap.py, one at a time; each new case must fail under its own mutation",
+          "plan": "dependency-edge-semantics",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_transition_gates_read_alike.py",
+            "docs/evidence/archive/dependency-edge-semantics-landed.html",
+            "docs/figures/dependency-edge-semantics",
+            "docs/plans/dependency-edge-semantics.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-admission",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T03:31:55Z",
+        "completed_at": "2026-09-25T03:55:37.207Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1157,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1422,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "2caff888149f0da23f3e4a7a3861fe3abc73da77",
+        "commits": [
+          "4484c60b073da681952d2add51cdf89b3d54fb97",
+          "c8a73d7c10942537c07f6b36ca9dee2fc5acaf11"
+        ],
+        "changed_lines": {
+          "added": 178,
+          "removed": 16,
+          "files": 4
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_transition_gates_read_alike.py tests/test_closure_gates.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033137525290-closure-split-narrowings-are-guarded/gate-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033137525290-closure-split-narrowings-are-guarded/manifest.md",
+        "scope_changed": false,
+        "session_id": "6bfec760-7c91-4eb1-9350-69ef75005ae7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4675762,
+            "input_tokens_cumulative": 4675762,
+            "output_tokens": 52368,
+            "output_tokens_cumulative": 52368,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T03:55:37.207Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 20,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 100
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 4675762,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1176.271,
+          "generated_tokens": 52368,
+          "generation_seconds": 1140.376,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 29.5,
+          "machine_seconds": 35.895,
+          "peak_input_tokens": 141661,
+          "tokens_per_second": 45.92,
+          "wall_tokens_per_second": 44.52
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/closure-split-narrowings-are-guarded",
+          "session_id": "6bfec760-7c91-4eb1-9350-69ef75005ae7",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T03:55:37.207Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T03:55:37Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T03:35:57Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T033137525290-closure-split-narrowings-are-guarded",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 10933,
+          "worker_pid": 2759759
+        },
+        "promoted_revision": "c8a73d7c10942537c07f6b36ca9dee2fc5acaf11",
+        "plan_impl_at_dispatch": 0.95,
+        "impl_move": {
+          "plan": "dependency-edge-semantics",
+          "at_dispatch": 0.95,
+          "at_complete": 0.95,
+          "verdict": "waived",
+          "reason": "\u00a76's guard node; the plan's scope grew by \u00a77 at the same beat, so impl holds at 0.95"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_transition_gates_read_alike.py"
+          ],
+          "declaration": "restore decision_blockers in the effective_status computation and decision_blockers_report in the decision tally in reckon/roadmap.py, one at a time; each new case must fail under its own mutation",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033137525290-closure-split-narrowings-are-guarded/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033137525290-closure-split-narrowings-are-guarded/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T04:01:38.950178+00:00",
+          "horizon_seconds": 1800,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T03:31:38Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 1,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 9,
+          "mean_context": 106667,
+          "observed_at": "2026-09-25T03:31:37Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 53.0,
+        "orientation_input_tokens": 1051055.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -387016,6 +387304,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2678
+    "_version": 2679
   }
 }
