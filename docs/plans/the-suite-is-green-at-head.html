@@ -854,6 +854,51 @@
       <p><strong>Follow-ons.</strong> None.</p>
     </div>
 
+    <div class="r-note" data-reckon="landed" data-node="process-tests-hold-under-load" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; the process-backed cases hold under parallel load.</strong> Commits
+      <code>91e3fd05</code> <em>test(crew): hold the reload and arming cases under a loaded parallel
+      run</em> and <code>91b8f1d7</code> <em>test(follower): keep the source-edit window exclusive
+      across pytest workers</em>. Two causes, both in the cases rather than in what they measure.
+      A follower that reloads on a source change stamps the package when it first enters its stream
+      loop, and the registration record that says it is armed is written <em>before</em> that stamp;
+      a case that edited the source as soon as the record appeared had its own edit captured as the
+      baseline, so no reload was ever seen and the case failed on a run where the follower was
+      behaving correctly. The cases now wait for the first wait pass the sweep records
+      (<code>swept_by_pid</code>) before touching the source, so the change lands after the
+      baseline is fixed, and the change is a content append so both the size and the mtime of the
+      stamped file move. Separately, a dispatch that names no roster member provisions one under its
+      own session, and that provisioning is a commit into the project's shared roster; two
+      dispatches racing on it can exhaust a bounded, no-pause retry and be refused for a reason that
+      is not the producer seat the case measures. The concurrent case now registers both session
+      members serially before the racing section, leaving it measuring the seat alone.</p>
+      <p><strong>Measured.</strong> Six named ids, each observed failing under load and passing
+      alone before repair, then passing in three consecutive <em>-n 8</em> runs of its file while a
+      concurrent <em>-n 8</em> full-suite run of the main checkout loaded the node: three reload
+      cases in <code>tests/test_follower_checks_its_owner.py</code> and
+      <code>tests/test_follow_lifetime_survives_reload.py</code>, and three producer cases in
+      <code>tests/test_crew_dispatch_arming.py</code> and
+      <code>tests/test_watch_arming_isolation.py</code>. The three owned files report 13 passed at
+      <em>-n 8</em> under that load, three times, and 13 passed run serially; the source tree is
+      left with no appended probe bytes after any run. Declared negative control &mdash;
+      <em>restore each original wait or assertion and observe it fail again under the same
+      load</em>. Satisfied for the reload ordering (3 of 3 loaded runs fail, <code>the follower did
+      not replace its image</code>) and for the lifetime case (1 of 3, the same window narrower
+      there). The arming mutation did not reproduce in three loaded runs &mdash; the collision needs
+      the two roster commits to overlap inside the retry &mdash; and is recorded with the
+      pre-repair observation that is its evidence instead: that id failed 2 of 3 loaded runs with
+      <code>could not provision session member &hellip; after 12 attempts</code>. No test is
+      skipped, xfailed, deleted or weakened, and no id in the owned files moved pass to fail.
+      Logs in the run record; figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/process-tests-under-load.svg">the trigger
+      ordering and each id's state alone and under load</a>. Anchor:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-process-tests-hold-under-load">process-tests-hold-under-load</a>.</p>
+      <p><strong>Follow-ons.</strong> The roster provisioning retries a bounded number of times with
+      no pause, so a loser under load is refused rather than waiting; the cases absorb it, the
+      product may want a backoff. The main checkout's editable-install pointer resolved
+      <code>import reckon</code> to this worktree while it existed; a coordinator should re-sync the
+      main environment after the worktree is removed.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">

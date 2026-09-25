@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
   <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
-  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df,2bb4fd6d,6d813b38,bdfff7f4,41737d3e">
+  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df,2bb4fd6d,6d813b38,bdfff7f4,41737d3e,91e3fd05,91b8f1d7">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <title>The Suite Is Green At Head — landed evidence | reckon</title>
@@ -1594,6 +1594,62 @@ env -C /tmp/other-reckon-surface PYTHONPATH= &lt;worktree&gt;/.venv/bin/python -
       Figure
       <a href="/reckon/figures/the-suite-is-green-at-head/resumed-runs-measure-cell.svg">the row's one
       measure cell, and the removed rate cell the test used to read</a>.</p>
+    </section>
+
+    <section id="node-process-tests-hold-under-load">
+      <h2>process-tests-hold-under-load</h2>
+      <p>Six process-backed ids in <code>tests/test_follower_checks_its_owner.py</code>,
+      <code>tests/test_follow_lifetime_survives_reload.py</code>,
+      <code>tests/test_crew_dispatch_arming.py</code> and
+      <code>tests/test_watch_arming_isolation.py</code>, held under a loaded parallel run at
+      <code>-n 8</code> with a concurrent full-suite run of the main checkout loading the node.
+      Commits <code>91e3fd05</code> and <code>91b8f1d7</code>.</p>
+
+      <h3>Measure</h3>
+      <p>Each of the six ids was first observed failing under load and passing alone with both logs
+      recorded, then made to pass in three consecutive <em>-n 8</em> runs of its file under that
+      load. The three owned files report <strong>13 passed</strong> at <em>-n 8</em> under load,
+      three times, and <strong>13 passed</strong> serially. Two states were repaired, both in the
+      cases rather than in what they measure:</p>
+      <ul>
+        <li><strong>The reload cases changed the source before the follower had fixed its
+        baseline.</strong> A follower stamps the imported package when it enters its stream loop,
+        and the registration record that marks it armed is written before that stamp, so an edit
+        made as soon as the record appeared was captured as the baseline and no reload followed.
+        The cases now wait for the sweep's first wait pass (<code>swept_by_pid</code>), then append
+        content so both size and mtime of the stamped file move. Observed failing first:
+        <code>the follower did not replace its image</code> and
+        <code>the follower did not replace its image within 6.0s of the source change</code>.</li>
+        <li><strong>Two racing dispatches contended for one roster index.</strong> A dispatch that
+        names no member provisions one under its session, a commit into the shared roster; the
+        loser retries a bounded number of times with no pause. Observed failing: 2 of 3 loaded runs
+        with <code>could not provision session member 'session-4fe582fd12754e0b4fec' after 12
+        attempts &hellip; uncommitted member registration(s): session-5cfb2a1c47cd2054bc5b</code>.
+        The case now registers both session members serially before the racing section.</li>
+      </ul>
+      <p>The source tree is left with no appended probe bytes after any run. No test is skipped,
+      xfailed, deleted or weakened, and no other id in the owned files moved pass to fail.</p>
+
+      <h3>Negative control</h3>
+      <p>Declared: <em>restore each original wait or assertion and observe it fail again under the
+      same load</em>. Satisfied for the reload ordering &mdash; reverting the wait makes the owner
+      case fail <strong>3 of 3</strong> loaded runs with <code>the follower did not replace its
+      image</code>, and the lifetime case 1 of 3, the same window narrower there because it waits
+      for a sweep child before the change. The arming mutation did <strong>not</strong> reproduce in
+      three loaded runs: it needs the two roster commits to overlap inside the bounded no-pause
+      retry. That id's evidence is its pre-repair observation instead, the 2-of-3 refusal quoted
+      above. Log <code>logs/negative-control.log</code>, whose first line repeats the declared
+      string verbatim.</p>
+
+      <h3>Evidence and figure</h3>
+      <p>Logs under <code>logs/load-mine-locked-*.log</code>, <code>logs/load-mine-arming-*.log</code>,
+      <code>logs/load-mine-nc-own-*.log</code>, <code>logs/load-mine-nc-life-*.log</code>,
+      <code>logs/load-mine-nc-arm-*.log</code>, <code>logs/negative-control.log</code> in the run
+      record
+      <code>~/.config/reckon/crew/runs/.../r-20260925T025834054990-process-tests-hold-under-load/logs/</code>.
+      Figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/process-tests-under-load.svg">the trigger
+      ordering, and each id's state alone and under load</a>.</p>
     </section>
   </main>
 </body>
