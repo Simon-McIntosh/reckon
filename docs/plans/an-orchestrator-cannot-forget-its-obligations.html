@@ -176,6 +176,9 @@
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260925T080918504205-hook-installer-prints-before-it-writes" data-who="reckon-build" data-when="2026-09-25T10:11:49.865Z">
     <div class="r-comment-body"><p>hook installer prints by default and writes only on request; nothing installed; review 91</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-20260925-obligations-mcp-view-seeded" data-who="reckon-build-worker" data-when="2026-09-25T13:00:00Z">
+    <div class="r-comment-body"><p><code>c78ffabc</code> reseeds the obligations MCP view test so it measures the derivation again. The old <code>derived</code> fixture patched <code>recovery.recover</code>, which the purity change had already taken off the read path; the fixture now seeds live run pointers, complete manifests and run directories in a content-addressable synthetic home and derives through <code>recovery.classify_pointer</code>, producing a <code>review-missing</code> and a <code>review-ready</code> duty. Two tests pass at the committed head with the absolute <code>.venv</code> interpreter (<code>2 passed</code>), the reused census file passes unchanged, and ruff reports no findings on the file. Both declared mutations were observed to fail: dropping the obligations branch in <code>reckon/mcp.py</code> reds both tests, and re-adding the inert <code>recover</code> patch while removing the seeding reds the kinds assertion. Figure: <a href="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-mcp-view-seeded.svg">where the stub read nothing and the seeded pointers read two duties</a>. Full record: <a href="/reckon/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed#obligations-mcp-view-reseeded">reseeded view evidence</a>.</p></div>
+</div>
 </section>
   </main>
 </body>

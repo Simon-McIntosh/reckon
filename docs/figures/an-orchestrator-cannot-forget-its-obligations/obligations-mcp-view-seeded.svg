@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 430" font-family="system-ui, sans-serif" font-size="13">
+  <title>How the reseeded fixture measures the derived obligations again</title>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#555"/>
+    </marker>
+  </defs>
+  <rect width="760" height="430" fill="#ffffff"/>
+  <text x="24" y="30" font-size="16" font-weight="600">The view test: an inert stub read nothing, seeded pointers read two duties</text>
+
+  <!-- BEFORE -->
+  <text x="24" y="62" font-size="12" fill="#555">before: the fixture stubbed recovery.recover</text>
+  <rect x="24" y="72" width="300" height="120" rx="6" fill="#fdeeee" stroke="#d98b8b"/>
+  <text x="40" y="96" font-weight="600">tests/test_mcp_crew_obligations.py</text>
+  <text x="40" y="118" fill="#333">monkeypatch recovery.recover -&gt; 2 stub rows</text>
+  <text x="40" y="140" fill="#333">no pointers, manifests or run dirs seeded</text>
+  <text x="40" y="170" fill="#a33">obligations() never calls recover now</text>
+
+  <rect x="24" y="212" width="300" height="120" rx="6" fill="#fdeeee" stroke="#d98b8b"/>
+  <text x="40" y="236" font-weight="600">reckon/crew/obligations.py</text>
+  <text x="40" y="258" fill="#333">runs.list_live(project) -&gt; []</text>
+  <text x="40" y="280" fill="#333">recovery.classify_pointer per pointer</text>
+  <text x="40" y="312" fill="#a33">kinds [] != [review-ready, review-missing]</text>
+
+  <!-- arrow to AFTER -->
+  <line x1="332" y1="202" x2="418" y2="202" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+  <text x="336" y="194" font-size="11" fill="#555">reseed with real state</text>
+
+  <!-- AFTER -->
+  <rect x="424" y="72" width="312" height="120" rx="6" fill="#eef7ee" stroke="#7fae7f"/>
+  <text x="440" y="96" font-weight="600">fixture seeds a synthetic home</text>
+  <text x="440" y="118" fill="#333">live pointer + complete manifest per run</text>
+  <text x="440" y="140" fill="#333">run directory; a stored review on one head</text>
+  <text x="440" y="170" fill="#365">reuses tests/test_crew_obligations helpers</text>
+
+  <rect x="424" y="212" width="312" height="150" rx="6" fill="#eef7ee" stroke="#7fae7f"/>
+  <text x="440" y="236" font-weight="600">derivation reads the real classifier</text>
+  <text x="440" y="258" fill="#333">run-view-review-ready: complete + review</text>
+  <text x="452" y="276" fill="#365">-&gt; promotable -&gt; review-ready (age 240)</text>
+  <text x="440" y="298" fill="#333">run-view-review-missing: complete, no review</text>
+  <text x="452" y="316" fill="#365">-&gt; scoring -&gt; review-missing (age 120)</text>
+  <text x="440" y="342" fill="#365">view obligations == function obligations</text>
+
+  <!-- legend -->
+  <text x="24" y="378" font-size="11" fill="#555">The reseed is what the two declared mutations are measured against:</text>
+  <text x="24" y="396" font-size="11" fill="#555">drop the obligations branch (view loses the payload); re-add the inert patch (derivation returns nothing).</text>
+</svg>

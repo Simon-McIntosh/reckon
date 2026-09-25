@@ -193,6 +193,23 @@
       <p><strong>Supersession.</strong> The two paragraphs above cite a receipt named <code>negative-control.log</code>, written before this revision; that file is retained on disk but is superseded by <code>negative-control-cap-record.log</code>, which reprints the same declared mutation at the current head. The earlier failure counts (four, then two) reflect the smaller test set at those heads; the reprinted receipts show eight and three against the thirteen-test file. The install snippet is unchanged.</p>
     </section>
 
+    <section id="obligations-mcp-view-reseeded">
+      <h2>The MCP view test seeds real duties again</h2>
+      <p>Commit <code>c78ffabd3eba11ae5607dcd6879feebc579c0287</code> rewrites <code>tests/test_mcp_crew_obligations.py</code>. The prior fixture stubbed <code>reckon.crew.recovery.recover</code>, but the derivation reads <code>runs.list_live(project)</code> and classifies each pointer through <code>recovery.classify_pointer</code>; the stub was never on that path, so both sides of the view equality were computed from the real classifier against an empty synthetic home. The fixture now seeds two dead runs whose manifests report completion — one with a stored review of its head (<code>review-ready</code>) and one without (<code>review-missing</code>) — into a synthetic configuration home.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-mcp-view-seeded.svg" alt="Before: a stub on recovery.recover was never read and the derivation returned no duties. After: seeded pointers and manifests classified through recovery.classify_pointer yield a review-ready and a review-missing duty, and the view equals the function.">
+        <figcaption>The reseed restores a measurement: the stub read nothing, while seeded pointers classify to the two seeded duties.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>gate</td><td><code>c78ffabd</code></td><td>2 passed, exit 0</td><td><code>runs/r-20260925T103032479587-mcp-obligations-test-seeds-real-pointers/gate.log</code></td></tr>
+          <tr><td>mutation: drop the obligations branch in <code>reckon/mcp.py</code></td><td><code>72bb6a5a</code></td><td>2 failed, exit 1</td><td><code>&#8230;/negative-control-drop-obligations-branch.log</code></td></tr>
+          <tr><td>mutation: re-add the inert recover patch, seed no pointers</td><td><code>72bb6a5a</code></td><td>1 failed, 1 passed, exit 1</td><td><code>&#8230;/negative-control-inert-recover-patch.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The fixture reuses the census module's seeding helpers (<code>_git</code>, <code>_write_pointer</code>, <code>_store_complete_review</code>, <code>_file_mtimes</code>) and its <code>PROJECT</code> and <code>SESSION</code> vocabulary rather than defining a second copy. The test first asserts the derivation's item kinds are exactly the two seeded and non-empty, then asserts the view's <code>obligations</code> and <code>summary</code> equal the function's own output; the missing-session test is unchanged. Both declarations are restored byte-identically and the working tree is clean after each.</p>
+    </section>
   </main>
 </body>
 </html>
