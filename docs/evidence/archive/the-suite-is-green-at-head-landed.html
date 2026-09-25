@@ -1027,6 +1027,56 @@ docs/state/proj/crew.json; commit or discard that roster write before retrying</
       is likewise red at base and at head under the same selection, and belongs to the
       <code>test_ledger</code> node.</p>
     </section>
+  <section id="node-no-watch-producer-outlives-the-suite">
+      <h2>no-watch-producer-outlives-the-suite — a session check fails the run on a leaked producer</h2>
+      <p><strong>What landed, and why.</strong> Arming a project watch producer is detached on purpose, so a
+      producer a test starts is nobody's child. The suite already carried a session-scoped reaper that terminates
+      the pids named by the seat records under the base temp directory. A record only names a producer that
+      reached its seat, so a producer that died earlier, or one started by a path that never wrote a record, was
+      not listed and would survive the reaper in silence. The session fixture now reads every live
+      <code>crew watch</code> process from <code>/proc</code> after the reaper runs and fails the session, naming
+      the pid and the <code>RECKON_HOME</code> it reports into, if any of them names a configuration home this run
+      created.</p>
+      <p><strong>The check, in three parts.</strong> (1) A configuration home is test-owned when it lies under the
+      pytest base temp directory, or it sits directly under the system temp directory with a prefix a test
+      registered — the second case exists because the arming guard's own definition of an ordinary home is
+      <em>outside the pytest temporary root</em>, so a test proving arming proceeds for an ordinary home cannot
+      place it under that root. (2) Liveness is read from the live process's own environment, never from the stored
+      record: a record names a pid only until it exits, and the pid may since have been reused. (3) The reaped pids
+      are given a bounded grace to leave <code>/proc</code> before the scan, so a terminated producer on a loaded
+      host cannot read as one that ignored the signal.</p>
+      <p><strong>Home creation is now tracked.</strong> <code>tests/test_watch_arming_isolation.py</code> creates its
+      ordinary-home and outside-home fixtures through the registered helper rather than a bare
+      <code>tempfile.mkdtemp</code>, so a producer naming either is attributable to this run. The helper registers a
+      prefix, not a path, because the test removes the directory and a leaked producer goes on naming the deleted
+      path.</p>
+      <p><strong>The new test, and its control.</strong> A test asserts the scan finds a producer naming a home under
+      the base temp directory and does not find one naming a home this run did not create, so the check cannot
+      aim a verdict at a peer's producer. Full record with the figure:
+      <a href="/reckon/figures/the-suite-is-green-at-head/watch-producer-session-check.png">watch producer session
+      check</a>.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Deliberately leaked producer is reported</td><td>Scratch test, not committed: session failed with
+          <code>pid 2036229 (RECKON_HOME=/tmp/pytest-of-mcintos/pytest-scratch-pos/test_a_deliberately_leaked_pro0/leaked-home)</code></td></tr>
+          <tr><td>Declared negative control</td><td>Remove the new session check and the same leak goes unreported:
+          exit 0, and a scan confirmed the producer still alive (<code>pid 2038580</code>) — so the pass was a miss,
+          not an absence of leak</td></tr>
+          <tr><td><code>tests/test_watch_arming_isolation.py</code></td><td>8 passed, exit 0, per file</td></tr>
+          <tr><td><code>tests/test_crew_dispatch_arming.py</code></td><td>6 passed, exit 0, three consecutive per-file
+          runs in a quiet window; under host load one listed load-sensitive id
+          (<code>test_concurrent_dispatches_arm_exactly_one_detached_producer</code>, named in §3) failed intermittently
+          — its robustness is §3's separate measure, not this node's</td></tr>
+          <tr><td>Product files touched</td><td>none — no <code>reckon/</code> path, no test disabled, skipped or weakened</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Scope note.</strong> One clause of this node's assigned evidence asked the isolation test to create
+      <em>every</em> configuration home under the pytest base temp directory. Two homes cannot go there: the ordinary
+      home the arming guard must treat as ordinary, and the outside home a record-attribution test must exclude from
+      its search. Both are now created through the registered helper instead, so they are tracked rather than bare —
+      the substance of the clause — while the guard's own definition of an ordinary home is preserved.</p>
+    </section>
   </main>
 </body>
 </html>

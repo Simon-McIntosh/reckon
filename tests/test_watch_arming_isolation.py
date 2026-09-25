@@ -16,6 +16,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -225,7 +226,9 @@ def test_arming_refuses_a_configuration_home_under_a_test_directory(
 
 def test_arming_proceeds_for_an_ordinary_configuration_home(monkeypatch) -> None:
     """The refusal is bound to the throwaway home, not to arming itself."""
-    ordinary = Path(tempfile.mkdtemp(prefix="reckon-ordinary-home-"))
+    from tests.conftest import test_temp_config_home
+
+    ordinary = test_temp_config_home("reckon-ordinary-home-")
     launched: list[list[str]] = []
 
     class _Supervisor:
@@ -294,10 +297,10 @@ def test_a_producer_is_bound_to_this_run_by_the_home_it_reports_into(
     the pid, and the directory's location names the run. A record under another
     run's home belongs to that run and must not be found from this one.
     """
-    from tests.conftest import watcher_record_pids
+    from tests.conftest import test_temp_config_home, watcher_record_pids
 
     inside = tmp_path / "inside"
-    outside = Path(tempfile.mkdtemp(prefix="reckon-ordinary-home-"))
+    outside = test_temp_config_home("reckon-ordinary-home-")
     (inside / "crew" / "watch").mkdir(parents=True)
     (outside / "crew" / "watch").mkdir(parents=True)
 
@@ -325,3 +328,49 @@ def test_a_producer_is_bound_to_this_run_by_the_home_it_reports_into(
             process.terminate()
             process.wait(timeout=10)
         shutil.rmtree(outside, ignore_errors=True)
+
+
+def _spawn_lookalike(config_home: Path) -> subprocess.Popen:
+    """A detached process whose argv and environment read as a watch producer."""
+    return subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import time; time.sleep(120)",
+            "crew",
+            "watch",
+            "--project",
+            "sample",
+        ],
+        env={**os.environ, "RECKON_HOME": str(config_home)},
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def test_the_session_check_reads_a_producers_own_home(tmp_path_factory) -> None:
+    """A live producer is bound to this run by the home its environment names.
+
+    A producer is run detached, because detached is what makes it outlive the
+    test that started it — a child a teardown could wait on would not model the
+    case the session check exists for. One producer names a home under the
+    pytest base temp directory, which is how the check finds it; a second names
+    a home this run did not create, and must not be reported, because reporting
+    it would aim a verdict at a peer's producer.
+    """
+    from tests.conftest import leaked_watch_producers
+
+    base = tmp_path_factory.getbasetemp()
+    ours = _spawn_lookalike(base / "producer-home")
+    foreign = _spawn_lookalike(
+        Path(tempfile.gettempdir()) / "reckon-not-this-runs-home"
+    )
+    try:
+        pids = {pid for pid, _ in leaked_watch_producers(base)}
+
+        assert ours.pid in pids
+        assert foreign.pid not in pids
+    finally:
+        for process in (ours, foreign):
+            process.terminate()
+            process.wait(timeout=10)

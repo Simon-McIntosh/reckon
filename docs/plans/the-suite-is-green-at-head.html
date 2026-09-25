@@ -559,6 +559,34 @@
       </tbody>
     </table>
 
+    <div class="r-note" data-reckon="landed" data-node="no-watch-producer-outlives-the-suite" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; a session check now fails the run on a crew watch producer a test leaked.</strong>
+      The session fixture that reaps a run's producers by seat record could not see a producer that never registered
+      one, so such a producer survived the reaper in silence. The fixture now reads every live <code>crew watch</code>
+      process from <code>/proc</code> after the reaper, and fails the session naming the pid and the
+      <code>RECKON_HOME</code> it reports into, when that home is one the run created: under the pytest base temp
+      directory, or directly under the system temp directory with a prefix a test registered. Liveness is read from
+      the live process's own environment, never the stored record, and the reaped pids are given a bounded grace to
+      leave <code>/proc</code> so a terminated producer on a loaded host cannot read as one that ignored the signal.</p>
+      <p><strong>Measure.</strong> A deliberately leaked producer in a scratch test (not committed) failed the session,
+      reporting its pid and home. The declared negative control &mdash; remove the session check and observe the leak go
+      unreported &mdash; was applied: the same run exited 0 while a scan confirmed the producer still alive, so the
+      pass was a miss and the check is what carries the verdict. At <code>2a72458c</code>,
+      <code>tests/test_watch_arming_isolation.py</code> ran 8 passed / exit 0, and
+      <code>tests/test_crew_dispatch_arming.py</code> ran 6 passed / exit 0 three consecutive times in a quiet window;
+      under host load the load-sensitive id <code>test_concurrent_dispatches_arm_exactly_one_detached_producer</code>
+      failed intermittently, which the load-sensitive measure above owns. No test was disabled, skipped or weakened,
+      and no <code>reckon/</code> path was touched. <code>tests/test_watch_arming_isolation.py</code> now creates its
+      ordinary-home and outside-home fixtures through the registered helper rather than a bare
+      <code>tempfile.mkdtemp</code>, so a producer naming either is attributable to this run.</p>
+      <p><strong>Not closed here.</strong> This node records the check and its evidence; the merged-head full-suite run
+      and the load-sensitive robustness measure remain §3's, and this node does not resolve its driving followup or set
+      a terminal status. Full record:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-no-watch-producer-outlives-the-suite">landed
+      evidence</a>, figure <a href="/reckon/figures/the-suite-is-green-at-head/watch-producer-session-check.png">watch
+      producer session check</a>.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">
