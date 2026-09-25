@@ -133,6 +133,31 @@
       members, runs a dispatch and an observe, and requires member fields byte-identical afterwards
       while the run record carries the session. That uncommitted roster write is what dirtied
       <code>crew.json</code> under a peer session tonight.</p>
+      <div id="run-owned-session-landing" class="landed-summary">
+        <p><strong>Worker implementation recorded 2026-09-25; integration gate remains unmet.</strong>
+        Commit <code>2760462980e9f6394245ca24bfca9609de81b290</code> moves automatic capture
+        onto the run, records the owning harness on live pointers and promoted rows, and leaves
+        roster members unchanged. Lane changes update the saved command and harness; resume
+        uses that harness's session, or starts fresh with a recorded reason. Same-task dispatch
+        withholds a session belonging to another harness.</p>
+        <p>The seven isolated cases pass, including dispatch/observe roster byte equality,
+        promotion with and without an observe, and a cross-harness move followed by resume and
+        a move back. Restoring the member write at the capture call makes the roster case fail
+        (one expected failure). The importer gate is <strong>not satisfied</strong>: base
+        <code>d4de23475df5a66e30bb1231489a35773fc8fda8</code> has 20 failures, 2,189 passes and
+        4 skips; the implementation has 39 failures, 2,177 passes and 4 skips. That is
+        <strong>21 added failure IDs</strong> and 2 no longer failing. All added failures name
+        test files outside this worker's fence; they are returned without out-of-scope repair.</p>
+        <p>Section closure and the driving followup remain with the coordinator. Next action:
+        assign the importer-delta repairs with the needed test scopes, then verify the combined
+        result. The <a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed#run-owned-session">cumulative
+        evidence anchor</a> holds the exact IDs, commands and logs.</p>
+        <figure>
+          <img src="/reckon/figures/new-work-gets-a-new-worker/run-session-ownership.svg"
+               alt="Worker capture records the session and owning harness on the live run and promoted ledger row; a harness change starts fresh and later resumes use the new harness's session.">
+          <figcaption>The run carries session ownership through capture, promotion and continuation.</figcaption>
+        </figure>
+      </div>
     </section>
 
     <section id="s4" data-reckon="section">
