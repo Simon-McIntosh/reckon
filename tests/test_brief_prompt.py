@@ -133,6 +133,32 @@ def test_the_brief_landing_contract_keeps_the_figure_and_meta_rules() -> None:
     assert "Do not edit the plan-version or plan-modified meta lines" in flat
 
 
+def test_the_brief_landing_contract_never_tells_the_worker_to_commit_the_record() -> (
+    None
+):
+    """The record's directory lies outside the repository, so git refuses a path
+    under it: an instruction to commit the record names an act the worker cannot
+    perform, and a worker who tries reads a refusal as its own scope error."""
+    flat = _flat(_compose(brief=BRIEF_TEXT))
+
+    assert "into your final commit" not in flat
+    assert "both go into" not in flat
+    assert "commit your landing record" not in flat
+    assert "commit the landing record" not in flat
+
+
+def test_the_brief_landing_contract_places_the_record_outside_the_commit() -> None:
+    """The contract must say where the record lives, that it is not committed,
+    and what the worker does commit instead — the repository files it changes."""
+    flat = _flat(BRIEF_LANDING_CONTRACT)
+
+    assert "into this run's own directory" in flat
+    assert "the record's home" in flat
+    assert "never committed" in flat
+    assert "commit only the repository files your node changes" in flat
+    assert "name the record's absolute path in your manifest" in flat
+
+
 def test_the_brief_landing_contract_is_a_pure_removable_substitution(
     monkeypatch,
 ) -> None:
