@@ -20,14 +20,14 @@
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Reckon has no host-environment model today; nothing upstream must land first, and the one consumer (worker launch) is sequenced by the trigger in §4 rather than by a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
   <title>A Worker Knows It Is On Compute | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="14">
 <meta name="plan-commits" content="9e695b0c,bf1725d6,2700bda6,a4bbb242,f2810b50">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-impl" content="0.4">
 </head>
 <body>
   <main class="plan-doc">
@@ -202,6 +202,17 @@
     Full record:
     <a href="/reckon/evidence/archive/a-worker-knows-it-is-on-compute-landed#s5">&sect;5 landed evidence</a>.</p>
 
+    <h2 id="s6">&sect;6 &mdash; A worker's scratch lives and dies with its run</h2>
+    <p>The login-node imas-ambix session counted 37 worker scratch entries in clu-2058's node-local <code>/tmp</code>, written between 21:10 and 01:08 on 2026-09-24. They include <code>probe_accounting*.py</code>, <code>probe_follower*.py</code>, <code>probe-mount-*</code>, <code>sg-probe*</code>, <code>rh-probe-*</code>, <code>spend-probe</code> and <code>bt-probe*</code>. Two of them came from S23's own runs, and the coordinator removed those by path. Nothing owns the rest, and nothing removes them. <code>/tmp</code> is a shared, node-local allocation. It is also invisible from the login node, so anything a later reader needs must not live there either.</p>
+    <p>Dispatch should give each worker a private scratch directory under node-local <code>/tmp</code>, named for its run id, and set it as the worker's <code>TMPDIR</code>. Promotion or discard should remove that directory, printing what it removed. Gate logs and evidence continue to go to the run directory on GPFS.</p>
+    <p><strong>Trigger:</strong> deferred, like &sect;4, until no live run claims <code>reckon/crew/dispatch.py</code> (S21) or <code>reckon/crew/promotion.py</code> (S21). The worker-contract line that says so rides with &sect;4's host line.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A dispatch test shows the worker's <code>TMPDIR</code> is a per-run directory under the node-local scratch root.</li>
+      <li>A promotion test and a discard test each show that directory removed, with the removal printed.</li>
+      <li>A test asserts that a directory belonging to a different run survives.</li>
+    </ul>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-awkioc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build a-worker-knows-it-is-on-compute" data-resolved-at="" data-resolved-by="">
@@ -232,7 +243,7 @@
     <div class="r-comment-body"><p>review of host-facts-probe scored 97/100; plan prose on occupying_the_reservation corrected at landing; one self-referential FACTS assertion noted</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260925T000046843631-review-of-nested-launch-is-refused" data-who="reckon-build" data-when="2026-09-25T01:00:50.443Z">
-    <div class="r-comment-body"><p>review of nested-launch-is-refused scored 90/100: the shim-directory filter in real_binary is unexercised and the refusal status is asserted against the imported constant; both returned to the node&#x27;s session</p></div>
+    <div class="r-comment-body"><p>review of nested-launch-is-refused scored 90/100: the shim-directory filter in real_binary is unexercised and the refusal status is asserted against the imported constant; both returned to the node's session</p></div>
 </div>
 </section>
 </main>
