@@ -246,6 +246,276 @@ tests/test_run_record_reports_actual_resume.py
     <img src="/reckon/figures/new-work-gets-a-new-worker/first-request-input.png" alt="Distribution of codex runs by opening-request input; the fresh-run median sits near 41k tokens and the resumed-run population is shifted well right, with the named positive control at 378,921 tokens."></p>
   </section>
 
+
+  <section id="run-owned-session">
+    <h2>§3 — Worker session capture belongs to its run</h2>
+    <p><strong>Worker implementation complete; required importer gate unmet.</strong>
+    Product commit <code>2760462980e9f6394245ca24bfca9609de81b290</code>, against base
+    <code>d4de23475df5a66e30bb1231489a35773fc8fda8</code>. This records the worker's
+    implementation and measurements; it does not close the section or its driving followup.</p>
+
+    <h3>Reproduction and change</h3>
+    <p>At base, the dispatch/observe test fails on <code>assert _members(repo) == before</code>:
+    observation writes session fields into both an empty member and a member with unrelated
+    legacy session metadata. A run moved from the codex harness to the claude harness then
+    fails <code>assert plan.dialect == "claude"</code>, returning <code>"codex"</code>.
+    The two additional base cases also fail: resume without a captured session on the new
+    harness, and same-task dispatch across harnesses. Reproduction logs are retained under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T022155719269-session-lives-on-its-run</code>.</p>
+    <p><code>reckon/crew/runs.py</code> now provides <code>capture_run_session</code>.
+    Capture retains <code>session_id</code>, <code>session_harness</code> and
+    <code>session_model</code> on the run. <code>reckon/ledger.py</code> records the owning
+    harness and model alongside the promoted session, using the launched agent's recorded
+    dialect. The same-task selector reads the run and ledger row and withholds incompatible
+    harness ownership. <code>reckon/crew/dispatch.py</code> updates command, argv and dialect
+    together on a lane change, confines session recovery at a fresh harness boundary to the
+    current stream, and records why a resume must start fresh when no compatible session exists.</p>
+    <p>The compatibility entry point <code>_capture_member_session</code> remains because the
+    separately owned promotion module imports it. It delegates to run capture and performs
+    no roster write. Explicit roster registration is separate from automatic capture.</p>
+    <figure>
+      <img src="/reckon/figures/new-work-gets-a-new-worker/run-session-ownership.svg"
+           alt="Session capture flows from worker stream to live run to promoted row, and reuse checks task plus harness identity; after moving to another harness, resume uses that harness's own session.">
+      <figcaption>Session ownership travels with the run, including across a harness change.</figcaption>
+    </figure>
+
+    <h3>Checks that could fail</h3>
+    <table>
+      <thead><tr><th>Check</th><th>Observed result</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Seven isolated regression cases</td><td>7 passed in 10.44 s before commit;
+        all seven also pass in the committed-head importer run.</td><td><code>focused-complete.log</code>, <code>after.log</code></td></tr>
+        <tr><td>Declared negative control</td><td>1 expected failure on roster byte equality</td><td><code>negative-control.log</code></td></tr>
+        <tr><td>184 existing importing files at base</td><td>20 failed, 2,189 passed, 4 skipped;
+        exit 1; 430.33 s</td><td><code>baseline.json</code>, <code>baseline.log</code></td></tr>
+        <tr><td>The same files plus the new file at the product commit</td><td>39 failed,
+        2,177 passed, 4 skipped; exit 1; 423.54 s</td><td><code>after.json</code>, <code>after.log</code></td></tr>
+        <tr><td>Failure-ID delta</td><td>21 added; 2 no longer failing; gate unmet</td><td><code>suite-delta.json</code></td></tr>
+        <tr><td>Scoped Ruff delta</td><td>Zero additional findings on all four Python paths</td><td><code>lint-delta.json</code></td></tr>
+      </tbody>
+    </table>
+    <p>Every log above is under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T022155719269-session-lives-on-its-run</code>. The JSON receipts carry both full failure-ID
+    sets and the exact expanded commands. The gate uses the root project interpreter with
+    <code>PYTHONPATH</code> set to this assigned worktree, <code>-n 4 --dist loadfile</code>,
+    <code>--timeout=120</code>, isolated per-arm basetemps under <code>/tmp</code>, and no pytest
+    cache. Both importer arms ran in the inherited compute allocation <code>1277272</code>.
+    No model endpoint is called; launches use stubs. Header lines record revision, worktree,
+    imported module path and command. <code>committed-markers.json</code> proves the new capture
+    and harness-resolution functions are present in the product commit and the measured import
+    resolves to the assigned tree.</p>
+    <p>The negative control restores the base capture function in memory at the active capture
+    call, preserving run capture while reintroducing <code>sessions</code> and
+    <code>session_owners</code> on the member. Its first line repeats the declared mutation
+    verbatim; its traceback fails the byte-equality assertion, not fixture setup. The log names
+    the uncommitted measurement revision and the unchanged product tree subsequently committed
+    as <code>2760462980e9f6394245ca24bfca9609de81b290</code>. The control source and injection
+    script are retained beside it as <code>member_capture_at_base.py</code> and
+    <code>restore_member_capture.py</code>.</p>
+
+    <h3>Required follow-on scope</h3>
+    <p>These 21 added failures span 14 test files outside the worker's write fence.
+    They are reported without triage or edits to those files. Existing tests explicitly requiring
+    roster capture conflict with the requested behavior; the other added failures are not
+    classified here. The coordinator must assign repair scope and require a zero-added-failure
+    comparison before accepting this implementation.</p>
+    <ul>
+      <li><code>tests/test_backend_environment.py::test_run_record_agent_configuration_excludes_environment</code></li>
+      <li><code>tests/test_backend_reconstruction_settings.py::test_a_resumption_states_it_was_not_context_checked</code></li>
+      <li><code>tests/test_crew.py::test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first</code></li>
+      <li><code>tests/test_crew.py::test_resume_resolves_a_stream_session_without_observation_writeback</code></li>
+      <li><code>tests/test_crew.py::test_shadow_inherits_primary_agent_settings_while_switching_backend</code></li>
+      <li><code>tests/test_crew_dispatch_arming.py::test_concurrent_dispatches_arm_exactly_one_detached_producer</code></li>
+      <li><code>tests/test_crew_ephemeral_members.py::test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session</code></li>
+      <li><code>tests/test_crew_interrupted_phase.py::test_observe_folds_a_dead_cli_run_to_orphaned_then_interrupted</code></li>
+      <li><code>tests/test_crew_members.py::test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it</code></li>
+      <li><code>tests/test_follower_checks_its_owner.py::test_a_reload_under_a_live_subreaper_keeps_the_dead_owner</code></li>
+      <li><code>tests/test_ledger.py::test_a_completed_record_carries_every_calibration_input</code></li>
+      <li><code>tests/test_ledger.py::test_a_later_session_is_not_written_over_the_captured_one</code></li>
+      <li><code>tests/test_ledger.py::test_a_member_with_a_null_session_captures_one_from_its_first_run</code></li>
+      <li><code>tests/test_ledger.py::test_a_record_without_a_review_is_distinguishable_from_a_zero_scored_one</code></li>
+      <li><code>tests/test_ledger.py::test_every_completed_record_names_its_completion_time_source</code></li>
+      <li><code>tests/test_ledger.py::test_explicit_promotion_stamp_reaches_every_duration_consumer</code></li>
+      <li><code>tests/test_mcp_recovery.py::test_resume_reattaches_a_session_only_the_stream_carries</code></li>
+      <li><code>tests/test_removed_flag_migration.py::test_the_deprecation_announcement_reaches_stderr_and_not_the_stream</code></li>
+      <li><code>tests/test_routing_evidence_fields.py::test_a_promoted_row_carries_all_three_fields_together</code></li>
+      <li><code>tests/test_session_resumes_only_its_own_task.py::test_a_new_node_does_not_continue_the_members_other_node_session</code></li>
+      <li><code>tests/test_worker_session_is_session_scoped.py::test_the_capture_path_records_the_session_on_the_roster</code></li>
+    </ul>
+    <p>The two IDs no longer failing are
+    <code>tests/test_follow_lifetime_survives_reload.py::test_a_reload_does_not_restart_the_lifetime</code>
+    and <code>tests/test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap</code>.
+    Their changed outcomes are recorded without claiming those defects were repaired.</p>
+  </section>
+
+  <section id="run-record-test-adaptation">
+    <h2>Run-record test adaptation — three repaired assertions, seven preserved failures</h2>
+    <p><strong>Node:</strong> <code>session-tests-meet-the-run-record</code>.
+    Base <code>5065f8638d944a8820c34adb02534144a1761ddb</code>; test commit
+    <code>323cad737c02dcad4d0c805d0ad873b75c9a135d</code>. This is the bounded test
+    adaptation receipt. It does not close §3 or establish a green integration result.</p>
+    <p>The input is the original implementation's <code>suite-delta.json</code> under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T022155719269-session-lives-on-its-run</code>.
+    It lists 21 added failures: ten in this node's files and eleven held by peers. The
+    reproduction at the assigned base sees all ten. Three fail on automatic session writes
+    to members; seven fail on other contracts and remain unchanged.</p>
+    <figure>
+      <img src="/reckon/figures/new-work-gets-a-new-worker/run-session-assertions.svg"
+           alt="Dispatch and observe must persist the session on the live run and preserve the roster snapshot; restoring the roster write in a scratch copy fails all three rewritten cases.">
+      <figcaption>Both assertions are required: finding the captured session alone cannot detect a stray roster write.</figcaption>
+    </figure>
+    <h3>Reproductions and replacements</h3>
+    <table><thead><tr><th>Test</th><th>Reproduced assertion</th><th>Run-record assertion</th></tr></thead><tbody>
+      <tr><td><code>test_crew_members.py::test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it</code></td><td><code>member["sessions"] == {configuration: captured}</code> failed at line 171 with an empty member map.</td><td>The dispatched run pointer carries the captured session, codex harness and model; the original bare member session and roster bytes are unchanged.</td></tr>
+      <tr><td><code>test_session_resumes_only_its_own_task.py::test_a_new_node_does_not_continue_the_members_other_node_session</code></td><td><code>ALPHA_SESSION in json.dumps(stored.get("sessions") or {})</code> failed at line 187 against <code>{}</code>.</td><td>The first run demonstrably holds the session; dispatching a different task still composes no resume, and neither dispatch nor observe changes roster bytes.</td></tr>
+      <tr><td><code>test_worker_session_is_session_scoped.py::test_the_capture_path_records_the_session_on_the_roster</code> → <code>test_the_capture_path_records_the_session_on_the_run</code></td><td><code>STORED_SESSION in json.dumps(stored.get("sessions") or {})</code> failed at line 209 against <code>{}</code>.</td><td>Drive dispatch and observe, then read the persisted pointer. Require session, harness, model and capture run id, alongside byte-identical roster content.</td></tr>
+    </tbody></table>
+    <h3>The measured delta</h3>
+    <table><thead><tr><th>Population</th><th>Before</th><th>After</th></tr></thead><tbody>
+      <tr><td>Ten assigned files</td><td>73 passed, 10 failed</td><td>76 passed, 7 failed</td></tr>
+      <tr><td>Dedicated run-session contract file</td><td>7 passed</td><td>7 passed</td></tr>
+      <tr><td>Combined gate</td><td>80 passed, 10 failed</td><td>83 passed, 7 failed</td></tr>
+      <tr><td>Unreported failure IDs</td><td>All ten classified</td><td>0</td></tr>
+    </tbody></table>
+    <p>The gate ran on the existing compute allocation with <code>--timeout=60</code>, one
+    pytest process, a distinct node-local <code>--basetemp</code> per arm and the shared
+    project interpreter. The commands and revision are in each log's first line. The after
+    gate used the modified working tree at the base HEAD; <code>tested-blobs.json</code> and
+    <code>committed-markers.json</code> prove those exact test blobs became the cited commit.
+    Every file under <code>reckon/</code> and all seven held test files retain their base content.</p>
+    <h3>The declared control</h3>
+    <pre>in a scratch copy, restore the session write onto the member entry at the dispatch capture site; at least one rewritten case must fail</pre>
+    <p>The unmodified scratch arm passes all three cases. The mutated arm restores the base
+    roster writer at <code>_capture_member_session</code> while retaining successful run
+    capture. All three cases fail on member or roster equality (3 failed, exit 1). This
+    isolates the forbidden side effect: the session, harness and model checks still pass.
+    Both arms print the imported <code>reckon.crew.dispatch.__file__</code> and resolved cwd;
+    they resolve to the scratch tree, never the installed checkout.</p>
+    <h3>Seven reported regressions — unchanged tests</h3>
+    <p>These are observed differences from the original recorded base failure set, not
+    claims that every failure is caused by session ownership. In particular, the registration
+    race and follower startup bound need their own causal assessment. The scope requires
+    reporting these contracts rather than weakening assertions to accept changed behavior.</p>
+    <table><thead><tr><th>Failure id</th><th>Traceback source</th><th>Reason held</th></tr></thead><tbody>
+<tr><td><code>tests/test_backend_environment.py::test_run_record_agent_configuration_excludes_environment</code></td><td><code>tests/test_backend_environment.py:237</code></td><td>Agent shape changes by adding dialect=codex. This is a configuration-shape contract mismatch, not a roster-write assertion; leave unchanged for source/test adjudication.</td></tr>
+<tr><td><code>tests/test_backend_reconstruction_settings.py::test_a_resumption_states_it_was_not_context_checked</code></td><td><code>tests/test_backend_reconstruction_settings.py:375</code></td><td>Resume detail text no longer contains re-verifying context fit. Semantic unchecked flags pass, but the wording contract regresses; this is not a roster-write assertion.</td></tr>
+<tr><td><code>tests/test_crew_ephemeral_members.py::test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session</code></td><td><code>reckon/crew/routing.py:1302</code></td><td>Concurrent registration collides in git index.lock before observe or any session assertion. This is a registration concurrency regression, not automatic session capture; later obsolete session assertions remain unreachable and unchanged.</td></tr>
+<tr><td><code>tests/test_crew_interrupted_phase.py::test_observe_folds_a_dead_cli_run_to_orphaned_then_interrupted</code></td><td><code>reckon/_backends.py:1759</code></td><td>observe now resolves a dialect for an unsupported python command and raises BackendError before interruption classification; the mocked-observation path regresses before roster capture.</td></tr>
+<tr><td><code>tests/test_mcp_recovery.py::test_resume_reattaches_a_session_only_the_stream_carries</code></td><td><code>tests/test_mcp_recovery.py:189</code></td><td>Resume writes the resolved stream session onto the pointer despite the test requiring read-only session resolution. This is a resume-side-effect contract mismatch, not an assertion about roster writes.</td></tr>
+<tr><td><code>tests/test_removed_flag_migration.py::test_the_deprecation_announcement_reaches_stderr_and_not_the_stream</code></td><td><code>tests/test_removed_flag_migration.py:277</code></td><td>Follower produces no baseline row before the fixed 1.5 second wait and termination. This timing-bound failure reproduces, but causation by the session change is not established.</td></tr>
+<tr><td><code>tests/test_routing_evidence_fields.py::test_a_promoted_row_carries_all_three_fields_together</code></td><td><code>tests/test_routing_evidence_fields.py:477</code></td><td>Promoted row omits session_harness and session_model although RECORD_FIELDS requires them. This is ledger-record completeness, not a roster-write assertion.</td></tr>
+    </tbody></table>
+    <h3>Peer-owned added failures — classification only</h3>
+    <p>These eleven entries are read from the implementation's recorded after log; they
+    were not rerun or edited here. Each distinguishes roster capture from a timing bound.
+    A traceback may be neither, so those rows retain their actual cause.</p>
+    <table><thead><tr><th>Failure and source</th><th>Roster write?</th><th>Timing bound?</th><th>Observed contract</th></tr></thead><tbody>
+<tr><td><code>tests/test_crew.py::test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first</code><br><code>tests/test_crew.py:2948</code></td><td>yes</td><td>no</td><td>Expected member session_id to equal the original capture.</td></tr>
+<tr><td><code>tests/test_crew.py::test_resume_resolves_a_stream_session_without_observation_writeback</code><br><code>tests/test_crew.py:3616</code></td><td>no</td><td>no</td><td>Expected no pointer write during resume; stream session is now persisted.</td></tr>
+<tr><td><code>tests/test_crew.py::test_shadow_inherits_primary_agent_settings_while_switching_backend</code><br><code>tests/test_crew.py:3904</code></td><td>no</td><td>no</td><td>Agent equality now includes dialect=codex.</td></tr>
+<tr><td><code>tests/test_crew_dispatch_arming.py::test_concurrent_dispatches_arm_exactly_one_detached_producer</code><br><code>reckon/crew/routing.py:1307</code></td><td>registration only</td><td>no</td><td>Concurrent member registration is refused after 12 attempts; this is not session capture.</td></tr>
+<tr><td><code>tests/test_follower_checks_its_owner.py::test_a_reload_under_a_live_subreaper_keeps_the_dead_owner</code><br><code>tests/test_follower_checks_its_owner.py:319</code></td><td>no</td><td>no</td><td>Follower exited before replacing its image; the traceback fires before the timing bound, so do not relabel it a timeout.</td></tr>
+<tr><td><code>tests/test_ledger.py::test_a_completed_record_carries_every_calibration_input</code><br><code>tests/test_ledger.py:1701</code></td><td>no</td><td>no</td><td>Agent equality now includes dialect=codex.</td></tr>
+<tr><td><code>tests/test_ledger.py::test_a_later_session_is_not_written_over_the_captured_one</code><br><code>tests/test_ledger.py:1567</code></td><td>yes</td><td>no</td><td>Expected later capture to be refused because the member already held another session.</td></tr>
+<tr><td><code>tests/test_ledger.py::test_a_member_with_a_null_session_captures_one_from_its_first_run</code><br><code>tests/test_ledger.py:1526</code></td><td>yes</td><td>no</td><td>Expected captured session_id to be written onto the member.</td></tr>
+<tr><td><code>tests/test_ledger.py::test_a_record_without_a_review_is_distinguishable_from_a_zero_scored_one</code><br><code>tests/test_ledger.py:788</code></td><td>no</td><td>no</td><td>RECORD_FIELDS requires absent session_harness and session_model.</td></tr>
+<tr><td><code>tests/test_ledger.py::test_every_completed_record_names_its_completion_time_source</code><br><code>tests/test_ledger.py:725</code></td><td>no</td><td>no</td><td>RECORD_FIELDS requires absent session_harness and session_model.</td></tr>
+<tr><td><code>tests/test_ledger.py::test_explicit_promotion_stamp_reaches_every_duration_consumer</code><br><code>tests/test_ledger.py:1253</code></td><td>no</td><td>no</td><td>Recorded configuration key gains dialect and disagrees with the calibration observation.</td></tr>
+    </tbody></table>
+    <p><code>test_follow_lifetime_survives_reload.py::test_a_reload_does_not_restart_the_lifetime</code>
+    and <code>test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap</code>
+    are in the input's <code>no_longer_failing_ids</code>, not its added failure set. Their
+    base failures concern lifecycle timing; they supply no added-failure traceback to classify.</p>
+    <h3>Durable receipt and next action</h3>
+    <p>All logs and structured measurements live under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T025931154715-session-tests-meet-the-run-record/</code>:
+    <code>manifest.md</code>, <code>before.log</code>, <code>after.log</code>,
+    <code>before-summary.json</code>, <code>after-summary.json</code>,
+    <code>failure-attribution.json</code>, <code>negative-control-clean.log</code>,
+    <code>negative-control.log</code>, <code>negative-control-summary.json</code>,
+    <code>tested-blobs.json</code> and <code>committed-markers.json</code>.
+    The run and control drivers are preserved alongside the logs.</p>
+    <p>Next: the coordinator assigns the seven reported contract failures to their owning
+    repairs and dispatches verification at the merged result. This record leaves the driving
+    followup, section declaration, lifecycle and implementation fraction untouched.</p>
+  </section>
+
+  <section id="session-contract-repairs">
+    <h2>Session contracts preserved around run-owned capture</h2>
+    <p><strong>Worker repairs recorded 2026-09-25; importer gate unmet.</strong>
+    The assigned base was <code>c6abaeb9c1fe7e932ee3cd46475632672ea11975</code>.
+    All seven named regressions reproduced there, while the seven dedicated run-session
+    cases passed. At repair head <code>199069f16c2e3a41231a9652eb02baa4d6d3d945</code>
+    the same gate reports <strong>14 passed, zero failed</strong>.
+    Only <code>tests/test_crew_ephemeral_members.py</code> changed, replacing the removed
+    roster-session assertion with id, harness and model on the persisted run plus
+    byte-identical roster content. The other six listed tests remain byte-identical.</p>
+    <table><thead><tr><th>Contract</th><th>Repair commit</th><th>Result</th></tr></thead>
+      <tbody><tr><td>Agent configuration equality</td><td><code>f0324bd1</code></td><td>Session harness and model are explicit run/ledger fields; the agent mapping keeps its established keys.</td></tr>
+<tr><td>Promoted row completeness</td><td><code>f0324bd1</code></td><td>Promotion passes session_harness and session_model into the ledger builder, which emits both keys even when no session was captured.</td></tr>
+<tr><td>Unchecked resume wording</td><td><code>70b8eb4f</code></td><td>The pointer continues to say without re-verifying context fit.</td></tr>
+<tr><td>Read-only stream recovery</td><td><code>ae05630c</code></td><td>Resume composes the recovered session without caching it as session_id; session_resumed records the actual launch invocation.</td></tr>
+<tr><td>Interruption classification</td><td><code>fd272fd7</code></td><td>A run with no harness boundary resolves its recorded session before any dialect translation is required.</td></tr>
+<tr><td>Concurrent unnamed registration</td><td><code>199069f1</code></td><td>A repository lock covers lookup, write and commit; the updated assertion requires run-owned session identity and byte-identical roster content.</td></tr>
+<tr><td>Follower deprecation channels</td><td><code>unchanged</code></td><td>The listed case passes in the focused repaired-head gate. Its initial fixed-delay failure is retained; no timing assertion or source was changed for it.</td></tr></tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/new-work-gets-a-new-worker/session-contracts.svg"
+           alt="Observation and promotion carry session identity on the run and ledger, while resume resolves a session without caching a stream identity and agent configuration keeps its shape.">
+      <figcaption>Session ownership and the agent configuration have separate storage contracts.</figcaption>
+    </figure>
+    <h3>Reproductions and controls</h3>
+    <p>The initial equality failure reads <code>Left contains 1 more item:
+    {'dialect': 'codex'}</code>. The initial resume-side-effect failure reads
+    <code>assert '01a0635f-62a3-7283-a81b-61cd39bedb60' is None</code>.
+    The unsupported-command path raises <code>no launch translation for command 'python'</code>
+    before interruption classification. All three reproduction traces remain in
+    <code>reproduction.log</code>.</p>
+    <p>Four registration trials of four concurrent calls reproduce <strong>13 failures
+    out of 16</strong>, including <code>index.lock': File exists</code> and uncommitted-roster
+    refusals. With the transaction lock the identical probe reports <strong>0 failures
+    out of 16</strong>. The existing unnamed-dispatch and registration-commit files
+    report <strong>10 passed</strong>.</p>
+    <p>The declared mutation is <q>re-add the dialect key to the recorded agent configuration; tests/test_backend_environment.py::test_run_record_agent_configuration_excludes_environment must fail</q>.
+    <code>negative-control.log</code> starts with that exact text and records
+    <strong>one expected assertion failure</strong>, solely on the extra dialect key.
+    The clean repaired-head test passes; there are no fixture or import errors in the control.</p>
+    <h3>Importer comparison</h3>
+    <table><thead><tr><th>Arm</th><th>Population and revision</th><th>Result</th></tr></thead><tbody>
+      <tr><td>Base</td><td>248 importing files at <code>0bd7a7c9667176b07d0d7912d07a1e8739581d03</code></td><td>24 failed, 3033 passed, 4 skipped, 17 warnings in 863.44s (0:14:23)</td></tr>
+      <tr><td>Repaired</td><td>251 importing files at <code>199069f16c2e3a41231a9652eb02baa4d6d3d945</code></td><td>25 failed, 3056 passed, 4 skipped, 18 warnings in 794.93s (0:13:14)</td></tr>
+      <tr><td>Failure-ID delta</td><td>7 added; 6 no longer failing</td><td>3 added outside the four declared peer exceptions</td></tr>
+    </tbody></table>
+    <p>The population includes direct imports of the six measured modules, imports
+    through <code>reckon.crew</code>, and literal module imports. The base arm is a
+    <code>git archive</code> export of <code>0bd7a7c9</code>; its log prints the imported
+    dispatch module and resolved cwd in that export. Both arms run on allocation
+    <code>1277272</code> with four pytest workers, a 90-second per-test bound, separate
+    basetemps and the repository's shared interpreter. Expanded commands and the full
+    failure-ID sets are in the JSON receipts. Two raw base failures, in the shared-checkout safety checks in <code>test_member_registration_commits.py</code> and <code>test_roster_write_commits.py</code>, fail because the archive has no Git metadata. Both pass in the repaired arm; <code>baseline-instrument-limits.json</code> excludes them from the baseline exemption set, so neither can excuse a repaired-head failure.</p>
+    <table><thead><tr><th>Added failure ID</th><th>Asserts roster write?</th><th>Disposition</th></tr></thead>
+      <tbody><tr><td><code>tests/test_crew.py::test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first</code></td><td>yes</td><td>declared peer exception</td></tr>
+<tr><td><code>tests/test_crew_members.py::test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it</code></td><td>no</td><td>outside the exception set; returned without repair</td></tr>
+<tr><td><code>tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers</code></td><td>no</td><td>outside the exception set; returned without repair</td></tr>
+<tr><td><code>tests/test_follower_checks_its_owner.py::test_a_reloaded_follower_still_leaves_when_the_original_owner_dies</code></td><td>no</td><td>declared peer exception</td></tr>
+<tr><td><code>tests/test_ledger.py::test_a_later_session_is_not_written_over_the_captured_one</code></td><td>yes</td><td>declared peer exception</td></tr>
+<tr><td><code>tests/test_ledger.py::test_a_member_with_a_null_session_captures_one_from_its_first_run</code></td><td>yes</td><td>declared peer exception</td></tr>
+<tr><td><code>tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code></td><td>no</td><td>outside the exception set; returned without repair</td></tr></tbody>
+    </table>
+    <p>All run logs and scripts live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033627599580-session-on-its-run-keeps-its-contracts</code>:
+    <code>reproduction.log</code>, <code>repaired.log</code>,
+    <code>registration-before.log</code>, <code>registration-after.log</code>,
+    <code>negative-control.log</code>, <code>baseline.log</code>, <code>after.log</code>,
+    and <code>suite-delta.json</code>. The scoped lint and format receipts show no added
+    findings or formatting debt. <code>committed-markers.json</code> reads introduced
+    markers from committed source. Subsequent diagram and explanatory-comment commits
+    change no runtime code; <code>runtime-content-receipt.json</code> compares executable
+    syntax against the measured repair head.</p>
+    <p>The coordinator owns the remaining failure dispositions, integration, section
+    closure and the driving followup. This worker changes no lifecycle status,
+    implementation fraction, section declaration, version, modified stamp or followup.
+    Next action: review these commits and the explicit delta, then run the separately
+    assigned merged-head verification.</p>
+  </section>
 </main>
 </body>
 </html>

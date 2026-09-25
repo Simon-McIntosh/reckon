@@ -26,7 +26,6 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 from reckon import _backends, _store, capability, flight, ledger
-from reckon.calibration import agent_configuration_key
 from reckon.crew import summary
 from reckon.crew.node import (
     BudgetHold,
@@ -96,6 +95,7 @@ from reckon.crew.runs import (
     _watch_arming_line,
     _watch_attach_line,
     _write_json,
+    capture_run_session,
     delivery_roots,
     list_live,
     new_run_id,
@@ -3712,6 +3712,7 @@ def dispatch(
             project,
             committed_runs=committed_runs,
             live_pointers=live_pointers,
+            harness=_backends.dialect_for(backend).name if launch_kind == "cli" else "",
         )
         if backend.get("session_reuse")
         else {"session_id": None, "withheld": None}
@@ -3997,6 +3998,7 @@ def dispatch(
                 # Read before the placement wraps the plan: the harness is
                 # argv[0] here, and after the wrap argv[0] is the scheduler.
                 harness_command = str(plan.argv[0]) if plan.argv else None
+                record["session_harness"] = plan.dialect if reuse_session else None
                 plan = apply_backend_placement(plan, backend, project)
             except (_backends.BackendError, flight.FlightConfigError, OSError) as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
@@ -5394,7 +5396,6 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
     from reckon.crew.query import _resumability
     from reckon.crew.recovery import _apply_budget_watchdog
     from reckon.crew.reports import parse_manifest
-    from reckon.crew.resumption import resolve_session
 
     """Fold a run's on-disk evidence back into its pointer and return it.
 
@@ -5407,7 +5408,7 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
     def fold(record: dict[str, Any]) -> dict[str, Any]:
         # Resolve before folding the stream into the pointer so the answer says
         # where the session was recovered rather than always reporting pointer.
-        session = resolve_session(run_id, record=record)
+        session = _current_harness_session(record, config=config)
         backend_name = str(record.get("backend") or "")
         manifest = Path(record.get("manifest_path") or "")
         manifest_file_present, manifest_fresh = _manifest_freshness(record)
@@ -5439,7 +5440,7 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
                 and record["phase"] in _TERMINAL_RUN_PHASES
             ):
                 record["phase"] = "working"
-            record["session_id"] = data["session_id"] or record.get("session_id")
+            record["session_id"] = data["session_id"] or session.get("session_id")
             if data["detail"]:
                 record["detail"] = data["detail"]
             final_file = Path(record.get("final_message_path") or "")
@@ -5752,6 +5753,7 @@ def _task_session_resolution(
     *,
     committed_runs: Iterable[Mapping[str, Any]] = (),
     live_pointers: Iterable[Mapping[str, Any]] = (),
+    harness: str = "",
 ) -> dict[str, Any]:
     """Resolve this dispatch's prior same-task session, or name none.
 
@@ -5783,7 +5785,17 @@ def _task_session_resolution(
     if prior is None:
         return {"session_id": None, "withheld": None}
     session_id = str(prior.get("session_id") or "").strip()
-    disqualifier = _session_too_large_to_continue(prior)
+    owner = str(
+        prior.get("session_harness")
+        or prior.get("dialect")
+        or (prior.get("agent") or {}).get("dialect")
+        or ""
+    )
+    disqualifier = (
+        f"its session belongs to harness {owner or 'unknown'!r}, not {harness!r}"
+        if harness and owner != harness
+        else _session_too_large_to_continue(prior)
+    )
     if disqualifier is not None:
         return {
             "session_id": None,
@@ -5881,84 +5893,62 @@ def _capture_session_absence(
     }
 
 
-def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
-    """Persist a run's session id under its exact agent configuration.
+def _capture_member_session(record: dict[str, Any]) -> dict[str, Any] | None:
+    """Compatibility entry point for promotion; capture writes only the run."""
+    return capture_run_session(record)
 
-    Observation is where a backend's session id first becomes knowable, so it is
-    also where the roster learns it — waiting for completion would leave a second
-    node dispatched in the meantime unable to reach the same session. Keying by
-    the full resolved configuration (rather than the model alone) keeps an
-    effort or model change from inheriting incompatible session context while
-    letting every distinct configuration reuse its own history independently.
 
-    The coordinator session that dispatched the run is recorded as the owner of
-    the entry it writes, under the same key as the session, because a stored
-    conversation is only resumed by the session that opened it. Reading it back
-    is what lets a later dispatch decide whether the entry belongs to it.
+def _current_harness_session(
+    record: Mapping[str, Any], *, config: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
+    """Resolve only sessions owned by the run's current harness.
+
+    A fresh harness boundary excludes earlier streams even when their event
+    vocabulary is readable by the new parser. Once this harness captures a
+    session, its pointer also permits recovery across its own resume streams.
     """
-    member = record.get("member")
-    session_id = record.get("session_id")
-    agent = record.get("agent")
-    if not member or not session_id or not isinstance(agent, Mapping) or not agent:
-        return None
-    configuration_key = agent_configuration_key(record)
-    coordinator_session = str(record.get("session") or "").strip()
-    try:
-        data, version = ledger.load(
-            str(record.get("project") or ""), root=record.get("repo")
-        )
-        for entry in data["members"]:
-            if str(entry.get("id")) != str(member):
-                continue
-            sessions = dict(entry.get("sessions") or {})
-            current = sessions.get(configuration_key)
-            if current:
-                return {
-                    "captured": False,
-                    "member": dict(entry),
-                    "detail": (
-                        "unchanged"
-                        if str(current) == str(session_id)
-                        else (
-                            f"member {member!r} already reuses session {current!r} "
-                            "for this agent configuration; run reported "
-                            f"{session_id!r} and it was not written over the top"
-                        )
-                    ),
-                }
-            sessions[configuration_key] = str(session_id)
-            entry["sessions"] = sessions
-            if coordinator_session:
-                session_owners = dict(entry.get("session_owners") or {})
-                session_owners[configuration_key] = coordinator_session
-                entry["session_owners"] = session_owners
-            if not entry.get("session_id"):
-                entry["session_id"] = str(session_id)
-                entry["session_model"] = str(agent.get("model") or "") or None
-            elif str(entry.get("session_id")) == str(session_id) and not entry.get(
-                "session_model"
-            ):
-                entry["session_model"] = str(agent.get("model") or "") or None
-            ledger.write(
-                str(record.get("project") or ""),
-                data,
-                version,
-                root=record.get("repo"),
-            )
-            return {
-                "captured": True,
-                "member": dict(entry),
-                "detail": "first run for agent configuration",
-            }
-        return {
-            "captured": False,
-            "member": None,
-            "detail": f"project {record.get('project')!r} has no member {member!r}",
-        }
-    except (ledger.LedgerError, OSError) as exc:
-        # The run record retains the session id even when the roster write is
-        # unavailable, so observation and promotion remain recoverable.
-        return {"captured": False, "member": None, "detail": str(exc)}
+    from reckon.crew.resumption import resolve_session
+
+    run_id = str(record.get("run_id") or "")
+    if record.get("launch") != "cli":
+        return resolve_session(run_id, record=record)
+    owner = str(record.get("session_harness") or "")
+    boundary = record.get("lane_change") or {}
+    changed_harness = boundary.get("session") == "fresh" and boundary.get(
+        "from_harness"
+    ) != boundary.get("to_harness")
+    if not owner and not changed_harness:
+        return resolve_session(run_id, record=record)
+    backend = _backend_settings(record, config)
+    harness = _backends.dialect_for(backend).name
+    if (not changed_harness and (not owner or owner == harness)) or (
+        record.get("session_id") and owner == harness
+    ):
+        return resolve_session(run_id, record=record)
+    observation = _backends.observe_log(
+        backend_name=str(record.get("backend") or ""),
+        backend=backend,
+        log_path=record.get("log_path", ""),
+    )
+    found = observation.session_id
+    reason = (
+        f"the current harness {harness!r} has no captured session; sessions "
+        "from another harness cannot be continued"
+    )
+    return {
+        "run_id": run_id,
+        "session_id": found,
+        "resolved": bool(found),
+        "source": "stream" if found else None,
+        "consulted": ["current-harness-stream"],
+        "detail": None if found else reason,
+        "withheld": None
+        if found
+        else {
+            "session_id": record.get("session_id") or boundary.get("session_id"),
+            "reason": reason,
+        },
+    }
 
 
 def _backend_settings(
@@ -6054,16 +6044,10 @@ def resume_plan(
         )
     # The pointer is a cache. A stream may already carry the captured session
     # while the next observation has not folded it into that cache yet.
-    from reckon.crew.resumption import resolve_session
-
-    session = resolve_session(
-        run_id,
-        record=record,
-        project=resume_project,
-        root=resume_root,
-    )
+    session = _current_harness_session(record, config=config)
     session_id = str(session.get("session_id") or "")
-    if not session["resolved"]:
+    fresh_reason = session.get("withheld")
+    if not session["resolved"] and not fresh_reason:
         raise CrewError(
             f"run {run_id!r} has no session id in any authority: "
             f"{session.get('detail') or 'no session authority resolved'}"
@@ -6087,33 +6071,39 @@ def resume_plan(
         _backends.launch_plan(
             backend_name=str(record.get("backend") or ""),
             backend=backend,
-            prompt=advice,
+            prompt=(
+                _lane_prompt(record, advice, fresh_reason["reason"], continued=False)
+                if fresh_reason
+                else advice
+            ),
             worktree=str(record.get("worktree") or "."),
             manifest_path=str(record.get("manifest_path") or ""),
             writable_directories=record.get("sandbox_write_roots") or (),
-            resume_session=str(session_id),
+            resume_session=session_id or None,
         )
     )
-    # A resumption reuses the recorded session and never re-verifies that the
-    # session's context window fits the repository it is resumed into; only a
-    # fresh dispatch runs that check. The pointer must say so explicitly, or a
-    # reader treats an unchecked resumption as one that was verified.
-    _mutate_pointer(
-        run_id,
-        lambda current: {
-            **current,
-            "context_fit": {
-                "checked": False,
-                "state": "unchecked",
-                "window_tokens": backend.get("usable_input_window"),
-                "detail": (
-                    "the resumed turn reuses the recorded session without "
-                    "re-verifying context fit; only a fresh dispatch performs "
-                    "that check against the current repository"
-                ),
-            },
-        },
-    )
+
+    def capture(current: dict[str, Any]) -> dict[str, Any]:
+        current["session_resumed"] = _launched_prior_session(plan) is not None
+        if fresh_reason:
+            current["session_id"] = None
+            current["session_harness"] = None
+            current["session_model"] = None
+            current["session_withheld"] = fresh_reason
+        # Only dispatch measures repository context fit. Resuming a session or
+        # starting a replacement must not claim that measurement took place.
+        current["context_fit"] = {
+            "checked": False,
+            "state": "unchecked",
+            "window_tokens": backend.get("usable_input_window"),
+            "detail": (
+                "the resume request proceeds without re-verifying context fit; only "
+                "dispatch performs that check against the current repository"
+            ),
+        }
+        return current
+
+    _mutate_pointer(run_id, capture)
     return plan
 
 
@@ -6386,14 +6376,7 @@ def change_lane(
     target_harness = target_launch
     if target_launch == "cli":
         target_harness = _backends.dialect_for(backend).name
-    from reckon.crew.resumption import resolve_session
-
-    session = resolve_session(
-        run_id,
-        record=record,
-        project=str(record.get("project") or ""),
-        root=record.get("repo"),
-    )
+    session = _current_harness_session(record, config=config)
     session_id = str(session.get("session_id") or "")
     continued = bool(
         session["resolved"]
@@ -6515,6 +6498,8 @@ def change_lane(
                 "attempt_started_at": lane_change["changed_at"],
                 "phase": "working" if target_plan is not None else "starting",
                 "session_id": session_id if continued else None,
+                "session_harness": target_harness if continued else None,
+                "session_model": backend.get("model") if continued else None,
                 "pid": spawned_pid,
                 "pid_start_time": (
                     _process_start_time(spawned_pid)
@@ -6539,6 +6524,7 @@ def change_lane(
             current.update(
                 {
                     "argv": list(target_plan.argv),
+                    "command": str(target_plan.argv[0]),
                     "dialect": target_plan.dialect,
                 }
             )
@@ -6547,6 +6533,7 @@ def change_lane(
             current.update(
                 {
                     "argv": None,
+                    "command": None,
                     "dialect": None,
                     "directive": {
                         "attach_with": (
@@ -6615,12 +6602,11 @@ def record_resumption(
                 "phase": "working",
                 "attempt": int(record.get("attempt") or 1) + 1,
                 "attempt_kind": "resume",
-                # This is reached only after the resume plan resolved a
-                # recorded session and put it on the launched command line, so
-                # this attempt carried one. The live pointer does not keep the
-                # resumption's argv, which is why the fact is stated here
-                # rather than derived from it.
-                "session_resumed": True,
+                # A harness change may require a fresh session even though
+                # this attempt was requested through the resume command.
+                "session_resumed": bool(
+                    record.get("session_resumed", record.get("session_id"))
+                ),
                 "attempt_started_at": attempt_started_at or _utc_now(),
                 "manifest_baseline_mtime_ns": (
                     _manifest_mtime_ns(record.get("manifest_path") or "")

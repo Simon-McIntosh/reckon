@@ -116,6 +116,8 @@ def test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session(
     }
 
     captured_session = "019ff509-8a60-7723-94fd-65942a6d8faa"
+    roster_path = ledger.ledger_path("proj", repository)
+    roster_before = roster_path.read_bytes()
     Path(first["log_path"]).write_text(
         "\n".join(
             [
@@ -130,13 +132,11 @@ def test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session(
     assert observed["phase"] == "complete"
     assert observed["session_capture"]["captured"] is True
 
-    owner = next(
-        entry
-        for entry in ledger.members("proj", root=repository)
-        if entry["id"] == first["member"]
-    )
-    assert captured_session in owner["sessions"].values()
-    assert set(owner["session_owners"].values()) == {"left-coordinator"}
+    captured = crew.read_pointer(first["run_id"])
+    assert captured["session_id"] == captured_session
+    assert captured["session_harness"] == "codex"
+    assert captured["session_model"] == "some-model"
+    assert roster_path.read_bytes() == roster_before
 
     # A later dispatch from the same coordinator reuses its private member, but
     # the session a run continues is keyed to the task it belongs to, so a

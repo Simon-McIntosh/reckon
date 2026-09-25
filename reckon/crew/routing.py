@@ -1282,32 +1282,36 @@ def _register_session_member(
     whose write never happened would otherwise leave the caller without a
     member, and only the first leaves a roster no other checkout can see.
     """
-    last: ledger.LedgerError | None = None
-    for _attempt in range(max(1, attempts)):
-        existing = ledger.member(project, member_id, root=root)
-        if existing is not None:
-            return existing
-        try:
-            return ledger.register_member(
-                project,
-                member_id,
-                harness=backend,
-                role=role,
-                root=root,
-                commit=True,
-            )
-        except ledger.LedgerError as exc:
-            last = exc
-            if ledger.member(project, member_id, root=root) is not None:
-                raise CrewError(
-                    f"session member {member_id!r} was written to the roster and "
-                    f"not committed, so no other checkout can see the "
-                    f"registration: {exc}"
-                ) from exc
-    raise CrewError(
-        f"could not provision session member {member_id!r} after {attempts} "
-        f"attempts: {last}"
-    )
+    # Hold one repository lock through both the ledger write and its git commit.
+    # Distinct member ids still share the same roster and git index.
+    identity = hashlib.sha256(str(root.resolve()).encode()).hexdigest()
+    with _pointer_lock(f"roster-registration-{identity}"):
+        last: ledger.LedgerError | None = None
+        for _attempt in range(max(1, attempts)):
+            existing = ledger.member(project, member_id, root=root)
+            if existing is not None:
+                return existing
+            try:
+                return ledger.register_member(
+                    project,
+                    member_id,
+                    harness=backend,
+                    role=role,
+                    root=root,
+                    commit=True,
+                )
+            except ledger.LedgerError as exc:
+                last = exc
+                if ledger.member(project, member_id, root=root) is not None:
+                    raise CrewError(
+                        f"session member {member_id!r} was written to the roster and "
+                        f"not committed, so no other checkout can see the "
+                        f"registration: {exc}"
+                    ) from exc
+        raise CrewError(
+            f"could not provision session member {member_id!r} after {attempts} "
+            f"attempts: {last}"
+        )
 
 
 def _parse_utc_timestamp(value: Any) -> datetime | None:

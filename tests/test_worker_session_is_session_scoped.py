@@ -1,10 +1,9 @@
 """A dispatch-time session comes from the task's own runs, not from the roster.
 
-The roster entry is a directory, not an authority: it records which sessions a
-member has carried, and it is where a captured session is written back so a
-later reader can find it. What a dispatch may continue is decided from the run
-records of its own task, so a session another node left on the member — or one
-written under a configuration the dispatch happens to match — is never offered.
+The roster entry describes the member. Captured sessions live on run records,
+and dispatch selects a continuation from its own task's runs. A legacy session
+on the member, including one under a matching configuration, is never offered.
+Capture preserves every member field while recording the session on its run.
 
 The end-to-end cases drive `crew.dispatch` and read the launched argv back,
 since a helper-level assertion is exactly how the resumed-conversation defect
@@ -16,17 +15,12 @@ from __future__ import annotations
 import json
 import subprocess
 from collections.abc import Mapping
-from importlib import import_module
 from pathlib import Path
 
 import pytest
 
 from reckon import crew, ledger
 from reckon.crew import resumption
-
-# `crew` re-exports a `dispatch` function under that name, so the module is
-# reached by import rather than by attribute.
-dispatch_module = import_module("reckon.crew.dispatch")
 
 CONFIG = {
     "default_backend": "alpha",
@@ -188,25 +182,24 @@ def test_a_run_of_this_task_supplies_the_session_instead(
     assert again["session_withheld"] is None
 
 
-# ── the capture path still writes the session back onto the roster ──────────
+# ── capture persists the session on its run ────────────────────────────────
 
 
-def test_the_capture_path_records_the_session_on_the_roster(repo: Path) -> None:
-    captured = dispatch_module._capture_member_session(
-        {
-            "project": "proj",
-            "repo": str(repo),
-            "member": "worker-a",
-            "session_id": STORED_SESSION,
-            "agent": {"backend": "alpha", "launch": "cli", "model": "some-model"},
-            "session": "coordinator-1",
-        }
-    )
+def test_the_capture_path_records_the_session_on_the_run(
+    home: Path, repo: Path
+) -> None:
+    roster_path = repo / "docs" / "state" / "proj" / "crew.json"
+    roster_before = roster_path.read_bytes()
+    dispatched = _dispatch(home, repo)
+    _complete(dispatched, STORED_SESSION)
 
-    assert captured is not None and captured["captured"] is True
-    stored = ledger.member("proj", "worker-a", repo)
-    assert stored is not None
-    assert STORED_SESSION in json.dumps(stored.get("sessions") or {})
+    recorded = crew.read_pointer(str(dispatched["run_id"]))
+    assert recorded["session_capture"]["captured"] is True
+    assert recorded["session_capture"]["run_id"] == dispatched["run_id"]
+    assert recorded["session_id"] == STORED_SESSION
+    assert recorded["session_harness"] == "codex"
+    assert recorded["session_model"] == "some-model"
+    assert roster_path.read_bytes() == roster_before
 
 
 # ── the run record still resolves a session ─────────────────────────────────
