@@ -27,6 +27,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import lane_document as lane_document_module
 from reckon.crew.lane_document import (
     UNKNOWN,
     read_lane_document,
@@ -44,6 +45,7 @@ DECLARED_MUTATION = (
     "the engine figure"
 )
 NEGATIVE_CONTROL = os.environ.get("RECKON_LANE_HEADROOM_NEGATIVE_CONTROL", "").strip()
+REASON_CONTROL = os.environ.get("RECKON_LANE_REASON_NEGATIVE_CONTROL", "").strip()
 
 
 @contextmanager
@@ -54,6 +56,24 @@ def _control(monkeypatch: pytest.MonkeyPatch, guard: str):
             flight_module,
             "_lane_document_headroom",
             lambda payload: payload.get("headroom"),
+        )
+    yield
+
+
+@contextmanager
+def _reason_control(monkeypatch: pytest.MonkeyPatch, guard: str):
+    """Restore the two-arm branch: every non-congested verdict reads 'open'."""
+    if REASON_CONTROL in {guard, "all"}:
+        clauses = lane_document_module._VERDICT_CLAUSE
+        monkeypatch.setattr(
+            lane_document_module,
+            "_VERDICT_CLAUSE",
+            {
+                "open": clauses["open"],
+                "congested": clauses["congested"],
+                "full": clauses["open"],
+                "paused": clauses["open"],
+            },
         )
     yield
 
@@ -178,3 +198,34 @@ def test_an_open_and_a_congested_gate_give_distinct_reasons() -> None:
     assert opened["admission_reason"] != congested["admission_reason"]
     assert "open" in opened["admission_reason"]
     assert "congested" in congested["admission_reason"]
+
+
+def test_paused_and_full_give_reasons_that_name_their_verdict(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A paused or full published gate must not be labelled open.
+
+    The vocabulary a lane publishes is congested, full, open and paused. A
+    paused lane whose reason read "the gate is open" would licence exactly the
+    dispatch the lane was declining, so each verdict names itself. The paused
+    assertion runs under the declared reason control, which restores the
+    two-arm branch and makes this case fail on the missing 'paused'.
+    """
+    base = {
+        "headroom": 6,
+        "state": "measured",
+        "observed_at": datetime.now(UTC).isoformat(),
+    }
+    paused_document = {**base, "admission": {"headroom": -1, "verdict": "paused"}}
+    full_document = {**base, "admission": {"headroom": 0, "verdict": "full"}}
+
+    with _reason_control(monkeypatch, "two-arm-reason"):
+        paused_reason = read_lane_document(paused_document)["admission_reason"]
+
+    full_reason = read_lane_document(full_document)["admission_reason"]
+
+    assert "paused" in paused_reason
+    assert "open" not in paused_reason
+    assert "full" in full_reason
+    assert "open" not in full_reason
+    assert paused_reason != full_reason
