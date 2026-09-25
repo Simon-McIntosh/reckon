@@ -1,0 +1,84 @@
+<svg viewBox="0 0 760 452" width="100%" style="max-width:760px" xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-label="Two panels. Top: the sequence that made a blocked run unreachable. A worker hits its fence, writes status blocked naming the missing write path, and ends its turn; the turn ending is not an error, so the backend's terminal event is a normal completion; crew observe folds the pointer's phase from that event and the phase reads complete. widen read the phase alone, refused with run is complete, not blocked, and the only discharge was discard plus redispatch, throwing away the session that had diagnosed the change. Bottom: the repaired decision. Two accounts feed one verdict: the folded phase, and the status the run's own manifest reports. A manifest reporting complete or failed refuses on its own. Otherwise blocked in either account widens the fence, adding the path while the session id and the recorded commits are carried through untouched. Anything else refuses, because a working run is writing against the boundary a widening would move.">
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #3a3a38; }
+    .h { font-size: 14px; font-weight: 600; fill: #1a1a19; }
+    .lbl { font-size: 11px; }
+    .code { font-family: system-ui; font-size: 10.5px; }
+    .note { font-size: 10.5px; fill: #6b6a63; }
+    .colhead { font-size: 10.5px; fill: #6b6a63; letter-spacing: 0.04em; }
+    .arrow { stroke: #8a8981; stroke-width: 1.4; fill: none; }
+  </style>
+
+  <text x="16" y="24" class="h">A blocked run the phase-only widening could not reach, and what decides now</text>
+
+  <!-- ── Panel A: the sequence that produced the refusal ─────────────── -->
+  <text x="16" y="52" class="colhead">WHY THE FENCE COULD NOT BE WIDENED</text>
+
+  <rect x="16" y="62" width="216" height="76" rx="5" fill="#f4f4f0" stroke="#d6d5cb"/>
+  <text x="28" y="82" class="lbl"><tspan font-weight="600">1. the worker</tspan> hits its fence</text>
+  <text x="28" y="99" class="code">status: blocked</text>
+  <text x="28" y="115" class="code">blockers: write scope is missing</text>
+  <text x="28" y="131" class="code">reckon/crew/dispatch.py</text>
+
+  <line x1="236" y1="100" x2="264" y2="100" class="arrow"/>
+  <path d="M264,100 l-7,-4 v8 z" fill="#8a8981"/>
+
+  <rect x="270" y="62" width="216" height="76" rx="5" fill="#f4f4f0" stroke="#d6d5cb"/>
+  <text x="282" y="82" class="lbl"><tspan font-weight="600">2. the turn ends</tspan></text>
+  <text x="282" y="99" class="lbl">the worker stops writing and ends</text>
+  <text x="282" y="115" class="lbl">its turn &#8212; not an error, so the</text>
+  <text x="282" y="131" class="lbl">stream's terminal event reads normal</text>
+
+  <line x1="490" y1="100" x2="518" y2="100" class="arrow"/>
+  <path d="M518,100 l-7,-4 v8 z" fill="#8a8981"/>
+
+  <rect x="524" y="62" width="220" height="76" rx="5" fill="#f4f4f0" stroke="#d6d5cb"/>
+  <text x="536" y="82" class="lbl"><tspan font-weight="600">3. crew observe</tspan> folds the phase</text>
+  <text x="536" y="99" class="lbl">from that terminal event, so the</text>
+  <text x="536" y="115" class="lbl">pointer's mirror of the run says</text>
+  <text x="536" y="131" class="code">phase: complete</text>
+
+  <rect x="16" y="152" width="728" height="34" rx="5" fill="#fbeeee" stroke="#c98c8c"/>
+  <text x="28" y="173" class="lbl"><tspan font-weight="600">widen read the phase alone</tspan> &#8594; refused: <tspan class="code">run &#8230; is complete, not 'blocked'</tspan> &#8212; and the only discharge left was discard plus redispatch, which throws away the session that had diagnosed the change</text>
+
+  <!-- ── Panel B: the two accounts that decide now ───────────────────── -->
+  <text x="16" y="214" class="colhead">WHAT DECIDES THE WIDENING NOW</text>
+
+  <rect x="16" y="226" width="196" height="46" rx="5" fill="#f4f4f0" stroke="#d6d5cb"/>
+  <text x="28" y="245" class="lbl"><tspan font-weight="600">the folded phase</tspan></text>
+  <text x="28" y="262" class="note">the mirror, folded from the stream</text>
+
+  <rect x="16" y="284" width="196" height="46" rx="5" fill="#f4f4f0" stroke="#d6d5cb"/>
+  <text x="28" y="303" class="lbl"><tspan font-weight="600">the run's own manifest</tspan></text>
+  <text x="28" y="320" class="note">the delivery the worker wrote</text>
+
+  <line x1="214" y1="249" x2="262" y2="272" class="arrow"/>
+  <line x1="214" y1="307" x2="262" y2="284" class="arrow"/>
+  <path d="M262,278 l-8,-1 l3,7 z" fill="#8a8981"/>
+
+  <rect x="266" y="226" width="196" height="104" rx="5" fill="#eef2f7" stroke="#8b9bb0"/>
+  <text x="278" y="246" class="lbl"><tspan font-weight="600">eligibility</tspan></text>
+  <text x="278" y="266" class="lbl">manifest reports complete</text>
+  <text x="278" y="281" class="lbl">or failed &#8594; refuse, decisive</text>
+  <text x="278" y="301" class="lbl">else blocked in either account</text>
+  <text x="278" y="316" class="lbl">&#8594; widen</text>
+
+  <line x1="464" y1="252" x2="508" y2="234" class="arrow"/>
+  <path d="M508,230 l-8,0 l3,7 z" fill="#8a8981"/>
+  <line x1="464" y1="300" x2="508" y2="330" class="arrow"/>
+  <path d="M508,334 l-8,0 l3,-7 z" fill="#8a8981"/>
+
+  <rect x="512" y="212" width="232" height="46" rx="5" fill="#eef7ee" stroke="#7fa07f"/>
+  <text x="524" y="231" class="lbl"><tspan font-weight="600">widen</tspan> &#8212; adds the path, leaves</text>
+  <text x="524" y="248" class="note">the session id and commits byte for byte</text>
+
+  <rect x="512" y="308" width="232" height="46" rx="5" fill="#fbeeee" stroke="#c98c8c"/>
+  <text x="524" y="327" class="lbl"><tspan font-weight="600">refuse</tspan> &#8212; a working run is writing</text>
+  <text x="524" y="344" class="note">against the boundary a widening moves</text>
+
+  <text x="16" y="380" class="note">A manifest that is absent, unreadable, left by an earlier attempt, or still carrying the dispatch contract's status choice reports no status:</text>
+  <text x="16" y="396" class="note">eligibility then rests on the phase alone, which is what it was before this repair. Every case above was asserted against a synthesised run</text>
+  <text x="16" y="412" class="note">directory; restoring the phase-only check turns the blocked-manifest case red (3 failed), and the sibling cases keep their refusals.</text>
+  <text x="16" y="436" class="note">Read as: the phase mirrors the run, and the manifest is the run's own account &#8212; a reader that consults only the mirror cannot see a block the mirror lost.</text>
+</svg>

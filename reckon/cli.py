@@ -2928,6 +2928,72 @@ def crew_check_manifest(run_id, pretty):
 # already writing against it.
 WIDENABLE_PHASE = "blocked"
 
+# The statuses a run's own manifest can report that leave no scope decision to
+# widen for: the work has ended, so a wider fence is not what the run awaits.
+WIDEN_REFUSING_MANIFEST_STATUSES = frozenset({"complete", "failed"})
+
+
+def _manifest_reported_status(record: Mapping[str, Any]) -> str:
+    """The status a run's own manifest reports, or "" when none can be read.
+
+    A run launched through a backend folds its phase from its stream's terminal
+    event, so a worker that writes ``status: blocked`` and ends its turn folds
+    to ``complete`` and the one place the block is stated -- the delivery the
+    worker wrote -- is never consulted. This reads that file, because it is the
+    authority whose mirror the folded phase is. A manifest that is absent,
+    unreadable, older than the attempt that is reading it, or still carrying the
+    dispatch contract's unsubstituted status choice reports no status rather
+    than a wrong one, and eligibility then rests on the phase alone.
+    """
+    from reckon.crew.reports import (
+        ManifestParseError,
+        manifest_status_is_template,
+        parse_manifest,
+    )
+
+    path = str(record.get("manifest_path") or "").strip()
+    if not path:
+        return ""
+    crew_module, _ = _crew_modules()
+    if not crew_module._manifest_freshness(record)[1]:
+        # A resumed attempt points at the same delivery path, so a terminal
+        # status left there by the attempt before it is not this attempt's
+        # verdict. Only a manifest written after the attempt began is read.
+        return ""
+    try:
+        delivered = parse_manifest(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ManifestParseError):
+        return ""
+    status = str(delivered.get("status") or "").strip().lower()
+    return "" if manifest_status_is_template(status) else status
+
+
+def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str]:
+    """The state refusing this run's fence, and the status its manifest reports.
+
+    The first value is the state that refuses a widening, or ``""`` when the
+    fence may move; the second is the manifest's own reported status, so the
+    answer can name which of the two accounts authorised the write.
+
+    Two sources state whether a run has stopped on a blocked fence: the folded
+    phase, and the manifest the run delivered. A run is wideniable when either
+    reports ``blocked``, because a run launched through a backend folds its
+    phase from a terminal stream event and a worker that writes ``status:
+    blocked`` before ending its turn leaves the two disagreeing. A manifest
+    reporting complete or failed refuses on its own -- a finished run has no
+    scope decision outstanding, and a wider fence would be granted to work that
+    has already ended. Every other state is refused, since only a run that has
+    stopped and stated a block has a boundary that can move without a live
+    process writing against it.
+    """
+    phase = str(record.get("phase") or "")
+    reported = _manifest_reported_status(record)
+    if reported in WIDEN_REFUSING_MANIFEST_STATUSES:
+        return f"{reported!r} in its own manifest", reported
+    if WIDENABLE_PHASE in (phase, reported):
+        return "", reported
+    return repr(phase or "unphased"), reported
+
 
 @crew.command(name="widen")
 @click.option("--run", "run_id", required=True, help="Run whose fence to widen.")
@@ -2955,13 +3021,20 @@ def crew_widen(run_id, write_paths, pretty):
     session with its own work intact. The field written is the one promotion
     reads, so a scope granted here is the scope the promotion validator honours.
 
-    The run must be blocked. A working run's fence is the boundary it is
-    currently writing against, so widening one would move that boundary under a
-    live process that already read it. A run whose phase is not ``blocked`` is
-    refused and its pointer is left untouched. The phase is checked twice: once
-    on the pointer as it stands and again on the record read under the per-run
-    lock, so a run that leaves the blocked phase between those two reads is
-    refused rather than widened in place.
+    The run must be blocked, read from two sources rather than from the folded
+    phase alone: the phase, and the status the run's own manifest reports. A run
+    whose manifest reports ``blocked`` is wideniable even when its phase has
+    folded to ``complete``, because a run launched through a backend folds its
+    phase from its stream's terminal event -- so a worker that ends its turn
+    after writing ``status: blocked`` folds to ``complete``, and its own
+    delivery is the only place the block is stated. A manifest reporting
+    ``complete`` or ``failed`` is refused, because a finished run has no scope
+    decision outstanding. Every other state is refused too: a working run's
+    fence is the boundary it is currently writing against, so widening one would
+    move that boundary under a live process that already read it. Eligibility is
+    read twice -- once on the pointer as it stands and again on the record read
+    under the per-run lock -- so a run that reaches either read in a
+    non-wideniable state is refused rather than widened in place.
     """
     crew_module, _ = _crew_modules()
     try:
@@ -2969,10 +3042,10 @@ def crew_widen(run_id, write_paths, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    phase = str(record.get("phase") or "")
-    if phase != WIDENABLE_PHASE:
+    state, manifest_status = _widen_eligibility(record)
+    if state:
         raise click.ClickException(
-            f"run {run_id!r} is {phase or 'unphased'}, not {WIDENABLE_PHASE!r}: only a "
+            f"run {run_id!r} reads {state}, not {WIDENABLE_PHASE!r}: only a "
             "blocked run's fence is widened, because a working run is already "
             "writing against the boundary this would move"
         )
@@ -2985,18 +3058,18 @@ def crew_widen(run_id, write_paths, pretty):
     added: list[str] = []
 
     def widen(pointer: dict[str, Any]) -> dict[str, Any]:
-        # The phase above was read before the per-run lock, so it is a claim about
-        # the pointer as it was, not as it is. Re-check it on the record this
+        # The eligibility above was read before the per-run lock, so it is a claim
+        # about the pointer as it was, not as it is. Re-check it on the record this
         # mutation read under the lock: between the two reads a run can leave the
-        # blocked phase and start writing against its boundary, and widening there
-        # would move that boundary under a live process. Raising before the write
-        # leaves the pointer as this mutation found it.
-        locked_phase = str(pointer.get("phase") or "")
-        if locked_phase != WIDENABLE_PHASE:
+        # wideniable state and start writing against its boundary, and widening
+        # there would move that boundary under a live process. Raising before the
+        # write leaves the pointer as this mutation found it.
+        locked_state, _ = _widen_eligibility(pointer)
+        if locked_state:
             raise click.ClickException(
-                f"run {run_id!r} became {locked_phase or 'unphased'} before the widening "
-                f"reached the pointer: only a {WIDENABLE_PHASE!r} run's fence is widened, "
-                "and nothing was written"
+                f"run {run_id!r} reads {locked_state} at the pointer write, not "
+                f"{WIDENABLE_PHASE!r}: only a blocked run's fence is widened, and "
+                "nothing was written"
             )
         node = dict(pointer.get("node") or {})
         declared = [str(path) for path in node.get("write_paths") or ()]
@@ -3014,6 +3087,11 @@ def crew_widen(run_id, write_paths, pretty):
             "ok": True,
             "run_id": run_id,
             "phase": str(updated.get("phase") or ""),
+            # The status the run's own manifest reported. It is carried because
+            # the phase alone can read complete here: a widening authorised by
+            # the manifest would otherwise look, in this very output, like a
+            # widening of a finished run.
+            "manifest_status": manifest_status,
             "node": str((updated.get("node") or {}).get("id") or ""),
             "session_id": str(updated.get("session_id") or ""),
             "added": added,
