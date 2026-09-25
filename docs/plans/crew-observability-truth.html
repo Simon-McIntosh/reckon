@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="496">
+<meta name="plan-version" content="497">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -3226,7 +3226,10 @@ if isinstance(argv, list) and argv:
     return {"launch": "cli", "command": argv[0]}</code></pre><p>The short-circuit happens <em>before</em> the config lookup, so <code>usable_input_window</code>, <code>model</code>, <code>effort</code> and <code>sandbox</code> are dropped even at call sites that pass a full config. The docstring explains why and is correct about its original purpose: <em>"Only the command matters for reading, and the recorded argv already holds it, so a run stays observable after its config layer changes."</em> True for reading a stream. False for everything else it has since been handed.</p><table><thead><tr><th>Call site</th><th>Needs what is dropped?</th></tr></thead><tbody><tr><td><code>promotion.py:1483</code></td><td>yes — feeds <code>StreamMeasures</code>, which writes the promoted row's <code>input_utilisation_pct</code>; the divisor is missing, so a row reads 84.2% where the configured window gives 16.6%</td></tr><tr><td><code>dispatch.py:3902</code> (<code>resume_plan</code>)</td><td>yes — relaunches on the default model rather than the recorded one</td></tr><tr><td><code>resumption.py:407</code></td><td>takes only <code>session_id</code>, so probably unaffected</td></tr><tr><td><code>dispatch.py:3553</code>, <code>4188</code></td><td>reading paths, the original contract</td></tr></tbody></table><p><strong>A third consequence, which is this section's own subject.</strong> <code>_context_fit_verdict</code> is invoked from exactly one place, <code>routing.py:1601</code>, in the dispatch resolution path. <code>crew resume</code> does not reach it. So a resumed run gets <em>no context check at all</em> — not an honest unknown, not a refusal, simply nothing — and <code>_backend_settings</code> would give it no window to divide by even if it did. Seven runs were resumed in this session under that gap; all succeeded, which is exactly why it stays invisible.</p><p>This is distinct from the fit-check finding above and does not replace it. There the check <em>runs</em> and sums two of three terms. Here it does not run.</p><p>Found by a peer session working from the utilisation denominator; the <code>resume_plan</code> model consequence was recorded here earlier from the opposite direction. Same line, three consequences, three independent discoveries, none of which found the others. The repair is at the function, not at any caller: a reader that wants only the command can ask for only the command.</p></div>
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20260925T072236169623-widen-reaches-a-blocked-run" data-who="reckon-build" data-when="2026-09-25T08:36:56.585Z">
-    <div class="r-comment-body"><p>crew widen reads the run&#x27;s own manifest; live falsifier met on append-run-writes-one-run-file; review 96, predicate-docstring gap recorded as a followup</p></div>
+    <div class="r-comment-body"><p>crew widen reads the run's own manifest; live falsifier met on append-run-writes-one-run-file; review 96, predicate-docstring gap recorded as a followup</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20260925T081110768082-review-of-widen-reaches-a-blocked-run" data-who="reckon-build" data-when="2026-09-25T10:13:19.016Z">
+    <div class="r-comment-body"><p>review stored: 96, one predicate-docstring finding recorded as a followup</p></div>
 </div>
 </section>
 </main>
