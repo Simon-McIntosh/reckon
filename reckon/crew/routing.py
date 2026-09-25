@@ -20,6 +20,7 @@ from reckon.calibration import calibration_configuration_key
 from reckon.crew.node import (
     CrewError,
     DEFAULT_MEMBER_IDLE_WINDOW,
+    PlanReviewMissingError,
     PlanVisibilityError,
     TaskNode,
     _TERMINAL_RUN_PHASES,
@@ -1111,6 +1112,101 @@ def require_plan_section_visible(
             "before dispatching"
         )
     return commit
+
+
+# Roles that read a plan rather than build it. A review of the plan gates only
+# the node that changes it, so an investigation, a test and a review itself are
+# exempt: demanding a review to write a review is circular, and a test that
+# reads a plan changes nothing a review exists to catch.
+PLAN_BUILD_EXEMPT_ROLES: frozenset[str] = frozenset(
+    {"investigate", "review", "test"}
+)
+
+
+def _plan_review_exempt(node: TaskNode) -> bool:
+    """Whether a node is exempt from the plan-review gate.
+
+    A plan is reviewed before it is *built*, so only the building node is gated.
+    The exemption is the same predicate the promotion boundary uses to stop
+    reviews of reviews: a node is exempt when its declared role reads rather
+    than builds, or when its identity names it the reviewer of some run. The
+    composed plan-review dispatch is such a node, and it must be dispatchable
+    without a review of its own, so the two conditions share this one predicate.
+    """
+    if str(node.role or "").strip() in PLAN_BUILD_EXEMPT_ROLES:
+        return True
+    from reckon.crew.recovery import _is_review_node
+
+    return _is_review_node({"node": {"id": node.id}})
+
+
+def require_plan_reviewed(
+    *,
+    node: TaskNode,
+    project: str,
+    repo: str | Path,
+    authority: Mapping[str, Any],
+    allow_unreviewed: bool = False,
+) -> None:
+    """Refuse a building dispatch whose plan carries no answered review.
+
+    A plan is reviewed before it is built: the gate joins a stored review to the
+    plan content by fingerprint rather than by the plan's version integer, so a
+    metadata-only write neither demands a review nor orphans one, and an
+    authored edit demands a fresh one. Every finding of the review must be
+    answered — acted on or declined with a reason — because the findings are
+    advisory and the answer is the record; an unanswered finding is an unread
+    one, and the gate refuses a plan whose review nobody read.
+
+    ``allow_unreviewed`` is the operational waiver: a broken local review lane
+    must not stop every build, so the caller may waive the gate and the waiver
+    is recorded on the run that carries it.
+    """
+    if allow_unreviewed or _plan_review_exempt(node):
+        return
+
+    from reckon.crew import plan_review
+    from reckon.resources import ResourceCollision, resolve_resource
+
+    plan_data = authority["plan"]
+    docs_dir = Path(str(plan_data["docs"])).resolve()
+    if plan_data.get("source") == "repository" and (
+        not docs_dir.is_dir() or not any(docs_dir.rglob("*.html"))
+    ):
+        # A repository that has not adopted HTML plans has no reviewable plan
+        # document, the same carve-out the visibility check makes.
+        return
+    try:
+        resource = resolve_resource(
+            docs_dir, project, node.plan, "plan", include_archived=False
+        )
+    except ResourceCollision as exc:
+        raise PlanReviewMissingError(
+            f"plan {node.plan!r} cannot be resolved in {docs_dir}: {exc}; "
+            "commit one unambiguous plan before dispatching"
+        ) from exc
+    if resource is None:
+        # The visibility check refuses an unreadable plan ahead of this gate, so
+        # an unresolved resource here has nothing to review.
+        return
+
+    fingerprint = plan_review.plan_fingerprint(resource.path)
+    record = plan_review.read_plan_review(
+        project, node.plan, plan_fingerprint=fingerprint
+    )
+    if record is None:
+        raise PlanReviewMissingError(
+            f"plan {node.plan!r} in project {project!r} carries no stored review "
+            f"of the content about to be built (fingerprint {fingerprint[:12]}); "
+            "a plan is reviewed before it is built"
+        )
+    unanswered = plan_review.unanswered_findings(record)
+    if unanswered:
+        raise PlanReviewMissingError(
+            f"the review of plan {node.plan!r} leaves {len(unanswered)} "
+            f"finding(s) unanswered: {', '.join(unanswered)}; answer each by "
+            "acting on it or declining it with a reason"
+        )
 
 
 def resolve_dispatch_authority(project: str, repo: str | Path) -> dict[str, Any]:

@@ -1128,6 +1128,14 @@ def crew_preflight(
     ),
 )
 @click.option(
+    "--allow-unreviewed-plan",
+    is_flag=True,
+    help=(
+        "Dispatch a build against a plan carrying no answered review; the waived "
+        "plan is recorded on the new run."
+    ),
+)
+@click.option(
     "--local",
     is_flag=True,
     help="Route through the backend named by the resolved local_backend key.",
@@ -1166,6 +1174,7 @@ def crew_dispatch(
     allow_execution_mismatch,
     allow_unreconciled_runs,
     no_watch,
+    allow_unreviewed_plan,
     local,
     dry_run,
     pretty,
@@ -1178,6 +1187,8 @@ def crew_dispatch(
     ``launch`` kind.
     """
     crew_module, flight_module = _crew_modules()
+    from reckon.crew.node import PlanReviewMissingError
+
     config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
     flight_backend_override = _flight_default_backend_override(
         flight_module, config, overrides
@@ -1248,8 +1259,9 @@ def crew_dispatch(
                 backend_override=backend,
                 default_backend_override=flight_backend_override,
                 member=member,
+                allow_unreviewed_plan=allow_unreviewed_plan,
             )
-        except crew_module.PlanVisibilityError as exc:
+        except (crew_module.PlanVisibilityError, PlanReviewMissingError) as exc:
             _emit(
                 {"ok": False, "error": "plan-unavailable", "detail": str(exc)},
                 pretty,
@@ -1304,6 +1316,7 @@ def crew_dispatch(
             member=member,
             execution_override=allow_execution_mismatch,
             unreconciled_override=allow_unreconciled_runs,
+            unreviewed_plan_override=allow_unreviewed_plan,
             watch_required=True,
             watch_override=no_watch,
             local=local,
@@ -1313,6 +1326,15 @@ def crew_dispatch(
     except crew_module.PlanVisibilityError as exc:
         _emit(
             {"ok": False, "error": "plan-unavailable", "detail": str(exc)},
+            pretty,
+        )
+        raise click.exceptions.Exit(4) from exc
+    except PlanReviewMissingError as exc:
+        # The plan is readable but unreviewed: a refusal the caller resolves by
+        # dispatching the composed review, so it rides the dry-run
+        # plan-unavailable exit code rather than the generic dispatch refusal.
+        _emit(
+            {"ok": False, "error": "plan-review-missing", "detail": str(exc)},
             pretty,
         )
         raise click.exceptions.Exit(4) from exc

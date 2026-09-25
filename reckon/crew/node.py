@@ -484,6 +484,13 @@ class PlanVisibilityError(CrewError):
         super().__init__(format_refusal("D05", detail))
 
 
+class PlanReviewMissingError(CrewError):
+    """The plan carries no answered review of the content about to be built."""
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(format_refusal("D23", detail))
+
+
 # ── Placement requirements ──────────────────────────────────────────────────
 
 

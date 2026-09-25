@@ -92,7 +92,14 @@ def _node(config_home: Path, *, role: str = "implement", name: str = "delivery")
         role=role,
         spec_level="exact",
         done_when="pytest reports one passing plan review gate case",
-        write_paths=["src/change.py"],
+        # A restricted verifier role writes only its delivery, outside the
+        # repository, so its node is otherwise dispatchable and the exemption
+        # under test is the plan-review gate alone.
+        write_paths=(
+            [str(config_home / "crew" / "reports" / f"{name}.md")]
+            if role == "test"
+            else ["src/change.py"]
+        ),
         time_budget="20m",
         manifest_path=str(config_home / "manifests" / f"{name}.md"),
     )
@@ -134,7 +141,9 @@ def _store_answered_review(plan_path: Path, config_home: Path) -> None:
             "status": "declined",
             "review_run_id": "r-plan-review",
         },
-        base_dir=config_home / "reviews",
+        # Stored to the crew review store root the gate reads through, resolved
+        # from RECKON_HOME, so the fixture writes where production reads.
+        base_dir=config_home / "crew" / "reviews",
     )
 
 
