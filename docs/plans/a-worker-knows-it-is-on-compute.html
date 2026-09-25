@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-commits" content="9e695b0c,bf1725d6,2700bda6,a4bbb242,f2810b50,87a3ed30,c0b25024,20822ec8,b0ffdd18">
 <meta name="plan-impl" content="0.6">
 </head>
@@ -246,7 +246,10 @@
     <div class="r-comment-body"><p>review of nested-launch-is-refused scored 90/100: the shim-directory filter in real_binary is unexercised and the refusal status is asserted against the imported constant; both returned to the node's session</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925-shims-landed" data-who="reckon-build" data-when="2026-09-25T01:46:00Z">
-    <div class="r-comment-body"><p>Run <code>r-20260924T224514791530-nested-launch-is-refused</code> landed. It was merged at <code>9e33424a</code>, with test fixes at <code>7c937f38</code>.</p><p><code>reckon/nested_launch.py</code> and the <code>srun</code>/<code>sbatch</code>/<code>salloc</code> shims refuse an implicit launch from inside the allocation with status 97. The refusal names the job, the node and <code>RECKON_ALLOW_NESTED_LAUNCH=1</code>. An srun carrying <code>--overlap</code> plus <code>--jobid</code> or a single task passes unchanged, as the imas-ambix fleet-view probes need.</p><p>The first review scored 90/100. It found the shim-directory filter unexercised: every test put the fake binary ahead of the shim directory. It also found the refusal status asserted against the module's own constant. The same session added a shim-directory-first case, with the filter-drop mutation observed to fail it, and pinned the literal 97. The re-review at <code>b0ffdd18</code> scored 95/100 with no findings. The gate is 11 passed.</p><p>The shims reach no worker <code>PATH</code> until &sect;4.</p></div>
+    <div class="r-comment-body"><p>Run <code>r-20260924T224514791530-nested-launch-is-refused</code> landed. It was merged at <code>9e33424a</code>, with test fixes at <code>7c937f38</code>.</p><p><code>reckon/nested_launch.py</code> and the <code>srun</code>/<code>sbatch</code>/<code>salloc</code> shims refuse an implicit launch from inside the allocation with status 97. The refusal names the job, the node and <code>RECKON_ALLOW_NESTED_LAUNCH=1</code>. An srun carrying <code>--overlap</code> plus <code>--jobid</code> or a single task passes unchanged, as the imas-ambix fleet-view probes need.</p><p>The first review scored 90/100. It found the shim-directory filter unexercised: every test put the fake binary ahead of the shim directory. It also found the refusal status asserted against the module's own constant. The same session added a shim-directory-first case, with the filter-drop mutation observed to fail it, and pinned the literal 97. The re-review at <code>b0ffdd18</code> scored 95/100 with no findings. The gate is 11 passed.</p><p>The shims reach no worker <code>PATH</code> until §4.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260924T224514791530-nested-launch-is-refused" data-who="reckon-build" data-when="2026-09-25T01:19:17.287Z">
+    <div class="r-comment-body"><p>srun/sbatch/salloc shims refuse an implicit nested launch inside the allocation with 97; explicit --overlap single-step and override pass; shim-directory-first case and literal 97 added after review 90; re-review 95; 11 passed</p></div>
 </div>
 </section>
 </main>
