@@ -19,12 +19,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;deferred&quot;}">
   <title>The Fleet Counters Count The Fleet | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -97,6 +97,12 @@
     <h2 id="s5">§5 — The unpromoted count says what each run needs</h2>
 <p>The <code>u</code> counter says a run is unpromoted but not why. On 2026-09-25 the lead saw <code>3u</code> while one of the three had no review at all. The reflex had reviewed only the run's first completion, and a resumed worker's new head sat idle for about ten minutes.</p><p>After this section, the follower emits a standing line, only when the set of unpromoted runs or their review state changes. It never repeats on a cadence: the lead rejected a heartbeat on 2026-09-25 because a signal that repeats gets ignored. Pending duties reach the coordinator every turn through the hooks in <code>an-orchestrator-cannot-forget-its-obligations</code>. The line names each of the session's unpromoted runs with its age, and says whether an independent review is in flight or the coordinator is needed.</p><p>The work is folded in from <code>a-follower-keeps-your-work-in-view</code> &sect;2, whose falsifier is this section's done-when. Re-reviewing a resumed run's new head is reflex logic in <code>reckon/crew/recovery.py</code>, which S21's review-reflex node carries or which follows it. It is not part of this section.</p><p><strong>Done when:</strong></p><ul><li>A test with three unpromoted runs asserts the standing line names all three with their ages. It labels the two with live reviews as review in flight and the one with no review as needs you.</li><li>The declared mutation, dropping the review-in-flight check, is observed to fail. The log is recorded.</li></ul>
 
+    <h2 id="s6">§6 — The state cell carries the action; the reason is plain text</h2>
+<p>On 2026-09-25 the lead flagged that the reason clause repeats a label the state already implies, and that the label adds nothing. Rows read <code>abandoned &hellip; recover: the process is gone &hellip;</code>, <code>stalled &hellip; investigate: stream quiet for 905s</code>, <code>blocked &hellip; ! resume: the worker process is gone &hellip;</code>, <code>unreadable &hellip; repair: the manifest at &hellip;</code>. Worst is <code>resume: ready to resume: &hellip;</code>, where label and text say the same word twice. The text after the label is the useful part.</p><p>After this section:</p><ul><li>The coordinator's action (<code>resume</code>, <code>recover</code>, <code>investigate</code>, <code>repair</code>, <code>inspect</code>, <code>promote</code>, <code>review</code>) moves into the state cell as <code>&lt;state&gt; &middot; &lt;action&gt;</code>, for example <code>blocked &middot; resume</code>. The <code>!</code> urgency prefix becomes the state cell's colour and its word, not a glyph in the text.</li><li>The reason clause carries only the explanation. It never begins with a label and never repeats a word already in the state cell.</li></ul><p><strong>Done when:</strong></p><ul><li>A render test over every classification that carries a remedy asserts that no reason clause matches <code>^!?\s*\w+:</code>, that the state cell contains the action word, and that the reason clause's first word differs from every word in the state cell.</li><li>A <code>ready to resume</code> case renders one <code>resume</code>, not two.</li><li>The declared mutation, restoring the label prefix, is observed to fail. The log is recorded.</li></ul>
+
+    <h2 id="s7">§7 — A queued run keeps the ticker aligned</h2>
+<p>The lead reported on 2026-09-25 that a queued worker makes the ticker ragged. The coordinator's own follower showed the same misalignment from several causes:</p><ul><li>The counter block gains a fourth bucket (<code>q</code>) only while a run is queued, so it changes width.</li><li>The elapsed cell mixes <code>0m</code>, <code>15m</code>, <code>0:14</code>, <code>39:50</code> and <code>1:10:25</code>.</li><li>Optional trailing cells (<code>&ndash;</code>, <code>0mb</code>, <code>0mu</code>) appear and vanish, and one row ran a cell into its text: <code>0mbinvestigate:</code>.</li></ul><p>After this section:</p><ul><li>The counter block has a fixed width. Every bucket the fleet can show (<code>w</code>, <code>b</code>, <code>u</code>, <code>q</code>) always renders, with zero dimmed.</li><li>Elapsed uses one format, <code>57m</code> or <code>1h33m</code>, right-aligned to a fixed width.</li><li>Every optional cell keeps its column when empty, and a cell is always separated from the text by at least one space.</li></ul><p><strong>Done when:</strong></p><ul><li>A property test renders rows for every state, with and without a queued run in the fleet, and elapsed values from 0 s to 30 h. It asserts that the reason clause starts at the same column in every row, and that no cell abuts the text.</li><li>The declared mutation, rendering <code>q</code> only when non-zero, is observed to fail. The log is recorded.</li></ul>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-counter-census-landed" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
@@ -133,6 +139,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260925-fold-follower-sections" data-who="reckon-build" data-when="2026-09-25T07:40:00Z">
     <div class="r-comment-body"><p>§4 and §5 are folded in with the S22 coordinator's agreement, on three conditions:</p><ul><li>each section's plan falsifier is the done-when</li><li>the landing is recorded here as comments with the run id and shas</li><li>S22 closes its own two sections</li></ul><p>§3, §4 and §5 dispatch as one <code>ticker.py</code> node once S21's liveness and review-reflex nodes release <code>reckon/crew/recovery.py</code>. That node also carries S21's removal of the <code>now</code> baseline marker.</p><p><em>Written with the new <code>insert_section</code> op, with no hand edit.</em></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260925-row-labels-and-alignment" data-who="reckon-build" data-when="2026-09-25T08:05:00Z">
+    <div class="r-comment-body"><p>&sect;6 and &sect;7 come from the lead's 2026-09-25 review of the ticker. <code>a-monitor-row-reads-at-a-glance</code> (S22) is fully landed and covered neither issue. Both write <code>reckon/crew/ticker.py</code>, and ship in the same ticker node as &sect;3&ndash;&sect;5 once S21 releases <code>reckon/crew/recovery.py</code>.</p></div>
 </div>
 </section>
 </main>
