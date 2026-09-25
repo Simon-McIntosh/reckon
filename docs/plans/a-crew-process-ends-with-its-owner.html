@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-impl" content="0.25">
 </head>
 <body>
@@ -719,6 +719,11 @@
     <h4 class="r-fu-title">A live worker reads as gone right after its first commit</h4>
     <div class="r-fu-body"><p>Reported by suite-green-at-head on 2026-09-24 and recorded here as its owning plan. Three runs had a follower row reading <q>blocked — resume: the worker process is gone with no recorded exit and the worktree carries 1 commit</q>: <code>promotion-tests-meet-the-review-and-checkout-guards</code> (21:16:15 local), <code>promotion-fixtures-initialise-the-ledger</code> (21:19:43) and <code>python-surface-contracts-match</code> (21:19:56). Each came right after the worker's first commit. At that moment <code>crew(view=live)</code> read the process alive with a fresh log. The coordinator had to read the stream and the worktree to rule out a real death. This is the mid-run twin of the launch flicker recorded on a-dispatch-returns-without-its-worker (f-adrwiw-launch-flicker). The follower's transition text and the live classifier disagree about one run's liveness. Done when a run whose recorded pid is alive never emits a process-gone transition, whatever its commit count. A test commits in a stub worker's worktree while the stub stays alive and asserts no blocked-resume row.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
+    </article>
+<article class="r-fu" data-id="f-acpewio-release-at-promotion" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Promotion releases the worktree it integrated</h4>
+    <div class="r-fu-body"><p>Gate for a wider fleet release, part of §4's reclaim (lead, 2026-09-25). Stale worktrees are the root of the pre-spawn snapshot cost: reckon went from 344 to 74 registered trees after a gc on 2026-09-25, and a worker's time from dispatch to <code>worker.json</code> fell from 2–12 min to 39 s. So <code>crew complete</code> should release the run's worktree in the same beat that proves it integrated. After a passing promotion, when the run's head is reachable from the primary branch, <code>git status --porcelain</code> is empty, and no live pointer other than the run being promoted names that worktree (including a <code>review-of-&lt;node&gt;</code> run reading it), promotion removes it with plain <code>git worktree remove</code> (no <code>--force</code>) and records the removal on the ledger row. Any other state leaves the tree and records why. A blocked or failed run keeps its tree, because a resume needs it. Promotion prints what it removed and what it kept. Done when a test drives promotion over five synthesized cases: integrated and clean (removed); dirty (kept); unintegrated (kept); another live pointer naming the tree (kept); failed gate (kept). Each asserts the on-disk state and the recorded reason. The negative control removes the live-pointer check, and the kept case then fails. File scope: <code>reckon/crew/promotion.py</code> and a new test module.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §4</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
