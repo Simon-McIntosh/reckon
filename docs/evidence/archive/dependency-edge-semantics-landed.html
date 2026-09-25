@@ -492,6 +492,82 @@
     the coordinator.</p>
   </section>
 
+  <section id="after-edge-reaches-every-reader">
+    <h2>The after edge reaches every roadmap reader, not only the parser</h2>
+
+    <p>The edge was parsed from the plan HTML and resolved into ordering and came-after hints, but
+    the roadmap reads it off the inventory row it is handed, and two builders stand between: the
+    discovery scan that builds the row, and the MCP normaliser that rebuilds it before the MCP
+    roadmap. Each named the relation keys it carried — <code>depends_on</code> and
+    <code>blocks</code> — and <code>after</code> was on neither list, so an authored
+    <code>plan-after</code> reached no reader while both call paths looked healthy.</p>
+
+    <p><strong>Reproduced at base</strong> <code>29df6835</code> before the repair, over a
+    synthesised docs tree — two ready plans and one unshipped target the first is sequenced behind —
+    with <code>reckon.__file__</code> pinned into the base export. The discovery row carried
+    <code>['blocks', 'depends_on']</code>, and the roadmap built over those rows reported
+    <code>after: [] came_after: [] after_hold: False</code>; the MCP inventory row reported
+    <code>after: False</code> and the MCP roadmap <code>came_after: []</code>. The new gate at base:
+    <strong>2 failed</strong>, each at <code>KeyError: 'after'</code> on its own builder's row; at head
+    <strong>2 passed</strong>. Logs under the node's run record
+    (<code>crew/runs/r-20260925T065159936340-after-edge-reaches-every-roadmap-reader/logs/</code>):
+    <code>base-repro.log</code>, <code>head-repro.log</code>, <code>base-new-test.log</code>,
+    <code>head-new-test.log</code>, with the reproduction driver beside them as
+    <code>repro-after-edge-readers.py</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/dependency-edge-semantics/after-edge-reaches-every-reader.svg"
+           alt="Two rows over one path from the plan HTML to the roadmap readers. In the first row
+                each builder keeps its own relation-key list, after is on neither, and the readers
+                report no order and no hint; in the second row both builders take the keys from one
+                tuple, after survives the row, and the readers rank the plan behind unsequenced work
+                with a hint naming its target.">
+      <figcaption>An edge either builder drops is invisible to every reader at once, while the
+      carrier stays in ready work throughout.</figcaption>
+    </figure>
+
+    <p><strong>Repair.</strong> Both builders take the edge keys from one tuple
+    (<code>EDGE_ROW_FIELDS</code> in <code>reckon/serve.py</code>) through one helper
+    (<code>edge_row</code>), so <code>depends_on</code>, <code>after</code> and <code>blocks</code>
+    cannot land in one builder and be missed by the other. Every reader named by this node reads that
+    one row computation: the HTTP roadmap and the ready-set projection through the discovery payload,
+    the MCP roadmap through <code>_inventory_row</code>, and the portfolio rollup through
+    <code>flight._project_roadmap</code>, which also takes its rows from <code>discover_plans</code>.</p>
+
+    <p><strong>Gate.</strong> The cohort of every test file importing <code>reckon.serve</code> or
+    <code>reckon.mcp</code> that is not browser-driven (59 files; <code>tests/test_spa_*</code> is
+    excluded because the change reaches no JSX) ran in a bound slice at both arms: base
+    <code>29df6835</code> <strong>2 failed / 1147 passed / 1 skipped in 216.8 s</strong>, head
+    <strong>2 failed / 1147 passed / 1 skipped in 180.0 s</strong>, the same two ids at both arms —
+    <code>tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers</code> and
+    <code>tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact</code> —
+    so <strong>zero added failures</strong> (<code>logs/cohort-base.log</code>,
+    <code>logs/cohort-head.log</code>). The named sibling gates at head —
+    <code>tests/test_after_edge_orders_without_blocking.py</code> plus
+    <code>tests/test_schema.py</code> — report <strong>1 failed / 1591 passed</strong>
+    (<code>logs/named-gates-head.log</code>). The failing case,
+    <code>test_cross_project_conformance[imas-ambix:dsv41-flash-four-card-throughput-landed]</code>,
+    fails identically at base <code>29df6835</code> — <strong>1 failed / 1521 passed</strong>,
+    <code>logs/named-gates-base-schema.log</code> — because the imas-ambix evidence record it
+    conforms against names a commit that does not resolve in that repository, so it is
+    uninstrumented by this change.</p>
+
+    <p><strong>Negative control.</strong> Declared as: remove the after key from the
+    <code>mcp.py</code> inventory row; the MCP-path case in
+    <code>tests/test_after_edge_reaches_every_reader.py</code> must fail. Executed in a scratch
+    export of the node's head with that one line removed (<code>edge_row(item)</code> mentions
+    1 → 0) and the module pinned to the export: the MCP-path case failed while the discovery-path
+    case passed — <strong>1 failed, 1 passed</strong> — so the red belongs to that row and not to the
+    export (<code>logs/negative-control-mcp-row.log</code>, whose first line is the declared string).
+    A mirrored arm mutated the discovery row instead: because the MCP inventory path consumes the
+    discovery rows, both cases fail there
+    (<code>logs/supplementary-serve-row-mutation.log</code>), which is the wiring direction the two
+    builders have.</p>
+
+    <p>Commit in the node: <code>5bdf633b</code>. Section closure and the driving followup remain with
+    the coordinator.</p>
+  </section>
+
   </main>
 </body>
 </html>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 350" role="img" aria-labelledby="title desc">
+<title id="title">The after edge must survive both inventory row builders to reach any reader</title>
+<desc id="desc">Two rows over one path from the plan HTML to the roadmap readers. In the first row each row builder keeps its own list of relation keys, after is on neither list, and every reader downstream reports a sequenced plan as first and unannotated. In the second row both builders take the edge keys from one tuple, after survives the row, and every reader ranks the plan behind unsequenced work with a hint naming its target.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#245878"/></marker></defs>
+<g font-family="sans-serif" font-size="17" fill="#172d3d">
+<text x="25" y="28" font-weight="bold">One edge, two row builders, every reader</text>
+<text x="25" y="52" font-size="14" fill="#4a5b66">The roadmap reads relations off the inventory row, so an edge a builder drops is invisible to all of them at once.</text>
+
+<text x="25" y="82" font-weight="bold" font-size="15" fill="#9b2c25">Dropped — the state this node found</text>
+<rect x="25" y="94" width="150" height="58" rx="4" fill="#eef6fa" stroke="#245878"/>
+<text x="40" y="120">plan HTML</text>
+<text x="40" y="142" font-size="14">plan-after meta</text>
+<path d="M175 123 H215" stroke="#245878" fill="none" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="220" y="94" width="150" height="58" rx="4" fill="#eef6fa" stroke="#245878"/>
+<text x="235" y="120">parser</text>
+<text x="235" y="142" font-size="14">resolves after</text>
+<path d="M370 123 H410" stroke="#245878" fill="none" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="415" y="94" width="200" height="58" rx="4" fill="#f9f2df" stroke="#9b7825"/>
+<text x="430" y="120">row builders</text>
+<text x="430" y="142" font-size="14">depends_on, blocks</text>
+<text x="625" y="120" font-weight="bold" fill="#9b2c25">&#10007; after dropped</text>
+<text x="625" y="142" font-size="14" fill="#9b2c25">readers never see it</text>
+
+<path d="M745 123 H785" stroke="#9b2c25" fill="none" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="790" y="90" width="85" height="66" rx="4" fill="#f3f5f6" stroke="#9b2c25"/>
+<text x="802" y="112" font-size="14" fill="#172d3d">readers</text>
+<text x="802" y="132" font-size="13" fill="#9b2c25">no order</text>
+<text x="802" y="149" font-size="13" fill="#9b2c25">no hint</text>
+
+<text x="25" y="192" font-weight="bold" font-size="15" fill="#1f6b3a">Carried — the state this node lands</text>
+<rect x="25" y="204" width="150" height="58" rx="4" fill="#eef6fa" stroke="#245878"/>
+<text x="40" y="230">plan HTML</text>
+<text x="40" y="252" font-size="14">plan-after meta</text>
+<path d="M175 233 H215" stroke="#245878" fill="none" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="220" y="204" width="150" height="58" rx="4" fill="#eef6fa" stroke="#245878"/>
+<text x="235" y="230">parser</text>
+<text x="235" y="252" font-size="14">resolves after</text>
+<path d="M370 233 H410" stroke="#245878" fill="none" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="415" y="204" width="200" height="58" rx="4" fill="#eaf4ec" stroke="#1f6b3a"/>
+<text x="430" y="230">one edge-key tuple</text>
+<text x="430" y="252" font-size="14">depends_on, after, blocks</text>
+<text x="625" y="230" font-weight="bold" fill="#1f6b3a">&#10003; after on the row</text>
+<text x="625" y="252" font-size="14" fill="#1f6b3a">both builders agree</text>
+
+<path d="M745 233 H785" stroke="#1f6b3a" fill="none" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="790" y="196" width="85" height="66" rx="4" fill="#eaf4ec" stroke="#1f6b3a"/>
+<text x="800" y="218" font-size="13">readers</text>
+<text x="800" y="236" font-size="12" fill="#1f6b3a">ranked</text>
+<text x="800" y="252" font-size="12" fill="#1f6b3a">hint names</text>
+<text x="800" y="266" font-size="12" fill="#1f6b3a">target</text>
+
+<text x="25" y="296" font-size="14" fill="#4a5b66">Readers reached over one computation: the HTTP roadmap, the ready-set projection, the portfolio rollup,</text>
+<text x="25" y="318" font-size="14" fill="#4a5b66">and the MCP roadmap. The carrier stays in ready work throughout — the edge orders and never blocks.</text>
+</g></svg>

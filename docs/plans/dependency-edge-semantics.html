@@ -348,6 +348,36 @@
       Section closure and the driving followup remain for the coordinator.</p>
     </aside>
 
+    <aside id="after-edge-reaches-every-reader">
+      <p><strong>Worker implementation, 2026-09-25:</strong> a plan carrying the <code>after</code> edge
+      above orders the HTTP roadmap, but only where the edge survives the inventory row the roadmap reads
+      it off. It did not. Both builders between the parser and the readers — the discovery scan in
+      <code>reckon/serve.py</code> and the MCP inventory normaliser in <code>reckon/mcp.py</code> — each
+      named the relation keys it carried (<code>depends_on</code>, <code>blocks</code>) and dropped
+      <code>after</code>, so an authored edge reached no reader while both call paths looked healthy.
+      Reproduced at base <code>29df6835</code> over a synthesised docs tree: the discovery row carried
+      <code>['blocks', 'depends_on']</code>, the roadmap built over it reported
+      <code>after: [] came_after: [] after_hold: False</code>, and the MCP inventory row reported
+      <code>after: False</code>. Both builders now take the edge keys from one tuple
+      (<code>EDGE_ROW_FIELDS</code>) through one helper (<code>edge_row</code>), so the three keys cannot
+      land in one builder and be missed by the other.</p>
+      <p><strong>Gate:</strong> <code>tests/test_after_edge_reaches_every_reader.py</code> drives each
+      real path from a synthesised docs tree rather than hand-built rows — <strong>2 failed</strong> at
+      base, each at <code>KeyError: 'after'</code> on its own builder's row, <strong>2 passed</strong> at
+      head. The cohort of non-browser files importing <code>reckon.serve</code> or <code>reckon.mcp</code>
+      (59 files) ran in a bound slice at both arms: <strong>2 failed / 1147 passed / 1 skipped</strong>
+      either side, the same two pre-existing ids, so zero added failures.
+      <code>tests/test_after_edge_orders_without_blocking.py</code> stays green at head; the one
+      <code>tests/test_schema.py</code> failure at head fails identically at base from an external
+      imas-ambix evidence record.</p>
+      <p><strong>Declared negative control:</strong> removing the after key from the <code>mcp.py</code>
+      inventory row in a scratch export of the head fails the MCP-path case of the new test while the
+      discovery-path case passes — <code>1 failed, 1 passed</code> — so the red belongs to that row and
+      not to the export.</p>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#after-edge-reaches-every-reader">reproduction, cohort gate, negative control and figure</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
+    </aside>
+
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
       Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout
