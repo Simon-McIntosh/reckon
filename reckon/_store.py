@@ -66,7 +66,7 @@ import re
 import tempfile
 import fcntl
 import hashlib
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -678,14 +678,16 @@ def _apply_evidence_appends(
     requests: list[dict[str, str]],
     root: str | Path | None,
 ) -> list[Path]:
-    """Append each request to its own record, one record at a time.
+    """Append each request to its own record, all records or none.
 
     Requests are grouped by record path and applied in order, each to the text
     the previous request produced, so a batch naming one record twice appends
     twice and the duplicate-anchor refusal sees the anchors an earlier request
-    added. Each record's read, apply and replace run inside that record's lock,
-    so a concurrent writer's append interleaves with this one instead of being
-    overwritten by it.
+    added. Every named record's lock is held while the whole batch is validated
+    and replaced, so a refusal leaves every record as it was and a concurrent
+    writer's append interleaves with this batch instead of being overwritten by
+    it. The locks are taken in sorted path order so two overlapping batches
+    cannot deadlock.
     """
     grouped: dict[Path, list[dict[str, str]]] = {}
     for request in requests:
@@ -693,10 +695,13 @@ def _apply_evidence_appends(
             request
         )
 
+    planned: list[tuple[Path, str]] = []
     written: list[Path] = []
-    for path, batch in grouped.items():
-        plan_slug = batch[0]["plan"]
-        with _serialized_path_lock(path, "evidence"):
+    with ExitStack() as locks:
+        for path in sorted(grouped, key=str):
+            locks.enter_context(_serialized_path_lock(path, "evidence"))
+        for path, batch in grouped.items():
+            plan_slug = batch[0]["plan"]
             if path.is_file():
                 current = path.read_text(encoding="utf-8", errors="replace")
             else:
@@ -707,11 +712,13 @@ def _apply_evidence_appends(
                 )
             for request in batch:
                 current = _append_evidence_to_text(current, request)
+            planned.append((path, current))
+        for path, new_text in planned:
             path.parent.mkdir(parents=True, exist_ok=True)
             tmp = path.with_suffix(".html.tmp")
-            tmp.write_text(current, encoding="utf-8")
+            tmp.write_text(new_text, encoding="utf-8")
             tmp.replace(path)
-        written.append(path)
+            written.append(path)
     return written
 
 
