@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="A worker killed mid-turn is a row on the snapshot that sees it die, not fifteen minutes later.">
   <meta name="plan-evidence-for" content="a-stalled-row-says-whether-the-worker-lives">
   <meta name="plan-verifies" content="a-stalled-row-says-whether-the-worker-lives#s2">
-  <meta name="plan-commits" content="8b759fa0">
-  <meta name="plan-artifacts" content="tests/test_watch_reports_death_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png">
+  <meta name="plan-commits" content="8b759fa0,c5b2e184">
+  <meta name="plan-artifacts" content="tests/test_watch_reports_death_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png,tests/test_death_row_reads_any_final_record.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/tail_window_reads.png">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -66,6 +66,48 @@
       <code>result</code> tail is left for &sect;8. The branch fires only for a run the classifier
       still calls running, which is exactly the run whose manifest's word the process table has
       falsified.</p>
+
+      <h3 id="s2-tail-window">Node <code>death-row-reads-any-final-record</code> &mdash; the last
+      record however large it is</h3>
+      <p><strong>Landed</strong> (<code>c5b2e184</code>). The reader that decides between a death and
+      a turn that ended took one fixed 64&nbsp;KiB window from the end of the run's newest stream. A
+      record larger than the window leaves that window entirely inside it, and a fragment parses as
+      nothing, so the reader answered &ldquo;no last record&rdquo; &mdash; the run kept reading as
+      working and no death clause appeared, which is the stale row this section exists to remove. The
+      window is now a floor: the read reaches further back in geometric steps while the chunk begins
+      inside a record, and stops as soon as a chunk begins at a record boundary, because such a chunk
+      holds only complete lines and a scan that finds nothing in it is the stream's own answer. The
+      boundary test is on where the chunk <em>begins</em>: the file's final byte can be the terminating
+      newline of the very record that overflows the window, so counting newlines in the chunk is not
+      the same test and answers wrongly for a record of about one window plus a line.</p>
+      <figure>
+        <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/tail_window_reads.png" alt="Four cases stacked by size of the record the stream ends with: the stream (grey), the final record (orange), and each read the reader took (blue for one window, violet for the read that reaches back over the whole record). The right panel plots the bytes read per case against the 64 KiB window.">
+        <figcaption>Measured from the reader itself, one case per size of the record the stream ends
+        with. The 1 KiB and 64.5 KiB cases are answered by their first read; the 65.5 KiB case reaches
+        back a second time and the 512 KiB case a third, each paying one window plus the boundary byte
+        per attempt. The cost panel stays at the window line while the record fits inside it, and
+        climbs only where the record does not.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Final record</th><th>Reads taken (bytes)</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td>1 KiB (file 1 KiB)</td><td>1 204</td><td><code>assistant</code></td></tr>
+          <tr><td>64.5 KiB (file 63 KiB)</td><td>64 680</td><td><code>assistant</code></td></tr>
+          <tr><td>65.5 KiB (file 64 KiB)</td><td>65 536 + 1 + 65 680</td><td><code>assistant</code></td></tr>
+          <tr><td>512 KiB (file 512 KiB)</td><td>65 536 + 1 + 262 144 + 1 + 524 468</td><td><code>assistant</code></td></tr>
+          <tr><td>small record behind a 2 MiB stream</td><td>65 536 (one window)</td><td><code>assistant</code></td></tr>
+          <tr><td>fixed window restored (mutated head)</td><td>65 536</td><td><code>None</code> for the 65.5 KiB and 512 KiB cases</td></tr>
+        </tbody>
+      </table>
+      <p>The repair was confirmed against the head that carried the defect before it was changed:
+      with the fixed window the 1 KiB and 64.5 KiB cases read <code>assistant</code> and the 65.5 KiB
+      and 512 KiB cases read <code>None</code>, which is the reproduction the followup recorded. The
+      window's floor is 65 536 bytes, so the boundary these sizes straddle is the serialized line:
+      the 64.5 KiB case serializes to a 63 KiB line and the 65.5 KiB case to a 65 578-byte line.</p>
+      <p><strong>Negative control, executed and logged.</strong> With the single fixed 64 KiB seek
+      restored in the reader and nothing else changed, the 65.5 KiB and 512 KiB cases fail at
+      <code>assert None == 'assistant'</code> (2 failed, 3 passed); the reader was then restored
+      byte-exact (sha1 compared before and after) and the file re-run green.</p>
     </section>
 
     <section id="verification">
