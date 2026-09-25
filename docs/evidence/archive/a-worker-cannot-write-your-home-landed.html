@@ -832,17 +832,46 @@ exit: 0</pre>
       redirected.</figcaption>
     </figure>
 
-    <p><strong>Ambient sensitivity, reported rather than patched.</strong> A test that
-    writes a plan with no <code>checkout_path</code> and <em>no</em> synthetic pointer
-    now meets this refusal whenever <code>RECKON_RUN_ID</code> is in its environment,
-    which is true of any pytest process a worker starts. Both arms are therefore run
-    with <code>env -u RECKON_RUN_ID</code>, so they measure the change rather than this
-    worker's own run; the feature itself is exercised by the new test file, which sets
-    its own synthetic pointer. The test files that would feel the ambient case when a
-    suite runs inside a run (<code>tests/test_mcp_tools.py</code>,
-    <code>tests/test_mcp_store.py</code>, <code>tests/test_edit_plan.py</code>) lie
-    outside this node's write scope, so the finding is recorded here as a follow-on
-    rather than repaired in this commit.</p>
+    <p><strong>Ambient sensitivity, then repaired.</strong> A test that writes a plan
+    with no <code>checkout_path</code> and <em>no</em> synthetic pointer meets this
+    refusal whenever <code>RECKON_RUN_ID</code> is in its environment, which is true of
+    any pytest process a worker starts. The first version of this record reported that
+    as a follow-on, because the test files it lands in were outside the node's write
+    scope; review found it fleet-breaking and the scope was extended to close it.</p>
+
+    <p><strong>The measurement, before and after.</strong> With <code>RECKON_RUN_ID</code>
+    exported in the invoking shell, as it is in every worker's shell, over the eight
+    declared files at the feature commit <code>22ae76dc</code>: <code>72 failed / 119
+    passed</code> &mdash; 66 in <code>tests/test_edit_plan.py</code> alone, plus 5 in
+    <code>tests/test_mcp_store.py</code> and 1 in <code>tests/test_mcp_tools.py</code>.
+    That one file on its own reads <code>66 failed / 13 passed</code>. Every failure is
+    a plan-write test resolving a run that is not the test's. With the isolation fixture
+    in place at <code>4dce31a2</code>: <code>196 passed / 0 failed</code> over the nine
+    files, the same variable still exported. The fixture is autouse in
+    <code>tests/conftest.py</code> and removes <code>RECKON_RUN_ID</code>,
+    <code>RECKON_MANIFEST</code> and <code>RECKON_ATTEMPT_STARTED_AT</code> &mdash; the
+    three a dispatch exports, read from <code>reckon/crew/dispatch.py</code> rather than
+    guessed &mdash; for every test, so the identity of the process running the suite is
+    never read as a fact about the code under test. A test whose subject is the run
+    scope sets what it needs itself, as the run-scoped tests already did
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-ambient-base.txt</code>,
+    <code>gate-ambient-head.txt</code>,
+    <code>edit-plan-ambient-before.txt</code>,
+    <code>edit-plan-ambient-after.txt</code>).</p>
+
+    <p><strong>The base arm for this repair is the feature commit, not its
+    parent.</strong> Run against <code>dc0c6f34</code> the ambient variable is harmless,
+    because the refusal does not exist there: <code>191 passed</code>. The sensitivity
+    was introduced by this change, so the arm that shows it must carry the change and
+    lack only the fixture, or the comparison measures nothing.</p>
+
+    <p><strong>Coverage gap closed.</strong> The branch that refuses a run id naming no
+    readable pointer had no test of its own. It now has one:
+    <code>test_a_run_with_no_readable_pointer_is_refused</code> asserts the refusal's
+    error code, that the message names the run, and that both the main checkout's and
+    the worktree's plan files are byte-identical afterwards &mdash; so an unreadable
+    pointer can never widen a write's reach. Lint on <code>tests/conftest.py</code> is
+    clean at base and at head, the new test file is clean, and both are formatted.</p>
   </section>
 </main>
 </body>

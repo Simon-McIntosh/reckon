@@ -424,7 +424,33 @@
         <code>docs/figures/a-worker-cannot-write-your-home/</code>. Evidence:
         <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-plan-write</code>,
         figure
-        <code>/reckon/figures/a-worker-cannot-write-your-home/plan-write-resolution.svg</code>.</p></div>
+        <code>/reckon/figures/a-worker-cannot-write-your-home/plan-write-resolution.svg</code>.</p>
+
+        <p><strong>Review follow-up: the run scope leaked into every test's
+        environment.</strong> The first version of this record reported the ambient
+        sensitivity as a follow-on. Review found it fleet-breaking, because a dispatch
+        exports <code>RECKON_RUN_ID</code> into every worker, so any worker whose gate
+        runs the plan-write tests met the refusal for a run that is not the test's:
+        with the variable exported, <code>tests/test_edit_plan.py</code> reads
+        <code>66 failed / 13 passed</code>, and the eight declared files read
+        <code>72 failed / 119 passed</code>. The scope was extended to close it. An
+        autouse fixture in <code>tests/conftest.py</code> now removes
+        <code>RECKON_RUN_ID</code>, <code>RECKON_MANIFEST</code> and
+        <code>RECKON_ATTEMPT_STARTED_AT</code> for every test, so no test inherits the
+        identity of the worker running it, and a test whose subject <em>is</em> the run
+        scope sets what it needs itself. Measured with the variable exported in the
+        invoking shell, as it is in a worker's shell: base (feature commit, no fixture)
+        <code>72 failed / 119 passed</code>, head <code>196 passed / 0 failed</code> over
+        the nine files. The same review found the no-readable-pointer branch untested;
+        <code>test_a_run_with_no_readable_pointer_is_refused</code> now covers it and
+        asserts the refusal names the run and leaves both plan files byte-identical.
+        Lint clean on both repaired files at base and head. Commit
+        <code>4dce31a2</code>; logs at
+        <code>docs/figures/a-worker-cannot-write-your-home/gate-ambient-base.txt</code>,
+        <code>gate-ambient-head.txt</code>,
+        <code>edit-plan-ambient-before.txt</code>,
+        <code>edit-plan-ambient-after.txt</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-plan-write</code>.</p></div>
       </div>
     </section>
 
