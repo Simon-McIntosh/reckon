@@ -275,6 +275,24 @@ head, a first sighting that did move keeps its left word and its arrow:
         </tbody>
       </table>
     </section>
+
+    <section id="seat-survives-other-hosts">
+      <h2>A seat is judged only on its own host</h2>
+      <p>Run <code>r-20260925T164609522941-watcher-seat-survives-other-hosts</code> (node <code>watcher-seat-survives-other-hosts</code>) stops a process on one host clearing the primary producer's seat because that pid is absent from its own process table. The plan section is <a href="/reckon/plans/the-fleet-counters-count-the-fleet#s4">§4</a>.</p>
+      <p>The seat is a record on the shared GPFS home and carries a pid. Before this change liveness, erasure and reconciliation all probed that pid in the process table of whoever read the record, so any reckon read on another host sharing the home judged a live producer dead and cleared its seat; the producer kept writing its transition stream, but <code>producer_live</code> read false, so <code>reckon/cli.py:2267</code> skipped the stream and the attached follower delivered nothing. The seat record now carries <code>host</code> (<code>socket.gethostname()</code>), and the three judgements split on it: a record naming another host is never erased here and is live while its events stream moved within its stall window; a record naming this host is judged by the local process table as before; a record naming no host is never erased by pid alone and lives off its stream. Delivery (<code>producer_live</code>) judges a seat it cannot attribute by stream freshness; admission (<code>watcher_live</code>, <code>project_watch_visibility</code>) stays conservative, so a dispatch is still refused off an erased seat. <code>ensure_watcher_service</code> now settles lingering before starting a unit and routes <code>service.LingerUnavailableError</code> to the session-owned process producer rather than raising on a compute node with no user session bus.</p>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td><code>tests/test_watch_seat_across_hosts.py</code> at the head</td><td>5 passed</td><td>The four tests the follow-up names, plus one for the hostless record.</td></tr>
+          <tr><td>The same file against base <code>9a9cb581</code></td><td>5 failed, 0 passed (of the five)</td><td><code>/tmp/wsh-base</code>, built by <code>git archive 9a9cb581 | tar -x</code>; <code>module.__file__</code> and cwd recorded in the run's logs.</td></tr>
+          <tr><td>Assigned watch, follow and dispatch files, base against head</td><td>base 16 failed / 0 added at head; head 11 failed / 219 passed, 0 added by id</td><td><code>gate-head.log</code>; the five new tests are the only set difference. The eleven residual failures are pre-existing on base and owned elsewhere — the brief's "8 known base failures" is stale, the measured base measures eleven.</td></tr>
+          <tr><td>Mutation <code>erase a seat whose record names another host because its pid is absent from the local process table</code></td><td>failed as required (4 failed, 1 passed)</td><td><code>mutation-erase-foreign-seat-by-pid.log</code>: the pre-change rule restored, so erasing a foreign seat by a local pid probe happens and is shown.</td></tr>
+          <tr><td>Mutation <code>enable_linger reverted to raise a plain ServiceError</code></td><td>failed as required (1 failed, 4 passed)</td><td><code>mutation-linger-raise-reverted-to-service-error.log</code>. After review: the linger test now drives the real <code>service.enable_linger</code> through a <code>loginctl</code> shadowed on <code>PATH</code> that answers <code>Could not enable linger: No such device or address</code>, so reverting the raise reddens it. The earlier form built its own exception and could not fail.</td></tr>
+          <tr><td>Mutation <code>a hostless seat is erased by pid</code></td><td>failed as required (1 failed, 4 passed)</td><td><code>mutation-hostless-seat-erased-by-pid.log</code>. After review: the hostless test now asserts the record still carries its pid, so erasing it reddens the test. The earlier assertion read <code>host</code> as none, which an erased record also answers.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Retained limit.</strong> The local commit was not created: the primary checkout's <code>.git</code> is mounted read-only on this fleet compute node, so <code>git add</code> fails creating <code>index.lock</code>. The change set is left uncommitted in worktree <code>.reckon-worktrees/reckon-c8f839407e49/s23-coord/watcher-seat-survives-other-hosts</code> at base <code>9a9cb581</code>.</p>
+    </section>
   </main>
 </body>
 </html>
