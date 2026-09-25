@@ -92,6 +92,34 @@
       <li>Every existing sprint test that asserted demotion is updated to the new contract in the same commit. Each such change is named in the landing record.</li>
     </ul>
 
+    <h3 id="s4-landed">Landed &mdash; push no longer demotes</h3>
+    <p><code>push_sprint</code> in <code>reckon/project_state.py</code> writes <code>active</code>
+    on its target alone under one resource lock and a recovery journal, leaves every other sprint's
+    stored status untouched, and returns only <code>new_version</code>; the <code>push</code> branch
+    of the apply op no longer emits demotion warnings. Landed in <code>0ad5a171</code>.</p>
+    <p>Reproduced at the base revision first: pushing S2 while S1 was active returned
+    <code>demoted=['S1']</code> and left S1 at <code>open</code>. Repaired, it returns no
+    <code>demoted</code> key and both stay <code>active</code>. The gate
+    <code>tests/test_sprint_push_status.py</code> is 11 passed; the declared mutation restoring the
+    demote loop makes <code>test_push_leaves_other_sprints_active</code> fail
+    (<code>{'S1': 'open'}</code> != <code>{'S1': 'active'}</code>) and nothing else. The audit
+    finding and <code>reckon/mcp.py</code> are untouched here, so
+    <code>multiple-active-sprints</code> remains live and is retired by the node that owns
+    <code>reckon/mcp.py</code>.</p>
+    <figure>
+      <img src="/reckon/figures/a-sprint-is-live-while-a-crew-works-it/push-sprint-before-after.png"
+           alt="Two panels: under the retired one-active cap, pushing S2 demotes S1 to open; under the current hint semantics, pushing S2 leaves S1 active.">
+      <figcaption>Pushing S2 while S1 is active: the retired cap demoted S1; the current behaviour
+      leaves it active.</figcaption>
+    </figure>
+    <p>Tests changed in the same commit:
+    <code>test_push_demotes_the_previous_active_sprint_in_one_write</code> is replaced by
+    <code>test_push_leaves_other_sprints_active</code> (pushes S2 after S1, asserts no
+    <code>demoted</code> key and both <code>active</code>);
+    <code>test_push_on_a_stale_version_changes_neither_sprint</code> is unchanged and still passes.
+    Evidence: <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html">execution
+    record</a>.</p>
+
     <h2 id="s5">&sect;5 &mdash; The skills teach liveness, not the marker</h2>
     <p><code>reckon-sprint</code> SKILL.md's "One pushed sprint" section, and every <code>reckon-build</code> sentence that tells a coordinator to read <code>active_sprint_id</code>, are rewritten to the &sect;2 definition. The <code>push</code> op is described as a hint.</p>
     <p><strong>Done when:</strong></p>

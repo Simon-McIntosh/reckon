@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-sprint-is-live-while-a-crew-works-it-landed">
+  <meta name="plan-title" content="A Sprint Is Live While A Crew Works It — Execution Record">
+  <meta name="plan-summary" content="Execution evidence for §4: the sprint push op stops demoting other sprints, writing active on its target alone under one resource lock and a recovery journal, and returning no demoted list; the push-status test that asserted demotion now requires both sprints to stay active, and the declared mutation that restores the demote loop trips it.">
+  <meta name="plan-evidence-for" content="a-sprint-is-live-while-a-crew-works-it">
+  <meta name="plan-verifies" content="a-sprint-is-live-while-a-crew-works-it#s4">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <title>A Sprint Is Live While A Crew Works It — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s4">§4 — The one-active cap, push no longer demotes</h2>
+
+    <p><code>push_sprint</code> in <code>reckon/project_state.py</code> no longer
+    treats <code>active</code> as an exclusive slot. It writes <code>active</code> on its
+    target alone — under the same single resource lock and recovery journal the op used
+    before — leaves every other sprint's stored status untouched, and returns only
+    <code>new_version</code>. The <code>push</code> branch of the apply op no longer emits
+    demotion warnings. The change landed in <code>0ad5a171</code>.</p>
+
+    <h3 id="s4-measure">The measure — push S2 while S1 is active, both stay active</h3>
+
+    <p>The defect is that a push wrote a second sprint file to demote the previous holder of the
+    slot. Reproduced at the base revision before the repair: pushing S2 while S1 was active
+    returned <code>demoted=['S1']</code> and left S1 at <code>open</code>; the same script
+    against the repaired module returns no <code>demoted</code> key and leaves both at
+    <code>active</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-sprint-is-live-while-a-crew-works-it/push-sprint-before-after.png"
+           alt="Two panels: under the retired one-active cap, pushing S2 demotes S1 to open; under the current hint semantics, pushing S2 leaves S1 active.">
+      <figcaption>Pushing S2 while S1 is active. Left: the retired cap, which wrote S1 to
+      <code>open</code>. Right: the current behaviour, where the push writes only its target and
+      S1 is untouched.</figcaption>
+    </figure>
+
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Base reproduction — <code>push_sprint</code> demotes the prior active sprint</td>
+          <td><code>demoted=['S1']</code>, S1 <code>open</code> — the defect present</td></tr>
+        <tr><td>Repaired — push returns no demoted list, both stay active</td>
+          <td>S1 <code>active</code>, S2 <code>active</code></td></tr>
+        <tr><td>Gate — <code>tests/test_sprint_push_status.py</code></td>
+          <td>11 passed, exit 0</td></tr>
+        <tr><td>Declared mutation — restore the demote loop</td>
+          <td><code>test_push_leaves_other_sprints_active</code> FAILED
+          (<code>{'S1': 'open'}</code> != <code>{'S1': 'active'}</code>), 1 failed / 10 passed</td></tr>
+        <tr><td>Scoped ruff — <code>reckon/project_state.py</code>,
+          <code>tests/test_sprint_push_status.py</code></td>
+          <td>11 findings before, 11 after; identical finding set — no new findings</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="s4-tests-changed">Tests changed in this commit</h3>
+
+    <ul>
+      <li><code>test_push_demotes_the_previous_active_sprint_in_one_write</code> is replaced by
+      <code>test_push_leaves_other_sprints_active</code>: it pushes S2 while S1 is active and
+      asserts no <code>demoted</code> key is returned and <code>{S1: active, S2: active}</code>.
+      The old name asserted the retired invariant and would now be false.</li>
+      <li><code>test_push_on_a_stale_version_changes_neither_sprint</code> is unchanged and still
+      passes.</li>
+    </ul>
+
+    <p><strong>The negative control.</strong> Restoring the demote loop — re-reading the other
+    active sprints and writing each to <code>open</code> after the target write — makes exactly
+    <code>test_push_leaves_other_sprints_active</code> fail with
+    <code>{'S1': 'open', 'S2': 'active'}</code> against the both-active expectation. Removing the
+    mutation restores 11 passed.</p>
+
+    <h3 id="s4-scope-notes">Scope notes</h3>
+
+    <ul>
+      <li>This node does not touch <code>reckon/mcp.py</code>. The <code>multiple-active-sprints</code>
+      audit finding and the push op description at <code>reckon/mcp.py:1315</code> still state the
+      retired invariant and still back the audit test; retiring them belongs to the node that owns
+      <code>reckon/mcp.py</code>.</li>
+      <li>The remaining §4 work — <code>active_sprint_id</code> following the live sprint beside a
+      derived <code>live_sprint_ids</code> list — is a read-side derivation, not a write-side
+      change, and is outside this node's write scope.</li>
+    </ul>
+
+  </main>
+</body>
+</html>
