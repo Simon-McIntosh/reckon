@@ -27,7 +27,7 @@
   review records under <code>/home/ITER/mcintos/.config/reckon/crew/reviews/</code> and
   the run directories under <code>/home/ITER/mcintos/.config/reckon/crew/runs/</code>.
   The filter accepted JSON objects carrying all five review score dimensions and a
-  <code>reviewed_run_id</code>: <strong>820 review records</strong>, across
+  <code>reviewed_run_id</code>: <strong>678 distinct review records</strong>, across
   <strong>imas-ambix, imas-codex, imas-efit, nova and reckon</strong>. The raw census is
   reproducible with <code>review_metrics.py</code>; its row-level output is
   <code>review-rows.jsonl</code>, its grouped output is <code>review-summary.tsv</code>,
@@ -37,9 +37,9 @@
   <p>The join is deliberately conservative. An explicit <code>reviewer_run_id</code>
   resolves the review stream; if it is absent, the review still contributes to finding,
   repair and score counts but contributes no invented wall time, turn count or model.
-  That leaves <strong>222 reviewer-run joins</strong>, <strong>197 reviews with a
-  timestamped review wall</strong>, and <strong>169 latency joins</strong>. The missing
-  377 model labels and the missing timing are not filled from a profile, scheduler or
+  That leaves <strong>207 reviewer-run joins</strong>, <strong>183 reviews with a
+  timestamped review wall</strong>, and <strong>154 latency joins</strong>. The missing
+  271 model labels and the missing timing are not filled from a profile, scheduler or
   filename. This distinction matters: a coverage number is evidence about the instrument,
   not evidence that the unjoined reviews cost zero.</p>
 
@@ -53,9 +53,9 @@
   is unknown.</p>
 
   <figure>
-    <img src="/reckon/figures/review-node-utility/review-cost.svg" alt="Bars comparing median review cost of 1,743 seconds and 101 turns with median implement cost of 3,533 seconds and 160 turns.">
+    <img src="/reckon/figures/review-node-utility/review-cost.svg" alt="Bars comparing median review cost of 1,743 seconds and 100 turns with median implement cost of 3,510 seconds and 158 turns.">
     <figcaption>Across the timestamped joins, a review consumes about half the implement wall and
-    63% of its assistant turns. The two medians have separate coverage counts and should not be
+    63.3% of its assistant turns. The two medians have separate coverage counts and should not be
     read as a claim that every review and implement stream was timestamped.</figcaption>
   </figure>
 
@@ -65,16 +65,16 @@
     <caption>Overall cost and completion-to-review latency. Seconds are converted to minutes only in the prose.</caption>
     <thead><tr><th>Measure</th><th>Review</th><th>Implement run</th><th>Coverage</th></tr></thead>
     <tbody>
-      <tr><td>Median wall</td><td><strong>1,743 s</strong> (29.1 min)</td><td><strong>3,533 s</strong> (58.9 min)</td><td>197 review walls / 176 implement walls</td></tr>
-      <tr><td>Median assistant turns</td><td><strong>101</strong></td><td><strong>160</strong></td><td>222 joined streams</td></tr>
-      <tr><td>Median review tool steps</td><td><strong>52</strong></td><td>not applicable</td><td>222 reviewer streams</td></tr>
-      <tr><td>Median completion-to-review start</td><td><strong>749 s</strong> (12.5 min)</td><td>completion is the origin</td><td>169 latency joins</td></tr>
+      <tr><td>Median wall</td><td><strong>1,743 s</strong> (29.1 min)</td><td><strong>3,510 s</strong> (58.5 min)</td><td>183 review walls / 161 implement walls</td></tr>
+      <tr><td>Median assistant turns</td><td><strong>100</strong></td><td><strong>158</strong></td><td>207 joined streams</td></tr>
+      <tr><td>Median review tool steps</td><td><strong>52</strong></td><td>not applicable</td><td>207 reviewer streams</td></tr>
+      <tr><td>Median completion-to-review start</td><td><strong>677 s</strong> (11.3 min)</td><td>completion is the origin</td><td>154 latency joins</td></tr>
     </tbody>
   </table>
 
   <p>The latency includes reviews started after the implement stream's last event, including
   reflex reviews queued through a session-derived member. It is therefore a scheduling
-  observation, not just model time. Its mean is 7,656 s while its median is 749 s, so a
+  observation, not just model time. Its mean is 7,656 s while its median is 677 s, so a
   single average would hide the long tail. The decision instrument should use a median and
   keep the long tail visible when a node is time-sensitive.</p>
 
@@ -83,10 +83,10 @@
     “Luna” is an explicit zero in this corpus, not a synonym inferred from another label.</caption>
     <thead><tr><th>Reviewer model</th><th>Reviews</th><th>Finding share</th><th>Repair share among findings</th><th>Median tool steps</th><th>Score median</th></tr></thead>
     <tbody>
-      <tr><td><code>deepseek-v4.1-flash</code></td><td>334</td><td>302/334 = <strong>90.4%</strong></td><td>80/302 = <strong>26.5%</strong></td><td><strong>59</strong></td><td>90</td></tr>
+      <tr><td><code>deepseek-v4.1-flash</code></td><td>301</td><td>272/301 = <strong>90.4%</strong></td><td>31/272 = <strong>11.4%</strong></td><td><strong>59</strong></td><td>90</td></tr>
       <tr><td><code>gpt-5.6-luna</code></td><td><strong>0</strong></td><td>not measured</td><td>not measured</td><td>not measured</td><td>not measured</td></tr>
-      <tr><td><code>gpt-5.6-sol</code> (observed label, not Luna)</td><td>16</td><td>12/16 = 75.0%</td><td>1/12 = 8.3%</td><td><strong>43</strong></td><td>90.5</td></tr>
-      <tr><td>model missing</td><td>377</td><td>not used for model comparison</td><td>not used for model comparison</td><td>57.5 where present</td><td>90</td></tr>
+      <tr><td><code>gpt-5.6-sol</code> (observed label, not Luna)</td><td>16</td><td>12/16 = 75.0%</td><td>0/12 = 0.0%</td><td><strong>43</strong></td><td>90.5</td></tr>
+      <tr><td>model missing</td><td>271</td><td>not used for model comparison</td><td>not used for model comparison</td><td>57.5 where present</td><td>90</td></tr>
     </tbody>
   </table>
 
@@ -98,11 +98,11 @@
 
   <h2 id="s3">§3 — Findings, repairs and later defects</h2>
 
-  <p><strong>692 of 820 reviews (84.4%) carried at least one finding.</strong> A repair is
-  credited only where the run record shows a later finding-bearing review for the same
-  implement run, or the reviewed run's manifest carries a commit after the reviewed head;
-  abbreviated and full commit IDs are matched by prefix. On that definition,
-  <strong>171 of 692 finding-bearing reviews (24.7%) led to an observable repair</strong>.
+  <p><strong>588 of 678 distinct reviews (86.7%) carried at least one finding.</strong> A repair is
+  credited only where the run record shows a later distinct review of the same implement run
+  with a different reviewed head or findings, or the reviewed run's manifest carries a commit
+  after the reviewed head; duplicate twins never qualify. On that definition,
+  <strong>58 of 588 finding-bearing reviews (9.9%) led to an observable repair</strong>.
   The complement is not “no repair”: it is either promoted unchanged or lacks a durable
   later receipt, so the latter must remain visible rather than being folded into success.</p>
 
@@ -110,10 +110,10 @@
     <caption>Catch and repair by node class. Unknown rows are retained because the manifest was unavailable or lacked a usable path list.</caption>
     <thead><tr><th>Node class</th><th>Reviews</th><th>Finding share</th><th>Repair / finding reviews</th><th>Median review wall</th><th>Median turns</th><th>Median tool steps</th></tr></thead>
     <tbody>
-      <tr><td>docs or evidence only</td><td>117</td><td>100/117 = <strong>85.5%</strong></td><td>11/100 = <strong>11.0%</strong></td><td>1,446 s</td><td>111.5</td><td>57</td></tr>
+      <tr><td>docs or evidence only</td><td>97</td><td>84/97 = <strong>86.6%</strong></td><td>2/84 = <strong>2.4%</strong></td><td>1,446 s</td><td>110</td><td>56</td></tr>
       <tr><td>test-only</td><td><strong>0</strong></td><td>not measured</td><td>not measured</td><td>not measured</td><td>not measured</td><td>not measured</td></tr>
-      <tr><td>source change</td><td>615</td><td>511/615 = <strong>83.1%</strong></td><td>150/511 = <strong>29.4%</strong></td><td>1,572 s</td><td>99</td><td>50.5</td></tr>
-      <tr><td>unknown</td><td>88</td><td>81/88 = 92.0%</td><td>10/81 = 12.3%</td><td>3,514 s</td><td>106.5</td><td>53.5</td></tr>
+      <tr><td>source change</td><td>502</td><td>432/502 = <strong>86.1%</strong></td><td>56/432 = <strong>13.0%</strong></td><td>1,572 s</td><td>98</td><td>51</td></tr>
+      <tr><td>unknown</td><td>79</td><td>72/79 = 91.1%</td><td>0/72 = 0.0%</td><td>3,523 s</td><td>102.5</td><td>50.5</td></tr>
     </tbody>
   </table>
 
@@ -138,14 +138,14 @@
     <caption>Score bands use total score: low ≤80, middle 81–89, high ≥90.</caption>
     <thead><tr><th>Band</th><th>Reviews</th><th>Median score</th><th>Finding share</th><th>Repair share among findings</th></tr></thead>
     <tbody>
-      <tr><td>low (≤80)</td><td>95</td><td>78</td><td>93/95 = <strong>97.9%</strong></td><td><strong>36.6%</strong></td></tr>
-      <tr><td>middle (81–89)</td><td>273</td><td>86</td><td>260/273 = <strong>95.2%</strong></td><td><strong>26.5%</strong></td></tr>
-      <tr><td>high (≥90)</td><td>452</td><td>94</td><td>339/452 = <strong>75.0%</strong></td><td><strong>20.1%</strong></td></tr>
+      <tr><td>low (≤80)</td><td>83</td><td>77</td><td>81/83 = <strong>97.6%</strong></td><td><strong>14.8%</strong></td></tr>
+      <tr><td>middle (81–89)</td><td>230</td><td>86</td><td>220/230 = <strong>95.7%</strong></td><td><strong>11.4%</strong></td></tr>
+      <tr><td>high (≥90)</td><td>365</td><td>94</td><td>287/365 = <strong>78.6%</strong></td><td><strong>7.3%</strong></td></tr>
     </tbody>
   </table>
 
   <p>Low score predicts that a review will carry a finding, and weakly predicts that the
-  finding will lead to an observable repair: 36.6% for low scores versus 20.1% for high
+  finding will lead to an observable repair: 14.8% for low scores versus 7.3% for high
   scores among finding-bearing reviews. It is not a sufficiently sharp repair rule on its
   own. Model, node class and the missing receipt fields explain enough uncertainty that the
   score should prioritize a second look, not automatically demand one.</p>
@@ -168,10 +168,10 @@
     <caption>Observed catch rate and cost, offered as decision data rather than a default policy.</caption>
     <thead><tr><th>Node class</th><th>Observed catch rate</th><th>Review cost</th><th>What the record supports</th></tr></thead>
     <tbody>
-      <tr><td>docs or evidence only</td><td>85.5%; 11.0% repaired</td><td>1,446 s / 111.5 turns / 57 tool steps</td><td>A review often finds durable-record defects, but the observed repair yield is lower; use a bounded evidence/readability review when the artifact is consequential.</td></tr>
+      <tr><td>docs or evidence only</td><td>86.6%; 2.4% repaired</td><td>1,446 s / 110 turns / 56 tool steps</td><td>A review often finds durable-record defects, but the observed repair yield is lower; use a bounded evidence/readability review when the artifact is consequential.</td></tr>
       <tr><td>test-only</td><td>no sample</td><td>no sample</td><td>Do not infer a review depth or cost from source nodes; collect a dedicated test-only cohort first.</td></tr>
-      <tr><td>source change</td><td>83.1%; 29.4% repaired</td><td>1,572 s / 99 turns / 50.5 tool steps</td><td>The highest measured repair yield; a review with mutation/refusal evidence is justified when promotion risk is material.</td></tr>
-      <tr><td>unknown</td><td>92.0%; 12.3% repaired</td><td>3,514 s / 106.5 turns / 53.5 tool steps</td><td>Repair the manifest/classification receipt before using this stratum to choose review depth.</td></tr>
+      <tr><td>source change</td><td>86.1%; 13.0% repaired</td><td>1,572 s / 98 turns / 51 tool steps</td><td>The highest measured repair yield; a review with mutation/refusal evidence is justified when promotion risk is material.</td></tr>
+      <tr><td>unknown</td><td>91.1%; 0.0% repaired</td><td>3,523 s / 102.5 turns / 50.5 tool steps</td><td>Repair the manifest/classification receipt before using this stratum to choose review depth.</td></tr>
     </tbody>
   </table>
 
@@ -183,9 +183,21 @@
 
   <h2 id="s7">§7 — Reproduction and artifact inventory</h2>
 
+  <p><strong>Correction note.</strong> The original file-level census counted duplicate review
+  stores as separate records and allowed a duplicate twin to satisfy the repair relation. The
+  pinned capture hashes <strong>5,167 files</strong>, selects 845 review-shaped files,
+  collapses <strong>166 byte-identical</strong> and <strong>1 semantic</strong> re-store, and
+  measures 678 distinct records. The old rule gave 185 repair credits; the distinct-review or
+  post-head rule gives 58 and removes 127 credits. This changes every absolute table and figure
+  because the original denominator was not a review count.</p>
+
   <p>The analysis script is <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/review_metrics.py</code>.
-  Its outputs are <code>review-summary.json</code>, <code>review-summary.tsv</code>,
-  <code>review-rows.jsonl</code> and <code>measurement.log</code> in the same directory.
+  The pinned file list and SHA-256 content hashes are in
+  <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/corpus-manifest.json</code>,
+  captured at <code>2026-09-25T12:17:24.237696+02:00</code>. The script's complete stdout
+  is preserved in <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/measurement.log</code>.
+  Its other outputs are <code>review-summary.json</code>, <code>review-summary.tsv</code> and
+  <code>review-rows.jsonl</code> in the same directory.
   The two figures are stored under <code>docs/figures/review-node-utility/</code> and are
   referenced with project-absolute sources. No repository test gate was run: this node's
   write paths are a research record, figures and measurement outputs, and the merged-result

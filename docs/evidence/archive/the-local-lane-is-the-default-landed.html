@@ -690,20 +690,27 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
     <h2>Review-node utility measurement</h2>
     <p>Read 2026-09-25 from the cross-project crew review store and run streams. The research
     record <code>/reckon/research/review-node-utility</code> and the report directory contain
-    the exact script, row output and grouped output. The filter retains 820 JSON review records
-    with five score dimensions and a reviewed run ID across five projects. Of these, 692 carry
-    findings (84.4%); 171 of those have an observable repair (24.7%), defined by a later
-    finding-bearing review or a post-reviewed-head commit in the durable run record. The strict
+    the exact script, row output and grouped output. The pinned manifest hashes 5,167 JSON
+    files; 845 pass the five-score/reviewed-run filter, 166 byte-identical files and one
+    semantic re-store collapse, leaving 678 distinct records across five projects. Of these,
+    588 carry findings (86.7%); 58 have an observable repair (9.9%), defined by a later
+    distinct review with a different head or findings, or a post-reviewed-head commit. The
+    old rule gave 185 repair credits and the corrected rule removes 127. The strict
     clean-review-then-later-finding proxy has zero observed cases, but verify-gate failures,
     added suite failures and re-cuts are not fully joined in the review store, so this is not a
     zero missed-defect claim.</p>
-    <p>The timestamped joins give median review wall 1,743 s, 101 review turns and 52 tool
-    steps, versus 3,533 s and 160 turns for the implement runs reviewed; median completion to
-    review start is 749 s. Source-change nodes show 83.1% findings and 29.4% repairs among
-    finding reviews; docs/evidence-only nodes show 85.5% and 11.0%; no test-only node is
-    classified. Deepseek-v4.1-flash contributes 334 records, 302 with findings, 80 repairs and
+    <p>The timestamped joins give median review wall 1,743 s, 100 review turns and 52 tool
+    steps, versus 3,510 s and 158 turns for the implement runs reviewed; median completion to
+    review start is 677 s. Source-change nodes show 86.1% findings and 13.0% repairs among
+    finding reviews; docs/evidence-only nodes show 86.6% and 2.4%; no test-only node is
+    classified. Deepseek-v4.1-flash contributes 301 records, 272 with findings, 31 repairs and
     59 median tool steps. No record is labelled gpt-5.6-luna; the observed gpt-5.6-sol label is
     retained as a separate 16-record comparator with 43 median tool steps where present.</p>
+    <p>The pinned file list and content hashes are
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/corpus-manifest.json</code>;
+    the script's complete output is
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/measurement.log</code>.
+    Both are part of the receipt for the figures above.</p>
     <p><strong>Positive control.</strong> The paid-headroom document review stored four findings
     at score 75, returned them to the implement node, and the cumulative landing record names
     repair commits <code>db50a1e3</code>, <code>559e9fe7</code> and <code>d1ae179c</code>

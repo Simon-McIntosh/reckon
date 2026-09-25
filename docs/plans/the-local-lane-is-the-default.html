@@ -45,18 +45,20 @@
       </tbody>
     </table>
 
-    <p><strong>Measured 2026-09-25: review-node-utility.</strong> A census of 820 five-dimension
-    review records across imas-ambix, imas-codex, imas-efit, nova and reckon found 692 reviews
-    with findings (84.4%) and 171 finding-bearing reviews with an observable repair (24.7%).
-    The timestamped joins measured a median review wall of 1,743 s and 101 assistant turns,
-    against 3,533 s and 160 turns for the implement runs reviewed; the completion-to-review
-    median was 749 s over 169 joins. Source-change nodes had 83.1% finding share and 29.4%
-    repair share; docs/evidence-only nodes had 85.5% and 11.0%; no test-only node was present
+    <p><strong>Measured 2026-09-25: review-node-utility, corrected capture.</strong> The pinned
+    corpus hashes 5,167 JSON files, selects 845 review-shaped files, collapses 166
+    byte-identical duplicates and one semantic re-store, and leaves 678 distinct review
+    records. Of those, 588 carry findings (86.7%) and 58 have an observable repair (9.9%);
+    the old file-level rule gave 185 repair credits, so 127 credits were removed. The
+    timestamped joins measured a median review wall of 1,743 s and 100 assistant turns,
+    against 3,510 s and 158 turns for the implement runs reviewed; the completion-to-review
+    median was 677 s over 154 joins. Source-change nodes had 86.1% finding share and 13.0%
+    repair share; docs/evidence-only nodes had 86.6% and 2.4%; no test-only node was present
     in the classified corpus. The requested gpt-5.6-luna cohort is absent from the store (0
     records), so the observed gpt-5.6-sol label is retained without relabelling. Full method,
     model/tool-step breakdown, score bands, figures and the positive control are in
-    <code>docs/research/review-node-utility.html</code>; the durable script and outputs are in
-    the worker report directory.</p>
+    <code>docs/research/review-node-utility.html</code>; the hash manifest and complete
+    measurement log are in the worker report directory.</p>
 
     <h2 id="s2">&sect;2 &mdash; Route by backend and model, not by per-model lane</h2>
     <p><strong>The lead's routing model.</strong> A <em>backend</em> is a provider:
