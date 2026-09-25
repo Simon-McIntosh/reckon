@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" role="img">
+  <title>Two stat-keyed lookups versus one paired read</title>
+  <style>
+    .box { fill: #f7f7f9; stroke: #4a4a55; stroke-width: 1.5; }
+    .pair { fill: #e7f3ec; stroke: #2f6b46; stroke-width: 1.5; }
+    .bad { fill: #fbecec; stroke: #a03030; stroke-width: 1.5; }
+    .lbl { font: 13px sans-serif; fill: #1c1c22; }
+    .sub { font: 11.5px sans-serif; fill: #4a4a55; }
+    .h { font: 15px bold sans-serif; fill: #1c1c22; }
+    .mono { font: 12px monospace; fill: #1c1c22; }
+    .flow { stroke: #4a4a55; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    .warn { stroke: #a03030; stroke-width: 2; fill: none; marker-end: url(#arrowbad); }
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#4a4a55"/>
+    </marker>
+    <marker id="arrowbad" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#a03030"/>
+    </marker>
+  </defs>
+
+  <text x="40" y="36" class="h">Before: two stat-keyed lookups, a write can land between them</text>
+
+  <rect x="40" y="70" width="230" height="58" rx="6" class="box"/>
+  <text x="56" y="94" class="mono">read_state_file</text>
+  <text x="56" y="114" class="sub">stat S1 in, read bytes@S1, parse</text>
+
+  <rect x="330" y="70" width="230" height="58" rx="6" class="box"/>
+  <text x="346" y="94" class="mono">_read_plan_text</text>
+  <text x="346" y="114" class="sub">stat S2 in, read bytes@S2</text>
+
+  <path class="flow" d="M270,99 L326,99"/>
+  <text x="272" y="88" class="sub">then</text>
+
+  <path class="warn" d="M272,168 C 320,208 340,208 350,232"/>
+  <rect x="150" y="150" width="196" height="46" rx="6" class="bad"/>
+  <text x="164" y="172" class="lbl">write lands between the two</text>
+  <text x="164" y="189" class="sub">S2 != S1: file changes on disk</text>
+
+  <rect x="330" y="232" width="230" height="52" rx="6" class="bad"/>
+  <text x="344" y="254" class="lbl">state@S1 paired with text@S2</text>
+  <text x="344" y="272" class="sub">diagnostic warns about a stale section</text>
+  <path class="warn" d="M445,128 L445,228"/>
+
+  <text x="40" y="232" class="sub">state comes from the old bytes,</text>
+  <text x="40" y="249" class="sub">text from the new ones</text>
+
+  <line x1="610" y1="50" x2="610" y2="330" stroke="#c9c9d2" stroke-width="1.5"/>
+
+  <text x="650" y="36" class="h">After: one paired read</text>
+
+  <rect x="650" y="70" width="270" height="86" rx="6" class="pair"/>
+  <text x="668" y="96" class="mono">read_state_and_text_file</text>
+  <text x="668" y="118" class="sub">stat S in, read bytes@S once</text>
+  <text x="668" y="136" class="sub">return (parse(bytes@S), bytes@S)</text>
+
+  <path class="flow" d="M785,156 L785,196"/>
+  <rect x="650" y="196" width="270" height="52" rx="6" class="pair"/>
+  <text x="668" y="218" class="lbl">state and text memoised as a pair</text>
+  <text x="668" y="236" class="sub">one stat identity, one set of bytes</text>
+
+  <text x="650" y="290" class="sub">a write after the stat changes the next</text>
+  <text x="650" y="307" class="sub">signature, so the pair is re-read whole</text>
+</svg>

@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="Cumulative evidence for profiling and reducing the latency of routine Reckon reads.">
   <meta name="plan-evidence-for" content="reckon-reads-answer-in-seconds">
   <meta name="plan-verifies" content="reckon-reads-answer-in-seconds#s2,reckon-reads-answer-in-seconds#s3,reckon-reads-answer-in-seconds#s4">
-  <meta name="plan-commits" content="436c75f32d918cad81349350ff423c86f53378e4,f7f6fe29b063a774f07ce572c1e07948b7c33746,057d8ad0170cb071537c8a92797f7cbd34158640,2b05c42b9054be8ca115d604743c04c8b3c814d4">
-  <meta name="plan-artifacts" content="docs/research/reckon-read-latency-profile.html,docs/figures/reckon-reads-answer-in-seconds/warm-profile-and-residual.svg,docs/figures/reckon-reads-answer-in-seconds/parse-memo-before-after.svg,docs/figures/reckon-reads-answer-in-seconds/state-and-live-run-before-after.svg">
+  <meta name="plan-commits" content="436c75f32d918cad81349350ff423c86f53378e4,f7f6fe29b063a774f07ce572c1e07948b7c33746,057d8ad0170cb071537c8a92797f7cbd34158640,2b05c42b9054be8ca115d604743c04c8b3c814d4,f3bf0d55a0bcbeffab3e71f57935cd4c3224831d">
+  <meta name="plan-artifacts" content="docs/research/reckon-read-latency-profile.html,docs/figures/reckon-reads-answer-in-seconds/warm-profile-and-residual.svg,docs/figures/reckon-reads-answer-in-seconds/parse-memo-before-after.svg,docs/figures/reckon-reads-answer-in-seconds/state-and-live-run-before-after.svg,docs/figures/reckon-reads-answer-in-seconds/one-read-pairs-state-and-text.svg">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="qualified">
   <meta name="plan-environment" content="fleet allocation 1277272 on clu-2058; reckon project virtual environment">
@@ -95,6 +95,20 @@
       <p><strong>Guard evidence.</strong> The focused memo, partition and existing parse-memo checks passed 13 tests. Holding the file signature constant made the size, mtime and inode cases fail with stale titles while the unchanged-read and isolation cases stayed green. The named regression gate passed 148 tests and retained the same two <code>test_store_concurrency.py</code> failures at base and after, so this commit added no failure.</p>
 
       <p><strong>Qualification retained.</strong> The audit gate did not pass. A warm profile at the committed head attributes 16.90 of 21.70 instrumented seconds to 182 direct <code>from_html(read_text(...))</code> calls in <code>reckon/mcp.py</code>. That file is outside this node's declared paths and concurrently owned, so no replacement cache was invented in the assigned files. The remaining repair is to route that audit loop through the stat-keyed file reader, then repeat the three-call audit receipt.</p>
+    </section>
+
+    <section id="one-read-pairs-state-and-text">
+      <h2>A plan read pairs state with the text it was parsed from</h2>
+      <p><strong>The defect reproduced before repair.</strong> At <code>311bfc6256b029cafd9934a013452d41c192ea48</code>, a write landing between the two halves of one read paired a state parsed from the old bytes with text from the new ones. The focused check drives that write by rewriting the file at each text read. At base the read returned a state showing the <code>gates</code> section empty beside text carrying one authored, unrecognised gate child, so <code>_unparsed_section_warnings</code> reported a hazard the read itself had created. The reproduction returned the expected plan and its warning text named the section and the count, so it observed a working path rather than an empty instrument.</p>
+
+      <figure>
+        <img src="/reckon/figures/reckon-reads-answer-in-seconds/one-read-pairs-state-and-text.svg" alt="Two panels. Before: read_state_file stats the file and parses bytes at signature S1, then _read_plan_text stats again and reads bytes at S2; a write between them leaves state from the old bytes paired with text from the new ones. After: one read_state_and_text_file call stats once and returns the parsed state and the same bytes as a pair.">
+        <figcaption>Two independently keyed lookups can straddle a write; one paired read cannot.</figcaption>
+      </figure>
+
+      <p>Commit <code>f3bf0d55a0bcbeffab3e71f57935cd4c3224831d</code> adds <code>read_state_and_text_file</code>, which stats and reads the file once and returns the parsed state and the exact text it was parsed from, memoised as a pair on that one stat identity. <code>_read_state</code> takes that pair, so every diagnostic derived from both halves is computed against the bytes its state came from. A warm read still parses the file once, because the pair is served from its own memo entry.</p>
+
+      <p><strong>Guard evidence.</strong> The focused check passes 3 tests at head and fails 2 at base: the mid-read write is reported as an unparsed-section hazard, and the paired call is absent. The declared mutation &mdash; reading state and text through two separately keyed lookups again &mdash; restores the two-lookup form and the mid-read write fails again while the paired-call test stays green. The named regression gate ran <code>test_store_concurrency</code>, <code>test_read_state_memo</code>, <code>test_parse_plan_memo</code>, <code>test_mcp_store</code>, <code>test_plan_review_store</code> and <code>test_run_store</code>: 78 passed, and the same two <code>test_store_concurrency</code> failures appear at base and at head, so this commit adds no failure. The gate's manifest named <code>tests/test_plan_html_parse_memo.py</code>, which does not exist; the standing parse-memo check is <code>tests/test_parse_plan_memo.py</code> and it was run in its place.</p>
     </section>
   </main>
 </body>
