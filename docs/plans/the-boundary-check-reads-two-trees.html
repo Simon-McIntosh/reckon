@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="6">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-version" content="7">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -114,10 +114,11 @@
 
   <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
-<div class="r-gate" data-id="g-tbcrtt-1" data-section="s1" data-gated-sections="s1" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-tbcrtt-1" data-section="s1" data-gated-sections="s1" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the dispatch snapshot has moved into the per-run supervisor and promotion reads its baseline from tree-snapshot.json</h4>
     <p class="r-gate-required-evidence">a-dispatch-returns-without-its-worker#s3</p>
-    </div>
+    <a class="r-gate-evidence" href="a-dispatch-returns-without-its-worker §3 merged at 3ad8b13c (git merge-base --is-ancestor passes on main), and reckon/crew/dispatch.py carries TREE_SNAPSHOT_NAME = &quot;tree-snapshot.json&quot;. The per-run supervisor takes the snapshot, and promotion reads its baseline from the run directory. Observed on every s21-coord run on 2026-09-24/25: each run directory holds tree-snapshot.json written before the worker spawns.">Evidence</a>
+</div>
 <div class="r-gate" data-id="g-tbcrtt-2" data-section="s1" data-gated-sections="s1" data-status="open" data-verdict="">
     <h4 class="r-gate-measure">the fence protects the worktree root, so a fenced worker cannot write another run&#x27;s worktree</h4>
     <p class="r-gate-required-evidence">a-worker-cannot-write-your-home#s3</p>
@@ -132,6 +133,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-tbcrtt-baseline-and-order" data-who="reckon-e5" data-when="2026-09-24">
     <div class="r-comment-body"><p><strong>Baseline and agreed order.</strong> Measured by the S20 session on 2026-09-24, with storage healthy and 214 registered worktrees (107 fewer than the day before after cleanup): an env-scope promotion that had run 3 h 10 m before being stopped re-ran in 132 s. That is roughly 0.6 s per tree over its persisted roots, several of which no longer existed. So tree count and filesystem health dominate promotion time, and §2 records both beside each wall time. Order agreed with S20: <code>a-dispatch-returns-without-its-worker</code> §3 first, then this plan's §1 after <code>a-worker-cannot-write-your-home</code> §3, then <code>a-crew-process-ends-with-its-owner</code> §4 on the reduced set. That §4's done-when carries the constraint that untracked files in the run's own worktree are still read.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260925T040000-baseline-figures" data-who="reckon-build s21-coord" data-when="2026-09-25T02:00:00Z">
+    <div class="r-comment-body">Baseline figures before §1, 2026-09-24/25 on the fleet node (clu-2058), for §2's before-and-after. Registered reckon worktrees rose from 232 (19:30Z) to 287 (23:10Z), then fell to about 270 after two coordinators removed their own landed worktrees by hand. Dispatch to worker start, which is the supervisor's pre-spawn snapshot: 1:57–3:40 at 20:05Z, 9:04 for one of six simultaneous launches, 12:07 at 22:58Z. crew complete of r-20260924T224514791530-nested-launch-is-refused (s23-coord) took 3 m 44 s wall-clock at 01:49–01:53Z, measured with `time`. Two earlier attempts under a 110 s timeout were killed before promoting, where same-day S23 promotions earlier had finished well under a minute. Gate 1 is passed. §1 still waits on gate 2, the worktree fence in a-worker-cannot-write-your-home §3, which follows §2's merge. That merge is held by agreement until the suite-green-at-head session's resumes are over.</div>
 </div>
 </section>
 </main>
