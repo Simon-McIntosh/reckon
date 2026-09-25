@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-25">
-  <meta name="plan-version" content="99">
+  <meta name="plan-version" content="100">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
-<meta name="plan-impl" content="0.62">
+<meta name="plan-impl" content="0.68">
 </head>
 <body>
   <main class="plan-doc">
@@ -1017,10 +1017,16 @@
     <div class="r-fu-body"><p>A worker's early orientation manifest carries <code>status: in-progress</code>. The follower renders that run as <code>unreadable</code> with a <q>repair: the manifest at …</q> remedy, which looks like a delivery defect when it is a healthy checkpoint. Observed on <code>r-20260924T190042181732-delivery-tests-read-the-scoring-state</code> at 21:02:30 and 21:02:52 (local), 1:44 into the run. It sits beside <code>f-adrwiw-launch-flicker</code>: both are live states the display misclassifies within the first minutes of a run.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
     </article>
-<article class="r-fu" data-id="f-adrwiw-stop-before-spawn" data-status="open" data-written-by="reckon-build s21-coord" data-written-at="2026-09-24T21:30:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-adrwiw-stop-before-spawn" data-status="resolved" data-written-by="reckon-build s21-coord" data-written-at="2026-09-24T21:30:00Z" data-recommends-skill="" data-resolved-at="2026-09-25T11:08:26+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A stop during the pre-spawn snapshot is ignored, and the worker spawns anyway</h4>
     <div class="r-fu-body"><p>Measured by s22-coord and relayed through reckon-ee on 2026-09-24. Runs <code>r-20260924T210848317887-row-drops-unread-cells</code> (supervisor pid 1265809) and <code>r-20260924T210913887464-manifest-names-the-tree-it-imported</code> (supervisor pid 1268007) were each stopped with <code>crew stop</code> during the supervisor's pre-spawn tree snapshot. Stop printed <q>SIGTERM sent to process group</q> and the follower read <q>stopped</q>. About 60 s later each supervisor spawned its clive worker anyway (children 1272399 and 1274866), and only a second stop ended them. So the supervisor does not act on SIGTERM while it is inside the snapshot, and it spawns after the stop was reported as done. Done when a stop delivered at any point before the spawn means no worker is ever spawned for that run. A test holds the supervisor in a stubbed snapshot, sends the stop, releases the snapshot and asserts no <code>worker.json</code> and no child. The negative control ignores SIGTERM during the snapshot, and the assertion then fails.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
+    <p class="r-fu-outcome">Landed as stop-before-spawn-spawns-nothing (d47c6a70, ccf6d34a, 99b75c64), merged at 425d0520, review 93. Three residual findings are carried in f-adrwiw-stop-window.</p>
+    </article>
+<article class="r-fu" data-id="f-adrwiw-stop-window" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Close the stop flag&#x27;s read-to-fork window and test the post-spawn stop</h4>
+    <div class="r-fu-body"><p>Residual findings from the review (93) of stop-before-spawn-spawns-nothing, merged at 425d0520. (1) The stop flag is read once, near dispatch.py:5415, and never again before the fork, so a stop delivered in that microsecond window still spawns a worker. Re-check the flag under the same signal mask immediately before the fork, or block SIGTERM across the check-and-fork. (2) No test delivers a group stop to a live supervisor after its worker spawns, so a supervisor that exits instead of recording the stop's exit status would pass. Add that case with a stub worker, and assert the recorded exit. (3) One docstring phrase, "It used to be ignored", is changelog prose, which the naming rule bans; restate it as the invariant. Each change carries a negative control.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
