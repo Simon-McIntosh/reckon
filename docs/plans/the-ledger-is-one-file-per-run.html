@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -302,6 +302,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-tlofpr-snapshot-is-the-other-cost" data-who="reckon-e5" data-when="">
     <div class="r-comment-body"><p><strong>The ledger is not the only reason promotions are slow.</strong> The third read-back's promotion ran from 20:03 on 2026-09-23 to about 00:00 the next day, roughly 4 hours, while peer commits were nearly idle. Its time went on the repository tree snapshot: a <code>git status --untracked-files=all</code> in each of the 312 worktrees recorded at dispatch. The same walk runs at dispatch and under <code>crew follow</code>. Per-run files remove the rewrite and the queue on one file, but not this walk. <code>the-boundary-check-reads-two-trees</code> carries that fix. When this plan's §1 gate records promotion wall time, it should also record the snapshot's tree count, so the two costs are not credited to each other.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260925T074635678902-append-run-writes-one-run-file" data-who="reckon-build" data-when="2026-09-25T10:28:11Z">
+    <div class="r-comment-body"><p>append_run writes one run file and never rewrites crew.json; manifest status repaired blocked-&gt;complete because its blocker (the promotion staging) was discharged by promotion-stages-its-one-run-file, as-delivered kept; widened through crew widen; review 87</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T161834173344-review-of-the-ledger-revision" data-who="reckon-ship" data-when="2026-09-23T17:15:02.102Z">
     <div class="r-comment-body"><p>second read-back: 16 of 18 earlier items settled, 9 load-bearing forks left; all settled in the next revision, third read-back follows</p></div>
