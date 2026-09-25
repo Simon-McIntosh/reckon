@@ -131,6 +131,8 @@ _MANIFEST_SCHEMA: dict[str, frozenset[str]] = {
     "derived": _TEXT_SHAPE,
     "orientation_worktree": _TEXT_SHAPE,
     "orientation_base_sha": _TEXT_SHAPE,
+    "measurement_module": _TEXT_SHAPE,
+    "measurement_cwd": _TEXT_SHAPE,
 }
 
 # A text body whose parsed top-level fields are all outside the schema is

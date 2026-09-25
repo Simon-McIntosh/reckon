@@ -857,6 +857,31 @@
     only this node's own change; the merged head is a separately dispatched node's measurement. Full record:
     <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#a-measurement-names-the-tree-it-imported">the cumulative evidence</a>.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-25 &mdash; the schema now declares the two keys the
+    template asks for.</strong> <code>_MANIFEST_SCHEMA</code> in <code>reckon/crew/reports.py</code> gains
+    <code>measurement_module</code> and <code>measurement_cwd</code> each with <code>_TEXT_SHAPE</code>,
+    beside the orientation keys, so the reader that serves a delivered manifest to the audit and to promotion
+    has a shape for the facts the template asks a scratch-tree measurement to name. A manifest carrying both
+    as text reads with no finding; a manifest carrying either as a mapping is refused with the schema's shape
+    message naming the field. The new file is <strong>4 passed</strong>, and the cohort &mdash; the ten
+    existing files under <code>tests/</code> that import <code>reckon.crew.reports</code> plus this change's
+    new one &mdash; is <strong>321 passed, 1 failed</strong> at head <code>5755dfec</code> against
+    <strong>317 passed, 1 failed</strong> at base <code>11dfbe67</code>: the single failing id is identical
+    (<code>tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path</code>,
+    present at base and outside this node's declared scope), so the four added passes are exactly the four new
+    cases. Falsified: the declared mutation removes the two entries and reddens <strong>3 failed, 1
+    passed</strong> &mdash; the declared-key case and both off-shape cases &mdash; and the file was restored
+    byte-identically (<code>cmp</code> against the copy taken before the mutation) and re-run 4 passed.</p>
+
+    <p><strong>One measured deviation from the fence, reported rather than papered over.</strong> A manifest
+    carrying either key as a <em>list</em> is not reported with the shape finding: the tolerant reader joins a
+    list body under a text-declared field into that field's text, so the off-shape case that reaches the shape
+    message is a <em>mapping</em> body, and the list reading is pinned as a case of its own (it is what makes
+    the value's treatment depend on the declaration at all). The join is the reading every text-declared field
+    already gets; refusing it would change the reader for all of them and was left as a list reading the shape
+    message does not cover. Full record:
+    <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-schema-declares-the-measurement-keys">the cumulative evidence</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="unpromoted-grace-seconds" data-choice="900" data-by="Simon McIntosh" data-when="2026-09-17T20:41:32+00:00">

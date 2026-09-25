@@ -2267,6 +2267,82 @@ AGREE: False</code></pre>
     No figure accompanies this record: the change is template text, and a before-and-after
     of two sentences is quoted rather than drawn.</p>
   </section>
+
+  <section id="the-schema-declares-the-measurement-keys">
+    <h2>&sect;11 &mdash; The manifest schema declares the measurement keys</h2>
+    <p><strong>A key the template asks for is a key the schema should know.</strong> The template offers
+    <code>measurement_module</code> and <code>measurement_cwd</code> beside <code>test_logs</code> and the
+    schema declared neither, so the reader that serves a manifest to the audit and to promotion carried them
+    as unshaped keys. Both are now declared <code>_TEXT_SHAPE</code> beside the orientation keys in
+    <code>reckon/crew/reports.py</code>. A manifest carrying both as text reads with no finding; a manifest
+    carrying either as a mapping is refused with the schema's shape message naming the field, which is the
+    refusal a text-declared field gives any shape it does not accept.</p>
+
+    <h3>Gate delta</h3>
+    <table>
+      <thead><tr><th>Revision</th><th>Result</th><th>Failing ids</th></tr></thead>
+      <tbody>
+        <tr><td>base <code>11dfbe67</code></td><td>1 failed, 317 passed, <code>EXIT=1</code> (480.81s)</td><td><code>tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path</code></td></tr>
+        <tr><td>head <code>5755dfec</code></td><td>1 failed, 321 passed, <code>EXIT=1</code> (272.72s)</td><td>the same id, sorted sets diff clean</td></tr>
+        <tr><td><strong>added</strong></td><td colspan="2"><strong>none</strong> &mdash; the four added
+        passes are this change's four new cases in
+        <code>tests/test_manifest_measurement_keys_declared.py</code>, and the one failure is present at base
+        and outside this node's declared scope</td></tr>
+      </tbody>
+    </table>
+    <p>The cohort is every existing file under <code>tests/</code> that imports <code>reckon.crew.reports</code>
+    &mdash; ten files &mdash; plus this change's new file, run whole at both revisions with the same command
+    (<code>PYTHONPATH=.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 --dist loadfile &hellip;</code>).
+    <code>tests/spa_browser_harness.py</code> also imports the module but is a harness rather than a test file,
+    so it is not a collector and is not in the cohort.</p>
+
+    <h3>Falsified before trusting it</h3>
+    <p>The declared mutation removes the two declared-entry lines from
+    <code>_MANIFEST_SCHEMA</code>. Applied, the file reddens <strong>3 failed, 1 passed</strong>: the
+    declared-key case fails, and both off-shape cases fail &mdash; the mapping body is no longer refused, and
+    the list body stops being joined into the field's text because an undeclared key keeps the list it
+    composed. The survivor is the text case, and it is expected to survive: unknown keys are kept in both
+    forms, so a manifest carrying the two keys as text reads the same before and after the entries are
+    declared, and the declaration is what the other three cases measure. The mutation is the red log's first
+    line verbatim; the source was restored from the copy taken before the mutation (<code>cmp</code>
+    identical, both entry lines present) and the file re-run <strong>4 passed</strong> at the same revision.</p>
+
+    <h3>The off-shape reading, measured rather than assumed</h3>
+    <p>A manifest carrying either key as a <em>list</em> is <strong>not</strong> reported with the shape
+    message. Measured at the head: a block list body under a text-declared field is joined into that field's
+    text (<code>/tree/reckon/crew/reports.py, /tree</code>), which is the same reading every text-declared
+    field gives a list body (<code>node</code> and <code>orientation_worktree</code> were probed for the
+    comparison) and is not a refusal &mdash; the shape message is raised for the mapping pair. So the
+    off-shape case asserting the schema's finding is a mapping body, and the list reading is pinned as a case
+    of its own, because it is the one whose value <em>does</em> depend on the declaration (an undeclared key
+    keeps the list it composed). Refusing a list under a text-declared field would change the reader for every
+    text field and belongs to its own node; the deviation is recorded here rather than papered over, and it is
+    the one part of the node's recorded measure that the delivered file does not assert in the form the record
+    first stated.</p>
+
+    <h3>Instrument checks</h3>
+    <p>The resolved module was printed on both headers (<code>reckon.crew.reports.__file__</code> under this
+    worktree, not the main checkout), so both arms are known to have measured this tree; the failure sets were
+    compared as sorted id sets rather than counts, and the failing id is the same single one at both
+    revisions. The head log's header names revision <code>185439ff</code>, the commit on disk when it started,
+    and an appended line names the amended <code>5755dfec</code> that carries the same tree (<code>185439ff</code>
+    and the head trees are equal) together with the blob hashes of both measured paths. Lint and format are
+    judged by delta: <code>reckon/crew/reports.py</code> reports four findings under the same invocation at the
+    base revision and the same four at the head, the new test file reports none, and both changed paths are
+    formatted.</p>
+
+    <p>Changed paths: <code>reckon/crew/reports.py</code>,
+    <code>tests/test_manifest_measurement_keys_declared.py</code>,
+    <code>docs/plans/work-does-not-fall-to-the-coordinator.html</code>,
+    <code>docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html</code>. Measured revision
+    <code>5755dfec</code>; stated base <code>11dfbe67</code>. Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260924T233052030320-measurement-keys-are-declared/</code> &mdash;
+    <code>logs/cohort-base.log</code>, <code>logs/cohort-head.log</code> (each naming the revision, the tree
+    and the command on its header lines), <code>logs/measured-file-head.log</code> and
+    <code>logs/negative-control.log</code> (the declared mutation on its first line, the three failures, the
+    restore and the green re-run). No figure accompanies this record: the change is a declaration and the
+    readings are quoted values, which a table carries and a drawing would not.</p>
+  </section>
   </main>
 </body>
 </html>
