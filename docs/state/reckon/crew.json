@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T01:58:12",
+  "updated": "2026-09-25T02:03:51",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -363874,6 +363874,291 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon",
+        "plan": "a-dispatch-returns-without-its-worker",
+        "section": "\u00a710",
+        "node": "the-fleet-supervisor-lives-in-reckon",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3948,
+                "cached_input_tokens": 300286,
+                "input_tokens": 304236,
+                "output_tokens": 2458,
+                "reasoning_output_tokens": 126,
+                "total_tokens": 306694,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "reckon/crew/fleet_supervisor.py runs as python -m reckon.crew.fleet_supervisor and implements the protocol of /home/ITER/mcintos/Code/dotfiles/bin/fleet-supervisor (its session and reload verbs, its private node-local runtime directory, its stripping of inherited ZELLIJ, CLAUDE and CX variables) plus a spawn verb: a line of three space-separated fields, the word spawn, the run id and the absolute supervisor spec path, runs the spec's argv verbatim as the supervisor's own detached child and writes spawned.json, holding pid and started_at, into the spec's run directory. tests/test_fleet_supervisor.py drives the reader over a FIFO in a temporary runtime directory and shows: a spawn line runs a stub argv and spawned.json names its live pid; session and reload lines parse as in the reference, with zellij stubbed; a malformed line is logged and ignored; the stripped variables are absent from a spawned child's environment. The declared negative control is executed and logged: with spawned.json not written, the pid assertion fails. No change to reckon/cli.py, reckon/crew/placement.py or dotfiles.",
+          "estimated_hours": null,
+          "goal": "reckon carries the fleet batch-step supervisor, with a spawn verb, ported from the dotfiles reference",
+          "id": "the-fleet-supervisor-lives-in-reckon",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-24T20:06:24Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 13,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 10,
+            "mean_context": 102857,
+            "observed_at": "2026-09-24T20:06:11Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon/manifest.md",
+          "negative_control": "skip writing spawned.json in the spawn verb; the pid assertion must fail",
+          "plan": "a-dispatch-returns-without-its-worker",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a710",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/fleet_supervisor.py",
+            "tests/test_fleet_supervisor.py",
+            "docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html",
+            "docs/figures/a-dispatch-returns-without-its-worker",
+            "docs/plans/a-dispatch-returns-without-its-worker.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "watcher-unit",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-24T20:06:33Z",
+        "completed_at": "2026-09-24T22:57:51.637Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 10202,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 10278,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "02e2757d4795338d9c3af4209aef400cfbd4f7f4",
+        "commits": [
+          "770abccfc887a712610f05afed404b33f54f250b",
+          "a55aff86f924bb3e32aca9b9e834b71599414e00",
+          "025ba05783e45fa9915007359efcea7367a91d49"
+        ],
+        "changed_lines": {
+          "added": 1041,
+          "removed": 0,
+          "files": 5
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_supervisor.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon/logs/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon/manifest.md",
+        "scope_changed": false,
+        "session_id": "5eb03130-8d47-4538-9d49-8466dee6cb15",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7344092,
+            "input_tokens_cumulative": 7344092,
+            "output_tokens": 36050,
+            "output_tokens_cumulative": 36050,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-24T22:57:51.637Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 18,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 97
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 18458608,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2154.613,
+          "generated_tokens": 135442,
+          "generation_seconds": 2081.554,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.2,
+          "machine_seconds": 73.059,
+          "peak_input_tokens": 164151,
+          "tokens_per_second": 65.07,
+          "wall_tokens_per_second": 62.86
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/the-fleet-supervisor-lives-in-reckon",
+          "session_id": "5eb03130-8d47-4538-9d49-8466dee6cb15",
+          "session_source": "stream",
+          "retained_at": "2026-09-24T22:57:51.637Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-24T20:59:06Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-24T20:07:39Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 13181,
+          "worker_pid": 1052448
+        },
+        "promoted_revision": "025ba05783e45fa9915007359efcea7367a91d49",
+        "plan_impl_at_dispatch": 0.33,
+        "impl_move": {
+          "plan": "a-dispatch-returns-without-its-worker",
+          "at_dispatch": 0.33,
+          "at_complete": 0.56,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_fleet_supervisor.py"
+          ],
+          "declaration": "skip writing spawned.json in the spawn verb; the pid assertion must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon/logs/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon/logs/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-24T21:06:24.150969+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-24T20:06:24Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 13,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 10,
+          "mean_context": 102857,
+          "observed_at": "2026-09-24T20:06:11Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 92.0,
+        "orientation_input_tokens": 1648936.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -364186,6 +364471,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2570
+    "_version": 2571
   }
 }

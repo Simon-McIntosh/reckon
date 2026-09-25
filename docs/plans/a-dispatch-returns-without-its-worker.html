@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-25">
-  <meta name="plan-version" content="85">
+  <meta name="plan-version" content="86">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -975,6 +975,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260925T020800-s10-supervisor-landed" data-who="reckon-build s21-coord" data-when="2026-09-25T00:08:00Z">
     <div class="r-comment-body">The batch-step supervisor merged at 27d801de (commits 770abccf, a55aff86, 025ba057). reckon.crew.fleet_supervisor carries the dotfiles reader's session and reload verbs, its private mode-0700 runtime directory and its stripping of inherited variables, and adds the spawn verb, acknowledged with spawned.json. First review 93: two claims had no assertion behind them. The same session added both assertions, each with an executed negative control, and the re-review scored 97. Its two record nits, a control digest quoted from a different run and a case-count sentence, were corrected during the merge. The merge again conflicted with the routing node's anchors, and both are kept, the new ones as s10-supervisor and s10-supervisor-landed. §10's reckon code is now complete on main behind RECKON_FLEET_SPAWN. The two steps left both touch the live allocation and wait on the lead: running this module as job 1277272's batch step with RECKON_FLEET_SPAWN set there, and the on-node scancel-of-step proof.</div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon" data-who="reckon-build" data-when="2026-09-24T22:57:51.637Z">
+    <div class="r-comment-body"><p>reckon carries the fleet batch-step supervisor with a spawn verb acknowledged by spawned.json; real fleet state asserted untouched, runtime dir 0700; three negative controls executed; re-review 97 after one repair round</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260924T213000-discard-leaves-worktree" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
     <div class="r-comment-body">Evidence for this section, 2026-09-24 23:19. crew discard of r-20260924T211759945494-review-of-the-fleet-supervisor-lives-in-reckon removed its pointer but left its worktree, which was clean and at an integrated head. So redispatching the same node id was refused with 'worktree creation failed: worktree path already exists'. The coordinator removed the worktree by hand with a plain `git worktree remove`. The follower then labelled the discarded run 'promoted'. That label is owned by the-fleet-counters-count-the-fleet §3. The discarded run was itself a review-reflex launch with launch in-harness, backend native and pid null in a Claude Code coordinator session that never asked for in-harness. Nothing would ever have run it, yet it held the review's scope claim.</div>
