@@ -170,8 +170,10 @@ def test_plan_terminal_closure_gate_reads_alike(project_tree):
     expected = {("outcome-gate", "producer#outcome")}
     assert _named(roadmap_row["closure_blockers"]) == expected
     assert _named(served_row["closure_blockers"]) == expected
-    assert _named(summary["closure_blockers"]) == expected
     assert roadmap_row["closure_blockers"] == served_row["closure_blockers"]
+    # The MCP summary is a deliberately small payload: it carries the blocker
+    # set rather than per-edge lists, and agrees by that set being empty.
+    assert summary["blocking"] == roadmap_row["gate_blockers"] == []
 
 
 def test_decision_transition_gate_reads_alike(project_tree):
@@ -182,7 +184,7 @@ def test_decision_transition_gate_reads_alike(project_tree):
     assert _named(roadmap_row["decision_blockers"]) == expected
     assert [row["status"] for row in served_row["decision_blockers"]] == ["gated"]
     assert _named(served_row["decision_blockers"]) == expected
-    assert _named(summary["decision_blockers"]) == expected
+    assert summary["blocking"] == roadmap_row["gate_blockers"] == []
     assert roadmap_row["decision_blockers"][0]["gate_id"] == "choice-gate"
     assert roadmap_row["decision_blockers"][0]["transition"] == "decision-lockable"
 

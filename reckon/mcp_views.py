@@ -1687,7 +1687,7 @@ def _summary(
             "Use view='detail' with include_prompts=true.",
         )
     blocking = _blocking(data, deps)
-    result = {
+    return {
         "resource": selector.as_dict(),
         "version": version,
         "view": "summary",
@@ -1702,12 +1702,6 @@ def _summary(
         "next": _next_action(data, include_prompts=False),
         "warnings": list(data.get("compatibility_warnings") or []),
     }
-    if selector.type == "plan":
-        from reckon.roadmap import closure_blockers, unsettled_decisions
-
-        result["closure_blockers"] = closure_blockers(data)
-        result["decision_blockers"] = unsettled_decisions(data)
-    return result
 
 
 def _detail(
@@ -1839,8 +1833,6 @@ def _response_schema(
             },
         }
     if selector.type == "plan" and view not in {"schema", "version"}:
-        common["properties"]["closure_blockers"] = {"type": "array"}
-        common["properties"]["decision_blockers"] = {"type": "array"}
         common["properties"]["in_flight"] = {
             "type": "array",
             "items": {
