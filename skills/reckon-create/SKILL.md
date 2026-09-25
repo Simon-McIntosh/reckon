@@ -308,10 +308,10 @@ DOCS_DIR="$REPO_ROOT/docs"
    Work down the sprint's plan list and fill a row per candidate. "It" below is
    the candidate slug in the first column:
 
-   | Candidate (slug) | Does my first section wait on it? | Does it consume my evidence? | Does one section of mine wait on one section of it? | Relation to write |
-   |---|---|---|---|---|
-   | `…` | | | | |
-   | `…` | | | | |
+   | Candidate (slug) | Does my first section wait on it? | Does it consume my evidence? | Does one section of mine wait on one section of it? | Would starting before it ships be wrong? | Relation to write |
+   |---|---|---|---|---|---|
+   | `…` | | | | | |
+   | `…` | | | | | |
 
    - **yes to question 1** → `depends_on` (X blocks the whole plan, and the
      roadmap will report this plan blocked until X ships — author it only when
@@ -323,9 +323,21 @@ DOCS_DIR="$REPO_ROOT/docs"
      "measure":"<what the section needs from X>","required_evidence":"<X's
      evidence anchor or receipt>"}`. Gates feed `roadmap.gate_blockers`; a
      prose comment feeds nothing and the next session cannot see the rule.
-   - **no to all three, and X is research or a reference this plan reads** →
+   - **no to question 4 but you would still rather start after X ships** →
+     `after` with the same ref grammar (bare slug, `project:slug`, optional
+     `#section`). A coordinator with no relation between `depends_on` (blocks)
+     and `informs` (orders nothing) wired `depends_on` between plans whose work
+     was dispatchable; the roadmap correctly reported both blocked and the wire
+     was undone an hour later. The soft edge is that middle: the roadmap orders
+     the plan behind the rest of the ready set and names the target it is
+     sequenced behind, and **the plan stays in `ready_now` while that target is
+     open** — a sequencing preference, never a prerequisite. The litmus, in one
+     line: *would this plan's first section be wrong to start before X ships?*
+     If not, X informs it, sequencing is an after edge, and a real prerequisite
+     on one section is a gate.
+   - **no to all four, and X is research or a reference this plan reads** →
      `informs`;
-   - **no to all three for every candidate, and nothing downstream waits on
+   - **no to all four for every candidate, and nothing downstream waits on
      this plan** → it genuinely stands alone. Say so in the document, not in
      your head, through the write boundary that accepts it:
      `{"op":"set","path":"standalone","value":"<one-sentence reason>"}` — the
@@ -360,8 +372,9 @@ Before writing the file:
    Introduce a new tag only when no existing identity describes the topic.
 3. Decide its type and whether it belongs in that type's live or `archive/` directory.
 4. Decide whether it is a **plan** or **research/doc**.
-5. Fill `plan-depends-on` / `plan-blocks` / `plan-informs` / `plan-evidence-for` with **slugs** for
-   the relationships that are already explicit in the source material.
+5. Fill `plan-depends-on` / `plan-blocks` / `plan-after` / `plan-informs` /
+   `plan-evidence-for` with **slugs** for the relationships that are already
+   explicit in the source material.
 
 For execution outcomes, prefer one cumulative evidence resource at
 `docs/evidence/archive/<plan-slug>-landed.html`, with stable section anchors.
@@ -538,6 +551,7 @@ Only author fields that a view downstream consumes:
 | `plan-tags` | Topical grouping across plans, research, evidence and sprints; discovery inventory with usage counts |
 | `plan-capability-*` | Versioned capability class and structured dispatch requirements |
 | `plan-depends-on` / `plan-blocks` | Dependency DAG → critical-path and fleet-prompt |
+| `plan-after` | Soft sequencing → orders the ready set and names the targets it is behind; never blocks |
 | `plan-archived` | `1` hides plan from default inventory (retirements) |
 | `plan-read` | `1` marks a research/doc reviewed |
 | `plan-impl` | Set by `reckon-build` (shipped/total) on each landing — **not** server-computed; unset = 0%. |
@@ -568,6 +582,7 @@ Only author fields that a view downstream consumes:
 | `plan-sprint` | (empty) | e.g. `S4` |
 | `plan-tags` | (empty) | Comma-separated canonical identities chosen from discovery's live `tag_inventory` |
 | `plan-depends-on` | (empty) | Comma-separated slugs |
+| `plan-after` | (empty) | Comma-separated plan refs — soft sequencing; the roadmap orders ready work by it and never blocks on it |
 | `plan-informs` | (empty) | Comma-separated slugs (research type only) |
 | `plan-evidence-for` | (empty) | Comma-separated slugs — the plan(s) this record is execution evidence FOR (mandatory on landed/outcome records) |
 | `plan-verifies` | (empty) | Optional `slug#section` anchors this evidence verifies |
