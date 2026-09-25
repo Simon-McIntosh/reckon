@@ -166,11 +166,19 @@ def _promote(
 
 
 def _stored_row(repository: Path, run_id: str) -> dict:
-    ledger_path = repository / "docs" / "state" / PROJECT / "crew.json"
-    data = json.loads(ledger_path.read_text(encoding="utf-8"))
-    rows = [row for row in data["data"]["runs"] if row["run_id"] == run_id]
-    assert len(rows) == 1
-    return rows[0]
+    path = ledger.run_path(PROJECT, run_id, repository)
+    row = json.loads(path.read_text(encoding="utf-8"))
+    assert row["run_id"] == run_id
+    rows = [
+        item for item in ledger.runs(PROJECT, repository) if item["run_id"] == run_id
+    ]
+    assert rows == [row]
+    assert path.read_text(encoding="utf-8") == ledger.serialize_run(row)
+    assert (
+        _git(repository, "show", f"HEAD:{path.relative_to(repository)}")
+        == ledger.serialize_run(row).strip()
+    )
+    return row
 
 
 def _windows_by_length(receipt: dict) -> dict[int, dict]:

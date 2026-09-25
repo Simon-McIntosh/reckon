@@ -888,14 +888,20 @@ def record_gate_rerun_at_integrated_revision(
         timeout_seconds=timeout_seconds,
         command=command,
     )
-    patched = [dict(item) for item in data["runs"]]
-    for index, item in enumerate(patched):
-        if str(item.get("run_id") or "") == run_id:
-            patched[index]["integrated_gate_check"] = report
-            break
-    new_version = ledger.write(
-        project, {**data, "runs": patched}, version, ledger_root
-    )
+    record_path = ledger.run_path(project, run_id, ledger_root)
+    if record_path.is_file():
+        _update_run_record(record_path, run_id, {"integrated_gate_check": report})
+        new_version = None
+    else:
+        record_path = ledger.ledger_path(project, ledger_root)
+        patched = [dict(item) for item in data["runs"]]
+        for index, item in enumerate(patched):
+            if str(item.get("run_id") or "") == run_id:
+                patched[index]["integrated_gate_check"] = report
+                break
+        new_version = ledger.write(
+            project, {**data, "runs": patched}, version, ledger_root
+        )
     from reckon import run_store
 
     store_synopsis = run_store.import_ledger(project, root=ledger_root)
@@ -903,7 +909,7 @@ def record_gate_rerun_at_integrated_revision(
         run_id=run_id,
         verdict=str(report.get("integrated_verdict") or "not-run"),
         checkout=checkout,
-        paths=[ledger.ledger_path(project, ledger_root)],
+        paths=[record_path],
         subject=f"record({run_id}): re-run gate at integrated {integrated_revision}",
         body=(
             "Re-run the run's stored gate command against the merged tree and "
@@ -915,9 +921,11 @@ def record_gate_rerun_at_integrated_revision(
     return {
         "run_id": run_id,
         "project": project,
-        "ledger_path": str(ledger.ledger_path(project, ledger_root)),
+        "ledger_path": str(record_path),
         "ledger_version": new_version,
-        "checkout_on_integrated_revision": report.get("checkout_on_integrated_revision"),
+        "checkout_on_integrated_revision": report.get(
+            "checkout_on_integrated_revision"
+        ),
         "checkout_revision": report.get("checkout_revision"),
         "report": report,
         "finding": report.get("finding"),
@@ -3059,14 +3067,14 @@ def _release_after_promotion(
         }
 
 
-def _write_run_release(
-    path: Path, run_id: str, release: Mapping[str, Any]
+def _update_run_record(
+    path: Path, run_id: str, changes: Mapping[str, Any]
 ) -> dict[str, Any]:
     """Amend only this run's record through the canonical serialiser."""
     record = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(record, dict) or record.get("run_id") != run_id:
         raise ledger.LedgerError(f"run {run_id!r} does not match {path}")
-    updated = {**record, "release": dict(release)}
+    updated = {**record, **changes}
     temporary: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
@@ -3111,7 +3119,7 @@ def _record_release_on_ledger(
     for _attempt in range(12):
         try:
             if per_run:
-                updated = _write_run_release(path, run_id, release)
+                updated = _update_run_record(path, run_id, {"release": dict(release)})
             else:
                 data, version = ledger.load(project, root=root)
                 updated = None
