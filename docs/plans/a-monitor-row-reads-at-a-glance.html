@@ -140,6 +140,50 @@
     <code>m</code> and a bucket letter, no row carries the absence marker in a rate position, and a
     run with 3,421 seconds elapsed renders <code>57m</code>. The width recovered is stated as a
     column count.</p>
+    <p class="r-landing"><strong>Renderer landed 2026-09-25</strong> at <code>f7d1c597</code>,
+    <code>5860f6a2</code> and <code>8dfe2bbb</code>, base <code>c590aaaa</code>. The measure block
+    is one cell again: the run's elapsed time in hours and minutes, with the generation-rate cell
+    and the age cells removed. Six columns come back to the reason clause at the 180-column
+    default — five the rate cell and its separator spent, one the hours-and-minutes format is
+    narrower than the clock it replaced — and <code>MIN_WIDTH</code> falls from 127 to 121, both
+    read at each revision's own renderer rather than from a constant. The row's clause begins at
+    column 114 where the base revision's began at 126, so a reader recovering a row from a
+    record gets the single figure and the whole margin.</p>
+    <p class="r-landing"><strong>Tests landed 2026-09-25</strong> at <code>6d83dc99</code>, base
+    <code>8dfe2bbb</code>. The two ticker test files that still asserted the removed cells now
+    assert the row this revision renders; the failure count across the pair falls from 11 to 0,
+    with 67 tests passing before and 76 after.
+    <code>tests/test_crew_ticker_layout.py</code> reads the measure cell's column off the row's own
+    constants, requires the clause to begin immediately after it, and renders a record carrying a
+    generation rate, model seconds, tokens and a cost to hold the elapsed figure alone on the row.
+    <code>tests/test_counter_carries_age.py</code> keeps no case whose subject is gone: the ages
+    are neither computed nor rendered now, so the row-cell cases whose subject was an age are
+    removed, and the file holds what follows instead — two fleets with the same counts render the
+    same row whatever their members' arrival times, a member standing for hours prints no span
+    beside its counter, and the one span left on the row is the reading run's own elapsed time.
+    The age itself belongs to the needs-you line of
+    <a href="/reckon/plans/a-follower-keeps-your-work-in-view">a-follower-keeps-your-work-in-view</a>,
+    where it is spelled beside the node it belongs to. Across the thirteen ticker-importing test
+    files, run at this head, no failure id appears that is absent from the base revision's set
+    (13 failed and 287 passed at base, 13 failed and 285 passed here — the thirteen are the same
+    ids). <code>reckon/crew/ticker.py</code> is not changed by this landing. The declared negative
+    control — restore the generation-rate cell in <code>Ticker.render</code>, requiring the
+    rewritten layout test to fail — was applied, reddened four of the file's tests, and was
+    reverted with the renderer's SHA-256 proven identical.</p>
+    <figure>
+      <img src="/reckon/figures/a-monitor-row-reads-at-a-glance/measure_cell_column_map.png"
+           alt="Top: the row at 180 columns with the one measure cell boxed, the fleet counters
+                boxed, the clause beginning at column 114, and the five columns the rate cell
+                spent hatched over the clause's first five characters. Bottom: the clause begins
+                at column 114 with the single cell and at 119 with the rate cell restored.">
+      <figcaption>
+        The row as it renders, at the 180-column default, with the boxed regions taken from the
+        rendered string's own character positions. The hatched five columns are what the rate cell
+        and its separator spent; the clause's first five characters now sit in them. The lower
+        panel is the pair the negative control measured: restoring the rate cell moves the clause
+        from column 114 to 119, which is what the rewritten layout test detects.
+      </figcaption>
+    </figure>
 
     <h2 id="s5">&sect;5 &mdash; A long node name keeps the part that distinguishes it</h2>
     <p>Cut a node name longer than its cell from the middle, keeping its start and its end. When two
@@ -236,6 +280,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260924T123454188775-clive-review-of-ticker-tests-read-the-grid-width" data-who="reckon-ship" data-when="2026-09-24T13:19:05.325Z">
     <div class="r-comment-body"><p>review of ticker-tests-read-the-grid-width scored 88; the corrective is promoted and its gate re-verified at merged main</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260924T211219792337-row-drops-unread-cells" data-who="row-drops-unread-cells" data-when="2026-09-25T01:50:00Z">
+    <div class="r-comment-body"><p>§4 implemented in the <code>row-drops-unread-cells</code> worktree, not merged: commit <code>f7d1c597</code>, base <code>c590aaaa</code>. The row's measure block carries the elapsed time alone; the generation-rate cell and the age cells are gone, and the elapsed span renders as hours and minutes — 3,421 seconds render <code>57m</code> and 5,580 render <code>1h33m</code> — rather than as a clock. The width recovered is <strong>six columns</strong>, measured at the 180-column default from each revision's own renderer rather than read off a constant: the fixed-column floor falls 127 to 121 (<code>SPEND</code> 12 to 6), the margin the clause is given rises 60 to 66, and the base row's clause began at column 126 where it begins at 114 here, the six columns the age cells had taken from that margin coming back with it. Sixteen tests in <code>tests/test_ticker_row_drops_unread_cells.py</code> pass, among them a positive control that the banned shape <code>57mb</code> matches the pattern forbidding it. Restoring the generation-rate cell fails 12 of the node's 16. Over the thirteen files that import <code>reckon.crew.ticker</code>, base <code>c590aaaa</code> is 13 failed and 287 passed against 24 failed and 276 passed here: 11 added, 0 fixed, every added one an assertion about the age cells or the <code>RATE</code> constant and outside this node's scope. The age of a run that needs the coordinator has no needs-you line to move into — <code>a-follower-keeps-your-work-in-view</code> carries no such line at HEAD.</p></div>
 </div>
 </section>
 </main>

@@ -1,15 +1,16 @@
-"""A counter total cannot show whether the row's backlog is moving.
+"""The counter block carries counts alone: the span beside a count is gone.
 
-The inbox cells read the same whether the same item has stood there for an hour
-or a stalled one was cleared this second and a fresh one took its place: the
-figure is a total, and a total has no membership and no time in it. The age of
-the oldest member is what separates the two — it climbs while nothing is
-cleared and falls when the oldest item is dealt with.
-
-The counter block is also the part of the row a reader scans down a column, so
-the age arrives without moving a single column of it, and an empty bucket
-renders nothing rather than a zero, because a zero in this position reads as
-fresh work rather than as none.
+The row's counters are totals. A total holds no membership and no time, so the
+age of the oldest member of an actionable bucket used to be printed beside the
+count it qualified — that was the one reading on the row separating a backlog
+being worked from one standing still. The cell is removed: the row has no room
+for a figure its reader goes to another surface for, and the surface that
+answers it is the needs-you line, which spells the age beside the node it
+belongs to. Nothing computes a bucket age while that line is unbuilt, so this
+file holds the row to what follows: two fleets with the same counts render the
+same row whatever their arrival times, the fleet whose oldest member has stood
+for hours prints no span, and the one span the row still prints is the reading
+run's own elapsed time.
 """
 
 from __future__ import annotations
@@ -22,14 +23,14 @@ from reckon.crew import ticker as ticker_module
 
 ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 
-# An age carries the letter of the counter it qualifies, and its own unit tells
-# it apart from that counter: the counts are digits followed by w, b, u or q
-# with no unit between them, so requiring a minute, hour or day unit before the
-# letter finds the ages and never the counts.
-AGES = re.compile(r"(\d+[mhd]\+?)([bu])")
+# A span printed beside a counter — the cell the row stopped carrying: a minute,
+# hour or day count with the letter of the bucket it qualified immediately after
+# it. The counts are digits followed by w, b, u or q with no unit between them,
+# so requiring a unit before the letter finds a span and never a count.
+AGES = re.compile(r"(\d+[mhd]\+?)([buq])")
 
-# Two transitions of the same run, far enough apart that their ages land in
-# different units and could not be confused by a rounding difference.
+# Two transitions of the same run, far enough apart that a rendered span would
+# land in different units and could not be confused by a rounding difference.
 ARRIVED_LONG_AGO = "2026-09-18T05:00:00+00:00"
 ARRIVED_JUST_NOW = "2026-09-18T11:58:00+00:00"
 READ_AT = "2026-09-18T12:00:00+00:00"
@@ -40,8 +41,8 @@ def plain(line: str) -> str:
     return ESCAPES.sub("", line)
 
 
-def ages(line: str) -> dict[str, str]:
-    """Each actionable bucket's rendered age on this row, keyed by its letter."""
+def spans(line: str) -> dict[str, str]:
+    """Each bucket letter's rendered span on this row, keyed by its letter."""
     return {letter: span for span, letter in AGES.findall(plain(line))}
 
 
@@ -64,12 +65,7 @@ def _transition(run: str, at: str, state: str = "blocked", **overrides):
 
 
 def _reading(at: str, **overrides):
-    """A row rendered at ``at``, carrying no reason of its own.
-
-    The reason is left empty because the age is paid for out of the free text:
-    a clause that claims the margin keeps it whole and the age blanks, so a
-    fixture that exists to read an age must not spend the margin on prose.
-    """
+    """A row rendered at ``at``, carrying no reason of its own."""
     return _transition("r-reader", at, state="working", **overrides)
 
 
@@ -81,150 +77,72 @@ def _row(events, at: str = READ_AT, width: int = 180, **overrides) -> str:
     return plain(grid.render(_reading(at, **overrides)))
 
 
-def test_a_fleet_with_nothing_actionable_carries_no_age():
-    """Nothing outstanding renders no age, and never a zero.
+def test_the_pattern_matches_the_span_beside_a_counter_it_forbids():
+    """The pattern can fire: it matches the cell the row no longer carries.
 
-    Asserted first, because it is the half that fails silently: an empty bucket
-    printing ``0m`` would read as work that had only just arrived, which is the
-    opposite of what it is, and no cell would be left to tell the two apart.
+    Without this control every absence assertion below would also pass on a
+    pattern that matches nothing at all. The shape it forbids is a span with the
+    letter of its bucket printed adjacent, and here is that shape.
     """
-    row = _row(
-        [_transition("r-working", ARRIVED_LONG_AGO, state="working")],
-        blocked=0,
-        unpromoted=0,
-    )
-    assert ages(row) == {}
-    assert "0m" not in row
-    assert "0d" not in row
+    assert AGES.search(" 7hb")
+    assert AGES.search(" 12mu")
+    assert AGES.search(" 2dq")
 
 
-def test_two_fleets_with_the_same_counts_and_different_ages_render_differently():
-    """One figure, two situations, two rows — the change this node lands.
+def test_two_fleets_with_the_same_counts_render_identically():
+    """The count is the whole reading again, whatever the members' arrival times.
 
-    Both rows carry the same counts and differ only in when the oldest member
-    of the bucket arrived. If they rendered identically the age did not take and
-    the cell is still only a total.
+    The inversion of what the cell existed for. A fresh arrival and a backlog
+    standing for seven hours were once made to render differently by design, and
+    they now render the same row, because the row carries no age of any member
+    to separate them.
     """
     fresh = _row([_transition("r-a", ARRIVED_JUST_NOW)], blocked=1)
     stale = _row([_transition("r-a", ARRIVED_LONG_AGO)], blocked=1)
-    assert fresh != stale
-    assert ages(fresh) == {"b": "2m"}
-    assert ages(stale) == {"b": "7h"}
+    assert fresh == stale
+    assert spans(stale) == {}
 
 
-def test_the_oldest_member_sets_the_age_and_a_fresh_arrival_does_not_reset_it():
-    """A new arrival beside a long-standing item leaves the reading where it was.
+def test_a_long_standing_member_prints_no_span_beside_its_counter():
+    """The population that used to produce a span renders the count alone.
 
-    This is the membership turnover a total cannot show: the count does not
-    move, a fresh item has just landed, and the backlog has in fact been
-    standing still the whole time. Reading the newest stamp would report the
-    arrival and hide the backlog.
+    Run against the fleet whose oldest blocked member arrived seven hours before
+    the reading — the exact case a span beside the counter existed to make
+    visible — so a span still rendered would be found here rather than missed on
+    a fleet too young to have one.
+    """
+    row = _row([_transition("r-old", ARRIVED_LONG_AGO)], blocked=1)
+    assert spans(row) == {}
+    assert not AGES.search(row)
+    assert "1b" in row
+
+
+def test_the_only_span_on_the_row_is_the_reading_runs_own_elapsed_time():
+    """A stale backlog does not leak into the one measure cell that remains.
+
+    The row still prints one span — the elapsed time of the run the row is about
+    — and it reads that run's own fact rather than anything about the fleet
+    behind it: the seven-hour-old member leaves no span on the row, and the
+    elapsed figure appears from the reading run's own spend.
     """
     row = _row(
-        [
-            _transition("r-old", ARRIVED_LONG_AGO),
-            _transition("r-new", ARRIVED_JUST_NOW),
-        ],
-        blocked=2,
-    )
-    assert ages(row) == {"b": "7h"}
-
-
-def test_the_age_falls_when_the_oldest_member_is_cleared():
-    """Clearing the oldest item moves the reading, which is what it is for.
-
-    A backlog being worked and one standing still are the two situations the
-    count cannot separate. Here the count is unchanged between the two
-    readings — two blocked either way — and the age dropped because the oldest
-    one left the bucket.
-    """
-    events = [
-        _transition("r-old", ARRIVED_LONG_AGO),
-        _transition("r-young", ARRIVED_JUST_NOW),
-    ]
-    before = _row(events, blocked=2)
-    grid = ticker_module.Ticker(width=180, color=False)
-    for event in events:
-        grid.render(event)
-    # The oldest leaves the fleet entirely, so it is no longer a member of
-    # anything the row counts even though the count is unchanged.
-    grid.render(_transition("r-old", READ_AT, state="promoted", from_state="blocked"))
-    after = plain(grid.render(_reading(READ_AT, blocked=2)))
-    assert ages(before) == {"b": "7h"}
-    assert ages(after) == {"b": "2m"}
-
-
-def test_the_work_in_progress_cells_carry_no_age():
-    """Only the buckets that ask something of the reader answer with an age.
-
-    A blocked run needs a decision and an unpromoted one needs merging or
-    recording; a working run and a queued run are progressing, and an age
-    beside them would measure nothing a reader acts on.
-    """
-    row = _row(
-        [
-            _transition("r-blocked", ARRIVED_LONG_AGO),
-            _transition("r-done", ARRIVED_LONG_AGO, state="complete"),
-            _transition("r-working", ARRIVED_LONG_AGO, state="working"),
-            _transition("r-waiting", ARRIVED_LONG_AGO, state="waiting"),
-        ],
+        [_transition("r-old", ARRIVED_LONG_AGO)],
         blocked=1,
-        unpromoted=1,
-        working=1,
-        waiting=1,
+        spend_wall_seconds=1_234.0,
     )
-    assert set(ages(row)) == {"b", "u"}
-
-
-def test_the_counter_block_holds_one_column_as_counts_and_ages_change():
-    """The counts' letters land on one screen column across every row.
-
-    The block is what a reader scans down, so an age that widened it would move
-    every count on the rows that carry one and defeat the scan.
-    """
-    rows = [
-        _row(
-            [_transition("r-a", ARRIVED_LONG_AGO)], working=12, blocked=9, unpromoted=7
-        ),
-        _row(
-            [_transition("r-a", ARRIVED_JUST_NOW)], working=3, blocked=1, unpromoted=0
-        ),
-        _row([], working=3, blocked=0, unpromoted=0),
-    ]
-    assert len({row.index("w") for row in rows}) == 1, rows
-    assert len({row.rindex("u") for row in rows}) == 1, rows
+    assert "20m" in row
+    assert spans(row) == {}
 
 
 @pytest.mark.parametrize("width", [180, 208])
-def test_the_row_holds_its_width_with_and_without_an_age(width):
-    """The age is paid for out of the free text's margin, never by wrapping.
+def test_a_stale_fleet_row_holds_the_requested_width(width):
+    """Removing the cell must not leave a gap where it stood.
 
-    A row that grew a column to carry an age would wrap in a pane the grid
-    already fills, and a wrapped row costs the reader two lines of the eight a
-    pane shows.
+    The cell was paid for out of the free text's margin, so a row that grew to
+    keep it — or kept the width it spent — would wrap in a pane the grid already
+    fills, and a wrapped row costs the reader two lines of the eight a pane
+    shows.
     """
-    with_age = _row([_transition("r-a", ARRIVED_LONG_AGO)], width=width, blocked=1)
-    without = _row([], width=width, blocked=0)
-    assert len(with_age) == width
-    assert len(without) == width
-    assert ages(with_age)
-    assert not ages(without)
-
-
-def test_the_age_yields_the_margin_to_a_clause_that_needs_it():
-    """A clause that fills the margin keeps it whole; the age gives way.
-
-    The ages are paid for out of the free text, so a long clause cannot both
-    keep the predicate a reader acts on and leave the columns an age would
-    occupy. The predicate wins: it is the actionable text, and the age is a
-    reading of it.
-    """
-    clause = "the process is gone without a complete manifest"
-    crowded = _row(
-        [_transition("r-a", ARRIVED_LONG_AGO)],
-        to_state="blocked",
-        detail=clause + " for the archive dry run which reported the marker moved",
-        blocked=1,
-    )
-    assert clause in crowded
-    assert ages(crowded) == {}
+    stale = _row([_transition("r-old", ARRIVED_LONG_AGO)], width=width, blocked=1)
+    assert len(stale) == width
+    assert spans(stale) == {}

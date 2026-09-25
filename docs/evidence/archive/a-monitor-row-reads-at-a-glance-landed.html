@@ -313,6 +313,224 @@
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T172753966510-ticker-tests-read-the-grid-width/logs/gate-negative-control.log</code>.
     </p>
 
+  <h2 id="the-row-drops-the-cells-nobody-reads">&sect;4 — The row drops the cells nobody reads</h2>
+    <p>
+      Commit <code>f7d1c597</code> (implementation and test together) in the
+      <code>row-drops-unread-cells</code> worktree, base revision <code>c590aaaa</code>. The row's
+      measure block carries one fact — how long the run has been going — and states it in hours and
+      minutes. The generation-rate cell and the age cells are removed.
+    </p>
+
+    <h3>The width recovered, measured rather than assumed</h3>
+    <p>
+      Six columns, read at the 180-column default from each revision's own renderer with the blocked
+      fixture the test file uses, rather than taken from a constant. At <code>c590aaaa</code> the
+      renderer's margin for the clause is 60 columns and the row's fixed cells are 120; here they are
+      66 and 114, and <code>MIN_WIDTH</code> falls 127 to 121. The fixed budget gives back the rate
+      cell (4 columns) and the separator in front of it (1), plus one column from the elapsed format
+      being narrower than the clock it replaces (7 to 6). At base the age cells took a further six
+      columns out of the clause's own margin — the base row's clause begins at column 126 where this
+      row's begins at 114 — so a row that rendered age cells reads its clause twelve columns further
+      left here.
+    </p>
+    <p>
+      The measurement is logged with the row each revision renders:
+      <code>/home/ITER/mcintos/.cache/reckon-row-drops-unread-cells/room-settle.log</code>. The five
+      figures it prints — margin 60 → 66, fixed 120 → 114, clause column 126 → 114,
+      <code>MIN_WIDTH</code> 127 → 121, <code>SPEND</code> 12 → 6 — are the record. The default
+      width is unchanged at <code>DEFAULT_WIDTH</code> 180; what a narrow pane gets is a shorter
+      clause, and the shortest legal pane falls by the same six columns.
+    </p>
+
+    <h3>Gate measure, as executed</h3>
+    <p>
+      Every file that imports <code>reckon.crew.ticker</code>, run at each revision with the project
+      environment's interpreter. The thirteen are the same set at both revisions, so the delta is
+      like for like.
+    </p>
+    <table>
+      <thead>
+        <tr><th>revision</th><th>files</th><th>result</th><th>log</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>base <code>c590aaaa</code></td><td>13</td><td>13 failed, 287 passed</td>
+          <td><code>/home/ITER/mcintos/.cache/reckon-row-drops-unread-cells/base-c590aaaa.log</code></td>
+        </tr>
+        <tr>
+          <td>head <code>f7d1c597</code></td><td>13</td><td>24 failed, 276 passed</td>
+          <td><code>/home/ITER/mcintos/.cache/reckon-row-drops-unread-cells/head-row-drops-cells.log</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Eleven failures added and none fixed. Six are in <code>tests/test_counter_carries_age.py</code>:
+      <code>test_the_age_falls_when_the_oldest_member_is_cleared</code>,
+      <code>test_the_oldest_member_sets_the_age_and_a_fresh_arrival_does_not_reset_it</code>,
+      <code>test_the_row_holds_its_width_with_and_without_an_age[180]</code> and <code>[208]</code>,
+      <code>test_the_work_in_progress_cells_carry_no_age</code>, and
+      <code>test_two_fleets_with_the_same_counts_and_different_ages_render_differently</code>.
+      Four of the six read the age cells through that file's own <code>ages()</code> helper, which now
+      returns an empty mapping. Five are in <code>tests/test_crew_ticker_layout.py</code>:
+      <code>test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker</code>,
+      <code>test_an_unmeasured_cell_and_a_measured_zero_are_distinct_strings</code>,
+      <code>test_the_fleet_counters_precede_the_measures</code>,
+      <code>test_the_two_measure_cells_occupy_the_same_columns_on_every_row</code>, and
+      <code>test_the_two_measure_cells_render_measured_figures_in_their_own_cells</code>,
+      each reading <code>ticker_module.RATE</code> — the constant the rate cell was sized by. Both
+      files are outside this node's write scope: all eleven are recorded and carried as follow-ons
+      rather than triaged or repaired here.
+    </p>
+    <p>
+      Three ids that fail at both revisions report a different failure here, none of them newly
+      failing: <code>test_a_resumed_runs_line_carries_measured_values_not_markers</code> (a spacing
+      assertion at base) and
+      <code>test_the_refusal_names_where_the_arming_primitive_is_documented</code>
+      (<code>KeyError: 'ensure_line'</code> at base) both now stop on the removed <code>RATE</code>
+      constant, and <code>test_the_blocked_bucket_is_derived_from_the_attention_set</code> reports a
+      different assertion.
+    </p>
+
+    <h3>The owned test</h3>
+    <p>
+      <code>tests/test_ticker_row_drops_unread_cells.py</code> holds sixteen tests: no class of row
+      matches the age pattern, with and without a rate fact; the absence marker has exactly one
+      position on a row whose span is unmeasured, and it is the elapsed one; the span renders
+      <code>57m</code> for 3,421 seconds and <code>1h33m</code> for 5,580, with no colon in the
+      figure; the clause begins at the measured column and its margin is bounded exactly at the
+      figure claimed, a clause one column short printed whole and one column over elided. The file's
+      positive control asserts that <code>57mb</code> matches the very pattern the first test
+      forbids, so a pattern matching nothing cannot pass the file. 16 passed.
+    </p>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared and repeated verbatim as the log's first line: <em>restore the generation-rate cell in
+      Ticker.render; tests/test_ticker_row_drops_unread_cells.py must fail</em>. Applied by giving
+      <code>_spend_cells</code> a further cell again — the rate where the event carries one, the
+      absence marker where it does not — and running the owned file. Twelve of the sixteen fail,
+      among them every elapsed rendering and both geometry tests; the four that pass are the positive
+      control, both parametrisations of the age-pattern check — which a restored rate cell does not
+      affect — and the floor assertion. The tree was restored from a copy taken before the edit and
+      the restore proven by comparing the file's SHA-256 across the two states. Log:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211219792337-row-drops-unread-cells/negative_control.log</code>.
+    </p>
+
+    <h3>The two ticker test files, brought onto the single measure cell</h3>
+    <p>
+      Commit <code>6d83dc99</code> in the <code>ticker-tests-meet-the-single-measure-row</code>
+      worktree, base revision <code>8dfe2bbb</code> — the renderer landing above. Test files only:
+      <code>tests/test_crew_ticker_layout.py</code> and
+      <code>tests/test_counter_carries_age.py</code>. <code>reckon/crew/ticker.py</code> is not in
+      the commit.
+    </p>
+
+    <h3>The defect reproduced before the repair</h3>
+    <p>
+      The two files were run at the base revision first, with the interpreter of the project
+      environment and the module under test pinned by path in the log's own header:
+      <strong>11 failed, 67 passed</strong>. The eleven are the five layout cases that read
+      <code>ticker_module.RATE</code> or assert the two-cell shape and the six age cases whose
+      subject no longer renders. Log:
+      <code>/home/ITER/mcintos/.cache/reckon-ticker-tests-meet-the-single-measure-row/before-repair.log</code>.
+      After the rewrite: <strong>76 passed</strong>.
+    </p>
+
+    <h3>What changed in each file</h3>
+    <ul>
+      <li><strong>The layout file.</strong> One geometry helper reads the single measure cell's
+        column off the row's own constants (<code>CLOCK</code>, <code>GAP</code>,
+        <code>ROLE</code>, <code>NODE</code>, <code>STATE_REGION</code>, <code>PAIR_GAP</code>,
+        <code>EFFORT</code>, the counters, <code>SPEND_GAP</code>, <code>WALL</code>) instead of
+        composing the removed rate cell's span, and the tests assert the clause begins immediately
+        after it. A record carrying a generation rate, model seconds, charged tokens and a
+        notional cost renders the elapsed figure alone: the rate is absent from the row's tail.
+        The zero-versus-marker case keeps its distinction on the one cell, and the row-state case
+        keeps its blank/marker distinction there too.</li>
+      <li><strong>The counter file.</strong> Nine cases at base, six now. Four cases whose subject
+        was a computed age are removed — the ages are neither computed nor rendered anywhere in
+        this revision: <code>test_a_fleet_with_nothing_actionable_carries_no_age</code>,
+        <code>test_the_age_falls_when_the_oldest_member_is_cleared</code>,
+        <code>test_the_age_yields_the_margin_to_a_clause_that_needs_it</code> and
+        <code>test_the_work_in_progress_cells_carry_no_age</code>. The file holds the row to the
+        absence instead: two fleets with the same counts render the same row whatever their
+        members' arrival times, the fleet whose oldest member arrived seven hours before the
+        reading prints no span beside its counter, and the one span left on the row is the reading
+        run's own elapsed time. A positive control asserts the forbidding pattern matches
+        <code> 7hb</code>, <code> 12mu</code> and <code> 2dq</code>, so an absence assertion
+        cannot pass on a pattern that matches nothing. The age's own surface is the needs-you line
+        of <a href="/reckon/plans/a-follower-keeps-your-work-in-view">a-follower-keeps-your-work-in-view</a>, where
+        it is spelled beside the node it belongs to; no row-cell case here can assert a value
+        nothing computes.</li>
+    </ul>
+
+    <h3>Gate measure, as executed</h3>
+    <p>
+      Every file that imports <code>reckon.crew.ticker</code> — the same thirteen the renderer
+      landing measured — run at this head with the project environment's interpreter.
+    </p>
+    <table>
+      <thead>
+        <tr><th>revision</th><th>files</th><th>result</th><th>failure ids absent from base</th><th>log</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>base <code>c590aaaa</code></td><td>13</td><td>13 failed, 287 passed</td><td>—</td>
+          <td><code>/home/ITER/mcintos/.cache/reckon-row-drops-unread-cells/base-c590aaaa.log</code>
+          (ids in <code>base-ids.txt</code>, same directory)</td>
+        </tr>
+        <tr>
+          <td>head <code>6d83dc99</code></td><td>13</td><td>13 failed, 285 passed</td><td>0</td>
+          <td><code>/home/ITER/mcintos/.cache/reckon-ticker-tests-meet-the-single-measure-row/gate-13-head.log</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The thirteen ids are the same thirteen: the set difference in both directions is empty, so
+      these two files add no failure id and fix none of the ids that were already failing at base.
+      The two-fewer passing count is the counter file's consolidation (nine cases to six, one of
+      them new) and the layout file's one added case. The thirteen names other files and other
+      surfaces — the dispatch guard's claim walk, the recovery log's cells, the arming primitive's
+      documentation, the attention set's derivation, one of the wait-fact row cases — and each is
+      reported as a follow-on rather than triaged here, per this node's fence. Log:
+      <code>/home/ITER/mcintos/.cache/reckon-ticker-tests-meet-the-single-measure-row/gate-13-head.log</code>.
+    </p>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared and repeated verbatim as the log's first line: <em>restore the generation-rate cell
+      in Ticker.render at your head; tests/test_crew_ticker_layout.py must fail</em>. Applied by
+      inserting into <code>Ticker.render</code> itself, after the measure cell, the gap and
+      four-column right-aligned figure the removed cell spent, blanked to the absence marker where
+      the record carries no rate; the owned file was then run by the console interpreter with
+      <code>PYTHONPATH</code> pinned to the worktree. <strong>Four</strong> cases fail as required:
+      <code>test_the_clause_follows_the_row_s_one_measure_cell</code> (the clause moves from column
+      114 to 119), <code>test_the_measure_cell_renders_the_elapsed_figure_alone</code> (the rate
+      figure <code>44</code> reappears in the row's tail),
+      <code>test_a_line_with_spend_facts_is_exactly_the_requested_width_at_three_sizes</code> and
+      <code>test_a_narrow_width_is_widened_to_what_the_columns_need</code> (the row outgrows its
+      own floor). The renderer was restored from a copy taken before the edit and the restore
+      proven by comparing SHA-256 across the two states
+      (<code>7ce8882d…f1406</code>), with <code>git status</code> showing no modification to
+      <code>reckon/crew/ticker.py</code>. Log:
+      <code>/home/ITER/mcintos/.cache/reckon-ticker-tests-meet-the-single-measure-row/negative-control.log</code>.
+    </p>
+
+    <h3>Figure</h3>
+    <figure>
+      <img src="/reckon/figures/a-monitor-row-reads-at-a-glance/measure_cell_column_map.png"
+           alt="Top: the row at 180 columns with the one measure cell, the counters and the clause
+                boxed from the rendered string's own character positions, the clause beginning at
+                column 114. Bottom: the clause begins at column 114 with the single cell and at
+                119 with the rate cell restored.">
+      <figcaption>
+        The row printed from the renderer's own output alongside the pair the negative control
+        measured. The hatched five columns are the rate cell and its separator, which the clause's
+        first five characters now occupy. Source:
+        <code>docs/figures/a-monitor-row-reads-at-a-glance/measure_cell_column_map.py</code>.
+      </figcaption>
+    </figure>
+
   </main>
 </body>
 </html>
