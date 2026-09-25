@@ -48,6 +48,10 @@
     {
       "path": "reckon/flight.py",
       "reason": "Backend routing, lane-window pacing and lane-document probing each add or change a separate function in this module, so a whole-file claim serialises work that does not collide."
+    },
+    {
+      "path": "reckon/_backends.py",
+      "reason": "The launch plan, the fence composition and the harness-home seeding are separate functions that fence nodes extend at separate points, often stacked on one another's commits, so a whole-file claim serialises work that does not collide."
     }
   ]
 }
