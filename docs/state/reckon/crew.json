@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T08:40:41",
+  "updated": "2026-09-25T08:42:25",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -397454,6 +397454,299 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T055144797509-section-writes-tests-carry-a-contract",
+        "plan": "section-contract-and-computed-impl",
+        "section": "\u00a72",
+        "node": "section-writes-tests-carry-a-contract",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 575,
+                "cached_input_tokens": 897679,
+                "input_tokens": 898256,
+                "output_tokens": 1168,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 899424,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "Based on 3d7afe48, each of the six failing cases in tests/test_edit_plan_section_writes.py named in the blockers of /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T051130395922-insert-section-carries-its-contract/manifest.md gives the section it inserts a valid typed record (effort_hours, capability, links as the \u00a71 schema requires), keeping each case's original intent about section-scoped writes, and one new case there asserts insert_section without a record is refused. No reckon/ source file changes. At your head tests/test_edit_plan_section_writes.py and tests/test_section_contract_is_refused.py pass and every test file importing reckon._store shows no failure id absent from its base set at the parent of 3d7afe48's branch point. The declared negative control is executed and logged: removing the record from one rewritten case makes it fail with the contract refusal.",
+          "estimated_hours": null,
+          "goal": "The section-scoped write tests insert sections that carry their typed record, now that insert_section refuses a contract-less one",
+          "id": "section-writes-tests-carry-a-contract",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T05:51:45Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 14,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 12,
+            "mean_context": 106667,
+            "observed_at": "2026-09-25T05:51:31Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T055144797509-section-writes-tests-carry-a-contract/manifest.md",
+          "negative_control": "remove the typed record from one rewritten insert_section case; it must fail with the section-contract refusal",
+          "plan": "section-contract-and-computed-impl",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_edit_plan_section_writes.py",
+            "docs/evidence/archive/section-contract-and-computed-impl-landed.html",
+            "docs/figures/section-contract-and-computed-impl",
+            "docs/plans/section-contract-and-computed-impl.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-manifest-keys",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T05:51:55Z",
+        "completed_at": "2026-09-25T06:19:19.091Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1538,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1644,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "3d7afe483b5943c616398c390d76b262339119f7",
+        "commits": [
+          "98c976c5e1db9bde6e82fd47c49955ca31fd0e2f",
+          "c3e431aad10394ffaffad2167c2bfd20fdcf23b8"
+        ],
+        "changed_lines": {
+          "added": 321,
+          "removed": 59,
+          "files": 4
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_section_contract_is_refused.py tests/test_edit_plan_section_writes.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T055144797509-section-writes-tests-carry-a-contract/cohort-base.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T055144797509-section-writes-tests-carry-a-contract/manifest.md",
+        "scope_changed": false,
+        "session_id": "9123760e-89ed-436a-9634-bc8c45b2704c",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8307853,
+            "input_tokens_cumulative": 8307853,
+            "output_tokens": 76458,
+            "output_tokens_cumulative": 76458,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T06:19:19.091Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 17,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 94
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 8475659,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1543.875,
+          "generated_tokens": 85574,
+          "generation_seconds": 1376.601,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 167.274,
+          "peak_input_tokens": 166506,
+          "tokens_per_second": 62.16,
+          "wall_tokens_per_second": 55.43
+        },
+        "follow_on_paths": [
+          "reckon/_store.py"
+        ],
+        "predecessor_run": "r-20260925T051130395922-insert-section-carries-its-contract",
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/section-writes-tests-carry-a-contract",
+          "session_id": "9123760e-89ed-436a-9634-bc8c45b2704c",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T06:19:19.091Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T06:19:19Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T05:53:32Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T055144797509-section-writes-tests-carry-a-contract",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 15550,
+          "worker_pid": 3507793
+        },
+        "promoted_revision": "c3e431aad10394ffaffad2167c2bfd20fdcf23b8",
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "section-contract-and-computed-impl",
+          "at_dispatch": 0.5,
+          "at_complete": 0.5,
+          "verdict": "waived",
+          "reason": "\u00a72 impl moves when its audit-doc warning half lands"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_edit_plan_section_writes.py"
+          ],
+          "declaration": "remove the typed record from one rewritten insert_section case; it must fail with the section-contract refusal",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T055144797509-section-writes-tests-carry-a-contract/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T055144797509-section-writes-tests-carry-a-contract/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T06:21:45.422950+00:00",
+          "horizon_seconds": 1800,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T05:51:45Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 14,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 12,
+          "mean_context": 106667,
+          "observed_at": "2026-09-25T05:51:31Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 77.0,
+        "orientation_input_tokens": 796047.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -397766,6 +398059,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2717
+    "_version": 2718
   }
 }
