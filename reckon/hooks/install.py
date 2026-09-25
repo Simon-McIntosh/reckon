@@ -1,9 +1,13 @@
 """Install the coordinator-obligations hook into a Claude Code settings file.
 
 The obligations hook script binds a coordinator session to the crew duties
-reckon derives for it. Binding the script to the harness means registering one
-command under three harness events: ``UserPromptSubmit`` and ``SessionStart``
-run it in prompt mode, and ``Stop`` runs it in stop mode.
+reckon derives for it; the worker stop hook binds a dispatched worker's turn end
+to its run manifest. Binding both to the harness means registering them under
+three harness events: ``UserPromptSubmit`` and ``SessionStart`` run the
+obligations hook in prompt mode, and ``Stop`` carries one entry for each hook,
+the obligations hook in stop mode and the worker stop hook with no argument. The
+two stop entries do not interfere: each resolves the session it belongs to, and
+writes nothing for a session that is not its own.
 
 The settings fragment is data. :func:`build_hook_snippet` composes it, and
 :func:`install_hook_settings` is the surface a caller drives:
@@ -14,7 +18,7 @@ The settings fragment is data. :func:`build_hook_snippet` composes it, and
 * A merge happens only under ``write=True``, into the path the caller names
   (the user-scope ``~/.claude/settings.json`` when the caller names none). The
   merge preserves every existing key and every existing hook group, and appends
-  the three entries.
+  the fragment's entries.
 * An install refuses when a command it would add already exists anywhere in the
   target's hooks, naming the event and the command it found. The refusal is
   raised before anything is written, so it leaves the file byte-identical.
@@ -22,9 +26,9 @@ The settings fragment is data. :func:`build_hook_snippet` composes it, and
   directory and moved into place, and a settings file that changed between the
   read and the write is not overwritten.
 
-Standard-library only, and it imports neither the obligations hook nor any other
-module of this package: the caller may be the CLI before the package's own
-imports are exercised, and the fragment names the hook script by path.
+Standard-library only, and it imports neither hook script nor any other module
+of this package: the caller may be the CLI before the package's own imports are
+exercised, and the fragment names each hook script by path.
 """
 
 from __future__ import annotations
@@ -37,13 +41,17 @@ import time
 from pathlib import Path
 from typing import IO, Any
 
-# The hook script the fragment binds. It ships beside this module, which is how
-# the fragment resolves its absolute path.
-HOOK_SCRIPT_NAME = "coordinator_obligations.py"
+# The two hook scripts the fragment binds. Both ship beside this module, which
+# is how the fragment resolves each absolute path: the snippet names the scripts
+# of the checkout that composed it.
+COORDINATOR_HOOK_SCRIPT_NAME = "coordinator_obligations.py"
+WORKER_STOP_SCRIPT_NAME = "worker_stop.py"
 
-# The script's two modes and the harness events each one serves. Prompt mode
-# opens every turn with the current duties; stop mode holds the turn open while
-# unacknowledged duties remain.
+# The obligations hook's two modes and the harness events each one serves.
+# Prompt mode opens every turn with the current duties; stop mode holds the turn
+# open while unacknowledged duties remain. The worker stop hook takes no mode:
+# it resolves the run it belongs to from the environment and the payload's
+# working directory.
 PROMPT_MODE = "prompt"
 STOP_MODE = "stop"
 PROMPT_EVENTS = ("UserPromptSubmit", "SessionStart")
@@ -56,7 +64,12 @@ class HookInstallError(RuntimeError):
 
 def hook_script_path() -> Path:
     """Return the obligations hook script shipped beside this module."""
-    return Path(__file__).resolve().with_name(HOOK_SCRIPT_NAME)
+    return Path(__file__).resolve().with_name(COORDINATOR_HOOK_SCRIPT_NAME)
+
+
+def worker_stop_script_path() -> Path:
+    """Return the worker stop hook script shipped beside this module."""
+    return Path(__file__).resolve().with_name(WORKER_STOP_SCRIPT_NAME)
 
 
 def user_settings_path() -> Path:
@@ -65,14 +78,18 @@ def user_settings_path() -> Path:
 
 
 def build_hook_snippet(script_path: Path | str | None = None) -> dict[str, Any]:
-    """Return the settings fragment, as it would be merged, for both hook modes."""
+    """Return the settings fragment, as it would be merged, for every hook script."""
     script = Path(script_path) if script_path is not None else hook_script_path()
     prompt_command = shlex.join([str(script), "--hook", PROMPT_MODE])
     stop_command = shlex.join([str(script), "--hook", STOP_MODE])
+    worker_stop_command = shlex.join([str(worker_stop_script_path())])
     entries: dict[str, Any] = {
         event: [_command_group(prompt_command)] for event in PROMPT_EVENTS
     }
-    entries[STOP_EVENT] = [_command_group(stop_command)]
+    entries[STOP_EVENT] = [
+        _command_group(stop_command),
+        _command_group(worker_stop_command),
+    ]
     return {"hooks": entries}
 
 

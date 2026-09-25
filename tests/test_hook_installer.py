@@ -3,7 +3,10 @@
 Every settings file these tests write lives under the pytest temporary
 directory. The one file outside it that this module reads is the real
 user-scope settings file, and it is read only to prove the installer's default
-call leaves it alone.
+call leaves it alone. The hook scripts the snippet names are resolved from this
+file's own location, never through the installer's helper, so a snippet naming
+a path that is not in this repository fails the test rather than agreeing with
+whatever the installer computed.
 """
 
 from __future__ import annotations
@@ -46,6 +49,16 @@ EXISTING_SETTINGS: dict = {
 }
 
 
+# The hook scripts as this repository carries them, resolved from this file's
+# own location: tests/ sits directly under the repository root, and both scripts
+# ship in reckon/hooks/. Nothing here reads the installer's own path helper: a
+# snippet whose command points somewhere else is meant to fail these tests.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+HOOKS_DIR = REPO_ROOT / "reckon" / "hooks"
+COORDINATOR_HOOK = HOOKS_DIR / "coordinator_obligations.py"
+WORKER_STOP_HOOK = HOOKS_DIR / "worker_stop.py"
+
+
 def _encode(payload: dict) -> bytes:
     return (json.dumps(payload, indent=2, ensure_ascii=False) + "\n").encode()
 
@@ -58,12 +71,21 @@ def _stop_command() -> str:
     return shlex.join([str(installer.hook_script_path()), "--hook", "stop"])
 
 
+def _worker_stop_command() -> str:
+    return shlex.join([str(installer.worker_stop_script_path())])
+
+
 def _commands(payload: dict, event: str) -> list[str]:
     return [
         hook["command"]
         for group in payload["hooks"].get(event, [])
         for hook in group.get("hooks", [])
     ]
+
+
+def _command_paths(payload: dict, event: str) -> list[Path]:
+    """Return the script each command in ``event`` runs, as the command names it."""
+    return [Path(shlex.split(command)[0]) for command in _commands(payload, event)]
 
 
 def _fingerprint(path: Path) -> tuple[int, bytes] | None:
@@ -94,7 +116,27 @@ def test_snippet_binds_both_modes_to_their_events() -> None:
     assert set(snippet["hooks"]) == {"UserPromptSubmit", "SessionStart", "Stop"}
     assert _commands(snippet, "UserPromptSubmit") == [_prompt_command()]
     assert _commands(snippet, "SessionStart") == [_prompt_command()]
-    assert _commands(snippet, "Stop") == [_stop_command()]
+    # Two entries under Stop: the coordinator's obligations hook in stop mode,
+    # and the worker stop hook that binds a dispatched worker to its manifest.
+    assert len(snippet["hooks"]["Stop"]) == 2
+    assert _commands(snippet, "Stop") == [_stop_command(), _worker_stop_command()]
+
+
+def test_snippet_commands_name_the_hook_scripts_this_repository_carries() -> None:
+    """Every command names the hook script at its repository location."""
+    expected = {
+        "UserPromptSubmit": [COORDINATOR_HOOK],
+        "SessionStart": [COORDINATOR_HOOK],
+        "Stop": [COORDINATOR_HOOK, WORKER_STOP_HOOK],
+    }
+
+    snippet = installer.build_hook_snippet()
+
+    observed = {event: _command_paths(snippet, event) for event in expected}
+    assert observed == expected
+    for paths in observed.values():
+        for path in paths:
+            assert path.is_file()
 
 
 def test_dry_run_prints_the_fragment_and_leaves_the_file_untouched(
@@ -131,9 +173,13 @@ def test_write_merges_the_entries_and_keeps_every_existing_hook_and_key(
     assert merged["hooks"]["PostToolUse"] == EXISTING_SETTINGS["hooks"]["PostToolUse"]
     assert merged["hooks"]["Stop"][0] == EXISTING_SETTINGS["hooks"]["Stop"][0]
     assert (
-        merged["hooks"]["Stop"][1] == installer.build_hook_snippet()["hooks"]["Stop"][0]
+        merged["hooks"]["Stop"][1:] == installer.build_hook_snippet()["hooks"]["Stop"]
     )
-    assert _commands(merged, "Stop") == ["say-done", _stop_command()]
+    assert _commands(merged, "Stop") == [
+        "say-done",
+        _stop_command(),
+        _worker_stop_command(),
+    ]
     assert _commands(merged, "UserPromptSubmit") == [_prompt_command()]
     assert _commands(merged, "SessionStart") == [_prompt_command()]
 
