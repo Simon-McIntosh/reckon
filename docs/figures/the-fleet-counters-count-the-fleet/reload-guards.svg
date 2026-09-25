@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="470" viewBox="0 0 760 470" role="img" aria-labelledby="t d">
+  <title id="t">A follower's reload decision, with line numbers from cli.py and runs.py</title>
+  <desc id="d">The follower re-checks its code stamp at a bounded cadence. A content-hash change is the first guard: a touched file whose bytes are unchanged does not move the stamp, so no reload follows. Once the content has changed, the replacement image is proven to import in a throwaway interpreter before the process image is replaced. A failed proof defers the reload: the current image is kept, one dim line names the reason, and the check repeats only when the code changes again. A passing proof re-executes into the new image.</desc>
+  <style>
+    .box { fill: #f6f8fa; stroke: #8a94a6; stroke-width: 1.5; }
+    .dec { fill: #eef4ff; stroke: #3b6fd4; stroke-width: 1.5; }
+    .stop { fill: #fdecec; stroke: #c0392b; stroke-width: 1.5; }
+    .go { fill: #eaf7ee; stroke: #2e8a4f; stroke-width: 1.5; }
+    .t { font: 13px sans-serif; fill: #1f2430; }
+    .lbl { font: 11px sans-serif; fill: #4a5568; }
+    .edge { stroke: #5a6577; stroke-width: 1.5; fill: none; marker-end: url(#a); }
+  </style>
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,9 L0,0 L9,4.5 Z" fill="#5a6577"/>
+    </marker>
+  </defs>
+
+  <rect class="box" x="250" y="16" width="260" height="46" rx="6"/>
+  <text class="t" x="380" y="36" text-anchor="middle">poll: re-check code stamp</text>
+  <text class="lbl" x="380" y="52" text-anchor="middle">runs.follower_code_stamp() · bounded cadence</text>
+
+  <path class="edge" d="M380,62 L380,96"/>
+  <text class="lbl" x="388" y="84">stamp moved past the running image?</text>
+
+  <rect class="dec" x="270" y="98" width="220" height="52" rx="6"/>
+  <text class="t" x="380" y="120" text-anchor="middle">module content hash changed?</text>
+  <text class="lbl" x="380" y="138" text-anchor="middle">mtime and size are a pre-check only</text>
+
+  <path class="edge" d="M490,124 L580,124 L580,200"/>
+  <text class="lbl" x="520" y="118">no</text>
+  <rect class="go" x="500" y="202" width="230" height="44" rx="6"/>
+  <text class="t" x="615" y="228" text-anchor="middle">no reload · nothing printed</text>
+
+  <path class="edge" d="M380,150 L380,186"/>
+  <text class="lbl" x="388" y="174">yes</text>
+
+  <rect class="dec" x="255" y="188" width="250" height="52" rx="6"/>
+  <text class="t" x="380" y="210" text-anchor="middle">replacement image imports?</text>
+  <text class="lbl" x="380" y="228" text-anchor="middle">compile every module · import the entry points</text>
+
+  <path class="edge" d="M255,214 L150,214 L150,290"/>
+  <text class="lbl" x="180" y="208">no</text>
+  <rect class="stop" x="30" y="292" width="250" height="76" rx="6"/>
+  <text class="t" x="155" y="315" text-anchor="middle">defer the reload</text>
+  <text class="lbl" x="155" y="334" text-anchor="middle">keep the current image, still delivering</text>
+  <text class="lbl" x="155" y="350" text-anchor="middle">one dim line names the reason; retry on</text>
+  <text class="lbl" x="155" y="364" text-anchor="middle">the next content change</text>
+
+  <path class="edge" d="M380,240 L380,290"/>
+  <text class="lbl" x="388" y="268">yes</text>
+  <rect class="go" x="270" y="292" width="220" height="52" rx="6"/>
+  <text class="t" x="380" y="314" text-anchor="middle">os.execve into the new image</text>
+  <text class="lbl" x="380" y="362" text-anchor="middle">checkpoint, deadline and owner carried over</text>
+
+  <text class="lbl" x="30" y="436">Guards protect one outcome: a load failure never replaces the running image,</text>
+  <text class="lbl" x="30" y="452">so the pane keeps its rows and the follower is not lost to code that will not parse.</text>
+</svg>
