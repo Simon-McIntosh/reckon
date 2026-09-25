@@ -20,14 +20,14 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="a-page-load-reads-each-file-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
   <title>Reckon Reads Answer In Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-commits" content="436c75f3,37c8988a,f7f6fe29,057d8ad0,4784f497">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 </head>
 <body>
   <main class="plan-doc">
@@ -79,6 +79,10 @@
     <h3 id="parse-memo-landing">Landing record &mdash; unchanged documents reuse one parse</h3>
     <p>Commit <code>f7f6fe29b063a774f07ce572c1e07948b7c33746</code> memoizes the full record and link summary against file stat identity while sharing one cached text read. Commit <code>057d8ad0170cb071537c8a92797f7cbd34158640</code> makes relative corpus roots and project-absolute evidence targets share one path identity. The focused check proves one physical read across repeated parsing, lifecycle and link use; size, mtime and inode changes each invalidate the memo; and a mutated return cannot change the next result. The named audit and doccheck gate passed <strong>113 tests</strong>. Replacing the stat identity with one constant &mdash; keying on the path alone &mdash; failed all three invalidation cases.</p>
     <p>Three warmed measurements per read show median latency moving from 35.39 s to 14.58 s for audit, 11.82 s to 7.81 s for roadmap summary, and 9.71 s to 0.98 s for discovery. The audit is below the 28.9 s reference but remains above five seconds: its residual profile is led by repeated <code>from_html</code>/<code>read_state</code> validation and live-run classification, outside this node's write scope. Full receipts and the before/after figure are in <a href="/reckon/evidence/archive/reckon-reads-answer-in-seconds-landed#parse-memo">the cumulative evidence record</a>.</p>
+
+    <h2 id="s4">§4 — read_state and live runs stop re-reading unchanged files</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>After the §3 parse memo the warm audit takes 14.6 s and the roadmap summary 7.8 s. The residual profile names two costs. First, <code>_plan_html.read_state</code> and <code>from_html</code> in the MCP validation path: about 18 s profiled across 184 calls. Second, <code>partition_live_runs</code>: about 17 s, 9.8 s of it observing run logs.</p><ul><li><code>read_state</code> is memoized on the same file signature as <code>parse_plan</code> (path, size, mtime, inode) and returns an isolated copy.</li><li>Live-run partitioning reads each run's latest classification from the watch producer's recorded stream, the way <code>sprint_liveness</code> now does, and observes a run's logs only where the stream has no record.</li></ul><p><strong>Done when:</strong></p><ul><li>Memo tests for <code>read_state</code> assert that an unchanged file is not re-read, that a size, mtime or inode change is re-read, and that a mutated result stays isolated.</li><li>Partition tests assert that the recorded state is used, and that the fallback runs only for unrecorded runs.</li><li>Warm <code>audit(project="reckon")</code> and <code>roadmap(project="reckon", view="summary")</code> are each timed three times before and after on this host and recorded, and each is under 5 s.</li><li>The declared mutation, keying the <code>read_state</code> memo on the path alone, is observed to fail. The log is recorded.</li></ul>
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
