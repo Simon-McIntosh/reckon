@@ -17,15 +17,15 @@
   <meta name="plan-capability-risk" content="low">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="17">
+  <meta name="plan-modified" content="2026-09-25">
+  <meta name="plan-version" content="18">
   <meta name="plan-informs" content="the-monitor-under-measurement">
   <title>A Monitor Row Reads At A Glance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
+<meta name="plan-impl" content="0.67">
 </head>
 <body>
   <main class="plan-doc">
@@ -283,6 +283,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T211219792337-row-drops-unread-cells" data-who="row-drops-unread-cells" data-when="2026-09-25T01:50:00Z">
     <div class="r-comment-body"><p>§4 implemented in the <code>row-drops-unread-cells</code> worktree, not merged: commit <code>f7d1c597</code>, base <code>c590aaaa</code>. The row's measure block carries the elapsed time alone; the generation-rate cell and the age cells are gone, and the elapsed span renders as hours and minutes — 3,421 seconds render <code>57m</code> and 5,580 render <code>1h33m</code> — rather than as a clock. The width recovered is <strong>six columns</strong>, measured at the 180-column default from each revision's own renderer rather than read off a constant: the fixed-column floor falls 127 to 121 (<code>SPEND</code> 12 to 6), the margin the clause is given rises 60 to 66, and the base row's clause began at column 126 where it begins at 114 here, the six columns the age cells had taken from that margin coming back with it. Sixteen tests in <code>tests/test_ticker_row_drops_unread_cells.py</code> pass, among them a positive control that the banned shape <code>57mb</code> matches the pattern forbidding it. Restoring the generation-rate cell fails 12 of the node's 16. Over the thirteen files that import <code>reckon.crew.ticker</code>, base <code>c590aaaa</code> is 13 failed and 287 passed against 24 failed and 276 passed here: 11 added, 0 fixed, every added one an assertion about the age cells or the <code>RATE</code> constant and outside this node's scope. The age of a run that needs the coordinator has no needs-you line to move into — <code>a-follower-keeps-your-work-in-view</code> carries no such line at HEAD.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260925T0315-s22" data-who="reckon-build" data-when="2026-09-25T03:15:00+02:00">
+    <div class="r-comment-body">§4 closed at merge b33172e3. The renderer node's own gate was green but added 11 failures in two test files asserting the removed cells; a corrective node on its head rewrote them, bringing thirteen ticker-importing files to the base's own 13 failures with none added. Review 18-20. The age of a run needing the coordinator has no row surface until a-follower-keeps-your-work-in-view §2 lands. §5 and §6 follow serially on ticker.py.</div>
 </div>
 </section>
 </main>
