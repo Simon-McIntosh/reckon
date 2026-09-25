@@ -3390,7 +3390,7 @@ def _resolved_wave_id(project: str, session: str, requested: str) -> str:
 def _plan_impl_at_dispatch(
     project: str, plan: str, root: str | Path | None
 ) -> float | None:
-    """Read the plan's impl now, for the promotion-time comparison.
+    """Read the authored implementation fraction for promotion-time comparison.
 
     Imported lazily because the promotion module imports this one at module
     load; the reader lives there so the value recorded here and the value
@@ -3913,7 +3913,7 @@ def dispatch(
             "worktree": worktree["path"],
             "base": worktree["base"],
             "base_sha": worktree["base_sha"],
-            # The plan's impl at dispatch, so promotion can refuse a passing
+            # The authored implementation fraction at dispatch, so promotion can refuse a passing
             # implement landing whose plan did not move. An unreadable value
             # stays absent, which exempts the run rather than recording a false
             # zero that would look like a plan that never moved.
@@ -4102,7 +4102,7 @@ def dispatch(
         # which lives under the configuration home outside every repository.
         # Dispatch waits for neither the snapshot nor the spawn.
         if launch_kind == "cli" and plan is not None:
-            # Starting the worker is the one step a caller-supplied launcher
+            # Starting the worker is the one operation a caller-supplied launcher
             # stands in for and the one that fails for reasons outside
             # dispatch's own writes: a harness executable that is absent or not
             # executable, a refused fork, an exhausted process table. The plan
@@ -4576,7 +4576,7 @@ def _launched_prior_session(plan: _backends.LaunchPlan | None) -> str | None:
     A backend's ``session_reuse`` setting says the lane permits a run to
     continue an earlier session; only the command line says whether this run
     did. The plan records the session it was handed, and the answer is read
-    back off the plan's own argv so a plan naming a session its command line
+    back off the launch plan argv so a plan naming a session in its command line
     does not carry is not reported as a resumption.
     """
     if plan is None:
@@ -4676,7 +4676,7 @@ def resolve_launch_executable(
     names the binary and the PATH that was searched so the repair is a command
     rather than an investigation.
 
-    ``environment`` is the overlay the launch will run with; absent, the plan's
+    ``environment`` is the overlay the launch will run with; absent, the launch
     own environment is used, which is what every construction site passes.
     """
     selected_environment = plan.environment if environment is None else environment
