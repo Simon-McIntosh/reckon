@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
   <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
-  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df,2bb4fd6d,6d813b38,bdfff7f4">
+  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df,2bb4fd6d,6d813b38,bdfff7f4,41737d3e">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <title>The Suite Is Green At Head — landed evidence | reckon</title>
@@ -1540,6 +1540,60 @@ env -C /tmp/other-reckon-surface PYTHONPATH= &lt;worktree&gt;/.venv/bin/python -
       <code>head-target.log</code>, <code>base-set2.log</code>, <code>head-set2.log</code>,
       <code>watch-arming-alone.log</code>, <code>flaky-alone.log</code>,
       <code>flaky-alone-head.log</code>, <code>negative-control.log</code>.</p>
+    </section>
+    <section id="node-resumed-runs-line-reads-the-elapsed-cell">
+      <h2>resumed-runs-line-reads-the-elapsed-cell &mdash; the test reads the row's single measure cell</h2>
+
+      <h3>The defect, reproduced before repair</h3>
+      <p><code>tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers</code>
+      read its assertion column from <code>_spend_columns</code>, a helper that walked both of the
+      measure block's cells and named <code>ticker.RATE</code> for the second. The generation-rate
+      cell is gone from the row and the constant that named it was removed with it, so the helper
+      raised before any assertion evaluated. Base arm, run from the base revision's own test file
+      against this worktree's package
+      (<code>reckon.__file__</code>:
+      <code>/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/suite-green-at-head/resumed-runs-line-reads-the-elapsed-cell/reckon/__init__.py</code>,
+      resolved cwd: that worktree):
+      <code>E   AttributeError: module 'reckon.crew.ticker' has no attribute 'RATE'</code> at
+      <code>test_base_recovery.py:2402</code>, <em>1 failed</em>. Log
+      <code>logs/base-arm-resumed-runs-id.log</code>.</p>
+
+      <h3>The shipped design the test now asserts</h3>
+      <p>The row carries one measure cell: the run's elapsed span, rendered in hours and minutes and
+      right-aligned in a fixed six-column field so the column stays put as the figure grows
+      (<code>reckon/crew/ticker.py</code>, <code>WALL = 6</code>, <code>_elapsed</code>). So a
+      measured chain renders <code>2h00m</code> in the cell for <code>spend_wall_seconds = 7,200.0</code>,
+      and an unmeasured chain renders the absence marker (<code>DIM_MARKER</code>, an en dash) in
+      the same cell. The helper now returns that single cell's <code>(start, width)</code> and the
+      test asserts the measured figure against it, so it still separates a measured reading from the
+      marker rather than asserting a marker against itself.</p>
+
+      <h3>Measure</h3>
+      <p>Head file <code>tests/test_crew_recovery.py</code>: <strong>92 passed</strong> (exit 0), log
+      <code>logs/gate-test_crew_recovery.log</code>. Revision <code>de965e07</code> plus the node
+      commit <code>41737d3e</code>. No test is skipped, xfailed, deleted or weakened; one helper,
+      one assertion's expected value and two docstrings/comments changed. Read at the same measure
+      cell the shipped elapsed figure occupies:
+      <code>measured_line[start:start+width] == "2h00m".rjust(width)</code> and
+      <code>absent_line[start:start+width] == ticker.DIM_MARKER.rjust(width)</code>.</p>
+
+      <h3>Negative control</h3>
+      <p>Declared: <em>restore the ticker.RATE reference and observe the AttributeError return</em>.
+      Satisfied &mdash; the helper's return was mutated to reference
+      <code>(ticker_module.WALL, ticker_module.RATE)</code> in the repaired file, the named id
+      re-raised <code>AttributeError: module 'reckon.crew.ticker' has no attribute 'RATE'</code> at
+      <code>tests/test_crew_recovery.py:2403</code>, <em>1 failed in 1.49s</em>; the mutation was then
+      reverted. Log <code>logs/negative-control-restore-rate.log</code>, whose first line repeats the
+      declared string verbatim.</p>
+
+      <h3>Evidence and figure</h3>
+      <p>Logs <code>logs/base-arm-resumed-runs-id.log</code>,
+      <code>logs/gate-test_crew_recovery.log</code>,
+      <code>logs/negative-control-restore-rate.log</code> in the run record
+      <code>~/.config/reckon/crew/runs/.../r-20260925T020550606508-resumed-runs-line-reads-the-elapsed-cell/logs/</code>.
+      Figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/resumed-runs-measure-cell.svg">the row's one
+      measure cell, and the removed rate cell the test used to read</a>.</p>
     </section>
   </main>
 </body>

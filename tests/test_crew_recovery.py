@@ -2378,12 +2378,14 @@ def test_one_stored_new_line_renders_differently_at_two_display_settings(home) -
     assert "dsv4-flash" in wide
 
 
-def _spend_columns(model_width: int) -> list[tuple[int, int]]:
-    """The (start, width) of the two measure cells on a plain rendered line.
+def _spend_column(model_width: int) -> tuple[int, int]:
+    """The (start, width) of the single measure cell on a plain rendered line.
 
     ``model_width`` is the grid's own model cell width — read from the grid
     under test — rather than the fixed ``MODEL`` default, so a grid declaring a
-    wider alias moves these columns with the row it renders.
+    wider alias moves this column with the row it renders. A second measure cell
+    would be placed by the renderer after this one, taking the columns its own
+    width and its separating space spend.
     """
     prefix = (
         ticker_module.CLOCK
@@ -2398,11 +2400,7 @@ def _spend_columns(model_width: int) -> list[tuple[int, int]]:
     )
     prefix += sum(3 for _ in ticker_module._CELLS) + (len(ticker_module._CELLS) - 1)
     prefix += ticker_module.SPEND_GAP
-    columns: list[tuple[int, int]] = []
-    for width in (ticker_module.WALL, ticker_module.RATE):
-        columns.append((prefix, width))
-        prefix += width + ticker_module.SPEND_GAP
-    return columns
+    return (prefix, ticker_module.WALL)
 
 
 # ── What a transition carries about a run's cumulative spend ──────────────
@@ -2561,13 +2559,14 @@ def test_a_resumed_runs_line_carries_measured_values_not_markers(
     measured_line = ticker_module.Ticker(width=180).render(measured)
     absent_line = ticker_module.Ticker(width=180).render(absent)
 
-    # The measured 7,200s wall time renders; the same run without a measured
-    # chain renders the absence marker instead. The grid's own model width
-    # places these columns, so they move with the alias it renders.
+    # The measured 7,200s wall time renders as the row's single measure cell in
+    # hours and minutes; the same run without a measured chain renders the
+    # absence marker instead. The grid's own model width places this column, so
+    # it moves with the alias it renders.
     grid = ticker_module.Ticker(width=180, color=False)
-    start, width = _spend_columns(grid.model_width)[0]
-    assert measured_line[start : start + width] == "2:00:00"
-    assert absent_line[start : start + width].strip() == "\N{EN DASH}"
+    start, width = _spend_column(grid.model_width)
+    assert measured_line[start : start + width] == "2h00m".rjust(width)
+    assert absent_line[start : start + width] == ticker_module.DIM_MARKER.rjust(width)
 
 
 # ── The budget fence charges tokens, the hang ceiling stays wall clock ──────

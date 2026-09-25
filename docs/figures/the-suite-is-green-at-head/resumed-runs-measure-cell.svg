@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="360" viewBox="0 0 820 360" font-family="DejaVu Sans Mono, monospace" font-size="13">
+  <rect width="820" height="360" fill="#ffffff"/>
+  <text x="24" y="30" font-size="16" font-weight="bold" font-family="DejaVu Sans, sans-serif">The row's one measure cell, and the removed rate cell the test used to read</text>
+  <text x="24" y="52" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#555">ticker row at width 180 — columns 0–130 shown; elapsed cell starts at column 108 and is 6 wide</text>
+
+  <!-- column ruler -->
+  <g stroke="#dddddd" stroke-width="1">
+    <line x1="80" y1="70" x2="760" y2="70"/>
+  </g>
+  <g fill="#888" font-size="10">
+    <text x="80" y="66">0</text>
+    <text x="292" y="66">48</text>
+    <text x="504" y="66">96</text>
+    <text x="716" y="66">132</text>
+  </g>
+
+  <!-- the row -->
+  <rect x="80" y="86" width="680" height="34" fill="#f7f7f7" stroke="#cccccc"/>
+  <!-- fixed columns: clock role node state model effort counters -->
+  <rect x="88" y="92" width="46" height="22" fill="#ececec" stroke="#cfcfcf"/>
+  <text x="92" y="108" font-size="11" fill="#444">clock</text>
+  <rect x="146" y="92" width="46" height="22" fill="#ececec" stroke="#cfcfcf"/>
+  <text x="150" y="108" font-size="11" fill="#3b7a3b">role</text>
+  <rect x="204" y="92" width="96" height="22" fill="#ececec" stroke="#cfcfcf"/>
+  <text x="208" y="108" font-size="11" fill="#444">node</text>
+  <rect x="312" y="92" width="96" height="22" fill="#ececec" stroke="#cfcfcf"/>
+  <text x="316" y="108" font-size="11" fill="#444">state · model · effort</text>
+  <rect x="420" y="92" width="150" height="22" fill="#ececec" stroke="#cfcfcf"/>
+  <text x="424" y="108" width="150" font-size="11" fill="#444">fleet counters (w· b· u)</text>
+
+  <!-- the single measure cell: start 108, width 6 -> x = 80 + 108*... scale -->
+  <!-- scale: 132 columns span 680 px -> 5.1515 px/col -->
+  <g transform="translate(80,0)">
+    <rect x="558.8" y="86" width="30.9" height="34" fill="#e6f2ff" stroke="#2b6cb0" stroke-width="2"/>
+    <text x="560" y="140" font-size="11" fill="#2b6cb0" font-weight="bold">108</text>
+    <text x="543" y="82" font-size="11" fill="#2b6cb0" font-weight="bold">elapsed — the row's only measure cell</text>
+  </g>
+  <text x="646" y="108" font-size="13" fill="#1a365d" font-weight="bold">2h00m</text>
+
+  <!-- removed rate cell, ghosted -->
+  <g transform="translate(80,0)" opacity="0.75">
+    <rect x="594.9" y="86" width="30.9" height="34" fill="none" stroke="#b02a2a" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="598" y="160" font-size="11" fill="#b02a2a" font-weight="bold">115</text>
+    <text x="588" y="176" font-size="11" fill="#b02a2a" font-weight="bold">rate cell — removed; the test used to read it</text>
+  </g>
+  <text x="676" y="108" font-size="13" fill="#b02a2a" font-style="italic">—</text>
+
+  <!-- assertion box -->
+  <rect x="80" y="210" width="680" height="120" rx="6" fill="#fbfbfb" stroke="#dddddd"/>
+  <text x="96" y="234" font-size="13" font-weight="bold" font-family="DejaVu Sans, sans-serif" fill="#222">What the test asserts now</text>
+  <text x="96" y="262" fill="#1a365d">measured_line[start : start+width] == "2h00m".rjust(width)</text>
+  <text x="96" y="286" fill="#333">absent_line[start : start+width]   == ticker.DIM_MARKER.rjust(width)</text>
+  <text x="96" y="316" font-size="11" fill="#777" font-family="DejaVu Sans, sans-serif">At base the helper named ticker.RATE for a second cell and raised AttributeError before either line ran.</text>
+</svg>
