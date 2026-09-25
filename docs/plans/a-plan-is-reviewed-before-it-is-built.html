@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
-  <meta name="plan-impl" content="0.0">
+  <meta name="plan-impl" content="0.4">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 </head>
 <body>
   <main class="plan-doc">
@@ -121,6 +121,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260925T1210-design-brief" data-who="" data-when="">
     <div class="r-comment-body"><p>Design brief by plan-review-design-scout (r-20260925T083345319450), at <code>~/.config/reckon/crew/reports/reckon/s21-coord/plan-review-design-scout/design.md</code>, with 39 file and function citations machine-checked and none failing. Adopted as the build contract. <b>D1</b>: a review record is keyed by plan and version and joined by a content fingerprint that excludes the server-managed metadata scalars (version, modified, impl, status, roi, effort-hours, owner, sprint, tags, archived). A version-only or impl-only write therefore neither triggers nor invalidates a review, and the gate keys on the fingerprint. <b>D2</b>: eligibility is derived by a sweep (fingerprint changed, and quiet longer than the settle window), never enqueued by a write hook. So MCP, POST and hand edits are all caught. <b>D3</b>: the plan pointer is surface state beside the plan, not written into the HTML. <b>D4</b>: an implementation-role dispatch is refused without a review of the current fingerprint in which every finding is acted on or declined with a reason. The first implementation dispatch of a plan also requires the §3 design review. An <code>--allow-unreviewed-plan</code> waiver is recorded on the run pointer, so a broken local lane cannot stop every build. <b>D5</b>: review-role nodes are exempt through <code>_is_review_node</code>. <b>D6</b>: plan-review dispatch extends the existing review reflex rather than copying it. Nodes: PR-1 record and store (<code>reckon/crew/plan_review.py</code>), then PR-3 rubric prompts and PR-4 dispatch gate, then PR-2 sweep and PR-5 responses and surface. Pilot input folded into PR-3: the anchor-resolves check resolves an extensionless href as the SPA does.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260925T1558-pr3-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>Two of five nodes have landed. PR-1 (review store and plan pointer) and PR-3 (the plan-review rubric prompts, merged at <code>fe707812</code>, commits <code>eb2fc40f</code> and <code>e2685b55</code>) are both on main. PR-3 also wrote <code>reckon/crew/review.py</code>, which the coordinator left out of its scope; the path was accepted at promotion. PR-4, the dispatch gate, was moved to clive during the codex pause. Its fence was widened with <code>reckon/cli.py</code> for the public <code>--allow-unreviewed-plan</code> option. PR-2 and PR-5 follow PR-4.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T083257138237-plan-review-pilot-luna" data-who="reckon-build" data-when="2026-09-25T08:48:18Z">
     <div class="r-comment-body"><p>luna rubber-duck pilot of six live plans: 14 findings, 13 rated would-change-the-plan (a stop hook that recreates its root defect, a section marked done against its own outcome, a locked decision contradicting an invariant, a root cause quoting absent text, a missing blocks edge, broken .html anchors); checker exit 0; status repaired blocked-&gt;complete, as-delivered kept, because check-manifest refuses report-only records</p></div>
