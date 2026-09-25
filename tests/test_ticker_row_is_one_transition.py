@@ -1,4 +1,4 @@
-"""A follower row is one aligned transition with one attention signal."""
+"""A follower row is one aligned transition with no attention mark."""
 
 from __future__ import annotations
 
@@ -53,8 +53,7 @@ def _event(**overrides):
 
 
 def _columns(model_width: int) -> dict[str, int]:
-    attention = ticker_module.CLOCK + ticker_module.GAP
-    model = attention + ticker_module.ATTENTION + ticker_module.GAP
+    model = ticker_module.CLOCK + ticker_module.GAP
     effort = model + model_width + ticker_module.GAP
     role = effort + ticker_module.EFFORT + ticker_module.GAP
     node = role + ticker_module.ROLE + ticker_module.GAP
@@ -66,7 +65,6 @@ def _columns(model_width: int) -> dict[str, int]:
     counters = elapsed + ticker_module.WALL + ticker_module.GAP
     reason = counters + ticker_module.STATS + ticker_module.GAP
     return {
-        "attention": attention,
         "model": model,
         "effort": effort,
         "role": role,
@@ -79,22 +77,16 @@ def _columns(model_width: int) -> dict[str, int]:
     }
 
 
-def _attention_expected(state: str) -> bool:
-    displayed = ticker_module.DISPLAY.get(state, state)
-    return (
-        state in ticker_module.ATTENTION_STATES
-        or displayed in ticker_module.ATTENTION_STATES
-    )
-
-
 def test_every_classifier_transition_keeps_one_grid() -> None:
     """Every input extreme preserves each column and every two-space gutter."""
     assert set(CLASSIFIER_STATES) == ticker_module.CLASSIFIER_STATE_WORDS
     assert max(map(len, CLASSIFIER_STATES)) == ticker_module.STATE_WORD
     columns = _columns(ticker_module.MODEL)
-    observed = {
-        name: set() for name in ("attention", "arrow", "elapsed", "counters", "reason")
-    }
+    observed = {name: set() for name in ("arrow", "elapsed", "counters", "reason")}
+    # The column between the time and the model is the whole attention question:
+    # the mark was dropped, so the model cell must start at the first column
+    # after the time's two-space gutter, leaving no reserved blank column.
+    assert columns["model"] == ticker_module.CLOCK + ticker_module.GAP
 
     cases = itertools.product(
         (None, *CLASSIFIER_STATES),
@@ -122,20 +114,19 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
         )
         assert len(row) == 208
 
-        observed["attention"].add(columns["attention"])
         observed["arrow"].add(columns["arrow"])
         observed["elapsed"].add(columns["elapsed"])
         observed["counters"].add(columns["counters"])
         observed["reason"].add(columns["reason"])
-
-        expected_attention = "!" if _attention_expected(new) else " "
-        assert row[columns["attention"]] == expected_attention
+        # No row carries an attention mark, whatever the destination needs: the
+        # mark was dropped, so no `!` appears anywhere on the row and the model
+        # cell follows the time's gutter directly.
+        assert "!" not in row, row
         assert row[columns["arrow"]] == (ticker_module.ARROW if previous else " ")
         assert row[columns["node"] : columns["node"] + ticker_module.NODE].strip()
 
         gutters = (
-            (ticker_module.CLOCK, columns["attention"]),
-            (columns["attention"] + ticker_module.ATTENTION, columns["model"]),
+            (ticker_module.CLOCK, columns["model"]),
             (columns["model"] + ticker_module.MODEL, columns["effort"]),
             (columns["effort"] + ticker_module.EFFORT, columns["role"]),
             (columns["role"] + ticker_module.ROLE, columns["node"]),
@@ -199,24 +190,14 @@ def test_repeated_same_state_events_render_one_row() -> None:
     assert repeated == ""
 
 
-def test_reported_examples_keep_attention_and_name_gutters() -> None:
+def test_reported_examples_keep_name_gutters_and_no_mark() -> None:
     examples = (
-        (
-            "review-of-hook-stop-mode-silent-without-follower",
-            "abandoned",
-            "recover",
-            "!",
-        ),
-        (
-            "review-of-obligations-are-a-derived-view",
-            "working",
-            "observe",
-            " ",
-        ),
+        ("review-of-hook-stop-mode-silent-without-follower", "abandoned", "recover"),
+        ("review-of-obligations-are-a-derived-view", "working", "observe"),
     )
     columns = _columns(ticker_module.MODEL)
 
-    for index, (node, state, action, attention) in enumerate(examples):
+    for index, (node, state, action) in enumerate(examples):
         row = plain(
             ticker_module.Ticker(width=208, color=False, model_aliases=()).render(
                 _event(
@@ -229,9 +210,66 @@ def test_reported_examples_keep_attention_and_name_gutters() -> None:
                 )
             )
         )
-        assert row[columns["attention"]] == attention
+        # The attention mark the lead saw beside this row is gone, and the model
+        # cell holds the column the mark used to occupy.
+        assert "!" not in row, row
+        assert row[columns["model"] : columns["model"] + ticker_module.MODEL].strip()
         assert (
             row[columns["node"] + ticker_module.NODE : columns["transition"]]
             == " " * ticker_module.GAP
         )
         assert action not in row[columns["transition"] : columns["elapsed"]]
+
+
+def test_no_configured_model_alias_is_truncated(tmp_path, monkeypatch) -> None:
+    """The model cell holds every alias the flight config declares, whole.
+
+    A grid sized to the longest declared alias lands no ellipsis on any row
+    carrying one, so a reader sees the ground with the longest alias it must
+    hold and no configured alias is cut to a prefix. The alias set is read
+    through the module's own resolver, against a config written into a
+    temporary home, so the check runs the same resolution a live pane runs
+    without reading the machine's own flight config.
+    """
+    config = tmp_path / "flight.yaml"
+    config.write_text(
+        "version: 1\n"
+        "default_backend: local\n"
+        "backends:\n"
+        "  local:\n"
+        "    launch: in-harness\n"
+        "    sandbox: worktree-full\n"
+        "    alias: dsv4.1-flash\n"
+        "  fork:\n"
+        "    launch: cli\n"
+        "    command: codex\n"
+        "    sandbox: worktree-full\n"
+        "    alias: luna5.6\n"
+        "  alt:\n"
+        "    launch: cli\n"
+        "    command: codex\n"
+        "    sandbox: worktree-full\n"
+        "    alias: sol5.6\n"
+        "  big:\n"
+        "    launch: cli\n"
+        "    command: codex\n"
+        "    sandbox: worktree-full\n"
+        "    alias: astra6\n"
+        "roles:\n"
+        "  implement: {}\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(config))
+
+    aliases = ticker_module.declared_model_aliases(None)
+    assert aliases, "the fixture config declares no alias, so the check is vacuous"
+    assert max(map(len, aliases)) == len("dsv4.1-flash")
+    grid = ticker_module.Ticker(width=208, color=False)
+    assert grid.model_width == len("dsv4.1-flash")
+
+    for index, alias in enumerate(aliases):
+        row = plain(
+            grid.render(_event(run_id=f"r-alias-{index}", alias=alias, model=""))
+        )
+        assert alias in row, (alias, row)
+        assert "\N{HORIZONTAL ELLIPSIS}" not in row, (alias, row)

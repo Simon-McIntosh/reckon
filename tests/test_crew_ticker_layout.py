@@ -353,7 +353,9 @@ def test_a_reason_clipped_at_the_margin_ends_on_a_word(grid):
     )
     clipped = plain(grid.render(_event(to_state="blocked", reason=long_reason)))
     assert len(clipped) == 180
-    assert "the process is…" in clipped
+    # The clause owns the margin the retired attention column used to spend, so
+    # it now reaches one word further before the cut.
+    assert "the process is gone…" in clipped
     assert "marker moved before its files" not in clipped
     assert "…" in clipped
     assert "\n" not in clipped
@@ -1200,8 +1202,6 @@ def _measure_column(model_width: int) -> tuple[int, int]:
     """
     prefix = (
         ticker_module.CLOCK
-        + ticker_module.GAP
-        + ticker_module.ATTENTION
         + ticker_module.GAP
         + model_width
         + ticker_module.GAP

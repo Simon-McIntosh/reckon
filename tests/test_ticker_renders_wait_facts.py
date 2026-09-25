@@ -262,20 +262,21 @@ def _event(snapshot: Path) -> dict:
     )
 
 
-def test_unprobed_and_attention_signals_keep_their_own_columns() -> None:
-    """A wait nobody probes on a run that also needs help keeps both signals.
+def test_unprobed_marker_is_a_clause_glyph_not_an_attention_column() -> None:
+    """A wait nobody probes on a run that also needs help still says so.
 
-    The needs-action glyph says the run cannot proceed without a reader, and
-    the unprobed marker says its condition is not being tested; a row that
-    showed one by dropping the other would send its reader to fix the wrong
-    problem.
+    The unprobed marker says the wait's condition is not being tested, and it
+    rides the clause rather than a column of its own: the separate attention
+    column was dropped, so a row that needs help says it through the
+    destination state's colour and the clause alone.
     """
     t = grid()
     held = unprobed(to_state="needs-help", needs_help_complete=True)
     clause = t._reason(held, "needs-help", 45)
     line = rendered(held)
     assert clause.startswith(ticker_module.UNPROBED_MARKER + " ")
-    assert line[ticker_module.CLOCK + ticker_module.GAP] == "!"
+    assert "!" not in line
+    assert line[ticker_module.CLOCK + ticker_module.GAP] != " "
 
 
 def test_a_real_run_declaring_no_wait_carries_no_marker(tmp_path: Path) -> None:

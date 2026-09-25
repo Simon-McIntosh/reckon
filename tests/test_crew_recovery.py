@@ -2392,8 +2392,6 @@ def _spend_column(model_width: int) -> tuple[int, int]:
     prefix = (
         ticker_module.CLOCK
         + ticker_module.GAP
-        + ticker_module.ATTENTION
-        + ticker_module.GAP
         + model_width
         + ticker_module.GAP
         + ticker_module.EFFORT
