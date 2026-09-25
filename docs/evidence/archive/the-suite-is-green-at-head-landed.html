@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
   <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
-  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df,2bb4fd6d,6d813b38,bdfff7f4,41737d3e,7288cb66,34e1b0d2,124cbf09,91e3fd05">
+  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df,2bb4fd6d,6d813b38,bdfff7f4,41737d3e,7288cb66,34e1b0d2,124cbf09,91e3fd05,e885dee7">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <title>The Suite Is Green At Head — landed evidence | reckon</title>
@@ -2118,6 +2118,79 @@ reckon/crew/dispatch.py:4535: TypeError
       <a href="/reckon/figures/the-suite-is-green-at-head/carrier-type-branches.png">the carrier
       classification: the mapping and sequence arms unchanged, the third arm's scalar outcome before
       and after</a>.</p>
+    </section>
+    <section id="node-test-ledger-reads-only-its-own-state">
+      <h2>test-ledger-reads-only-its-own-state &mdash; the ledger tests compare only state they created</h2>
+      <p>The two promotion cases in <code>tests/test_ledger.py</code> snapshot
+      <code>_outside_state()</code> before and after a promotion to prove the tests
+      never write the workstation's real state. That is a correct guard, but it read
+      the whole of the shared live-pointer directory under the workstation's real
+      config home (<code>~/.config/reckon/crew/live</code>) and the whole of the
+      checkout's <code>docs/state</code> tree. Peer sessions dispatch runs and rewrite
+      their project state while these tests run, so a peer's write moved a file in a
+      directory the guard owned wholesale and the tests failed for a write that was
+      not theirs. The read-surface case had the same problem in a second form: it
+      pointed every read view at the repository under test, so it parsed all 129 plans
+      and resolved git history per document, and under a loaded parallel run that cost
+      ran into the read deadline &mdash; it is one of the load-sensitive ids §2 named.</p>
+
+      <h3>Repair</h3>
+      <p>Two changes, both inside the test file; no <code>reckon/</code> path is
+      touched. Commit <code>e885dee7</code>
+      <em>test(ledger): scope the outside-state guard and read a synthetic checkout</em>.</p>
+      <ul>
+        <li><strong>The guard compares only entries a test in this file could have
+        created.</strong> <code>_owned_live_state</code> keeps a live-directory entry
+        only when its filename carries the project name this file dispatches under as
+        a whole word, or when the pointer's recorded <code>project</code> is that
+        project. Every dispatch here uses <code>PROJECT</code>, so a peer's pointer
+        &mdash; a different project &mdash; is ignored, while a test that forgets its
+        isolation writes a pointer naming this project and is still caught. The
+        checkout arm is narrowed the same way, to <code>docs/state/&lt;PROJECT&gt;/</code>.</li>
+        <li><strong>The read-surface case reads a two-plan synthetic checkout under its
+        own temporary root</strong> (<code>_read_surface_checkout</code>) instead of the
+        repository. Two plans pin the resource list and every view's payload without
+        the whole-checkout cost. When a defaulted read comes back without its
+        <code>view</code> key the assertion now prints the whole envelope
+        (<code>_assert_default_view</code>), so a shape change reads as the payload that
+        produced it rather than a bare key error.</li>
+      </ul>
+
+      <h3>Measure &mdash; the done-when</h3>
+      <p>(1) The guard's two directions are the declared control
+      <code>test_the_outside_state_guard_ignores_a_peer_and_catches_only_its_own</code>:
+      a peer pointer (filename carrying &ldquo;project&rdquo; as a substring, a project
+      this file never dispatches) leaves the owned set unchanged, while this file's own
+      pointer, copied byte-for-byte from the run it dispatched, changes it. Both run
+      against a stand-in directory, so the test never writes the real one.</p>
+      <p>(2) The read-surface case's own duration, recorded with <code>--durations</code>
+      at each revision. Base <code>d4f13e1a</code> against the 129-plan checkout:
+      <strong>155.50 s</strong>. Head against the two-plan synthetic tree:
+      <strong>1.32 s</strong> &mdash; about 118&times;.</p>
+      <p>(3) The three named ids pass in three consecutive <em>-n 8</em> runs of the
+      whole file while a concurrent <em>-n 8</em> full-suite run of this worktree loaded
+      the node: <strong>96 passed</strong> each at load average 18.8, 21.1 and 22.3, and
+      <strong>96 passed</strong> serially (299.62 s). No <code>reckon/</code> file is
+      edited and no test is skipped, xfailed, deleted or weakened.</p>
+
+      <h3>Negative control</h3>
+      <p>Declared: <em>restore the whole-directory <code>_outside_state</code>
+      comparison and observe a simulated peer pointer fail it</em>. Satisfied: the
+      pre-change comparison (every file under the directory, unfiltered) reports the
+      peer pointer as a change, while the filtered comparison ignores it on the same
+      input. Log <code>logs/negative-control-whole-directory.log</code>, whose first
+      line repeats the declared string verbatim.</p>
+
+      <h3>Evidence and figure</h3>
+      <p>Logs under <code>logs/</code> in the run record
+      <code>~/.config/reckon/crew/runs/.../r-20260925T053343436358-test-ledger-reads-only-its-own-state/</code>:
+      <code>base-read-views.log</code>, <code>head-read-views.log</code>,
+      <code>ledger-serial-full.log</code>, <code>load-full-suite-n8.log</code>,
+      <code>load-file-n8-run{1,2,3}.log</code>, <code>load-mine-n8-run{1,2,3}.log</code>
+      (the three named ids alone under load), and
+      <code>negative-control-whole-directory.log</code>. Figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/ledger-reader-scope.png">the
+      read-surface duration at each revision, and the guard's two directions</a>.</p>
     </section>
   </main>
 </body>

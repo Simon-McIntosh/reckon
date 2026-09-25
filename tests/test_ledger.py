@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import sys
@@ -1994,23 +1995,66 @@ def test_every_read_tool_rejects_an_unknown_keyword_with_its_vocabulary() -> Non
         assert tool.parameters["additionalProperties"] is False
 
 
-def test_every_read_view_returns_and_large_defaults_are_compact(home) -> None:
+def _assert_default_view(envelope: dict, expected: str) -> None:
+    """A default read must name its view; a miss prints the whole envelope."""
+    assert envelope.get("view") == expected, json.dumps(
+        envelope, indent=2, sort_keys=True, default=str
+    )
+
+
+def _read_surface_checkout(root: Path) -> Path:
+    """A two-plan checkout under a temporary root, isolated from the repository.
+
+    Every read view is exercised against this tree rather than the repository
+    under test. A whole-repository read parses every plan the checkout holds
+    and resolves git history per document, so it measures the size of the
+    checkout rather than the shape of the response, and on a shared checkout it
+    contends with peer sessions. Two plans pin the resource list and every
+    view's payload without that cost.
+    """
+    from reckon._plan_html import write_state
+
+    (root / "docs" / "plans").mkdir(parents=True)
+    (root / "docs" / "state" / "reckon").mkdir(parents=True)
+    for slug, status, impl in (("alpha", "active", 0.4), ("beta", "shipped", 1.0)):
+        bare = (
+            '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            '<meta name="docs-project" content="reckon">'
+            f"<title>{slug}</title></head>"
+            '<body><main class="plan-doc"></main></body></html>'
+        )
+        state = {"slug": slug, "title": slug.title(), "status": status, "impl": impl}
+        (root / "docs" / "plans" / f"{slug}.html").write_text(
+            write_state(bare, state), encoding="utf-8"
+        )
+    (root / "docs" / "state" / "reckon" / "index.json").write_text(
+        json.dumps(
+            {"project": "reckon", "doc": "index", "data": {"projects": [], "sprints": []}}
+        ),
+        encoding="utf-8",
+    )
+    for args in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "worker@example.invalid"],
+        ["config", "user.name", "Worker"],
+        ["add", "docs"],
+        ["commit", "-q", "-m", "chore: seed"],
+    ):
+        subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+    return root
+
+
+def test_every_read_view_returns_and_large_defaults_are_compact(
+    home, tmp_path
+) -> None:
     """A client can inspect every read shape without touching workstation state."""
-    checkout = Path(__file__).resolve().parents[1]
-    real_live = str(Path.home() / ".config" / "reckon" / "crew" / "live")
+    checkout = _read_surface_checkout(tmp_path / "read-surface")
 
-    def durable_outside_state() -> dict[str, int]:
-        return {
-            path: modified
-            for path, modified in _outside_state()
-            if not path.startswith(f"{real_live}{os.sep}")
-        }
-
-    before = durable_outside_state()
+    before = _outside_state()
     assert _store._config_home() == home.resolve()
 
     discovery = _call_mcp("read_plan", project="reckon", checkout_path=str(checkout))
-    assert discovery["view"] == "summary"
+    _assert_default_view(discovery, "summary")
     selected = next(
         item for item in discovery["resources"] if item.get("type") == "plan"
     )
@@ -2082,7 +2126,7 @@ def test_every_read_view_returns_and_large_defaults_are_compact(home) -> None:
 
     audit_default = _call_mcp("audit", project="reckon", checkout_path=str(checkout))
     responses.append(audit_default)
-    assert audit_default["view"] == "summary"
+    _assert_default_view(audit_default, "summary")
     assert audit_default["state"]["checked"] >= audit_default["state"]["conformant"]
     counts = audit_default["state"]["finding_counts"]
     assert {"by_severity", "by_code"} <= set(counts)
@@ -2090,7 +2134,7 @@ def test_every_read_view_returns_and_large_defaults_are_compact(home) -> None:
     assert len(json.dumps(audit_default)) < 32 * 1024
     assert all(isinstance(response, dict) for response in responses)
     assert _store._config_home() == home.resolve()
-    assert durable_outside_state() == before
+    assert _outside_state() == before
 
 
 def test_a_document_audit_keeps_its_own_findings_by_default(home) -> None:
@@ -2336,6 +2380,42 @@ def _terminal_result(fixture: str) -> dict:
     return events[-1]
 
 
+def _name_tokens(name: str) -> set[str]:
+    """The alphanumeric words in a filename, so a match is a whole word."""
+    return {token for token in re.split(r"[^A-Za-z0-9]+", name) if token}
+
+
+def _entry_belongs_to_this_file(path: Path) -> bool:
+    """Whether a live-directory entry could have been created by a test here.
+
+    The live pointer directory under this workstation's real config home is
+    shared with peer sessions, so comparing it whole reports a peer's write as
+    this suite's. A pointer records the project it claims, and every dispatch
+    in this file uses ``PROJECT``, so a pointer naming another project is a
+    peer's and is not this suite's to report. A filename carrying ``PROJECT``
+    as a whole word is treated the same way, which also covers an entry caught
+    between its write and a parseable read.
+    """
+    if PROJECT in _name_tokens(path.name):
+        return True
+    try:
+        record = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return False
+    return isinstance(record, dict) and str(record.get("project") or "") == PROJECT
+
+
+def _owned_live_state(live: Path) -> list[tuple[str, int]]:
+    """The live-pointer entries a test in this file could have created."""
+    if not live.exists():
+        return []
+    return sorted(
+        (str(path), path.stat().st_mtime_ns)
+        for path in live.rglob("*")
+        if path.is_file() and _entry_belongs_to_this_file(path)
+    )
+
+
 def _outside_state() -> list[tuple[str, int]]:
     """Snapshot the durable state this test suite must never touch.
 
@@ -2345,21 +2425,61 @@ def _outside_state() -> list[tuple[str, int]]:
     The checkout's own state tree is where it would corrupt the project's real
     ledger. An isolated read does not prove an isolated write, so both are
     compared before and after a promotion; absence is a legitimate state.
+
+    Both arms are narrowed to the state a test *in this file* could create. The
+    live directory is shared with peer sessions, so only the entries naming the
+    project this file dispatches under are compared; the checkout state arm is
+    the same project's slice of the state tree, which is the only part a test
+    here could write.
     """
     isolated = os.environ.pop("RECKON_HOME", None)
     try:
-        roots = [_store._config_home() / "crew" / "live"]
+        live = _store._config_home() / "crew" / "live"
     finally:
         if isolated is not None:
             os.environ["RECKON_HOME"] = isolated
-    roots.append(Path(__file__).resolve().parents[1] / "docs" / "state")
+    state = Path(__file__).resolve().parents[1] / "docs" / "state" / PROJECT
     return sorted(
-        (str(path), path.stat().st_mtime_ns)
-        for root in roots
-        if root.exists()
-        for path in root.rglob("*")
-        if path.is_file()
+        _owned_live_state(live)
+        + [
+            (str(path), path.stat().st_mtime_ns)
+            for path in state.rglob("*")
+            if path.is_file()
+        ]
     )
+
+
+def test_the_outside_state_guard_ignores_a_peer_and_catches_only_its_own(
+    home, repo, tmp_path
+) -> None:
+    """A peer's live write is invisible; this file's own is not.
+
+    The guard exists to fail a run that leaves a pointer in the real live
+    directory, but that directory is shared with peer sessions, so an
+    unfiltered comparison fails on a peer's write. Both directions run against
+    a stand-in directory rather than the real one, so this test never writes
+    the workstation state it is describing.
+    """
+    record = _dispatch(repo)
+    real_pointer = home / "crew" / "live" / f"{record['run_id']}.json"
+    assert real_pointer.is_file()
+
+    stand_in = tmp_path / "live"
+    stand_in.mkdir()
+    before = _owned_live_state(stand_in)
+
+    # A peer's pointer, with a filename that carries "project" as a substring
+    # but not as a whole-word token, and a project this file never dispatches.
+    peer = stand_in / "r-20260101T000000000000-a-project-that-is-not-ours.json"
+    peer.write_text(
+        json.dumps({"project": "some-peer-project", "node": "a-project-node"})
+    )
+    assert _owned_live_state(stand_in) == before
+
+    # This file's own pointer, copied byte-for-byte from the run it dispatched.
+    own = stand_in / real_pointer.name
+    own.write_text(real_pointer.read_text())
+    assert _owned_live_state(stand_in) != before
 
 
 def test_a_promoted_row_carries_the_throughput_its_observation_measured(
