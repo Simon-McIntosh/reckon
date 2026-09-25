@@ -27,7 +27,7 @@
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-commits" content="436c75f3,37c8988a,f7f6fe29,057d8ad0,4784f497">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 </head>
 <body>
   <main class="plan-doc">
@@ -119,6 +119,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T072218841168-review-of-read-latency-profile" data-who="reckon-build" data-when="2026-09-25T07:46:17.861Z">
     <div class="r-comment-body"><p>review of read-latency-profile scored 82/100: third-party frames omitted from the stated ranking rule; plan-commits names only the first commit</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260925T125039545313-parse-plan-reads-each-file-once" data-who="reckon-build" data-when="2026-09-25T13:22:20Z">
+    <div class="r-comment-body"><p>parse_plan memoized on path, size, mtime and inode and the audit&#x27;s per-file passes read it: warm audit 35.4 to 14.6 s, roadmap 11.8 to 7.8 s, discovery 9.7 to 1.0 s; 113 passed; review 94 (the manifest&#x27;s tests line held a placeholder, so the gate is re-run at the merged head with an explicit command; audit_file&#x27;s single read is unguarded, folded into the next audit-test node)</p></div>
 </div>
 </section>
   </main>
