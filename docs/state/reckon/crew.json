@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T08:16:51",
+  "updated": "2026-09-25T08:18:29",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -395669,6 +395669,294 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T053337979964-a-scalar-reexec-carrier-starts-clean",
+        "plan": "the-suite-is-green-at-head",
+        "section": "\u00a72",
+        "node": "a-scalar-reexec-carrier-starts-clean",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 477,
+                "cached_input_tokens": 795221,
+                "input_tokens": 795702,
+                "output_tokens": 950,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 796652,
+                "uncached_input_tokens": 4
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "In reckon/crew/dispatch.py, _adopt_launched_workers_from_reexec builds its pid list from the parsed carrier only when it is a dict (its pids field) or a list or tuple; any other parsed type, such as the scalar 123 or a string, is treated as unparseable and starts clean, as the function's docstring already states. tests/test_a_reexec_keeps_its_children.py::test_an_absent_empty_or_unparseable_carrier_starts_the_new_image_clean[scalar] fails at the node's base and passes at its head, both logged, and every other parametrised case of that test still passes. The declared negative control is executed and logged: with the list-or-tuple type test removed, the scalar case fails. The files importing reckon.crew.dispatch show zero added failures against the base revision, and any id that fails only under parallelism is re-run alone before it is counted. No test file is edited.",
+          "estimated_hours": null,
+          "goal": "A reexec carrier that parses to a JSON scalar starts the new image clean instead of raising",
+          "id": "a-scalar-reexec-carrier-starts-clean",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T05:33:38Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 11,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 17,
+            "mean_context": 96000,
+            "observed_at": "2026-09-25T05:33:27Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053337979964-a-scalar-reexec-carrier-starts-clean/manifest.md",
+          "negative_control": "remove the list-or-tuple type test so a scalar reaches the list comprehension; the scalar case must fail",
+          "plan": "the-suite-is-green-at-head",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+            "docs/figures/the-suite-is-green-at-head",
+            "docs/plans/the-suite-is-green-at-head.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "dispatch-readback-2",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T05:33:46Z",
+        "completed_at": "2026-09-25T05:58:37.714Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1394,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1491,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "d4f13e1ac6d57b4c72e708367d3e628ba24d5a07",
+        "commits": [
+          "eaf6f9774335ee5abc3d88d790af5044f0e9f489",
+          "b45165dadc54ac8928c92c608ef7674450925e47",
+          "bc651ec1e771cd5ffbd71352ce85830fdcd9594f"
+        ],
+        "changed_lines": {
+          "added": 223,
+          "removed": 1,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_reexec_keeps_its_children.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053337979964-a-scalar-reexec-carrier-starts-clean/logs/head-full.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053337979964-a-scalar-reexec-carrier-starts-clean/manifest.md",
+        "scope_changed": false,
+        "session_id": "39381b61-42d0-438d-aec9-45adb019af5f",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7766085,
+            "input_tokens_cumulative": 7766085,
+            "output_tokens": 35435,
+            "output_tokens_cumulative": 35435,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T05:58:37.714Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 17,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 92
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7766085,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1397.669,
+          "generated_tokens": 35435,
+          "generation_seconds": 595.205,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 27.4,
+          "machine_seconds": 802.464,
+          "peak_input_tokens": 131506,
+          "tokens_per_second": 59.53,
+          "wall_tokens_per_second": 25.35
+        },
+        "follow_on_paths": [
+          "tests/test_ledger.py::test_a_promoted_row_carries_the_budget_fallback_its_pointer_held",
+          "~/.config/reckon/crew/live/"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/a-scalar-reexec-carrier-starts-clean",
+          "session_id": "39381b61-42d0-438d-aec9-45adb019af5f",
+          "session_source": "stream",
+          "retained_at": "2026-09-25T05:58:37.714Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T05:58:38Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T05:35:17Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T053337979964-a-scalar-reexec-carrier-starts-clean",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 3461,
+          "worker_pid": 3367448
+        },
+        "promoted_revision": "bc651ec1e771cd5ffbd71352ce85830fdcd9594f",
+        "plan_impl_at_dispatch": 0.85,
+        "impl_move": {
+          "plan": "the-suite-is-green-at-head",
+          "at_dispatch": 0.85,
+          "at_complete": 0.89,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T06:18:38.689306+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T05:33:38Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 11,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 17,
+          "mean_context": 96000,
+          "observed_at": "2026-09-25T05:33:27Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 81.0,
+        "orientation_input_tokens": 633853.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -395981,6 +396269,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2710
+    "_version": 2711
   }
 }
