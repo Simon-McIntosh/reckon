@@ -188,6 +188,16 @@
     at 7 for <code>dispatch.py</code> and 2 for <code>prompts.py</code>; the new
     test has none. Full record:
     <a href="/reckon/evidence/archive/a-worker-knows-it-is-on-compute-landed#s4">&sect;4 landed evidence</a>.</p>
+    <p><strong>Coordinator-review correction.</strong> The first product commit
+    built the supervisor specification with the full dispatcher environment,
+    which would persist credentials beside the run. Commit <code>7326f7fe</code>
+    now serializes only <code>dict(plan.environment)</code>, adding the shim-first
+    <code>PATH</code> only when fixture host facts say the dispatcher is inside
+    the allocation; outside, the mapping is exactly the original overlay. The
+    in-harness directive uses the same overlay-only serializer. A sentinel
+    dispatcher secret is absent from both persisted surfaces, the full-merge
+    mutation makes that assertion fail, and the repaired focused gate passes
+    <strong>48 tests</strong> in 6.05 s.</p>
 
     <h2 id="s5">&sect;5 &mdash; The suite carries its own bounds</h2>
     <p><code>pyproject.toml</code> should declare <code>pytest-timeout</code> and <code>pytest-xdist</code> as development dependencies, with a default per-test timeout of 300 s in the pytest configuration. Then:</p>

@@ -396,6 +396,58 @@ FAILED tests/test_worker_path_carries_shims.py::test_inside_allocation_launch_pa
       and <code>tests/test_worker_path_carries_shims.py</code>; this section and
       the plan's landing record travel in the record commit. Verification at the
       merged head belongs to the separately dispatched test node.</p>
+
+      <h3>Coordinator-review correction: persisted data is an overlay</h3>
+      <p>The initial implementation called
+      <code>_launch_environment(plan.environment, facts=facts)</code> while
+      constructing the supervisor specification. That helper merged
+      <code>os.environ</code> into its result. Because the specification is
+      written under the run directory on GPFS, this changed an ephemeral process
+      environment into a durable copy of every dispatcher variable, including
+      credentials. The defect reproduced with
+      <code>RECKON_TEST_SECRET=do-not-persist</code>:</p>
+      <pre><code>&gt;       assert SENTINEL not in spec["plan"]["environment"]
+E       AssertionError: assert 'RECKON_TEST_SECRET' not in {'PYTHONPATH': '…', …}
+FAILED tests/test_worker_path_carries_shims.py::test_inside_allocation_launch_path_starts_with_the_shim_directory
+1 failed in 0.54s</code></pre>
+
+      <p>Repair commit <code>7326f7fe</code> replaces that helper with
+      <code>_persisted_worker_environment()</code>. Its starting value is
+      exactly <code>dict(environment or {})</code>. When the supplied host facts
+      read <code>in_allocation: true</code>, it adds one key:
+      <code>PATH = launch_search_path(environment, facts=facts)</code>. When they
+      read false, it returns the overlay unchanged. The in-harness directive
+      calls the same helper with an empty overlay, so its inside-allocation
+      environment contains exactly <code>PATH</code> and its outside-allocation
+      environment is omitted.</p>
+
+      <p>The dedicated test sets the sentinel in the dispatcher process,
+      builds a supervisor specification whose plan overlay contains only
+      <code>PATH</code> and <code>PLAN_ONLY</code>, and asserts that the serialized
+      mapping contains exactly those two keys while the path still starts with
+      <code>reckon/host_shims</code>. It also asserts the in-harness mapping
+      contains exactly <code>PATH</code> and no sentinel. The outside fixture
+      asserts the specification mapping equals <code>dict(plan.environment)</code>
+      exactly.</p>
+
+      <p><strong>Mutation control.</strong> The declaration is <q>restore the
+      full-environment merge in persisted launch data</q>. Reintroducing
+      <code>{**os.environ, **persisted_overlay}</code> makes the dedicated test
+      fail at the supervisor-spec sentinel assertion:</p>
+      <pre><code>restore the full-environment merge in persisted launch data
+&gt;       assert SENTINEL not in spec["plan"]["environment"]
+E       AssertionError: assert 'RECKON_TEST_SECRET' not in {'PYTHONPATH': '…', …}
+FAILED tests/test_worker_path_carries_shims.py::test_persisted_worker_environments_exclude_dispatcher_secrets
+1 failed in 0.53s</code></pre>
+
+      <p><strong>Repaired gate.</strong> At
+      <code>7326f7fefc06e1de1bee5623cd9ee968f0325d90</code>, the focused gate is
+      <strong>48 passed in 6.05 s</strong>. Ruff remains at 7 findings for
+      <code>dispatch.py</code> at both parent and repaired commit, and the test
+      file reports none at both revisions. The additional durable logs are
+      <code>environment-persistence-reproduction.log</code>,
+      <code>restore-full-environment-merge.red.log</code>, and
+      <code>ruff-persistence-delta.log</code> under the run directory.</p>
     </section>
   </main>
 </body>
