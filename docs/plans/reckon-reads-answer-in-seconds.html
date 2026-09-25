@@ -27,7 +27,7 @@
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-commits" content="436c75f3,37c8988a,f7f6fe29,057d8ad0,4784f497">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 </head>
 <body>
   <main class="plan-doc">
@@ -128,7 +128,10 @@
     <div class="r-comment-body"><p>parse_plan memoized on path, size, mtime and inode and the audit's per-file passes read it: warm audit 35.4 to 14.6 s, roadmap 11.8 to 7.8 s, discovery 9.7 to 1.0 s; 113 passed; review 94 (the manifest's tests line held a placeholder, so the gate is re-run at the merged head with an explicit command; audit_file's single read is unguarded, folded into the next audit-test node)</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260925T132307892763-review-of-parse-plan-reads-each-file-once" data-who="reckon-build" data-when="2026-09-25T13:31:50Z">
-    <div class="r-comment-body"><p>review of parse-plan-reads-each-file-once at 4784f497 scored 94/100: the manifest&#x27;s tests line held a placeholder; audit_file&#x27;s single read is unguarded by the memo test</p></div>
+    <div class="r-comment-body"><p>review of parse-plan-reads-each-file-once at 4784f497 scored 94/100: the manifest's tests line held a placeholder; audit_file's single read is unguarded by the memo test</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260925T141847159746-review-of-read-state-and-live-runs-reuse" data-who="reckon-build" data-when="2026-09-25T14:59:38.571Z">
+    <div class="r-comment-body"><p>review of read-state-and-live-runs-reuse at b6d88e88 scored 86 (goal fidelity 14): state and text are two independent stat-keyed lookups in _store.py, so a write between them pairs stale state with new text; a corrective node carries it</p></div>
 </div>
 </section>
   </main>
