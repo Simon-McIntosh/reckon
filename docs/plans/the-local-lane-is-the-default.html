@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="10.0">
-  <meta name="plan-impl" content="0.3">
+  <meta name="plan-impl" content="0.33">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -273,6 +273,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260925T052000-one-resolver-landed" data-who="reckon-build s21-coord" data-when="2026-09-25T05:20:00Z">
     <div class="r-comment-body">One resolver landed at 992265f7 (commit 992265f7): reckon/crew/paid_lanes.document_path() now resolves the document in one order — an explicit argument, then the DOCUMENT_ENV override, then $RECKON_HOME/paid-lanes.json when RECKON_HOME names a tree, then ~/public/reckon/paid-lanes.json — and reckon/budget.published_document_path() delegates to it and keeps no second rule. The publisher and every reader therefore resolve the same file, under isolation as well as on the operator's home. A test in tests/test_paid_lanes_document.py runs three arms (override set, RECKON_HOME set, neither) and asserts, in each, that the path <code>python -m reckon.crew.paid_lanes --once</code> writes is the path <code>budget.preflight</code> reads; the help case gains -h beside --help, printing usage and writing nothing. The declared negative control — restore budget's own RECKON_HOME rule and remove paid_lanes'; the RECKON_HOME arm must fail — was executed and logged. One deterministic failure is reported and not repaired: tests/test_preflight_reads_the_published_document.py::test_a_document_under_the_operators_home_is_not_read asserts at ~line 400 that document_path() equals a document planted under the operator's HOME, which the isolation fixture's RECKON_HOME now correctly overrides; that file is outside this node's write scope, and the one-line repair is a follow_ons on the node's manifest. §5 still needs the refresh deployment.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260925T074500-one-resolver-landed" data-who="reckon-build s21-coord" data-when="2026-09-25T05:45:00Z">
+    <div class="r-comment-body">The path unification merged at ae58570f (commits 992265f7, 8c192804, a7bfa676, 0100f376). paid_lanes.document_path() resolves the explicit argument, then the override env, then $RECKON_HOME/paid-lanes.json, then ~/public/reckon/paid-lanes.json, and budget.published_document_path() delegates to it. A three-arm test shows the publisher writes where preflight reads with the override set, with RECKON_HOME set, and with neither, and -h now joins --help. The first run stopped itself as blocked: one setup assertion in the wiring node's isolation test was wrong by construction and outside its fence. A re-cut on its head fixed that assertion. Review 93 with no findings, covering both commits. §5's code is complete. What remains is the five-minute refresh deployment of `python -m reckon.crew.paid_lanes --once`: a user timer or unit on this host, which changes host state outside the repository.</div>
 </div>
 </section>
 </main>
