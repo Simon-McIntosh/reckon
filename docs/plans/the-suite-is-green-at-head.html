@@ -556,6 +556,39 @@
       evidence</a>.</p>
     </div>
 
+    <div class="r-note" data-reckon="landed" data-node="a-failed-launch-test-expects-the-refusal" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; the worktree-atomicity test now expects the launch refusal the
+      launcher fix raises, and pins the conversion by its cause.</strong> The one test named in the
+      launcher node's follow-on moves its assertion from <code>pytest.raises(OSError)</code> to
+      <code>pytest.raises(crew.CrewError)</code> and adds
+      <code>assert isinstance(excinfo.value.__cause__, OSError)</code> with
+      <code>assert str(...) == "no such executable"</code>, so it pins the conversion rather than
+      merely the raised type. Its two clean-trace assertions &mdash; no <code>node-a</code> worktree,
+      no live pointer &mdash; are unchanged. One test edited in <code>tests/test_crew.py</code>; no
+      product code touched. Commits <code>c11eaf2f</code>, <code>8b9ee037</code>.</p>
+      <p><strong>Measured.</strong> The unedited test fails at the node base <code>eafdb655</code>
+      because the launcher now raises <code>CrewError</code> where the test asked for
+      <code>OSError</code>; the edited test passes at head, together with the pre-pointer refusal id
+      (2 passed). Over the 89 test files that import <code>reckon.crew.dispatch</code>, each arm
+      <code>-n 6</code> with its own <code>--basetemp</code>: base <strong>15 failed / 1216
+      passed</strong>, head <strong>13 failed / 1218 passed</strong>, and the one stable
+      red&rarr;green id is the target. The single head-only id,
+      <code>test_watch_arming_isolation.py::test_a_dispatch_under_the_shared_fixture_arms_no_producer</code>,
+      passes alone and is load-sensitive, so it is not counted as added; the base-only extras are
+      likewise load/ordering-dependent and named in the evidence. <strong>Zero added failures.</strong>
+      <code>tests/test_crew.py</code> at head is 1 failed / 204 passed, the one red id the peer-owned
+      <code>launch-failed</code> attention gap.</p>
+      <p><strong>Declared negative control:</strong> <em>unwrap the launcher call in a scratch copy so
+      the OSError propagates; the edited test must fail</em> &mdash; satisfied: the mutant tree
+      restores the pre-fix <code>dispatch.py</code> and the edited test fails with
+      <code>OSError: no such executable</code> from the launcher. Logs at
+      <code>~/.cache/a-failed-launch-test/</code>. Figure:
+      <a href="/reckon/figures/the-suite-is-green-at-head/failed-launch-assertion-pins-the-cause.png">the
+      assertion before and after, with the cause chain</a>. Full record:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-a-failed-launch-test-expects-the-refusal">landed
+      evidence</a>.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">
