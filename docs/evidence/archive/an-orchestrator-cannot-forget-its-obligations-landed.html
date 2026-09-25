@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-orchestrator-cannot-forget-its-obligations-landed">
+  <meta name="plan-title" content="Coordinator Obligations Execution Record">
+  <meta name="plan-summary" content="Derived coordinator duties, review-head freshness, focused verification, and mutation evidence">
+  <meta name="plan-evidence-for" content="an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-verifies" content="an-orchestrator-cannot-forget-its-obligations#s2">
+  <meta name="plan-commits" content="66d08fa6caad67f2b0a762f1c09aac2a0c723a42">
+  <meta name="plan-artifacts" content="reckon/crew/obligations.py,tests/test_crew_obligations.py,docs/figures/an-orchestrator-cannot-forget-its-obligations/obligations-derived-view.svg">
+  <meta name="plan-recorded-at" content="2026-09-25">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="fleet allocation with the project root virtual environment">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <title>Coordinator Obligations Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; cumulative record</p>
+      <h1>Coordinator obligations execution record</h1>
+      <p class="lead">The first derived obligations function now turns recovery classifications, promoted-worktree evidence and the session drain into identity-bearing duties with their age and exact next command. The focused census produced six obligations while excluding a healthy working run and a reconciled promoted run.</p>
+    </header>
+
+    <section id="obligations-derived-view">
+      <h2>Derived obligations view</h2>
+      <p>Commit <code>66d08fa6caad67f2b0a762f1c09aac2a0c723a42</code> adds <code>reckon/crew/obligations.py</code> and <code>tests/test_crew_obligations.py</code>. The implementation imports recovery rather than defining another live-run classifier: recovery rows supply the state and exact remedy, the resolved unreconciled-run grace distinguishes a recent review-ready delivery from a stale promotion, and the ledger plus Git registry identify promoted runs whose worktrees remain held.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-derived-view.svg" alt="Recovery rows and promoted worktree evidence flow into session-filtered obligations and a closure summary.">
+        <figcaption>The derived view combines three existing authorities without persisting another copy of obligation state.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Recovery or durable evidence</th><th>Obligation</th><th>Tested age</th><th>Next action retained</th></tr></thead>
+        <tbody>
+          <tr><td><code>scoring</code>, no current-head review in flight</td><td><code>review-missing</code></td><td>100 s</td><td>Composed review dispatch</td></tr>
+          <tr><td>recent <code>promotable</code></td><td><code>review-ready</code></td><td>200 s</td><td>Recovery promotion command</td></tr>
+          <tr><td>complete escape-hatch question</td><td><code>needs-help</code></td><td>300 s</td><td>Resume with an answer</td></tr>
+          <tr><td>process ended before terminal manifest</td><td><code>turn-ended-early</code></td><td>400 s</td><td>Recovery-provided resume remedy</td></tr>
+          <tr><td><code>promotable</code> beyond the 900 s grace</td><td><code>promotable-stale</code></td><td>1,000 s</td><td>Recovery promotion command</td></tr>
+          <tr><td>promoted ledger row with registered worktree</td><td><code>worktree-held</code></td><td>1,500 s</td><td>Conservative crew garbage collection</td></tr>
+        </tbody>
+      </table>
+      <p>The summary reports <code>count: 6</code>, <code>oldest_age_seconds: 1500</code>, and the drain view's measured <code>unreconciled_runs: 7</code>. The synthetic working run and the promoted row with no registered worktree are absent. Separate assertions preserve distinct <code>blocked</code> and <code>needs-help</code> kinds and suppress <code>review-missing</code> while a review of the current head is already live.</p>
+    </section>
+
+    <section id="review-head-freshness">
+      <h2>Review-head freshness</h2>
+      <p>The recovery classifier already selects review evidence by the revision it read. The new obligations layer consumes that verdict. A synthetic run moved from its previously reviewed base to a new head; the older stored review remained on disk, and the derived duty was <code>review-missing</code>, not <code>review-ready</code>.</p>
+      <p>The declared mutant replaced the head-keyed lookup with the newest review for the run id. The focused freshness assertion then failed because recovery returned <code>promotable</code> instead of <code>scoring</code>. The red receipt is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T074613380785-obligations-are-a-derived-view/negative-review-freshness.log</code>; its first line records the declared mutation verbatim.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td><code>pytest -q tests/test_crew_obligations.py</code></td><td>passed</td><td>5 tests passed; six obligations appeared with exact kind, identity, age and next command.</td></tr>
+          <tr><td>Declared review-freshness mutation</td><td>failed as required</td><td>1 selected test failed: the stale review changed the classifier from <code>scoring</code> to <code>promotable</code>.</td></tr>
+          <tr><td><code>ruff check --output-format=concise</code></td><td>passed</td><td>No findings in the new module or its focused test.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Scope retained:</strong> this node adds no CLI or MCP surface. Independent verification at the merged head remains coordinator-owned.</p>
+    </section>
+  </main>
+</body>
+</html>
