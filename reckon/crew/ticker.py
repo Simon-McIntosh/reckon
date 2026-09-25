@@ -505,6 +505,13 @@ def single_clause(value: Any, *, limit: int = 96) -> str:
     failure upstream (a block-scalar indicator returned as if it were the value)
     must not render as a "reason" no reader can act on. The refusal lives here,
     where the clause is derived, so the producer never has to make it.
+
+    A clause still wider than the field is cut at the last word boundary inside
+    it, so what a reader keeps is a whole word: a cut through a word reads as a
+    typo rather than as a cut, and the word a reader scans for is where the
+    clause's own sense stops. Only a clause whose first word is at least as wide
+    as the field has no boundary to cut at, and then the cut falls inside that
+    word and fills the field, because the head of it is all the room can show.
     """
     compact = " ".join(str(value or "").split())
     clause = re.split(
@@ -515,7 +522,7 @@ def single_clause(value: Any, *, limit: int = 96) -> str:
     if len(clause) <= limit:
         return clause
     boundary = clause.rfind(" ", 0, limit)
-    if boundary < limit // 2:
+    if boundary < 0:
         boundary = limit - 1
     return clause[:boundary].rstrip(" ,:") + "…"
 
