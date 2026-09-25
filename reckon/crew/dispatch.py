@@ -5897,13 +5897,15 @@ def _current_harness_session(
     run_id = str(record.get("run_id") or "")
     if record.get("launch") != "cli":
         return resolve_session(run_id, record=record)
-    backend = _backend_settings(record, config)
-    harness = _backends.dialect_for(backend).name
     owner = str(record.get("session_harness") or "")
     boundary = record.get("lane_change") or {}
     changed_harness = boundary.get("session") == "fresh" and boundary.get(
         "from_harness"
     ) != boundary.get("to_harness")
+    if not owner and not changed_harness:
+        return resolve_session(run_id, record=record)
+    backend = _backend_settings(record, config)
+    harness = _backends.dialect_for(backend).name
     if (not changed_harness and (not owner or owner == harness)) or (
         record.get("session_id") and owner == harness
     ):
