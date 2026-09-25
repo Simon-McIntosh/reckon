@@ -47,6 +47,18 @@ class ServiceError(RuntimeError):
     """A systemd operation could not be completed."""
 
 
+class LingerUnavailableError(ServiceError):
+    """Lingering could not be enabled, so a unit would stop at logout.
+
+    Distinct from a plain :class:`ServiceError` because a caller can act on it
+    rather than only report it: the manager is reachable and the unit is fine,
+    but this account's units will not outlive its login session, so an arming
+    path that must leave a watcher behind has to place it outside the manager.
+    Measured 2026-09-25 on a fleet compute node, where ``loginctl`` refused with
+    ``Could not enable linger: No such device or address``.
+    """
+
+
 def node_executable() -> Path:
     """Locate the Node.js interpreter used for server-side JSX compilation."""
     configured = os.environ.get("RECKON_NODE")
@@ -186,7 +198,7 @@ def enable_linger() -> None:
     completed = _run(["loginctl", "enable-linger"])
     if completed.returncode != 0:
         detail = (completed.stderr or completed.stdout or "").strip()
-        raise ServiceError(
+        raise LingerUnavailableError(
             f"could not enable lingering, so the service would stop at logout: {detail}"
         )
 

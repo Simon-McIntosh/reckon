@@ -1369,6 +1369,47 @@ def replace_stale_watch_seat(project: str) -> dict[str, Any] | None:
     return unwatch(project)
 
 
+def _seat_host(record: Mapping[str, Any]) -> str:
+    """The host a seat record names as its producer's, or an empty string."""
+    return str(record.get("host") or "")
+
+
+def _seat_host_is_local(record: Mapping[str, Any]) -> bool:
+    """Report whether a seat record names this host as its producer's host."""
+    return _seat_host(record) == socket.gethostname()
+
+
+def _seat_names_a_foreign_host(record: Mapping[str, Any]) -> bool:
+    """Report whether a seat record names a host that is not this one.
+
+    Distinct from :func:`_seat_host_is_local` because a record naming *no* host
+    is neither: it predates the field, or it is an erased seat, and both are read
+    differently from a seat known to belong elsewhere.
+    """
+    host = _seat_host(record)
+    return bool(host) and host != socket.gethostname()
+
+
+def _seat_stream_fresh(project: str, record: Mapping[str, Any]) -> bool:
+    """Report whether a seat's transition stream moved within its stall window.
+
+    The stream lies on the same shared home as the seat, so a line written to it
+    recently is the one piece of evidence a reader on another host has that a
+    producer it cannot see is still producing. An empty seat record names no
+    window, so the default one is used.
+    """
+    window = record.get("stall_window") or DEFAULT_WATCH_STALL_WINDOW
+    try:
+        seconds = parse_duration(str(window))
+    except (CrewError, TypeError, ValueError):
+        seconds = parse_duration(DEFAULT_WATCH_STALL_WINDOW)
+    try:
+        written = watch_stream_path(project).stat().st_mtime
+    except OSError:
+        return False
+    return (time.time() - written) <= seconds
+
+
 def _erase_confirmed_dead_seat(path: Path, stale: Mapping[str, Any]) -> None:
     """Erase a seat record only if it still names the process just confirmed dead.
 
@@ -1403,6 +1444,22 @@ def producer_live(project: str) -> bool:
     rather than merely reported, so the next reader finds no record instead of
     the same stale one. A live record is left untouched.
 
+    Only a record that names *this* host is judged that way. A pid is issued by
+    one kernel, so a record naming another host carries a number this host cannot
+    answer for, and it is judged by the transition stream instead — the one piece
+    of evidence that crosses the shared home. An erased record names no pid at
+    all, and is judged the same way. Measured 2026-09-25: a producer on compute
+    node 98dci4-clu-2058 held its seat and kept writing transitions while a read
+    on another host, unable to find the pid locally, erased the record to ``{}``.
+    Delivery and admission both follow that record, so the fleet went unwatched
+    for about three hours while the stream grew.
+
+    A record naming *no* host is a third case, and the narrowest: it is read
+    against the local table, because every seat this install writes now carries a
+    host and a hostless one is a legacy or hand-written record rather than proof
+    of a foreign producer. But its death is confirmed only when the stream is
+    quiet too, so a pid alone never erases it.
+
     Deliberately *not* the orphan check that :func:`watch_state` applies. A
     producer whose supervisor died is reparented to init and stops satisfying
     the dispatch guard, because nothing is listening to the seat it holds — but
@@ -1417,16 +1474,31 @@ def producer_live(project: str) -> bool:
         return False
     with path.open("rb") as handle:
         record = _read_watch_record(handle)
-    if not record:
-        return False
+    if _seat_names_a_foreign_host(record) or not record:
+        # A foreign or erased seat names a pid this host cannot judge — another
+        # kernel's, or none at all. Delivery must follow the stream rather than
+        # such a record, so a stream that moved within the stall window reads
+        # live and the record is left exactly as it was found.
+        return _seat_stream_fresh(project, record)
     alive = record_process_alive(record) is True
-    if not alive:
-        _erase_confirmed_dead_seat(path, record)
-    return alive
+    if alive:
+        return True
+    # The pid is gone from this host's table. For a record that names no host,
+    # the stream is a second witness before the death is acted on: while it is
+    # moving, something is still producing transitions, and the seat is left for
+    # the host that issued its pid to clear. A record naming *this* host needs no
+    # second witness: this host can see the process it names, and its absence is
+    # the whole answer.
+    if not _seat_host_is_local(record) and _seat_stream_fresh(project, record):
+        return True
+    _erase_confirmed_dead_seat(path, record)
+    return False
 
 
-def _record_producer_running(record: Mapping[str, Any]) -> bool:
-    """Report whether a seat record names a process that is running now.
+def _record_producer_running(
+    record: Mapping[str, Any], *, project: str | None = None
+) -> bool:
+    """Report whether a seat record names a producer that is live now.
 
     Drawn from the process table, not from the seat's held-state: a live
     producer whose record no longer holds the seat lock still reads as live,
@@ -1435,17 +1507,57 @@ def _record_producer_running(record: Mapping[str, Any]) -> bool:
     whether or not its recorded start time still matches, because the
     start-time check exists for who may *signal* that process, a different
     question than whether it is running.
+
+    The process table answers only for a record this host issued. A record
+    naming another host is judged by its transition stream instead, which is the
+    one piece of evidence that crosses the shared home. A record naming no host
+    at all is an erased seat or a legacy one and is read against the local table,
+    exactly as it always was: admission is a question about a producer, and a
+    record that names no producer to admit answers nothing.
+
+    ``project`` names the stream for a record that carries no project of its own.
     """
+    if _seat_names_a_foreign_host(record):
+        return _stream_says_alive(record, project)
     pid = record.get("pid")
     return bool(pid) and record_process_alive(record, match_start_time=False) is True
 
 
-def _record_producer_dead(record: Mapping[str, Any]) -> bool:
-    """Report whether a seat record names a process that is no longer running."""
+def _seat_project(record: Mapping[str, Any], project: str | None) -> str:
+    """The project whose stream a seat record is judged against."""
+    if project:
+        return str(project)
+    return str(record.get("project") or "")
+
+
+def _stream_says_alive(record: Mapping[str, Any], project: str | None) -> bool:
+    """Whether a seat's stream is moving, for a record that carries no project."""
+    name = _seat_project(record, project)
+    return bool(name) and _seat_stream_fresh(name, record)
+
+
+def _record_producer_dead(
+    record: Mapping[str, Any], *, project: str | None = None
+) -> bool:
+    """Report whether a seat record names a process confirmed dead *here*.
+
+    A record naming another host is never dead from here: the local process
+    table cannot see the process it names, so its absence says nothing about it.
+    A record naming no host is judged by pid, but confirmed dead only when its
+    stream is quiet too, so a pid alone never erases it. Reconciliation and
+    erasure both gate on this, so neither can clear a live producer's seat from
+    a host that did not issue its pid.
+    """
+    if _seat_names_a_foreign_host(record):
+        return False
     pid = record.get("pid")
-    return (
+    if not (
         bool(pid) and record_process_alive(record, match_start_time=False) is not True
-    )
+    ):
+        return False
+    if _seat_host_is_local(record):
+        return True
+    return not _stream_says_alive(record, project)
 
 
 def _reconcile_watch_record(project: str, record: Mapping[str, Any]) -> bool:
@@ -1459,7 +1571,7 @@ def _reconcile_watch_record(project: str, record: Mapping[str, Any]) -> bool:
     interim. It never takes a blocking exclusive lock, so observing still cannot
     deny an arming. Returns True when the record was rewritten.
     """
-    if not _record_producer_dead(record):
+    if not _record_producer_dead(record, project=project):
         return False
     path = watch_lock_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1500,6 +1612,11 @@ def _project_watch_claim(project: str, stall_window: str):
             "project": project,
             "pid": os.getpid(),
             "pid_start_time": _process_start_time(os.getpid()),
+            # The host that issued this pid. The seat lives on the shared home
+            # every fleet node mounts, so without this a reader on another host
+            # probes its own process table for a pid that belongs to someone
+            # else and confirms a running producer dead.
+            "host": socket.gethostname(),
             "stall_window": stall_window,
             "started_at": _utc_now(),
             "stream_path": str(watch_stream_path(project)),
@@ -2014,7 +2131,7 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     # producer as absent, and one that sees it held reads a dead process as
     # live — each the wrong way to decide a dispatch guard. The running answer
     # is the one the guard may trust.
-    watcher_live = _record_producer_running(registration)
+    watcher_live = _record_producer_running(registration, project=project)
     return {
         "arming_line": arming_line,
         "attach_line": attach_line,
@@ -2054,13 +2171,20 @@ def project_watch_visibility(
     # repaired state (an empty registration) rather than the stale one.
     if (
         registration
-        and _record_producer_dead(registration)
+        and _record_producer_dead(registration, project=project)
         and _reconcile_watch_record(project, registration)
     ):
         registration = {}
 
     pid = registration.get("pid")
-    registering_process_alive = record_process_alive(registration)
+    # The seat-aware judgement, not a bare pid probe: a record naming another
+    # host is answered by its stream, which is the only liveness this host can
+    # observe for a producer it cannot see.
+    registering_process_alive = (
+        _record_producer_running(registration, project=project)
+        if registration
+        else None
+    )
 
     observer_alive: bool | None = None
     if "parent_pid" in registration:
@@ -2392,9 +2516,17 @@ def ensure_watcher_service(
     raising and leaving the project unwatched. The result names which path armed
     the watcher, and why, in fields a caller reads rather than in prose.
 
+    A host that will not enable lingering falls back the same way. Measured
+    2026-09-25 on a fleet compute node, ``loginctl enable-linger`` answered
+    ``Could not enable linger: No such device or address``; a unit that stops at
+    logout is worse than no unit at all for a coordinator that has already been
+    told a watcher is durable, so the watcher is placed in the session that owns
+    it instead of raising. The failure is named in the `detail` sentence because
+    the two causes of a fallback read differently to a person.
+
     The fallback is deliberately narrow — a unit the manager refused on its
     merits still raises — and ``producer`` is the seam that lets a caller supply
-    the process arming, so a test exercises this path without starting a watcher.
+    a process arming, so a test exercises this path without starting a watcher.
     """
     from reckon import flight
 
@@ -2417,6 +2549,17 @@ def ensure_watcher_service(
 
     try:
         was_active = service_manager.active(project)
+        # Lingering is settled before the unit starts, not after: a manager that
+        # will not keep this account's units past logout is a reason to place the
+        # watcher outside the manager, and settling this first keeps the seat free
+        # for the process that then takes it. Checking after the start would leave
+        # a service holding the seat that the fallback could not displace.
+        lingering: bool | None = None
+        if LINGER_IF_REQUIRED and hasattr(service_manager, "lingering"):
+            lingering = bool(service_manager.lingering())
+            if not lingering:
+                service_manager.enable_linger()
+                lingering = bool(service_manager.lingering())
         start_required = bool(changed or restart or not was_active)
         if start_required:
             # 'enable --now' leaves an already-running unit on its old
@@ -2424,14 +2567,19 @@ def ensure_watcher_service(
             service_manager.start(
                 project, restart=bool(restart or (changed and was_active))
             )
-
-        lingering: bool | None = None
-        if LINGER_IF_REQUIRED and hasattr(service_manager, "lingering"):
-            lingering = bool(service_manager.lingering())
-            if not lingering:
-                service_manager.enable_linger()
-                lingering = bool(service_manager.lingering())
     except Exception as error:
+        from reckon import service
+
+        if isinstance(error, service.LingerUnavailableError):
+            return _watcher_armed_as_process(
+                project,
+                error=error,
+                unit_path=path,
+                unit_changed=bool(changed),
+                environment=environment,
+                producer=producer or _arm_watcher_as_process,
+                cause=_LINGER_FALLBACK_CAUSE,
+            )
         if not _service_manager_unreachable(error):
             raise
         return _watcher_armed_as_process(
@@ -2475,6 +2623,16 @@ def ensure_watcher_service(
     }
 
 
+# The two reasons a service arming is abandoned for a plain process. Named
+# rather than inlined so the sentence a coordinator reads distinguishes them,
+# and so a caller deciding whether a fallback is expected can match on the
+# value instead of on a phrase, which drifts.
+_SERVICE_UNREACHABLE_CAUSE = "the service manager could not be reached"
+_LINGER_FALLBACK_CAUSE = (
+    "lingering could not be enabled, so a unit would stop at this account's logout"
+)
+
+
 def _watcher_armed_as_process(
     project: str,
     *,
@@ -2483,8 +2641,9 @@ def _watcher_armed_as_process(
     unit_changed: bool,
     environment: Mapping[str, str],
     producer: Callable[[str], Mapping[str, Any]],
+    cause: str = _SERVICE_UNREACHABLE_CAUSE,
 ) -> dict[str, Any]:
-    """Arm the watcher as a plain process after the service bus refused.
+    """Arm the watcher as a plain process after the service path was refused.
 
     The result keeps the shape the service path returns, so a caller reads one
     result either way, and states the fallback in three fields: ``path``, the
@@ -2492,6 +2651,11 @@ def _watcher_armed_as_process(
     producer reports liveness rather than raising, so a fallback that could not
     start a watcher reads as ``watcher_live`` false with the reason beside it,
     which is the same shape the dispatch path reports.
+
+    ``cause`` names which failure forced the fallback, because two do: a manager
+    that cannot be reached, and one that will not keep this account's units past
+    logout. The error text alone does not say which, and the sentence a coordinator
+    reads has to.
     """
     state = producer(project)
     registration = _register_watch_unit(project, watch_unit_name(project))
@@ -2505,7 +2669,7 @@ def _watcher_armed_as_process(
         "service_active": False,
         "started": live,
         "detail": (
-            f"the service manager could not be reached ({reason}); "
+            f"{cause} ({reason}); "
             + (
                 f"armed the watcher for {project} as a plain background process"
                 if live
