@@ -1927,45 +1927,56 @@ def _within_any(path: Path, roots: Sequence[Path]) -> bool:
     return any(path == root or path.is_relative_to(root) for root in roots)
 
 
+def resolved_destination(path: Path) -> Path:
+    """Return the path a mount destination must name, with no link in it.
+
+    bubblewrap cannot create a mount point anywhere below a symlink: the
+    destination ``~/.config/reckon`` is refused with ``Can't mkdir`` when
+    ``~/.config`` is itself a link, even though ``reckon`` is an ordinary
+    directory. Resolving the whole ancestry gives the path the kernel actually
+    composes the mount at, and binding there seals the same bytes because a
+    write through a link path lands on its target.
+
+    ``Path.resolve`` removes every link in the ancestry, so its result is the
+    path the real filesystem holds; a path with a nonexistent ancestor is
+    returned as far as it resolves, which callers treat as a missing file.
+    """
+    return Path(path).resolve()
+
+
 def protected_read_only_binds(
     protected: Sequence[Path],
 ) -> list[tuple[Path, Path]]:
     """Return the source/destination pairs that overlay the protected paths.
 
-    A protected path that is itself a symlink cannot be a mount destination:
-    bubblewrap will not create a mount point where the destination is a symlink.
-    A symlink that reaches this list — ``protected_paths`` filters on
-    ``Path.exists()``, which follows links — would otherwise abort the whole
-    launch before the worker starts, so each one is resolved and its target
-    bound read-only in place. That seals the same bytes, because a write through
-    the link lands on the target.
+    Every protected path is resolved through its whole ancestry, not only when
+    the path is itself a symlink, because a link anywhere above it makes the
+    destination unmountable and aborts the launch before the worker starts. Both
+    shapes reach this list — ``protected_paths`` filters on ``Path.exists()``,
+    which follows links — and two are live on this workstation's home:
+    ``~/.gitconfig`` is a link into ``Code/dotfiles``, and a protected path
+    below a symlinked ``~/.config`` is a plain directory with a link above it.
 
-    A target already inside another protected path needs no overlay of its own:
-    that path is sealed in its own right, so composing one would add a redundant
-    read-only bind. A symlink whose target does not exist is skipped outright —
-    a link into nothing seals nothing, and there is no file to mount.
+    Two consequences of resolving, both handled here. A resolved target already
+    inside another protected path needs no overlay of its own: that path is
+    sealed in its own right, so one of its own would be a redundant read-only
+    bind. And a target that does not exist is skipped outright — a link into
+    nothing seals nothing, and there is no file to mount.
 
-    The destination is always the resolved path, never the link, so nothing this
-    returns has a symlink for a destination.
+    The destination is always the resolved path, so nothing this returns names
+    a symlink anywhere in its ancestry.
     """
-    pairs: list[tuple[Path, Path]] = []
-    seen: set[str] = set()
+    resolved: list[Path] = []
     for path in protected:
-        if path.is_symlink():
-            target = path.resolve()
-            if not target.exists():
-                continue
-            others = [other.resolve() for other in protected if other != path]
-            if _within_any(target, others):
-                continue
-            source = destination = target
-        else:
-            source = destination = path
-        key = str(destination)
-        if key in seen:
+        target = resolved_destination(path)
+        if target.exists() and str(target) not in {str(seen) for seen in resolved}:
+            resolved.append(target)
+    pairs: list[tuple[Path, Path]] = []
+    for target in resolved:
+        others = [other for other in resolved if other != target]
+        if _within_any(target, others):
             continue
-        seen.add(key)
-        pairs.append((source, destination))
+        pairs.append((target, target))
     return pairs
 
 
@@ -1991,12 +2002,14 @@ def fence_argv(
     the run directory the manifest lives in — the last because a worker that
     cannot write its own manifest has delivered nothing.
 
-    A protected path that is a symlink is bound at its resolved target rather
-    than at its own path, because bubblewrap cannot create a mount point where
-    the destination is a symlink; see :func:`protected_read_only_binds`. The
-    writable roots are therefore tested for containment against the paths the
-    overlays actually land on, so a grant inside a symlinked protected tree is
-    still re-opened writable.
+    A protected path is bound at its resolved target rather than at its own
+    path, because bubblewrap cannot create a mount point below a symlink; see
+    :func:`protected_read_only_binds`. The writable roots are resolved the same
+    way, for two reasons: containment is tested against the paths the overlays
+    actually land on, so a grant inside a symlinked protected tree is still
+    re-opened writable rather than silently lost, and the grant's own
+    destination has no link in it either — a grant below a symlinked directory
+    would otherwise abort the launch just as a protected path did.
 
     ``read_only_binds`` are source/destination pairs mounted last: a writable
     grant re-binds a whole subtree, so a file mounted underneath one is exposed
@@ -2016,8 +2029,9 @@ def fence_argv(
         fenced += ["--ro-bind", str(source), str(destination)]
     granted: set[str] = set()
     for root in roots:
-        key = str(root)
-        if key in granted or not _within_any(root, sealed):
+        target = resolved_destination(root)
+        key = str(target)
+        if key in granted or not _within_any(target, sealed):
             continue
         granted.add(key)
         fenced += ["--bind", key, key]

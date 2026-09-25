@@ -50,6 +50,21 @@ SYMLINK_NEGATIVE_CONTROL_MUTATION = (
     "its own path; the stub launch must exit nonzero"
 )
 
+# The third declared mutation: resolution restored to the leaf alone, so a
+# protected path below a symlinked directory is bound at its unresolved path.
+ANCESTOR_LEAF_ONLY_MUTATION = (
+    "restore leaf-only resolution so a protected path below a symlinked "
+    "directory is bound at its unresolved path; the stub launch must exit nonzero"
+)
+
+# The fourth: the skip that drops a redundant overlay of a path an
+# already-sealed directory covers, removed.
+REDUNDANT_OVERLAY_MUTATION = (
+    "remove the inside-a-protected-path skip so a path an already-sealed "
+    "directory covers is bound a second time; the redundant-overlay check must "
+    "catch it"
+)
+
 # One entry per protected class the plan names, plus a checkout stand-in.
 _NAMED_PROTECTED = (
     ".claude",
@@ -269,6 +284,33 @@ class SymlinkFence(Fence):
         )
 
 
+class AncestorSymlinkFence(Fence):
+    """A home whose ``.config`` is a symlink, so a protected child has a link above it.
+
+    The leaf is an ordinary directory here, which is the shape the first repair
+    missed: the resolution triggered on the leaf's own ``is_symlink()``, so
+    ``~/.config/reckon`` was bound at its own path and bubblewrap refused it
+    with ``Can't mkdir`` — a home with ``~/.config`` symlinked aborts every
+    fenced launch. The run's own write root also lives below the link, so the
+    same home proves the writable grants are resolved with the overlays.
+    """
+
+    def __init__(self, root: Path) -> None:
+        super().__init__(root)
+        real = self.home / "realconfig"
+        shutil.move(str(self.home / ".config"), str(real))
+        (self.home / ".config").symlink_to(real)
+        self.real_config = real
+
+    def linked_protected(self) -> list[Path]:
+        """The protected paths reached through the symlinked directory."""
+        return [
+            self.protected[".config/reckon"],
+            self.protected[".config/git"],
+            self.protected[".config/gh"],
+        ]
+
+
 def _drop_ro_bind(argv: list[str], path: Path) -> list[str]:
     """Return argv with the read-only overlay of ``path`` removed.
 
@@ -292,12 +334,67 @@ def _drop_ro_bind(argv: list[str], path: Path) -> list[str]:
     return kept
 
 
-def _bind_at_the_link_itself(argv: list[str], link: Path, target: Path) -> list[str]:
-    """Return argv with the resolved overlay replaced by one at the link's path.
+def _bind_destinations(argv: list[str]) -> list[Path]:
+    """Return every mount destination in a composed fence argv."""
+    destinations: list[Path] = []
+    for index, flag in enumerate(argv):
+        if flag in ("--ro-bind", "--bind", "--dev-bind") and index + 2 < len(argv):
+            destinations.append(Path(argv[index + 2]))
+    return destinations
 
-    The declared mutation: the symlink resolution is undone, so the read-only
-    overlay of the resolved target is emitted at the symlink's own path instead
-    — which is what bubblewrap refuses to mount.
+
+def _has_symlink_component(path: Path) -> bool:
+    """True if the path itself or any ancestor is a symlink.
+
+    bubblewrap refuses to create a mount point: nowhere below a link, so a
+    destination is usable only when no component of it is one — a leaf that is
+    an ordinary directory with a symlinked parent aborts the launch exactly as
+    a symlinked leaf does.
+    """
+    return any(Path(part).is_symlink() for part in (path, *path.parents))
+
+
+def _overlays_inside_another(argv: list[str]) -> list[Path]:
+    """Return read-only destinations an already-sealed directory covers.
+
+    The observable of the clause that drops a redundant overlay: a second
+    read-only bind of a path inside a directory that is sealed in its own right
+    is accepted by bubblewrap, so it cannot be caught by executing the argv, but
+    it is still argv the composition must not produce.
+    """
+    destinations = [
+        Path(argv[index + 2]) for index, flag in enumerate(argv) if flag == "--ro-bind"
+    ]
+    return [
+        destination
+        for destination in destinations
+        if any(
+            destination != other and destination.is_relative_to(other)
+            for other in destinations
+        )
+    ]
+
+
+def _bind_again(argv: list[str], target: Path) -> list[str]:
+    """Return argv with a second read-only overlay of ``target``.
+
+    The declared mutation for the inside-a-protected-path clause: the skip is
+    removed, so a path an already-sealed directory covers is bound a second
+    time.
+    """
+    marker = argv.index("--")
+    return [*argv[:marker], "--ro-bind", str(target), str(target), *argv[marker:]]
+
+
+def _bind_at_the_unresolved_path(
+    argv: list[str], unresolved: Path, target: Path
+) -> list[str]:
+    """Return argv with the resolved overlay replaced by one at its own path.
+
+    The declared mutation: the resolution is undone, so the read-only overlay
+    of the resolved target is emitted at the path as the fence spelled it
+    instead — which is what bubblewrap refuses to mount when a link sits at the
+    path or anywhere above it.
     """
     kept: list[str] = []
     index = 0
@@ -308,7 +405,7 @@ def _bind_at_the_link_itself(argv: list[str], link: Path, target: Path) -> list[
             and argv[index + 1] == str(target)
             and argv[index + 2] == str(target)
         ):
-            kept += ["--ro-bind", str(link), str(link)]
+            kept += ["--ro-bind", str(unresolved), str(unresolved)]
             index += 3
             continue
         kept.append(argv[index])
@@ -331,7 +428,7 @@ def _negative_control_report(root: Path) -> list[str]:
 
 def _symlink_negative_control_report(root: Path) -> list[str]:
     fence = SymlinkFence(root)
-    argv = _bind_at_the_link_itself(
+    argv = _bind_at_the_unresolved_path(
         fence.argv(), fence.protected[".netrc"], fence.outside_target
     )
     proc = fence.run_fence(argv)
@@ -340,6 +437,36 @@ def _symlink_negative_control_report(root: Path) -> list[str]:
         f"stub exit: {proc.returncode}",
         f"stub stderr: {proc.stderr.strip()}",
         f"the stub ran: {fence.results.exists()}",
+    ]
+
+
+def _ancestor_negative_control_report(root: Path) -> list[str]:
+    fence = AncestorSymlinkFence(root)
+    link = fence.protected[".config/reckon"]
+    argv = _bind_at_the_unresolved_path(
+        fence.argv(), link, _backends.resolved_destination(link)
+    )
+    proc = fence.run_fence(argv)
+    return [
+        f"fence argv head: {' '.join(argv[:4])}",
+        f"protected path below the symlinked directory: {link}",
+        f"bound at: {link} (unresolved)",
+        f"stub exit: {proc.returncode}",
+        f"stub stderr: {proc.stderr.strip()}",
+        f"the stub ran: {fence.results.exists()}",
+    ]
+
+
+def _redundant_overlay_control_report(root: Path) -> list[str]:
+    fence = SymlinkFence(root)
+    argv = fence.argv()
+    target = _backends.resolved_destination(fence.inside_target)
+    mutated = _bind_again(argv, target)
+    return [
+        f"fence argv head: {' '.join(argv[:4])}",
+        f"coverage before: {_overlays_inside_another(argv)}",
+        f"redundant target: {target}",
+        f"coverage after: {_overlays_inside_another(mutated)}",
     ]
 
 
@@ -398,13 +525,18 @@ def test_a_symlinked_protected_path_does_not_stop_the_launch(tmp_path: Path) -> 
 
     assert argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
     assert "--ro-bind" in argv
-    # No overlay has a symlink for its destination, which bubblewrap refuses.
-    for index, flag in enumerate(argv):
-        if flag == "--ro-bind":
-            assert not Path(argv[index + 2]).is_symlink(), argv[index + 2]
-    # The symlink into another protected directory carries no overlay of its
-    # own; the one outside needs the resolved target bound.
+    # No mount destination has a symlink anywhere in its ancestry: bubblewrap
+    # refuses a point below a link exactly as it refuses a symlinked leaf.
+    for destination in _bind_destinations(argv):
+        assert not _has_symlink_component(destination), destination
+    # The symlink into another protected directory carries no overlay at all —
+    # neither at the link nor at the target, which that directory already
+    # seals — and the clause has its own observable rather than only the
+    # link's absence from argv.
     assert str(fence.protected[".gitconfig"]) not in argv
+    assert str(_backends.resolved_destination(fence.inside_target)) not in argv
+    assert _overlays_inside_another(argv) == []
+    # The one outside every protected path needs its resolved target bound.
     assert str(fence.outside_target) in argv
 
     proc = fence.run_fence(argv)
@@ -435,7 +567,7 @@ def test_the_negative_control_binds_a_symlink_and_the_launch_is_refused(
     so the refusal is attributable to the removed resolution.
     """
     fence = SymlinkFence(tmp_path)
-    argv = _bind_at_the_link_itself(
+    argv = _bind_at_the_unresolved_path(
         fence.argv(), fence.protected[".netrc"], fence.outside_target
     )
     # The mutation applied: the link is now a destination, the target is not.
@@ -447,11 +579,115 @@ def test_the_negative_control_binds_a_symlink_and_the_launch_is_refused(
     assert not fence.results.exists()
 
 
+@requires_bwrap
+def test_a_protected_path_below_a_symlinked_directory_does_not_stop_the_launch(
+    tmp_path: Path,
+) -> None:
+    """A link *above* a protected path aborts the launch; resolved, it does not.
+
+    The shape the leaf-only resolution missed: ``.config`` is the symlink and
+    ``reckon`` below it is an ordinary directory, so a check on the leaf's own
+    ``is_symlink()`` never fires and bubblewrap refuses the destination with
+    ``Can't mkdir``. The run's own write root also lives below the link, so the
+    same home shows the writable grants are resolved with the overlays rather
+    than lost to the containment test.
+    """
+    fence = AncestorSymlinkFence(tmp_path)
+    argv = fence.argv()
+
+    assert argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
+    for destination in _bind_destinations(argv):
+        assert not _has_symlink_component(destination), destination
+    # Each protected child is bound at the real directory behind the link, and
+    # the path as the fence spelled it is nowhere in the argv.
+    for link in fence.linked_protected():
+        assert str(_backends.resolved_destination(link)) in argv, link
+        assert str(link) not in argv, link
+    # The grant below the link is present, so resolving the roots kept it.
+    assert str(_backends.resolved_destination(fence.run)) in argv
+
+    proc = fence.run_fence(argv)
+    assert proc.returncode == 0, proc.stderr
+    results = fence.results_text()
+
+    # A write through the symlinked directory is refused, sentinel and all.
+    assert "protected-rm-refused" in results
+    assert (fence.config / "flight.toml").exists()
+    for root in fence.linked_protected():
+        sentinel = root / "sentinel"
+        assert sentinel.exists(), sentinel
+        assert f"protected-rm-refused {sentinel}" in results, sentinel
+
+    for grant in fence.grants():
+        assert f"grant-write-ok {grant}" in results, grant
+        assert (grant / ".fence-write-probe").exists(), grant
+
+
+@requires_bwrap
+def test_the_negative_control_restores_leaf_only_resolution(tmp_path: Path) -> None:
+    """The declared mutation: leaf-only resolution, and the launch must not start.
+
+    The mutated argv binds a protected path below the symlinked directory at its
+    own unresolved path; bubblewrap refuses to create that mount point, the stub
+    never runs and the exit is nonzero. The mutation is asserted to have applied
+    first, so the refusal is attributable to the missing resolution.
+    """
+    fence = AncestorSymlinkFence(tmp_path)
+    link = fence.protected[".config/reckon"]
+    resolved = _backends.resolved_destination(link)
+    argv = _bind_at_the_unresolved_path(fence.argv(), link, resolved)
+
+    # The mutation applied: the unresolved path is now a destination, the
+    # resolved one is not, and it is reached through a link.
+    assert str(link) in argv
+    assert str(resolved) not in argv
+    assert _has_symlink_component(link)
+
+    proc = fence.run_fence(argv)
+    assert proc.returncode != 0
+    assert not fence.results.exists()
+
+
+@requires_bwrap
+def test_the_negative_control_rebinds_a_target_inside_a_sealed_directory(
+    tmp_path: Path,
+) -> None:
+    """The declared mutation: the inside-a-protected-path skip, removed.
+
+    A second read-only overlay of a path an already-sealed directory covers is
+    accepted by bubblewrap, so the clause cannot be caught by executing the
+    argv. Its observable is the argv itself: the freshly bound target reads as
+    an overlay another destination already covers. Applied first, the mutation
+    is shown to flip exactly that observable — without this the clause rested on
+    the link's absence from argv, which a redundant bind does not change.
+    """
+    fence = SymlinkFence(tmp_path)
+    argv = fence.argv()
+    target = _backends.resolved_destination(fence.inside_target)
+
+    # The clause holds at the head: the sealed directory covers the target and
+    # no second overlay of it is composed.
+    assert _overlays_inside_another(argv) == []
+    assert str(target) not in argv
+
+    mutated = _bind_again(argv, target)
+    assert str(target) in mutated  # the mutation applied
+    assert _overlays_inside_another(mutated) == [target]
+
+
 _RED_LOGS = {
     "protected-overlay": (NEGATIVE_CONTROL_MUTATION, _negative_control_report),
     "symlink-resolution": (
         SYMLINK_NEGATIVE_CONTROL_MUTATION,
         _symlink_negative_control_report,
+    ),
+    "symlinked-ancestor": (
+        ANCESTOR_LEAF_ONLY_MUTATION,
+        _ancestor_negative_control_report,
+    ),
+    "redundant-overlay": (
+        REDUNDANT_OVERLAY_MUTATION,
+        _redundant_overlay_control_report,
     ),
 }
 
