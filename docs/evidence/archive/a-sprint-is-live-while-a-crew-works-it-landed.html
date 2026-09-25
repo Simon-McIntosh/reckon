@@ -95,6 +95,43 @@
       <p>Commit <code>6c92861d</code> adds <code>reckon/sprint_liveness.py</code>
         and <code>tests/test_sprint_liveness.py</code>. No existing file is
         edited.</p>
+
+      <h3 id="s2-recorded-stream">Recorded classification read and bounded fallback</h3>
+      <p>Commit <code>17983be1</code> moves the hot path from per-pointer recovery
+        classification to the watcher's durable stream. The implementation reads
+        <code>runs.watch_stream_path(project)</code> once, parses each line through
+        <code>runs.parse_stream_line</code>, and keeps the latest <code>to_state</code> for
+        each run. Only pointers absent from that pass use the bounded fallback: the first
+        64 manifest lines are searched for <code>status:</code>, then the pointer's stream
+        mtime is compared with the stall window. No full stream scan or pointer classifier
+        is used by the fallback.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-sprint-is-live-while-a-crew-works-it/recorded-stream-liveness.svg"
+             alt="A live pointer joins to its plan sprint, then uses the latest recorded watcher state or a bounded fallback to produce a sprint row.">
+        <figcaption>The recorded watch state is the fast path; an unseen run has a bounded
+          manifest-and-age fallback.</figcaption>
+      </figure>
+
+      <table>
+        <thead><tr><th>Evidence</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Focused gate</td><td><code>tests/test_sprint_liveness.py</code>: 5 passed, exit 0</td></tr>
+          <tr><td>Recorded-state guard</td><td>A stream event marks a pointer <code>working</code> while its files say failed; both classifier entry points are patched to fail, and the test passes.</td></tr>
+          <tr><td>Fallback guard</td><td>An unrecorded recent non-terminal pointer reads live from the bounded manifest/status and stream-age check; both classifier entry points are patched to fail, and the test passes.</td></tr>
+          <tr><td>Negative control</td><td><code>negative-control.log</code> begins with <code>call classify_pointer per pointer again</code> and records 2 failed / 3 passed against the mutation.</td></tr>
+          <tr><td>Real-project timing</td><td>39 live pointers; 0.164233s, 0.136719s, 0.138047s across three read-only calls; 4 rows and 4 live in each call.</td></tr>
+          <tr><td>Comparison</td><td>11.6s at <code>bec9f24a</code>, recorded in <code>active-sprint-follows-the-live-crew</code>'s <code>logs/latency-interleaved.txt</code>.</td></tr>
+          <tr><td>Scoped lint</td><td>ruff check and format check for the two owned Python files: clean.</td></tr>
+        </tbody>
+      </table>
+
+      <p>The read remains resource-safe: the existing mtime assertions continue to cover
+        the synthetic docs and config homes, and the new tests invoke neither
+        <code>classify_pointer</code> nor <code>_watch_snapshot</code>. The worker's changed
+        paths are <code>reckon/sprint_liveness.py</code>,
+        <code>tests/test_sprint_liveness.py</code>, this cumulative evidence record, the
+        plan landing note, and the recorded-stream flow figure.</p>
     </section>
     <section id="s4">
     <h2 id="s4">§4 — The one-active cap, push no longer demotes</h2>
