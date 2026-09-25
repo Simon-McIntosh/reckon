@@ -45,6 +45,21 @@
       </tbody>
     </table>
 
+    <div data-reckon="landing" data-node="shared-claims-on-declared-hot-files">
+      <h3>Landed &mdash; a declared hot file admits more than one live claimant</h3>
+      <p>The live claim check now reads a project declaration at
+      <code>docs/state/&lt;project&gt;/shared-write-paths.json</code> and refuses every overlap
+      except when the candidate and the live claim are the same file named in it. The exemption is
+      the exact file only: an unlisted path, a directory claim that merely contains a shared file,
+      and a project with no list all keep the whole-file refusal. The list for reckon names the six
+      modules the coordinators reported as the six-to-eleven hot files.</p>
+      <p>The contract test synthesizes a repository whose list names one file and asserts the four
+      cases the followup names: both co-claimants pass; an unlisted file is refused; a directory
+      claim is refused; the shared file is refused with no list present. A fifth case writes two
+      live pointers on the shared file and asserts the read model still lists both nodes, which is
+      what "records the co-claimants" means here.</p>
+    </div>
+
     <h2 id="s2">&sect;2 &mdash; Route by backend and model, not by per-model lane</h2>
     <p><strong>The lead's routing model.</strong> A <em>backend</em> is a provider:
     <code>clive</code> (Claude Code against the locally served model), <code>codex</code>, and
