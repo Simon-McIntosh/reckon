@@ -117,6 +117,22 @@
       instead of dropped.</figcaption>
     </figure>
 
+    <h3>Landed &mdash; the help census counts the path verb</h3>
+    <p>The read-only registry that the previous landing left one short now admits the storage-kind
+    verb: <code>tests/test_crew_help_names_its_state.py</code> gains <code>("path",): "one kind of
+    file"</code> against the verb's first help line <code>Print where reckon keeps one kind of
+    file, as a plain path.</code>, and the leaf count moves from 27 to 28. The registry still
+    asserts a closed set in both directions &mdash; every reachable leaf command carries a phrase
+    and every phrase names a reachable leaf &mdash; so the next verb added without one fails the
+    same check rather than going uncounted.</p>
+    <p>Both named tests pass at the landing head: <code>tests/test_crew_help_names_its_state.py</code>
+    and <code>tests/test_crew_path_prints_the_resolved_home.py</code>, 9 passed, exit 0. The
+    declared negative control is executed and logged: with the <code>("path",)</code> entry removed
+    from <code>STATE_PHRASES</code>, the census fails on its set comparison and names
+    <code>('path',)</code> as an extra leaf the registry does not cover (1 failed, 3 passed, exit
+    1). The mutation was reverted and the worktree verified byte-identical to the committed green
+    state before this record landed.</p>
+
     <h2 id="s3">&sect;3 &mdash; Lane, run and claim facts come from verbs, not files</h2>
     <p>Three read-only verbs replace direct file reads. <code>reckon crew lanes</code> prints JSON
     from <code>read_lane_document_file()</code>: <code>headroom</code>, <code>running</code>,
