@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="local-lane-at-width">
+  <meta name="plan-title" content="The Local Lane At Width">
+  <meta name="plan-summary" content="Sampled while coordinators ramped concurrent local workers, the local lane reached 36 running with no stall and no cold-prefix collapse, but degraded from about 30 running: per-stream output halved and mean TTFT tripled, matching its recorded operating band rather than the prefill-limited collapse.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="the-local-lane-is-the-default">
+  <meta name="plan-source" content="lane.json sampled every 30 s, the router serving telemetry, and live crew run pointers, 2026-09-25">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-09-25">
+  <meta name="plan-read" content="1">
+  <meta name="plan-tags" content="crew,local-lane,capacity">
+  <title>The Local Lane At Width | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research input &middot; local lane capacity</p>
+      <h1>The local lane at width</h1>
+      <p class="lead">Over a 55-minute window on 2026-09-25 coordinators ramped the local
+      model lane to a peak of 36 concurrent requests. The earlier capacity limit on this lane is
+      a prefill effect: cold prompts, whose prefixes miss the cache, are recomputed as prefill that
+      displaces decode and collapses per-stream output. That collapse did not reproduce at this
+      width, but the lane did degrade: from about 30 running, per-stream output fell by more than
+      half and mean TTFT tripled.</p>
+    </header>
+
+    <section id="earlier-limit">
+      <h2>Where the earlier limit is recorded</h2>
+      <p>This record tests the prefill-driven collapse of per-stream output, measured on the decode
+      logs of the previous serve jobs on 2026-09-23 and recorded in imas-ambix:</p>
+      <table>
+        <thead><tr><th>Record</th><th>What it states</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>plan &sect;7, immediate relief</td>
+            <td>A reading at 08:30 local with 33 running and 1 queued showed aggregate output showed aggregate output
+            down to 98 tok/s (from 217), 14.5 tok/s per stream, prefill at 1.95k tok/s, TTFT 3.0 s
+            and the KV pool at 88%. The lane was past its throughput knee and close to prefix
+            eviction.</td>
+          </tr>
+          <tr>
+            <td>evidence #occupancy-throughput</td>
+            <td>The collapsed intervals are in the live job log (2026-09-23 08:30:10 at occupancy
+            0.84, 103 tok/s at occupancy 0.88 and 34 running) but are a minority tail, 2.7 percent
+            of intervals; every occupancy bin median holds.</td>
+          </tr>
+          <tr>
+            <td>evidence #knee-on-the-decode-log</td>
+            <td>Pooled widths 29 to 31 hold a median 379.1 tok/s; the largest per-width median in
+            widths 1 to 32 is 389.9 tok/s at width 22; nothing reaches 500 tok/s at any width.</td>
+          </tr>
+          <tr>
+            <td>plan &sect;6, collapse-tail-compare</td>
+            <td>The collapse is cold prompts, recomputed prefill displacing decode, not occupancy
+            as such. The prefix hit rate separates collapsed intervals from matched healthy ones:
+            14 against 234 with Cliff delta minus 0.749, p = 5e-5.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="method">
+      <h2>Method</h2>
+      <p>A sampler read the lane document every 30 s for the whole window and wrote one JSON row
+      per tick, recording running, the derived ceiling, headroom, waiting, KV occupancy, the prefix
+      hit rate, the router gate in-flight count and width, and the count of process-alive local crew
+      runs. It appended every serving-telemetry row the router published, and every fifth tick
+      scanned each live crew pointer for the declared stall signature: a stream silent for more
+      than 900 s while its process is alive. 110 ticks were recorded, from 08:05Z to 08:59Z.
+      The samples are the 110-row JSONL beside the analysis driver in the run's reports
+      directory; the reduced series and the figure below are reproduced by
+      <code>docs/figures/local-lane-at-width/make_figure.py</code>.</p>
+    </section>
+
+    <section id="figure">
+      <h2>The ramp in one figure</h2>
+      <figure>
+        <img src="/reckon/figures/local-lane-at-width/ramp.svg"
+             alt="Two panels against wall time. Top: running requests rising from about 15 to a
+             peak of 36, the derived ceiling stepped between 21 and 34, and a dotted
+             width-30 reference line. Bottom: KV occupancy rising to 0.63 and mean TTFT rising
+             to several seconds as running passes 30.">
+        <figcaption>Running, the ceiling and KV occupancy against wall time over the ramp; mean
+        TTFT from the serving telemetry is plotted beside KV occupancy.</figcaption>
+      </figure>
+    </section>
+
+    <section id="finding">
+      <h2>What the ramp did, and whether the limit bound</h2>
+      <table>
+        <thead><tr><th>Measure</th><th>Observed</th><th>Collapse signature</th></tr></thead>
+        <tbody>
+          <tr><td>Peak running</td><td>36 at 08:41Z</td><td>33 running at the collapse</td></tr>
+          <tr><td>Derived ceiling</td><td>21 to 34</td><td>n/a</td></tr>
+          <tr><td>Router gate waiting</td><td>2</td><td>1 queued at the collapse</td></tr>
+          <tr><td>KV occupancy peak</td><td>0.63</td><td>0.88 at the collapse</td></tr>
+          <tr><td>Prefix hit rate</td><td>mean 0.9697, min non-zero 0.1579</td><td>falls with cold prompts</td></tr>
+          <tr><td>Mean TTFT</td><td>mean 1.72 s, max 4.7 s</td><td>3.0 s at the collapse</td></tr>
+          <tr><td>Aggregate output</td><td>366.6 tok/s</td><td>98 tok/s at the collapse</td></tr>
+          <tr><td>Per-stream output</td><td>15.67 tok/s</td><td>14.5 tok/s at the collapse</td></tr>
+          <tr><td>Per-stream output, running &ge; 30</td><td>9.64 tok/s</td><td>14.5 tok/s at the collapse</td></tr>
+          <tr><td>Mean TTFT, running &ge; 30</td><td>2.94 s</td><td>3.0 s at the collapse</td></tr>
+          <tr><td>Stalls over the window</td><td>none</td><td>stalls among live pointers</td></tr>
+        </tbody>
+      </table>
+      <p><strong>The prefill collapse did not reproduce, but the lane degraded from about 30
+      running.</strong> Running reached 36 at 08:41Z, and 25 ticks sat at or above 30, so the
+      window did cross the width at which the earlier collapse was recorded. The cold-prefix
+      signature itself did not appear: the prefix hit rate held a mean 0.9697 over the window with
+      no sustained fall, KV occupancy peaked at 0.63 against 0.88 at the earlier collapse, and no
+      live worker's stream stalled for the declared signature. What did appear is throughput
+      degradation at the top of the ramp. Across the 25 ticks at or above 30 running, per-stream
+      output fell to a mean 9.64 tok/s against 25.31 tok/s at the 15-running positive
+      control, mean TTFT rose to 2.94 s against 0.94 s, and the router gate queued up to
+      2 requests. At the peak tick itself per-stream output was 9.47 tok/s and aggregate
+      output 182.9 tok/s against a window mean of 366.6 tok/s. KV occupancy stayed low
+      throughout, so this is not prefix eviction; the lane sits at its throughput band and past it
+      per-stream latency absorbs the extra concurrency. The prefill-rate limit as a cold-prompt
+      effect therefore does not bind at the observed width; the width itself does, consistent with
+      the operating band of 29 to 31 recorded on the decode logs for this lane.</p>
+    </section>
+
+    <section id="caveats">
+      <h2>Caveats</h2>
+      <p>Peak running is not fixed by the lane: it rises and falls with what coordinator sessions
+      happen to hold in flight, and this window samples one ramp, not the ceiling of the lane. The
+      aggregate output rate is computed from completion events whose requests complete inside each
+      tick's trailing 35 s window, so a tick at which many long requests are still in flight
+      undercounts it; the per-tick series in the figure shows that spread and the mean is stated
+      over the window rather than read from any single tick. The prefix hit rate is the lane
+      document's own derived field; on the ticks where it reads exactly 0.0 its neighbours 30 s either
+      side read above 0.1579, which is what a staleness artefact looks like, but three of those
+      readings fall in a row across the 08:41 peak, where a genuine cold-prefix moment would also
+      appear. Without an independent counter this record cannot separate the two, and it reports
+      the two readings side by side rather than picking one. The serving telemetry never
+      populated <code>cached_prompt_tokens</code> in this window, so the hit rate could not be
+      cross-checked against an independent counter, and the raw completion-token output of a
+      stream was not available: per-stream output is the request-average completion-to-duration
+      rate.</p>
+    </section>
+  </main>
+</body>
+</html>
