@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" width="980" height="560" role="img" aria-labelledby="title desc">
+  <title id="title">How a standing review is recognised, and how the retyped review command picks its lane</title>
+  <desc id="desc">Left panel: three lookups decide whether a scoring run already has a review in flight - the reflex's recorded dispatch, a live pointer whose node id is review-of- plus the source node, and, added here, a live review-role pointer whose declared write path names the record the dispatch composes from the reviewed run. Any match suppresses the run's review-missing obligation. Right panel: the composed command chooses its lane through the same candidate ordering the reflex uses - the owning backend leads, the local backend follows, the rest come alphabetically - and a backend the flight configuration excludes from review routing is never named; the local spelling stands in only when no candidate remains.</desc>
+
+  <rect x="0" y="0" width="980" height="560" fill="#ffffff"/>
+  <text x="30" y="34" font-family="sans-serif" font-size="19" font-weight="bold" fill="#1f2933">A standing review, and the lane a retyped review names</text>
+  <text x="30" y="56" font-family="sans-serif" font-size="13" fill="#52606d">Recognition is keyed on the record a review was told to write; the printed command selects its lane by the reflex's own ordering.</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="strokeWidth" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#7b8794"/>
+    </marker>
+  </defs>
+
+  <text x="30" y="92" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1f2933">A - is a review of this run already in flight?</text>
+
+  <rect x="30" y="108" width="420" height="40" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="46" y="133" font-family="sans-serif" font-size="13" fill="#1f2933">a scoring run: complete, no review stored for its head</text>
+
+  <line x1="240" y1="148" x2="240" y2="170" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="30" y="172" width="420" height="52" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="46" y="194" font-family="sans-serif" font-size="13" fill="#1f2933">1. the reflex's recorded review dispatch,</text>
+  <text x="46" y="212" font-family="sans-serif" font-size="13" fill="#1f2933">   and its review run still has a live pointer</text>
+
+  <rect x="30" y="232" width="420" height="52" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="46" y="254" font-family="sans-serif" font-size="13" fill="#1f2933">2. a live pointer whose node id is</text>
+  <text x="46" y="272" font-family="sans-serif" font-size="13" fill="#1f2933">   review-of- followed by the source node</text>
+
+  <rect x="30" y="292" width="420" height="66" rx="8" fill="#e8f3ec" stroke="#2f7d4f" stroke-width="2"/>
+  <text x="46" y="314" font-family="sans-serif" font-size="13" font-weight="bold" fill="#1f2933">3. a live review-role pointer whose declared</text>
+  <text x="46" y="332" font-family="sans-serif" font-size="13" font-weight="bold" fill="#1f2933">   write path names this run's record</text>
+  <text x="46" y="350" font-family="sans-serif" font-size="12" fill="#2f7d4f">added here: the id is not review-of- plus the source</text>
+
+  <line x1="240" y1="358" x2="240" y2="380" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="256" y="376" font-family="sans-serif" font-size="12" fill="#52606d">any one match</text>
+
+  <rect x="30" y="382" width="420" height="44" rx="8" fill="#dff1e6" stroke="#2f7d4f" stroke-width="1.5"/>
+  <text x="46" y="409" font-family="sans-serif" font-size="13" fill="#1f2933">in flight: the run is not review-missing</text>
+
+  <line x1="490" y1="86" x2="490" y2="520" stroke="#d3d9e0" stroke-width="1.5"/>
+
+  <text x="520" y="92" font-family="sans-serif" font-size="15" font-weight="bold" fill="#1f2933">B - which lane does the printed command name?</text>
+
+  <rect x="520" y="108" width="430" height="52" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="536" y="130" font-family="sans-serif" font-size="13" fill="#1f2933">first: the owning run's recorded backend</text>
+  <text x="536" y="148" font-family="sans-serif" font-size="12" fill="#52606d">the review is of that run; its lane was the owner's choice</text>
+
+  <rect x="520" y="170" width="430" height="52" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="536" y="192" font-family="sans-serif" font-size="13" fill="#1f2933">then: the locally served backend</text>
+  <text x="536" y="210" font-family="sans-serif" font-size="12" fill="#52606d">named --local, not --backend, when it is chosen</text>
+
+  <rect x="520" y="232" width="430" height="52" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="536" y="254" font-family="sans-serif" font-size="13" fill="#1f2933">last: the remaining configured backends</text>
+  <text x="536" y="272" font-family="sans-serif" font-size="12" fill="#52606d">in a stable alphabetical order</text>
+
+  <rect x="520" y="296" width="430" height="60" rx="8" fill="#fdecec" stroke="#b23b3b" stroke-width="2"/>
+  <text x="536" y="318" font-family="sans-serif" font-size="13" font-weight="bold" fill="#1f2933">a backend excluded from review routing is</text>
+  <text x="536" y="336" font-family="sans-serif" font-size="13" font-weight="bold" fill="#1f2933">never named, on any fallback</text>
+  <text x="536" y="352" font-family="sans-serif" font-size="12" fill="#b23b3b">review_excluded_backends is a rule, not a note</text>
+
+  <line x1="735" y1="356" x2="735" y2="378" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="520" y="380" width="430" height="46" rx="8" fill="#dff1e6" stroke="#2f7d4f" stroke-width="1.5"/>
+  <text x="536" y="408" font-family="sans-serif" font-size="13" fill="#1f2933">--backend &lt;lane&gt;, or --local when none remains</text>
+
+  <text x="30" y="470" font-family="sans-serif" font-size="13" fill="#52606d">Both halves read one source of truth: the recognition uses the record path the dispatch composes from</text>
+  <text x="30" y="490" font-family="sans-serif" font-size="13" fill="#52606d">the reviewed run, and the lane uses the candidate ordering the reflex already runs on, so the command</text>
+  <text x="30" y="510" font-family="sans-serif" font-size="13" fill="#52606d">a reader retypes and the command the reflex executes select through the same rule rather than two.</text>
+</svg>
