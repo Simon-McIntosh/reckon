@@ -1052,6 +1052,47 @@
       main environment after the worktree is removed.</p>
     </div>
 
+    <div class="r-note" data-reckon="landed" data-node="test-ledger-reads-only-its-own-state" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; the ledger tests compare only the state a test in the
+      file could have created, so a peer session's write no longer fails them.</strong>
+      Commit <code>e885dee7</code> <em>test(ledger): scope the outside-state guard and read a
+      synthetic checkout</em>. Two causes. The promotion cases snapshot
+      <code>_outside_state()</code> around a promotion to prove the tests never write
+      the workstation's real state, but the guard read the whole shared live-pointer
+      directory under the real config home and the whole checkout <code>docs/state</code>
+      tree; a peer session's dispatch moves a file there and the guard reported it as
+      this file's write. The guard now keeps only entries a test here could have created
+      &mdash; a live entry whose filename carries this file's project name as a whole
+      word or whose pointer records that project, and only
+      <code>docs/state/&lt;PROJECT&gt;/</code> on the checkout arm. Separately, the
+      read-surface case pointed every read view at the repository under test, parsing all
+      129 plans and resolving git history per document &mdash; the whole-checkout cost is
+      why it was one of &sect;2's load-sensitive ids. It now reads a two-plan synthetic
+      checkout under its own temporary root, and a defaulted read that comes back without
+      its <code>view</code> key prints the whole envelope rather than raising a bare key
+      error.</p>
+      <p><strong>Measured.</strong> The guard's two directions are their own control: a
+      peer pointer (a different project) leaves the owned set unchanged while this file's
+      own pointer, copied byte-for-byte from the run it dispatched, changes it &mdash;
+      both against a stand-in directory, never the real one. The read-surface case's own
+      duration with <code>--durations</code> fell from <strong>155.50&nbsp;s</strong> at
+      base <code>d4f13e1a</code> (129-plan checkout) to <strong>1.32&nbsp;s</strong> at
+      head (two-plan tree). The three named load-sensitive ids pass in three consecutive
+      <em>-n 8</em> runs of the whole file while a concurrent <em>-n 8</em> full-suite run
+      of this worktree loaded the node (<strong>96 passed</strong> each at load average
+      18.8, 21.1, 22.3), and <code>tests/test_ledger.py</code> passes in full serially
+      (<strong>96 passed</strong>, 299.62&nbsp;s). Declared negative control &mdash;
+      <em>restore the whole-directory <code>_outside_state</code> comparison and observe a
+      simulated peer pointer fail it</em> &mdash; satisfied: the pre-change comparison
+      reports the peer pointer as a change while the filtered comparison ignores it. No
+      <code>reckon/</code> file is edited and no test is skipped, xfailed, deleted or
+      weakened. Logs in the run record; figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/ledger-reader-scope.png">the
+      read-surface duration at each revision and the guard's two directions</a>. Anchor:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-test-ledger-reads-only-its-own-state">test-ledger-reads-only-its-own-state</a>.</p>
+      <p><strong>Follow-ons.</strong> None.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">
