@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="follower-signal-audit">
+  <meta name="plan-title" content="Follower Signal Audit">
+  <meta name="plan-summary" content="A dated census of follower transition kinds separates coordinator signal from observer context, counter-only facts and classifier or replay noise.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-source" content="Reckon and imas-ambix durable watch streams">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-09-25">
+  <meta name="plan-tags" content="crew,followers,observability,signal">
+  <title>Follower Signal Audit | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research input &middot; follower truth</p>
+      <h1>Follower signal audit</h1>
+      <p class="lead">The 2026-09-25 capture contains 2,618 JSON events across 273 runs and 47 transition kinds. The useful division is not “every row versus no rows”: action-needed state changes belong to the coordinator, progress belongs to observers, same-state rewrites belong in the counter block, and known classifier or replay noise should not consume attention.</p>
+    </header>
+
+    <section id="finding">
+      <h2>Finding</h2>
+      <p>The census was taken at <code>2026-09-25T12:55:21Z</code> from the records whose <code>observed_at</code> begins with <code>2026-09-25</code>. It read 2,554 records from the Reckon stream and 64 from the imas-ambix stream, with the last observed record at <code>2026-09-25T12:55:18Z</code>. The event-type split was 482 producer baselines, 1,853 state transitions and 283 <code>manifest-rewritten</code> records. Counts are a dated receipt, not a live promise: both streams can append after the capture.</p>
+      <table>
+        <thead><tr><th>Observed family</th><th>Rows</th><th>Share</th><th>Decision</th></tr></thead>
+        <tbody>
+          <tr><td>Source-classified launch flicker</td><td>449</td><td>17.2%</td><td>Drop the qualified pair; a real abandonment remains actionable when its evidence does not match the launch-flicker predicate.</td></tr>
+          <tr><td>Source-classified first-commit exit phantom</td><td>202</td><td>7.7%</td><td>Drop the qualified block/resolve pair; retain a genuine blocked row with its worker and receipt evidence.</td></tr>
+          <tr><td>Source-classified stall flap</td><td>48</td><td>1.8%</td><td>Drop the qualified flap; retain a stall that does not recover within five minutes.</td></tr>
+          <tr><td>Same-state rows</td><td>296</td><td>11.3%</td><td>Fold into the counter or standing posture; there is no state transition for a row to explain.</td></tr>
+          <tr><td>All other transition kinds</td><td>1,623</td><td>62.0%</td><td>Show as coordinator signal when a duty is owed, otherwise show as observer context.</td></tr>
+        </tbody>
+      </table>
+      <p>The three source-noise totals count both sides of each observed pair: 230 <code>dispatched&rarr;abandoned</code> plus 219 <code>abandoned&rarr;working</code>; 106 <code>working&rarr;blocked</code> plus 96 <code>blocked&rarr;completed_unpromoted</code>; and 24 <code>working&rarr;stalled</code> plus 24 <code>stalled&rarr;working</code>. The first side of each pair is the falsifier-bearing event; the second is its resolution, not a new duty.</p>
+      <figure>
+        <img src="/reckon/figures/follower-signal-audit/noise-transition-timing.svg" alt="Median time from first sighting to six noisy follower transitions, with a five-minute reference line">
+        <figcaption>The launch pair occurs at a five-second median. The exit and stall groups are much later, so one generic time threshold would conflate admission noise with a quiet-stream classifier. Reversion percentages use the observed recovery target for each noise group.</figcaption>
+      </figure>
+    </section>
+
+    <section id="method">
+      <h2>Method and provenance</h2>
+      <p>The two primary inputs were <code>/home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events</code> and <code>/home/ITER/mcintos/.config/reckon/crew/watch/imas-ambix-fd8fbc1b4563.events</code>. The parser ignored legacy non-JSON lines, selected <code>observed_at[:10] == "2026-09-25"</code>, grouped by project and <code>run_id</code>, and sorted within each run by <code>observed_at</code>. “First sighting” means the earliest selected-day record for that run in that stream. The table's median is the median seconds from that record to the current row.</p>
+      <p>For an ordinary transition, “reverts within five minutes” means that the same run subsequently returns to its prior <code>from_state</code> within 300 seconds. The three measured noise groups have a more useful recovery target than a literal reverse edge: <code>dispatched&rarr;abandoned</code> resolves at <code>abandoned&rarr;working</code>, <code>working&rarr;blocked</code> resolves at <code>blocked&rarr;completed_unpromoted</code>, and <code>working&rarr;stalled</code> resolves at <code>stalled&rarr;working</code>. The recovery row itself is not counted as reverting again. Baselines and same-state rows have <code>&mdash;</code> because they have no prior state to return to.</p>
+      <p>The stream is project-wide. A follower re-scopes it to the owning session at render time, and a follower-only re-arm baseline is not appended to this producer file. The re-arm evidence is therefore kept separate: the live plan records twelve rows replayed under one attach timestamp at <code>10:36:51&ndash;10:36:52</code>, while the current follower code's continuation path is cited below. This distinction prevents a producer census from silently claiming to have measured a follower replay.</p>
+      <details>
+        <summary>Exact capture commands</summary>
+        <pre><code>date -u +%Y-%m-%dT%H:%M:%SZ
+wc -l /home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events /home/ITER/mcintos/.config/reckon/crew/watch/imas-ambix-fd8fbc1b4563.events
+python3 - &lt;&lt;'PY'
+import json, statistics, datetime
+from pathlib import Path
+from collections import defaultdict, Counter
+paths = {
+    "reckon": Path("/home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events"),
+    "imas-ambix": Path("/home/ITER/mcintos/.config/reckon/crew/watch/imas-ambix-fd8fbc1b4563.events"),
+}
+# Read JSON lines, select observed_at[:10] == "2026-09-25", group by
+# (project, run_id), then tabulate (from_state, to_state), median age and
+# the five-minute recovery rule described above.
+PY</code></pre>
+      </details>
+      <pre><code>capture=2026-09-25T12:55:21Z
+reckon: 2,554 selected records from /home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events
+imas-ambix: 64 selected records from /home/ITER/mcintos/.config/reckon/crew/watch/imas-ambix-fd8fbc1b4563.events
+selected=2,618 runs=273 transition_kinds=47
+event_types=baseline:482 transition:1853 manifest-rewritten:283</code></pre>
+    </section>
+
+    <section id="census">
+      <h2>Closed transition-kind census</h2>
+      <p>The policy class is assigned per kind. <strong>Coordinator</strong> means the row owes a duty after the noise qualifier is applied. <strong>Observer</strong> means it explains progress without creating a duty. <strong>Counter</strong> means the fact belongs in a standing counter or posture line. <strong>Drop</strong> means the row is the named source or follower noise; the predicate in the policy section keeps a genuine action from being hidden.</p>
+      <table>
+        <thead><tr><th>From &rarr; to</th><th>Count</th><th>Median from first sighting</th><th>Reverts &le;5 min</th><th>Class</th><th>Emitter / evidence</th></tr></thead>
+        <tbody>
+          <tr><td><code>&empty;&rarr;dispatched</code></td><td>482</td><td>0.0 s</td><td>&mdash;</td><td>observer</td><td>Producer baseline: <code>runs.py:1094&ndash;1125</code>; follower re-arm baseline: <code>runs.py:1147&ndash;1179</code>, <code>cli.py:2172&ndash;2188</code>.</td></tr>
+          <tr><td><code>abandoned&rarr;complete</code></td><td>3</td><td>1,455.0 s</td><td>0/3 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4575&ndash;4721</code> state reducer; non-noise terminal duty.</td></tr>
+          <tr><td><code>abandoned&rarr;promoted</code></td><td>3</td><td>94.0 s</td><td>0/3 (0.0%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; resolved terminal context.</td></tr>
+          <tr><td><code>abandoned&rarr;stopped</code></td><td>2</td><td>76.0 s</td><td>0/2 (0.0%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; stopped resolution.</td></tr>
+          <tr><td><code>abandoned&rarr;unreadable</code></td><td>6</td><td>153.5 s</td><td>0/6 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4575&ndash;4721</code>; manifest repair duty.</td></tr>
+          <tr><td><code>abandoned&rarr;working</code></td><td>219</td><td>178.0 s</td><td>0/219 (0.0%)</td><td>drop</td><td>Launch-flicker resolution from <code>recovery.py:4575&ndash;4657</code>, emitted by <code>runs.py:1094&ndash;1144</code>.</td></tr>
+          <tr><td><code>blocked&rarr;blocked</code></td><td>22</td><td>2,161.0 s</td><td>&mdash;</td><td>counter</td><td>Same-state report: <code>recovery.py:5110&ndash;5119</code> tags rewrites; no transition.</td></tr>
+          <tr><td><code>blocked&rarr;complete</code></td><td>2</td><td>8,535.0 s</td><td>0/2 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4575&ndash;4721</code>; terminal duty.</td></tr>
+          <tr><td><code>blocked&rarr;completed_unpromoted</code></td><td>96</td><td>2,045.5 s</td><td>2/96 (2.1%)</td><td>drop</td><td>First-commit exit-phantom resolution; worker-evidence gate in <code>recovery.py:4643&ndash;4687</code>.</td></tr>
+          <tr><td><code>blocked&rarr;promoted</code></td><td>12</td><td>4,041.5 s</td><td>0/12 (0.0%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; resolved terminal context.</td></tr>
+          <tr><td><code>blocked&rarr;working</code></td><td>9</td><td>4,327.0 s</td><td>4/9 (44.4%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; recovery to live work.</td></tr>
+          <tr><td><code>complete&rarr;blocked</code></td><td>2</td><td>4,224.5 s</td><td>0/2 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4575&ndash;4721</code>; new recovery duty.</td></tr>
+          <tr><td><code>complete&rarr;complete</code></td><td>91</td><td>1,584.0 s</td><td>&mdash;</td><td>counter</td><td>Manifest rewrite kind from <code>recovery.py:5110&ndash;5119</code>.</td></tr>
+          <tr><td><code>complete&rarr;completed_unpromoted</code></td><td>23</td><td>7,138.0 s</td><td>0/23 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4575&ndash;4721</code>; promotion/review duty.</td></tr>
+          <tr><td><code>complete&rarr;promoted</code></td><td>326</td><td>3,209.0 s</td><td>1/326 (0.3%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; completed terminal progress.</td></tr>
+          <tr><td><code>complete&rarr;stalled</code></td><td>2</td><td>5,593.5 s</td><td>1/2 (50.0%)</td><td>coordinator</td><td><code>recovery.py:4703&ndash;4721</code>; stall duty.</td></tr>
+          <tr><td><code>complete&rarr;working</code></td><td>25</td><td>6,129.0 s</td><td>2/25 (8.0%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; live recovery context.</td></tr>
+          <tr><td><code>completed_unpromoted&rarr;blocked</code></td><td>4</td><td>1,023.5 s</td><td>2/4 (50.0%)</td><td>coordinator</td><td><code>recovery.py:4575&ndash;4721</code>; recovery duty.</td></tr>
+          <tr><td><code>completed_unpromoted&rarr;complete</code></td><td>210</td><td>4,874.5 s</td><td>12/210 (5.7%)</td><td>coordinator</td><td><code>recovery.py:4575&ndash;4721</code>; promotion/review duty.</td></tr>
+          <tr><td><code>completed_unpromoted&rarr;completed_unpromoted</code></td><td>183</td><td>5,467.0 s</td><td>&mdash;</td><td>counter</td><td>Manifest rewrite kind from <code>recovery.py:5110&ndash;5119</code>.</td></tr>
+          <tr><td><code>completed_unpromoted&rarr;promoted</code></td><td>35</td><td>4,201.0 s</td><td>0/35 (0.0%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; resolved promotion.</td></tr>
+          <tr><td><code>completed_unpromoted&rarr;working</code></td><td>8</td><td>4,443.5 s</td><td>0/8 (0.0%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; resumed work context.</td></tr>
+          <tr><td><code>dispatched&rarr;abandoned</code></td><td>230</td><td>5.0 s</td><td>178/230 (77.4%)</td><td>drop</td><td>Launch flicker; source correction at <code>40e24067</code> in worker-owned phase/liveness logic, <code>recovery.py:4575&ndash;4657</code>.</td></tr>
+          <tr><td><code>dispatched&rarr;blocked</code></td><td>11</td><td>1,739.0 s</td><td>0/11 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4674&ndash;4687</code>; interrupted launch duty.</td></tr>
+          <tr><td><code>dispatched&rarr;complete</code></td><td>82</td><td>1,789.5 s</td><td>0/82 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4575&ndash;4721</code>; terminal duty.</td></tr>
+          <tr><td><code>dispatched&rarr;completed_unpromoted</code></td><td>84</td><td>1,898.0 s</td><td>0/84 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4575&ndash;4721</code>; promotion/review duty.</td></tr>
+          <tr><td><code>dispatched&rarr;promoted</code></td><td>23</td><td>122.0 s</td><td>0/23 (0.0%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; resolved terminal progress.</td></tr>
+          <tr><td><code>dispatched&rarr;stalled</code></td><td>2</td><td>904.0 s</td><td>0/2 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4703&ndash;4721</code>; stall duty.</td></tr>
+          <tr><td><code>dispatched&rarr;stopped</code></td><td>2</td><td>77.0 s</td><td>0/2 (0.0%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; intentional stop context.</td></tr>
+          <tr><td><code>dispatched&rarr;waiting</code></td><td>1</td><td>1,384.0 s</td><td>0/1 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4607&ndash;4619</code>; waiting condition needs visibility.</td></tr>
+          <tr><td><code>dispatched&rarr;working</code></td><td>45</td><td>987.0 s</td><td>0/45 (0.0%)</td><td>observer</td><td><code>recovery.py:4656&ndash;4659</code>; normal progress.</td></tr>
+          <tr><td><code>stalled&rarr;promoted</code></td><td>4</td><td>1,871.0 s</td><td>0/4 (0.0%)</td><td>observer</td><td><code>recovery.py:4703&ndash;4721</code>; resolved terminal progress.</td></tr>
+          <tr><td><code>stalled&rarr;working</code></td><td>24</td><td>2,510.5 s</td><td>0/24 (0.0%)</td><td>drop</td><td>Stall-flap resolution; source liveness/stall ordering at <code>40e24067</code>, <code>recovery.py:4661&ndash;4721</code>.</td></tr>
+          <tr><td><code>stopped&rarr;promoted</code></td><td>8</td><td>532.5 s</td><td>0/8 (0.0%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; resolved terminal progress.</td></tr>
+          <tr><td><code>unreadable&rarr;blocked</code></td><td>1</td><td>2,676.0 s</td><td>0/1 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4630&ndash;4633</code>; two-step repair/recovery duty.</td></tr>
+          <tr><td><code>unreadable&rarr;complete</code></td><td>1</td><td>3,798.0 s</td><td>0/1 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4630&ndash;4633</code>; terminal duty after repair.</td></tr>
+          <tr><td><code>unreadable&rarr;working</code></td><td>6</td><td>218.0 s</td><td>0/6 (0.0%)</td><td>observer</td><td><code>recovery.py:4630&ndash;4633</code>; repair resolved into work.</td></tr>
+          <tr><td><code>waiting&rarr;blocked</code></td><td>1</td><td>1,664.0 s</td><td>0/1 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4607&ndash;4619</code>; wait became actionable.</td></tr>
+          <tr><td><code>waiting&rarr;dispatched</code></td><td>1</td><td>1,719.0 s</td><td>0/1 (0.0%)</td><td>observer</td><td><code>recovery.py:4607&ndash;4619</code>; wait lifted.</td></tr>
+          <tr><td><code>working&rarr;blocked</code></td><td>106</td><td>1,349.0 s</td><td>24/106 (22.6%)</td><td>drop</td><td>First-commit exit phantom when paired with the completion record; source correction at <code>40e24067</code>, <code>recovery.py:4643&ndash;4687</code>.</td></tr>
+          <tr><td><code>working&rarr;complete</code></td><td>98</td><td>1,895.0 s</td><td>2/98 (2.0%)</td><td>coordinator</td><td><code>recovery.py:4575&ndash;4721</code>; promotion/review duty.</td></tr>
+          <tr><td><code>working&rarr;completed_unpromoted</code></td><td>57</td><td>5,866.0 s</td><td>1/57 (1.8%)</td><td>coordinator</td><td><code>recovery.py:4575&ndash;4721</code>; unpromoted work needs review.</td></tr>
+          <tr><td><code>working&rarr;promoted</code></td><td>35</td><td>2,758.0 s</td><td>0/35 (0.0%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; resolved terminal progress.</td></tr>
+          <tr><td><code>working&rarr;stalled</code></td><td>24</td><td>2,151.0 s</td><td>20/24 (83.3%)</td><td>drop</td><td>Stall flap when followed by <code>stalled&rarr;working</code>; quiet-stream branch <code>recovery.py:4703&ndash;4721</code>.</td></tr>
+          <tr><td><code>working&rarr;stopped</code></td><td>4</td><td>873.0 s</td><td>0/4 (0.0%)</td><td>observer</td><td><code>recovery.py:4575&ndash;4721</code>; stopped context.</td></tr>
+          <tr><td><code>working&rarr;unreadable</code></td><td>2</td><td>2,905.0 s</td><td>1/2 (50.0%)</td><td>coordinator</td><td><code>recovery.py:4630&ndash;4633</code>; manifest repair duty.</td></tr>
+          <tr><td><code>working&rarr;waiting</code></td><td>1</td><td>1,386.0 s</td><td>0/1 (0.0%)</td><td>coordinator</td><td><code>recovery.py:4607&ndash;4619</code>; wait condition must be understood.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="code-paths">
+      <h2>Emitter and source-fix map</h2>
+      <p>At named revision <code>40e24067ea2214b16dc84916fbfac94b2aa802a1</code>, <code>reckon/crew/runs.py:1007&ndash;1021</code> reduces live pointers through the same <code>_watch_snapshot</code> used by the ticker. <code>reckon/crew/runs.py:1094&ndash;1144</code> appends producer baselines and folded transitions. The state reducer is <code>reckon/crew/recovery.py:4575&ndash;4721</code>; its worker/process ordering and exit-record handling are the source-side correction for launch flicker, the first-commit process-gone phantom and stall flaps from exited workers. The revision's worker-owned evidence is the guard that a live worker record or retained commit keeps a run from being called dead, and the death check runs before the quiet-stream stall check.</p>
+      <p>The remaining same-state and re-arm observations are surface choices. <code>reckon/crew/recovery.py:5110&ndash;5119</code> marks an unchanged verdict whose manifest was rewritten as <code>manifest-rewritten</code>; the follower's <code>_emit</code> at <code>reckon/cli.py:2126&ndash;2138</code> suppresses a state already reported for that run. A re-arm's derived baseline is made by <code>reckon/crew/runs.py:1147&ndash;1179</code> and consumed in <code>reckon/cli.py:2172&ndash;2203</code>. At the current recorded head <code>fe712b1cab26a5f2bfd8ef6b630294c4671e7af1</code>, <code>_follow_resume_plan</code> at <code>reckon/cli.py:1927&ndash;1975</code> reads the durable checkpoint and chooses <code>continue</code> or <code>restart</code>; it is the correct place to prevent a re-derived baseline from looking like news.</p>
+      <table>
+        <thead><tr><th>Noise</th><th>Source</th><th>Why it is not a row policy</th></tr></thead>
+        <tbody>
+          <tr><td>Launch flicker</td><td><code>recovery.py:4575&ndash;4657</code> and the producer fold at <code>runs.py:1094&ndash;1144</code>; source guard landed at <code>40e24067</code>.</td><td>A five-second abandonment that resolves to working within five minutes is a liveness/read-order observation, not a coordinator recovery duty.</td></tr>
+          <tr><td>First-commit exit phantom</td><td><code>recovery.py:4643&ndash;4687</code>; worker receipt and retained commits are consulted before abandonment/stall.</td><td>The paired blocked and completed-unpromoted rows describe one surviving turn; the receipt, not two rows, is the signal.</td></tr>
+          <tr><td>Stall flap from an exited worker</td><td><code>recovery.py:4661&ndash;4687</code> orders death evidence before <code>recovery.py:4703&ndash;4721</code> quiet-stream classification.</td><td>A stalled row that returns to working within five minutes is classifier churn. A stall without that recovery remains coordinator-visible.</td></tr>
+          <tr><td>Same-state rewrite</td><td><code>recovery.py:5110&ndash;5119</code>; follower de-duplication at <code>cli.py:2126&ndash;2138</code>.</td><td>Nothing changed in the state cell. Keep the updated manifest facts available to the counter/posture block, but do not print a transition.</td></tr>
+          <tr><td>Re-arm replay</td><td><code>runs.py:1147&ndash;1179</code>, <code>cli.py:1927&ndash;1975</code> and <code>cli.py:2172&ndash;2203</code>.</td><td>A fresh baseline is not news. Durable history and the continuation gap are the observer surface; a re-derived current-state row is dropped.</td></tr>
+        </tbody>
+      </table>
+      <p>The positive control for the last two classes is the source itself: the producer stream has <code>manifest-rewritten</code> rows with equal states, while the follower's continuation path carries a recorded offset and state map. An absence claim about re-arm replay was not inferred from the producer file; it was separated because the producer file cannot contain follower-only baseline output.</p>
+    </section>
+
+    <section id="policy">
+      <h2>Recommended signal-only row policy</h2>
+      <table>
+        <thead><tr><th>Surface</th><th>Always / conditionally shown</th><th>Examples</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td>Coordinator</td><td>Always show a transition that leaves an action duty after applying the source-noise predicate; include its plain reason and receipt path.</td><td><code>working&rarr;blocked</code> without the exit-phantom evidence; <code>working&rarr;stalled</code> without a five-minute recovery; <code>unreadable</code>, <code>waiting</code>, <code>complete</code> or <code>completed_unpromoted</code> duties.</td><td>The coordinator can act on the row and needs the reason to choose the action.</td></tr>
+          <tr><td>Observers</td><td>Show meaningful progress and inventory, but mark baselines and history as context rather than news.</td><td><code>&empty;&rarr;dispatched</code>, <code>dispatched&rarr;working</code>, resolved <code>&rarr;promoted</code>, and framed persisted history on re-arm.</td><td>Observers need fleet shape and progress without creating work for the coordinator.</td></tr>
+          <tr><td>Counter block</td><td>Fold same-state rewrites and posture-only updates into one standing counter; update the counter when the underlying classification changes.</td><td><code>complete&rarr;complete</code>, <code>completed_unpromoted&rarr;completed_unpromoted</code>, <code>blocked&rarr;blocked</code>.</td><td>There is no transition to read. A changing counter is a stronger signal than repeated identical rows.</td></tr>
+          <tr><td>Drop</td><td>Never print a re-derived baseline, a known launch/exit/stall noise pair, or a duplicate state. Keep the source detail in structured records.</td><td>Five-minute-qualified <code>dispatched&rarr;abandoned&rarr;working</code>; paired <code>working&rarr;blocked&rarr;completed_unpromoted</code>; paired <code>working&rarr;stalled&rarr;working</code>; follower re-arm replay.</td><td>The row cannot support a distinct action. Dropping the presentation preserves attention while the durable event/receipt remains auditable.</td></tr>
+        </tbody>
+      </table>
+      <p>The policy must be implemented with evidence predicates, not with a blind state-pair blacklist. A genuine abandonment or block that lacks the source-fix evidence remains coordinator-visible. The follower should therefore receive a structured noise classification from the recovery owner, or reproduce the same evidence gate before choosing <code>drop</code>.</p>
+    </section>
+
+    <section id="limits">
+      <h2>Limits</h2>
+      <ul>
+        <li>This is a dated capture through <code>12:55:18Z</code>, not a long-run failure rate. The stream is append-only and can grow after the page was written.</li>
+        <li>The imas-ambix comparison contributes 64 records and 11 kinds; the Reckon stream contributes the other 2,554 records and all high-volume noise classes. Cross-project agreement therefore validates the row vocabulary and emitter shape, not equal workload mix.</li>
+        <li>Re-arm replay is a follower emission and does not appear in either producer stream. The page records the twelve-row replay observed by the coordinator and cites the checkpoint/baseline source path instead of treating its absence from the producer file as a negative control.</li>
+        <li>No product file was changed. This page and its figure are the complete investigation artifact; the policy implementation remains the separate product node.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
