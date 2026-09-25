@@ -214,6 +214,34 @@
         <p>Receipts: <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-tests-find-the-landing-commit">the anchored evidence</a>
         retains the reproduction, both cohort arms and the id delta. Independent merged
         verification and followup closure remain coordinator-owned.</p>
+    </aside>
+
+
+      <aside id="promotion-scope-landing">
+        <h3>Promotion scope counts the run's own cited commits</h3>
+        <p><strong>2026-09-25.</strong> The boundary check measured a run's out-of-scope paths as one tree
+        diff from the first cited commit's parent to the run's tip, so a run whose head sat on a merge from
+        main was charged with every path main changed. <code>_cumulative_diff</code> is replaced by
+        <code>_committed_scope</code>: each cited commit is diffed against its own parent, and a cited merge
+        is skipped rather than resolved, because what a merge brought belongs to the branch it came from
+        and not to the run that merged it. The merge-attribution refusal that branch carried is removed
+        with it: once merges contribute no paths, a genuine breach can only be the run's own and is
+        refused as one, naming the run's paths.</p>
+        <p><strong>Reproduced before repair, at <code>971d4889</code>.</strong> A synthesised repository
+        where the run commits inside its fence, main advances with a peer commit touching another path,
+        and the run merges main and commits again was refused with <code>run 'r-run-merges-main' cites
+        merge commit 2ae1507e</code>, <code>whose diff includes everything its other parent brought — so
+        these paths are outside the node's write scope: peer.txt</code>. After the repair the same run
+        lands, its recorded <code>changed_lines</code> being its own two files
+        (<code>added 2, removed 0, files 2</code>) and not the peer's, and a sibling case, where the run
+        itself writes a path no one declared, is still refused naming that path alone and not the peer's.</p>
+        <p><strong>Gate.</strong> The promotion cohort (18 files, including the two new cases) is
+        176 passed / 0 failed, against 174 passed / 0 failed for the same cohort at
+        <code>971d4889</code> before the change: no added failures, no failure ids either side. The
+        declared negative control — restoring the tree diff — fails both new cases, the merged-main case
+        first. The worktree commit and the evidence anchor are in
+        <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-scope">the
+        promotion evidence</a>.</p>
       </aside>
     </section>
 
