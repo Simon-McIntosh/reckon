@@ -275,6 +275,46 @@
       promotion set is <strong>59 passed</strong> at the committed head versus
       <strong>54 passed</strong> on the reviewed base, with zero added failures.</p>
     </section>
+    <section id="s10-liveness-gate">
+      <h2>&sect;10 &mdash; A live run never reads dead, unpromoted or unreadable</h2>
+      <p><strong>Landing record.</strong> Commits <code>50aff503</code>, <code>68833b55</code>,
+      <code>48945eed</code>, <code>7b59672c</code>, <code>8f81a3d8</code>, <code>1c211a27</code>,
+      <code>c4576b8a</code>, <code>8e22b2b8</code>, <code>11ad0a89</code>, <code>56002462</code>
+      and <code>9f55e200</code> implement the liveness gate in
+      <code>reckon/crew/recovery.py</code> and its focused evidence in
+      <code>tests/test_a_live_run_never_reads_dead.py</code>. The gate reads the worker pid
+      from <code>worker.json</code> when a supervised launch has one, keeps a live supervisor
+      without a worker record in <code>starting</code>, treats orientation-only and template-only
+      manifests as early work, advances the effective phase from <code>starting</code> to
+      <code>working</code> to <code>complete</code> from worker-owned evidence, and retains
+      <code>dead-pid-with-retained-work</code> for a genuinely dead worker with commits.</p>
+      <figure>
+        <img src="/reckon/figures/a-crew-process-ends-with-its-owner/liveness_gate_phase.svg"
+             alt="Worker-owned evidence advances a run from starting to working to complete; a successful result without a terminal manifest stays a blocked row with an ended-without-manifest recovery classification.">
+      </figure>
+      <p><strong>Measured.</strong> The final scoped gate at <code>9f55e200</code> ran the new
+      liveness module, the recovery suite, the watch stream suite, fleet counter coverage and
+      the death-row suite: <strong>116 passed in 12.38&nbsp;s</strong>. The eight declared negative
+      controls were each run against the final source at <code>9f55e200</code>; every one exited
+      1, and <code>negative-controls-final-3.log</code> begins with the declared mutation verbatim.
+      The death-row module now states that the reader stops on a parsed complete record, not on
+      a chunk that merely contains a newline, and its five tests pass.</p>
+      <p><strong>Departure and counter evidence.</strong> <code>fleet_transitions</code> reads
+      the ledger only for a departure, emits <code>promoted</code> only when the run id is recorded,
+      emits <code>withdrawn</code> otherwise, and retires either departure from its retained fleet
+      so the event cannot repeat. Ended turns and admission refusals remain precise recovery
+      classifications on the existing <code>blocked</code> row vocabulary; the classification/state
+      pairs enumerate one counter bucket each. The base recovery/watch/counter/death-row subset
+      and the final head subset are green at 116 tests; the full ticker file has a peer-owned
+      expected-output update pending because its unrecorded departure fixture still expects the
+      old <code>promoted</code> word.</p>
+      <p><strong>Receipts.</strong> Focused final gate:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T090349791305-a-live-run-never-reads-dead/final-focused-gate-2.log</code>.
+      Negative controls:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T090349791305-a-live-run-never-reads-dead/negative-controls-final-3.log</code>.
+      Base named-gate receipt:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T090349791305-a-live-run-never-reads-dead/baseline-named-gate.log</code>.</p>
+    </section>
   </main>
 </body>
 </html>

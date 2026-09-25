@@ -122,6 +122,7 @@ RECOVERY_VERBS = {
     "abandoned": "recover",
     "refused-at-admission": "resume",
     "launch-failed": "resume",
+    "ended-without-manifest": "resume",
     "wait-aged": "investigate",
     INTERRUPTED_RUN_PHASE: "redispatch",
 }
@@ -2674,6 +2675,104 @@ def _run_directory(record: Mapping[str, Any] | dict[str, Any]) -> Path:
     return Path(str(record.get("log_path") or ".")).parent
 
 
+# The run directory's own record of the worker's pid. A supervised launch
+# writes the supervisor's pid on the pointer and the worker's pid here, so the
+# two answer different questions: the pointer pid says whether the launcher
+# still lives, this record says whether the work does.
+WORKER_RECORD_NAME = "worker.json"
+
+# The phases a run holds before its worker has been spawned and observed. A run
+# that died in one of them recorded no worker and no exit, so its pointer pid
+# going silent is not proof that any work stopped.
+_PRE_SPAWN_PHASES = frozenset({"starting", "launching", "launcher", "dispatching"})
+
+
+def _observed_phase(
+    phase: str,
+    *,
+    alive: bool | None,
+    worker_alive: bool | None,
+    ended_exit: Mapping[str, Any] | None,
+    manifest_status: str,
+    commits_beyond_base: int,
+) -> str:
+    """The phase a run's own evidence supports, not the last writer's label.
+
+    A pointer's phase is written by the launcher: a supervisor sets it at spawn,
+    and a run whose launch was interrupted can keep a pre-spawn label for its
+    whole life. Where the stored phase is still one of those labels, the run's
+    own evidence decides instead — a live worker record or retained commits
+    show the launch got past starting. A live supervisor or stream alone does
+    not: the supervisor may still be between admission and worker spawn, and a
+    stream can be inherited from an earlier attempt. A terminal verdict on a
+    gone process shows it finished. With no evidence at all the label stands:
+    nothing has happened yet, and inventing an advance would be as wrong as
+    inventing an end.
+    """
+    if phase not in _PRE_SPAWN_PHASES:
+        return phase
+    if manifest_status in TERMINAL_MANIFEST_STATUSES and alive is not True:
+        return "complete"
+    if ended_exit is not None:
+        return "complete"
+    if worker_alive is True or commits_beyond_base:
+        return "working"
+    return phase
+
+
+def _carries_orientation_write(text: str, data: Mapping[str, Any]) -> bool:
+    """Whether a manifest body is a worker's orientation write and nothing more.
+
+    Every dispatch records where it is working before it has a status, so a body
+    carrying the orientation keys and no status line is a run one minute into its
+    life rather than a delivery that failed to declare a verdict. The raw body is
+    read because the manifest reader requires a status key. A parsed body is
+    accepted too, so a reader that once tolerated a missing status still lands
+    here.
+
+    A body with a ``status:`` line is not this case at all: whatever it says,
+    the file has moved past its orientation write.
+    """
+    if data and data.get("orientation_worktree"):
+        return not str(data.get("status") or "").strip()
+    if "orientation_worktree" not in text:
+        return False
+    return not any(line.startswith("status:") for line in text.splitlines())
+
+
+def _worker_record(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The run's own worker record, or None when none was written or readable."""
+    try:
+        data = json.loads((_run_directory(record) / WORKER_RECORD_NAME).read_text())
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, Mapping) else None
+
+
+def _worker_record_liveness(record: Mapping[str, Any]) -> bool | None:
+    """Whether the worker pid the run recorded for itself is still running.
+
+    None answers "nothing to ask": no worker record, an unreadable one, or one
+    naming no pid. Reported as its own fact rather than folded into the
+    pointer's answer, because a supervisor that has exited before its worker
+    takes the pointer pid with it while the work continues.
+    """
+    data = _worker_record(record)
+    if data is None:
+        return None
+    pid = data.get("pid")
+    if not pid:
+        return None
+    alive = runs.process_alive(pid)
+    if alive is True:
+        expected = data.get("pid_start_time")
+        if expected is not None:
+            actual = _process_start_time(pid)
+            if actual is not None:
+                alive = actual == expected
+    return alive
+
+
 def _record_newest_stream(record: Mapping[str, Any]) -> tuple[Path, float] | None:
     """A record's newest stream, through the shared reader."""
     return newest_stream(
@@ -3124,6 +3223,7 @@ def classify_pointer(
     manifest_data: dict[str, Any] = {}
     manifest_error = ""
     manifest_digest: str | None = None
+    manifest_text = ""
     if manifest_present:
         try:
             manifest_text = manifest.read_text()
@@ -3143,7 +3243,16 @@ def classify_pointer(
             # refresh for every session.
             manifest_error = str(exc)
     manifest_reported_status = str(manifest_data.get("status") or "").strip().lower()
-    manifest_unwritten = manifest_status_is_template(manifest_reported_status)
+    # The orientation write is the first thing every dispatch writes: the tree,
+    # the base revision and the write paths, before any status exists. A body
+    # carrying those keys and no readable status is a run in progress, not a
+    # delivery a reader has to repair, so it reaches the unwritten handling
+    # beside the template. The body is read whole because the status is required
+    # before any field reaches the classifier, so a reader that refused it may
+    # have refused a file whose only sin was being one minute old.
+    manifest_unwritten = manifest_status_is_template(
+        manifest_reported_status
+    ) or _carries_orientation_write(manifest_text, manifest_data)
     # The dispatch contract prints all terminal choices as a placeholder. It
     # is evidence that the worker never wrote a verdict, not a fourth spelling
     # of one, so no terminal predicate may see it as delivered state.
@@ -3192,6 +3301,16 @@ def classify_pointer(
     else:
         alive = stored_alive
         liveness_proven = False
+    # The pointer names the supervisor for a supervised launch while the worker
+    # pid lives on the run directory's own worker record. A supervisor that has
+    # exited before its worker takes the pointer pid with it — the recorded pid
+    # then answers for a process that is gone while the work continues — so a
+    # dead pointer pid is not proof the work is gone. The worker record is asked
+    # next, and only its answer may let a run read as dead.
+    worker_alive = _worker_record_liveness(record)
+    if alive is not True and worker_alive is True:
+        alive = True
+        liveness_proven = True
     # The run's own supervisor records the worker's exit in the run directory,
     # and that account survives a pointer nobody updates and a pid no machine
     # but the launching one can look up. It is consulted only where the process
@@ -3383,14 +3502,24 @@ def classify_pointer(
         action = "resolve the surviving session before choosing a recovery"
     elif manifest_unwritten:
         classification = "running"
-        detail = (
-            f"the manifest template at {manifest} is present but its status "
-            "placeholder was never replaced"
-        )
-        action = (
-            f"reckon crew resume --run {run_id} --advice "
-            "write the manifest's current status before continuing"
-        )
+        if _carries_orientation_write(manifest_text, manifest_data):
+            # The first write of every dispatch, read while the worker is still
+            # filling in the rest of the manifest. There is no verdict to repair
+            # and no placeholder to replace; the run is simply early.
+            detail = (
+                f"the manifest at {manifest} carries the run's orientation write "
+                "and no status yet; the worker is early in its turn"
+            )
+            action = f"reckon crew observe --run {run_id}"
+        else:
+            detail = (
+                f"the manifest template at {manifest} is present but its status "
+                "placeholder was never replaced"
+            )
+            action = (
+                f"reckon crew resume --run {run_id} --advice "
+                "write the manifest's current status before continuing"
+            )
     elif deferred_outcome:
         classification = "running"
         detail = "the process is alive"
@@ -3969,6 +4098,14 @@ def classify_pointer(
             lifting_condition = DEFAULT_LIFTING_CONDITIONS["paused"]
 
     timing = _budget_timing(record, now_seconds=now_seconds)
+    observed_phase = _observed_phase(
+        phase,
+        alive=alive,
+        worker_alive=worker_alive,
+        ended_exit=ended_exit,
+        manifest_status=manifest_status,
+        commits_beyond_base=commits_beyond_base,
+    )
     classified = {
         "run_id": run_id,
         "project": record.get("project"),
@@ -3992,8 +4129,14 @@ def classify_pointer(
             else None
         ),
         "phase": phase,
+        # The stored phase is the last launcher's label; the effective phase is
+        # what the run's own evidence supports, so a run whose pointer never
+        # advanced past starting reads from its stream and its process; it does
+        # not sit in a pre-spawn label for its whole life.
         "effective_phase": (
-            INTERRUPTED_RUN_PHASE if classification == INTERRUPTED_RUN_PHASE else phase
+            INTERRUPTED_RUN_PHASE
+            if classification == INTERRUPTED_RUN_PHASE
+            else observed_phase
         ),
         "interruption": interruption,
         # The run directory's own account of the worker's exit, when it was
@@ -4423,7 +4566,9 @@ def _pointer_role(pointer: Mapping[str, Any]) -> str:
 # because the refusal text naming the rejected format is the one sentence a
 # reader needs before repairing the file.
 EXPLAINED_STATES = frozenset(
-    NEEDS_ACTION | WAITING_STATES | {"unreadable", "unwritten"}
+    NEEDS_ACTION
+    | WAITING_STATES
+    | {"unreadable", "unwritten", "ended-without-manifest"}
 )
 
 
@@ -4436,7 +4581,11 @@ def _watch_snapshot(
         now_seconds=moment,
         stale_after_seconds=stall_seconds,
     )
-    phase = str(pointer.get("phase") or "")
+    stored_phase = str(pointer.get("phase") or "")
+    # The stored phase is the launcher's label; the row carries the phase the
+    # run's own evidence supports, so a pointer that never advanced past
+    # starting does not pin the run in a pre-spawn bucket while it works.
+    phase = str(row.get("effective_phase") or stored_phase)
     classification = str(row.get("classification") or "")
     alive = row.get("process_alive")
 
@@ -4521,12 +4670,19 @@ def _watch_snapshot(
     # already owns for a worker that died — rather than as a second vocabulary
     # this reducer would have to keep in step.
     death_reason = None
+    ended_without_manifest = False
     if alive is False and state in ("dispatched", "working"):
         last_record_type = _newest_stream_last_record_type(pointer)
-        if (
-            last_record_type is not None
-            and last_record_type != STREAM_RESULT_RECORD_TYPE
-        ):
+        if last_record_type == STREAM_RESULT_RECORD_TYPE:
+            # The worker's process ended after a successful result record and
+            # before a terminal manifest: its turn concluded and the record that
+            # says so is on disk. Nothing was lost, the session is resumable, and
+            # the reading names that rather than the mid-turn death a stalled row
+            # would report — a resumable turn has no session to conclude rather
+            # than one whose turn was cut off.
+            ended_without_manifest = True
+            state = "blocked"
+        elif last_record_type is not None:
             death_reason = _process_exit_reason(pointer, last_record_type)
             state = "blocked"
 
@@ -4581,6 +4737,18 @@ def _watch_snapshot(
         # already calls it rather than a second vocabulary composed here.
         recovery_classification = INTERRUPTED_RUN_PHASE
         recovery_verb = RECOVERY_VERBS[INTERRUPTED_RUN_PHASE]
+    elif ended_without_manifest:
+        # The classifier's clause for this pointer is about the commits that
+        # survived the process; this state is about the end itself, so the
+        # reading names the result record that says the turn concluded.
+        recovery_classification = "ended-without-manifest"
+        recovery_verb = RECOVERY_VERBS["ended-without-manifest"]
+        lifting_condition = None
+        detail = (
+            "the worker's process ended after a successful result record and no "
+            "terminal manifest followed; the turn concluded and the run is "
+            "resumable rather than stalled"
+        )
     elif state == "stalled":
         recovery_classification = "stalled"
         recovery_verb = RECOVERY_VERBS["stalled"]
@@ -4751,9 +4919,31 @@ def _manifest_rewritten(
     )
 
 
+def _ledger_run_id_reader(project: str) -> Callable[[], Iterable[str]]:
+    """A lazy reader of a project's recorded run ids, for the departure fold.
+
+    The ledger is a shared file another process rewrites, so its read degrades
+    to an empty set rather than failing the whole fleet observation: a partial
+    read must not stop the fold from reporting everything else. An empty answer
+    withholds the promoted word — the safe direction, because the alternative
+    promises a landing that was never recorded.
+    """
+    from reckon import ledger as ledger_module
+
+    def read() -> Iterable[str]:
+        try:
+            return ledger_module.run_ids(project)
+        except (OSError, ValueError):
+            return ()
+
+    return read
+
+
 def fleet_transitions(
     known: Mapping[str, Mapping[str, Any]],
     current: Mapping[str, Mapping[str, Any]],
+    *,
+    ledger_run_ids: Callable[[], Iterable[str]] | None = None,
 ) -> tuple[
     list[tuple[dict[str, Any], str | None, str, dict[str, int]]],
     dict[str, dict[str, Any]],
@@ -4777,12 +4967,33 @@ def fleet_transitions(
     running = {run_id: dict(snapshot) for run_id, snapshot in known.items()}
     changes: list[tuple[Mapping[str, Any], str | None, str]] = []
 
-    for run_id in (item for item in known if item not in current):
+    departures = [item for item in known if item not in current]
+    # A run leaves the fleet for two reasons that look identical from a pointer:
+    # a promotion that wrote its ledger row, and a pointer that vanished with
+    # nothing recorded behind it. A reader acts on the word — one is finished,
+    # the other needs recovering — so the ledger decides it. The ledger is read
+    # at most once per observation and only when something departed; a caller
+    # that supplies no ledger cannot distinguish the two, so the reading is
+    # qualified as promoted rather than asserted as withdrawn. The predicate is
+    # consulted lazily for the same reason: reading a project's ledger on every
+    # poll to answer a question that no departure asks is pure cost.
+    if departures and ledger_run_ids is not None:
+        recorded = {str(run) for run in ledger_run_ids()}
+    elif departures:
+        recorded = None
+    else:
+        recorded = set()
+    for run_id in departures:
         # A departure is its own fact and inherits no clause or marker from the
         # state it left. Carrying one forward reports a block on the line
         # announcing that the block is over.
         departed = {**known[run_id], "detail": "", "needs_help_complete": None}
-        changes.append((departed, str(known[run_id]["state"]), "promoted"))
+        word = (
+            "promoted"
+            if recorded is None or run_id in recorded
+            else "withdrawn"
+        )
+        changes.append((departed, str(known[run_id]["state"]), word))
     for run_id in (item for item in current if item not in known):
         changes.append(
             (
@@ -4818,7 +5029,7 @@ def fleet_transitions(
     events: list[tuple[dict[str, Any], str | None, str, dict[str, int]]] = []
     for snapshot, previous, state in changes:
         run_id = str(snapshot.get("run_id") or "")
-        if state == "promoted":
+        if state in {"promoted", "withdrawn"}:
             running.pop(run_id, None)
         elif not snapshot.get("manifest_rewritten"):
             running[run_id] = dict(snapshot)
@@ -5168,7 +5379,9 @@ def watch_ticker(
                     )
                 continue
 
-            folded, next_known = fleet_transitions(known, current)
+            folded, next_known = fleet_transitions(
+                known, current, ledger_run_ids=_ledger_run_id_reader(project)
+            )
             events = [
                 _watch_transition(
                     project,
