@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-impl" content="0.85">
-<meta name="plan-version" content="68">
+<meta name="plan-version" content="69">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1258,6 +1258,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0640-bounds" data-who="reckon-build" data-when="2026-09-25T04:40:00Z">
     <div class="r-comment-body"><p>Three landings since the last record, all green at the merged head:</p><ul><li><strong>slow-dispatch-tests-wait-on-events</strong> (<code>8b0e332f</code>, review 96). The four slowest dispatch tests now wait on an observed scan signal instead of a 30 × 1 s <code>git</code> shim sleep, falling from 39–47 s to 7–12 s. The server arming test dropped below 7 s from 15 s. <code>DISPATCH_EXIT_BOUND</code> moved from 5 s to 8 s, still far below the 30 s held scan it discriminates.</li><li><strong>a-watch-row-renders-the-same-in-any-order</strong> (peer, <code>12db5f2c</code>). <code>format_watch_transition</code> builds a fresh <code>Ticker</code> per call. <code>test_follower_freshness</code> now overrides that function by name instead of patching a source line. The freshness and monitor-output files pass at the merged head (17 passed). All 128 source sections of the evidence record are intact.</li><li><strong>timing-bounds-hold-under-load</strong> (<code>23ad9e7e</code>, review 93). The promotion-fold tests bound the settle ceiling with a 60 s hang guard instead of a 2–5 s wall clock that a loaded node's own commit could exceed.</li></ul><p>Found along the way, and queued as one <code>test_ledger.py</code> node to run after a peer's roster-write change to that file. <code>_outside_state()</code> snapshots the workstation's real <code>crew/live</code> directory, so any peer dispatch during the run moves it. <code>test_every_read_view_returns_and_large_defaults_are_compact</code> discovers the real checkout and exceeds the 30 s storage deadline under load. Disposed: 23 of 27 nodes. Open: the peer's scalar-carrier fix, <code>process-tests-hold-under-load</code>, the <code>test_ledger</code> isolation node, and the final bounded run.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260925T025834054990-process-tests-hold-under-load" data-who="reckon-build" data-when="2026-09-25T04:45:10.939Z">
+    <div class="r-comment-body"><p>Follower reload and producer-arming tests pass under -n 8 load (21 passed twice at the node head); reload forced by content change, reload-aware exit wait, exclusive source-edit window; review 87 on evidence claims only.</p></div>
 </div>
 </section>
 </main>
