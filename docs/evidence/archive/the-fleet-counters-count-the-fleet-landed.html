@@ -11,7 +11,7 @@
   <meta name="plan-evidence-for" content="the-fleet-counters-count-the-fleet">
   <meta name="plan-verifies" content="the-fleet-counters-count-the-fleet#s2">
   <meta name="plan-commits" content="858b83d34fc68e08a6bad069650b3cccd29a9a06">
-  <meta name="plan-artifacts" content="docs/research/fleet-counters-against-the-fleet.html,docs/figures/the-fleet-counters-count-the-fleet/counter-census.svg">
+  <meta name="plan-artifacts" content="docs/research/fleet-counters-against-the-fleet.html,docs/figures/the-fleet-counters-count-the-fleet/counter-census.svg,docs/figures/the-fleet-counters-count-the-fleet/derived-columns.svg">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="isolated worktree with project root virtual environment">
@@ -83,6 +83,35 @@
         </tbody>
       </table>
       <p><strong>Retained limit.</strong> The producer that emits the departure word is <code>fleet_transitions</code> in <code>reckon/crew/recovery.py</code> (line 4749 at base), which appends <code>promoted</code> for any departure with no ledger lookup. This node renders the word correctly from <code>event["ledger_row"]</code>, but the field is populated by that producer, so a run that vanishes without the field still defaults to <code>promoted</code> at the source. The producer fix is reported as a follow-on. Column-offset assertions in four out-of-fence ticker tests moved with the layout and are reported as follow-ons.</p>
+    </section>
+
+    <section id="ticker-tests-follow-the-row">
+      <h2>The ticker tests follow the row</h2>
+      <p>Commit <code>6434f94c</code> brings the four test files the row geometry moved onto the new columns, resolving the twelve out-of-fence failures the row change left. Three helpers derive their column from the renderer's own constants and each summed three counter buckets where the row always renders four, so the elapsed cell and the clause were read four columns to the left of where the row places them; the helpers now sum the fleet's full bucket set. The retired baseline marker is asserted absent rather than present, with the state cell holding the column in place of the retired cell. Each change is a column offset, a removed marker word or a moved action word, and no assertion is deleted or loosened: every corrected helper still locates the property it measured, and every marker assertion still separates an inventory row from a transition by its own coordinates.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-counters-count-the-fleet/derived-columns.svg" alt="A 180-column row drawn to scale. The rendered row places the elapsed cell at column 125 and the clause at 133; the test helper read them at 121 and 129, four columns left, the width of the queued bucket and its separator.">
+        <figcaption>The helper's column sits four columns left of the row's while the queued bucket it omitted is rendered on every row.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Helper</th><th>File</th><th>Read</th><th>Correct</th></tr></thead>
+        <tbody>
+          <tr><td><code>_measure_column</code></td><td>tests/test_crew_ticker_layout.py</td><td>121</td><td>125</td></tr>
+          <tr><td><code>_spend_column</code></td><td>tests/test_crew_recovery.py</td><td>121</td><td>125</td></tr>
+          <tr><td><code>_reason_start</code></td><td>tests/test_ticker_reason_cut_at_a_word.py</td><td>129</td><td>133</td></tr>
+          <tr><td>baseline marker assertions</td><td>tests/test_crew_ticker_layout.py, tests/test_crew_watch_stream.py</td><td>marker present</td><td>marker absent, state cell holds the column</td></tr>
+        </tbody>
+      </table>
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>Command</th><th>Result</th><th>Measure</th></tr></thead>
+        <tbody>
+          <tr><td><code>pytest</code> over the four in-fence files at the committed head</td><td>169 passed</td><td>12 failed and 157 passed at base; the four files pass together at <code>6434f94c</code>.</td></tr>
+          <tr><td>declared mutation <code>restore the now marker in ticker.py's status column</code></td><td>4 failed</td><td>The marker word returns and the clause column moves; log <code>mutation-restore-now-marker.log</code>.</td></tr>
+          <tr><td><code>pytest</code> over the full ticker, watch and recovery set</td><td>4 failed, 352 passed</td><td>16 failed and 340 passed at base; the twelve in-scope failures resolved, four out-of-fence failures remain.</td></tr>
+          <tr><td><code>ruff check</code> on the four files</td><td>6 findings</td><td>6 at base and 6 at head; <code>ruff format --check</code> reports the four formatted.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Retained limit.</strong> <code>reckon/crew/ticker.py</code> and <code>reckon/crew/recovery.py</code> are untouched by this node. Four failures remain in the full ticker, watch and recovery set and all four failed at base: three in <code>tests/test_recovery_state_typing.py</code> (the action word moved out of the clause into the state cell, so a literal <code>resume:</code> or <code>decide:</code> label no longer renders) and one unrelated unit-template gap in <code>tests/test_watcher_unit_restart.py</code> (a source module with no generator). All four are outside this node's fence and are reported as follow-ons rather than fixed.</p>
     </section>
   </main>
 </body>
