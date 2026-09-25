@@ -24,9 +24,9 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="29">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
-<meta name="plan-impl" content="0.67">
+<meta name="plan-version" content="30">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.71">
 <meta name="plan-commits" content="4cfc76a4,798e549d,3a06801e,394acda7,eb8db19a">
 </head>
 <body>
@@ -382,6 +382,11 @@ a durable field on the run record so the argv clause becomes checkable.</p>
     <h4 class="r-fu-title">A named member needs --repo, and a finished review can hold the session member</h4>
     <div class="r-fu-body"><p>Two frictions measured in the suite-green-at-head wave on 2026-09-24, both in §4's territory. (1) <code>crew dispatch --member suite-green-a</code> refused with <q>crew member 'suite-green-a' cannot be resolved without a repository</q> even when run from the registered checkout, until <code>--repo</code> was passed. (2) The review reflex dispatched <code>r-20260924T193024923376-review-of-promotion-fixtures-initialise-the-ledger</code>, which stored its verdict, but its worker process (pid 926718) stayed alive for about 30 minutes afterwards. While alive it held the auto-derived session member <code>session-cce238a4d3342b916934</code>, so every no-member review dispatch from the same session was refused <code>member-in-flight</code>. The reviews serialised behind a finished run until it was promoted by hand.</p></div>
     <pre class="r-fu-prompt">/reckon-build new-work-gets-a-new-worker §4</pre>
+    </article>
+<article class="r-fu" data-id="f-nwganw-member-test-names" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T18:52:00Z" data-recommends-skill="/reckon-build new-work-gets-a-new-worker §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Two member test names still claim the retired contract</h4>
+    <div class="r-fu-body"><p>Review of member-tests-follow-disposable-identity (91): <code>tests/test_member_registration_commits.py::test_a_dispatch_naming_no_member_commits_its_registration</code> and <code>tests/test_crew_ephemeral_members.py::test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session</code> now assert the disposable identity with no roster row and no reuse, but their names still describe the retired shared member. Rename each by what it now asserts. The landing record also quotes a duration its receipt does not carry.</p></div>
+    <pre class="r-fu-prompt">/reckon-build new-work-gets-a-new-worker §4 — rename the two member tests by what they now assert</pre>
     </article>
 </section>
 
