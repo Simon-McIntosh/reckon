@@ -862,6 +862,82 @@
     <p>The mechanism, the five cases and the controls are recorded in
     <code>docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html</code>&nbsp;&sect;10.</p>
 
+    <h3 id="s10-headless-tabs-landed">Landed &mdash; node <code>headless-tabs-survive-attach</code>, a headless session keeps its tabs</h3>
+    <p>Node <code>headless-tabs-survive-attach</code> landed the sizing client in the
+    <code>session</code> verb of <code>reckon/crew/fleet_supervisor.py</code>. A session is
+    still created exactly as before &mdash; <code>attach --create-background --create
+    &lt;name&gt;</code> with its layout &mdash; and then one short-lived client is attached on a
+    pty whose size is set to a fixed 200 columns by 50 rows with
+    <code>TIOCSWINSZ</code>, and taken off again once <code>zellij action
+    query-tab-names</code> reports the layout's tabs. The verb returns only after that. The
+    workaround is commented as removable once a zellij release carries the upstream fix for
+    per-client tab sizing (<code>zellij-org/zellij#5612</code>); 0.45.1 is the newest release
+    and still needs it.</p>
+    <p><strong>Why it is needed.</strong> zellij 0.45 sizes each tab from the client that
+    created it rather than from the terminal a later client brings. A session created with
+    <code>--create-background</code> has no client at all, so the tabs its layout asks for are
+    applied with no size to lay them out in and are left broken, and the next client to attach
+    to one of them panics the server. Giving every tab a size from one client at creation time
+    is enough; the client does not have to be the one that will use the session.</p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/headless_tab_sizing.svg"
+           alt="Two panic-free timelines of the same four-tab session. Left, without the sized client: tabs 1 to 3 are applied with no size and each logs 'Not enough room for panes', the first client attaches and survives, and the second client's attach panics with 'failed to attach client 2 to tab with index 3'. Right, with the sized client: a client on a 200 by 50 pty attaches during creation, tabs 1 to 4 are applied at that size, query-tab-names lists all four, the sized client detaches and a second client attaches for five seconds with no pane error and no attach failure.">
+      <figcaption>
+        The same four-tab layout twice. The tabs are only sized for a client if one is present
+        while the layout is applied; after that, any client's terminal size does.
+      </figcaption>
+    </figure>
+    <p><strong>The measure that could have failed, and the reproduction it rests on.</strong>
+    The defect was reproduced from this node's own zellij server log before the repair was
+    written, verbatim: at 2026-09-25 02:51:58.781 a headless session spawned tab 1
+    (<code>PtyInstruction::NewTab: spawning terminals for tab 1</code>, immediately followed by
+    <code>ScreenInstruction::ApplyLayout: applying layout for tab 1</code>) and the screen thread
+    answered <code>ERROR ... Failed to apply layout: Not enough room for panes</code>; tabs 2 and
+    3 repeated it at 02:52:00.328 and 02:52:01.869; the first real client started at
+    02:52:03.540, the second at 02:52:05.656, and at 02:52:05.667 the server panicked with
+    <code>failed to attach client 2 to tab with index 3</code>. The tabs were created before any
+    client existed, which is the headless path this node repairs.</p>
+    <p>After the repair, an on-node check drives the verb against the real
+    <code>zellij 0.45.1</code> with a throwaway socket directory, config directory and session
+    name (<code>s21-headless-probe&lt;pid&gt;</code>), creates a four-tab layout headless, attaches
+    a second client for five seconds under <code>timeout</code>, and removes only that one
+    session by its exact name with <code>zellij delete-session --force</code>. It reports
+    <code>query-tab-names</code> as all four tabs, and zero <code>Not enough room for
+    panes</code> and zero <code>failed to attach client</code> lines in the bytes the shared
+    server log gained while the session lived. That window is bounded and the shared log is
+    written by every session on the uid, so an absence in it is only evidence if the same
+    reading can be shown finding the strings elsewhere: the same whole-log reading returns the
+    eight pane errors and two attach failures recorded earlier, so the check is looking at
+    something it can see. The log is
+    <code>.../crew/reports/reckon/s21-coord/headless-tabs-survive-attach/on-node.log</code>,
+    <code>RESULT: PASS</code>.</p>
+    <p><strong>The negative control this node declared.</strong> With the sized-client attach
+    removed from the session verb, the test's ordering assertion must fail. It does: the
+    declared red run's first line reads <em>remove the sized-client attach from the session
+    verb; the ordering assertion must fail</em>, and its recorded failure is the ordering
+    assertion on <code>'attach demo'</code>, over an invocation log holding only
+    <code>list-sessions --no-formatting</code> and <code>--layout fleet attach
+    --create-background --create demo</code>. Removing the line makes the ordering assertion
+    fail, not some earlier timeout.</p>
+    <p><strong>After review.</strong> Three properties the first draft rested on without
+    measuring are now measured, each with its own executed control. The tab list must be
+    non-empty and <em>unchanged for a settle window</em> longer than the ~1.5&nbsp;s spacing the
+    recorded application shows before the client is taken off, so a slow layout cannot be called
+    complete after its first tab; the pty's size is read back from the kernel after it is set, so
+    the size the log reports is the one the tabs were laid out in rather than the one that was
+    requested; and the detach line carries the client's own exit status, read after the wait, so
+    it reports that the process ended rather than that it was asked to. Deleting the ioctl,
+    deleting the detach, or shortening the settle window each turns a case red &mdash; the driver
+    is <code>negative_controls.sh</code> in the node's reports directory, with
+    <code>negative_control_wait.log</code>, <code>negative_control_pty_size.log</code> and
+    <code>negative_control_detach.log</code> beside it.</p>
+    <p><strong>What this node does not take.</strong> Nothing outside the verb: the
+    <code>spawn</code> and <code>reload</code> verbs, the reader loop and its runtime directory
+    are untouched, and no caller changes. The workaround costs one throwaway client per session
+    start and is deleted when the upstream fix is released.</p>
+    <p>The mechanism, the ordering case and its control are recorded in
+    <code>docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html</code>&nbsp;&sect;10.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-adrwiw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
