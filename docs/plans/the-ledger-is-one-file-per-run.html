@@ -158,6 +158,24 @@
         <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-run-file">the promotion evidence</a>.
         Coordinator review, ownership of the residual failures, merged verification and the first
         live promotion receipt remain required; the section and driving followup remain open.</p>
+        <p><strong>Scope-expanded repair, 2026-09-25.</strong> Commit
+        <code>a105c0602fe182e7cc33da56fd480d7e8f64193f</code> updates the authorized promotion
+        tests to check the per-run file, exact commit contents and observable index lag,
+        preserving their substantive fleet and receipt assertions. It also fixes
+        <code>verify-gate</code> writing a conflicting aggregate copy: the locked per-file
+        recording decision now uses the same atomic serialiser as release.</p>
+        <p><strong>The zero-added-failures measure is now met.</strong> The same 21-module
+        cohort reports <strong>414 passed, one inherited failure</strong>, against 353 passed
+        and 62 failed at <code>0a1d9a26</code>: 61 resolved, one retained, zero added. All
+        12 added failing ids in the earlier delivery are repaired, all 23 original promotion
+        failures pass, and all nine release cases remain green. The sole retained failure is
+        <code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code>,
+        an unchanged error-message expectation. The three new contract cases and four further
+        verify-gate cases pass; the declared staging mutation still fails the exact assertion.
+        <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-contract-repair">The repair receipt</a>
+        maps all 20 affected test ids to their governing clause or production correction.
+        This supersedes the worker delivery's scope blocker above; independent merged
+        verification, the live promotion receipt and closure remain coordinator-owned.</p>
       </aside>
     </section>
 

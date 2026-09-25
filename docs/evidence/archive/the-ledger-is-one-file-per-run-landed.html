@@ -326,6 +326,80 @@
       section declaration or driving followup is replaced or resolved.</p>
     </section>
 
+
+    <section id="promotion-contract-repair">
+      <h2>§1 — Expanded test scope closes the added-failure delta</h2>
+      <p><strong>2026-09-25.</strong> The test fence was explicitly widened to
+      <code>tests/test_crew_promotion.py</code>,
+      <code>tests/test_promotion_beat_carries_fleet_state.py</code>,
+      <code>tests/test_promotion_harvests_the_receipt.py</code> and
+      <code>tests/test_ledger.py</code>. Repair commit
+      <code>a105c0602fe182e7cc33da56fd480d7e8f64193f</code> changes the first three
+      and <code>reckon/crew/promotion.py</code>; <code>tests/test_ledger.py</code>
+      remains unchanged. The manifest was updated immediately after that commit, before
+      the full cohort was measured.</p>
+      <p><strong>Reproduction retained.</strong> Before editing, the relevant source and test
+      paths at <code>02921aa4</code> were confirmed byte-identical to the measured
+      <code>7f9fe3f1</code> paths. Their recorded failures were missing <code>crew.json</code>,
+      exact commit sets expecting that aggregate instead of the run file, missing
+      <code>store_write</code>, and two verify-gate commands refusing conflicting history.</p>
+      <table>
+        <thead><tr><th>Contract or defect</th><th>Repair and retained assertion</th></tr></thead>
+        <tbody>
+          <tr><td>§1 writes and commits one run file</td><td>Exact commit sets now name <code>runs/&lt;run_id&gt;.json</code>; plan-comment cardinality, verdict, commit body and exclusion of unrelated dirty files remain asserted. Refusal/rollback cases also require no run file to survive.</td></tr>
+          <tr><td>§1 retains the complete canonical record</td><td>Receipt and fleet helpers read the run file, retain unique-row checking, and add row identity, canonical bytes, union-reader agreement and committed-content checks. All quota, pricing and fleet assertions remain.</td></tr>
+          <tr><td>§1 reports index health outside the durable record</td><td>The ordinary success/failure payload remains checked. Durable <code>store_write</code> is explicitly absent. An injected index failure observes the complete file, attempts exactly once, leaves lag at one through repeated reads, and returns to zero after an explicit rebuild.</td></tr>
+          <tr><td>Locked per-file integrated-gate recording</td><td>The production writer updates and commits the existing run file instead of creating a differing aggregate copy. Existing finding and no-finding assertions remain; tests add canonical, committed report and exact-path checks. Release shares the same atomic serializer.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>No tests were removed, skipped or marked xfail.</strong> The three test modules
+      retain all 58 test functions. Their assertion counts move from 204 to 228, 26 to 29,
+      and 59 to 62, respectively. <code>expanded-test-clause-map.json</code> records all
+      20 affected test ids, including helper consumers and every one of the 12 added failures;
+      the same mapping is embedded directly in the manifest.</p>
+      <table>
+        <thead><tr><th>Identical 21-module cohort</th><th>Passed</th><th>Failed</th><th>Errors / skipped</th></tr></thead>
+        <tbody>
+          <tr><td>Dispatch base <code>0a1d9a266bb81a15e36166cf9cf43947b06a4072</code></td><td>353</td><td>62</td><td>0 / 0</td></tr>
+          <tr><td>Repair <code>a105c0602fe182e7cc33da56fd480d7e8f64193f</code></td><td>414</td><td>1</td><td>0 / 0</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Zero added failures:</strong> 61 baseline failing ids resolve and one remains.
+      The complete base and head failure inventories are recorded in the manifest and
+      <code>expanded-delta.json</code>. All 12 added failing ids from the earlier delivery
+      and all 23 promotion failures from the ledger worker now pass. The retained failure is
+      <code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code>:
+      the unchanged test expects an older list of view names in the error message. This is
+      a passing delta against the stated base, not an entirely green suite.</p>
+      <p><strong>Release and command verification:</strong> the cohort includes all five
+      <code>tests/test_promotion_release.py</code> cases and all four
+      <code>tests/test_promotion_releases_its_worktree.py</code> cases; all pass. At the
+      committed repair, the three new CLI contract cases pass in 4.92 seconds and the four
+      <code>tests/test_verify_gate_command_option.py</code> cases pass in 5.37 seconds.
+      The full cohort finishes in 181.94 seconds. The focused precommit repair gate passed
+      all 73 cases in 33.75 seconds.</p>
+      <p><strong>Negative control retained at the repair commit:</strong> restoring
+      <code>ledger.ledger_path</code> staging fails the exact one-run-file commit assertion,
+      exit 1, with the required declaration as the log's first line. The earlier negative
+      receipt is preserved as <code>negative-control-before-expansion.log</code>. Lint
+      reports the same 22 pre-existing findings across the widened paths, with none added.</p>
+      <p><strong>Receipts</strong> remain under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T113540308665-promotion-stages-its-one-run-file/</code>:
+      <code>expanded-reproduction.log</code>, <code>expanded-focused.log</code>,
+      <code>expanded-cohort.log</code>, <code>expanded-cohort-command.json</code>,
+      <code>expanded-contract.log</code>, <code>expanded-verify-gate.log</code>,
+      <code>expanded-delta.json</code>, <code>expanded-test-clause-map.json</code>,
+      <code>expanded-assertion-counts.json</code>, <code>expanded-repair.patch</code>,
+      <code>expanded-lint-base.json</code>, <code>expanded-lint-head.json</code> and
+      <code>expanded-committed-markers.log</code>. Every gate receipt identifies the
+      revision, command, resolved checkout and imported promotion module.</p>
+      <p><strong>Boundary.</strong> The worker's zero-added-failures obligation is met.
+      Independent verification after integration, the first live promotion commit receipt,
+      the retained unrelated view-message test and plan closure remain coordinator work.
+      This append preserves all prior evidence and leaves lifecycle metadata and the driving
+      followup unchanged, using the previously announced direct-prose fallback.</p>
+    </section>
+
   </main>
 </body>
 </html>
