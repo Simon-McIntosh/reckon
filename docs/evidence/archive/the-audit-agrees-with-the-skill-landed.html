@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-audit-agrees-with-the-skill-landed">
+  <meta name="plan-title" content="The audit agrees with the skill — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Execution evidence for the-audit-agrees-with-the-skill. One anchor per material outcome, accumulating as nodes land.">
+  <meta name="plan-evidence-for" content="the-audit-agrees-with-the-skill">
+  <meta name="plan-verifies" content="the-audit-agrees-with-the-skill#s1">
+  <meta name="plan-recorded-at" content="2026-09-25">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; the node ran in a detached worktree with the main checkout&#x27;s environment reached through PYTHONPATH and pytest -p no:cacheprovider; the mutated negative-control run followed by an edit and an exact restore, verified against HEAD">
+  <meta name="plan-commits" content="6e168152">
+  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_doccheck_landed_header.py,docs/figures/the-audit-agrees-with-the-skill/landed-header-exemption.svg">
+  <title>The audit agrees with the skill — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-version" content="1">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The audit agrees with the skill — cumulative execution-evidence record</h1>
+    <p class="plan-summary">One anchor per material outcome, accumulating as nodes land.</p>
+  </header>
+
+  <section id="landed-header-is-not-a-splice">
+    <h2>&sect;1 — A landed section's header is not a spliced document</h2>
+
+    <figure>
+      <img src="/reckon/figures/the-audit-agrees-with-the-skill/landed-header-exemption.svg"
+           alt="Two document trees. Left: the shell owns one header and three section.section-landed wrappers each carry a header as a direct child; the three nested headers are crossed out of the count, so the counted total is one and the audit is silent. Right: the shell header plus a second top-level header, not nested in a landed section; both count, the total is two, and the audit warns header-duplicate.">
+      <figcaption>The exemption is positional: a header counts unless its
+      <em>direct</em> parent is a landed-section wrapper, so a genuine second
+      document header is still reported.</figcaption>
+    </figure>
+
+    <p><strong>The defect.</strong> The collapse-on-landing template puts a
+    <code>&lt;header&gt;</code> as the direct child of a
+    <code>&lt;section class="section-landed"&gt;</code>, so a document that has
+    collapsed three sections legitimately carries four headers.
+    <code>reckon audit-doc</code> counted every <code>&lt;header&gt;</code> and
+    warned <code>header-duplicate</code> ("document carries 2 &lt;header&gt;
+    elements &hellip; content from another document spliced into this one") on any
+    plan with two landed sections, while the authoring skill prescribed exactly
+    that shape. It was seen on imas-ambix
+    <code>agent-sessions-live-on-the-fleet-node.html</code> and
+    <code>description-reader-migration.html</code>.</p>
+
+    <p><strong>What landed.</strong> <code>reckon/doccheck.py</code>'s
+    <code>_StructureScanner</code> now keeps a stack of open elements alongside its
+    section stack. On a <code>&lt;header&gt;</code> start tag it counts the header
+    only when the innermost open element is <em>not</em> a
+    <code>&lt;section&gt;</code> carrying the <code>section-landed</code> class, so
+    the collapse-on-landing summary header is not counted while every other header
+    is. The check is positional, not a blanket skip: a header nested one element
+    deeper (for example inside a <code>&lt;div&gt;</code> within a landed section)
+    still counts, and a header under an unlanded section still counts. The
+    duplicate warning's own message keeps naming the counted total, so a document
+    with three landed sections and one shell header reports nothing while a
+    document carrying a real second shell header reports two.</p>
+
+    <p><strong>Verification.</strong>
+    <code>tests/test_doccheck_landed_header.py</code> covers four cases: three
+    landed sections in the &sect;6b template produce no
+    <code>header-duplicate</code> finding; a second top-level header beside three
+    landed sections still produces it, with the message naming two counted
+    headers; a header whose parent is a <code>&lt;div&gt;</code> inside a landed
+    section still counts; and a header under an unlanded section still counts.
+    <code>tests/test_doccheck.py</code> passes unchanged (25 passed). The
+    doccheck-focused set
+    (<code>test_doccheck.py</code>, <code>test_doccheck_structure.py</code>,
+    <code>test_doccheck_landed_header.py</code>,
+    <code>test_doccheck_code_spans.py</code>,
+    <code>test_doccheck_unwired_plan.py</code>) is 69 passed. <code>ruff check
+    --output-format=concise reckon/doccheck.py</code> reports 12 findings, equal
+    to the base revision's 12, so the change adds none.</p>
+
+    <p><strong>Negative control.</strong> The declared mutation removes the
+    exemption by having <code>handle_starttag</code> count every
+    <code>&lt;header&gt;</code> again. With it applied, the three-landed-sections
+    case fails with exactly one <code>header-duplicate</code> finding reading
+    "document carries 4 &lt;header&gt; elements" &mdash; 1 failed. The log is at
+    the run's <code>negative-control.log</code>. The exemption was restored
+    afterwards and the full focused set re-run green.</p>
+  </section>
+</main>
+</body>
+</html>

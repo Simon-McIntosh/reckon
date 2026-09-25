@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 430" role="img"
+     aria-label="Two document trees. Left: the shell owns one header and three section.section-landed wrappers each carry a header as a direct child; the three nested headers are crossed out of the count, so the counted total is one and the audit is silent. Right: the shell header plus a second top-level header, not nested in a landed section; both count, the total is two, and the audit warns header-duplicate.">
+  <style>
+    .box { fill: #f7f7f5; stroke: #999; stroke-width: 1; }
+    .box-shell { fill: #eef2f7; stroke: #5b7fb0; }
+    .box-landed { fill: #eef7ee; stroke: #5b9a5b; }
+    .box-bad { fill: #fbeaea; stroke: #c0504d; }
+    text { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; fill: #222; }
+    .tag { font-size: 12px; }
+    .lbl { font-size: 12px; fill: #555; }
+    .hdr { font-size: 14px; font-weight: 600; }
+    .edge { stroke: #aaa; stroke-width: 1; fill: none; }
+    .exempt { stroke: #c0504d; stroke-width: 2; }
+    .verdict-ok { fill: #2e7d32; font-weight: 600; }
+    .verdict-bad { fill: #c0504d; font-weight: 600; }
+  </style>
+
+  <text x="30" y="30" class="hdr">Counted: one document header &#8212; audit silent</text>
+  <text x="30" y="52" class="lbl">Three landed sections each nest a header as the section's direct child.</text>
+
+  <!-- Left tree -->
+  <rect class="box box-shell" x="60" y="80" width="330" height="42" rx="4"/>
+  <text x="75" y="106" class="tag">&lt;header&gt; shell</text>
+
+  <rect class="box box-landed" x="60" y="150" width="330" height="52" rx="4"/>
+  <text x="75" y="171" class="tag">&lt;section class="section-landed"&gt;</text>
+  <rect class="box" x="90" y="180" width="270" height="30" rx="3"/>
+  <text x="102" y="200" class="tag">&lt;header&gt; &lt;h2&gt;&#167;1&lt;/h2&gt;</text>
+  <line class="exempt" x1="84" y1="195" x2="366" y2="195"/>
+  <text x="404" y="199" class="lbl">exempt (direct child)</text>
+
+  <rect class="box box-landed" x="60" y="216" width="330" height="52" rx="4"/>
+  <text x="75" y="237" class="tag">&lt;section class="section-landed"&gt;</text>
+  <rect class="box" x="90" y="246" width="270" height="30" rx="3"/>
+  <text x="102" y="266" class="tag">&lt;header&gt; &lt;h2&gt;&#167;2&lt;/h2&gt;</text>
+  <line class="exempt" x1="84" y1="261" x2="366" y2="261"/>
+  <text x="404" y="265" class="lbl">exempt (direct child)</text>
+
+  <rect class="box box-landed" x="60" y="282" width="330" height="52" rx="4"/>
+  <text x="75" y="303" class="tag">&lt;section class="section-landed"&gt;</text>
+  <rect class="box" x="90" y="312" width="270" height="30" rx="3"/>
+  <text x="102" y="332" class="tag">&lt;header&gt; &lt;h2&gt;&#167;3&lt;/h2&gt;</text>
+  <line class="exempt" x1="84" y1="327" x2="366" y2="327"/>
+  <text x="404" y="331" class="lbl">exempt (direct child)</text>
+
+  <text x="60" y="378" class="verdict-ok">counted = 1 &#160;&#8594;&#160; no header-duplicate finding</text>
+
+  <!-- divider -->
+  <line x1="770" y1="70" x2="770" y2="400" stroke="#ddd" stroke-width="1"/>
+
+  <!-- Right tree -->
+  <text x="560" y="30" class="hdr" text-anchor="start">Counted: two &#8212; audit warns</text>
+  <text x="560" y="52" class="lbl" text-anchor="start">A second header that is NOT under a landed section.</text>
+
+  <rect class="box box-shell" x="580" y="80" width="330" height="42" rx="4"/>
+  <text x="595" y="106" class="tag">&lt;header&gt; shell</text>
+
+  <rect class="box box-landed" x="580" y="150" width="330" height="52" rx="4"/>
+  <text x="595" y="171" class="tag">&lt;section class="section-landed"&gt;</text>
+  <rect class="box" x="610" y="180" width="270" height="30" rx="3"/>
+  <text x="622" y="200" class="tag">&lt;header&gt; &lt;h2&gt;&#167;1&lt;/h2&gt;</text>
+  <line class="exempt" x1="604" y1="195" x2="886" y2="195"/>
+  <text x="924" y="199" class="lbl" text-anchor="end">exempt</text>
+
+  <rect class="box box-bad" x="580" y="220" width="330" height="42" rx="4"/>
+  <text x="595" y="246" class="tag">&lt;header&gt; second document header</text>
+
+  <text x="580" y="378" class="verdict-bad">counted = 2 &#160;&#8594;&#160; header-duplicate (warn)</text>
+</svg>

@@ -43,6 +43,19 @@
       <li>Tests assert that a plan with a second top-level <code>&lt;header&gt;</code> still produces it.</li>
       <li>The declared mutation, removing the exemption, is applied, and the three-landed-sections case is observed to fail. The log is recorded.</li>
     </ul>
+    <p class="r-landing"><strong>Landed 2026-09-25</strong> at <code>6e168152</code>, base
+    <code>663cc0d2</code>. <code>reckon/doccheck.py</code>'s <code>_StructureScanner</code> keeps a
+    stack of open elements and counts a <code>&lt;header&gt;</code> only when its direct parent is
+    not a <code>&lt;section class="section-landed"&gt;</code>; every other header still counts, so a
+    real second shell header is still reported. <code>tests/test_doccheck_landed_header.py</code>
+    asserts three landed sections produce no <code>header-duplicate</code> finding, a second
+    top-level header still does, and a header nested one element deeper inside a landed section
+    still counts. <code>tests/test_doccheck.py</code> passes unchanged (25 passed); the
+    doccheck-focused set is 69 passed; <code>ruff check</code> on the module reports 12 findings,
+    equal to base. The declared mutation (removing the exemption) was applied, the
+    three-landed-sections case observed to fail with "document carries 4 &lt;header&gt; elements",
+    and the exemption restored &mdash; log under the run's <code>negative-control.log</code>. Full
+    record: <a href="/reckon/evidence/archive/the-audit-agrees-with-the-skill-landed#landed-header-is-not-a-splice">&sect;1 landed</a>.</p>
 
     <h2 id="s2">&sect;2 &mdash; A slug two resource types share is refused at audit</h2>
     <p>A research note at <code>docs/research/fleet-view-rendering.html</code> carried the <code>plan-slug</code> of a live plan, <code>agent-sessions-live-on-the-fleet-node</code>. From then on, every slug-only <code>edit_plan</code> on the plan failed with "resource slug &hellip; is ambiguous across types: plan, research". The worker's gate was <code>reckon audit-doc</code>, and it passed.</p>
