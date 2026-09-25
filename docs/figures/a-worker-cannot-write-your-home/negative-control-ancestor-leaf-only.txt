@@ -1,0 +1,43 @@
+# Falsification of the ancestor repair: resolution reverted to leaf-only.
+# tree: /tmp/reckon-leafonly — this worktree's sources with the protected-path loop back to
+#        'target = resolved_destination(path) if path.is_symlink() else Path(path)'
+#        (line 1971) and the fence_argv root loop back to 'target = root' (line 2032).
+# interpreter: /home/ITER/mcintos/Code/reckon/.venv/bin/python
+# command: cd $tree && python -m pytest -p no:cacheprovider -q tests/test_launch_plan_fences_the_home.py
+
+## the mutation, read from the tree under test
+    resolved: list[Path] = []
+    for path in protected:
+        target = resolved_destination(path) if path.is_symlink() else Path(path)
+        if target.exists() and str(target) not in {str(seen) for seen in resolved}:
+    granted: set[str] = set()
+    for root in roots:
+        target = root
+        key = str(target)
+
+## provenance: the module the run actually imports
+# module.__file__: /tmp/reckon-leafonly/reckon/_backends.py
+
+## result
+    
+        The shape the leaf-only resolution missed: ``.config`` is the symlink and
+        ``reckon`` below it is an ordinary directory, so a check on the leaf's own
+        ``is_symlink()`` never fires and bubblewrap refuses the destination with
+        ``Can't mkdir``. The run's own write root also lives below the link, so the
+        same home shows the writable grants are resolved with the overlays rather
+        than lost to the containment test.
+        """
+        fence = AncestorSymlinkFence(tmp_path)
+        argv = fence.argv()
+    
+        assert argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
+        for destination in _bind_destinations(argv):
+>           assert not _has_symlink_component(destination), destination
+E           AssertionError: PosixPath('/tmp/pytest-of-mcintos/pytest-10235/test_a_protected_path_below_a_0/home/.config/reckon')
+E           assert not True
+E            +  where True = _has_symlink_component(PosixPath('/tmp/pytest-of-mcintos/pytest-10235/test_a_protected_path_below_a_0/home/.config/reckon'))
+
+tests/test_launch_plan_fences_the_home.py:600: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_launch_plan_fences_the_home.py::test_a_protected_path_below_a_symlinked_directory_does_not_stop_the_launch
+1 failed, 6 passed in 0.49s
