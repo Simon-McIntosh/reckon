@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="90">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="91">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.99">
 </head>
@@ -1551,6 +1551,11 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <h4 class="r-fu-title">A no-commit promotion over a worktree with commits belongs to the promotion plan</h4>
     <div class="r-fu-body"><p>Pointer, not work. Four verification nodes were promoted with <code>--no-commit</code> while their worktrees held committed landing records, and nothing compared the declared reason against <code>git log &lt;base&gt;..HEAD</code>. The one-line refusal belongs at the promotion boundary in <code>reckon/crew/promotion.py</code>, which <strong>scoring-should-stop-a-promotion</strong> owns and had claimed live when this was recorded. Recorded here as foreign-owner so the ledger shows where it went; the work is that plan's.</p></div>
     <pre class="r-fu-prompt">/reckon-build scoring-should-stop-a-promotion</pre>
+    </article>
+<article class="r-fu" data-id="f-awptl-budget-group-assertion-cannot-fail" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T14:18:00Z" data-recommends-skill="/reckon-build a-window-paces-the-lane §5b" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A budget-group assertion cannot fail on a swapped clock constant</h4>
+    <div class="r-fu-body"><p>Review of window-groups-declare-one-wallet (85) at 5d3f52e4: the assertion near <code>tests/test_budget_group_declaration.py:242</code> computes both sides from the same reading under the module's own FILL_CLOCK, so swapping FILL_CLOCK and WEEK_CLOCK in <code>reckon/crew/budget_group.py</code> leaves it green. Pin the expected value from an independently built reading, and add a mutation that swaps the two constants.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §5b — the budget-group clock assertion must fail on a swapped constant</pre>
     </article>
 </section>
 
