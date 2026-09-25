@@ -9,7 +9,7 @@
   <meta name="plan-title" content="A Sprint Is Live While A Crew Works It — landed record">
   <meta name="plan-summary" content="Liveness is derived at read time from a project&#x27;s live crew pointers (§2), the sprint push op no longer demotes other sprints (§4), and the sprint skill teaches that definition (§5).">
   <meta name="plan-evidence-for" content="a-sprint-is-live-while-a-crew-works-it">
-  <meta name="plan-verifies" content="a-sprint-is-live-while-a-crew-works-it#s2,a-sprint-is-live-while-a-crew-works-it#s4,a-sprint-is-live-while-a-crew-works-it#s4-focus,a-sprint-is-live-while-a-crew-works-it#s5">
+  <meta name="plan-verifies" content="a-sprint-is-live-while-a-crew-works-it#s2,a-sprint-is-live-while-a-crew-works-it#s4,a-sprint-is-live-while-a-crew-works-it#s4-focus,a-sprint-is-live-while-a-crew-works-it#s4-focus-remeasure,a-sprint-is-live-while-a-crew-works-it#s5">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-commits" content="6c92861d,0ad5a171,21077dfa,bec9f24a">
   <title>A Sprint Is Live While A Crew Works It — landed record | reckon</title>
@@ -209,11 +209,12 @@
     <section id="s4-focus">
       <h2 id="s4-focus">§4 — The focus follows the live crew, and what it costs</h2>
 
-      <p><strong>Verdict: blocked on cost.</strong> The behaviour is complete, tested and committed
-      at <code>bec9f24a</code>. It is not promotable as it stands, because it makes
-      <code>roadmap(view="summary")</code> about three times slower, against a budget of one
-      second; the cost belongs to the liveness reader, which is another node's module. The
-      measurements are below.</p>
+      <p><strong>Verdict: complete.</strong> The behaviour landed at <code>bec9f24a</code>. The one
+      check it failed when it was written — the added cost, measured while
+      <code>sprint_liveness</code> still parsed every live run's whole stream — now passes: with the
+      reader taking the watcher's recorded stream (merged at <code>a4fa01f6</code>), the same read
+      costs no more with the focus than without it. Both measurements are below: first the one that
+      blocked the node, then the re-measurement that closes it.</p>
 
       <p><code>active_sprint_id</code> names the live sprint with the liveness reader's newest
       <code>last_activity_at</code>, and falls back to the stored <code>active</code> sprint when no
@@ -309,11 +310,39 @@
         dominated by parsing every live run's stream.</figcaption>
       </figure>
 
-      <p><strong>What unblocks it.</strong> Classify a pointer from a bounded part of its stream
-      rather than the whole of it, or derive the focus from a liveness snapshot the fleet records
-      once. Both touch <code>reckon/sprint_liveness.py</code> and the stream readers it composes,
-      which this node does not own; the behaviour above is complete and needs no further change
-      once the read is cheap.</p>
+      <p><strong>What unblocked it.</strong> The reader now reads the watcher's recorded stream
+      — <code>runs.watch_stream_path(project)</code> in one pass, with a bounded manifest-and-age
+      fallback for a run the watcher has not recorded — and that node measured 0.14–0.16 s for 39
+      live pointers, against the 11.6 s above. The focus change needed no change of its own.</p>
+
+      <h3 id="s4-focus-remeasure">Re-measured after the reader was made cheap</h3>
+      <p>Now that <code>sprint_liveness</code> is no longer the dominant term, the comparison that
+      matters is the two revisions the merge joined: <code>d1fcf486</code>'s first parent
+      <code>f668addc</code> (the cheap reader, without this node's change) against
+      <code>d1fcf486</code>. Each is a <code>git archive</code> of that revision, with
+      <code>reckon.__file__</code> confirmed to resolve inside it
+      (<code>/tmp/pin-base/reckon/__init__.py</code> and
+      <code>/tmp/pin-head/reckon/__init__.py</code>), read-only, interleaved in the same minutes on
+      one host. Each row warms the read and then times three; the table gives the fastest, and the
+      whole run is logged.</p>
+
+      <table>
+        <thead><tr><th>Round</th><th>Base <code>f668addc</code> (s)</th>
+          <th>Head <code>d1fcf486</code> (s)</th><th>Head − Base</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>10.79</td><td>6.19</td><td>−4.60</td></tr>
+          <tr><td>2</td><td>5.67</td><td>5.06</td><td>−0.61</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>The change adds no more than one second.</strong> In both rounds the head read is
+      the faster of the two, by 4.60 s and 0.61 s on the round minima, so the added cost is at most
+      zero and the budget is met. The spread between the rounds — the base read itself falls from
+      10.79 s to 5.67 s — is the host and its caches rather than the change, which is why the
+      comparison is drawn within a round and never across one. The three timed reads behind each
+      minimum are in <code>logs/latency-after-speedup.txt</code>:
+      12.375/10.791/11.050 and 11.691/6.187/6.316 in round 1, 11.571/5.749/5.672 and
+      10.819/5.060/5.312 in round 2. Revisions: <code>f668addc</code> and <code>d1fcf486</code>.</p>
     </section>
     <section id="s5">
       <h2>&sect;5 &mdash; The skill teaches liveness, not the marker</h2>
