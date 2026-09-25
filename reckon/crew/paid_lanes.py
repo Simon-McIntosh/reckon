@@ -64,6 +64,14 @@ DEFAULT_STALE_SECONDS = 3600.0
 #: ``public`` tree is what the docs server and peer sessions read.
 DEFAULT_DOCUMENT_PATH = "~/public/reckon/paid-lanes.json"
 
+#: The document's filename under the crew home when ``RECKON_HOME`` names a tree.
+#: Whatever the caller isolates through ``RECKON_HOME`` reads and writes the one
+#: document at this name, so a publisher and a reader resolve the same file.
+DOCUMENT_NAME = "paid-lanes.json"
+
+#: The environment variable naming the crew home an isolated run reads and writes.
+RECKON_HOME_ENV = "RECKON_HOME"
+
 #: The environment variable that overrides the published path, so a deployment
 #: can point every reader at one document without editing code.
 DOCUMENT_ENV = "RECKON_PAID_LANES_DOCUMENT"
@@ -99,12 +107,25 @@ class Candidate:
 
 
 def document_path(path: str | Path | None = None) -> Path:
-    """Resolve the document path: the argument, then the environment, then the default."""
+    """Resolve the published document through one rule for reader and writer.
+
+    Order: the explicit argument, then the ``DOCUMENT_ENV`` override, then the
+    document under the crew home when ``RECKON_HOME`` names one, then the
+    default location. The crew home is what a caller isolates to run against its
+    own tree, so both the publisher and every reader resolve the isolated
+    document rather than the operator's real home; a fallback that consulted
+    ``HOME`` alone would make an isolated run publish to one file and read
+    another. Both the publishing command and the pre-flight reach the document
+    through this one function, so there is no second rule to drift from it.
+    """
     if path is not None:
         return Path(path).expanduser()
     override = os.environ.get(DOCUMENT_ENV)
     if override:
         return Path(override).expanduser()
+    home = os.environ.get(RECKON_HOME_ENV)
+    if home:
+        return Path(home).expanduser() / DOCUMENT_NAME
     return Path(DEFAULT_DOCUMENT_PATH).expanduser()
 
 

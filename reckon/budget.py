@@ -49,7 +49,6 @@ rather than a zero, which is the first rule above applied to a second quantity.
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
@@ -1404,22 +1403,17 @@ def backends_for_roles(config: Mapping[str, Any], roles: Iterable[str]) -> list[
 def published_document_path() -> Path:
     """Where the production callers look for the published headroom document.
 
-    Resolution is, in order: the environment override the observer and its
-    readers share, the file under the crew home, then the document's own
-    default. The crew home is what a caller isolates when it redirects
-    ``RECKON_HOME``, so a pre-flight reads its own temporary tree rather than
-    the operator's real home -- a path built from ``HOME`` alone would read
-    whatever document the workstation happened to hold, which is neither the
-    caller's fixture nor a reading the caller asked for.
+    Delegates to the publisher's own resolver so the path a pre-flight reads is
+    the path the publishing command writes: the environment override the
+    observer and its readers share, then the document under the crew home a
+    caller isolates through ``RECKON_HOME``, then the default location. Keeping
+    a second rule here is what let the two drift -- the reader honours the crew
+    home while the publisher did not, so an isolated run published to one file
+    and read another. One resolver, named once in
+    :func:`reckon.crew.paid_lanes.document_path`, is what holds them together.
     """
     from reckon.crew import paid_lanes
 
-    override = os.environ.get(paid_lanes.DOCUMENT_ENV)
-    if override:
-        return Path(override).expanduser()
-    home = os.environ.get("RECKON_HOME")
-    if home:
-        return Path(home).expanduser() / "paid-lanes.json"
     return paid_lanes.document_path()
 
 

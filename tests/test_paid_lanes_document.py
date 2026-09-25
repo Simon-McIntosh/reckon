@@ -348,14 +348,19 @@ def test_the_module_run_as_a_process_publishes_where_it_was_told(
     assert not (home / "public" / "reckon" / "paid-lanes.json").exists()
 
 
-def test_asking_for_help_prints_usage_and_publishes_nothing(tmp_path: Path) -> None:
-    """``--help`` prints usage instead of composing and publishing.
+@pytest.mark.parametrize("flag", ["--help", "-h"])
+def test_asking_for_help_prints_usage_and_publishes_nothing(
+    flag: str, tmp_path: Path
+) -> None:
+    """``--help`` and ``-h`` print usage instead of composing and publishing.
 
     Asking what the command does must not be the same act as running it, so a
-    ``--help`` run that fell through to the publishing path would answer a
-    question by writing the document the question was about. The invocation is a
-    real process because the defect lives in the argv parse, and the run is
-    given both a named path and a temporary home: neither may be written.
+    help run that fell through to the publishing path would answer a question by
+    writing the document the question was about. Both spellings of the flag sit
+    in one tuple in the parser, so both are driven here: a case pinning only
+    ``--help`` would leave ``-h`` unguarded beside it. The invocation is a real
+    process because the defect lives in the argv parse, and the run is given
+    both a named path and a temporary home: neither may be written.
     """
     home = tmp_path / "home"
     (home / "public" / "reckon").mkdir(parents=True, exist_ok=True)
@@ -366,7 +371,7 @@ def test_asking_for_help_prints_usage_and_publishes_nothing(tmp_path: Path) -> N
             sys.executable,
             "-m",
             "reckon.crew.paid_lanes",
-            "--help",
+            flag,
             "--path",
             str(named),
         ],
@@ -590,3 +595,86 @@ def test_preflight_never_reads_a_document_the_caller_did_not_name(
         clock = _group(report["groups"], group)["clocks"]["five_hour"]
         assert clock["utilisation"] is None, group
         assert clock["state"] == budget.UNKNOWN, group
+
+
+# ── The publisher and the pre-flight resolve one document path ──────────────
+
+
+def _publisher_env(arm: str, tmp_path: Path) -> tuple[dict[str, str], Path]:
+    """The subprocess environment and the path a publisher writes under ``arm``.
+
+    Three arms pin the resolution order: an explicit ``DOCUMENT_ENV`` override,
+    the crew home when ``RECKON_HOME`` names one, and neither, which falls to the
+    default under ``HOME``. ``RECKON_HOME`` is set in the override arm too, so the
+    override is proven to win over the crew home rather than merely to be present.
+    Both variables are stripped from the inherited environment first, so the arm
+    under test is the one the environment actually carries.
+    """
+    home = tmp_path / "home"
+    crew_home = tmp_path / "crew-home"
+    override = tmp_path / "override" / paid_lanes.DOCUMENT_NAME
+    env = {
+        **{
+            key: value
+            for key, value in os.environ.items()
+            if key not in ("RECKON_HOME", paid_lanes.DOCUMENT_ENV)
+        },
+        "HOME": str(home),
+        "PYTHONPATH": str(_REPO_ROOT),
+    }
+    if arm == "override":
+        env[paid_lanes.DOCUMENT_ENV] = str(override)
+        env["RECKON_HOME"] = str(crew_home)
+        return env, override
+    if arm == "reckon_home":
+        env["RECKON_HOME"] = str(crew_home)
+        return env, crew_home / paid_lanes.DOCUMENT_NAME
+    return env, home / "public" / "reckon" / paid_lanes.DOCUMENT_NAME
+
+
+def _mirror_env(arm: str, env: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point this process at the same document the arm's subprocess writes."""
+    monkeypatch.setenv("HOME", env["HOME"])
+    for name in ("RECKON_HOME", paid_lanes.DOCUMENT_ENV):
+        monkeypatch.delenv(name, raising=False)
+    for name in ("RECKON_HOME", paid_lanes.DOCUMENT_ENV):
+        if name in env:
+            monkeypatch.setenv(name, env[name])
+
+
+@pytest.mark.parametrize("arm", ["override", "reckon_home", "neither"])
+def test_the_publisher_writes_where_the_preflight_reads(
+    arm: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The path the command writes is the path the pre-flight resolves, per arm.
+
+    The publisher and the pre-flight each resolve the document through
+    ``paid_lanes.document_path``, so an isolated run's command must write the
+    very file the pre-flight that reads after it resolves. The command is a real
+    process because the resolution happens in the entry point's own
+    environment; the pre-flight's path is then resolved in this process with the
+    same environment mirrored, which is what every production pre-flight caller
+    names. A second rule on the pre-flight's side -- the crew home honoured by
+    one and not the other -- is what makes the crew-home arm disagree.
+    """
+    env, expected = _publisher_env(arm, tmp_path)
+    _mirror_env(arm, env, monkeypatch)
+
+    result = subprocess.run(
+        [sys.executable, "-m", "reckon.crew.paid_lanes", "--once"],
+        cwd=str(tmp_path),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "wrote " in result.stdout, result.stdout
+    written = Path(result.stdout.split("wrote ", 1)[1].split(":", 1)[0].strip())
+    assert written.resolve() == expected.resolve(), arm
+    assert written.exists(), arm
+    assert json.loads(written.read_text(encoding="utf-8"))["document"] == "paid-lanes"
+    # The path the pre-flight resolves is the file the command just wrote.
+    assert budget.published_document_path().resolve() == written.resolve(), arm
+    assert budget.published_document_path().resolve() == expected.resolve(), arm

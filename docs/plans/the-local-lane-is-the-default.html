@@ -151,6 +151,18 @@
     under the operator's real home. The five-minute refresh deployment remains open; until it runs,
     the default document is stale and the recorded windows speak.</p>
 
+    <p><strong>Landed (2026-09-25):</strong> the isolation case for a document under the operator's
+    home plants at the default location rather than at whatever the resolver returns. The case
+    <code>tests/test_preflight_reads_the_published_document.py::test_a_document_under_the_operators_home_is_not_read</code>
+    used to prove its plant by asserting <code>paid_lanes.document_path() == planted</code>; once the
+    document path was unified on one resolver that honours <code>RECKON_HOME</code>, the per-test
+    isolation fixture governs that resolver and the setup assertion failed before reaching the
+    isolation claim it exists to make. The plant is now proven against
+    <code>paid_lanes.DEFAULT_DOCUMENT_PATH</code> expanded under the stand-in <code>HOME</code>, which
+    is the location the case means to occupy and is independent of the resolver; the positive control
+    (the same document named explicitly) and the isolation assertion (the resolved path is not the
+    planted one) are unchanged. The five-minute refresh deployment remains open.</p>
+
     <h2 id="s6">&sect;6 &mdash; A warning comes early enough to change the decision</h2>
     <p>Today's codex hold was the first signal, arriving at 100%. The published state is graded:
     <em>open</em>; <em>pace</em>, when projected exhaustion falls before the window resets, or
@@ -258,6 +270,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260925T041712418891-rereview-of-production-preflight-reads-the-published-document" data-who="reckon-build" data-when="2026-09-25T04:43:06.808Z">
     <div class="r-comment-body"><p>re-review of the preflight wiring stored at 86; reader/publisher path divergence under RECKON_HOME; log header provenance</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260925T052000-one-resolver-landed" data-who="reckon-build s21-coord" data-when="2026-09-25T05:20:00Z">
+    <div class="r-comment-body">One resolver landed at 992265f7 (commit 992265f7): reckon/crew/paid_lanes.document_path() now resolves the document in one order — an explicit argument, then the DOCUMENT_ENV override, then $RECKON_HOME/paid-lanes.json when RECKON_HOME names a tree, then ~/public/reckon/paid-lanes.json — and reckon/budget.published_document_path() delegates to it and keeps no second rule. The publisher and every reader therefore resolve the same file, under isolation as well as on the operator's home. A test in tests/test_paid_lanes_document.py runs three arms (override set, RECKON_HOME set, neither) and asserts, in each, that the path <code>python -m reckon.crew.paid_lanes --once</code> writes is the path <code>budget.preflight</code> reads; the help case gains -h beside --help, printing usage and writing nothing. The declared negative control — restore budget's own RECKON_HOME rule and remove paid_lanes'; the RECKON_HOME arm must fail — was executed and logged. One deterministic failure is reported and not repaired: tests/test_preflight_reads_the_published_document.py::test_a_document_under_the_operators_home_is_not_read asserts at ~line 400 that document_path() equals a document planted under the operator's HOME, which the isolation fixture's RECKON_HOME now correctly overrides; that file is outside this node's write scope, and the one-line repair is a follow_ons on the node's manifest. §5 still needs the refresh deployment.</div>
 </div>
 </section>
 </main>
