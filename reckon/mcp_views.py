@@ -1099,6 +1099,34 @@ def _run_target_plan(pointer: Mapping[str, Any]) -> str:
     return str(node.get("plan") or "").strip()
 
 
+def _recorded_live_run_classifications(project: str) -> dict[str, dict[str, Any]]:
+    """Return the latest watcher event for every run recorded in its stream."""
+
+    from reckon.crew import runs
+
+    path = runs.watch_stream_path(project)
+    if not path.is_file():
+        return {}
+    latest: dict[str, dict[str, Any]] = {}
+    try:
+        with path.open(encoding="utf-8") as stream:
+            for line in stream:
+                event = runs.parse_stream_line(line)
+                if event is None or event.get("legacy"):
+                    continue
+                run_id = str(event.get("run_id") or "")
+                classification = str(
+                    event.get("recovery_classification")
+                    or event.get("to_state")
+                    or ""
+                )
+                if run_id and classification:
+                    latest[run_id] = event
+    except OSError:
+        return {}
+    return latest
+
+
 def partition_live_runs(
     project: str,
     pointers: list[dict[str, Any]] | None = None,
@@ -1126,14 +1154,22 @@ def partition_live_runs(
 
     in_flight: dict[str, list[dict[str, str]]] = {}
     interrupted: dict[str, list[dict[str, str]]] = {}
+    recorded = _recorded_live_run_classifications(project)
     for pointer in pointers:
         if not isinstance(pointer, dict) or pointer.get("project") != project:
             continue
         plan = _run_target_plan(pointer)
         if not plan:
             continue
-        classified = classify_pointer(pointer)
-        if str(classified.get("classification") or "") == INTERRUPTED_RUN_PHASE:
+        event = recorded.get(str(pointer.get("run_id") or ""))
+        classified = event if event is not None else classify_pointer(pointer)
+        classification = str(
+            classified.get("recovery_classification")
+            or classified.get("classification")
+            or classified.get("to_state")
+            or ""
+        )
+        if classification == INTERRUPTED_RUN_PHASE:
             row = _run_row(pointer)
             row["reason"] = str(classified.get("detail") or "")
             row["next_action"] = str(classified.get("next_action") or "")

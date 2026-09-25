@@ -607,6 +607,17 @@ def read_state(html_text: str) -> dict:
     return st
 
 
+def read_state_file(path: Path) -> dict:
+    """Return isolated semantic state, reparsing only when the file changes."""
+    from reckon.file_memo import memoized
+
+    return memoized(
+        "read_state",
+        path,
+        lambda: read_state(_read_plan_text(path)),
+    )
+
+
 # ── Render ───────────────────────────────────────────────────────────────--
 
 

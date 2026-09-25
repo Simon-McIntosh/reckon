@@ -420,7 +420,16 @@ def _state_from_text(
     """
     from reckon import _plan_html
 
-    state = _plan_html.read_state(text)
+    return _state_with_diagnostics(project, text, _plan_html.read_state(text), root)
+
+
+def _state_with_diagnostics(
+    project: str,
+    text: str,
+    state: dict,
+    root: str | Path | None = None,
+) -> dict:
+    """Add diagnostics that depend on more than one plan file."""
     _add_north_star_diagnostic(project, state, root)
     for warning in _unparsed_section_warnings(text, state):
         compat = list(state.get("compatibility_warnings") or [])
@@ -457,8 +466,11 @@ def _read_state(
     html_file = _resolve_html_file(project, slug, root, artifact_type)
     if html_file is None or not html_file.is_file():
         return {}, 0
-    text = html_file.read_text(encoding="utf-8", errors="replace")
-    state = _state_from_text(project, text, root)
+    from reckon import _plan_html
+
+    state = _plan_html.read_state_file(html_file)
+    text = _plan_html._read_plan_text(html_file)
+    state = _state_with_diagnostics(project, text, state, root)
     version = int(state.get("version", 0) or 0)
     return state, version
 
