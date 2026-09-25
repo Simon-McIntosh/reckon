@@ -27,7 +27,7 @@
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-commits" content="436c75f3,37c8988a,f7f6fe29,057d8ad0,4784f497">
 <meta name="plan-impl" content="0.85">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 </head>
 <body>
   <main class="plan-doc">
@@ -142,6 +142,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260925T141847159746-review-of-read-state-and-live-runs-reuse" data-who="reckon-build" data-when="2026-09-25T14:59:38.571Z">
     <div class="r-comment-body"><p>review of read-state-and-live-runs-reuse at b6d88e88 scored 86 (goal fidelity 14): state and text are two independent stat-keyed lookups in _store.py, so a write between them pairs stale state with new text; a corrective node carries it</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260925T132422661661-read-state-and-live-runs-reuse" data-who="reckon-build" data-when="2026-09-25T13:54:48Z">
+    <div class="r-comment-body"><p>read_state and live-run partitioning reuse the parse memo and recorded classification; roadmap met its latency bound; audit remains 8.01 s median against 5 s, carried by followup f-rraiss-mcp-validation-reads-through-memo; 148 passed with the two pre-existing test_store_concurrency failures of main and none added; review 86 found state and text paired from two reads, carried by f-rraiss-one-read-pairs-state-and-text</p></div>
 </div>
 </section>
   </main>
