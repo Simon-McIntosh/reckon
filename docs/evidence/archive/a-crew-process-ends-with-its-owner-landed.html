@@ -254,6 +254,22 @@
       The base and after suite logs are
       <code>promotion-base-suite.log</code> and <code>promotion-after-suite.log</code> in
       that same run directory.</p>
+      <p>The review repair adds the production-state case the first gate could not reach:
+      a complete passing run carrying a resolvable session id in both its pointer and stream
+      now removes its integrated, clean, unclaimed worktree. Resume retention remains for
+      blocked or failed promotions and for manifests that are not complete. The repair gate
+      passed <strong>4 tests</strong> at <code>c35d6f7e</code>; the reviewed base source failed
+      the new gate in <strong>3 cases</strong> and passed 1, covering the missing retention and
+      failed-promotion behaviour. The retention mutation
+      <em>restore unconditional retention so a complete run with a live session keeps its
+      integrated worktree; the case must fail</em> is red in
+      <code>negative-retention.log</code>.</p>
+      <p>Failed promotions now retain their worktree while still signalling a live terminal
+      writer and recording <code>worktree_audit</code>. A no-terminal-manifest control keeps
+      the writer alive, confirming that the signal remains guarded by terminal evidence.
+      The three existing session-retention assertions in
+      <code>tests/test_crew_promotion.py</code> still encode the superseded unconditional
+      retention policy and are reported as an out-of-scope follow-on.</p>
     </section>
   </main>
 </body>
