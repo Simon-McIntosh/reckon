@@ -9,15 +9,25 @@ second review of one version lands beside the first rather than over it, a
 declined finding without a reason is refused before anything is written, and a
 finding type declined across three distinct plans surfaces while one declined
 across two does not.
+
+The boundary is also held against the real corpus rather than a fixture, because
+a fixture cannot fail the way a legacy plan does: the parser derives a
+calibration flag and a diagnostics list while reading the metadata, so writing
+the named effort field to a plan that carried only the legacy effort letter
+moves state the exclusion set must normalise away. And the parsed state omits
+section prose, so a fingerprint over state alone would never notice a plan's
+prose being rewritten. Both are checked against `docs/plans`.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
 
+from reckon import _plan_html
 from reckon.crew import plan_review as module
 
 PROJECT = "fixture-project"
@@ -216,3 +226,83 @@ def test_recurrence_counts_distinct_plans(tmp_path: Path) -> None:
         "fixture-project/p2",
         "fixture-project/p3",
     ]
+
+
+# ── The boundary, held against the real corpus ──────────────────────────────
+PLANS_DIR = Path(__file__).resolve().parents[1] / "docs" / "plans"
+# A plan written before the named effort field existed, so it carries the legacy
+# letter and the parser must derive an uncalibrated effort from it.
+LEGACY_PLAN = PLANS_DIR / "reckon-mcp-plan.html"
+CURRENT_PLAN = PLANS_DIR / "a-plan-is-reviewed-before-it-is-built.html"
+
+# (parsed-state key, the meta that carries it, a metadata-only replacement).
+# `effort_hours` leads: it is the scalar a derived key breaks on, so a control
+# that folds that derived key back in fails on the assertion it names rather
+# than on some later plan.
+_METADATA_EDITS = (
+    ("effort_hours", "plan-effort-hours", "123.0"),
+    ("version", "plan-version", "99"),
+    ("modified", "plan-modified", "2031-01-01"),
+    ("impl", "plan-impl", "0.42"),
+    ("status", "plan-status", "blocked"),
+    ("roi", "plan-roi", "low"),
+    ("owner", "plan-owner", "Someone Else"),
+    ("sprint", "plan-sprint", "S99"),
+    ("tags", "plan-tags", "x,y"),
+    ("archived", "plan-archived", "1"),
+)
+
+_AUTHORED_EDIT = "</h2>\n<p>an authored edit for the fingerprint check</p>"
+
+
+def _write_meta(html: str, name: str, value: str) -> str:
+    """Return the document with one ``plan-*`` meta set to a new value.
+
+    A plan that never carried the meta gains the meta: writing a metadata scalar
+    to a plan is a metadata-only edit whether or not that scalar was present.
+    """
+    pattern = re.compile(f'<meta name="{re.escape(name)}" content="[^"]*"')
+    if pattern.search(html):
+        return pattern.sub(f'<meta name="{name}" content="{value}"', html, count=1)
+    return html.replace(
+        "</head>", f'<meta name="{name}" content="{value}">\n</head>', 1
+    )
+
+
+def test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it() -> None:
+    # The edit table is the named constant, not a hand-copied list.
+    assert {key for key, _meta, _value in _METADATA_EDITS} == set(
+        module.PLAN_METADATA_SCALARS
+    )
+
+    legacy_html = LEGACY_PLAN.read_text(encoding="utf-8")
+    legacy_state = _plan_html.read_state(legacy_html)
+    # The premise the boundary turns on: this plan has no named effort field, so
+    # writing one flips the derived calibration flag.
+    assert legacy_state.get("effort")
+    assert legacy_state.get("effort_calibrated") is False
+    assert "plan-effort-hours" not in legacy_html
+
+    for path in (LEGACY_PLAN, CURRENT_PLAN):
+        html = path.read_text(encoding="utf-8")
+        base_state = _plan_html.read_state(html)
+        base_fingerprint = module.plan_fingerprint(html)
+        for key, meta, value in _METADATA_EDITS:
+            edited_html = _write_meta(html, meta, value)
+            assert edited_html != html, f"{path.name}: the {meta} edit did not apply"
+            # The edit must actually have landed, or the stability check below
+            # would pass vacuously.
+            assert _plan_html.read_state(edited_html).get(key) != base_state.get(key), (
+                f"{path.name}: the {meta} edit did not reach the {key} state"
+            )
+            # ... and the fingerprint must not move: no review is due.
+            assert module.plan_fingerprint(edited_html) == base_fingerprint, (
+                f"{path.name}: {key} is metadata, so the fingerprint must not move"
+            )
+
+        # An authored edit does move it, so a fresh review is demanded.
+        authored = html.replace("</h2>", _AUTHORED_EDIT, 1)
+        assert authored != html, f"{path.name}: the authored edit did not apply"
+        assert module.plan_fingerprint(authored) != base_fingerprint, (
+            f"{path.name}: authored prose must move the fingerprint"
+        )

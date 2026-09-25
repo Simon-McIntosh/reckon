@@ -17,9 +17,13 @@ build with no review able to clear it. So the fingerprint normalises out exactly
 the server-managed metadata scalars — the plan's version, modified stamp,
 implementation fraction, status, ROI, effort, owner, sprint, tags and archive
 flag — and digests the authored content: declarations, sections, decisions,
-followups, relationships and comments. A metadata-only write therefore neither
-triggers a review nor invalidates one, and an authored edit changes the
-fingerprint so the gate demands a fresh review.
+followups, relationships and comments. The parser derives a little more state
+from those scalars, so :data:`PLAN_DERIVED_SCALARS` removes that too; without
+it, adding the named effort field to a plan that carried only the legacy effort
+letter would move the fingerprint through the derived calibration flag and
+orphan a review on exactly the plans that predate the named field. A metadata-only write
+therefore neither triggers a review nor invalidates one, and an authored edit
+changes the fingerprint so the gate demands a fresh review.
 
 The store reuses the crew review store root, so a plan review is queryable
 across plans and projects beside the code reviews: ``reviews/<project>/
@@ -46,6 +50,7 @@ import json
 import re
 from collections.abc import Mapping
 from datetime import UTC, datetime
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -70,6 +75,30 @@ PLAN_METADATA_SCALARS: tuple[str, ...] = (
     "archived",
 )
 
+# ── The derived-field exclusions ────────────────────────────────────────────
+# Excluding a metadata scalar is not sufficient: the parser derives further
+# state from those scalars, and a derived key left in the digest re-introduces
+# the very write that must not invalidate a review. Measured by sweeping every
+# plan under docs/plans and every evidence doc and editing each scalar in
+# PLAN_METADATA_SCALARS in turn: exactly these keys move, and nothing else does.
+
+#   effort_calibrated     - set from whether the plan parses an explicit
+#                           ``plan-effort-hours`` meta or falls back to a legacy
+#                           effort letter. It states how the effort field was
+#                           supplied, not authored content, so it moves
+#                           whenever ``effort_hours`` is written.
+#   compatibility_warnings - the parser's diagnostics channel, whose text
+#                           quotes the values it read ("legacy letter 'M' maps
+#                           to 8.0 worker-hours", "wall-clock ... exceeds ...
+#                           worker-hours"). It is commentary on the metadata
+#                           rather than plan content; a warning about authored
+#                           content sits beside the key it concerns, which the
+#                           digest carries on its own.
+PLAN_DERIVED_SCALARS: tuple[str, ...] = (
+    "effort_calibrated",
+    "compatibility_warnings",
+)
+
 # A review is taken under one of two rubrics: the section 2 rubber duck of a
 # plan's authored content, and the section 3 prior-art-and-depth review the
 # first implementation dispatch of a plan additionally requires.
@@ -91,21 +120,113 @@ RECURRENCE_THRESHOLD = 3
 
 _BLOB_RE = re.compile(r"[0-9A-Fa-f]{7,64}")
 
+# Tags whose content is never authored prose, and the void elements that carry
+# no text and would otherwise leave an unbalanced protected-stack behind.
+_PROSE_SKIP_TAGS = frozenset({"script", "style", "head"})
+_VOID_TAGS = frozenset(
+    {
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr",
+    }
+)
+
+
+class _AuthoredProseParser(HTMLParser):
+    """Collect a plan document's authored prose.
+
+    The parsed state carries no section prose: :func:`reckon._plan_html.read_state`
+    reads the metas, the typed section records and the reckon-owned blocks, and
+    the paragraphs a reader sees under each heading are never part of it. A
+    fingerprint over state alone would therefore not move when a plan's prose is
+    rewritten, leaving the one edit a review exists to catch invisible.
+
+    So the digest also covers the document's authored text — what lies in the
+    body outside every element carrying ``data-reckon="..."``, which are the
+    blocks :func:`reckon._plan_html.write_state` regenerates from state and which
+    the state component already covers canonically. The head is skipped, so a
+    metadata-only write cannot reach the prose through ``<title>`` or a meta.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._stack: list[bool] = []
+        self._in_body = False
+        self._chunks: list[str] = []
+
+    def _protected(self) -> bool:
+        return any(self._stack)
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in _VOID_TAGS:
+            return
+        if tag == "body":
+            self._in_body = True
+        carries_reckon = any(name == "data-reckon" for name, _value in attrs)
+        self._stack.append(
+            self._protected() or carries_reckon or tag in _PROSE_SKIP_TAGS
+        )
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in _VOID_TAGS:
+            return
+        if self._stack:
+            self._stack.pop()
+
+    def handle_data(self, data: str) -> None:
+        if self._in_body and not self._protected():
+            self._chunks.append(data)
+
+    def prose(self) -> str:
+        """Return the collected prose, whitespace-normalised."""
+        return " ".join("".join(self._chunks).split())
+
+
+def _authored_prose(html: str) -> str:
+    """Return the collected authored prose of a plan document."""
+    parser = _AuthoredProseParser()
+    parser.feed(html)
+    parser.close()
+    return parser.prose()
+
 
 def _as_state(plan: Mapping[str, Any] | str | Path) -> Mapping[str, Any]:
     """Coerce the accepted plan inputs to parsed plan state.
 
-    A mapping is taken as already-parsed state; a path is parsed through
-    :func:`reckon._plan_html.parse_plan`; a string is parsed as the plan's
-    semantic HTML. The fingerprint is defined on the parsed state, so all three
-    reduce to one before anything is digested.
+    A mapping is taken as already-parsed state; a path is read and parsed as its
+    document, so a path and that document's text give one fingerprint rather than
+    two.
     """
     if isinstance(plan, Mapping):
         return plan
     if isinstance(plan, Path):
-        return _plan_html.parse_plan(plan)
+        return _plan_html.read_state(plan.read_text(encoding="utf-8", errors="replace"))
     if isinstance(plan, str):
         return _plan_html.read_state(plan)
+    raise TypeError(
+        f"plan_fingerprint expects a mapping, path or html, got {type(plan)!r}"
+    )
+
+
+def _as_document(plan: Mapping[str, Any] | str | Path) -> str | None:
+    """Return the plan's document text, or ``None`` for an already-parsed mapping."""
+    if isinstance(plan, Path):
+        return plan.read_text(encoding="utf-8", errors="replace")
+    if isinstance(plan, str):
+        return plan
+    if isinstance(plan, Mapping):
+        return None
     raise TypeError(
         f"plan_fingerprint expects a mapping, path or html, got {type(plan)!r}"
     )
@@ -114,19 +235,37 @@ def _as_state(plan: Mapping[str, Any] | str | Path) -> Mapping[str, Any]:
 def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
     """Return the content fingerprint that joins a review to the plan it read.
 
-    The parsed state has :data:`PLAN_METADATA_SCALARS` removed and the remainder
-    canonicalised with sorted keys before digesting, so two parses of one
-    authored content fingerprint identically whatever order their keys arrived
-    in. The result is a hex sha256 string.
+    Two components are digested. The parsed state has the excluded keys of
+    :data:`PLAN_METADATA_SCALARS` and the derived keys of
+    :data:`PLAN_DERIVED_SCALARS` removed, and the remainder canonicalised with
+    sorted keys. The document's authored prose — the body text outside every
+    ``data-reckon`` block, which the store regenerates from state — is folded in
+    beside it, because the parsed state carries no section prose and a
+    fingerprint over state alone would not move when a plan's prose is
+    rewritten.
+
+    A caller passing a mapping passes a state and nothing more, so the digest
+    covers state alone; a path or the document text gives the full fingerprint.
+    With the excluded keys normalised out, an authored edit changes the digest
+    and a metadata-only write does not. The result is a hex sha256 string.
     """
-    state = _as_state(plan)
-    authored = {
-        str(key): value
-        for key, value in state.items()
-        if key not in PLAN_METADATA_SCALARS
+    if not isinstance(plan, (Mapping, str, Path)):
+        raise TypeError(
+            f"plan_fingerprint expects a mapping, path or html, got {type(plan)!r}"
+        )
+    excluded = frozenset(PLAN_METADATA_SCALARS) | frozenset(PLAN_DERIVED_SCALARS)
+    payload: dict[str, Any] = {
+        "state": {
+            str(key): value
+            for key, value in _as_state(plan).items()
+            if key not in excluded
+        }
     }
-    payload = json.dumps(authored, sort_keys=True, default=str, separators=(",", ":"))
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    document = _as_document(plan)
+    if document is not None:
+        payload["prose"] = _authored_prose(document)
+    blob = json.dumps(payload, sort_keys=True, default=str, separators=(",", ":"))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
 def plan_review_path(
