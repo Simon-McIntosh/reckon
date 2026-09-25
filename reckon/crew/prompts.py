@@ -79,15 +79,25 @@ PLAN_LANDING_CONTRACT = (
 # The landing contract a brief dispatch receives, in place of the plan-target
 # one. A brief names no committed plan section, so the plan-placement sentence
 # would send the worker to a plan the run was never given; the run's own
-# directory is the durable store its record belongs in. The header, the figure
-# convention and the meta-line ban are unchanged, so the two landing contracts
-# differ only in where the record goes. Kept as a standalone constant so a test
-# can compose with it masked out and diff against the live prompt, which proves
-# the substitution is removable and scoped.
+# directory is the store its record belongs in. That directory is
+# crew_home()/runs/<run_id> under the config home, which lies outside the
+# worktree and is never committed, so this contract states where the record
+# goes without telling the worker to commit it: a commit instruction naming a
+# path outside the repository is refused by git, and a worker following it has
+# no way to comply. The repository files the node changes are what it commits,
+# and the manifest carries the record's absolute path so a reader can open it
+# without knowing the run id. The header, the figure convention and the
+# meta-line ban are unchanged, so the two landing contracts differ only in
+# where the record goes and whether it is committed. Kept as a standalone
+# constant so a test can compose with it masked out and diff against the live
+# prompt, which proves the substitution is removable and scoped.
 BRIEF_LANDING_CONTRACT = (
     "CONTRACT — LANDING YOUR RECORD\n"
     "  Write your landing record and your evidence anchor into this run's own\n"
-    "  directory rather than into a plan section; both go into your final commit.\n"
+    "  directory rather than into a plan section. That directory is the record's\n"
+    "  home and lies outside the worktree, so it is never committed: commit only\n"
+    "  the repository files your node changes, and name the record's absolute path\n"
+    "  in your manifest so a later reader can open it without the run id.\n"
     "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
     "  shown than described, under docs/figures/<topic>/ with the project-absolute\n"
     "  src /<project>/figures/...; never an image of what is naturally a table.\n"
