@@ -419,7 +419,10 @@ def test_the_real_follower_directory_is_untouched(home) -> None:
 # A re-arm starts with an empty pane, so without a log of what was already drawn
 # the reader's view empties every time the host re-arms it. The log holds each
 # rendered row's own bytes, the stamp it carried and the run and state it drew;
-# the re-arm replays those rows above its own fresh ones, framed, in one write.
+# the re-arm replays those rows above its own fresh ones, in one write. The rows
+# carry their own clocks and fall straight onto the split they restored, so the
+# replay is framed by nothing: a header above it and a separator below it each
+# cost a line on every re-arm and said only what the rows already say.
 
 HISTORY_HEADER = "── history"
 HISTORY_SEPARATOR = "── re-armed"
@@ -458,11 +461,6 @@ def _run_follow() -> None:
     assert result.exit_code == 0, result.output
 
 
-def _clock_of(row: dict) -> str:
-    """The clock a stored row's own stamp renders as."""
-    return time.strftime("%H:%M", time.localtime(row["at"]))
-
-
 def _fleet_lines(lines: list[str]) -> list[str]:
     """The drawn fleet rows, without the pane's framing or the follower's end."""
     return [
@@ -475,12 +473,15 @@ def _fleet_lines(lines: list[str]) -> list[str]:
     ]
 
 
-def test_a_rearm_replays_the_framed_history_in_one_write(home, follow_lines) -> None:
-    """A re-arm restores the pane: header, the rows in order, one separator.
+def test_a_rearm_replays_the_history_in_one_write(home, follow_lines) -> None:
+    """A re-arm restores the pane: the rows in order, in a single write.
 
-    Framing, order and the single write are asserted together because they are
-    one property: the reader is handed its whole view as one event, and the rows
+    Order and the single write are asserted together because they are one
+    property: the reader is handed its whole view as one event, and the rows
     inside it are the ones it last saw, oldest first, under their own clocks.
+    The write is located as the one line carrying a newline, so a header or a
+    separator appearing above or below the rows is a second event rather than
+    part of this one.
     """
     _two_live_runs(home)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
@@ -493,24 +494,50 @@ def test_a_rearm_replays_the_framed_history_in_one_write(home, follow_lines) -> 
 
         _run_follow()
 
-    bursts = [line for line in follow_lines if line.startswith(HISTORY_HEADER)]
-    assert len(bursts) == 1, (
-        f"the whole replay is one write, so exactly one header reaches the "
-        f"reader; got {bursts!r}"
+    writes = [line for line in follow_lines if "\n" in line]
+    assert len(writes) == 1, (
+        f"the whole replay is one write, so exactly one multi-row line reaches "
+        f"the reader; got {writes!r}"
     )
-    block = bursts[0]
-    lines = block.split("\n")
-    assert lines[0] == (
-        f"── history {_clock_of(stored[0])}–{_clock_of(stored[-1])} · 2 rows ──"  # noqa: RUF001 - the pane's span separator is an en dash
-    ), lines[0]
-    assert lines[1:-1] == [row["text"] for row in stored], (
+    assert writes[0] == "\n".join(row["text"] for row in stored), (
         f"the replayed rows are the stored ones, in the order they were drawn, "
-        f"under their own bytes; got {lines[1:-1]!r}"
+        f"under their own bytes; got {writes[0]!r}"
     )
-    assert lines[-1] == f"── re-armed {time.strftime('%H:%M')} · live below ──", lines[
-        -1
+
+
+def test_a_replay_emits_no_banner_line(home, follow_lines) -> None:
+    """A replay is its rows and nothing else: no header, no separator.
+
+    A banner above the restored rows and a separator below them each cost a
+    line of furniture on every re-arm while telling the reader only what the
+    rows' own clocks and their chaining already say. The replay must carry the
+    rows alone, so the check is that neither mark appears anywhere in what a
+    re-arm writes — measured on the follower's own output, not on the composer.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+        assert acquired
+        crew.list_live(project=PROJECT)
+        _run_follow()
+        stored = follow_checkpoint.read_history(PROJECT, SESSION)
+        assert stored, "the baseline leaves rows to replay"
+        follow_lines.clear()
+
+        _run_follow()
+
+    assert any("\n" in line for line in follow_lines), (
+        f"the re-arm replayed nothing, so the check would be vacuous; "
+        f"got {follow_lines!r}"
+    )
+    bannered = [
+        line
+        for line in follow_lines
+        if HISTORY_HEADER in line or HISTORY_SEPARATOR in line
     ]
-    assert block.count(HISTORY_SEPARATOR) == 1, block
+    assert bannered == [], (
+        f"a replay carries its rows alone, with no header above them and no "
+        f"separator below; got {bannered!r}"
+    )
 
 
 def test_a_first_arming_replays_no_history(home, follow_lines) -> None:
@@ -544,10 +571,14 @@ def test_a_rearm_with_nothing_new_replays_only_the_history(home, follow_lines) -
         follow_lines.clear()
         _run_follow()
 
-    assert len([line for line in follow_lines if line.startswith(HISTORY_HEADER)]) == 1
-    assert _fleet_lines(follow_lines) == [], (
-        f"a re-arm with no intervening transition draws no fleet row; "
-        f"got {follow_lines!r}"
+    writes = [line for line in follow_lines if "\n" in line]
+    assert len(writes) == 1, (
+        f"a re-arm with no intervening transition replays the stored rows in "
+        f"one write and draws nothing fresh; got {follow_lines!r}"
+    )
+    fresh = [line for line in follow_lines if "\n" not in line]
+    assert all("follower end" in line for line in fresh), (
+        f"the only single-row lines are the follower's own end marker; got {fresh!r}"
     )
 
 

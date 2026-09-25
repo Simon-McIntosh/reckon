@@ -2491,16 +2491,15 @@ def _follow_history_burst(rows, *, dim=_dim_history_line) -> str:
 
     One string rather than one write per row: a consumer that batches the stream
     into notifications then sees the whole replay as a single event.
+
+    The rows carry their own timestamps, which is all the continuity a reader
+    needs, so the replay is framed by nothing: the ``history`` header and the
+    ``re-armed`` separator that once framed it each cost a line of furniture on
+    every re-arm and said only what the rows' own clocks already say.
     """
     if not rows:
         return ""
-    header = (
-        f"── history {time.strftime('%H:%M', time.localtime(rows[0]['at']))}"
-        f"–{time.strftime('%H:%M', time.localtime(rows[-1]['at']))}"  # noqa: RUF001 - a span, not a hyphen
-        f" · {len(rows)} rows ──"
-    )
-    separator = f"── re-armed {time.strftime('%H:%M')} · live below ──"
-    return "\n".join([header, *(dim(row["text"]) for row in rows), separator])
+    return "\n".join(dim(row["text"]) for row in rows)
 
 
 # The themes the ticker paints. Named here rather than imported because

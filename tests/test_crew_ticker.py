@@ -205,7 +205,7 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
     assert ticker_module.BASELINE_MARKER not in line
     # The counts are a fixed grid whose digits share a column, each number
     # followed by its state's single letter.
-    assert " 3w· 1b· 0u" in line
+    assert " 3w 1b 0u" in line
     # Free text is bounded to one clause and stays on the line; a second row
     # would cost a quarter of a pane that shows about eight.
     assert "first clause" in line
@@ -258,7 +258,7 @@ def test_follow_renders_at_the_resolved_terminal_width(home, monkeypatch) -> Non
     assert len(line) == 207
     # The counters hold their own column inside the resolved-width grid, ahead
     # of the reason a clipping pane is allowed to cut.
-    assert " 3w· 1b· 0u" in line
+    assert " 3w 1b 0u" in line
 
 
 def test_follow_explicit_width_beats_the_measurement(home, monkeypatch) -> None:
@@ -818,7 +818,7 @@ def test_a_row_wider_than_the_pane_loses_reason_characters_and_no_counter(
         "207",
     )
 
-    for row, counts in zip(rows, (" 3w· 1b· 0u", "12w· 9b· 7u"), strict=True):
+    for row, counts in zip(rows, (" 3w 1b 0u", "12w 9b 7u"), strict=True):
         assert len(row) == 207
         clipped = row[:pane]
         # The whole counter block survives the clip, at every count width.
@@ -873,7 +873,7 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
     assert len({row.index("implement"[:4]) for row in rows}) == 1
     for letter, spelling in (("w", "working"), ("b", "blocked"), ("u", "unpromoted")):
         columns = {
-            re.search(r"\d{1,2}w·\s?\d{1,2}b·\s?\d{1,2}u", row).end(0) for row in rows
+            re.search(r"\d{1,2}w\s?\d{1,2}b\s?\d{1,2}u", row).end(0) for row in rows
         }
         assert len(columns) == 1, (letter, spelling)
 

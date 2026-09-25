@@ -271,6 +271,34 @@ head, a first sighting that did move keeps its left word and its arrow:
         </tbody>
       </table>
     </section>
+  <section id="row-gives-the-reason-room">
+      <h2>The row gives the reason room and drops the re-arm banners</h2>
+      <p>The lead's review of 2026-09-25 found every row's reason showing a bare <code>…</code>. The clause began at column 159, so at the 180-column default it had 21 columns for the reason, and a clause whose head repeated the destination state was cut to that word and then stripped of it — the field emptied and then reported nothing. Measured on rendered rows at the base revision (<code>971d4889</code>), the reproduction is <code>detail="blocked hook-stop-mode-silent-without-follower"</code> with <code>to_state="blocked"</code>, which renders a blank clause.</p>
+      <p>Four cells are narrowed, funding 39 columns: the node cell from 36 to 28, the role cell from 13 to 9, each transition half from 22 to 10, and the counter block's three separator columns. The arrow still holds one fixed column with a two-space gutter either side, and every boundary keeps its two-space gutter.</p>
+      <table>
+        <thead><tr><th>Pane width</th><th>Reason starts (base)</th><th>Reason columns (base)</th><th>Reason starts (head)</th><th>Reason columns (head)</th></tr></thead>
+        <tbody>
+          <tr><td>120 (<code>MIN_WIDTH</code>)</td><td>159</td><td>0</td><td>120</td><td>0</td></tr>
+          <tr><td>180 (<code>DEFAULT_WIDTH</code>)</td><td>159</td><td>21</td><td>120</td><td>60</td></tr>
+          <tr><td>208 (the workstation pane)</td><td>159</td><td>49</td><td>120</td><td>88</td></tr>
+        </tbody>
+      </table>
+      <p>Measured at the default model cell width of ten; each column a longer configured alias takes comes straight off the head figures. The column is located on the rendered row rather than read back from the sentence that defines it, and the figures above come from <code>logs/geometry-head.log</code> and <code>logs/measure-base.log</code>.</p>
+      <p>The clause's head is stripped of a label repeating the state cell <em>before</em> the field cuts, so a clause wider than its field keeps the head of the word that did not fit instead of the ellipsis alone. The re-arm replay writes its dimmed rows alone in one write: the <code>history … </code> header and the <code>re-armed … · live below</code> separator are removed, since the rows carry their own clocks and their chaining across the split.</p>
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>The three named tests, base <code>971d4889</code> with this node's tests</td><td>3 failed</td><td><code>logs/base-three-named-tests.log</code>; reason start 159, clause empty, banner present.</td></tr>
+          <tr><td>The same three tests at head</td><td>3 passed</td><td><code>logs/head-three-named-tests.log</code>.</td></tr>
+          <tr><td>Declared mutation <code>print only the ellipsis when the first word of the reason does not fit</code></td><td>failed as required (1 failed, 1 passed)</td><td><code>logs/negative-control.log</code>, whose first line repeats the declaration verbatim. The emptiness guard fails; the geometry guard still passes, so the two are separate.</td></tr>
+          <tr><td>Reason column and width</td><td>starts at 120, 60 columns at 180 and 88 at 208</td><td><code>logs/geometry-head.log</code> against <code>logs/measure-base.log</code> (159 / 21 / 49 at base).</td></tr>
+          <tr><td>Ticker, watch, recovery, follow and re-arm test files</td><td>base 15 failed / 418 passed; head 36 failed / 397 passed — 11 pre-existing shared failures, 25 added</td><td><code>logs/family-base.log</code> and <code>logs/family-head.log</code>, failure sets diffed rather than counted absolutely.</td></tr>
+          <tr><td>The 25 added failures</td><td>all outside this node's write fence</td><td>Six files pin the retired geometry and counter separators: <code>test_crew_ticker_layout.py</code> 15, <code>test_crew_watch_stream.py</code> 3, <code>test_follow_counts_its_session.py</code> 3, <code>test_ticker_reads_cleanly.py</code> 2, <code>test_ticker_renders_wait_facts.py</code> 1, <code>test_crew_recovery.py</code> 1. They are this node's follow-ons: the fence must be widened before they can be brought onto the head geometry.</td></tr>
+        </tbody>
+      </table>
+      <p>The node's landing commit is withheld: the run repository's git store is mounted read-only in this sandbox, so the changed paths are delivered in the worktree for the coordinator to commit. The worker does not resolve the driving followup or change terminal plan state.</p>
+    </section>
   </main>
 </body>
 </html>

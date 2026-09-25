@@ -80,7 +80,15 @@ def _columns(model_width: int) -> dict[str, int]:
 def test_every_classifier_transition_keeps_one_grid() -> None:
     """Every input extreme preserves each column and every two-space gutter."""
     assert set(CLASSIFIER_STATES) == ticker_module.CLASSIFIER_STATE_WORDS
-    assert max(map(len, CLASSIFIER_STATES)) == ticker_module.STATE_WORD
+    # The cell is narrower than the widest classifier state, so the longer
+    # recovery spellings elide to it; every rendered state fills exactly the cell
+    # and the arrow below keeps one column whatever it is. The cell is at least
+    # wide enough for the common lifecycle states to render whole.
+    assert max(len(ticker_module._display_state(w)) for w in CLASSIFIER_STATES) <= (
+        ticker_module.STATE_WORD
+    )
+    for state in ("dispatched", "abandoned", "blocked", "working", "unpromoted"):
+        assert len(ticker_module._display_state(state)) <= ticker_module.STATE_WORD
     columns = _columns(ticker_module.MODEL)
     width = 208
     model_text = "gpt-sol"
@@ -378,3 +386,81 @@ def test_no_configured_model_alias_is_truncated(tmp_path, monkeypatch) -> None:
         )
         assert alias in row, (alias, row)
         assert "\N{HORIZONTAL ELLIPSIS}" not in row, (alias, row)
+
+
+def test_the_reason_starts_at_or_before_column_120_at_the_default_width() -> None:
+    """The clause's own column, measured off a rendered row, is at most 120.
+
+    The column is read from the row the renderer produced rather than from the
+    expression that built the grid: a renderer that moved a cell must fail here
+    rather than agree with the arithmetic that placed it. Columns are counted
+    from zero, the same base the row's index uses. A clause exactly sixty
+    characters long is the budget's own statement — the fixed cells must leave
+    sixty columns for the reason at the 180-column default, and eighty-eight on
+    the 208-column pane — so it is asserted whole and unelided, and the room
+    beside it is measured rather than assumed.
+    """
+    width = ticker_module.DEFAULT_WIDTH
+    assert width == 180
+    clause = "zeppelin the gate lifted and the pane has room to say it all"
+    assert len(clause) == 60
+    grid = ticker_module.Ticker(width=width, color=False, model_aliases=())
+
+    row = plain(grid.render(_event(run_id="r-room", to_state="blocked", detail=clause)))
+    assert len(row) == width, row
+    reason_start = row.index("zeppelin")
+    assert reason_start <= 120, (reason_start, row)
+    assert clause in row, row
+    assert width - reason_start >= 60, (reason_start, row)
+    assert "\N{HORIZONTAL ELLIPSIS}" not in row, row
+
+    # The pane this workstation measures is wider, and the clause's own column
+    # is fixed, so the extra columns land entirely on the reason's room.
+    wide = ticker_module.Ticker(width=208, color=False, model_aliases=())
+    wide_row = plain(
+        wide.render(_event(run_id="r-room-wide", to_state="blocked", detail=clause))
+    )
+    wide_start = wide_row.index("zeppelin")
+    assert wide_start == reason_start, (wide_start, reason_start, wide_row)
+    assert 208 - wide_start >= 88, (wide_start, wide_row)
+
+
+def test_a_reason_whose_first_word_does_not_fit_still_prints_characters() -> None:
+    """A clause longer than its field is cut inside the word, never emptied.
+
+    The regression this pins: a clause whose first word repeated the destination
+    state was cut to that word and then stripped of it, so the field carried the
+    ellipsis alone with the reason's whole content gone. Two shapes are checked
+    on a rendered row at the default width — a clause whose head is a long token,
+    and a clause the state label shares a word with — and each must leave
+    readable characters in the field rather than an empty ellipsis.
+    """
+    width = ticker_module.DEFAULT_WIDTH
+    grid = ticker_module.Ticker(width=width, color=False, model_aliases=())
+
+    claim = "hook-stop-mode-silent-without-follower"
+    labelled = plain(
+        grid.render(
+            _event(
+                run_id="r-labelled",
+                to_state="blocked",
+                detail=f"blocked {claim}",
+            )
+        )
+    )
+    assert claim in labelled, labelled
+
+    long_token = "w" * 200
+    overlong = plain(
+        grid.render(
+            _event(
+                run_id="r-overlong",
+                to_state="blocked",
+                detail=f"blocked {long_token}",
+            )
+        )
+    )
+    # The counters spell a single `w`; ten in a row can only come from the
+    # clause, so the field kept the word's head rather than collapsing.
+    assert overlong.count("w") >= 10, overlong
+    assert overlong.rstrip().endswith("\N{HORIZONTAL ELLIPSIS}"), overlong
