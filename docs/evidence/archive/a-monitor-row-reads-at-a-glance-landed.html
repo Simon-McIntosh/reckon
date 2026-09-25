@@ -635,6 +635,129 @@
       the suffix to separate two rows of one node name.
     </p>
 
+    <h3>Corrective landing: the collision suffix draws from the run's minted stamp</h3>
+    <p>
+      Commit <code>6925df20</code> in the
+      <code>colliding-node-cells-carry-a-distinguishing-suffix</code> worktree, base
+      <code>398a1f31</code>. The independent review of the node-name landing — review run
+      <code>r-20260925T011629068862-long-node-names-keep-their-ends</code>, stored at
+      <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T011629068862-long-node-names-keep-their-ends.json</code>,
+      total 85/100 — recorded two findings, and this node repairs both. It supersedes the finding
+      above that "the id format, not this renderer, is what would have to change": the id does carry
+      the distinguishing part, the minted stamp, and the suffix was simply drawn from the wrong end
+      of the id.
+    </p>
+    <ul>
+      <li>
+        The suffix was <code>run_id[-4:]</code>, and a fleet-minted id ends in its node name, so two
+        names a middle cut renders alike (which agree on their last eighteen characters) also ended
+        alike and carried the same four characters.
+      </li>
+      <li>
+        The collision was detected by comparing node names in <code>self._node_claims</code>, so two
+        runs of one node — a repair redispatched under a new run id, the commonest way a pane shows
+        two rows of one worker name — were never marked at all.
+      </li>
+    </ul>
+    <p>
+      The claim is now keyed by the run that claimed a rendered cell text, and the suffix is the tail
+      of that run's minted stamp: <code>minted_stamp</code> reads <code>r-&lt;stamp&gt;-&lt;node
+      token&gt;</code> by shape, never by field position, so a dashed id that is not minted cannot
+      pass its middle field off as a stamp, and an id carrying no minted stamp falls back to its own
+      tail. <code>NODE_ID_TAIL</code> is renamed <code>RUN_STAMP_TAIL</code>, because the width it
+      holds is no longer the id's tail.
+    </p>
+
+    <h3>The cases as rendered, read off the row's own columns</h3>
+    <p>
+      Ids minted through <code>new_run_id</code> with fixed instants, so the stamps are
+      <code>…011629006862</code> and <code>…024104740578</code> and both ids' own last four
+      characters are <code>seam</code>. At the 180-column default:
+    </p>
+    <table>
+      <thead>
+        <tr><th>case</th><th>node cell (36 columns)</th><th>row</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>two names a middle cut renders alike, first run</td>
+          <td><code>review-of-sgc-swe…at-the-banked-seam</code></td><td>180</td>
+        </tr>
+        <tr>
+          <td>the second run, at the render the collision is known</td>
+          <td><code>review-of-sgc-s…the-banked-seam 0578</code></td><td>180</td>
+        </tr>
+        <tr>
+          <td>the first run rendered again</td>
+          <td><code>review-of-sgc-s…the-banked-seam 6862</code></td><td>180</td>
+        </tr>
+        <tr>
+          <td>two runs of one node: first run, then second run</td>
+          <td>the first two rows above, cell for cell</td><td>180</td>
+        </tr>
+        <tr>
+          <td>a lone long name</td>
+          <td><code>review-of-sgc-swe…at-the-banked-seam</code>, no suffix</td><td>180</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The first render of a run stands bare and every later render of the same run carries its own
+      stamp's tail, because a row already written to a pane cannot be recalled; the claim is
+      remembered for the pane's life.
+    </p>
+
+    <h3>Gate measure, as executed</h3>
+    <p>
+      Fourteen test files import <code>reckon.crew.ticker</code> at base <code>398a1f31</code>,
+      enumerated by import rather than by name: <code>test_counter_carries_age.py</code>,
+      <code>test_crew_binding_bound.py</code>, <code>test_crew_recovery.py</code>,
+      <code>test_crew_session_delivery.py</code>, <code>test_crew_ticker.py</code>,
+      <code>test_crew_ticker_layout.py</code>, <code>test_crew_watch_stream.py</code>,
+      <code>test_fleet_counter_coverage.py</code>, <code>test_fleet_counter_launch_failure.py</code>,
+      <code>test_follow_observes_other_sessions.py</code>, <code>test_recovery_state_typing.py</code>,
+      <code>test_ticker_node_names_keep_their_ends.py</code>,
+      <code>test_ticker_renders_wait_facts.py</code> and
+      <code>test_ticker_row_drops_unread_cells.py</code>. The arms run that set plus the
+      dispatch-guard file the previous node's base arm carried — 15 files.
+    </p>
+    <ul>
+      <li>
+        Base arm, revision <code>398a1f31</code>, run in a scratch tree exported with
+        <code>git archive</code> (the run's header names the imported module as
+        <code>&lt;scratch tree&gt;/reckon/crew/ticker.py</code>, so the import was checked to serve
+        the named tree rather than the main checkout): 317 collected, 1 failed, 316 passed.
+      </li>
+      <li>
+        Head arm, revision <code>6925df20</code>, in this worktree: 319 collected, 1 failed, 318
+        passed — the two cases added by this node, and no failure id absent from the base set.
+      </li>
+      <li>
+        The one failure at both revisions is
+        <code>tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers</code>,
+        a stale <code>ticker_module.RATE</code> reference outside this node's scope.
+      </li>
+    </ul>
+    <p>
+      Logs: <code>/home/ITER/mcintos/.cache/reckon-ticker-collision/base-ticker-files.log</code>,
+      <code>/home/ITER/mcintos/.cache/reckon-ticker-collision/head-ticker-files.log</code>.
+    </p>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared: <em>switch the collision suffix back to the last four characters of the run id; the
+      minted-id cases in <code>tests/test_ticker_node_names_keep_their_ends.py</code> must fail</em>.
+      The control tree is this node's source commit exported with <code>git archive</code> with the
+      one line <code>tail = minted_stamp(run_id)[-RUN_STAMP_TAIL:]</code> changed back to
+      <code>tail = run_id[-RUN_STAMP_TAIL:]</code>, nothing else, so the mutation isolates the
+      suffix's source and leaves the collision check itself in place. Executed: 2 failed, 3 passed —
+      <code>test_two_names_that_cut_alike_each_carry_their_own_mint</code> and
+      <code>test_two_runs_of_one_node_show_different_cells</code>, the two minted-id cases, fail as
+      required, rendering <code>'review-of-sgc-s…the-banked-seam seam'</code> for both rows — which
+      is the reviewed defect itself, reproduced. The lone-name case stays green. Log:
+      <code>/home/ITER/mcintos/.cache/reckon-ticker-collision/negative-control-suffix-from-the-id-tail.log</code>.
+    </p>
+
   </main>
 </body>
 </html>

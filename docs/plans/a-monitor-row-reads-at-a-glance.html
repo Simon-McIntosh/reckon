@@ -227,6 +227,26 @@
     before and after. One finding recorded rather than acted on: the fleet mints a run id ending in
     its node name, so two ids of names that cut alike end alike and the suffix separates nothing
     there; it pays off for ids whose ends differ, which is what the pair test mints. No figure.</p>
+    <p class="r-landing"><strong>Corrective landing 2026-09-25</strong> at <code>6925df20</code>,
+    base <code>398a1f31</code>. The independent review of the node-name landing
+    (<code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T011629068862-long-node-names-keep-their-ends.json</code>,
+    total 85) found &sect;5's second sentence unmet in production, and both halves of the finding are
+    repaired here. The suffix came from the run id's last four characters, which for an id the fleet
+    mints are the node name's own last four, so two names a middle cut renders alike carried the same
+    suffix; and the collision was detected by comparing node names, so two runs of one node — one
+    repair redispatched, the commonest way a pane shows two rows of the same worker name — were
+    never marked at all. The claim is now keyed by the run that claimed a rendered cell text, and the
+    suffix is the tail of that run's minted stamp, the only part two runs of one node differ in. The
+    stamp is read by shape (<code>r-&lt;stamp&gt;-&lt;node token&gt;</code>), never by field
+    position, so a dashed id that is not minted cannot pass its middle field off as a stamp; an id
+    carrying no minted stamp falls back to its own tail, which is the only identity such a row has.
+    At the 180-column default, two runs of one node, both ids ending <code>seam</code>, render as
+    <code>review-of-sgc-swe…at-the-banked-seam</code> for the row already written and
+    <code>review-of-sgc-s…the-banked-seam 0578</code> for the later one — a row cannot be recalled
+    once written, so the first render of a run stands bare and every later one carries its own
+    stamp's tail; the first run re-rendered carries <code>6862</code>. Each cell is 36 columns and
+    the row stays 180. No figure: the change is which characters of an id the suffix draws from, not
+    a spatial or plotted relationship — the rendered cells above are the evidence.</p>
 
     <h2 id="s6">&sect;6 &mdash; The reason clause is cut at a word</h2>
     <p>When the reason clause is longer than its room, cut it at the last word boundary that fits and
