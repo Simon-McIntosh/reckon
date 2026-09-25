@@ -53,6 +53,10 @@
       <li>The declared mutation, dropping the duplicate-anchor refusal, is applied and observed to fail. The log is recorded.</li>
     </ul>
 
+    <div class="landed-summary" id="s2-landed">
+      <p><span class="badge badge-shipped">&#10003; landed 2026-09-25</span> <strong>append_evidence</strong> &mdash; the op appends one anchored section to <code>docs/evidence/archive/&lt;plan&gt;-landed.html</code>, creating it when absent and refusing a duplicate anchor by name. Commit <code>cf26c6df</code>; 5 new tests, 130 passing in the touched suites; audit-doc OK on the created record. <a href="/reckon/evidence/archive/a-landing-beat-needs-no-hand-edit-landed#s2">&sect;2 landed</a></p>
+    </div>
+
     <h2 id="s3">&sect;3 &mdash; An op collapses a landed section</h2>
     <p><code>edit_plan</code> accepts <code>{op:"collapse_section", section, summary, evidence_anchor}</code>. It replaces the authored body under that section's h2 with the &sect;6b landed card, which carries the <code>&#10003; landed</code> badge, the summary and the evidence link. It keeps the h2 id, and it sets that section's declaration to <code>done</code> in the same versioned write.</p>
     <p><strong>Done when:</strong></p>
