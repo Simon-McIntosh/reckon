@@ -400,6 +400,87 @@
       followup unchanged, using the previously announced direct-prose fallback.</p>
     </section>
 
+    <section id="f-tlioefpr-promotion-never-amends">
+      <h2>Promotion commit identity survives release</h2>
+      <p><strong>Implementation at 2026-09-25.</strong> Commit
+      <code>038b47355a29aaf310587c49aadaf5051736498b</code> records the worktree and process
+      release outcome in a separate commit limited to the run file. The promotion commit
+      and any peer commit that interleaves remain reachable with their original identities;
+      unrelated staged work stays staged. Commit <code>7f51cb12c451899b8111ebe11fb7d1924fc0490a</code>
+      makes an identical release receipt a successful no-op, preserving HEAD.</p>
+      <figure>
+        <img src="/reckon/figures/the-ledger-is-one-file-per-run/release-commits.svg"
+          alt="Amend replaces a publishable commit; a separate release receipt preserves the promotion and an optional peer commit as ancestors."
+          width="1060" height="430">
+        <figcaption>Release retains its existing cleanup policy and records its result after the promotion commit.</figcaption>
+      </figure>
+      <p><strong>Reproduced before repair.</strong> With production code at dispatch base
+      <code>ca9b7e0278c98a0eaf524385d994e6f0cb0bd128</code>, all four new CLI cases failed at
+      <code>no-amend reflog assertion</code>. The real temporary repository showed
+      <code>commit (amend): promote(r-release): passed</code>; inserting a peer commit
+      during release instead produced <code>commit (amend): test: peer landing</code>.
+      The positive write-observer control passed. No live repository or config home was
+      used as the promotion destination. The initial test-import collection error is
+      retained separately and is not counted as reproduction evidence.</p>
+      <p><strong>Assertions that could fail.</strong> The test calls <code>crew complete</code>
+      through its CLI with clean and dirty detached worktrees, with and without an
+      interleaved peer commit. It observes the commit carrying the run file before
+      release, compares its object and run-file bytes after completion, verifies its
+      ancestry, rejects any amend in the reflog, and reads the committed receipt back.
+      Clean integrated worktrees disappear; dirty worktrees survive with the explicit
+      <code>uncommitted changes</code> refusal. The fixture's config and database writes
+      are observed, while writes into the real config home are refused. The observer's
+      positive control deliberately attempts and rejects a protected pointer write.</p>
+      <p><strong>Replay correction.</strong> Re-recording an identical receipt initially
+      failed all four <code>identical release must be a durable no-op</code> assertions:
+      a separate empty commit was refused. The added staged-diff check now returns the
+      existing receipt without committing. This is asserted with peer work still staged.</p>
+      <p><strong>Caller cleanup.</strong> <code>append_run</code> no longer accepts its
+      unused <code>attempts</code> parameter. The authorized caller test removes only
+      <code>attempts=99</code>, preserving every complete-record and index-order assertion.
+      An AST audit covers 100 calls, including the production promotion caller, with
+      zero remaining attempts keywords and zero expanded keyword call sites.</p>
+      <table>
+        <thead><tr><th>Measurement</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Focused gate at final implementation</td><td>34 passed in 84.02s (0:01:24); exit 0</td></tr>
+          <tr><td>Declared amend mutation at final implementation</td><td>4 failed, 1 passed in 14.16s; exit 1; all four failures at the exact no-amend reflog assertion</td></tr>
+          <tr><td>Dispatch-base cohort, 22 modules</td><td>1 failed, 417 passed, 4 warnings in 244.71s (0:04:04)</td></tr>
+          <tr><td>Final-implementation cohort, same 22 modules</td><td>4 failed, 414 passed, 4 warnings in 353.49s (0:05:53)</td></tr>
+          <tr><td>Failure delta</td><td>3 added, 1 retained, 0 resolved</td></tr>
+          <tr><td>Scoped lint delta</td><td>23 inherited findings at base and final implementation; zero added</td></tr>
+        </tbody>
+      </table>
+      <p><strong>The zero-added-failures measure remains unmet.</strong> Added failure ids:</p>
+      <ul>
+          <li><code>tests/test_crew_promotion.py::test_a_landing_commit_never_stages_an_unrelated_dirty_file</code></li>
+          <li><code>tests/test_crew_promotion.py::test_a_run_without_a_worker_authored_record_still_lands_exactly_one_comment</code></li>
+          <li><code>tests/test_crew_promotion.py::test_the_landing_commit_names_the_run_id_and_the_gate_verdict</code></li>
+      </ul>
+      <p>Retained failure ids:</p>
+      <ul>
+          <li><code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code></li>
+      </ul>
+      <p>The added cohort failures are outside this node's write fence and were neither
+      changed nor disabled. The final HEAD is now a release receipt commit; existing
+      assertions about the original promotion commit must identify that commit in history.
+      Any test repair and its validation require coordinator assignment. The inherited
+      view-message failure is also retained. No merged-head or live promotion result is claimed.</p>
+      <p><strong>Receipt location.</strong> All logs and inventories are under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T132849977230-promotion-never-amends-its-commit/</code>: <code>reproduction.log</code>, <code>final-gate.log</code>,
+      <code>release-replay-reproduction.log</code>, <code>negative-control.log</code>,
+      <code>negative-control.patch</code>, <code>base-cohort.log</code>,
+      <code>head-cohort.log</code>, <code>final-cohort.log</code>,
+      <code>final-cohort-delta.json</code>, <code>append-callers.json</code> and the
+      scoped lint receipts. The negative log starts with the declared mutation verbatim.
+      Both cohort arms use isolated git archives with two test workers; each log names its
+      source revision, command, imported promotion and ledger modules, and resolved cwd.</p>
+      <p><strong>Delivery boundary.</strong> This append records the result for followup
+      <code>f-tlioefpr-promotion-never-amends</code> without resolving it. Plan lifecycle,
+      version and modified metadata remain unchanged. The direct prose fallback was announced
+      because the worker contract requires local append-only records without metadata writes.</p>
+    </section>
+
   </main>
 </body>
 </html>

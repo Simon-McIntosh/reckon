@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="430" viewBox="0 0 1060 430" role="img" aria-labelledby="title desc">
+  <title id="title">Record release without rewriting published history</title>
+  <desc id="desc">An amend replaces the promotion commit, or a peer commit that intervenes. A separate release commit preserves the promotion and the peer as ancestors and leaves unrelated staged work untouched.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9" fill="#334155"/></marker>
+  </defs>
+  <rect width="1060" height="430" rx="12" fill="#f8fafc"/>
+  <g font-family="sans-serif" fill="#0f172a">
+    <text x="30" y="38" font-size="23" font-weight="bold">Release records an outcome; commit identities remain stable</text>
+    <text x="30" y="79" font-size="17" fill="#9f1239">Reproduced defect: amend replaces whichever commit is HEAD at release time</text>
+    <rect x="35" y="103" width="210" height="66" rx="8" fill="#ffe4e6" stroke="#be123c"/>
+    <text x="140" y="130" text-anchor="middle" font-size="17">Promotion or peer</text>
+    <text x="140" y="153" text-anchor="middle" font-size="15">already publishable</text>
+    <path d="M250 136 H407" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <text x="328" y="120" text-anchor="middle" font-size="15">commit --amend</text>
+    <rect x="420" y="103" width="218" height="66" rx="8" fill="#ffe4e6" stroke="#be123c"/>
+    <text x="529" y="130" text-anchor="middle" font-size="17">Replacement commit</text>
+    <text x="529" y="153" text-anchor="middle" font-size="15">different identity</text>
+    <text x="670" y="129" font-size="16" fill="#9f1239">Published history diverges.</text>
+    <text x="670" y="153" font-size="16" fill="#9f1239">Reflog records commit (amend).</text>
+    <text x="30" y="219" font-size="17" fill="#166534">Separate receipt: each preceding commit remains an ancestor</text>
+    <g fill="#dcfce7" stroke="#15803d">
+      <rect x="35" y="246" width="220" height="82" rx="8"/>
+      <rect x="359" y="246" width="220" height="82" rx="8"/>
+      <rect x="683" y="246" width="337" height="82" rx="8"/>
+    </g>
+    <path d="M263 287 H346 M587 287 H670" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <g text-anchor="middle" font-size="17">
+      <text x="145" y="273">Promotion commit</text>
+      <text x="145" y="299" font-size="15">creates the run record</text>
+      <text x="469" y="273">Optional peer commit</text>
+      <text x="469" y="299" font-size="15">interleaves during release</text>
+      <text x="851" y="273">Release commit</text>
+      <text x="851" y="299" font-size="15">updates only this run's file</text>
+    </g>
+    <text x="35" y="370" font-size="16">Actual release still removes clean integrated worktrees and retains dirty ones with an explicit reason.</text>
+    <text x="35" y="398" font-size="16">Unrelated staged work remains in the index for its owner. The receipt and returned record agree.</text>
+  </g>
+</svg>
