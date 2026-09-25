@@ -71,6 +71,24 @@ DOCUMENT_ENV = "RECKON_PAID_LANES_DOCUMENT"
 OBSERVED = "observed"
 UNKNOWN = "unknown"
 
+#: What ``--help`` and ``-h`` print. Asking what the command does must never be
+#: the same act as running it, so the text is emitted and the run stops here.
+USAGE = """\
+usage: python -m reckon.crew.paid_lanes [--once] [--path PATH]
+       [--project PROJECT] [--checkout-path PATH]
+
+Compose the metered-backend headroom document, one entry per account, and
+write it atomically. The document is what the pre-flight reads between
+dispatches rather than only at a refusal.
+
+options:
+  --once                 publish the document one time and exit (the default)
+  --path PATH            write to PATH instead of the default location
+  --project PROJECT      read accounts from PROJECT's resolved flight config
+  --checkout-path PATH   resolve PROJECT's config relative to PATH
+  -h, --help             print this message and exit without publishing
+"""
+
 
 @dataclass(frozen=True, slots=True)
 class Candidate:
@@ -479,15 +497,19 @@ def gather_sources(
 def main(argv: Sequence[str] | None = None) -> int:
     """Compose and publish the document; ``--once`` writes it a single time.
 
-    ``argv`` defaults to the process's own command line, so invoking the module
-    as ``python -m reckon.crew.paid_lanes --once --path <file>`` publishes where
-    it was asked to rather than to the default location; a caller passing a list
-    supplies the same tokens it would have typed.
+    ``--help`` and ``-h`` print the usage and return without composing or
+    writing anything, because asking what the command does must not be the same
+    act as running it. ``argv`` defaults to the process's own command line, so
+    invoking the module as ``python -m reckon.crew.paid_lanes --once --path
+    <file>`` publishes where it was asked to rather than to the default
+    location; a caller passing a list supplies the same tokens it would have
+    typed.
     """
     args = list(sys.argv[1:] if argv is None else argv)
     path: str | None = None
     project: str | None = None
     root: str | None = None
+    help_requested = False
     index = 0
     while index < len(args):
         flag = args[index]
@@ -500,11 +522,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 project = value
             else:
                 root = value
-        elif flag in ("--once", "--help", "-h"):
+        elif flag in ("--help", "-h"):
+            help_requested = True
+        elif flag == "--once":
             pass
         else:
             path = flag
         index += 1
+
+    if help_requested:
+        sys.stdout.write(USAGE)
+        return 0
 
     from reckon import flight
 
