@@ -163,6 +163,22 @@
     (the same document named explicitly) and the isolation assertion (the resolved path is not the
     planted one) are unchanged. The five-minute refresh deployment remains open.</p>
 
+    <p><strong>Landed (2026-09-25):</strong> the five-minute refresh is deployed on this host. From
+    the main checkout, <code>python -m reckon.crew.paid_lanes --install-timer</code> wrote
+    <code>reckon-paid-lanes.service</code> (oneshot, <code>WorkingDirectory</code> the checkout root,
+    <code>ExecStart</code> the checkout's interpreter with <code>-m reckon.crew.paid_lanes
+    --once</code>) and <code>reckon-paid-lanes.timer</code> (<code>OnBootSec=1min</code>,
+    <code>OnUnitActiveSec=5min</code>, <code>Unit=reckon-paid-lanes.service</code>) under
+    <code>~/.config/systemd/user</code>, reloaded the manager and enabled the timer. The unit took
+    its first run at 07:38:14Z and published <code>~/public/reckon/paid-lanes.json</code>
+    (<code>observed_at</code> 07:38:15.086Z) with an entry for each of clive, codex and claude; the
+    timer's own second elapse followed at 07:43:37Z and published again, 322 s after the first. A
+    second <code>--install-timer</code> run reported the timer already current and left both unit
+    files byte-identical (sha256 and mtimes unchanged). The service's last run reads
+    <code>Result=success</code> with a real start and exit stamp, <code>ExecMainStatus=0</code>, and
+    the install edited no repository file. Evidence:
+    <code>~/.config/reckon/crew/reports/reckon/s21-coord/paid-lanes-timer-live/install.log</code>.</p>
+
     <h2 id="s6">&sect;6 &mdash; A warning comes early enough to change the decision</h2>
     <p>Today's codex hold was the first signal, arriving at 100%. The published state is graded:
     <em>open</em>; <em>pace</em>, when projected exhaustion falls before the window resets, or

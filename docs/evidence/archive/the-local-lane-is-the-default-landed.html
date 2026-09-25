@@ -635,6 +635,57 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
       naturally a table.</li>
     </ul>
   </section>
+
+  <section id="paid-lanes-timer-is-live">
+    <h2>&sect;5 — The five-minute refresh is installed on this host and refreshing the document</h2>
+
+    <p><strong>The step.</strong> The document, its readers and the production pre-flight callers had
+    landed; what remained was a deployment that republishes it on a clock rather than only at a
+    pre-flight. <code>python -m reckon.crew.paid_lanes --install-timer</code> writes two user units
+    under <code>~/.config/systemd/user</code> and brings the timer up. This node ran it once on this
+    host, from the main checkout at <code>HEAD</code>, and observed the unit file, the timer's next
+    elapse, the first publish, and the timer's own second publish.</p>
+
+    <figure>
+      <img src="/reckon/figures/the-local-lane-is-the-default/refresh-timer-live.png" alt="A three-lane timeline over eleven minutes: the install lane starts at 07:38:12.6Z and writes both unit files by 07:38:14.2Z; the document lane carries two publishes, observed_at 07:38:15.086Z and 07:43:37.517Z, 322.4 seconds apart against the 300-second floor; the timer lane shows the next elapse at 07:43:14Z, the second service run at 07:43:37Z, and the following elapse at 07:48:37Z.">
+      <figcaption>The install, the publish it triggered immediately, and the timer's own second
+      elapse: the two publishes are 322.4 s apart, past the five-minute floor the deployment
+      exists to meet. The 23 s between the 07:43:14Z elapse and the 07:43:37Z run is the
+      manager's own scheduling, not a shorter cadence.</figcaption>
+    </figure>
+
+    <h3>What was observed</h3>
+
+    <table>
+      <thead><tr><th>Check</th><th>Observed</th></tr></thead>
+      <tbody>
+        <tr><td>Install, run 1</td><td><code>installed ~/.config/systemd/user/reckon-paid-lanes.timer</code>, exit 0, at 07:38:12.6Z; units render <code>WorkingDirectory=/home/ITER/mcintos/Code/reckon</code> and <code>ExecStart=&lt;checkout venv python&gt; -m reckon.crew.paid_lanes --once</code></td></tr>
+        <tr><td>Timer listed with a next elapse</td><td><code>NEXT Fri 2026-09-25 09:43:14 CEST</code> (07:43:14Z); after the second run, <code>NEXT 09:48:37 CEST</code></td></tr>
+        <tr><td>Service's last run</td><td><code>Result=success</code>, <code>ExecMainStatus=0</code>, real <code>ExecMainStartTimestamp</code>/<code>ExecMainExitTimestamp</code> (09:38:14 and 09:43:37 CEST), <code>NRestarts=0</code></td></tr>
+        <tr><td>Publish, newer than the install moment</td><td><code>observed_at 2026-09-25T07:38:15.086428Z</code>, 2.5 s after the install start</td></tr>
+        <tr><td>Second publish, at least five minutes later</td><td><code>observed_at 2026-09-25T07:43:37.516938Z</code>, delta 322.4 s, on the timer's own elapse (no manual start)</td></tr>
+        <tr><td>One entry per backend</td><td><code>accounts</code> carries <code>clive</code>, <code>codex</code> and <code>claude</code> among ten accounts</td></tr>
+        <tr><td>Idempotence</td><td>Run 2 prints <code>... is already current</code>, exit 0; service sha256 <code>bd470326…</code> and timer sha256 <code>1cc28fdb…</code> identical before and after; both mtimes unchanged</td></tr>
+        <tr><td>Nothing else changed</td><td><code>git status --porcelain</code> of the main checkout identical before and after the install, bar the peer work already dirty at the start; no repository file edited</td></tr>
+      </tbody>
+    </table>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>Readings are entries, not positions.</strong> Each backend's entry is present; all
+      three currently read <code>state=unknown</code>, because no fresh receipt or stream window
+      resolved them at publish time; §5's document semantics, not this deployment, own that.</li>
+      <li><strong>The journal was not read.</strong> <code>journalctl --user -u
+      reckon-paid-lanes.service</code> refuses this shell's context (<q>No journal files were opened
+      due to insufficient permissions</q>), so the success claim rests on the manager's own
+      <code>Result</code>/<code>ExecMainStatus</code> stamps and on the document's advancing
+      <code>observed_at</code>, not on journal lines.</li>
+      <li><strong>Durability across the allocation was not measured.</strong> The timer lives in the
+      user manager reachable from this compute node's fleet runtime directory; whether that manager
+      outlives the allocation is a property of the host, not of the install.</li>
+    </ul>
+  </section>
 </main>
 </body>
 </html>
