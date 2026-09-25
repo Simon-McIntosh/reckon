@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" width="960" height="400" role="img" aria-label="Two launch paths for the coordinator obligations hook: the bare script form runs under the platform python3, where the reckon import fails and the hook is a silent no-op; the installed command form names the checkout's own dot-venv interpreter, which imports the obligations view and injects the checklist.">
+  <style>
+    .bg { fill: #ffffff; }
+    .lane { fill: #f7f7f9; stroke: #c9ccd4; stroke-width: 1.5; }
+    .box { fill: #ffffff; stroke: #6b7280; stroke-width: 1.5; }
+    .bad { stroke: #b3261e; }
+    .good { stroke: #1b6e3c; }
+    .t { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 15px; fill: #1f2328; }
+    .h { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 17px; font-weight: 600; fill: #1f2328; }
+    .m { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 13px; fill: #1f2328; }
+    .r { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #b3261e; }
+    .g { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #1b6e3c; }
+    .arrow { stroke: #6b7280; stroke-width: 2; fill: none; marker-end: url(#head) }
+  </style>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="960" height="400"/>
+  <text class="h" x="24" y="34">The harness runs what the command names, not what the script needs</text>
+
+  <rect class="lane" x="24" y="56" width="912" height="128" rx="10"/>
+  <text class="t" x="40" y="82">Before: the entry named the script alone, so the shebang chose the interpreter</text>
+  <rect class="box bad" x="40" y="94" width="270" height="72" rx="6"/>
+  <text class="m" x="52" y="120">/checkout/reckon/hooks/</text>
+  <text class="m" x="52" y="138">coordinator_obligations.py</text>
+  <text class="m" x="52" y="156">--hook prompt</text>
+  <path class="arrow" d="M 312 130 L 366 130"/>
+  <rect class="box bad" x="368" y="94" width="196" height="72" rx="6"/>
+  <text class="t" x="380" y="124">env python3</text>
+  <text class="t" x="380" y="148">platform interpreter</text>
+  <path class="arrow" d="M 566 130 L 620 130"/>
+  <rect class="box bad" x="622" y="94" width="296" height="72" rx="6"/>
+  <text class="r" x="634" y="122">No module named 'reckon'</text>
+  <text class="r" x="634" y="146">exit 0, empty stdout: no-op</text>
+
+  <rect class="lane" x="24" y="200" width="912" height="128" rx="10"/>
+  <text class="t" x="40" y="226">Now: the entry names the checkout's interpreter</text>
+  <rect class="box good" x="40" y="240" width="270" height="72" rx="6"/>
+  <text class="m" x="52" y="266">/checkout/.venv/bin/python</text>
+  <text class="m" x="52" y="284">/checkout/reckon/hooks/</text>
+  <text class="m" x="52" y="302">coordinator_obligations.py --hook prompt</text>
+  <path class="arrow" d="M 312 276 L 366 276"/>
+  <rect class="box good" x="368" y="240" width="196" height="72" rx="6"/>
+  <text class="t" x="380" y="270">import reckon.crew</text>
+  <text class="t" x="380" y="294">.obligations</text>
+  <path class="arrow" d="M 566 276 L 620 276"/>
+  <rect class="box good" x="622" y="240" width="296" height="72" rx="6"/>
+  <text class="g" x="634" y="270">checklist in additionalContext</text>
+  <text class="g" x="634" y="294">every turn</text>
+
+  <text class="t" x="24" y="356">Both interpreters are resolved from the checkout that carries the scripts; the worker Stop hook is standard-library only and needs none.</text>
+  <text class="t" x="24" y="380">A settings file installed before this change is recognised, not duplicated: identity is the script and its arguments.</text>
+</svg>
