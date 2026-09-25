@@ -527,7 +527,7 @@ def test_a_worker_that_ended_after_a_result_record_is_resumable(
 # ── Case 6: a departure is promoted only with a ledger row ────────────────
 
 
-def _departure_word(ledger_ids) -> str:
+def _departure_word(*, use_ledger: bool) -> str:
     known = {
         "r-departure": {
             "run_id": "r-departure",
@@ -538,10 +538,15 @@ def _departure_word(ledger_ids) -> str:
             "needs_help_complete": None,
         }
     }
+    reader = (
+        recovery._ledger_run_id_reader("liveness-fixture")
+        if use_ledger
+        else None
+    )
     events, _ = recovery.fleet_transitions(
         known,
         {},
-        ledger_run_ids=(lambda: ledger_ids) if ledger_ids is not None else None,
+        ledger_run_ids=reader,
     )
     return events[0][2]
 
@@ -549,16 +554,23 @@ def _departure_word(ledger_ids) -> str:
 def test_a_vanished_run_without_a_ledger_row_is_not_called_promoted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    ledger_ids = {"r-departure"}
+    monkeypatch.setattr(
+        recovery,
+        "_ledger_run_id_reader",
+        lambda _project: lambda: ledger_ids,
+    )
     with _control(monkeypatch, "ledger-row-check"):
-        assert _departure_word({"r-departure"}) == "promoted"
-        assert _departure_word(set()) != "promoted"
+        assert _departure_word(use_ledger=True) == "promoted"
+        ledger_ids.clear()
+        assert _departure_word(use_ledger=True) != "promoted"
 
 
 def test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word() -> None:
     # A caller that supplies no ledger cannot tell a promotion from a vanish,
     # so the reading is qualified rather than asserted: the word stays
     # promoted, and no reader is told a run was withdrawn on no evidence.
-    assert _departure_word(None) == "promoted"
+    assert _departure_word(use_ledger=False) == "promoted"
 
 
 # ── Case 7: every emitted word falls in exactly one bucket ────────────────
