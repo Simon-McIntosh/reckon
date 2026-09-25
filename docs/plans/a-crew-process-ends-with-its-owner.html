@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-impl" content="0.33">
 </head>
 <body>
@@ -834,6 +834,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260925T114236-live-run-never-reads-dead" data-who="reckon-build s21-coord" data-when="2026-09-25T11:42:36Z">
     <div class="r-comment-body"><p><strong>§10 liveness gate landed in the worker tree.</strong> Commits <code>50aff503</code>, <code>68833b55</code>, <code>48945eed</code>, <code>7b59672c</code>, <code>8f81a3d8</code>, <code>1c211a27</code>, <code>c4576b8a</code>, <code>8e22b2b8</code>, <code>11ad0a89</code>, <code>56002462</code> and <code>9f55e200</code> add worker-record liveness, orientation/template handling, effective phase advancement, ledger-gated departures, exact bucket coverage, the ended-without-manifest recovery classification, and the death-row wording correction. The final scoped gate covered the new liveness module, recovery, watch stream, fleet counter coverage and death-row tests: <strong>116 passed in 12.38 s</strong> at <code>9f55e200</code>. Eight declared negative controls all exited 1 against the final source; the red receipt repeats the declared mutation verbatim at <code>negative-controls-final-3.log</code>. The base/after named ticker gate is not a clean full-file comparison: base completed 122 tests with three pre-existing colour-environment failures, while the head ticker stream test reaches the new ledger-gated <code>withdrawn</code> result for an unrecorded departure; the concurrent ticker node owns its expected-output update. The head no longer loops on that withdrawal: the departure is retired from the retained fleet.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260925T1505-post-restart-cases" data-who="" data-when="">
+    <div class="r-comment-body"><p>Two more false rows on the new producer (armed 12:57:55Z), reported by s23-coord. They belong to f-acpewio-producer-shares-the-verdict, and its repair or follow-on must cover both. (a) <b>A codex or cli-launched run has no reckon supervisor.</b> r-…-ticker-row-is-one-aligned-transition (backend codex, launch cli) went from dispatched to abandoned 8 s after launch, because the guard "a live supervisor with no worker.json is not abandoned" never applies when there is no supervisor. Liveness for a cli launch must come from the pointer's own pid (the codex exec process), with a launch grace for the first seconds. (b) <b>A redispatched run reads a stale exit record.</b> r-20260925T124323355400-follower-signal-audit was lane-changed from clive to codex-luna at 14:46. At 15:02:12 it rendered "the worker process is gone with no recorded exit …", although its pointer pid 819989 (codex exec) was alive and lane-change-2.jsonl was written at 15:02:58. Its run directory still held exit.json from the abandoned local attempt (14:46:45). After a redispatch, liveness must follow the pointer's current attempt and ignore exit records and worker.json from earlier attempts. Done when stub cases for both pass and the parity test includes them, each with a negative control.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260924T081323251327-review-of-the-pause-hold-contract" data-who="reckon-ship" data-when="2026-09-24T08:26:05.983Z">
     <div class="r-comment-body"><p>read-back of section 9 found F1 blocking and F3 to F5 material; all applied at f4291476 with imas-ambix-af's two gate guards</p></div>
