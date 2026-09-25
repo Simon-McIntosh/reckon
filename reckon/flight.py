@@ -1042,6 +1042,27 @@ def _observation_age(stamp: object) -> float | None:
     return max(0.0, (datetime.now(UTC) - parsed).total_seconds())
 
 
+def _lane_document_headroom(payload: Mapping[str, Any]) -> int | float | str:
+    """Return the admission-limited headroom the shared reader resolves.
+
+    A lane's own engine headroom does not account for the router's admission
+    FIFO, so a document carrying ``router_generation_gate`` (or a published
+    ``admission`` block) reports the slots actually available at the router.
+    Resolving it through the shared reader keeps this probe's figure identical
+    to ``crew(view="lanes")`` and the dispatch carry, which read the same
+    document. A figure that does not resolve stays ``unknown``, never zero.
+    """
+    # Imported here rather than at module scope: the ``reckon.crew`` facade
+    # imports this module while building its own package path, so a top-level
+    # import would resolve ``reckon.crew`` before it is a package.
+    from reckon.crew import lane_document
+
+    value = lane_document.read_lane_document(payload).get("headroom")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return "unknown"
+    return value
+
+
 def _probe_lane_document(backend: Mapping[str, Any]) -> dict[str, Any]:
     """Report a backend's lane reading, taken from its declared lane document.
 
@@ -1095,9 +1116,7 @@ def _probe_lane_document(backend: Mapping[str, Any]) -> dict[str, Any]:
 
     state_raw = payload.get("state")
     state_verdict = str(state_raw).strip() if state_raw is not None else ""
-    headroom = payload.get("headroom")
-    if not isinstance(headroom, (int, float)) or isinstance(headroom, bool):
-        headroom = "unknown"
+    headroom = _lane_document_headroom(payload)
     binding = payload.get("binding_observed")
     if not isinstance(binding, bool):
         binding = None

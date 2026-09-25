@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 from reckon import _backends, _store, capability, flight, ledger
+from reckon.crew import lane_document as _lane_document
 from reckon.crew import summary
 from reckon.crew.node import (
     BudgetHold,
@@ -2365,7 +2366,9 @@ def _lane_reading_carry(
     # discards measurements the lane did take. The lane omits its concurrency
     # ceiling and nulls its headroom while the pool drains, which is precisely
     # when a reader needs the running count and the mean context.
-    headroom = _metric_number(document.get("headroom"))
+    headroom = _metric_number(
+        _lane_document.read_lane_document(document).get("headroom")
+    )
     mean_context = _metric_number(document.get("mean_context"))
     binding = document.get("binding_observed")
     if isinstance(binding, str) and not binding.strip():

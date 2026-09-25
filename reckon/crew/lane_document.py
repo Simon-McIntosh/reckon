@@ -186,10 +186,18 @@ def _admission_reading(
         verdict = "congested" if available <= 0 else "open"
     reason = published_reason
     if reason is None:
+        # The verdict is the whole point of the reason: an open gate and a
+        # congested one differ in the decision they licence, so the string must
+        # name which one this is rather than repeat the arithmetic identically.
         if verdict == "congested":
-            reason = f"admission headroom is {available:g} ({source})"
+            reason = (
+                f"admission headroom is {available:g} ({source}); "
+                "the gate is congested"
+            )
         else:
-            reason = f"admission headroom is {available:g} ({source})"
+            reason = (
+                f"admission headroom is {available:g} ({source}); the gate is open"
+            )
     return available, verdict, reason
 
 
