@@ -9,9 +9,9 @@
   <meta name="plan-title" content="Fleet Counter Execution Record">
   <meta name="plan-summary" content="Counter census, source paths, reproduction, verification, and retained limits">
   <meta name="plan-evidence-for" content="the-fleet-counters-count-the-fleet">
-  <meta name="plan-verifies" content="the-fleet-counters-count-the-fleet#s2">
-  <meta name="plan-commits" content="858b83d34fc68e08a6bad069650b3cccd29a9a06">
-  <meta name="plan-artifacts" content="docs/research/fleet-counters-against-the-fleet.html,docs/figures/the-fleet-counters-count-the-fleet/counter-census.svg">
+  <meta name="plan-verifies" content="the-fleet-counters-count-the-fleet#s2,the-fleet-counters-count-the-fleet#s9">
+  <meta name="plan-commits" content="858b83d34fc68e08a6bad069650b3cccd29a9a06,fcb44013ae9a535b346e243df38754c6449da85b,e79c5f210f845bb24fb9f51d9f0f051c65740e87">
+  <meta name="plan-artifacts" content="docs/research/fleet-counters-against-the-fleet.html,docs/figures/the-fleet-counters-count-the-fleet/counter-census.svg,docs/research/follower-signal-audit.html,docs/figures/follower-signal-audit/noise-transition-timing.svg">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="isolated worktree with project root virtual environment">
@@ -82,6 +82,8 @@
       <p><strong>Latency.</strong> Time from start to the first baseline line, base <code>17935dc3</code> against the head, absolute <code>.venv</code> interpreter. Synthetic fleet of 40 runs: base 0.118/0.071/0.072&nbsp;s, head 0.093/0.070/0.071&nbsp;s. Real project <code>reckon</code>, read-only, <code>runs.watch_stream_cursor</code> at 29 rows: base 6.59/6.14/6.21&nbsp;s, head 6.00/6.38/6.34&nbsp;s; the dry-run sweep that runs first, before the cursor, at <code>reckon/cli.py:2166</code>: base 1.04/1.05/1.02&nbsp;s, head 1.11/1.02/1.11&nbsp;s. The change adds one small atomic write, ~25&nbsp;ms. No latency was added; the largest measured pre-emission call is <code>watch_stream_cursor</code> at ~6.3&nbsp;s, and it predates this section.</p>
       <p><strong>Retained limit.</strong> The <code>dispatched</code> label a long-working run can carry in a regenerated baseline is derived outside this section's fence, in <code>reckon/crew/recovery.py:4507</code> (<code>_watch_snapshot</code>), consumed through <code>reckon/crew/runs.py:1155-1168</code>; it was not changed here and remains the continuation path's own baseline only on a first arming.</p>
 
+    </section>
+
     <section id="row-reads-cleanly">
       <h2>The follower row reads cleanly</h2>
       <p>Commit <code>4cec02e2</code> lands the state-cell and column work. The remedy the coordinator takes renders in the state cell as <code>&lt;state&gt; &middot; &lt;action&gt;</code> at a width derived from the widest state word the classification emits and the widest verb the vocabulary names, and the marker cell that once held the column ahead of the state is retired. The reason clause carries the explanation alone: a leading label whose words the state cell already says is dropped, so <code>ready to resume</code> renders one <code>resume</code>. Every bucket the fleet can show (<code>w</code>, <code>b</code>, <code>u</code>, <code>q</code>) prints on every row with a zero dimmed rather than dropped, and elapsed is one format right-aligned to a fixed width. A departure renders <code>withdrawn</code> unless the ledger recorded the run, and a refused dispatch is never promoted.</p>
@@ -128,6 +130,22 @@
         </tbody>
       </table>
       <p><strong>Retained limit.</strong> <code>reckon/crew/ticker.py</code> and <code>reckon/crew/recovery.py</code> are untouched by this node. Four failures remain in the full ticker, watch and recovery set and all four failed at base: three in <code>tests/test_recovery_state_typing.py</code> (the action word moved out of the clause into the state cell, so a literal <code>resume:</code> or <code>decide:</code> label no longer renders) and one unrelated unit-template gap in <code>tests/test_watcher_unit_restart.py</code> (a source module with no generator). All four are outside this node's fence and are reported as follow-ons rather than fixed.</p>
+    </section>
+
+    <section id="follower-signal-audit">
+      <h2>Follower signal audit</h2>
+      <p><strong>Capture.</strong> The research record <a href="/reckon/research/follower-signal-audit.html">follower-signal-audit</a> freezes the two primary watch streams at <code>2026-09-25T12:55:21Z</code>: 2,618 JSON events across 273 runs and 47 transition kinds. The inputs were <code>/home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events</code> (2,554 selected records) and <code>/home/ITER/mcintos/.config/reckon/crew/watch/imas-ambix-fd8fbc1b4563.events</code> (64 selected records), ending at <code>2026-09-25T12:55:18Z</code>.</p>
+      <table>
+        <thead><tr><th>Measured family</th><th>Count</th><th>Timing / reversion</th><th>Policy class</th></tr></thead>
+        <tbody>
+          <tr><td>Launch flicker: <code>dispatched&rarr;abandoned</code> + <code>abandoned&rarr;working</code></td><td>449</td><td>5.0 s / 178.0 s medians; 178/230 first edges resolve within 5 min</td><td>drop when qualified by the source evidence</td></tr>
+          <tr><td>Exit phantom: <code>working&rarr;blocked</code> + <code>blocked&rarr;completed_unpromoted</code></td><td>202</td><td>1,349.0 s / 2,045.5 s medians; 24/106 first edges resolve within 5 min</td><td>drop when the worker receipt/commit predicate matches</td></tr>
+          <tr><td>Stall flap: <code>working&rarr;stalled</code> + <code>stalled&rarr;working</code></td><td>48</td><td>2,151.0 s / 2,510.5 s medians; 20/24 first edges resolve within 5 min</td><td>drop the qualified flap; retain a persistent stall</td></tr>
+          <tr><td>Same-state report rewrites</td><td>296</td><td><code>blocked</code> 22, <code>complete</code> 91, <code>completed_unpromoted</code> 183</td><td>fold into the counter/posture block</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Source map.</strong> Producer baselines and transitions come from <code>reckon/crew/runs.py:1094&ndash;1144</code> at revision <code>40e24067ea2214b16dc84916fbfac94b2aa802a1</code>; the state reducer is <code>reckon/crew/recovery.py:4575&ndash;4721</code>. That revision's worker/process ordering fixes launch flicker, first-commit process-gone classification and stall flaps from exited workers. Same-state <code>manifest-rewritten</code> records are tagged at <code>reckon/crew/recovery.py:5110&ndash;5119</code>; follower de-duplication is <code>reckon/cli.py:2126&ndash;2138</code>. Re-arm continuation and baseline selection are <code>reckon/cli.py:1927&ndash;1975</code> and <code>reckon/cli.py:2172&ndash;2203</code> at the node head <code>fe712b1cab26a5f2bfd8ef6b630294c4671e7af1</code>.</p>
+      <p><strong>Verification and limits.</strong> The exact capture commands, complete 47-kind table, median timing, five-minute recovery rule, figure and policy are in the research page. This is a dated append-only receipt, not a live rate. Re-arm replay is follower-only and is not falsely claimed to be present in the producer stream. No product file changed.</p>
     </section>
   </main>
 </body>
