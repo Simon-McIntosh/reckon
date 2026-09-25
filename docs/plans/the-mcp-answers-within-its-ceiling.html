@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-commits" content="20258e3a,8bc09a50,39dee90a,8db64fe6,d5773b49,215821ed,9e02b5f6,2122207b,c8eab419,0c021526,1de67ffb,29016e25">
 <meta name="plan-impl" content="0.67">
 </head>
@@ -295,7 +295,10 @@
     <div class="r-comment-body"><p>runs_view(run_id) reads one pointer and one ledger row: host ledger 2 opens / 0.28 s vs 1895 opens / 214.3 s; synthetic 2000-row ledger 2 vs 2001 opens; review 87 notes the timing log names a pre-commit revision, corroborated by the MCP-level 0.26 s at 1de67ffb</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260925-runid-landed" data-who="reckon-build" data-when="2026-09-25T00:53:00Z">
-    <div class="r-comment-body"><p>&sect;5 landed through two nodes.</p><ul><li><code>r-20260924T230901653418-crew-runs-reads-one-run</code> gave <code>runs_view(run_id=X)</code> a narrowed read: one pointer and one ledger row. On this host's reckon ledger that is 2 files opened in 0.28 s, against 1,895 files in 214.3 s for the full walk. It was merged at <code>6f1c8e4b</code> and verified at the integrated head <code>87883fcb</code>. Review 87: the timing log names a revision from before the commit.</li><li><code>r-20260925T000003131551-mcp-crew-runs-forwards-run-id</code> forwarded <code>run_id</code> from the MCP crew runs view. It was merged at <code>e24b6805</code>. Review 97, no findings.</li></ul><p>The single-run read that hit the 30.1 s storage-slow guard now answers through MCP in 0.26 s. The first node's bar-chart PNG was replaced by a table of the same four numbers.</p></div>
+    <div class="r-comment-body"><p>§5 landed through two nodes.</p><ul><li><code>r-20260924T230901653418-crew-runs-reads-one-run</code> gave <code>runs_view(run_id=X)</code> a narrowed read: one pointer and one ledger row. On this host's reckon ledger that is 2 files opened in 0.28 s, against 1,895 files in 214.3 s for the full walk. It was merged at <code>6f1c8e4b</code> and verified at the integrated head <code>87883fcb</code>. Review 87: the timing log names a revision from before the commit.</li><li><code>r-20260925T000003131551-mcp-crew-runs-forwards-run-id</code> forwarded <code>run_id</code> from the MCP crew runs view. It was merged at <code>e24b6805</code>. Review 97, no findings.</li></ul><p>The single-run read that hit the 30.1 s storage-slow guard now answers through MCP in 0.26 s. The first node's bar-chart PNG was replaced by a table of the same four numbers.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260925T000003131551-mcp-crew-runs-forwards-run-id" data-who="reckon-build" data-when="2026-09-25T00:15:21.290Z">
+    <div class="r-comment-body"><p>crew(view=runs, run_id) forwards run_id to runs_view; the single-run MCP read answers in 0.26 s where it hit the 30 s storage-slow guard; lint parity; review 97</p></div>
 </div>
 </section>
   </main>
