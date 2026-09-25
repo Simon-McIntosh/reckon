@@ -13,7 +13,7 @@
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; the node ran in a detached worktree with the main checkout&#x27;s environment reached through PYTHONPATH and pytest -p no:cacheprovider; the base revision was extracted read-only with git archive into a scratch directory, so no second checkout, worktree or branch was created">
-  <meta name="plan-commits" content="db50a1e3,ca43ac53">
+  <meta name="plan-commits" content="db50a1e3,ca43ac53,1928299d">
   <meta name="plan-artifacts" content="reckon/crew/paid_lanes.py,reckon/budget.py,reckon/cli.py,reckon/mcp.py,tests/test_paid_lanes_document.py,tests/test_preflight_reads_the_published_document.py,docs/figures/the-local-lane-is-the-default/headroom-document.png,docs/figures/the-local-lane-is-the-default/preflight-merge.png">
   <title>The Local Lane Is The Default — cumulative execution-evidence record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -262,13 +262,28 @@ FAILED tests/test_paid_lanes_document.py::test_asking_for_help_prints_usage_and_
     <em>and</em> injected nothing, which no production path did: the document the whole section
     exists to publish was inert in the two places that run.</p>
 
-    <p><strong>What landed.</strong> The two callers now name the document at its default path
-    (<code>paid_lanes.document_path()</code>, resolved through the environment override then the
-    reader's home), and <code>budget.preflight</code> merges the document and the caller's recorded
-    reading <strong>per backend</strong>. A backend the document carries a fresh reading for is paced
-    from the document; every other backend keeps the reading the caller recorded. A backend therefore
-    falls back for itself alone when the document is absent, unreadable, silent about it, or holds
-    only a stale figure for it.</p>
+    <p><strong>What landed.</strong> The two callers now name the document at
+    <code>budget.published_document_path()</code> — the environment override, then the file under the
+    crew home, then the document's own default — and <code>budget.preflight</code> merges the document
+    and the caller's recorded reading <strong>per backend</strong>. A backend the document carries a
+    fresh reading for is paced from the document; every other backend keeps the reading the caller
+    recorded. A backend therefore falls back for itself alone when the document is absent, unreadable,
+    silent about it, or holds only a stale figure for it.</p>
+
+    <p><strong>Age is derived at read time, not baked at composition.</strong> The document records
+    each figure's age as of the moment it was published, and a reader that echoed that figure would
+    report a reading an hour old as twenty seconds old. The observation time travels with the figure
+    and does not drift, so the merge re-derives each age from it against the moment of the read, at
+    both the figure and the reading level, and judges freshness on the re-derived value. A document
+    published past the staleness horizon therefore falls back even though the age written inside it is
+    small.</p>
+
+    <p><strong>The path resolves through the crew home, so a pre-flight reads its own tree.</strong>
+    <code>published_document_path()</code> prefers the shared environment override, then the document
+    under <code>RECKON_HOME</code>, and only then the document's own <code>HOME</code>-based default.
+    The crew home is what a fixture isolates, so a test's pre-flight reads its own temporary tree
+    rather than a document the workstation happens to hold under the operator's real home — which
+    would report on the machine rather than on the fixture.</p>
 
     <p><strong>Per-backend, not per-document.</strong> One stale account must not drag a fresh
     sibling down with it, and one fresh account must not vouch for a stale one. Each backend's newest
@@ -294,6 +309,9 @@ FAILED tests/test_paid_lanes_document.py::test_asking_for_help_prints_usage_and_
         <tr><td>An absent document leaves every figure equal to the recorded-window result, per backend</td><td><code>test_an_absent_document_leaves_every_figure_as_recorded</code></td></tr>
         <tr><td>A stale reading falls back for that backend alone while a fresh sibling stays on the document</td><td><code>test_a_stale_reading_falls_back_for_that_backend_alone</code></td></tr>
         <tr><td><code>crew preflight</code> and MCP <code>budget</code> agree on every per-backend figure and source</td><td><code>test_the_cli_and_mcp_paths_agree_on_every_backend</code></td></tr>
+        <tr><td>A document read later reports the age it has at read time, not the age baked into it</td><td><code>test_a_document_read_later_reports_its_read_time_age</code></td></tr>
+        <tr><td>A document composed long ago with a small baked age reads stale and falls back</td><td><code>test_a_document_composed_long_ago_reads_stale_and_falls_back</code></td></tr>
+        <tr><td>A document under the operator's real home is not read by an isolated pre-flight</td><td><code>test_a_document_under_the_operators_home_is_not_read</code></td></tr>
       </tbody>
     </table>
 
@@ -304,20 +322,30 @@ FAILED tests/test_paid_lanes_document.py::test_asking_for_help_prints_usage_and_
     base revision extracted read-only with <code>git archive</code> (no second checkout, worktree or
     branch). The base arm's module under test resolved to the scratch tree, named on its header:</p>
 
-    <pre><code># head (this worktree, uncommitted changes)
+    <pre><code># head (this worktree, committed)
 module.__file__ = &lt;worktree&gt;/reckon/budget.py
-command: python -m pytest -q &lt;16 test files&gt;
-278 passed in 100.23s   EXIT=0     (includes the 4 new cases)
+command: python -m pytest -q &lt;17 test files, tests/test_ledger.py added&gt;
+375 passed, 1 failed in 294.09s   EXIT=1     (includes the 7 new cases)
 
-# base (git archive HEAD → /tmp/reckon-base-loSv)
+# base (git archive 9645fd62 → /tmp/reckon-base-loSv)
 module.__file__ = /tmp/reckon-base-loSv/reckon/budget.py
 command: same selection minus the new file
-274 passed in 95.95s    EXIT=0</code></pre>
+369 passed in 665.69s   EXIT=0</code></pre>
 
-    <p>Zero added failures: 278 = 274 + the 4 new cases. <code>ruff check</code> adds no finding on
-    the four changed paths (base 6/4/20 findings on
-    <code>budget.py</code>/<code>cli.py</code>/<code>mcp.py</code> against head 6/4/20), and the new
-    test file is clean and formatted.</p>
+    <p>The populations match. The base arm expresses the same 369 collected cases the head arm does
+    once the seven new cases are set aside, and the 369th share of the head arm is 368 passed plus one
+    failure — <code>tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact</code>,
+    which is a storage-latency flake and not this change. It failed there on an MCP read exceeding the
+    tool's 30-second deadline (<code>error: storage-slow</code>, <code>waited_seconds: 30.03</code>);
+    the same case run alone then passed (<code>1 passed in 171.10s</code>), and a direct
+    <code>read_plan</code> call executed from the base tree returned the identical
+    <code>storage-slow</code>, so the deadline is knife-edge against this filesystem at both revisions.
+    Both arms ran while a peer session held a full-suite pass on the same 28-CPU allocation, which is
+    why the wall clock is minutes rather than seconds; <code>tests/test_ledger.py</code> and
+    <code>tests/test_preflight_pace.py</code> were added to the selection as this node's review
+    required. <code>ruff check</code> adds no finding on the four changed paths (base
+    <code>4/2/18 findings</code> on <code>budget.py</code>/<code>cli.py</code>/<code>mcp.py</code>
+    against head the same 4/2/18), and the new test file is clean and formatted.</p>
 
     <h3>Negative control</h3>
 
@@ -335,11 +363,14 @@ E           assert None is not None
 FAILED tests/test_preflight_reads_the_published_document.py::test_an_absent_document_leaves_every_figure_as_recorded
 1 failed in 3.57s</code></pre>
 
-    <p><strong>Positive control:</strong> the same selection at head is <code>4 passed</code>, so the
-    red is the mutation and not the selection. Log:
+    <p><strong>Positive control:</strong> the same case in the unmutated tree is <code>1 passed</code>,
+    and the whole file is <code>7 passed</code>, so the red is the mutation and not the selection. The
+    control was re-executed against the committed fixes; the mutation was applied to a scratch copy of
+    <code>reckon/</code> rather than to the reviewed tree, so the reviewed file is untouched. Log:
     <code>~/.config/reckon/crew/runs/r-20260925T015518138129-production-preflight-reads-the-published-document/negative-control.log</code>,
-    alongside <code>~/.cache/reckon-preflight-gate/head.log</code> and
-    <code>~/.cache/reckon-preflight-gate/base.log</code>.</p>
+    alongside <code>~/.cache/reckon-preflight-gate/head2.log</code>,
+    <code>~/.cache/reckon-preflight-gate/base3.log</code> and the round-one
+    <code>head.log</code>/<code>base.log</code>.</p>
 
     <h3>What this record does not claim</h3>
 
