@@ -296,6 +296,34 @@
     <code>the-boundary-check-reads-two-trees</code> &sect;1, which reduces the set of trees
     read. This section's invocation count is then measured on that reduced set.</p>
 
+    <div data-reckon="landing" data-node="promotion-releases-its-worktree" data-when="2026-09-25">
+      <h3>Landing record &mdash; promotion reclaims only an integrated, clean, unclaimed tree</h3>
+      <p><code>reckon/crew/promotion.py</code> now filters the promoted run from the live claim
+      set, retains blocked and failed worktrees, and persists the release outcome on the same
+      landing commit's ledger row. A clean integrated tree is removed with plain
+      <code>git worktree remove</code>; dirty, unintegrated, live-referenced, and failed cases
+      remain with their reason recorded. The gate is
+      <code>tests/test_promotion_releases_its_worktree.py</code>, and the worker manifest names
+      the exact local commits and logs.</p>
+      <p>The five-case gate passed, the base promotion files passed 54 tests, and the after suite
+      passed 55 with no added failure. The declared live-pointer mutation produced a red gate
+      whose first line repeats the declaration verbatim. Cumulative evidence:
+      <code>a-crew-process-ends-with-its-owner-landed.html#s4-promotion-releases-its-worktree</code>.</p>
+      <p>Review repairs landed in commits <code>ed020ee5</code> and <code>c35d6f7e</code>.
+      Resume retention now yields to cleanup for a complete passing or review-node
+      <code>not-run</code> promotion even when its session is resolvable from the pointer and
+      stream; the added real-session case passes and its unconditional-retention mutation is
+      red. Failed and blocked promotions retain the tree but still signal a live terminal
+      writer and include <code>worktree_audit</code>; the no-terminal-manifest control stays
+      alive. The repaired gate is 4 passed, while the reviewed base is 3 failed and 1 passed.
+      The three legacy assertions in <code>tests/test_crew_promotion.py</code> were updated to
+      preserve their intent under the new rule: integrated complete work is released,
+      unintegrated work remains for its own artifact reason, and incomplete session work remains
+      resumable. The peer-population audit now uses an incomplete manifest and still proves that
+      promotion inspects only its own worktree. All promotion files pass: 59 at head versus 54
+      at base, with zero added failures.</p>
+    </div>
+
     <h2 id="s5">&sect;5 &mdash; Every storage read has a deadline</h2>
     <p>The MCP server is the interface and stays the interface. What failed was that its
     reads had no bound. One <code>read_plan</code> held imas-ambix-af's server blocked on

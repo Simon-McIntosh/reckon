@@ -222,6 +222,59 @@
         label is interpolated from that constant rather than written into the text.</li>
       </ul>
     </section>
+    <section id="s4-promotion-releases-its-worktree">
+      <h2>&sect;4 &mdash; Promotion releases only its integrated, unclaimed worktree</h2>
+      <p>The promotion cleanup now removes a run's worktree only after the ledger row and
+      landing comment are committed, and only when the tree is clean, its <code>HEAD</code>
+      is reachable from the integration branch, and no other live pointer claims it. The
+      promoted pointer is explicitly excluded from the claim set, so the decision does not
+      depend on a timing assumption about pointer deletion. Cleanup is withheld for dirty,
+      unintegrated, live-referenced, blocked, and failed runs, and the release result is
+      amended onto the same landing commit and persisted on the ledger row.
+      The implementation and gate live in
+      <code>reckon/crew/promotion.py</code> and
+      <code>tests/test_promotion_releases_its_worktree.py</code>.</p>
+      <table>
+        <thead><tr><th>Promotion case</th><th>Observed result</th><th>Recorded reason</th></tr></thead>
+        <tbody>
+          <tr><td>integrated and clean</td><td>worktree removed</td><td><code>release.worktree_released: true</code> on the ledger row</td></tr>
+          <tr><td>dirty</td><td>worktree kept</td><td><code>uncommitted changes in the worktree</code></td></tr>
+          <tr><td>unintegrated</td><td>worktree kept</td><td><code>HEAD is not reachable</code></td></tr>
+          <tr><td>another live pointer names the tree</td><td>worktree kept</td><td><code>a live run pointer still claims this worktree</code></td></tr>
+          <tr><td>failed gate</td><td>worktree kept</td><td><code>gate verdict 'failed' is not passing</code></td></tr>
+        </tbody>
+      </table>
+      <p>The focused five-case gate passed in 2.61 s. The base promotion files passed
+      <strong>54 tests</strong> at the base revision, and the after suite passed
+      <strong>55 tests</strong> with the new gate, so the added failure count is zero.
+      The declared mutation was executed: <em>remove the live-pointer check so a worktree
+      another live run names is removed; the kept case must fail</em>. Its red log is
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075055787676-promotion-releases-its-worktree/negative-control.log</code>;
+      the mutated gate failed its kept-case assertion, while the normal gate passed.
+      The base and after suite logs are
+      <code>promotion-base-suite.log</code> and <code>promotion-after-suite.log</code> in
+      that same run directory.</p>
+      <p>The review repair adds the production-state case the first gate could not reach:
+      a complete passing run carrying a resolvable session id in both its pointer and stream
+      now removes its integrated, clean, unclaimed worktree. Resume retention remains for
+      blocked or failed promotions and for manifests that are not complete. The repair gate
+      passed <strong>4 tests</strong> at <code>c35d6f7e</code>; the reviewed base source failed
+      the new gate in <strong>3 cases</strong> and passed 1, covering the missing retention and
+      failed-promotion behaviour. The retention mutation
+      <em>restore unconditional retention so a complete run with a live session keeps its
+      integrated worktree; the case must fail</em> is red in
+      <code>negative-retention.log</code>.</p>
+      <p>Failed promotions now retain their worktree while still signalling a live terminal
+      writer and recording <code>worktree_audit</code>. A no-terminal-manifest control keeps
+      the writer alive, confirming that the signal remains guarded by terminal evidence.
+      The three existing session-retention assertions in
+      <code>tests/test_crew_promotion.py</code> now encode the superseded policy correctly:
+      integrated complete work is released, unintegrated work is retained for its artifact
+      reason, and an incomplete session retains the tree for resume. The peer-population audit
+      uses an incomplete manifest so it continues to measure only its own worktree. The full
+      promotion set is <strong>59 passed</strong> at the committed head versus
+      <strong>54 passed</strong> on the reviewed base, with zero added failures.</p>
+    </section>
   </main>
 </body>
 </html>
