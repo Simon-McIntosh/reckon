@@ -26,6 +26,10 @@ dispatch_module = import_module("reckon.crew.dispatch")
 
 DECLARED_MUTATION = "remove the shim-directory PATH prepend"
 MUTATION_ENV = "RECKON_TEST_REMOVE_SHIM_PATH_PREPEND"
+PERSISTENCE_MUTATION = "restore the full-environment merge in persisted launch data"
+PERSISTENCE_MUTATION_ENV = "RECKON_TEST_PERSIST_FULL_ENVIRONMENT"
+SENTINEL = "RECKON_TEST_SECRET"
+SENTINEL_VALUE = "do-not-persist"
 NODE = "98dci4-clu-2058"
 JOB = "1277272"
 SCRATCH = "/tmp"  # noqa: S108 — fixture path, never written
@@ -121,8 +125,10 @@ def test_inside_allocation_launch_path_starts_with_the_shim_directory(
         )
     )
     assert plan.argv[0] == str(worker)
-    launched = dispatch_module._launch_environment(plan.environment, facts=facts)
-    assert launched["PATH"].split(os.pathsep)[0] == str(shim_directory())
+    persisted = dispatch_module._persisted_worker_environment(
+        plan.environment, facts=facts
+    )
+    assert persisted["PATH"].split(os.pathsep)[0] == str(shim_directory())
     spec = dispatch_module._supervisor_spec(
         run_id="worker-path",
         run_directory=tmp_path / "run",
@@ -137,6 +143,64 @@ def test_inside_allocation_launch_path_starts_with_the_shim_directory(
     assert spec["plan"]["environment"]["PATH"].split(os.pathsep)[0] == str(
         shim_directory()
     )
+
+
+def test_persisted_worker_environments_exclude_dispatcher_secrets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    facts = _facts(inside=True)
+    monkeypatch.setenv(SENTINEL, SENTINEL_VALUE)
+    if os.environ.get(PERSISTENCE_MUTATION_ENV) == PERSISTENCE_MUTATION:
+        persisted_environment = dispatch_module._persisted_worker_environment
+
+        def restore_full_environment_merge(environment=None, *, facts=None):
+            return {
+                **os.environ,
+                **persisted_environment(environment, facts=facts),
+            }
+
+        monkeypatch.setattr(
+            dispatch_module,
+            "_persisted_worker_environment",
+            restore_full_environment_merge,
+        )
+
+    inherited = str(tmp_path / "real-bin")
+    overlay = {"PATH": inherited, "PLAN_ONLY": "retained"}
+    plan = LaunchPlan(
+        backend="fixture",
+        dialect="fixture",
+        argv=["worker"],
+        cwd=str(tmp_path),
+        stdin_text="",
+        environment=overlay,
+        final_message_path=None,
+        resumed_session=None,
+    )
+    spec = dispatch_module._supervisor_spec(
+        run_id="worker-persistence",
+        run_directory=tmp_path / "run-persistence",
+        repo_root=tmp_path,
+        worktree=tmp_path / "worktree-persistence",
+        plan=plan,
+        prompt_path=tmp_path / "prompt-persistence.txt",
+        log_path=tmp_path / "stream-persistence.jsonl",
+        stderr_path=tmp_path / "stderr-persistence.log",
+        facts=facts,
+    )
+    directive_environment = dispatch_module._persisted_worker_environment(
+        {}, facts=facts
+    )
+
+    assert spec["plan"]["environment"]["PATH"].split(os.pathsep)[0] == str(
+        shim_directory()
+    )
+    assert spec["plan"]["environment"]["PLAN_ONLY"] == "retained"
+    assert SENTINEL not in spec["plan"]["environment"]
+    assert set(spec["plan"]["environment"]) == {"PATH", "PLAN_ONLY"}
+    assert directive_environment["PATH"].split(os.pathsep)[0] == str(shim_directory())
+    assert SENTINEL not in directive_environment
+    assert set(directive_environment) == {"PATH"}
 
 
 def test_inside_allocation_prompt_names_the_host_and_storage_contract(
@@ -161,13 +225,38 @@ def test_outside_allocation_adds_neither_shims_nor_host_line(
     real_bin = tmp_path / "real-bin"
     _executable(real_bin, "worker")
     inherited = str(real_bin)
+    overlay = {"PATH": inherited, "PLAN_ONLY": "retained"}
 
-    searched = dispatch_module.launch_search_path({"PATH": inherited})
-    launched = dispatch_module._launch_environment({"PATH": inherited}, facts=facts)
+    searched = dispatch_module.launch_search_path(overlay)
+    persisted = dispatch_module._persisted_worker_environment(overlay, facts=facts)
     prompt = _prompt(facts, tmp_path / "runs" / "worker-path")
 
+    plan = LaunchPlan(
+        backend="fixture",
+        dialect="fixture",
+        argv=["worker"],
+        cwd=str(tmp_path),
+        stdin_text="",
+        environment=overlay,
+        final_message_path=None,
+        resumed_session=None,
+    )
+    spec = dispatch_module._supervisor_spec(
+        run_id="worker-path-outside",
+        run_directory=tmp_path / "run-outside",
+        repo_root=tmp_path,
+        worktree=tmp_path / "worktree-outside",
+        plan=plan,
+        prompt_path=tmp_path / "prompt-outside.txt",
+        log_path=tmp_path / "stream-outside.jsonl",
+        stderr_path=tmp_path / "stderr-outside.log",
+        facts=facts,
+    )
+
     assert searched == inherited
-    assert launched["PATH"] == inherited
+    assert persisted == overlay
+    assert spec["plan"]["environment"] == overlay
+    assert dispatch_module._persisted_worker_environment({}, facts=facts) == {}
     assert str(shim_directory()) not in searched.split(os.pathsep)
     assert "HOST — ALLOCATION" not in prompt
     assert "do not use srun, sbatch or salloc" not in prompt

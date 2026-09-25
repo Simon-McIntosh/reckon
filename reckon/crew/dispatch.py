@@ -4062,9 +4062,9 @@ def dispatch(
                 "worktree": worktree["path"],
             }
             if dispatch_host.in_allocation:
-                record["directive"]["environment"] = {
-                    "PATH": launch_search_path(facts=dispatch_host)
-                }
+                record["directive"]["environment"] = _persisted_worker_environment(
+                    {}, facts=dispatch_host
+                )
 
         # Publish the pointer before probing the watcher. Otherwise a watcher
         # could drain an empty fleet between the probe and this write, leaving
@@ -4637,15 +4637,17 @@ def launch_search_path(
     return os.pathsep.join([str(shim_directory), *inherited_entries])
 
 
-def _launch_environment(
+def _persisted_worker_environment(
     environment: Mapping[str, str] | None = None,
     *,
     facts: Any | None = None,
 ) -> dict[str, str]:
-    """Return the process environment with its effective worker search path."""
-    merged = {**os.environ, **(environment or {})}
-    merged["PATH"] = launch_search_path(environment, facts=facts)
-    return merged
+    """Return only the launch overlay safe to persist in a run record."""
+    persisted = dict(environment or {})
+    placement = _current_host_facts() if facts is None else facts
+    if placement.in_allocation:
+        persisted["PATH"] = launch_search_path(environment, facts=placement)
+    return persisted
 
 
 def resolve_launch_executable(
@@ -5009,7 +5011,7 @@ def _supervisor_spec(
         "plan": {
             "argv": list(plan.argv),
             "cwd": plan.cwd,
-            "environment": _launch_environment(plan.environment, facts=facts),
+            "environment": _persisted_worker_environment(plan.environment, facts=facts),
             "dialect": plan.dialect,
             "backend": plan.backend,
         },
