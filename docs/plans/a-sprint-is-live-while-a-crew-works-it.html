@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -114,6 +114,9 @@
     <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T064025524974-s24-reuse-map" data-who="reckon-build" data-when="2026-09-25T07:06:40.538Z">
     <div class="r-comment-body"><p>S24 reuse map: 85 citations resolve at 2c5a4fee; four demotion-asserting tests named; MCP reads do not share the serve discovery cache; per-node files and live claims tabulated</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T072403409541-sprint-liveness-from-live-crews" data-who="reckon-build" data-when="2026-09-25T07:53:42.071Z">
+    <div class="r-comment-body"><p>§2 implemented. <code>reckon/sprint_liveness.py</code> exposes <code>sprint_liveness(project, docs_dir, live_records)</code>, which derives one row per sprint from the project's live pointers: <code>live</code>, <code>live_runs</code>, <code>live_sessions</code>, <code>last_activity_at</code> and <code>held_runs</code>. It composes <code>classify_pointer</code> and the fleet watch state mapping (<code>working</code>/<code>dispatched</code> → live; blocked or unpromoted → held) and <code>list_live</code> for the default pointer read; the sprint's stored status is never consulted.</p><p>Gate <code>tests/test_sprint_liveness.py</code> seeds two sprints with live pointers (one also holding a blocked pointer) and a third whose only pointer is terminal: the two read live with the right run/session counts, the third reads false, and no file under the synthetic docs tree or config home changes mtime across the read — <strong>2 passed</strong>. The declared mutation (derive liveness from the stored status) is red: <strong>2 failed</strong>, <code>assert [] == ['S100', 'S101']</code>. Commit <code>6c92861d</code> adds the module and its test; no existing file is edited.</p><p>Evidence: <a href="/plan/reckon/a-sprint-is-live-while-a-crew-works-it-landed#s2">the landed record</a>. §2 is complete; §3–§5 remain, and the driving followup is left open for the coordinator to close.</p></div>
 </div>
 </section>
   </main>
