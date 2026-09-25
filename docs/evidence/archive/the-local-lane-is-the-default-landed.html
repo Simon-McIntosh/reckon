@@ -1086,6 +1086,29 @@ E  reckon.crew.ScopeConflict: write scope 'pkg/hot.py' conflicts with live claim
     <code>negative-control.log</code>. Timer durability and the refresh figure remain separate
     follow-on work.</p>
   </section>
+
+  <section id="context-estimate-reads-declared-files">
+    <h3>The context estimate charges declared reads, not named paths</h3>
+    <p>Reproduced on 2026-09-25 before repair: a one-worker-hour node whose
+    done-when named <code>docs/state/proj/crew.json</code> (a 21,527,450-byte run
+    ledger) estimated <strong>6,150,700</strong> tokens for that one path and was
+    refused against a 480,000 window, and the competence verdict carried no
+    top-level <code>detail</code>; the informative reason sat under
+    <code>context</code>. After repair the same node charges zero for the named
+    path, and a refusal carries a non-empty top-level <code>detail</code> naming
+    the estimate, the window and the largest contributing files.</p>
+    <p>Counted inputs are now the declared write paths (minus dispatcher grants)
+    and paths a clause explicitly declares as inputs; a bare mention is a
+    reference, not a load. The gate
+    <code>tests/test_context_estimate_reads_declared_files.py</code> passes
+    (4 tests), alongside <code>tests/test_crew_dispatch_guard.py</code> and
+    <code>tests/test_crew_routing_visibility.py</code> (20 passed together), with
+    the pre-existing <code>tests/test_context_estimate_excludes_granted_paths.py</code>
+    still green. The declared negative control restored the full prose sweep and
+    the prose-mention case failed with the larger estimate (1,142,858 tokens).
+    Logs: <code>gate-context-estimate.log</code>,
+    <code>negative-control-prose-mention.log</code> under the run directory.</p>
+  </section>
 </main>
 </body>
 </html>
