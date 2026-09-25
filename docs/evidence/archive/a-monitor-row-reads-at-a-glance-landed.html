@@ -531,6 +531,110 @@
       </figcaption>
     </figure>
 
+  <h2 id="a-long-node-name-keeps-the-part-that-distinguishes-it">&sect;5 — A long node name keeps the part that distinguishes it</h2>
+    <p>
+      Commits <code>9e91c274</code> and <code>27e2439d</code> in the
+      <code>long-node-names-keep-their-ends</code> worktree, base revision <code>18f3c201</code>.
+      The node cell cuts a name wider than its cell from the middle, so the peers of one wave — which
+      share a long head — render apart where a right-hand cut rendered every one of them as the same
+      string. <code>elide</code> gained a <code>keep_end</code> mode rather than a second truncator,
+      so every other cell keeps the right-hand cut where a state word, a model id and a reason clause
+      carry what distinguishes them at the head.
+    </p>
+
+    <h3>The cell as rendered, read off the row's own columns</h3>
+    <p>
+      At the 180-column default, each figure taken from the rendered string at the cell's own
+      offsets:
+    </p>
+    <table>
+      <thead>
+        <tr><th>what</th><th>node cell (36 columns)</th><th>row</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>the done-when's first name</td>
+          <td><code>review-of-sgc-swe…at-the-banked-seam</code></td><td>180</td>
+        </tr>
+        <tr>
+          <td>the done-when's second name</td>
+          <td><code>review-of-sgc-swe…the-four-of-twenty</code></td><td>180</td>
+        </tr>
+        <tr>
+          <td>a name that fits</td>
+          <td><code>fleet-view-unseen-surfaces</code>, space-padded, no ellipsis</td><td>180</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Two names a middle cut still renders as one text are separated by the last four characters of
+      their run ids, inside the cell, the name cut a little tighter so the columns after the node
+      cell never move: <code>review-of-sgc-s…the-banked-seam pair</code> beside
+      <code>review-of-sgc-s…the-banked-seam nsus</code>. A row already written to a pane cannot be
+      recalled, so a name's later renders carry its suffix and the claim lives as long as the pane,
+      which a later attach replays its baselines through. Log:
+      <code>/home/ITER/mcintos/.cache/reckon-ticker-node-names/head-render-probe-and-new-test.log</code>.
+    </p>
+
+    <h3>Gate measure, as executed</h3>
+    <p>
+      The test files importing <code>reckon.crew.ticker</code> plus the dispatch-guard file the base
+      arm carried, run at each revision with the project environment's interpreter
+      (<code>--timeout=120</code>, <code>-p no:cacheprovider</code>). At head the new file
+      <code>tests/test_ticker_node_names_keep_their_ends.py</code> (3 tests) joins the set, so the
+      collection grows by exactly three against the base arm's 314.
+    </p>
+    <table>
+      <thead>
+        <tr><th>revision</th><th>files</th><th>collected</th><th>result</th><th>log</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>base <code>18f3c201</code></td><td>14</td><td>314</td><td>1 failed, 313 passed</td>
+          <td><code>/home/ITER/mcintos/.cache/reckon-ticker-node-names/base-ticker-files.log</code></td>
+        </tr>
+        <tr>
+          <td>head <code>9e91c274</code></td><td>15</td><td>317</td><td>1 failed, 316 passed</td>
+          <td><code>/home/ITER/mcintos/.cache/reckon-ticker-node-names/head-ticker-files-superset.log</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The failure is the same id at both revisions —
+      <code>tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers</code>,
+      a stale <code>ticker_module.RATE</code> reference left by the removed generation-rate cell and
+      outside this node's scope — so no failure id appears at head that is absent from the base set.
+      The new file alone: 3 passed in 0.49 s.
+    </p>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared: <em>restore the right-hand cut of the node cell in
+      <code>reckon/crew/ticker.py</code>; the distinct-names case in
+      <code>tests/test_ticker_node_names_keep_their_ends.py</code> must fail</em>. The mutation
+      restored <code>elide(node, NODE)</code> and
+      <code>elide(node, NODE - NODE_ID_TAIL - 1)</code> in <code>Ticker._node_cell</code> with the
+      suffix path left intact, so it isolates the cut. Executed: 2 failed, 1 passed in 1.47 s. The
+      distinct-names case fails as required, rendering
+      <code>'review-of-sgc-sweep-control-at-the-…'</code>, and the colliding-pair case fails with it
+      (<code>'review-of-sgc-sweep-census-at-the-b…'</code>) because a right cut throws away the end
+      the id suffix is checked against. The file was restored from a copy taken before the edit and
+      the restore proven by SHA-256 across the two states
+      (<code>8520abac99c1af99e5c0ae087f00fd6633b48b901347912e9c987c2a47584e77</code>). Log:
+      <code>/home/ITER/mcintos/.cache/reckon-ticker-node-names/negative-control-right-hand-cut.log</code>.
+    </p>
+
+    <h3>Finding recorded rather than acted on: an id ends in its node name</h3>
+    <p>
+      The spec appends the last four characters of a run id, and the fleet mints an id as
+      <code>r-&lt;stamp&gt;-&lt;sanitised node&gt;</code> — so an id's last four characters are the
+      node name's own last four. Two names that a middle cut renders as one text agree at both ends
+      by construction, so their ids end alike and the suffix separates nothing for them; it separates
+      ids whose ends differ, which the pair test in the new file mints deliberately. Implemented as
+      specified and recorded here: the id format, not this renderer, is what would have to change for
+      the suffix to separate two rows of one node name.
+    </p>
+
   </main>
 </body>
 </html>

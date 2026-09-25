@@ -192,6 +192,41 @@
     <p><strong>Done when</strong> <code>review-of-sgc-sweep-control-at-the-banked-seam</code> and
     <code>review-of-sgc-sweep-control-at-the-four-of-twenty</code> render with different node text
     at the default width, and a name that fits is unchanged.</p>
+    <p class="r-landing"><strong>Node names landed 2026-09-25</strong> at <code>9e91c274</code>
+    and <code>27e2439d</code>, base <code>18f3c201</code>. A name wider than the node cell is cut
+    from the middle, one column of ellipsis between its head and its end, and <code>elide</code>
+    gained a <code>keep_end</code> mode rather than a second truncator, so every other cell keeps
+    the right-hand cut where a state word, a model id and a reason clause carry what distinguishes
+    them at the head. At the 180-column default the done-when's two names render apart, read at the
+    cell's own columns off the rendered rows:
+    <code>review-of-sgc-swe…at-the-banked-seam</code> and
+    <code>review-of-sgc-swe…the-four-of-twenty</code>, each cell 36 columns with the row still 180,
+    while a name that fits renders unchanged and unmarked. A middle cut still lands two names on one
+    text when they differ only in the middle, so the second name to claim a text marks both and each
+    row for a marked name carries the last four characters of its own run id inside the cell, the
+    name cut a little tighter to make the room:
+    <code>review-of-sgc-s…the-banked-seam pair</code> beside
+    <code>review-of-sgc-s…the-banked-seam nsus</code>, so the columns after the node cell never
+    move. The claim is remembered for the pane's life, because a row already written cannot be
+    recalled and a later attach replays its baselines through the same grid.</p>
+    <p class="r-landing"><strong>Tests landed 2026-09-25</strong> at <code>9e91c274</code> and
+    <code>27e2439d</code>. <code>tests/test_ticker_node_names_keep_their_ends.py</code> holds the
+    done-when's pair, the unchanged name, and two names that cut alike, every assertion read off the
+    rendered row's own characters rather than from a format string. Over the ticker-importing test
+    files and the dispatch-guard file the base arm carried (314 tests at base <code>18f3c201</code>:
+    1 failed, 313 passed) plus the new file, run at this head: 316 passed and 1 failed, the one
+    failure
+    <code>tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers</code>,
+    the same id that fails at base — a stale <code>ticker_module.RATE</code> reference outside this
+    node's scope — so no failure id appears here that is absent from the base set. The declared
+    negative control — restore the right-hand cut of the node cell, requiring the distinct-names case
+    to fail — was applied: the distinct-names case fails on the cell
+    <code>review-of-sgc-sweep-control-at-the-…</code>, and the colliding-pair case fails with it
+    because a right cut throws away the end its id suffix is checked against — 2 of the 3 tests
+    redden, and <code>reckon/crew/ticker.py</code> was restored with its SHA-256 proven identical
+    before and after. One finding recorded rather than acted on: the fleet mints a run id ending in
+    its node name, so two ids of names that cut alike end alike and the suffix separates nothing
+    there; it pays off for ids whose ends differ, which is what the pair test mints. No figure.</p>
 
     <h2 id="s6">&sect;6 &mdash; The reason clause is cut at a word</h2>
     <p>When the reason clause is longer than its room, cut it at the last word boundary that fits and
