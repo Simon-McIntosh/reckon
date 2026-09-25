@@ -13,6 +13,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew
+from reckon import ledger
 from reckon.crew import recovery
 from reckon.crew import ticker as ticker_module
 
@@ -58,6 +59,19 @@ def _deliver(home: Path, run_id: str, status: str, *, blocker: str = "") -> None
         f"node: ticker-node\nstatus: {status}\ncommits: HEAD\n"
         f"blockers: {blocker or 'none'}\n"
     )
+
+
+def _record_ledger_row(run_id: str) -> None:
+    """Write the promotion row a completed run leaves behind when it lands.
+
+    A departure is not a fact the pointer records: a promotion and a pointer
+    that vanished with nothing behind it look identical from the fleet. The
+    ledger decides which one it was, so a fixture that models a landing records
+    the row a promotion would have written.
+    """
+    path = ledger.run_path("proj", run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"run_id": run_id}))
 
 
 def _event(**overrides) -> dict:
