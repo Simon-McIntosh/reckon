@@ -82,11 +82,21 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
     assert set(CLASSIFIER_STATES) == ticker_module.CLASSIFIER_STATE_WORDS
     assert max(map(len, CLASSIFIER_STATES)) == ticker_module.STATE_WORD
     columns = _columns(ticker_module.MODEL)
-    observed = {name: set() for name in ("arrow", "elapsed", "counters", "reason")}
-    # The column between the time and the model is the whole attention question:
-    # the mark was dropped, so the model cell must start at the first column
-    # after the time's two-space gutter, leaving no reserved blank column.
-    assert columns["model"] == ticker_module.CLOCK + ticker_module.GAP
+    width = 208
+    model_text = "gpt-sol"
+    # Every column this test relies on is located on a rendered row, never read
+    # back from the expression that built the same number: a renderer that moved
+    # a cell must fail here rather than agree with the arithmetic that placed
+    # it. The model column is the whole attention question — the mark was
+    # dropped, so the cell starts at the first column after the time's two-space
+    # gutter with no reserved blank column between them.
+    probe = plain(
+        ticker_module.Ticker(width=width, color=False, model_aliases=()).render(
+            _event()
+        )
+    )
+    assert probe.index(model_text) == ticker_module.CLOCK + ticker_module.GAP
+    observed = {name: set() for name in ("model", "node", "arrow", "counters")}
 
     cases = itertools.product(
         (None, *CLASSIFIER_STATES),
@@ -110,19 +120,37 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
             waiting=queued,
         )
         row = plain(
-            ticker_module.Ticker(width=208, color=False, model_aliases=()).render(event)
+            ticker_module.Ticker(width=width, color=False, model_aliases=()).render(
+                event
+            )
         )
-        assert len(row) == 208
+        previous_seen = ticker_module._display_state(previous) if previous else ""
+        if previous_seen == ticker_module._display_state(new):
+            # A first sighting whose effective previous state is the state it
+            # entered is not a transition: the left half and the arrow would only
+            # restate the destination, so the row is not printed at all.
+            assert row == "", (previous, new, row)
+            continue
+        assert len(row) == width, row
 
-        observed["arrow"].add(columns["arrow"])
-        observed["elapsed"].add(columns["elapsed"])
-        observed["counters"].add(columns["counters"])
-        observed["reason"].add(columns["reason"])
+        measured = {
+            "model": row.index(model_text),
+            "node": row.index("n"),
+            "counters": row.index(" 1w"),
+        }
+        # A first sighting has no remembered state, so its left half and arrow
+        # are blank and only a later transition carries the arrow. The gutter
+        # assertions below cover the blank half; the arrow is located here where
+        # one was drawn.
+        if previous_seen:
+            measured["arrow"] = row.index(ticker_module.ARROW)
+        for name, start in measured.items():
+            observed[name].add(start)
+            assert start == columns[name], (name, start, columns[name], row)
         # No row carries an attention mark, whatever the destination needs: the
-        # mark was dropped, so no `!` appears anywhere on the row and the model
-        # cell follows the time's gutter directly.
+        # mark was dropped, so no `!` appears anywhere on the row and the node
+        # cell follows the role's gutter directly.
         assert "!" not in row, row
-        assert row[columns["arrow"]] == (ticker_module.ARROW if previous else " ")
         assert row[columns["node"] : columns["node"] + ticker_module.NODE].strip()
 
         gutters = (
@@ -188,6 +216,83 @@ def test_repeated_same_state_events_render_one_row() -> None:
 
     assert bool(first)
     assert repeated == ""
+
+
+def test_first_seen_same_state_prints_no_row() -> None:
+    """A run seen for the first time after it did not move prints nothing.
+
+    With no remembered state the row's left side falls back to the event's own
+    ``from_state``, so a producer that emits the state the run is already in
+    would otherwise print ``unpromoted → unpromoted`` — a transition claimed
+    where the two sides are one state. The effective previous state is the
+    remembered one when the pane has seen the run and the event's otherwise, and
+    a row is printed only when that differs from the state entered. The
+    collision pair is the same defect by display: the internal
+    ``completed_unpromoted`` renders as ``unpromoted``, so the two sides are one
+    word a reader can see.
+    """
+    grid = ticker_module.Ticker(width=208, color=False, model_aliases=())
+    for index, state in enumerate(sorted(CLASSIFIER_STATES)):
+        row = plain(
+            grid.render(
+                _event(
+                    run_id=f"r-still-{index}",
+                    from_state=state,
+                    to_state=state,
+                    recovery_classification="",
+                    detail="",
+                )
+            )
+        )
+        assert row == "", (state, row)
+    collided = plain(
+        grid.render(
+            _event(
+                run_id="r-collided",
+                from_state="completed_unpromoted",
+                to_state="unpromoted",
+                recovery_classification="",
+                detail="",
+            )
+        )
+    )
+    assert collided == "", collided
+
+
+def test_first_seen_transition_keeps_its_arrow() -> None:
+    """A run seen for the first time after it moved renders the whole transition.
+
+    The suppression above keys on the effective previous state, not on the
+    absence of memory: where the event's ``from_state`` differs from the state
+    it entered, the row keeps its left word and its arrow, so a re-armed pane
+    reports the move it woke up to rather than a bare destination. The pair that
+    does not differ is the row that must not be printed, arrow included.
+    """
+    grid = ticker_module.Ticker(width=208, color=False, model_aliases=())
+    moved = plain(
+        grid.render(
+            _event(
+                run_id="r-moved",
+                from_state="dispatched",
+                to_state="working",
+                recovery_classification="running",
+            )
+        )
+    )
+    assert ticker_module.ARROW in moved, moved
+    assert "dispatched → working" in moved, moved
+    still = plain(
+        grid.render(
+            _event(
+                run_id="r-still-arrow",
+                from_state="unpromoted",
+                to_state="unpromoted",
+                recovery_classification="",
+                detail="",
+            )
+        )
+    )
+    assert still == "", still
 
 
 def test_reported_examples_keep_name_gutters_and_no_mark() -> None:
