@@ -8,6 +8,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew, flight
+from reckon.crew import plan_review
 
 _CONFIG = {
     "default_backend": "worker",
@@ -30,6 +31,41 @@ _CONFIG = {
 }
 
 
+def _store_answered_review(plan_path: Path, *, project: str, slug: str) -> None:
+    """Give the fixture plan the answered review a build dispatch now requires.
+
+    A build dispatch is refused until the plan carries a review of its current
+    content, so a dispatch fixture must first clear this precondition. The
+    record is stored at the store root the gate reads through, resolved from
+    RECKON_HOME, and joined to the plan by its content fingerprint.
+    """
+    plan_review.store_plan_review(
+        {
+            "project": project,
+            "plan_slug": slug,
+            "plan_version": 1,
+            "rubric": "plan_review",
+            "reviewed_blob_sha": "a" * 40,
+            "plan_fingerprint": plan_review.plan_fingerprint(plan_path),
+            "findings": [
+                {
+                    "id": "stated-cause",
+                    "type": "reasoning",
+                    "text": "the stated cause matches the cited evidence",
+                }
+            ],
+            "responses": {
+                "stated-cause": {
+                    "action": "declined",
+                    "reason": "the fixture plan asserts no cause, so none is unproven",
+                }
+            },
+            "status": "declined",
+            "review_run_id": "r-plan-review-fixture",
+        }
+    )
+
+
 def _repository(tmp_path: Path, monkeypatch) -> Path:
     home = tmp_path / "config"
     home.mkdir()
@@ -50,13 +86,15 @@ def _repository(tmp_path: Path, monkeypatch) -> Path:
     (scripts / "worktree_fleet.py").write_text(
         source.read_text(encoding="utf-8"), encoding="utf-8"
     )
-    (plans / "routing.html").write_text(
+    plan_path = plans / "routing.html"
+    plan_path.write_text(
         '<meta name="docs-project" content="sample">'
         '<meta name="reckon-type" content="plan">'
         '<meta name="plan-slug" content="routing">'
         '<h2 id="dispatch">Dispatch routing</h2>',
         encoding="utf-8",
     )
+    _store_answered_review(plan_path, project="sample", slug="routing")
     (repo / "target.py").write_text("value = 1\n", encoding="utf-8")
     for arguments in (
         ["init", "-q", "-b", "main"],

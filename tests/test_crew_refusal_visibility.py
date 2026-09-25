@@ -21,6 +21,7 @@ from click.testing import CliRunner
 
 from reckon import _backends, crew, ledger
 from reckon import cli as cli_module
+from reckon.crew import plan_review
 from reckon.crew import refusals as refusal_module
 from reckon.crew.refusals import (
     DISPATCH_REFUSAL_REMEDIES,
@@ -28,7 +29,7 @@ from reckon.crew.refusals import (
     format_refusal,
 )
 
-CONVERTED_REFUSAL_FAMILIES = frozenset(f"D{number:02d}" for number in range(1, 23))
+CONVERTED_REFUSAL_FAMILIES = frozenset(f"D{number:02d}" for number in range(1, 24))
 COMMAND_BOUNDARY_FAMILIES = frozenset()
 REFUSAL_SOURCE_PATHS = (
     "reckon/cli.py",
@@ -76,7 +77,7 @@ def _formatter_family_calls() -> set[str]:
 
 
 def test_the_dispatch_refusal_census_is_partitioned_without_gaps() -> None:
-    expected = {f"D{number:02d}" for number in range(1, 23)}
+    expected = {f"D{number:02d}" for number in range(1, 24)}
 
     assert set(DISPATCH_REFUSAL_REMEDIES) == expected
     assert expected == CONVERTED_REFUSAL_FAMILIES | COMMAND_BOUNDARY_FAMILIES
@@ -115,13 +116,51 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return config_home
 
 
+def _store_answered_review(plan_path: Path, *, project: str, slug: str) -> None:
+    """Give the fixture plan the answered review a build dispatch now requires.
+
+    A build dispatch is refused until the plan carries a review of its current
+    content, so a test aiming at some later refusal must first clear this one.
+    The record is stored at the store root the gate reads through, resolved
+    from RECKON_HOME, so the fixture writes where production reads.
+    ``plan_version`` only names the review's file: the gate joins on the content
+    fingerprint, which is why a fixture plan that declares no version admits.
+    """
+    plan_review.store_plan_review(
+        {
+            "project": project,
+            "plan_slug": slug,
+            "plan_version": 1,
+            "rubric": "plan_review",
+            "reviewed_blob_sha": "a" * 40,
+            "plan_fingerprint": plan_review.plan_fingerprint(plan_path),
+            "findings": [
+                {
+                    "id": "stated-cause",
+                    "type": "reasoning",
+                    "text": "the stated cause matches the cited evidence",
+                }
+            ],
+            "responses": {
+                "stated-cause": {
+                    "action": "declined",
+                    "reason": "the fixture plan asserts no cause, so none is unproven",
+                }
+            },
+            "status": "declined",
+            "review_run_id": "r-plan-review-fixture",
+        }
+    )
+
+
 @pytest.fixture()
 def repo(tmp_path: Path, home: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A repository that never received a vendored copy of the fleet script."""
     root = tmp_path / "repo"
     (root / "docs" / "plans").mkdir(parents=True)
     (root / "package").mkdir()
-    (root / "docs" / "plans" / "dispatch-safety.html").write_text(
+    plan_path = root / "docs" / "plans" / "dispatch-safety.html"
+    plan_path.write_text(
         '<meta name="docs-project" content="proj">'
         '<meta name="reckon-type" content="plan">'
         '<meta name="plan-slug" content="dispatch-safety">'
@@ -139,6 +178,7 @@ def repo(tmp_path: Path, home: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         subprocess.run(command, cwd=root, check=True, capture_output=True)
     mounts = home / "mounts.json"
     mounts.write_text(json.dumps({"proj": str(root / "docs")}), encoding="utf-8")
+    _store_answered_review(plan_path, project="proj", slug="dispatch-safety")
     monkeypatch.setattr(cli_module, "_resolved_flight", lambda *a, **k: CONFIG)
     return root
 
