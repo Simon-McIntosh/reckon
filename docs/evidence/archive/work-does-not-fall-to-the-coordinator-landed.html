@@ -2290,8 +2290,9 @@ AGREE: False</code></pre>
         and outside this node's declared scope</td></tr>
       </tbody>
     </table>
-    <p>The cohort is every existing file under <code>tests/</code> that imports <code>reckon.crew.reports</code>
-    &mdash; ten files &mdash; plus this change's new file, run whole at both revisions with the same command
+    <p>The cohort is ten of the eleven existing files under <code>tests/</code> that import <code>reckon.crew.reports</code>
+    plus this change's new file; <code>tests/test_crew_recovery.py</code>, which imports it at line 21, was
+    omitted, as the independent review found. The cohort ran whole at both revisions with the same command
     (<code>PYTHONPATH=.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 --dist loadfile &hellip;</code>).
     <code>tests/spa_browser_harness.py</code> also imports the module but is a harness rather than a test file,
     so it is not a collector and is not in the cohort.</p>
