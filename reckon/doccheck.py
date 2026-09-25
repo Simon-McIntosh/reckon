@@ -338,17 +338,7 @@ def _iter_doc_files(docs_dir: Path, project: str):
 
 
 def _read_lifecycle_state(path: Path) -> dict[str, Any]:
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return {
-            "slug": path.stem,
-            "type": "plan",
-            "status": "",
-            "impl": None,
-            "summary": "",
-        }
-    state = _plan_html.read_state(text)
+    state = _plan_html.parse_plan(path)
     impl = state.get("impl")
     return {
         "slug": (state.get("slug") or path.stem),
@@ -1219,10 +1209,9 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
 
 
 def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError as e:
-        return [Finding("error", "io", f"cannot read {path}: {e}")]
+    if not path.is_file():
+        return [Finding("error", "io", f"cannot read {path}: file does not exist")]
+    text = _plan_html._read_plan_text(path)
     return audit_html(text, project=project)
 
 
@@ -1322,19 +1311,9 @@ def _collect_corpus(
             part in INFRA_DIRS for part in relative.parts[:-1]
         ):
             continue
-        try:
-            text = html_file.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-        soup = BeautifulSoup(text, "html.parser")
-
-        slug_meta = soup.find("meta", attrs={"name": "plan-slug"})
-        slug = ((slug_meta.get("content") if slug_meta else "") or "").strip()
-        slug = slug or html_file.stem
-        type_meta = soup.find("meta", attrs={"name": "reckon-type"})
-        resource_type = (
-            ((type_meta.get("content") if type_meta else "") or "plan").strip().lower()
-        )
+        record = _link_record(html_file)
+        slug = record["slug"] or html_file.stem
+        resource_type = record["resource_type"]
         archived = "archive" in relative.parts[:-1]
 
         # Untyped compatibility links retain the historical plan preference.
@@ -1346,14 +1325,49 @@ def _collect_corpus(
             slug_to_file[stem] = html_file
 
         # Collect all id= attributes in the document.
-        ids: set[str] = set()
-        for el in soup.find_all(id=True):
-            eid = (el.get("id") or "").strip()
-            if eid:
-                ids.add(eid)
-        file_to_ids[html_file] = ids
+        file_to_ids[html_file] = set(record["ids"])
 
     return slug_to_file, file_to_ids
+
+
+def _link_record(path: Path) -> dict[str, Any]:
+    """Return the stat-keyed link and anchor fields for one document."""
+    from reckon.file_memo import memoized
+
+    def parse() -> dict[str, Any]:
+        soup = BeautifulSoup(_plan_html._read_plan_text(path), "html.parser")
+        slug_meta = soup.find("meta", attrs={"name": "plan-slug"})
+        type_meta = soup.find("meta", attrs={"name": "reckon-type"})
+        project_meta = soup.find("meta", attrs={"name": "docs-project"})
+        references = []
+        for meta_name in _SLUG_META_FIELDS:
+            meta = soup.find("meta", attrs={"name": meta_name})
+            if meta:
+                references.append((meta_name, (meta.get("content") or "").strip()))
+        return {
+            "slug": ((slug_meta.get("content") if slug_meta else "") or "").strip(),
+            "resource_type": (
+                ((type_meta.get("content") if type_meta else "") or "plan")
+                .strip()
+                .lower()
+            ),
+            "project": (
+                ((project_meta.get("content") if project_meta else "") or "").strip()
+            ),
+            "ids": tuple(
+                eid
+                for element in soup.find_all(id=True)
+                if (eid := (element.get("id") or "").strip())
+            ),
+            "hrefs": tuple(
+                href
+                for anchor in soup.find_all("a", href=True)
+                if (href := (anchor.get("href") or "").strip())
+            ),
+            "references": tuple(references),
+        }
+
+    return memoized("doccheck_links", path, parse)
 
 
 def _resolve_href(
@@ -1444,12 +1458,9 @@ def audit_links(
     corpus_project = project
     if not corpus_project:
         for candidate in paths:
-            try:
-                soup = BeautifulSoup(candidate.read_text(), "html.parser")
-            except OSError:
+            if not candidate.is_file():
                 continue
-            meta = soup.find("meta", attrs={"name": "docs-project"})
-            corpus_project = ((meta.get("content") if meta else "") or "").strip()
+            corpus_project = _link_record(candidate)["project"]
             if corpus_project:
                 break
     slug_to_file, file_to_ids = _collect_corpus(docs_dir, corpus_project or "doccheck")
@@ -1458,22 +1469,19 @@ def audit_links(
     for path in paths:
         findings: list[Finding] = []
 
-        try:
-            text = path.read_text(encoding="utf-8", errors="replace")
-        except OSError as e:
-            findings.append(Finding("error", "io", f"cannot read {path}: {e}"))
+        if not path.is_file():
+            findings.append(
+                Finding("error", "io", f"cannot read {path}: file does not exist")
+            )
             results[path] = findings
             continue
-
-        soup = BeautifulSoup(text, "html.parser")
+        record = _link_record(path)
 
         # Infer project from meta if not supplied.
-        dp = soup.find("meta", attrs={"name": "docs-project"})
-        proj = ((dp.get("content") if dp else "") or project or "").strip() or None
+        proj = (record["project"] or project or "").strip() or None
 
         # (g) Check <a href> internal links.
-        for a in soup.find_all("a", href=True):
-            href = (a.get("href") or "").strip()
+        for href in record["hrefs"]:
             target, anchor = _resolve_href(href, path, docs_dir, proj, slug_to_file)
             if target is None:
                 continue  # external or infra — skip
@@ -1499,11 +1507,7 @@ def audit_links(
                     )
 
         # (g) Check plan-depends-on / plan-blocks / plan-informs slug references.
-        for meta_name in _SLUG_META_FIELDS:
-            m = soup.find("meta", attrs={"name": meta_name})
-            if not m:
-                continue
-            raw = (m.get("content") or "").strip()
+        for meta_name, raw in record["references"]:
             if not raw:
                 continue
             for raw_ref in [s.strip() for s in raw.split(",") if s.strip()]:
@@ -1678,10 +1682,9 @@ def slug_collision_findings(
     """
     from reckon.resources import canonical_type, resource_map
 
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    if not path.is_file():
         return []
+    text = _plan_html._read_plan_text(path)
     soup = BeautifulSoup(text, "html.parser")
     slug_meta = soup.find("meta", attrs={"name": "plan-slug"})
     slug = ((slug_meta.get("content") if slug_meta else "") or "").strip()

@@ -1170,6 +1170,19 @@ _CONTENT_RE = re.compile(r'\bcontent=["\']([^"\']*)["\']', re.IGNORECASE)
 _TITLE_RE = re.compile(r"<title>(.*?)</title>", re.IGNORECASE | re.DOTALL)
 
 
+def _read_plan_text(path: Path) -> str:
+    """Read one plan's bytes once while its stat identity is unchanged."""
+    from reckon.file_memo import memoized
+
+    def read() -> str:
+        try:
+            return path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return ""
+
+    return memoized("plan_text", path, read)
+
+
 def parse_meta(path: Path, slug: str | None = None) -> dict:
     """Fast inventory record: <meta> + <title> + a regex open-decision count,
     parsed by regex (no bs4) so a project with thousands of docs stays cheap.
@@ -1184,10 +1197,7 @@ def parse_meta(path: Path, slug: str | None = None) -> dict:
 
 
 def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        text = ""
+    text = _read_plan_text(path)
     head = text[:16384]
     rec = dict(_DEFAULTS)
     metas: dict[str, str] = {}
@@ -1270,10 +1280,16 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
 
 
 def parse_plan(path: Path, slug: str | None = None) -> dict:
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        text = ""
+    """Return an isolated full-plan record, reparsing only changed files."""
+    from reckon.file_memo import memoized
+
+    return memoized(
+        "parse_plan", path, lambda: _parse_plan_uncached(path, slug), variant=slug
+    )
+
+
+def _parse_plan_uncached(path: Path, slug: str | None) -> dict:
+    text = _read_plan_text(path)
     st = read_state(text)
     rec = dict(_DEFAULTS)
     rec.update({k: v for k, v in st.items() if v is not None})
