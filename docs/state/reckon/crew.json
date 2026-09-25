@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T04:02:25",
+  "updated": "2026-09-25T04:07:43",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -4539,11 +4539,13 @@
         "session_id": "b658a412-18b2-4014-b935-80b90bbebf5d",
         "session_model": "deepseek-v4.1-flash",
         "sessions": {
-          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "b658a412-18b2-4014-b935-80b90bbebf5d"
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "b658a412-18b2-4014-b935-80b90bbebf5d",
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "891a02ec-5bfe-4f11-af1c-ae8761dc80c3"
         },
         "created": "2026-09-24",
         "session_owners": {
-          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "suite-green-at-head"
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "suite-green-at-head",
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "suite-green-at-head"
         }
       },
       {
@@ -374344,6 +374346,453 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T005352374696-build-skill-review-findings-closed",
+        "plan": "reckon-skill-overhaul",
+        "section": "\u00a73",
+        "node": "build-skill-review-findings-closed",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1405,
+                "cached_input_tokens": 527229,
+                "input_tokens": 528636,
+                "output_tokens": 987,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 529623,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "Against the review record at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T235922515513-build-skill-sheds-reference-material.json: (1) the sentence near skills/reckon-build/SKILL.md:645 states 'no dependent node builds on unverified work' once; (2) the pointer at skills/reckon-build/references/conditional-guidance.md:19 names the real section heading at skills/reckon-build/references/sprint-orchestration.md:701; (3) the concurrency passage near SKILL.md:638-643 no longer tells a coordinator to register members, and instead states the binding workstation rule that workers are disposable and concurrency comes from members a project already has, matching the Workers Are Disposable section of the user-global AGENTS.md; (4) the verification section near SKILL.md:770 restores 'Dispatch a test worker and audit its compact result manifest' or a one-line pointer to references/sprint-orchestration.md:480. tests/test_skill_contracts.py passes at your head with the fixed-read-set estimate still under FIXED_READ_SET_TOKEN_BUDGET, the estimate before and after stated; your landing record is appended to docs/plans/reckon-skill-overhaul.html. No other file changes.",
+          "estimated_hours": null,
+          "goal": "The four findings of the build-skill extraction review are corrected in the skill and its conditional reference",
+          "id": "build-skill-review-findings-closed",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T00:53:52Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 16,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 4,
+            "mean_context": 113846,
+            "observed_at": "2026-09-25T00:53:36Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T005352374696-build-skill-review-findings-closed/manifest.md",
+          "negative_control": "",
+          "plan": "reckon-skill-overhaul",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "skills/reckon-build/SKILL.md",
+            "skills/reckon-build/references/conditional-guidance.md",
+            "docs/plans/reckon-skill-overhaul.html",
+            "docs/evidence/archive/reckon-skill-overhaul-landed.html",
+            "docs/figures/reckon-skill-overhaul"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "exact",
+        "member": "crew-midflight",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T00:54:03Z",
+        "completed_at": "2026-09-25T01:27:22.611Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1904,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1999,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "76baf0f849be2c249d2eca6e9fdd4de911435042",
+        "commits": [
+          "8b04081b9bc0436f1ee515b5b7b090b41972e01f",
+          "3ad9da2d32680565ec5a2b1ffb76bc28cadd8987"
+        ],
+        "changed_lines": {
+          "added": 90,
+          "removed": 12,
+          "files": 4
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_skill_contracts.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T005352374696-build-skill-review-findings-closed/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "four extraction-review findings corrected in the build skill; review 12-19 found four more member-registration instructions in sprint-orchestration.md and SKILL.md:79 plus a vacuous test pin, routed to a sweep node",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T005352374696-build-skill-review-findings-closed/manifest.md",
+        "scope_changed": false,
+        "session_id": "56d18a3a-6146-458e-9d8a-73ab84a381fb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5810961,
+            "input_tokens_cumulative": 5810961,
+            "output_tokens": 52338,
+            "output_tokens_cumulative": 52338,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T01:27:22.611Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 1915,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 3207,
+              "log_fresh": false,
+              "manifest_commits": [
+                "f7d1c597 feat(crew): the ticker row keeps the elapsed time and drops the rate and age cells; 5860f6a2 test(crew): read the row's recovered width from the measured geometry; 8dfe2bbb docs(crew): record the measure-block landing with the measured column count"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "f69525e93a842112cdf0ce13d9fd2dc113b023d3fc99b866e18f4120b19fae10",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211219792337-row-drops-unread-cells/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-monitor-row-reads-at-a-glance --section '\u00a74' --role review --spec-level exact --node review-of-row-drops-unread-cells --goal 'attach an independent review to run r-20260924T211219792337-row-drops-unread-cells' --done-when 'the review for r-20260924T211219792337-row-drops-unread-cells stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T211219792337-row-drops-unread-cells.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T211219792337-row-drops-unread-cells.at-8dfe2bbb46ac3b205eca0304409af6d358d4b883.json --time-budget 60m --session s22-coord --allow-unreconciled-runs --backend clive",
+              "node": "row-drops-unread-cells",
+              "phase": "working",
+              "plan": "a-monitor-row-reads-at-a-glance",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260924T211219792337-row-drops-unread-cells",
+              "session": "s22-coord",
+              "terminal_age_seconds": 3248,
+              "terminal_at": "2026-09-24T23:59:46Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/row-drops-unread-cells"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3300,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 1810,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 3314,
+              "log_fresh": false,
+              "manifest_commits": [
+                "e280d50fd103b25d44ad1aacff91dd123708c2e3",
+                "3fb14fb27fc63a7f2040f6ebfc03b28e03ce80e7",
+                "e1d2c312d682c7239bddb041712a193a471f769d",
+                "8ff3d41fd6e6d88a95e4c22c8b672b300d73bb3f",
+                "c563da20d3f172073d3a5fde23c32006e3046309"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "5f4370455f4b948dc57f3ea420eadc3022c4b32666c40e76b402f03ca351c024",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230714304318-closure-gates-hold-a-terminal-write/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan dependency-edge-semantics --section '\u00a74' --role review --spec-level exact --node review-of-closure-gates-hold-a-terminal-write --goal 'attach an independent review to run r-20260924T230714304318-closure-gates-hold-a-terminal-write' --done-when 'the review for r-20260924T230714304318-closure-gates-hold-a-terminal-write stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T230714304318-closure-gates-hold-a-terminal-write.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T230714304318-closure-gates-hold-a-terminal-write.at-c563da20d3f172073d3a5fde23c32006e3046309.json --time-budget 55m --session s22-coord --allow-unreconciled-runs --backend codex-astra",
+              "node": "closure-gates-hold-a-terminal-write",
+              "phase": "working",
+              "plan": "dependency-edge-semantics",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260924T230714304318-closure-gates-hold-a-terminal-write",
+              "session": "s22-coord",
+              "terminal_age_seconds": 3347,
+              "terminal_at": "2026-09-24T23:58:08Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/closure-gates-hold-a-terminal-write"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 1713,
+              "budget_seconds": 2400,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "starting",
+              "elapsed_seconds": 4113,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 861,
+              "log_fresh": true,
+              "manifest_commits": [
+                "5755dfec b6117492"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "8cf3beafbb86f0293aaca85b604f0942b57c8df9c5245c68e257a0bfa83b1a91",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T233052030320-measurement-keys-are-declared/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan work-does-not-fall-to-the-coordinator --section '\u00a711' --role review --spec-level exact --node review-of-measurement-keys-are-declared --goal 'attach an independent review to run r-20260924T233052030320-measurement-keys-are-declared' --done-when 'the review for r-20260924T233052030320-measurement-keys-are-declared stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T233052030320-measurement-keys-are-declared.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T233052030320-measurement-keys-are-declared.at-b6117492b915541f9c5eedee9f86f8de9265c3e6.json --time-budget 40m --session s22-coord --allow-unreconciled-runs --backend clive",
+              "node": "measurement-keys-are-declared",
+              "phase": "starting",
+              "plan": "work-does-not-fall-to-the-coordinator",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260924T233052030320-measurement-keys-are-declared",
+              "session": "s22-coord",
+              "terminal_age_seconds": 1005,
+              "terminal_at": "2026-09-25T00:37:10Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/measurement-keys-are-declared"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 12,
+            "evidence": 15,
+            "fit": 17,
+            "goal_fidelity": 17,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 80
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 5810961,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1917.198,
+          "generated_tokens": 52338,
+          "generation_seconds": 1896.437,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 31.6,
+          "machine_seconds": 20.761,
+          "peak_input_tokens": 151835,
+          "tokens_per_second": 27.6,
+          "wall_tokens_per_second": 27.3
+        },
+        "follow_on_paths": [
+          "tests/test_skill_contracts.py:532-546"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/build-skill-review-findings-closed",
+          "session_id": "56d18a3a-6146-458e-9d8a-73ab84a381fb",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T01:27:22.611Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T01:27:23Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T00:55:22Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T005352374696-build-skill-review-findings-closed",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 11729,
+          "worker_pid": 2118072
+        },
+        "promoted_revision": "3ad9da2d32680565ec5a2b1ffb76bc28cadd8987",
+        "plan_impl_at_dispatch": 0.9,
+        "impl_move": {
+          "plan": "reckon-skill-overhaul",
+          "at_dispatch": 0.9,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:documentation"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T01:23:52.913117+00:00",
+          "horizon_seconds": 1800,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T00:53:52Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 16,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 4,
+          "mean_context": 113846,
+          "observed_at": "2026-09-25T00:53:36Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 60.0,
+        "orientation_input_tokens": 1343125.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -374656,6 +375105,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2623
+    "_version": 2625
   }
 }
