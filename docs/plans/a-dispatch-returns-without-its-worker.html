@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-25">
-  <meta name="plan-version" content="95">
+  <meta name="plan-version" content="96">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -1012,6 +1012,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260925T083000-pane-env-allow-list" data-who="reckon-build s21-coord" data-when="2026-09-25T06:30:00Z">
     <div class="r-comment-body">A finding from imas-ambix-a8, relayed by reckon-ee on 2026-09-25, queued as the next supervisor node after headless-tabs-survive-attach, which writes the same file. Every fleet pane inherited the tool-shell variables of the Claude Code session that submitted the job: AI_AGENT, GIT_EDITOR=true, COREPACK_ENABLE_AUTO_PIN=0 and NoDefaultCurrentDirectoryInExePath=1, plus SLURM's ENVIRONMENT=BATCH. The supervisor strips only CLAUDE*, ZELLIJ* and CX_* names. With GIT_EDITOR=true, a `git commit` without -m in a fleet pane silently takes the default message. The dotfiles supervisor now unsets all five (dotfiles 6a375a1). reckon.crew.fleet_supervisor builds a pane's and a spawned child's environment from an allow-list of the variables a session needs (HOME, USER, LOGNAME, PATH, SHELL, TERM, LANG, LC_*, TMPDIR, XDG_*, SLURM_JOB_ID and the step variables a worker reads), not from a deny-list, so the next tool-shell variable cannot leak the same way. The test asserts a planted unknown variable is absent from a spawned child and every allow-listed one present, and a negative control reverts to the deny-list.</div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20260925T070932944734-review-of-headless-tabs-survive-attach" data-who="reckon-build" data-when="2026-09-25T07:50:45.752Z">
+    <div class="r-comment-body"><p>review stored: 81/100 (durability 12), 4 findings (tab-wait stability window vs 1.5 s tab spacing, winsize and detach assertions not falsifiable, one misquoted timestamp); the implement run was resumed to repair all four</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260924T213000-discard-leaves-worktree" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
     <div class="r-comment-body">Evidence for this section, 2026-09-24 23:19. crew discard of r-20260924T211759945494-review-of-the-fleet-supervisor-lives-in-reckon removed its pointer but left its worktree, which was clean and at an integrated head. So redispatching the same node id was refused with 'worktree creation failed: worktree path already exists'. The coordinator removed the worktree by hand with a plain `git worktree remove`. The follower then labelled the discarded run 'promoted'. That label is owned by the-fleet-counters-count-the-fleet §3. The discarded run was itself a review-reflex launch with launch in-harness, backend native and pid null in a Claude Code coordinator session that never asked for in-harness. Nothing would ever have run it, yet it held the review's scope claim.</div>
