@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
   <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
-  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df,2bb4fd6d">
+  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df,2bb4fd6d,6d813b38">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <title>The Suite Is Green At Head — landed evidence | reckon</title>
@@ -1300,6 +1300,104 @@ env -C /tmp/other-reckon-surface PYTHONPATH= &lt;worktree&gt;/.venv/bin/python -
       slowest ids coloured by the call site that dominates each</a>. Reviewer note: a peer session's
       pytest processes ran on the same node during the measured run, so the wall times here are upper
       bounds; the attribution of time to a frame is unaffected.</p>
+    </section>
+    <section id="node-no-watch-producer-outlives-the-suite">
+      <h2>no-watch-producer-outlives-the-suite — a session check fails the run on a leaked producer</h2>
+      <p><strong>What landed, and why.</strong> Arming a project watch producer is detached on purpose, so a
+      producer a test starts is nobody's child. The suite already carried a session-scoped reaper that terminates
+      the pids named by the seat records under the base temp directory. A record only names a producer that
+      reached its seat, so a producer that died earlier, or one started by a path that never wrote a record, was
+      not listed and would survive the reaper in silence. The session fixture now reads every live
+      <code>crew watch</code> process from <code>/proc</code> after the reaper runs and fails the session, naming
+      the pid and the <code>RECKON_HOME</code> it reports into, if any of them names a configuration home this run
+      created.</p>
+      <p><strong>The check, in three parts.</strong> (1) A configuration home is test-owned when it lies under the
+      pytest base temp directory, or it sits directly under the system temp directory with a prefix a test
+      registered — the second case exists because the arming guard's own definition of an ordinary home is
+      <em>outside the pytest temporary root</em>, so a test proving arming proceeds for an ordinary home cannot
+      place it under that root. (2) Liveness is read from the live process's own environment, never from the stored
+      record: a record names a pid only until it exits, and the pid may since have been reused. (3) The reaped pids
+      are given a bounded grace to leave <code>/proc</code> before the scan, so a terminated producer on a loaded
+      host cannot read as one that ignored the signal.</p>
+      <p><strong>Home creation is now tracked.</strong> <code>tests/test_watch_arming_isolation.py</code> creates its
+      ordinary-home and outside-home fixtures through the registered helper rather than a bare
+      <code>tempfile.mkdtemp</code>, so a producer naming either is attributable to this run. The helper registers a
+      prefix, not a path, because the test removes the directory and a leaked producer goes on naming the deleted
+      path.</p>
+      <p><strong>The new test, and its control.</strong> A test asserts the scan finds a producer naming a home under
+      the base temp directory and does not find one naming a home this run did not create, so the check cannot
+      aim a verdict at a peer's producer. Full record with the figure:
+      <a href="/reckon/figures/the-suite-is-green-at-head/watch-producer-session-check.png">watch producer session
+      check</a>.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Deliberately leaked producer is reported</td><td>Scratch test, not committed: session failed with
+          <code>pid 2036229 (RECKON_HOME=/tmp/pytest-of-mcintos/pytest-scratch-pos/test_a_deliberately_leaked_pro0/leaked-home)</code></td></tr>
+          <tr><td>Declared negative control</td><td>Remove the new session check and the same leak goes unreported:
+          exit 0, and a scan confirmed the producer still alive (<code>pid 2038580</code>) — so the pass was a miss,
+          not an absence of leak</td></tr>
+          <tr><td><code>tests/test_watch_arming_isolation.py</code></td><td>8 passed, exit 0, per file</td></tr>
+          <tr><td><code>tests/test_crew_dispatch_arming.py</code></td><td>6 passed, exit 0, three consecutive per-file
+          runs in a quiet window; under host load one listed load-sensitive id
+          (<code>test_concurrent_dispatches_arm_exactly_one_detached_producer</code>, named in §3) failed intermittently
+          — its robustness is §3's separate measure, not this node's</td></tr>
+          <tr><td>Product files touched</td><td>none — no <code>reckon/</code> path, no test disabled, skipped or weakened</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Scope note.</strong> One clause of this node's assigned evidence asked the isolation test to create
+      <em>every</em> configuration home under the pytest base temp directory. Two homes cannot go there: the ordinary
+      home the arming guard must treat as ordinary, and the outside home a record-attribution test must exclude from
+      its search. Both are now created through the registered helper instead, so they are tracked rather than bare —
+      the substance of the clause — while the guard's own definition of an ordinary home is preserved.</p>
+      <h3>Coordinator verification, and the binding it corrected</h3>
+      <p><strong>Verification found two failures at this node's head.</strong> Run with pytest's default basetemp
+      under <code>-n 4</code>, two tests in <code>tests/test_watch_arming_isolation.py</code> failed that pass at
+      main. Both failed at the same line, and the reading of the cause matters because the first thing the trace
+      looks like is not what it is.</p>
+      <p><strong>The refusal still raised.</strong> In
+      <code>test_arming_refuses_a_configuration_home_under_a_test_directory</code> the
+      <code>pytest.raises(crew.CrewError)</code> block completed and every assertion on the refusal message passed;
+      the failure was the next line. So the guard's recognition of a throwaway home was intact, and the ordinary
+      home's move to the registered helper did not change what the product recognises as a test directory — the
+      serial run of the same file was 8 passed at the default basetemp. The claim that the guard stopped refusing is
+      not supported by the log, and this record does not carry it.</p>
+      <p><strong>What actually failed: the assertion could see other tests' processes.</strong> Both tests ended with
+      <code>_producer_processes(project) == before</code>, a whole-host <code>ps</code> read matched on the substring
+      <code>crew watch --project sample</code>. Under <code>-n 4</code> that substring is also carried by another
+      test's real producer for the same project name, and by this node's new lookalike producers, so the two
+      snapshots differed on processes that were never this test's. The check was characterising the fleet, not the
+      code under test; a file that passes serially and fails under <code>-n 4</code> is what that looks like.</p>
+      <p><strong>The fix binds the assertion to this run's own home.</strong> The assertion is now
+      <code>pytest.conftest.producers_naming_home(config_home)</code>, which reads every live <code>crew watch</code>
+      process from <code>/proc</code> and keeps only those whose own environment names the home this test created — the
+      same binding the session check uses. A peer's producer names its own home and is invisible; the two-snapshot
+      equality is gone, because a difference between two host-wide snapshots was never the fact being asserted. The
+      lookalike producers additionally name a project no other test uses, so a peer's project-keyed scan cannot
+      mistake them for its own. A subtlety worth keeping: for the suppression test the binding is load-bearing, since
+      a still-working guard would arm a producer that inherits this test's <code>RECKON_HOME</code>.</p>
+      <table>
+        <thead><tr><th>Gate (default basetemp)</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Five files, serial, three runs</td><td>34 passed each run, exit 0 (logs <code>serial-1..3</code>)</td></tr>
+          <tr><td>Five files, <code>-n 4</code>, three runs required</td><td>34 passed on four of seven runs
+          (<code>n4-1</code>, <code>n4-2</code>, <code>n4-6</code>, <code>n4-7</code>)</td></tr>
+          <tr><td>The two originally-failing isolation tests</td><td>pass in every serial and every <code>-n 4</code>
+          run after the fix, including the three loaded runs that failed elsewhere</td></tr>
+          <tr><td>Remaining <code>-n 4</code> failures, and their attribution</td><td>in files this node does not
+          write: <code>test_concurrent_dispatches_arm_exactly_one_detached_producer</code> (the §3-listed load-sensitive
+          id) with a <code>.git/index.lock</code> collision between its own two concurrent dispatches, and
+          <code>test_dispatch_returns_once_its_supervisor_runs</code> exceeding its 5.0&nbsp;s bound at 5.27 and 5.93&nbsp;s
+          under load average ~20</td></tr>
+          <tr><td>Attribution control for the bound</td><td>with this node's two files excluded from the run, the same
+          bound failed at 5.376&nbsp;s — so it is host-load-sensitive, not a consequence of this change
+          (<code>attrib-1</code>, <code>attrib-2</code>)</td></tr>
+        </tbody>
+      </table>
+      <p><strong>The negative control still applies.</strong> This rework did not touch the session check's scan: the
+      teardown path in <code>tests/conftest.py</code> is unchanged and the added helper is a new function beside it, so
+      the recorded control — remove the session check and the deliberately leaked producer goes unreported, exit 0 with
+      the producer still alive — remains the control for the code as committed.</p>
     </section>
   </main>
 </body>

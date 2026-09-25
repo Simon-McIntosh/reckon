@@ -16,6 +16,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -128,13 +129,19 @@ def _dispatch(config_home: Path, repo: Path, name: str, **kwargs) -> dict:
     )
 
 
-def _producer_processes(project: str) -> list[str]:
-    """Every live process whose argv is a watch producer for ``project``."""
-    listing = subprocess.run(
-        ["ps", "-eo", "pid=,args="], capture_output=True, text=True, check=True
-    ).stdout
-    marker = f"crew watch --project {project}"
-    return [line.strip() for line in listing.splitlines() if marker in line]
+def _producers_naming(config_home: Path) -> list[str]:
+    """Live watch producer pids whose own environment names ``config_home``.
+
+    The binding is the configuration home, never an argv substring or a project
+    the peer happens to share. A whole-host ``ps`` match on
+    ``crew watch --project <name>`` also matches another test's producer for
+    that same project — a different fact — so under a parallel run it reports
+    whatever else the host is running, and the assertion then fails on the
+    fleet rather than on the code.
+    """
+    from tests.conftest import producers_naming_home
+
+    return sorted(str(pid) for pid, _ in producers_naming_home(config_home))
 
 
 def _assert_attach_line_shape(
@@ -167,7 +174,6 @@ def test_a_dispatch_under_the_shared_fixture_arms_no_producer(
     fixture_project: tuple[Path, Path],
 ) -> None:
     config_home, repo = fixture_project
-    before = _producer_processes("sample")
 
     record = _dispatch(config_home, repo, "suppressed")
 
@@ -175,7 +181,7 @@ def test_a_dispatch_under_the_shared_fixture_arms_no_producer(
     assert record["watch"]["watcher_live"] is False
     assert record["watch_override"]["requested"] is True
     assert crew.watch_state("sample")["watcher_live"] is False
-    assert _producer_processes("sample") == before
+    assert _producers_naming(config_home) == []
 
 
 def test_the_suppressed_dispatch_records_the_same_waiver_as_an_explicit_one(
@@ -211,7 +217,6 @@ def test_arming_refuses_a_configuration_home_under_a_test_directory(
 ) -> None:
     """A caller that bypasses the fixture still cannot spawn a producer."""
     monkeypatch.delenv(WATCH_ARMING_ENV, raising=False)
-    before = _producer_processes("sample")
 
     with pytest.raises(crew.CrewError) as refusal:
         dispatch_module._ensure_watch_producer("sample", session="bypassing")
@@ -220,12 +225,14 @@ def test_arming_refuses_a_configuration_home_under_a_test_directory(
     assert str(isolated_reckon_home) in message
     assert "outlive" in message
     assert WATCH_ARMING_ENV in message
-    assert _producer_processes("sample") == before
+    assert _producers_naming(isolated_reckon_home) == []
 
 
 def test_arming_proceeds_for_an_ordinary_configuration_home(monkeypatch) -> None:
     """The refusal is bound to the throwaway home, not to arming itself."""
-    ordinary = Path(tempfile.mkdtemp(prefix="reckon-ordinary-home-"))
+    from tests.conftest import test_temp_config_home
+
+    ordinary = test_temp_config_home("reckon-ordinary-home-")
     launched: list[list[str]] = []
 
     class _Supervisor:
@@ -294,10 +301,10 @@ def test_a_producer_is_bound_to_this_run_by_the_home_it_reports_into(
     the pid, and the directory's location names the run. A record under another
     run's home belongs to that run and must not be found from this one.
     """
-    from tests.conftest import watcher_record_pids
+    from tests.conftest import test_temp_config_home, watcher_record_pids
 
     inside = tmp_path / "inside"
-    outside = Path(tempfile.mkdtemp(prefix="reckon-ordinary-home-"))
+    outside = test_temp_config_home("reckon-ordinary-home-")
     (inside / "crew" / "watch").mkdir(parents=True)
     (outside / "crew" / "watch").mkdir(parents=True)
 
@@ -325,3 +332,55 @@ def test_a_producer_is_bound_to_this_run_by_the_home_it_reports_into(
             process.terminate()
             process.wait(timeout=10)
         shutil.rmtree(outside, ignore_errors=True)
+
+
+def _spawn_lookalike(config_home: Path) -> subprocess.Popen:
+    """A detached process whose argv and environment read as a watch producer.
+
+    The project it names is one no other test uses, so a peer's scan that keys
+    on a project of their own cannot mistake this process for theirs. What binds
+    it to a run is the configuration home its environment carries, which is the
+    fact the session check reads.
+    """
+    return subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import time; time.sleep(120)",
+            "crew",
+            "watch",
+            "--project",
+            "arming-isolation-probe",
+        ],
+        env={**os.environ, "RECKON_HOME": str(config_home)},
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def test_the_session_check_reads_a_producers_own_home(tmp_path_factory) -> None:
+    """A live producer is bound to this run by the home its environment names.
+
+    A producer is run detached, because detached is what makes it outlive the
+    test that started it — a child a teardown could wait on would not model the
+    case the session check exists for. One producer names a home under the
+    pytest base temp directory, which is how the check finds it; a second names
+    a home this run did not create, and must not be reported, because reporting
+    it would aim a verdict at a peer's producer.
+    """
+    from tests.conftest import leaked_watch_producers
+
+    base = tmp_path_factory.getbasetemp()
+    ours = _spawn_lookalike(base / "producer-home")
+    foreign = _spawn_lookalike(
+        Path(tempfile.gettempdir()) / "reckon-not-this-runs-home"
+    )
+    try:
+        pids = {pid for pid, _ in leaked_watch_producers(base)}
+
+        assert ours.pid in pids
+        assert foreign.pid not in pids
+    finally:
+        for process in (ours, foreign):
+            process.terminate()
+            process.wait(timeout=10)

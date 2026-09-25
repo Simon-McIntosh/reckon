@@ -18,6 +18,8 @@ from __future__ import annotations
 import json
 import os
 import signal
+import tempfile
+import time
 from pathlib import Path
 
 import pytest
@@ -26,6 +28,20 @@ from reckon.crew.dispatch import WATCH_ARMING_ENV
 from reckon.crew.routing import signal_worker
 
 ARMING_MARKER = "arms_watch_producer"
+
+# How long a producer the reaper signalled is given to exit before its survival
+# is read as a leak. The producer is a Python process with no signal handler, so
+# the default disposition ends it promptly; the grace exists so a loaded host
+# cannot make a terminated producer read as one that ignored the signal.
+_REAP_GRACE_SECONDS = 15.0
+
+# Prefixes of throwaway configuration homes tests created outside the pytest
+# base temp directory. A home the pytest tree does not contain cannot be found by
+# searching that tree, so its name is recorded instead: a producer still naming a
+# home with one of these prefixes is this run's leak. Prefixes rather than paths
+# because the test removes the directory and a leaked producer goes on naming the
+# deleted path.
+_TEST_TEMP_HOME_PREFIXES: set[str] = set()
 
 # Modules whose subject IS the producer lifecycle: they start producers on
 # purpose and terminate them in their own teardown. Everything else is
@@ -131,11 +147,146 @@ def reaped_watch_producers(tmp_path_factory):
     a suite interrupted at a fence leaves its `finally` blocks unrun. This is
     the backstop for the tests that legitimately arm, and it is bound to the
     one moment that always happens.
+
+    Reaping by record is not enough on its own. A record names a producer that
+    reached its seat; a producer that died earlier, or one started by a path
+    that never wrote a record, is not listed and would survive the reaper in
+    silence. So the reaped pids are given a bounded grace to exit and then every
+    live ``crew watch`` process naming a home this run created is read from
+    ``/proc`` and the session is failed on it, by pid and by home.
     """
     root = tmp_path_factory.getbasetemp()
     yield
-    for pid in reapable_watch_pids(root):
+    reaped = reapable_watch_pids(root)
+    for pid in reaped:
         signal_worker(pid, signal.SIGTERM)
+    await_exit(reaped)
+    leaks = leaked_watch_producers(root)
+    if leaks:
+        named = ", ".join(f"pid {pid} (RECKON_HOME={home})" for pid, home in leaks)
+        pytest.fail(
+            "crew watch producers this session armed outlived it: "
+            f"{named}. They poll a temporary configuration home the suite is "
+            "about to remove; a test that arms a producer must reap it, and the "
+            "session fixture's reaper must be able to see it."
+        )
+
+
+def await_exit(pids: list[int], grace: float = _REAP_GRACE_SECONDS) -> None:
+    """Wait, bounded, for every pid in ``pids`` to disappear from ``/proc``.
+
+    ``/proc`` rather than ``os.kill(pid, 0)``: a signalled process can linger as
+    a zombie only relative to its own parent, and the pids here are detached,
+    so their absence from ``/proc`` is the fact that matters.
+    """
+    deadline = time.monotonic() + grace
+    while time.monotonic() < deadline:
+        if not any(Path("/proc", str(pid)).exists() for pid in pids):
+            return
+        time.sleep(0.05)
+
+
+def _live_watch_producers() -> list[tuple[int, Path]]:
+    """Every live ``crew watch`` process, with the home its environment names.
+
+    Read from ``/proc`` by argv and environment, never by a command-line
+    pattern alone: a pattern matches any process carrying the words, including a
+    peer's producer and the shell that ran the scan, while the process's own
+    environment names the one home it reports into.
+    """
+    found: list[tuple[int, Path]] = []
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            argv = (entry / "cmdline").read_bytes().split(b"\0")
+            environ = (entry / "environ").read_bytes().split(b"\0")
+        except OSError:
+            continue
+        if b"watch" not in argv or b"--project" not in argv:
+            continue
+        home = _environ_config_home(environ)
+        if home is not None:
+            found.append((int(entry.name), home))
+    return found
+
+
+def _environ_config_home(environ: list[bytes]) -> Path | None:
+    for item in environ:
+        name, _, value = item.partition(b"=")
+        if name == b"RECKON_HOME" and value:
+            return Path(os.fsdecode(value))
+    return None
+
+
+def test_temp_config_home(prefix: str) -> Path:
+    """A throwaway configuration home a test created, registered for attribution.
+
+    Some tests must place a home where the arming guard does not look — the one
+    that shows arming proceeding for an ordinary home, and the one that shows a
+    record under another home is refused. Those cannot live under the pytest base
+    temp directory, because that directory is exactly what the guard treats as a
+    throwaway. Recording the prefix keeps them attributable anyway: a producer
+    still naming one after the reaper ran is this run's leak even though the
+    directory sat outside the base temp tree and the test has since removed it.
+    """
+    _TEST_TEMP_HOME_PREFIXES.add(prefix)
+    return Path(tempfile.mkdtemp(prefix=prefix))
+
+
+def _home_is_test_owned(home: Path, base: Path) -> bool:
+    """True when ``home`` is a configuration home this run created."""
+    try:
+        resolved = home.resolve()
+    except OSError:
+        resolved = home
+    if resolved == base or base in resolved.parents:
+        return True
+    temp = Path(tempfile.gettempdir())
+    if home.parent == temp:
+        return any(home.name.startswith(prefix) for prefix in _TEST_TEMP_HOME_PREFIXES)
+    return False
+
+
+def producers_naming_home(home: Path) -> list[tuple[int, Path]]:
+    """Live ``crew watch`` producers whose own environment names ``home``.
+
+    The binding a caller asserts against is the configuration home, not a
+    project or an argv pattern: under a parallel run a peer's producer for the
+    same project is a different fact, and a scan that cannot tell the two apart
+    fails on whatever else the host happens to be running.
+    """
+    try:
+        wanted = home.resolve()
+    except OSError:
+        wanted = home
+    return [
+        (pid, named)
+        for pid, named in _live_watch_producers()
+        if _resolve(named) == wanted
+    ]
+
+
+def _resolve(path: Path) -> Path:
+    try:
+        return path.resolve()
+    except OSError:
+        return path
+
+
+def leaked_watch_producers(base: Path) -> list[tuple[int, Path]]:
+    """Live ``crew watch`` producers still naming a home this run created.
+
+    A stored seat record is a claim about the past — the pid it names may since
+    have exited and been reused — so liveness is read from the process itself.
+    A producer naming an ordinary home, or one belonging to a peer session, is
+    not this run's and is left alone.
+    """
+    return [
+        (pid, home)
+        for pid, home in _live_watch_producers()
+        if _home_is_test_owned(home, base)
+    ]
 
 
 def pytest_configure(config: pytest.Config) -> None:
