@@ -1,0 +1,333 @@
+{
+  "agent": {
+    "alias": "astra6",
+    "backend": "codex-astra",
+    "effort": "xhigh",
+    "launch": "cli",
+    "model": "gpt-6-astra",
+    "sandbox": "read-only"
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "codex-astra",
+  "base_sha": "76321a4645a81450c119fadf9ec46bb6d0d21cfd",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 2148224,
+      "cached_input_tokens_cumulative": 2148224,
+      "input_tokens": 2294945,
+      "input_tokens_cumulative": 2294945,
+      "output_tokens": 14956,
+      "output_tokens_cumulative": 14956,
+      "reasoning_output_tokens": 3110,
+      "reasoning_output_tokens_cumulative": 3110
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": null,
+  "commit_resolution": null,
+  "commits": [],
+  "completed_at": "2026-09-25T13:50:13Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-09-25T13:40:05Z",
+  "dispute_count": 0,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": false,
+    "matched_measure": null,
+    "override": false,
+    "role": "review",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "not-run",
+  "gate_check": null,
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": null,
+    "plan": "an-orchestrator-cannot-forget-its-obligations",
+    "reason": "role-not-enforced:review",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "codex-astra",
+    "burn_multiple": 1.6023819737074512,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'codex-astra' is projected to exhaust at 2026-09-29T08:45:57Z, which is after this node's 2700s horizon ending 2026-09-25T14:24:46.370903+00:00",
+    "horizon_ends_at": "2026-09-25T14:24:46.370903+00:00",
+    "horizon_seconds": 2700,
+    "metered": true,
+    "observed_at": "2026-09-25T13:39:45Z",
+    "precedes_horizon": false,
+    "projected_exhaustion_at": "2026-09-29T08:45:57Z",
+    "resets_at": "2026-10-01T15:38:44Z",
+    "seconds_until_reset": 525538,
+    "state": "quiet",
+    "utilisation_pct": 21.0
+  },
+  "lane_declaration": {
+    "backend": "codex-astra",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-09-25T13:39:45Z",
+    "read_at": "2026-09-25T13:39:46Z",
+    "resolved_backend": "codex-astra",
+    "utilisation_pct": 21.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null
+  },
+  "lane_receipt": {
+    "effective_context_window": 380000,
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-25T13:50:13Z",
+    "quota_state": "measured",
+    "quota_windows": [
+      {
+        "observed_at": "2026-09-25T13:50:13Z",
+        "resets_at": 1790869124,
+        "used_percent": 22.0,
+        "window_minutes": 10080
+      }
+    ],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "notional_cost_usd": "no_dated_rate",
+      "rate_basis": "no_dated_rate"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T133944565054-re-review-of-installer-carries-the-worker-stop-hook/manifest.md",
+  "member": "orphan-diagnosis",
+  "negative_control": {
+    "reason": "node-writes-no-test-path",
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "re-review-of-installer-carries-the-worker-stop-hook",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 957,
+          "cached_input_tokens": 688487,
+          "input_tokens": 689446,
+          "output_tokens": 1116,
+          "reasoning_output_tokens": 522,
+          "total_tokens": 690562,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "the review for r-20260925T114234476907-installer-carries-the-worker-stop-hook at head ed41c352 stores a parsed record scoring all 5 dimensions in the range 0..20, and it checks specifically that an install over a settings file that already registers the worker Stop command adds the coordinator entries and duplicates nothing; the turn ends once that record is stored and the manifest reads complete",
+    "estimated_hours": null,
+    "goal": "attach an independent review to run r-20260925T114234476907-installer-carries-the-worker-stop-hook at its current head",
+    "id": "re-review-of-installer-carries-the-worker-stop-hook",
+    "lane_declaration": {
+      "backend": "codex-astra",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-09-25T13:39:45Z",
+      "read_at": "2026-09-25T13:39:46Z",
+      "resolved_backend": "codex-astra",
+      "utilisation_pct": 21.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T133944565054-re-review-of-installer-carries-the-worker-stop-hook/manifest.md",
+    "negative_control": "",
+    "plan": "an-orchestrator-cannot-forget-its-obligations",
+    "requested_backend": "codex-astra",
+    "requires_decisions": [],
+    "role": "review",
+    "section": "§5",
+    "spec_level": "exact",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T114234476907-installer-carries-the-worker-stop-hook.json",
+      "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T114234476907-installer-carries-the-worker-stop-hook.at-ed41c35230575de4e67fb19d9995316800bd2f85.json"
+    ]
+  },
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "plan": "an-orchestrator-cannot-forget-its-obligations",
+  "promoted_revision": "76321a4645a81450c119fadf9ec46bb6d0d21cfd",
+  "release": {
+    "process_signalled": false,
+    "process_withheld": "process is not alive",
+    "worktree_audit": {
+      "counts": {
+        "dirty": 0,
+        "disposable": 0,
+        "integrated": 0,
+        "live-referenced": 0,
+        "retained-for-resume": 0,
+        "unintegrated": 0
+      },
+      "worktrees": [
+        {
+          "available": false,
+          "detail": "tree is no longer available",
+          "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/re-review-of-installer-carries-the-worker-stop-hook"
+        }
+      ]
+    },
+    "worktree_released": true
+  },
+  "resume_waiver": null,
+  "review": null,
+  "role": "review",
+  "run_id": "r-20260925T133944565054-re-review-of-installer-carries-the-worker-stop-hook",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§5",
+  "session_harness": "codex",
+  "session_id": "01a0d8cb-fd3a-7603-bb05-4f7a244605e7",
+  "session_model": "gpt-6-astra",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 0,
+  "throughput": {
+    "cumulative_cached_input_tokens": 2148224,
+    "cumulative_input_tokens": 4443169,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 18066
+  },
+  "time_budget": "45m",
+  "tool_steps": 57.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": true,
+        "budget_overrun_seconds": 757,
+        "budget_seconds": 2400,
+        "classification": "promotable",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion; the run is the review it dispatched with, so the review it wrote is its deliverable and no review of this run is required",
+        "effective_phase": "complete",
+        "elapsed_seconds": 3157,
+        "exit_record": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T13:20:39Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T12:28:35Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T122746943672-review-of-installer-carries-the-worker-stop-hook",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 12141,
+          "worker_pid": 767053
+        },
+        "external_wait": null,
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 1154,
+        "log_fresh": false,
+        "manifest_commits": [
+          "none — the deliverable is the review record outside the repository; the worktree is clean at base sha 105dd29bee2cc4ef257f3009df679a913aec9f9f"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "53d8ae05f800538f045f9939b3a7a3efd81d51bcfa458ef5dd11fb372d844ebc",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122746943672-review-of-installer-carries-the-worker-stop-hook/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "promote the completed review run once its verdict is read; the run is not itself reviewed",
+        "node": "review-of-installer-carries-the-worker-stop-hook",
+        "phase": "starting",
+        "plan": "an-orchestrator-cannot-forget-its-obligations",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "promote",
+        "recovery_classification": "promotable",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260925T122746943672-review-of-installer-carries-the-worker-stop-hook",
+        "session": "s22-coord",
+        "terminal_age_seconds": 1247,
+        "terminal_at": "2026-09-25T13:19:06Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/review-of-installer-carries-the-worker-stop-hook"
+      }
+    ]
+  },
+  "wall_seconds": 608,
+  "watch_override": null,
+  "worker_exit": {
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-25T13:50:14Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-09-25T13:40:42Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260925T133944565054-re-review-of-installer-carries-the-worker-stop-hook",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 142,
+    "worker_pid": 1141839
+  },
+  "worker_seconds": 608,
+  "worker_seconds_source": "wall_fallback",
+  "worktree_retention": null
+}
