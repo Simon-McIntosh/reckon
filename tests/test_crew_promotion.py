@@ -1532,8 +1532,25 @@ def _porcelain(repository: Path) -> list[str]:
     return [line for line in result.stdout.splitlines() if line.strip()]
 
 
-def _landing_commit_paths(repository: Path) -> list[str]:
-    return _git(repository, "show", "--format=", "--name-only", "HEAD").split()
+def _landing_commit_paths(repository: Path, revision: str = "HEAD") -> list[str]:
+    return _git(repository, "show", "--format=", "--name-only", revision).split()
+
+
+def _promotion_commit(repository: Path, run_id: str) -> str:
+    """Locate the commit a promotion made for one run.
+
+    A promotion records its release outcome in a commit on top of the landing,
+    so the landing is no longer what HEAD names. It is found instead by the
+    subject promotion gives it, which names the run and its gate verdict.
+    """
+    prefix = f"promote({run_id}):"
+    matches = [
+        line.split(" ", 1)[0]
+        for line in _git(repository, "log", "--format=%H %s").splitlines()
+        if line.split(" ", 1)[1].startswith(prefix)
+    ]
+    assert len(matches) == 1, matches
+    return matches[0]
 
 
 def test_a_successful_promotion_leaves_its_two_stores_committed_and_clean(
@@ -1567,11 +1584,12 @@ def test_the_landing_commit_names_the_run_id_and_the_gate_verdict(
     run_id = "r-20260914T190322000000-verdict"
     _promote(repository, run_id, outcome="the landing carries both stores")
 
-    subject = _git(repository, "log", "-1", "--format=%s")
+    promote_commit = _promotion_commit(repository, run_id)
+    subject = _git(repository, "log", "-1", "--format=%s", promote_commit)
     assert run_id in subject
     assert "passed" in subject
-    assert _git(repository, "log", "-1", "--format=%b").strip()
-    assert set(_landing_commit_paths(repository)) == {
+    assert _git(repository, "log", "-1", "--format=%b", promote_commit).strip()
+    assert set(_landing_commit_paths(repository, promote_commit)) == {
         f"docs/state/{PROJECT}/runs/{run_id}.json",
         f"docs/plans/{PLAN}.html",
     }
@@ -1593,7 +1611,7 @@ def test_a_landing_commit_never_stages_an_unrelated_dirty_file(
     assert any(
         line.startswith(" M ") and line.endswith("seed.txt") for line in porcelain
     )
-    committed = _landing_commit_paths(repository)
+    committed = _landing_commit_paths(repository, _promotion_commit(repository, run_id))
     assert "loose.txt" not in committed
     assert "seed.txt" not in committed
     assert set(committed) == {
@@ -1858,7 +1876,9 @@ def test_a_run_without_a_worker_authored_record_still_lands_exactly_one_comment(
         c for c in (plan["comments"].get("s2") or []) if c.get("id") == comment_id
     ]
     assert len(matching) == 1
-    assert set(_landing_commit_paths(repository)) == {
+    assert set(
+        _landing_commit_paths(repository, _promotion_commit(repository, run_id))
+    ) == {
         f"docs/state/{PROJECT}/runs/{run_id}.json",
         f"docs/plans/{PLAN}.html",
     }

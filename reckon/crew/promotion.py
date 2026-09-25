@@ -3110,6 +3110,8 @@ def _record_release_on_ledger(
     erase the evidence. This second, narrow ledger write makes the cleanup
     outcome durable as well: later readers can distinguish a removed tree from
     one retained for a dirty, unintegrated, live-referenced, or failed run.
+    Its separate commit preserves the landing's identity even if a peer has
+    already published it or committed other work before release finishes.
     """
     path = ledger.run_path(project, run_id, root)
     per_run = path.is_file()
@@ -3143,18 +3145,29 @@ def _record_release_on_ledger(
                         f"{staged.stderr.strip() or staged.stdout.strip()}",
                         rollback,
                     )
-                amended = _git(
+                unchanged = _git(
+                    checkout, "diff", "--cached", "--quiet", "--", str(path), check=False
+                )
+                if unchanged.returncode == 0:
+                    return dict(release), updated
+                committed = _git(
                     checkout,
                     "commit",
-                    "--amend",
-                    "--no-edit",
+                    "--only",
+                    "-m",
+                    f"release({run_id}): record workspace outcome",
+                    "-m",
+                    "Record the worktree and process release receipt after promotion "
+                    "without rewriting a commit another session may have published.",
+                    "--",
+                    str(path),
                     check=False,
                 )
-                if amended.returncode:
+                if committed.returncode:
                     rollback = _restore_landing_writes(checkout, [path])
                     raise _landing_refusal(
-                        f"could not amend the release outcome for run {run_id!r}: "
-                        f"{amended.stderr.strip() or amended.stdout.strip()}",
+                        f"could not commit the release outcome for run {run_id!r}: "
+                        f"{committed.stderr.strip() or committed.stdout.strip()}",
                         rollback,
                     )
         except (ledger.LedgerError, CrewError, OSError, ValueError) as exc:

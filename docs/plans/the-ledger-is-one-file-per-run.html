@@ -177,6 +177,44 @@
         This supersedes the worker delivery's scope blocker above; independent merged
         verification, the live promotion receipt and closure remain coordinator-owned.</p>
       </aside>
+      <aside id="promotion-commit-identity-landing">
+        <h3>Promotion commit identity recorded in the worker checkout</h3>
+        <p><strong>2026-09-25.</strong> Commits
+        <code>038b47355a29aaf310587c49aadaf5051736498b</code> and
+        <code>7f51cb12c451899b8111ebe11fb7d1924fc0490a</code> record release in its own
+        scoped commit and treat an identical receipt as a no-op. Real completion tests
+        preserve the original promotion and an interleaved peer commit, retain unrelated
+        staged work, exercise clean removal and dirty retention, and refuse real-home writes.
+        The unused append retry parameter and its remaining explicit caller argument are removed.</p>
+        <p>The focused gate passes all 34 cases. Restoring the amend fails all four exact
+        reflog assertions, with the observer's positive control still passing. The 22-module
+        cohort moves from 1 failed, 417 passed, 4 warnings in 244.71s (0:04:04) to 4 failed, 414 passed, 4 warnings in 353.49s (0:05:53):
+        3 added failure ids. <strong>The zero-added-failures measure remains unmet.</strong>
+        <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#f-tlioefpr-promotion-never-amends">The anchored evidence</a>
+        preserves the complete delta, mutation, receipts and sequence figure. Remaining test
+        ownership, independent merged verification and followup closure belong to the coordinator.</p>
+      </aside>
+      <aside id="promotion-tests-locate-the-landing-commit">
+        <h3>Promotion-history assertions read the landing, not HEAD</h3>
+        <p><strong>2026-09-25.</strong> Commit <code>10632d40</code> repairs the three
+        <code>tests/test_crew_promotion.py</code> cases that identified the promotion commit by
+        final HEAD. A promotion records its release receipt in a commit on top of the landing,
+        so HEAD names the receipt; each case now reads the landing commit, located by the
+        <code>promote(&lt;run_id&gt;):</code> subject promotion gives it, and asserts the same
+        run id, gate verdict, non-empty body and exact two-path file list as before.</p>
+        <p><strong>Measured.</strong> The three cases fail at base <code>789ef768</code>, both
+        in the focused reproduction and in the 22-module promotion / ledger / run-store cohort,
+        and pass at <code>10632d40</code>. The cohort moves from 4 failed, 402 passed to
+        1 failed, 405 passed — <strong>3 resolved, 0 added</strong>, one retained
+        (<code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code>,
+        outside this node's fence). <code>reckon/crew/promotion.py</code> is not edited, and
+        <code>test_crew_promotion.py</code> with
+        <code>test_promotion_never_amends_its_commit.py</code> pass whole at the head:
+        55 passed.</p>
+        <p>Receipts: <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-tests-find-the-landing-commit">the anchored evidence</a>
+        retains the reproduction, both cohort arms and the id delta. Independent merged
+        verification and followup closure remain coordinator-owned.</p>
+      </aside>
     </section>
 
     <section id="s2" data-reckon="section">
