@@ -708,6 +708,29 @@
       <code>docs/figures/a-crew-process-ends-with-its-owner/attempt_supervision_sequence.svg</code>.</p>
     </div>
 
+    <div data-reckon="landing" data-node="stall-clock-starts-at-the-attempt" data-when="2026-09-25">
+      <h3>Landing record &mdash; a resumed run's stall clock starts at its attempt</h3>
+      <p>Commit <code>40102f8b</code> caps a run's quiet time in
+      <code>_run_stream_quiet_seconds</code> at the age of the attempt now running, read from the
+      pointer's <code>attempt_started_at</code> or, for a pointer that predates the field, from
+      the run directory's current <code>attempt.json</code>. Quiet time is the earlier of the
+      stream's silence and that age, so a resume or redispatch cannot inherit its superseded
+      attempt's silence. An attempt at least as old as its last stream record gains nothing from
+      the floor and still stalls at its measured age; a run with no attempt clock reads the
+      stream alone, unchanged.</p>
+      <p>The reported defect reproduces: with a 1919-second-old stream and an attempt started 30
+      seconds before now, the run classified <code>stalled</code> though the live attempt means it
+      is working. After the change it classifies <code>working</code>, while the same silence under
+      an attempt at or before the last stream record still classifies <code>stalled</code>. The
+      focused gate ran <strong>116 passed</strong> on
+      <code>40102f8b</code>; base <code>311bfc62</code> runs the same four regression suites at
+      <strong>112 passed</strong>, so the added failure count is zero. The declared negative
+      control drops the attempt start and the freshly resumed case fails, exit 1. Full record:
+      <code>a-crew-process-ends-with-its-owner-landed.html#s10-stall-clock-starts-at-the-attempt</code>;
+      figure:
+      <code>docs/figures/a-crew-process-ends-with-its-owner/stall_clock_starts_at_the_attempt.svg</code>.</p>
+    </div>
+
     <h2 id="s11">&sect;11 &mdash; A live producer reads only what changed since its last poll</h2>
     <p><strong>The defect.</strong> &sect;3 ends a producer that nobody uses. &sect;4 stops
     whole-tree <code>git status</code> walks. Neither covers a producer that is legitimately
