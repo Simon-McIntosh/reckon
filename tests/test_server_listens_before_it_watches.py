@@ -4,7 +4,8 @@ Arming a tree's change watch walks it, and a walk of a shared-filesystem tree
 can take seconds. The served process must answer on its port throughout that
 walk, so the fleet watch arms one tree at a time on its own thread while the
 port serves. These cases measure the port's answer time against the arming
-time by patching watch construction to take a fixed segment per tree.
+time by patching watch construction to hold each tree open until the case
+releases it, so the open arming window is observed rather than waited out.
 """
 
 from __future__ import annotations
@@ -23,10 +24,14 @@ import pytest
 from reckon import serve
 
 _MOUNT_COUNT = 3
-_ARM_SECONDS_PER_TREE = 5.0
 _ANSWER_WITHIN_S = 2.0
 _ARMED_WITHIN_S = 20.0
 _POLL_S = 0.05
+
+# A tree's patched construction waits for the case to release it; each wait is
+# bounded so a case that never releases cannot hang the suite, and the bound is
+# well past the arming bound so it never masks a genuine arming failure.
+_RELEASE_WAIT_S = 30.0
 
 
 def _free_port() -> int:
@@ -78,8 +83,23 @@ class _ServedEntryPoint:
         self.armed: list[Path] = harness["armed"]
         self.mounts: dict[str, Path] = harness["mounts"]
         self._servers: list = harness["servers"]
+        self._arming_started: threading.Event = harness["arming_started"]
+        self._release_arming: threading.Event = harness["release_arming"]
+
+    def await_arming_started(self, timeout: float) -> bool:
+        """True once a tree's watch construction has begun and is held open."""
+
+        return self._arming_started.wait(timeout)
+
+    def release_arming(self) -> None:
+        """Let every held tree's watch construction proceed. Idempotent."""
+
+        self._release_arming.set()
 
     def stop(self) -> None:
+        # Release any tree still held, so the arming thread is not left blocked
+        # on a wait the case never reached.
+        self._release_arming.set()
         for server in self._servers:
             server.shutdown()
             server.server_close()
@@ -90,11 +110,12 @@ class _ServedEntryPoint:
 
 @pytest.fixture()
 def served_entry_point(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Launch the served entry point with a slow (patched) watch construction.
+    """Launch the served entry point with a patched, held watch construction.
 
-    ``_ProjectChangeWatch`` construction is patched to take
-    ``_ARM_SECONDS_PER_TREE`` per tree and to record every root it arms, so a
-    process that binds only after arming every tree is measured as such.
+    ``_ProjectChangeWatch`` construction is patched to signal that arming has
+    begun and then wait, bounded, for the case to release it, recording every
+    root it arms. So a process that binds only after arming every tree is
+    measured as such, while the open arming window stays open until observed.
     """
 
     config_home = tmp_path / "config"
@@ -118,10 +139,13 @@ def served_entry_point(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(serve.Handler, "_port", getattr(serve.Handler, "_port", 0))
 
     armed: list[Path] = []
+    arming_started = threading.Event()
+    release_arming = threading.Event()
     real_watch = serve._ProjectChangeWatch
 
     def slow_watch(tree: Path):
-        time.sleep(_ARM_SECONDS_PER_TREE)
+        arming_started.set()
+        release_arming.wait(_RELEASE_WAIT_S)
         watch = real_watch(tree)
         armed.append(watch.root)
         return watch
@@ -150,6 +174,8 @@ def served_entry_point(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         "armed": armed,
         "mounts": mounts,
         "servers": servers,
+        "arming_started": arming_started,
+        "release_arming": release_arming,
     }
     entry_point = _ServedEntryPoint(harness)
     try:
@@ -163,15 +189,23 @@ def test_mounts_answer_before_the_watch_is_armed(served_entry_point) -> None:
     launched = time.monotonic()
     entry_point.thread.start()
 
+    # Wait until a tree's watch construction has begun and is held open, so the
+    # answer below is measured against an arming that is genuinely in progress.
+    started = entry_point.await_arming_started(_ANSWER_WITHIN_S)
+    assert started, (
+        f"no tree's watch construction began within {_ANSWER_WITHIN_S} s of "
+        "launch, so the port answered without a watch arming behind it"
+    )
+
     status = _await_answer(entry_point.port, launched, _ANSWER_WITHIN_S)
     assert status == 200, (
         "mounts.json did not answer 200 within 2 s of launch; the port is "
         "bound only after the change watch is built"
     )
 
-    # Arming continues behind the answered port: the first tree takes the
-    # patched 5 s, so an answer inside 2 s rules out an entry point that armed
-    # every tree before serving.
+    # Arming continues behind the answered port: the held tree has not been
+    # armed, so an answer rules out an entry point that armed every tree before
+    # serving.
     assert len(entry_point.armed) < _MOUNT_COUNT, (
         "every tree was already armed when the port answered, so the answer "
         "time did not measure arming on a background thread"
@@ -183,6 +217,13 @@ def test_every_tree_is_armed_within_the_bound(served_entry_point) -> None:
     launched = time.monotonic()
     entry_point.thread.start()
 
+    started = entry_point.await_arming_started(_ANSWER_WITHIN_S)
+    assert started, (
+        f"no tree's watch construction began within {_ANSWER_WITHIN_S} s of "
+        "launch, so there was nothing for the arming bound to measure"
+    )
+    entry_point.release_arming()
+
     deadline = launched + _ARMED_WITHIN_S
     while time.monotonic() < deadline and len(entry_point.armed) < _MOUNT_COUNT:
         time.sleep(_POLL_S)
@@ -190,7 +231,8 @@ def test_every_tree_is_armed_within_the_bound(served_entry_point) -> None:
     armed = {path.resolve() for path in entry_point.armed}
     expected = {path.resolve() for path in entry_point.mounts.values()}
     assert armed == expected, (
-        f"only {len(armed)} of {_MOUNT_COUNT} trees were armed within 20 s"
+        f"only {len(armed)} of {_MOUNT_COUNT} trees were armed within "
+        f"{_ARMED_WITHIN_S} s"
     )
 
 

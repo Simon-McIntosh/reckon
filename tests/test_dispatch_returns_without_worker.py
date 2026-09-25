@@ -7,9 +7,12 @@ spawns no process and must still take its own boundary baseline. Three
 instruments make the measurements mean something:
 
 * a ``git`` shim first on the child processes' ``PATH`` that records the pid
-  that ran each ``status`` call and sleeps one second on it, so the boundary
-  scan over the repository's worktrees costs at least one second per worktree
-  and cannot hide under dispatch's return bound;
+  that ran each ``status`` call and, in the case that measures the return bound,
+  signals and holds every charged call the boundary scan makes under the
+  worktree root until that case releases it. The scan therefore cannot finish
+  inside dispatch's return bound, so the case observes dispatch's return with
+  the scan provably still in progress rather than waiting a fixed cost per
+  worktree for it to finish;
 * a ``sitecustomize`` module on the driver's ``PYTHONPATH`` that parks a
   dispatch process immediately after it has started its supervisor, so a
   signal can be delivered while dispatch is still inside ``crew.dispatch`` —
@@ -70,11 +73,10 @@ PROJECT = "sample"
 STUB_COMMAND = "claude"
 SUPERVISOR_ENTRY = "__supervise__"
 
-# The scan must not fit inside dispatch's return bound, so the repository
-# carries well over thirty worktrees and each status call is charged a full
-# second.
+# The scan crosses one worktree per registered tree, and the repository carries
+# well over thirty so that the scan a case holds open is long enough that a
+# dispatch which waited for it would blow its return bound.
 WORKTREE_COUNT = 30
-SHIM_SLEEP_SECONDS = 1.0
 
 DISPATCH_EXIT_BOUND = 5.0
 MARKER_BOUND = 60.0
@@ -82,9 +84,22 @@ EXIT_RECORD_BOUND = 10.0
 SPAWN_BOUND = 60.0
 DISCARD_BOUND = 60.0
 
-# Every ``git status`` dispatch makes before it returns is charged a second by
-# the shim, so the count of them is also a bound on the seconds dispatch spends
-# in its own pre-return path. The done-when declares four.
+# The driver's own wall bound: dispatch's return bound, plus the time the driver
+# spends importing the package under test before it calls dispatch (reported as
+# ``startup_seconds``), plus fork, exec and output-write slack. Interpreter
+# startup is the driver's cost, not dispatch's, so it is measured and added
+# rather than charged to the return bound; dispatch's own clock is bounded
+# exactly and separately below.
+DRIVER_EXIT_SLACK = 1.5
+
+# The shim holds a charged scan call until the case releases it, polling every
+# 0.02 s for this many polls. The bound is about thirty seconds, so a case that
+# never releases cannot wedge the scan forever.
+SHIM_GATE_WAITS = 1500
+
+# Every ``git status`` dispatch makes before it returns is charged and recorded
+# by the shim, so the count of them bounds the work dispatch does in its own
+# pre-return path. The done-when declares four.
 PRE_RETURN_STATUS_BOUND = 4
 
 # How long the driver stays parked after starting its supervisor, waiting for
@@ -142,6 +157,11 @@ import sys
 import time
 from pathlib import Path
 
+# Taken before the package under test is imported, so the case can subtract the
+# driver's own startup from its wall time and bound dispatch's return on
+# dispatch's clock rather than on the interpreter's.
+_boot = time.monotonic()
+
 payload = json.loads(Path(sys.argv[1]).read_text())
 os.environ["RECKON_HOME"] = payload["config"]
 os.environ["PATH"] = payload["bin_dir"] + os.pathsep + os.environ.get("PATH", "")
@@ -177,6 +197,7 @@ Path(payload["out_path"]).write_text(
         {
             "run_id": record.get("run_id"),
             "pid": record.get("pid"),
+            "startup_seconds": started - _boot,
             "dispatch_seconds": elapsed,
             "reckon_file": reckon.__file__,
         }
@@ -235,9 +256,27 @@ for a in "$@"; do
   prev="$a"
 done
 if [ "$charge" = "1" ]; then
-  printf '%s\\t%s\\t%s\\t%s\\n' "$PPID" "$(date +%s.%N)" "$PWD" "$*" \\
+  here=$(pwd)
+  printf '%s\\t%s\\t%s\\t%s\\n' "$PPID" "$(date +%s.%N)" "$here" "$*" \\
     >> "$RECKON_SHIM_LOG"
-  sleep "$RECKON_SHIM_SLEEP"
+  # A call run from under the worktree root is the boundary scan's: the scan
+  # charges one call per registered tree, and dispatch's own pre-return call
+  # runs from the repository root. Signal that the scan is in progress and hold
+  # it until the case releases it, so the case observes dispatch's return while
+  # the scan is still running rather than waiting a fixed cost per worktree.
+  if [ -n "$RECKON_SHIM_SCAN_ROOT" ]; then
+    case "$here" in
+      "$RECKON_SHIM_SCAN_ROOT"/*)
+        : > "$RECKON_SHIM_SCAN_SIGNAL"
+        waited=0
+        while [ ! -e "$RECKON_SHIM_SCAN_RELEASE" ]; do
+          [ "$waited" -ge "$RECKON_SHIM_SCAN_WAITS" ] && break
+          sleep 0.02
+          waited=$((waited + 1))
+        done
+        ;;
+    esac
+  fi
 fi
 exec "$RECKON_SHIM_GIT" "$@"
 """
@@ -435,6 +474,12 @@ class _Run:
         self.pointer: dict[str, Any] | None = None
         self.stdout_path = home / f"driver-{tag}.out"
         self.stderr_path = home / f"driver-{tag}.err"
+        # The shim writes ``scan_signal`` when the boundary scan's first charged
+        # call runs under the worktree root, and holds that call until
+        # ``scan_release`` exists. A case that starts no gated scan never sees
+        # either file.
+        self.scan_signal = home / "scan-gate" / "scanning"
+        self.scan_release = home / "scan-gate" / "release"
 
     @property
     def marker(self) -> Path:
@@ -442,6 +487,15 @@ class _Run:
 
     def marker_present(self) -> bool:
         return self.marker.exists()
+
+    def scan_started(self) -> bool:
+        """True once the shim has signalled a charged scan call is in progress."""
+        return self.scan_signal.exists()
+
+    def release_scan(self) -> None:
+        """Let the held boundary scan finish. Idempotent."""
+        self.scan_release.parent.mkdir(parents=True, exist_ok=True)
+        self.scan_release.touch()
 
     def elapsed(self) -> float:
         return time.monotonic() - self.started
@@ -535,6 +589,7 @@ def _start_dispatch(
     marker_dir: Path,
     stub_sleep: int,
     hold: bool,
+    scan_gate: bool = False,
     config_data: dict[str, Any] | None = None,
 ) -> _Run:
     home = _case_home(host, tag)
@@ -550,10 +605,19 @@ def _start_dispatch(
         + os.environ.get("PATH", ""),
         "PYTHONPATH": f"{host['bin_dir']}{os.pathsep}{PACKAGE_ROOT}",
         "RECKON_SHIM_LOG": str(home / f"shim-{tag}.log"),
-        "RECKON_SHIM_SLEEP": str(SHIM_SLEEP_SECONDS),
         "RECKON_SHIM_GIT": host["real_git"],
         "RECKON_WATCH_ARMING": "off",
     }
+    if scan_gate:
+        # The shim holds each charged call the boundary scan makes under the
+        # worktree root until this case releases it, so the case can observe
+        # dispatch's return while the scan is still in progress. Dispatch's own
+        # pre-return call runs from the repository root and is not held.
+        (home / "scan-gate").mkdir(parents=True, exist_ok=True)
+        environment["RECKON_SHIM_SCAN_ROOT"] = str(host["base"] / "worktrees")
+        environment["RECKON_SHIM_SCAN_SIGNAL"] = str(home / "scan-gate" / "scanning")
+        environment["RECKON_SHIM_SCAN_RELEASE"] = str(home / "scan-gate" / "release")
+        environment["RECKON_SHIM_SCAN_WAITS"] = str(SHIM_GATE_WAITS)
     payload = {
         "repo": str(host["repo"]),
         "config": str(home),
@@ -689,16 +753,24 @@ def _tail(path: Path, limit: int = 2000) -> str:
 def test_dispatch_returns_once_its_supervisor_runs(
     host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Case one: no signal, a five-second return, and a scan that outlasts it.
+    """Case one: a five-second return, and a scan held open across it.
 
     The stub writes its marker at once, so the only thing between dispatch's
-    start and the marker is the supervisor's own work.
+    start and the marker is the supervisor's own work. The shim holds the
+    supervisor's boundary scan until this case releases it, so the return bound
+    is measured against a scan that is still in progress rather than against a
+    fixed wait for a slow scan to finish.
     """
     marker_dir = tmp_path / "markers"
     marker_dir.mkdir()
     real_before = _snapshot(REAL_LIVE_DIR)
     run = _start_dispatch(
-        host, tag="returns", marker_dir=marker_dir, stub_sleep=0, hold=False
+        host,
+        tag="returns",
+        marker_dir=marker_dir,
+        stub_sleep=0,
+        hold=False,
+        scan_gate=True,
     )
     outcome: dict[str, Any] = {"case": "dispatch returns once its supervisor runs"}
     exit_after = None
@@ -716,10 +788,14 @@ def test_dispatch_returns_once_its_supervisor_runs(
         assert output is not None, (
             "the dispatch process returned no JSON, so it produced no run id"
         )
-        assert exit_after <= DISPATCH_EXIT_BOUND, (
+        outcome["driver_process_pid"] = run.process.pid
+        startup = float(output.get("startup_seconds") or 0.0)
+        outcome["driver_startup_seconds"] = round(startup, 3)
+        assert exit_after <= DISPATCH_EXIT_BOUND + startup + DRIVER_EXIT_SLACK, (
             f"the dispatch process was alive {exit_after:.3f} s after its start, "
-            f"past the {DISPATCH_EXIT_BOUND} s bound, so it waited on something "
-            "that belongs to the supervisor"
+            f"{startup:.3f} s of it importing the package under test, past the "
+            f"{DISPATCH_EXIT_BOUND} s bound, so it waited on something that "
+            "belongs to the supervisor"
         )
         outcome["dispatch_seconds"] = round(float(output["dispatch_seconds"]), 3)
         assert float(output["dispatch_seconds"]) <= DISPATCH_EXIT_BOUND, (
@@ -749,22 +825,32 @@ def test_dispatch_returns_once_its_supervisor_runs(
             "boundary or spawn the worker"
         )
 
-        assert not run.marker.exists(), (
-            "the stub's marker already existed when dispatch returned, so the "
-            "scan cannot have been slower than dispatch's own return"
+        # The scan signals from the first charged call it makes under the
+        # worktree root and is held there. Awaiting that signal proves the scan
+        # is in progress; the worker is spawned only after the scan completes,
+        # so it cannot have run while the scan is held.
+        signalled = _wait_for(run.scan_started, timeout=SPAWN_BOUND)
+        outcome["scan_signalled"] = bool(signalled)
+        assert signalled, (
+            f"the boundary scan signalled no progress signal within {SPAWN_BOUND} "
+            "s, so dispatch's return was not measured against a scan this case "
+            f"holds open. driver stderr: {outcome['driver_stderr_tail']!r}"
         )
+        assert not run.marker.exists(), (
+            "the stub's marker already existed while the boundary scan was still "
+            "held, so the worker was spawned without waiting for the scan the "
+            "shim holds open"
+        )
+
+        # Release the held scan; the supervisor finishes it, takes the boundary,
+        # and spawns the worker.
+        run.release_scan()
         marker = _wait_for(run.marker_present, timeout=MARKER_BOUND)
         outcome["marker_after_seconds"] = round(run.elapsed(), 3)
         assert marker, (
             f"the stub wrote no marker within {MARKER_BOUND} s of dispatch's "
             "start, so the supervisor neither spawned nor kept a worker. driver "
             f"stderr: {outcome['driver_stderr_tail']!r}"
-        )
-        slow_enough = WORKTREE_COUNT * SHIM_SLEEP_SECONDS
-        assert outcome["marker_after_seconds"] >= slow_enough, (
-            f"the marker appeared {outcome['marker_after_seconds']} s in, sooner "
-            f"than the {slow_enough} s the {WORKTREE_COUNT} charged status calls "
-            "must cost, so the scan was not the slow one this case declares"
         )
 
         # The pre-return path's own charged calls: the shim records the pid that
@@ -828,6 +914,9 @@ def test_dispatch_returns_once_its_supervisor_runs(
             f"scanned {captured.get('roots')!r} where the snapshot names {trees!r}"
         )
     finally:
+        # Release any scan still held, so a case that failed before its release
+        # does not leave the shim waiting out its own bound.
+        run.release_scan()
         _finish(run, outcome)
         host["outcomes"].append(outcome)
 
