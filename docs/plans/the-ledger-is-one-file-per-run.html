@@ -243,6 +243,62 @@
         <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-scope">the
         promotion evidence</a>.</p>
       </aside>
+<aside id="promotion-refuses-a-base-commit">
+        <h3>A promotion cites only the work the run made beyond its base</h3>
+        <p><strong>2026-09-25.</strong> A row records what a run made beyond the base it
+        was dispatched against, and neither half of that was checked. A citation of the
+        base itself, or of any commit the base already carries, satisfies every ancestry
+        question a later sweep asks of the row, so a run whose work was never committed
+        reads as landed; and a promotion citing nothing at all records the run complete
+        while its declared deliverable exists in no commit, with the release step then
+        taking the worktree that holds it. <code>_require_commits_beyond_base</code> runs
+        in <code>complete()</code> beside the gate-evidence guard and ahead of every
+        write, so a refused citation leaves no ledger row, no promotion commit and no
+        pointer removed. Both sides resolve through <code>_commit_canonical_id</code>, so
+        an abbreviated spelling of the base is still caught; a citation that resolves
+        nowhere is left to the guard that names the foreign repository; and an unreadable
+        tree or unresolvable base leaves the guard silent, because unmeasured is not a
+        verdict.</p>
+        <p><strong>Only the run's own dirt is charged.</strong> The commitless half refuses
+        uncommitted paths the run declared — its node write paths, plus a fresh manifest's
+        in-repo changed paths — because a shared checkout and a fleet worktree both carry
+        other sessions' uncommitted work. The two existing cases that hold dirty trees stay
+        green: the release case whose worker worktree holds an untracked file the node
+        never declared, and the landing case that must not stage an unrelated dirty path.
+        The refusal names the uncommitted paths and leaves the work where it is, so a run
+        that is refused can commit and cite rather than lose its tree.</p>
+        <figure>
+          <img src="/reckon/figures/the-ledger-is-one-file-per-run/citation-ancestry.svg"
+               alt="A commit line from an earlier commit through the base to the run's two commits. Dashed arrows mark two refused citations, of the earlier commit and of the base itself; a solid arrow marks an accepted citation of the run's tip. A lower panel states that a promotion citing no commit over a tree holding the run's declared work is refused naming the paths, while an undeclared stray path is not charged to the run.">
+          <figcaption>
+            Three citations of one commit graph: the base and everything the base already
+            carries are refused as not the run's work, and the run's own commit is accepted.
+            Below, the commitless promotion is refused only for dirt the run declared.
+          </figcaption>
+        </figure>
+        <p><strong>Measured.</strong> Six synthesised-repository cases in
+        <code>tests/test_promotion_refuses_a_base_commit.py</code>: the base citation is
+        refused naming the cited sha and the base, with no ledger row, no commit written
+        and the pointer retained; a commit behind the base, and an abbreviated spelling of
+        the base, are refused too; the commitless run whose declared
+        <code>in_scope.txt</code> is uncommitted is refused naming it, with the work left
+        in the tree; an undeclared stray is not charged; and a citation beyond the base
+        still promotes, recording its base and its promoted revision. Four of the six fail
+        at <code>f64f60ee</code>, the two promotion cases passing on both arms. The
+        promotion cohort — twenty files matching <code>tests/test_*promotion*.py</code>
+        plus <code>tests/test_refused_promotion_leaves_no_trace.py</code>, 159 tests —
+        moves from 4 failed, 155 passed at <code>f64f60ee</code> to 1 failed, 158 passed at
+        the head: the four base-arm failures are the new cases, and one failure is added,
+        <code>tests/test_crew_promotion.py::test_complete_manifest_with_changed_paths_and_commit_promotes</code>,
+        whose fixture records the commit it cites as the run's own base
+        (<code>base=commit</code>) where every sibling case in that file passes the true
+        base. That file is outside this change's write scope, so the delta is carried to
+        the coordinator rather than repaired here, and the candidate repair is the
+        fixture's base set to the cited commit's parent.</p>
+        <p>Receipts: <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-refuses-a-base-commit">the anchored evidence</a>
+        retains both cohort arms, the header-lined logs and the declared negative control.
+        Independent merged verification and followup closure remain coordinator-owned.</p>
+      </aside>
     </section>
 
     <section id="s2" data-reckon="section">

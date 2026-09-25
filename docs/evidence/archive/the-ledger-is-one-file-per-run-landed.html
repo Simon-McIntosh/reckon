@@ -596,6 +596,77 @@ worker's own commit, which `reckon crew recover` reports as the run's next actio
       receipt and closure remain coordinator work; the section and the driving followup remain open.</p>
     </section>
 
+<section id="promotion-refuses-a-base-commit">
+      <h2>Promotion refuses a citation that is not the run's own work</h2>
+      <p><strong>2026-09-25.</strong> A run's ledger row records what the run made beyond
+      its base, and neither half of that assertion was checked. Two states reached the
+      ledger that should not have:</p>
+      <ul>
+        <li><strong>A citation of the base, or of anything behind it.</strong> The base is
+        an ancestor of itself and of nothing the run made, so citing it satisfies every
+        ancestry question a later sweep asks of the row. A run whose work was never
+        committed therefore reads as landed, and a reader has no way to tell from the row
+        that nothing the run did exists in any commit.</li>
+        <li><strong>A commitless promotion over a tree still holding the run's declared
+        work.</strong> The run is recorded complete, and the release step then takes the
+        worktree that holds the only copy of the deliverable.</li>
+      </ul>
+      <p><strong>Repair.</strong> <code>_require_commits_beyond_base</code> is called in
+      <code>complete()</code> immediately after <code>_require_gate_evidence</code> and
+      before every write, so a refusal lands with no ledger row, no promotion commit and
+      no pointer removed. It resolves both the base and each cited revision through
+      <code>_commit_canonical_id</code> and refuses a citation that equals the base, then
+      refuses one the base already contains
+      (<code>_revision_is_ancestor</code>: not a commit the run made beyond its base). A
+      citation that resolves nowhere is skipped so the guard that names the foreign
+      repository keeps its message; an unreadable tree or an unresolvable base leaves the
+      guard silent, because unmeasured is not a verdict. When nothing is cited at all,
+      <code>_uncommitted_paths</code> reads the tree's own <code>git status --porcelain</code>
+      and <code>_declared_repository_roots</code> narrows it to what the run declared — its
+      node write paths, plus a fresh manifest's in-repo changed paths — so a shared
+      checkout or a fleet worktree carrying other sessions' dirt is not charged to this
+      run, and the refusal names the paths it holds.</p>
+      <p><strong>Evidence at <code>f64f60ee</code> + the working tree under test.</strong>
+      The declared negative control is the removal of the ancestry refusals. Its red log's
+      first line is the declaration verbatim; the base-sha case fails
+      <code>DID NOT RAISE CrewError</code>, the behind-base and abbreviated cases fail
+      with it, and the three cases that do not exercise the ancestry — the uncommitted
+      refusal, the undeclared stray and the ordinary promotion — stay green, so the red
+      is caused by the removed check and not by the mutation at large.</p>
+      <p><strong>Cohort.</strong> Twenty files (<code>tests/test_promotion_*.py</code>,
+      <code>tests/test_crew_promotion.py</code>,
+      <code>tests/test_crew_promotion_requires_review.py</code>,
+      <code>tests/test_crew_promotion_scope.py</code>,
+      <code>tests/test_refused_promotion_leaves_no_trace.py</code>), 159 tests, run with
+      the root environment's interpreter and the tree under test on
+      <code>PYTHONPATH</code> and as the working directory, so the imported
+      <code>reckon</code> is the tree named in each log's header:</p>
+      <table>
+        <tr><th>arm</th><th>revision</th><th>result</th><th>failures</th></tr>
+        <tr><td>base</td><td><code>f64f60ee</code>, scratch tree via <code>git archive</code>, new test copied in</td><td>4 failed, 155 passed, 127.55 s</td><td>the four refusal cases of the new file</td></tr>
+        <tr><td>head</td><td><code>f64f60ee</code> + the change</td><td>1 failed, 158 passed, 135.05 s</td><td><code>test_complete_manifest_with_changed_paths_and_commit_promotes</code></td></tr>
+      </table>
+      <p><strong>The one added failure, and where it is.</strong>
+      <code>tests/test_crew_promotion.py::test_complete_manifest_with_changed_paths_and_commit_promotes</code>
+      writes its pointer with <code>base=commit</code> and then cites that same commit, so
+      the fixture records the cited commit as the run's own base. Every sibling case in
+      that file passes the true base to the pointer. It is the state this change exists to
+      refuse, and its file is outside the change's write scope, so it is carried to the
+      coordinator as a follow-on: the fixture's base set to the cited commit's parent, one
+      argument, after which the case exercises the same manifest guard it was written for.
+      No other pre-existing case changed verdict.</p>
+      <p><strong>Receipts</strong> under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T201256753388-promotion-refuses-a-base-commit/</code>:
+      <code>logs/cohort-base.log</code>, <code>logs/cohort-head.log</code>,
+      <code>logs/new-test-first-run.log</code>, <code>logs/negative-control.log</code>,
+      and the mutation applied by <code>remove-base-descendant-check.py</code>. Each
+      cohort log's header names its revision, tree, command, the module under test as
+      imported and the resolved working directory.</p>
+      <p><strong>Boundary.</strong> This section records the change inside its own write
+      scope. The added failure above is outside it and is not repaired here; merged
+      verification, the coordinator's fixture repair and followup closure remain
+      coordinator work.</p>
+    </section>
   </main>
 </body>
 </html>
