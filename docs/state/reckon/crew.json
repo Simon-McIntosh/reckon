@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T12:48:12",
+  "updated": "2026-09-25T12:50:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -422358,6 +422358,365 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T072403409541-sprint-liveness-from-live-crews",
+        "plan": "a-sprint-is-live-while-a-crew-works-it",
+        "section": "\u00a72",
+        "node": "sprint-liveness-from-live-crews",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2399,
+                "cached_input_tokens": 835439,
+                "input_tokens": 837840,
+                "output_tokens": 1136,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 838976,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+            "session_id": "s23-coord"
+          },
+          "done_when": "reckon/sprint_liveness.py exposes sprint_liveness(project, docs_dir, live_records) returning, per sprint id, live (true when at least one live pointer serves a plan whose plan-sprint is that sprint and is classified working, starting or dispatched through the existing classify_pointer and _watch_snapshot state mapping), live_runs, live_sessions and last_activity_at, plus held counts for blocked or unpromoted pointers, composing classify_pointer (reckon/crew/recovery.py:3066, imported not edited) and list_live (reckon/crew/runs.py:460) per reuse map Node A1 at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s23-coord/s24-reuse-map/reuse-map.md; tests/test_sprint_liveness.py builds a synthetic config home and docs tree with live pointers for plans in two sprints and a terminal pointer for a third and asserts exactly those two read live true with the right run and session counts and the third reads false, and asserts no file under the synthetic docs tree or config home changes mtime during the read; the declared mutation (derive liveness from the stored sprint status instead of pointers) is applied and the test observed to fail with its log recorded; no existing file is edited",
+          "estimated_hours": null,
+          "goal": "add reckon/sprint_liveness.py that derives each sprint's liveness from the project's live crew pointers",
+          "id": "sprint-liveness-from-live-crews",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T07:24:04Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 15,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 10,
+            "mean_context": 113333,
+            "observed_at": "2026-09-25T07:23:49Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T072403409541-sprint-liveness-from-live-crews/manifest.md",
+          "negative_control": "derive liveness from the stored sprint status",
+          "plan": "a-sprint-is-live-while-a-crew-works-it",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/sprint_liveness.py",
+            "tests/test_sprint_liveness.py",
+            "docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html",
+            "docs/figures/a-sprint-is-live-while-a-crew-works-it",
+            "docs/plans/a-sprint-is-live-while-a-crew-works-it.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-no-zombies",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T07:24:20Z",
+        "completed_at": "2026-09-25T10:20:16.230Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 10451,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 10556,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "4079c4d2099966105269cb6df7a2cda93a5ac002",
+        "commits": [
+          "6c92861d692b1dcdbfe1439e1057986f3bf71c0e",
+          "d92277ef04ecc16b9414eaf80c138f9d9a3aaf0b",
+          "4b3f2ca36ebd8ccb75e80fdaf7511bbde89a6e2a",
+          "739175edbba638760822fa1d71f1229d2bdbee26"
+        ],
+        "changed_lines": {
+          "added": 481,
+          "removed": 1,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_sprint_liveness.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T072403409541-sprint-liveness-from-live-crews/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "reckon.sprint_liveness derives a sprint's liveness from live pointers classified working or dispatched and never reads the stored status; a sprint stored active through the project's own writer with only a terminal pointer reads not live; 3 passed; reviews 84 then 89 with no findings",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T072403409541-sprint-liveness-from-live-crews/manifest.md",
+        "scope_changed": false,
+        "session_id": "46bccfde-6823-4441-8700-73ff59db0bf9",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8625632,
+            "input_tokens_cumulative": 8625632,
+            "output_tokens": 34277,
+            "output_tokens_cumulative": 34277,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T10:20:16.230Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2700,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "starting",
+              "elapsed_seconds": 1188,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:00:43Z",
+                "last_record_type": "turn.completed",
+                "launched_at": "2026-09-25T06:42:22Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T064039051367-read-latency-profile",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 320,
+                "worker_pid": 3758806
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1406,
+              "log_fresh": false,
+              "manifest_commits": [
+                "436c75f32d918cad81349350ff423c86f53378e4",
+                "37c8988ae55d21dc036f8ecc0f9b24b7c61a1c62"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "652f5e7902b7bc3198408de072f1acf11ba1bdd18e62d41f047cfe6ac0d9ecc0",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T064039051367-read-latency-profile/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan reckon-reads-answer-in-seconds --section '\u00a72' --role review --spec-level exact --node review-of-read-latency-profile --goal 'attach an independent review to run r-20260925T064039051367-read-latency-profile' --done-when 'the review for r-20260925T064039051367-read-latency-profile stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T064039051367-read-latency-profile.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T064039051367-read-latency-profile.at-37c8988ae55d21dc036f8ecc0f9b24b7c61a1c62.json --time-budget 45m --session s23-coord --allow-unreconciled-runs --backend codex",
+              "node": "read-latency-profile",
+              "phase": "starting",
+              "plan": "reckon-reads-answer-in-seconds",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T064039051367-read-latency-profile",
+              "session": "s23-coord",
+              "terminal_age_seconds": 1458,
+              "terminal_at": "2026-09-25T06:59:50Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/read-latency-profile"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 17,
+            "fit": 18,
+            "goal_fidelity": 18,
+            "scope_discipline": 18
+          },
+          "absent": [],
+          "total": 89
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 19522141,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 4223.193,
+          "generated_tokens": 108710,
+          "generation_seconds": 4200.408,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 22.785,
+          "peak_input_tokens": 166475,
+          "tokens_per_second": 25.88,
+          "wall_tokens_per_second": 25.74
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/sprint-liveness-from-live-crews",
+          "session_id": "46bccfde-6823-4441-8700-73ff59db0bf9",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T10:20:16.230Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T07:55:39Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T07:25:56Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T072403409541-sprint-liveness-from-live-crews",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 10415,
+          "worker_pid": 3951679
+        },
+        "promoted_revision": "739175edbba638760822fa1d71f1229d2bdbee26",
+        "impl_move": {
+          "plan": "a-sprint-is-live-while-a-crew-works-it",
+          "at_dispatch": null,
+          "at_complete": 0.4,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_sprint_liveness.py"
+          ],
+          "declaration": "derive liveness from the stored sprint status",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T072403409541-sprint-liveness-from-live-crews/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T072403409541-sprint-liveness-from-live-crews/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T08:04:04.220601+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T07:24:04Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 15,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 10,
+          "mean_context": 113333,
+          "observed_at": "2026-09-25T07:23:49Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 100.0,
+        "orientation_input_tokens": 3830279.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -422670,6 +423029,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2782
+    "_version": 2783
   }
 }
