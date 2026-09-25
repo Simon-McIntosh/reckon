@@ -370,6 +370,58 @@
       reported so the control is known to have measured the mutated copy.
     </p>
 
+    <h3 id="s3-landed-stop-before-spawn">Landed &mdash; node <code>stop-before-spawn-spawns-nothing</code></h3>
+    <p>
+      <strong>A stop delivered before the spawn spawns no worker.</strong> The per-run
+      supervisor leads its own process group and installed <code>SIG_IGN</code> for SIGTERM
+      and SIGHUP, so that a <code>crew stop</code> &mdash; a signal to that group, which must
+      also take the worker down &mdash; would not take the supervisor down before it recorded
+      the exit the stop caused. Inside the pre-spawn tree snapshot the ignore discarded the
+      stop instead: the supervisor survived, the snapshot finished, and a stop that read as
+      done spawned its worker anyway. The supervisor now records a stop in a handler and reads
+      the flag once the snapshot returns. A stop that arrived before the worker existed
+      abandons the launch and writes the one launch-failure
+      <code>exit.json</code> (<code>worker_pid: null</code>, <code>ended_during: launch</code>);
+      a stop delivered after the spawn still ends the worker while the supervisor survives to
+      record it.
+    </p>
+    <p>
+      <strong>Gate.</strong> <code>tests/test_stop_before_spawn_spawns_nothing.py</code>, one
+      case, <strong>1 passed in 2.17 s</strong> at revision <code>d47c6a70</code>, with the
+      project interpreter <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code> in a
+      scratch tree cut from that revision. The case holds the supervisor inside a stubbed
+      snapshot: a <code>git</code> shim first on the child processes' <code>PATH</code> signals
+      a marker and waits for a release file on its first charged <code>git status</code> under
+      the worktree root, so the supervisor is provably inside the pre-spawn window rather than
+      merely slow. It then sends exactly what <code>crew stop</code> sends &mdash; SIGTERM to
+      the run's process group &mdash; releases the snapshot, and requires no
+      <code>worker.json</code>, no stub worker pid, a dead supervisor, and an
+      <code>exit.json</code> reading <code>worker_pid: null</code> and
+      <code>ended_during: launch</code>. The repository and the configuration home are
+      throwaway, and the real live-pointer directory is asserted unchanged.
+    </p>
+    <p>
+      <strong>Ignoring SIGTERM inside the pre-spawn snapshot makes the no-worker assertion
+      fail.</strong> A scratch tree at the same revision, with the handler replaced by
+      <code>signal.SIG_IGN</code> in both places, fails the gate on
+      <code>assert not (run_directory / "worker.json").exists()</code> with a worker spawned
+      after the stop. The mutated copy is a full package and test tree and the gate reports the
+      <code>reckon_file</code> it measured under the scratch root, so the control is known to
+      have measured the mutated copy.</p>
+    <p>
+      <strong>No failures added over the dispatch and supervisor test files.</strong>
+      <code>tests/test_dispatch_returns_without_worker.py</code> and
+      <code>tests/test_fleet_supervisor.py</code> are the same 10 passed at base
+      <code>6daecfc1</code> and, with this gate's case added, 11 passed at head
+      <code>d47c6a70</code>. One <code>test_fleet_supervisor</code> session case failed once at
+      head in the first pass and did not reproduce: 6 of 6 isolated runs passed, 3 at each
+      revision. That case reads the zellij stub's log after the reader's own log line rather
+      than after the stub's write, so the read can precede the write; the failure is a timing
+      flake in that test, not a failure added over base. Logs
+      <code>base-suite.log</code>, <code>after-suite-rerun.log</code>, <code>gate-head.log</code>
+      and <code>negative-control-pre-spawn-stop.log</code> in the run directory.
+    </p>
+
     <h2 id="s4">&sect;4 &mdash; The skill stops telling coordinators to background a dispatch</h2>
     <p>Once &sect;3 lands, a dispatch is an ordinary short command. Change every instruction that
     says to background a CLI dispatch or to yield after it, so a coordinator runs it in the

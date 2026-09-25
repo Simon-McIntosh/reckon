@@ -5269,12 +5269,13 @@ def _start_supervisor(spec_path: Path, run_directory: Path, run_id: str) -> int:
 
 
 def _worker_default_signals() -> None:
-    """Reset the signals the supervisor ignores back to default in the worker.
+    """Give the worker the default signal dispositions the supervisor changed.
 
-    An ignored disposition is inherited across ``exec``, so a worker spawned
-    after the supervisor installs SIG_IGN for SIGTERM would ignore the stop
-    signal that ends it. The worker therefore starts with the default handlers
-    its launch would otherwise have had.
+    The supervisor installs its own handlers for SIGTERM and SIGHUP, and the
+    worker is spawned into the supervisor's signal environment. The worker must
+    end on the group signal that stops it rather than carry a handler the
+    supervisor needed for itself, so it starts with the defaults its launch
+    would otherwise have had.
     """
     signal.signal(signal.SIGTERM, signal.SIG_DFL)
     signal.signal(signal.SIGHUP, signal.SIG_DFL)
@@ -5297,9 +5298,9 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
             stderr=stderr,
             start_new_session=False,
             # The worker must start with the default signal dispositions rather
-            # than inheriting the supervisor's ignores: SIG_IGN survives exec, so
-            # a stop aimed at the group would pass through it. This runs in the
-            # supervisor's single-threaded child as it starts.
+            # than the supervisor's own handlers, so a stop aimed at the group
+            # ends the worker. This runs in the supervisor's single-threaded
+            # child as it starts.
             preexec_fn=_worker_default_signals,  # noqa: PLW1509
         )
     return process.pid
@@ -5369,14 +5370,37 @@ def _supervisor_exit_record(
     return record
 
 
+def _record_stop_before_spawn() -> threading.Event:
+    """Install the supervisor's stop handler and return the flag it sets.
+
+    The supervisor starts in its own session, so ``crew stop`` reaches it as a
+    group signal — the same signal that must end the worker. It cannot take the
+    default disposition for SIGTERM or SIGHUP, or a stop delivered after the
+    spawn would take the supervisor down before it recorded the exit the stop
+    caused. It cannot ignore them either: an ignored stop is reported as done
+    while the supervisor goes on to spawn that stop's worker. The handler
+    records the request and lets the supervisor finish its snapshot, and the
+    pre-spawn launch is abandoned when the flag is set.
+    """
+    requested = threading.Event()
+
+    def record(_signum: int, _frame: Any) -> None:
+        requested.set()
+
+    signal.signal(signal.SIGTERM, record)
+    signal.signal(signal.SIGHUP, record)
+    return requested
+
+
 def _run_supervisor(spec_path: Path) -> int:
     """Take the snapshot, launch the worker, collect its exit, and stop.
 
     The supervisor holds the worker's parentage for the whole run, so it is the
     only process that can collect the exit a reparented worker would otherwise
-    hand to init. It ignores SIGTERM and SIGHUP so that a ``crew stop`` — a
-    group signal that must reach the worker — does not take it down before it
-    has written the exit the stop caused.
+    hand to init. A stop is recorded rather than ignored or acted on directly:
+    the supervisor survives one so it can write the exit a post-spawn stop
+    caused, and it abandons the launch when the stop arrived before the worker
+    existed.
     """
     try:
         spec = json.loads(spec_path.read_text())
@@ -5385,10 +5409,26 @@ def _run_supervisor(spec_path: Path) -> int:
     if not isinstance(spec, Mapping):
         return 0
     run_directory = Path(str(spec.get("run_directory") or ""))
-    signal.signal(signal.SIGTERM, signal.SIG_IGN)
-    signal.signal(signal.SIGHUP, signal.SIG_IGN)
+    stop_requested = _record_stop_before_spawn()
     _supervisor_tree_snapshot(spec)
     launched_at = _utc_now()
+    if stop_requested.is_set():
+        # The stop arrived while the snapshot ran, before any worker existed,
+        # so none is spawned and the launch is over before it began. The one
+        # launch-failure record is still written, because the run directory
+        # outlives the pointer a discard removes.
+        _supervisor_write(
+            run_directory / EXIT_RECORD_NAME,
+            _supervisor_exit_record(
+                run_id=str(spec.get("run_id") or ""),
+                worker_pid=None,
+                launched_at=launched_at,
+                status=None,
+                run_directory=run_directory,
+            )
+            | {"detail": "crew stop arrived before the worker was spawned"},
+        )
+        return 0
     try:
         pid = _supervisor_spawn_worker(spec)
     except (OSError, ValueError, KeyError) as exc:

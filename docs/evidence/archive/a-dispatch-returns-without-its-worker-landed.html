@@ -870,6 +870,60 @@ bypass detected by the gate: True</pre>
       per session start, deleted when the upstream fix ships.
     </p>
 
+  <h2 id="s3-stop-before-spawn">&sect;3 &mdash; A stop delivered before the spawn spawns no worker</h2>
+  <p>
+    Node <code>stop-before-spawn-spawns-nothing</code>, measured at revision
+    <code>d47c6a70</code> on 2026-09-25. The per-run supervisor leads its own process group and
+    held <code>SIG_IGN</code> for SIGTERM and SIGHUP, so that a <code>crew stop</code> &mdash;
+    a signal to that group, which must also take the worker down &mdash; could not take the
+    supervisor down before it recorded the exit the stop caused. Inside the pre-spawn tree
+    snapshot the ignore discarded the stop instead: the supervisor survived, finished its
+    snapshot, and spawned the worker of a stop already reported as done. The supervisor now
+    records a stop in a handler and reads the flag once the snapshot returns, abandoning the
+    launch when it is set; a stop delivered after the spawn still ends the worker while the
+    supervisor survives to record it.
+  </p>
+  <p>
+    <strong>Gate.</strong> <code>tests/test_stop_before_spawn_spawns_nothing.py</code>, one case,
+    <strong>1 passed in 2.17 s</strong>, run with
+    <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code> in a scratch tree cut from
+    <code>d47c6a70</code>, whose driver reported
+    <code>reckon_file=/tmp/stop-gate-head/reckon/__init__.py</code>. The case holds the
+    supervisor inside a stubbed snapshot &mdash; a <code>git</code> shim first on the child
+    processes' <code>PATH</code> signals a marker and waits for a release file on its first
+    charged <code>git status</code> under the worktree root &mdash; then sends exactly what
+    <code>crew stop</code> sends, SIGTERM to the run's process group, releases the snapshot, and
+    requires no <code>worker.json</code> and no stub worker pid. The captured outcome carries
+    <code>snapshot_held: true</code>, <code>stop_sent: true</code>, <code>worker_pid: null</code>,
+    <code>ended_during: "launch"</code>,
+    <code>detail: "crew stop arrived before the worker was spawned"</code>, and
+    <code>real_live_dir_unchanged: true</code>.
+  </p>
+  <p>
+    <strong>Negative control, executed and failing as declared.</strong> Replacing the handler
+    with <code>signal.SIG_IGN</code> for SIGTERM and SIGHUP in a copy of the package and test
+    tree at the same revision makes the gate fail on
+    <code>assert not (run_directory / "worker.json").exists()</code> &mdash; a worker is spawned
+    after the stop. The control's scratch tree reports the <code>reckon_file</code> it measured,
+    so the mutated copy is known to be the tree under test. Log
+    <code>negative-control-pre-spawn-stop.log</code>, whose first line is the declared mutation,
+    in the run directory.
+  </p>
+  <p>
+    <strong>No failures added over the dispatch and supervisor test files.</strong>
+    <code>tests/test_dispatch_returns_without_worker.py</code> and
+    <code>tests/test_fleet_supervisor.py</code> are the same 10 passed at base
+    <code>6daecfc1</code> and, with this gate's case added, 11 passed at head
+    <code>d47c6a70</code>. One <code>test_fleet_supervisor</code> session case failed once at
+    head in the first pass and did not reproduce: 6 of 6 isolated runs passed, 11 passed on the
+    full rerun. Logs <code>base-suite.log</code>, <code>after-suite.log</code>,
+    <code>after-suite-rerun.log</code>, <code>gate-head.log</code> in the run directory.
+  </p>
+  <p>
+    Landing record: <a href="/reckon/plans/a-dispatch-returns-without-its-worker#s3-landed-stop-before-spawn">&sect;3
+    of the plan</a>.
+  </p>
+
   </main>
 </body>
 </html>
