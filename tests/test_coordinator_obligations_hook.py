@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -28,6 +29,16 @@ PROJECT = "hook-fixture"
 SESSION = "coordinator-hook-fixture"
 RUN_ID = "run-hook-fixture"
 NODE_ID = "hook-fixture-node"
+FIRST_RUN_ID = "run-hook-alpha"
+FIRST_NODE_ID = "hook-alpha-node"
+SECOND_RUN_ID = "run-hook-beta"
+SECOND_NODE_ID = "hook-beta-node"
+HELD_ITEMS = 25
+# Held trees are staged with distinct retention ages, the first and oldest at
+# HELD_OLDEST_AGE seconds and each later tree HELD_AGE_STEP seconds newer, so
+# the collapsed line's oldest figure is one value the test can name.
+HELD_OLDEST_AGE = 2_940
+HELD_AGE_STEP = 60
 
 # An age the hook renders from wall-clock distances, such as "2s" or "1h3m".
 AGE = re.compile(r"\d+d\d+h|\d+h\d+m|\d+m\d+s|\d+s")
@@ -81,15 +92,21 @@ def repository(tmp_path: Path, config_home: Path) -> Path:
     return root
 
 
-def _blocked_run(repository: Path, tmp_path: Path) -> None:
+def _blocked_run(
+    repository: Path,
+    tmp_path: Path,
+    *,
+    run_id: str = RUN_ID,
+    node_id: str = NODE_ID,
+) -> Path:
     """Record one live run whose manifest holds its own turn open."""
-    manifest = tmp_path / "manifests" / f"{RUN_ID}.md"
-    manifest.parent.mkdir()
-    manifest.write_text(f"node: {NODE_ID}\nstatus: blocked\n", encoding="utf-8")
+    manifest = tmp_path / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(f"node: {node_id}\nstatus: blocked\n", encoding="utf-8")
     runs._write_json(
-        runs.pointer_path(RUN_ID),
+        runs.pointer_path(run_id),
         {
-            "run_id": RUN_ID,
+            "run_id": run_id,
             "project": PROJECT,
             "session": SESSION,
             "repo": str(repository),
@@ -99,13 +116,58 @@ def _blocked_run(repository: Path, tmp_path: Path) -> None:
             "role": "implement",
             "manifest_path": str(manifest),
             "node": {
-                "id": NODE_ID,
+                "id": node_id,
                 "plan": "fixture-plan",
                 "section": "fixture-section",
                 "time_budget": "20m",
                 "write_paths": ["seed.txt"],
             },
         },
+    )
+    return manifest
+
+
+def _retained_worktrees(repository: Path, tmp_path: Path, count: int) -> None:
+    """Promote runs whose retained worktrees are still registered.
+
+    Every row names its own tree and its own retention instant, so the derived
+    items are distinct runs while the remedy they are answered by is one shared
+    command.
+    """
+    now = datetime.now(tz=UTC)
+    trees = tmp_path / "managed-worktrees" / SESSION
+    trees.mkdir(parents=True)
+    rows: list[dict[str, object]] = []
+    for index in range(count):
+        node_id = f"held-node-{index:02d}"
+        tree = trees / node_id
+        _git(repository, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
+        retained_at = (
+            now - timedelta(seconds=HELD_OLDEST_AGE - index * HELD_AGE_STEP)
+        ).isoformat()
+        rows.append(
+            {
+                "run_id": f"held-run-{index:02d}",
+                "plan": "fixture-plan",
+                "node": node_id,
+                "completed_at": retained_at,
+                "worktree_retention": {
+                    "worktree": str(tree),
+                    "retained_at": retained_at,
+                },
+            }
+        )
+    ledger = repository / "docs" / "state" / PROJECT / "crew.json"
+    ledger.write_text(
+        json.dumps(
+            {
+                "updated": now.isoformat(),
+                "project": PROJECT,
+                "doc": "crew",
+                "data": {"members": [], "runs": rows, "holds": [], "_version": 1},
+            }
+        ),
+        encoding="utf-8",
     )
 
 
@@ -318,3 +380,61 @@ def test_no_follower_leaves_the_hook_silent(repository: Path, tmp_path: Path) ->
     assert stopping.returncode == 0
     assert stopping.stdout == ""
     assert stopping.stderr == ""
+
+
+def test_items_sharing_a_command_collapse_to_one_counted_line(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A fleet's worth of identical remedies takes one line, and one only.
+
+    Twenty-five promoted runs still hold their worktrees and are all answered
+    by the same gc command; two blocked runs are answered by a command naming
+    each one's own manifest. The collapsed line carries the count, the oldest
+    age and the command once; each blocked item keeps its own line and its run
+    id; and the checklist stays inside the size a coordinator reads at the open
+    of a turn.
+    """
+    _retained_worktrees(repository, tmp_path, HELD_ITEMS)
+    first_manifest = _blocked_run(
+        repository, tmp_path, run_id=FIRST_RUN_ID, node_id=FIRST_NODE_ID
+    )
+    second_manifest = _blocked_run(
+        repository, tmp_path, run_id=SECOND_RUN_ID, node_id=SECOND_NODE_ID
+    )
+
+    with runs.follower_claim(PROJECT, SESSION):
+        completed = _hook("prompt", _prompt_payload(repository, "harness-session"))
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    checklist = json.loads(completed.stdout)["hookSpecificOutput"]["additionalContext"]
+    lines = checklist.splitlines()
+
+    collapsed = [line for line in lines if line.startswith("- [worktree-held]")]
+    assert len(collapsed) == 1
+    assert AGE.sub("<age>", collapsed[0]) == (
+        f"- [worktree-held] {HELD_ITEMS} items (oldest <age> old): "
+        f"reckon crew gc --repo {repository} --project {PROJECT} --apply"
+    )
+
+    blocked = [line for line in lines if line.startswith("- [blocked]")]
+    assert sorted(AGE.sub("<age>", line) for line in blocked) == sorted(
+        [
+            (
+                f"- [blocked] {FIRST_RUN_ID} ({FIRST_NODE_ID}, <age> old): "
+                f"read {first_manifest}; resolve the blocker before resuming the run"
+            ),
+            (
+                f"- [blocked] {SECOND_RUN_ID} ({SECOND_NODE_ID}, <age> old): "
+                f"read {second_manifest}; resolve the blocker before resuming the run"
+            ),
+        ]
+    )
+
+    assert lines[0].startswith(
+        f"reckon obligations for session {SESSION} (project {PROJECT}): "
+        f"{HELD_ITEMS + 2} outstanding, oldest "
+    )
+    assert checklist.endswith(AUTHORITY_LINE)
+    assert len(lines) <= 8
+    assert len(checklist) < 2_000

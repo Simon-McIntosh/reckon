@@ -38,6 +38,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -261,6 +262,51 @@ def _format_age(seconds: int) -> str:
     return f"{secs}s"
 
 
+def _work_key(item: Mapping[str, Any]) -> tuple[str, str]:
+    """The pair that makes two obligations the same work.
+
+    One remedy command under one kind means every item carrying it is answered
+    by performing that command, however many runs the command reaches.
+    """
+    return str(item.get("kind") or ""), str(item.get("next_command") or "")
+
+
+def _work_lines(items: Sequence[Mapping[str, Any]]) -> list[str]:
+    """One line per distinct work, so a shared remedy is counted rather than repeated.
+
+    Items sharing a kind and a next command collapse into one line carrying the
+    count, the oldest age and the command once; the collapse is what keeps a
+    fleet's worth of identical remedies from pushing the actionable items off
+    the checklist. Every other item keeps its own line naming its run, because
+    a remedy that names a run is not the same work as another run's.
+    """
+    grouped: dict[tuple[str, str], list[Mapping[str, Any]]] = {}
+    for item in items:
+        grouped.setdefault(_work_key(item), []).append(item)
+    lines: list[str] = []
+    emitted: set[tuple[str, str]] = set()
+    for item in items:
+        key = _work_key(item)
+        if key in emitted:
+            continue
+        emitted.add(key)
+        members = grouped[key]
+        if len(members) > 1:
+            oldest = max(int(member.get("age_seconds") or 0) for member in members)
+            lines.append(
+                f"- [{key[0] or '?'}] {len(members)} items "
+                f"(oldest {_format_age(oldest)} old): {key[1]}"
+            )
+            continue
+        name = str(item.get("node") or item.get("run_id") or "?")
+        lines.append(
+            f"- [{item.get('kind') or '?'}] {item.get('run_id') or '?'} "
+            f"({name}, {_format_age(int(item.get('age_seconds') or 0))} old): "
+            f"{item.get('next_command') or ''}"
+        )
+    return lines
+
+
 def format_checklist(payload: dict[str, Any]) -> str:
     """Render one obligations payload as the checklist the hook emits."""
     items = payload.get("obligations") or ()
@@ -273,13 +319,7 @@ def format_checklist(payload: dict[str, Any]) -> str:
         f"oldest {_format_age(int(summary.get('oldest_age_seconds') or 0))}"
     )
     lines = [header]
-    for item in items:
-        name = str(item.get("node") or item.get("run_id") or "?")
-        lines.append(
-            f"- [{item.get('kind') or '?'}] {item.get('run_id') or '?'} "
-            f"({name}, {_format_age(int(item.get('age_seconds') or 0))} old): "
-            f"{item.get('next_command') or ''}"
-        )
+    lines.extend(_work_lines(items))
     unreconciled = f"unreconciled runs: {summary.get('unreconciled_runs', 0)}"
     lines.append(unreconciled + "; work the list to empty before ending the turn.")
     lines.append(AUTHORITY_LINE)
