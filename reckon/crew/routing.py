@@ -1118,9 +1118,7 @@ def require_plan_section_visible(
 # the node that changes it, so an investigation, a test and a review itself are
 # exempt: demanding a review to write a review is circular, and a test that
 # reads a plan changes nothing a review exists to catch.
-PLAN_BUILD_EXEMPT_ROLES: frozenset[str] = frozenset(
-    {"investigate", "review", "test"}
-)
+PLAN_BUILD_EXEMPT_ROLES: frozenset[str] = frozenset({"investigate", "review", "test"})
 
 
 def _plan_review_exempt(node: TaskNode) -> bool:
