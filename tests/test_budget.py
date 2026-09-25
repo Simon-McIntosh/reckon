@@ -142,6 +142,37 @@ def _window_budget(
     return block
 
 
+def _commit_roster(project: str, root: Path) -> None:
+    """Leave the ledger this fixture just wrote committed, as a landing does.
+
+    A session member registration commits the roster under its own subject, so
+    it refuses while ``crew.json`` holds content another hand put there. In a
+    real checkout the ledger row arrives in the commit that landed the run, so
+    the fixture has to reproduce that: write the row, then record it.
+    """
+    relative = Path("docs") / "state" / project / "crew.json"
+    if not (root / relative).exists():
+        return
+    dirt = subprocess.run(
+        ["git", "-C", str(root), "status", "--porcelain", "--", str(relative)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    if not dirt.stdout.strip():
+        return
+    subprocess.run(
+        ["git", "-C", str(root), "add", str(relative)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(root), "commit", "-q", "-m", "chore(state): record a run"],
+        check=True,
+        capture_output=True,
+    )
+
+
 def _record(
     project: str,
     root: Path,
@@ -165,6 +196,7 @@ def _record(
         budget=budget_block,
     )
     ledger.append_run(project, record, root=root)
+    _commit_roster(project, root)
     return record
 
 
@@ -1019,14 +1051,18 @@ def test_a_resume_is_still_held_at_a_genuinely_spent_quota() -> None:
 
 def test_the_preflight_spawns_no_process(home, repo, monkeypatch) -> None:
     """Free means free: any spawned process here would be a token cost."""
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
 
     def refuse(*args, **kwargs):
         raise AssertionError("the pre-flight spawned a process")
 
+    # The fence goes up after the fixture has written and recorded its ledger,
+    # because landing that row shells out to git itself — the process this test
+    # refuses is one the pre-flight would spawn, not one the fixture runs to
+    # set the scene.
     monkeypatch.setattr(subprocess, "Popen", refuse)
     monkeypatch.setattr(subprocess, "run", refuse)
 
-    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
     report = budget.preflight("proj", CONFIG, root=repo)
     assert report["held_backends"] == ["alpha"]
 

@@ -181,7 +181,13 @@ def test_resume_reattaches_a_session_only_the_stream_carries(
 
     recorded = mcp_module.crew_module.read_pointer(run_id)
     assert not (_real_crew_home(monkeypatch) / "live" / f"{run_id}.json").exists()
-    assert recorded["session_id"] == "01a0635f-62a3-7283-a81b-61cd39bedb60"
+    # Resolving a session reads the three authorities rather than caching the
+    # answer onto the pointer: the stream stays the source of truth, and a
+    # second reader re-resolves it instead of trusting a copy that the harness
+    # may since have contradicted. So the pointer carries no session id here,
+    # and the resume that used one is recorded as such on its own field.
+    assert recorded.get("session_id") is None
+    assert recorded["session_resumed"] is True
 
 
 def test_resume_of_a_live_process_is_refused_like_the_cli(

@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
   <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
-  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc">
+  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <title>The Suite Is Green At Head — landed evidence | reckon</title>
@@ -1026,6 +1026,89 @@ docs/state/proj/crew.json; commit or discard that roster write before retrying</
       <code>tests/test_budget.py</code> holds it. <code>tests/test_ledger.py::test_a_second_node_reaches_the_members_captured_session</code>
       is likewise red at base and at head under the same selection, and belongs to the
       <code>test_ledger</code> node.</p>
+    </section>
+    <section id="budget-session-and-follower-tests">
+      <h2>§2 &mdash; budget, session and follower tests (node <code>budget-session-and-follower-tests</code>)</h2>
+
+      <p>Nine files were owned by this node: <code>test_backends.py</code>, <code>test_budget.py</code>,
+      <code>test_a_served_turn_refutes_the_refusal.py</code>, <code>test_mcp_recovery.py</code>,
+      <code>test_crew_session_delivery.py</code>,
+      <code>test_crew_recovery.py</code>, <code>test_follower_freshness.py</code>,
+      <code>test_follower_checks_its_owner.py</code> and <code>test_a_reexec_keeps_its_children.py</code>.
+      Sixteen node ids in those files were listed red for this node in the research record's §3. The ledger
+      below accounts for exactly those sixteen, each in one bucket.</p>
+
+      <table>
+        <thead><tr><th>Bucket</th><th>Ids</th><th>What moved</th></tr></thead>
+        <tbody>
+          <tr><td>Green at head</td><td>13</td><td>assertion or fixture</td></tr>
+          <tr><td>Product defect, named as follow-on</td><td>2</td><td>nothing &mdash; the behaviour is wrong</td></tr>
+          <tr><td>Fails only under load</td><td>1</td><td>nothing &mdash; recorded as such</td></tr>
+          <tr><td><strong>Total listed ids</strong></td><td><strong>16</strong></td><td>&nbsp;</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>Cause groups among the thirteen green.</strong> Eleven were fixture repairs and two were stale
+      expectations. The fixture repairs cover a roster/registration guard that now refuses to provision a session
+      member while the roster file carries an uncommitted write, and a promotion fixture that built a plain
+      directory where the guard requires a git worktree. The stale expectations were helpers that mirrored an
+      older ticker geometry, and the held-reason string in the refusal test, now asserted as one exact string
+      built from the shipped detail clause and the remedy registered for the refusal family.</p>
+
+      <figure>
+        <img src="/reckon/figures/the-suite-is-green-at-head/budget-session-and-follower-tests.svg"
+             alt="Two bars per owned file. The left bar is the base revision's result and the right bar the result after repair. Seven files go from red to green. test_budget keeps one product defect and test_a_reexec_keeps_its_children keeps one product defect, both orange. The listed follower-freshness id and one id in test_follower_checks_its_owner keep one red id at head each, both load-only: they pass alone and fail under contention.">
+        <figcaption>Per-owned-file result at the base revision and after the node</figcaption>
+      </figure>
+
+      <table>
+        <thead><tr><th>Owned file</th><th>Red ids at base</th><th>Red ids at head</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_backends.py</code></td><td>3</td><td>0</td></tr>
+          <tr><td><code>test_budget.py</code></td><td>4</td><td>1 &mdash; product defect</td></tr>
+          <tr><td><code>test_a_served_turn_refutes_the_refusal.py</code></td><td>1</td><td>0</td></tr>
+          <tr><td><code>test_mcp_recovery.py</code></td><td>1</td><td>0</td></tr>
+          <tr><td><code>test_crew_session_delivery.py</code></td><td>1</td><td>0</td></tr>
+          <tr><td><code>test_crew_recovery.py</code></td><td>3</td><td>0</td></tr>
+          <tr><td><code>test_follower_freshness.py</code></td><td>1</td><td>1 &mdash; load-only</td></tr>
+          <tr><td><code>test_follower_checks_its_owner.py</code></td><td>0</td><td>1 &mdash; load-only, not a listed id</td></tr>
+          <tr><td><code>test_a_reexec_keeps_its_children.py</code></td><td>2</td><td>1 &mdash; product defect</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>Added failures. None among the sixteen listed ids.</strong> One id in an owned file but not among
+      the listed set &mdash;
+      <code>test_follower_checks_its_owner.py::test_a_reload_under_a_live_subreaper_keeps_the_declared_owner</code>
+      &mdash; was green at the base revision and red in one extracted head run. That file is unchanged between
+      the base revision and this head, so the movement is environmental, and it was measured: the flagged
+      <code>test_a_reloaded_follower_still_leaves_when_the_original_owner_dies</code> passed five of five runs
+      alone and failed four of five runs in file context, with the failing runs each taking about twice as long
+      on the shared node. Both reload ids are therefore recorded as load-bound rather than retried until they pass.</p>
+
+      <p><strong>Follow-on: <code>test_a_held_backend_with_a_declared_fallback_dispatches_on_it</code></strong>
+      (<code>tests/test_budget.py</code>). The dispatch records an uncommitted ledger hold and then provisions a
+      session member; the roster guard refuses its own registration, so the fallback lane is never reached:
+      <code>CrewError: could not provision session member ... uncommitted roster content at
+      docs/state/proj/crew.json</code> raised at <code>reckon/crew/routing.py:1307</code>. The behaviour and not
+      the assertion is wrong, and the same signature appears at the node's base revision, so the id was already
+      red when the node started.</p>
+
+      <p><strong>Follow-on: <code>test_an_absent_empty_or_unparseable_carrier_starts_the_new_image_clean[scalar]</code></strong>
+      (<code>tests/test_a_reexec_keeps_its_children.py</code>). <code>reckon/crew/dispatch.py:4470</code> iterates
+      the decoded carrier without a type test, so the JSON scalar <code>123</code> raises
+      <code>TypeError: 'int' object is not iterable</code>, contradicting the docstring of
+      <code>_adopt_launched_workers_from_reexec</code>, which promises that an unparseable carrier leaves the
+      registry empty and does not raise.</p>
+
+      <p><strong>Head receipts.</strong> The nine owned files were run at the committed head <code>d00f351f</code>,
+      each in its own pytest process with its own basetemp, recorded under the run's
+      <code>head-d00f351feef0c29ce059e86f6e4a9d2df4bf9472/</code> directory with that revision in each log
+      header. The records commit carrying this evidence file, the plan record and the figure touches no test,
+      so the receipts remain the receipts of the delivered test tree.</p>
+
+      <p><strong>Negative control, executed.</strong> Each owned file was run as it stood at the base revision,
+      in the worktree, one pytest process per file with its own basetemp, against the head code. All sixteen
+      listed ids failed with the errors recorded in the node's base logs.</p>
     </section>
   </main>
 </body>

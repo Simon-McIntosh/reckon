@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from reckon import budget
+from reckon.crew import refusals
 
 NOW = datetime(2026, 9, 6, 18, 30, tzinfo=UTC)
 CONFIG = {
@@ -171,11 +172,18 @@ def test_a_future_reset_without_service_keeps_its_reason(
     )
 
     assert verdict["held"] is True
-    assert verdict["reason"] == (
+    # A future reset does not by itself mean the lane is serving, so the reason
+    # keeps the clause that decided the hold, and the resolving action follows
+    # it — the reader who needs the reason is the reader who has to act on it.
+    # The whole string is pinned, so neither clause can move nor be dropped
+    # without this failing.
+    detail = (
         "backend reports threshold status 'exhausted', which policy counts as "
         "exhausted regardless of utilisation; utilisation 100% with burn "
         "multiple unknown"
     )
+    remedy = refusals.DISPATCH_REFUSAL_REMEDIES["D02"]
+    assert verdict["reason"] == f"{detail} Resolve with {remedy}."
 
 
 def test_a_past_reset_remains_clear(

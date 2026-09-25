@@ -105,11 +105,16 @@ def _wait_reaped(*pids: int) -> None:
         assert _pid_gone(pid), f"pid {pid} was not collected before the test ended"
 
 
-def _spawn_worker(tree: Path, marker: str, sleep: float = 2.0) -> tuple[int, Path]:
+def _spawn_worker(
+    tree: Path, marker: str, sleep: float = 2.0, log_dir: Path | None = None
+) -> tuple[int, Path]:
     """Launch one real worker through the production spawn path and return it.
 
     ``_spawn`` is the single funnel every launch goes through; registering a
-    child with it is what the launched-worker set and the reaper own.
+    child with it is what the launched-worker set and the reaper own. The
+    worker's stream lands in ``log_dir`` (defaulting to ``tree``); a stream
+    placed inside a run directory is what makes the launch carry the metadata
+    the reaper writes a launch failure up from.
     """
     plan = _backends.LaunchPlan(
         backend="probe",
@@ -125,13 +130,14 @@ def _spawn_worker(tree: Path, marker: str, sleep: float = 2.0) -> tuple[int, Pat
         final_message_path=None,
         resumed_session=None,
     )
-    log = tree / f"{marker}.log"
-    prompt = tree / f"{marker}.prompt.txt"
+    destination = log_dir if log_dir is not None else tree
+    log = destination / f"{marker}.log"
+    prompt = destination / f"{marker}.prompt.txt"
     prompt.write_text("continue\n", encoding="utf-8")
     pid = _spawn(
         plan,
         log_path=log,
-        stderr_path=tree / f"{marker}.stderr.log",
+        stderr_path=destination / f"{marker}.stderr.log",
         prompt_path=prompt,
     )
     return pid, log
@@ -348,7 +354,13 @@ def test_the_reloader_exports_launched_pids_beside_the_checkpoint(
 
     tree = tmp_path
     tree.mkdir(exist_ok=True)
-    pid, _ = _spawn_worker(tree, "handed", sleep=2.0)
+    # A worker whose stream sits inside its run directory is the ordinary
+    # launch: the stream path is what tells the registry which run the pid
+    # belongs to, so the carrier can describe it and not only name the pid.
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    run_directory = runs_module.run_dir("r-handover")
+    run_directory.mkdir(parents=True)
+    pid, _ = _spawn_worker(tree, "handed", sleep=2.0, log_dir=run_directory)
 
     stamps = iter(["old-stamp", "new-stamp"])
     monkeypatch.setattr(runs_module, "follower_code_stamp", lambda: next(stamps))
@@ -362,5 +374,15 @@ def test_the_reloader_exports_launched_pids_beside_the_checkpoint(
 
     monkeypatch.setattr(cli.os, "execve", capture_execve)
     reloader.poll({})
-    assert captured == [json.dumps([pid])]
+    assert len(captured) == 1
+
+    # The carrier crosses the boundary as a mapping rather than a bare list,
+    # because what the replacement image needs is not only which pids are
+    # outstanding but what each was launched as: a worker whose stream is empty
+    # when it is reaped is written up as a launch failure, and that record can
+    # only be composed from the launch metadata. A bare pid list stays readable
+    # beside it so an image older than this carrier still adopts the pids.
+    carried = json.loads(captured[0])
+    assert carried["pids"] == [pid]
+    assert str(pid) in carried["runs"]
     _wait_reaped(pid)

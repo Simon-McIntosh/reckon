@@ -437,12 +437,21 @@ def test_absent_log_reads_as_starting() -> None:
 
 
 def test_one_backend_reports_headroom_with_a_reset_time() -> None:
-    budget = _observe(CLAUDE, "claude-turn.jsonl").budget
+    """A headroom reading comes from a per-window utilisation, not the account's.
+
+    ``claude-worked-turn.jsonl`` records the ``unifiedWindows`` block a live
+    harness emits for each quota window; the reading is the binding window — the
+    one with the largest utilisation — together with that window's reset.
+    ``claude-turn.jsonl`` carries only the account-level overage summary, which
+    says what the account has spent across a three-week horizon and therefore
+    answers nothing about the window a dispatch is about to spend.
+    """
+    budget = _observe(CLAUDE, "claude-worked-turn.jsonl").budget
     assert budget["headroom"] == "known"
-    assert budget["utilisation_pct"] == pytest.approx(1.02)
-    assert budget["resets_at"] == "2026-09-01T00:00:00Z"
-    assert budget["threshold_status"] == "allowed_warning"
-    assert budget["rate_limit_type"] == "overage"
+    assert budget["utilisation_pct"] == pytest.approx(66.0)
+    assert budget["resets_at"] == "2026-08-26T13:40:00Z"
+    assert budget["threshold_status"] == "allowed"
+    assert budget["rate_limit_type"] == "five_hour"
     assert budget["cost_usd"] is not None
 
 
@@ -451,7 +460,7 @@ def test_an_empty_rate_limit_mapping_is_not_a_measurement() -> None:
 
     assert budget["headroom"] == "unknown"
     assert budget["utilisation_pct"] is None
-    assert "no numeric utilisation" in budget["detail"]
+    assert "no unifiedWindows" in budget["detail"]
 
 
 @pytest.mark.parametrize("reset_epoch", [1_788_220_800_000, 1e100])
@@ -479,11 +488,19 @@ def test_the_other_backend_reports_tokens_and_no_headroom() -> None:
 
 
 def test_absence_of_a_signal_is_never_read_as_exhaustion() -> None:
-    """The whole point of the unknown state: silence must not stop a wave."""
+    """The whole point of the unknown state: silence must not stop a wave.
+
+    ``claude-turn.jsonl`` belongs in this set even though it carries a
+    rate-limit event: its numeric utilisation is the account's overage position,
+    which the reader does not treat as a window measurement, so the run it came
+    from leaves no usable headroom signal either — and a spent-looking account
+    figure must not stop a wave on its own.
+    """
     for fixture, backend in (
         ("codex-turn.jsonl", CODEX),
         ("codex-failed-turn.jsonl", CODEX),
         ("claude-failed-turn.jsonl", CLAUDE),
+        ("claude-turn.jsonl", CLAUDE),
     ):
         assert _backends.budget_exhausted(_observe(backend, fixture).budget) is None
     assert _backends.budget_exhausted(None) is None
@@ -493,7 +510,9 @@ def test_absence_of_a_signal_is_never_read_as_exhaustion() -> None:
 
 def test_known_headroom_answers_the_exhaustion_question() -> None:
     assert (
-        _backends.budget_exhausted(_observe(CLAUDE, "claude-turn.jsonl").budget)
+        _backends.budget_exhausted(
+            _observe(CLAUDE, "claude-worked-turn.jsonl").budget
+        )
         is False
     )
     spent = dict(_backends.unknown_budget(""), headroom="known", utilisation_pct=100.0)

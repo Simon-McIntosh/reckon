@@ -921,7 +921,12 @@ def _cli_pointer(
 
 
 def _promotion_repository(home: Path, tmp_path: Path) -> Path:
-    """Create the durable plan and ledger roots exercised by crew completion."""
+    """Create the durable plan and ledger roots exercised by crew completion.
+
+    The repository is a real git worktree with those roots committed, because
+    promotion writes the ledger row and the plan landing comment as one commit
+    and refuses before writing either store when the checkout cannot host it.
+    """
     repository = tmp_path / "repository"
     (repository / "docs" / "state" / "proj").mkdir(parents=True)
     plan = repository / "docs" / "plans" / "plan-a.html"
@@ -945,6 +950,15 @@ def _promotion_repository(home: Path, tmp_path: Path) -> Path:
         ),
         encoding="utf-8",
     )
+    (repository / "seed.txt").write_text("seed\n", encoding="utf-8")
+    for args in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "worker@example.invalid"],
+        ["config", "user.name", "Worker"],
+        ["add", "seed.txt", "docs/plans/plan-a.html"],
+        ["commit", "-q", "-m", "chore: seed promotion fixture"],
+    ):
+        subprocess.run(["git", *args], cwd=repository, check=True, capture_output=True)
     (home / "mounts.json").write_text(
         json.dumps({"proj": str(repository / "docs")}), encoding="utf-8"
     )
@@ -2310,9 +2324,17 @@ def test_legacy_log_line_renders_and_new_line_renders_two_cells(home) -> None:
     legacy_line = recovery.format_watch_transition(
         legacy, ticker=ticker_module.Ticker(width=208, color=False)
     )
-    assert "gpt-5.6-sol" in legacy_line
+    # The model cell is sized from the configured aliases, so a composed agent
+    # whose model half is wider than that cell is cut with an ellipsis rather
+    # than pushing the effort column off the grid. The two cells still render in
+    # that order, which is the fact this reader scans.
+    grid = ticker_module.Ticker(width=208, color=False)
+    cut = ticker_module.elide("gpt-5.6-sol", grid.model_width)
+    assert cut.endswith("\N{HORIZONTAL ELLIPSIS}")
+    assert cut in legacy_line
+    assert "gpt-5.6-sol" not in legacy_line
     assert "medium" in legacy_line
-    assert legacy_line.index("gpt-5.6-sol") < legacy_line.index("medium")
+    assert legacy_line.index(cut) < legacy_line.index("medium")
     assert "the same focused pytest command failed twice" in legacy_line
 
     # A line in the new shape renders model and effort as two facts a reader
@@ -2356,31 +2378,31 @@ def test_one_stored_new_line_renders_differently_at_two_display_settings(home) -
     assert "dsv4-flash" in wide
 
 
-def _spend_columns() -> list[tuple[int, int]]:
-    """The (start, width) of the spend cells a plain rendered line carries."""
-    module = ticker_module
+def _spend_columns(model_width: int) -> list[tuple[int, int]]:
+    """The (start, width) of the two measure cells on a plain rendered line.
+
+    ``model_width`` is the grid's own model cell width — read from the grid
+    under test — rather than the fixed ``MODEL`` default, so a grid declaring a
+    wider alias moves these columns with the row it renders.
+    """
     prefix = (
-        module.CLOCK
-        + module.GAP
-        + module.ROLE
-        + module.GAP
-        + module.NODE
-        + module.GAP
-        + (module.STATE * 2 + 3)
-        + module.GAP
-        + module.MODEL
-        + module.PAIR_GAP
-        + module.EFFORT
+        ticker_module.CLOCK
+        + ticker_module.GAP
+        + ticker_module.ROLE
+        + ticker_module.GAP
+        + ticker_module.NODE
+        + ticker_module.STATE_REGION
+        + model_width
+        + ticker_module.PAIR_GAP
+        + ticker_module.EFFORT
     )
-    # The fleet counters precede the spend block once the row carries only the
-    # measured pair, so how many columns sit between effort and the wall cell is
-    # a layout fact. When SPEND is exactly that pair the counters lead; these
-    # fixtures carry no waiting counter, so the block is the named counters of
-    # two digits plus a letter and the separators between them, and the spend
-    # block's own leading gap follows.
-    if module.SPEND == module.WALL + module.SPEND_GAP + module.RATE:
-        prefix += len(module._CELLS) * 3 + (len(module._CELLS) - 1)
-    return [(prefix + module.SPEND_GAP, module.WALL)]
+    prefix += sum(3 for _ in ticker_module._CELLS) + (len(ticker_module._CELLS) - 1)
+    prefix += ticker_module.SPEND_GAP
+    columns: list[tuple[int, int]] = []
+    for width in (ticker_module.WALL, ticker_module.RATE):
+        columns.append((prefix, width))
+        prefix += width + ticker_module.SPEND_GAP
+    return columns
 
 
 # ── What a transition carries about a run's cumulative spend ──────────────
@@ -2540,8 +2562,10 @@ def test_a_resumed_runs_line_carries_measured_values_not_markers(
     absent_line = ticker_module.Ticker(width=180).render(absent)
 
     # The measured 7,200s wall time renders; the same run without a measured
-    # chain renders the absence marker instead.
-    start, width = _spend_columns()[0]
+    # chain renders the absence marker instead. The grid's own model width
+    # places these columns, so they move with the alias it renders.
+    grid = ticker_module.Ticker(width=180, color=False)
+    start, width = _spend_columns(grid.model_width)[0]
     assert measured_line[start : start + width] == "2:00:00"
     assert absent_line[start : start + width].strip() == "\N{EN DASH}"
 
