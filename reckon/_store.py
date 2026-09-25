@@ -468,8 +468,7 @@ def _read_state(
         return {}, 0
     from reckon import _plan_html
 
-    state = _plan_html.read_state_file(html_file)
-    text = _plan_html._read_plan_text(html_file)
+    state, text = _plan_html.read_state_and_text_file(html_file)
     state = _state_with_diagnostics(project, text, state, root)
     version = int(state.get("version", 0) or 0)
     return state, version
