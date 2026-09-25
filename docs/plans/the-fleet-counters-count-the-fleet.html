@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="15">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -105,6 +105,7 @@
   <li>When the checkpoint cannot be continued, because the stream was replaced or truncated, the follower falls back to state. It emits only runs whose state differs from the checkpoint's reported state, each stamped with the run's own recorded transition time, never the attach time.</li>
   <li>A session's first arming has no checkpoint and emits the baseline, stamped per run. The baseline's state must match what the live stream would say. In the lead's capture, runs that had been working for over twenty minutes replayed as <code>dispatched</code>. A run whose stream has advanced past its start renders <code>working</code>.</li>
   <li>Every row's age is computed from the run's recorded start.</li>
+  <li><strong>The pane keeps its history across a re-arm.</strong> The lead reported on 2026-09-25, after the checkpoint landed, that each re-arm still opens an empty Monitor pane. The checkpoint stops the replayed baseline and fills the gap, but the rows the previous arming showed, and their times, are gone from view, and a coordinator cannot track its work without them. So the follower keeps a per-session log of the rows it rendered: each row's rendered text and original timestamp, beside the checkpoint, capped at the most recent 200 rows or 12 hours. On a re-arm, before the gap lines, it re-emits that history as one burst of rows exactly as they were first rendered, with their original timestamps. Monitor batches lines written within 200 ms into one notification, so the history costs one notification per re-arm rather than one per row. The re-emitted rows are the log's rows, never a re-derived baseline, so no run is re-announced in a state it did not hold at that time.</li>
 </ul>
 <p>The work is folded in from <code>a-follower-outlives-its-monitor</code> &sect;4, whose falsifier this section's done-when extends. The S22 coordinator agreed on 2026-09-25, and that plan's section declarations and evidence stay with S22.</p>
 <p><strong>Done when:</strong></p>
@@ -117,7 +118,13 @@
       <li>re-arms with no environment checkpoint, as a fresh process would.</li>
     </ul>
     It asserts that the second follower emits exactly the gap transitions, in order and with their stream timestamps, and no row for a run whose state did not change.</li>
-  <li>A re-arm with no intervening transition emits no line.</li>
+  <li>A re-arm with no intervening transition emits no new transition. The only lines it emits are the persisted history rows.</li><li>A history test does the following in order:
+    <ul>
+      <li>arms a follower and delivers rows at known timestamps;</li>
+      <li>ends the arming;</li>
+      <li>re-arms.</li>
+    </ul>
+    It asserts that the re-armed follower first emits the prior rows byte-identical to their first rendering, in order, with their original timestamps, then the gap transitions, and that the history is written within one flush so a line-batching consumer receives it as one notification. A second test asserts that the cap holds at 200 rows and at 12 hours, and that a first arming has no history to replay. The declared mutation, a re-arm that skips the history replay, is observed to fail. The log is recorded.</li>
   <li>A test that replaces the stream between the two arms asserts that only changed runs are emitted, each stamped with its recorded time, and that no already-running run renders as <code>dispatched</code>.</li>
   <li>Two declared mutations are applied and each is observed to fail, with its log recorded:
     <ul>
@@ -175,11 +182,11 @@
 <div class="r-comment" data-section="s4" data-id="c-20260925-fold-follower-sections" data-who="reckon-build" data-when="2026-09-25T07:40:00Z">
     <div class="r-comment-body"><p>§4 and §5 are folded in with the S22 coordinator's agreement, on three conditions:</p><ul><li>each section's plan falsifier is the done-when</li><li>the landing is recorded here as comments with the run id and shas</li><li>S22 closes its own two sections</li></ul><p>§3, §4 and §5 dispatch as one <code>ticker.py</code> node once S21's liveness and review-reflex nodes release <code>reckon/crew/recovery.py</code>. That node also carries S21's removal of the <code>now</code> baseline marker.</p><p><em>Written with the new <code>insert_section</code> op, with no hand edit.</em></p></div>
 </div>
-<div class="r-comment" data-section="s6" data-id="c-20260925-row-labels-and-alignment" data-who="reckon-build" data-when="2026-09-25T08:05:00Z">
-    <div class="r-comment-body"><p>§6 and §7 come from the lead's 2026-09-25 review of the ticker. <code>a-monitor-row-reads-at-a-glance</code> (S22) is fully landed and covered neither issue. Both write <code>reckon/crew/ticker.py</code>, and ship in the same ticker node as §3–§5 once S21 releases <code>reckon/crew/recovery.py</code>.</p></div>
-</div>
 <div class="r-comment" data-section="s4" data-id="c-20260925-follower-rearm-landed" data-who="reckon-build" data-when="2026-09-25T11:20:00Z">
     <div class="r-comment-body"><p>§4 implemented by run <code>r-20260925T101452768368-follower-rearm-continues-the-stream</code> (node <code>fleet-follower-rearm</code>). The change and this record ship in one commit.</p><p><strong>What landed.</strong> New module <code>reckon/crew/follow_checkpoint.py</code> persists one checkpoint per project and session in the follower directory — stream path, device and inode (replacement), recorded byte offset (truncation), and the last reported state per run — written atomically (temp sibling, fsync, <code>os.replace</code>). <code>_follow_resume_plan</code> in <code>reckon/cli.py</code> selects one of three modes: <code>baseline</code> (first arm, unchanged), <code>continue</code> (seek to the recorded offset and deliver only the lines written since, carrying the stream's own timestamps and their state — no re-derivation), and <code>restart</code> (a replaced or truncated stream is re-read from its start and filtered to runs whose state differs from the checkpoint's). A continuation emits no baseline; a re-arm with nothing new prints nothing.</p><p><strong>Evidence.</strong> <code>tests/test_follow_rearm_continues.py</code> (5 tests): the gap is delivered in order with the stream's timestamps and no row for an unchanged run; a re-arm with nothing new is silent; a replaced stream emits only moved runs, each with its recorded transition time, and renders no running run as <code>dispatched</code>; the checkpoint advances to the stream's end; the real config home's follower directory is untouched. The ten pre-existing follow/watch test files pass unchanged (51 passed). Both declared mutations were applied and observed to fail, logs recorded in the run directory: <code>the re-arm ignores the durable checkpoint</code> (4 failed, 1 passed) and <code>replayed rows are stamped with the attach time</code> (1 failed, 4 passed).</p><p><strong>Follow-on, outside this node's fence.</strong> The <code>dispatched</code> baseline label for a long-working run is derived in <code>reckon/crew/recovery.py:4507</code> (<code>_watch_snapshot</code>: <code>state = "dispatched" if phase == "starting" else "working"</code>) and consumed via <code>runs.watch_stream_cursor</code>, whose baseline is built from <code>_watch_stream_snapshots</code> at <code>reckon/crew/runs.py:1155-1168</code>; that mapping is not part of §4's fence and no change was made to it.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260925-row-labels-and-alignment" data-who="reckon-build" data-when="2026-09-25T08:05:00Z">
+    <div class="r-comment-body"><p>§6 and §7 come from the lead's 2026-09-25 review of the ticker. <code>a-monitor-row-reads-at-a-glance</code> (S22) is fully landed and covered neither issue. Both write <code>reckon/crew/ticker.py</code>, and ship in the same ticker node as §3–§5 once S21 releases <code>reckon/crew/recovery.py</code>.</p></div>
 </div>
 </section>
 </main>
