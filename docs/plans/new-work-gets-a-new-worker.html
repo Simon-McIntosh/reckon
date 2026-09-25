@@ -158,6 +158,29 @@
           <figcaption>The run carries session ownership through capture, promotion and continuation.</figcaption>
         </figure>
       </div>
+      <div id="run-record-test-landing" class="landed-summary">
+        <p><strong>Test adaptation recorded 2026-09-25; section integration remains open.</strong>
+        Commit <code>323cad737c02dcad4d0c805d0ad873b75c9a135d</code> rewrites three
+        roster-capture assertions to require the captured session, harness and model on the
+        live run pointer and byte-identical roster content. The checks retain bare-member
+        session rejection, isolation between different tasks, and capture through dispatch
+        and observe. No <code>reckon/</code> source changed.</p>
+        <p>At base <code>5065f8638d944a8820c34adb02534144a1761ddb</code>, the ten assigned
+        test files reproduce all ten listed failures: <strong>73 passed, 10 failed</strong>.
+        With the test adaptation they report <strong>76 passed, 7 failed</strong>; all seven
+        <code>tests/test_session_lives_on_its_run.py</code> cases pass in both arms, giving
+        combined counts of 80/10 and 83/7. There are zero unreported failure IDs. The seven
+        remaining cases assert other contracts and are preserved for adjudication, including
+        the unnamed-dispatch registration race that fails before its session assertion.</p>
+        <p>The scratch-copy control runs the three rewritten cases cleanly, then restores
+        the member-session write at the dispatch capture site: <strong>3 passed → 3 expected
+        failures</strong> on roster preservation. Its log records the imported module and
+        resolved working directory. The
+        <a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed#run-record-test-adaptation">test
+        adaptation evidence</a> names every remaining case, traceback location, peer-owned
+        failure classification, and durable log. The coordinator owns section closure,
+        the driving followup, and verification at the merged head.</p>
+      </div>
     </section>
 
     <section id="s4" data-reckon="section">
