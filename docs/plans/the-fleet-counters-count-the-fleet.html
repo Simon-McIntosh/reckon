@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -73,6 +73,7 @@
     </article>
 
     <h2 id="s3">&sect;3 &mdash; Counters and terminal words follow the classification</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
     <p>The counter should be recomputed from the same classification the rows use, whenever any run's classification changes. A pointer that disappears should be called <code>promoted</code> only when a ledger row for that run exists. Otherwise the follower should call it <code>withdrawn</code>, with the refusal named when the dispatch recorded one.</p>
     <p><strong>Trigger:</strong> this section is deferred until &sect;2's report lands and no live run claims <code>reckon/crew/ticker.py</code> or <code>reckon/crew/recovery.py</code>. Today the S22 coordinator's next wave claims the first, and the S21 and suite-repair coordinators claim the second. The report's classes set the exact done-when. The minimum is:</p>
     <ul>
@@ -92,6 +93,7 @@
     </ul>
 
     <h2 id="s4">§4 — A re-arm continues the stream it left</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
 <p>The lead reported on 2026-09-25 that re-arming the follower every 30 minutes is fine, but every re-arm loses the history. A batch of rows arrives under one common timestamp, and the transitions that happened while no follower was attached never appear, which leaves a gap. The S23 coordinator's own follower reproduced it at 10:36:51–52 that day: after a re-arm it replayed twelve rows for runs already in flight, each stamped with the attach time.</p>
 <p><strong>Cause, at revision <code>b453d763</code>.</strong> The follower already has a resume path, but its checkpoint travels only through an environment variable handed across an in-place process reload (<code>_take_follower_checkpoint</code>, <code>reckon/cli.py:1702</code>). A re-arm is a new process with no checkpoint, so <code>_follow_watch_lines</code> (<code>reckon/cli.py:2098–2112</code>) takes the other branch, and two defects follow:</p>
 <ul>
