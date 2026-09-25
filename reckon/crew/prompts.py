@@ -76,6 +76,25 @@ PLAN_LANDING_CONTRACT = (
     "  touching them makes every merge conflict there."
 )
 
+# The landing contract a brief dispatch receives, in place of the plan-target
+# one. A brief names no committed plan section, so the plan-placement sentence
+# would send the worker to a plan the run was never given; the run's own
+# directory is the durable store its record belongs in. The header, the figure
+# convention and the meta-line ban are unchanged, so the two landing contracts
+# differ only in where the record goes. Kept as a standalone constant so a test
+# can compose with it masked out and diff against the live prompt, which proves
+# the substitution is removable and scoped.
+BRIEF_LANDING_CONTRACT = (
+    "CONTRACT — LANDING YOUR RECORD\n"
+    "  Write your landing record and your evidence anchor into this run's own\n"
+    "  directory rather than into a plan section; both go into your final commit.\n"
+    "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
+    "  shown than described, under docs/figures/<topic>/ with the project-absolute\n"
+    "  src /<project>/figures/...; never an image of what is naturally a table.\n"
+    "  Do not edit the plan-version or plan-modified meta lines: every worker\n"
+    "  touching them makes every merge conflict there."
+)
+
 # The closure-authority contract, embedded only beside the landing contract, so a
 # worker told how to land a record is also told what it may never close. It lives
 # here for the same reason its siblings do: the prompt embeds no protocol reference
@@ -235,12 +254,18 @@ def compose_prompt(
     peer_channel_path: str = "",
     can_write_worktree: bool | None = None,
     host_line: str = "",
+    brief: str = "",
 ) -> str:
-    """Compose a worker prompt from the four fences and a pointer to the plan.
+    """Compose a worker prompt from the four fences and its task authority.
 
     Deliberately short. Anything the live plan already says is omitted, because
     a copied brief drifts between workers and sessions while the plan does not.
-    The worker's first act is to read the plan and section named here.
+    The worker's first act is to read the plan and section named here, or, when
+    a brief is supplied, the brief carried in its place: a brief dispatch names
+    no committed plan section, so the plan pointer is replaced by the brief text
+    and the landing contract sends the record to the run directory rather than
+    to a plan section. A brief is carried verbatim, so a later reader can diff
+    the brief's own bytes against the prompt that read them.
     """
     peers = peer_scopes or {}
     peer_lines = (
@@ -274,6 +299,13 @@ def compose_prompt(
     )
     scope_lines = "\n".join(f"  {path}" for path in node.write_paths) or "  none"
     section = f" {node.section}" if node.section else ""
+    # The plan pointer is the plan-section read instruction, and the plan name
+    # and section it names are the whole of it. A brief replaces that block in
+    # place and verbatim, so the brief prompt carries no plan pointer; every
+    # other part of the contract is composed for both carriers.
+    task_authority = (
+        f"BRIEF\n{brief}" if brief else f"PLAN     {project}:{node.plan}{section}"
+    )
     specification_guidance = {
         "exact": (
             "SPEC     exact — implement as written and run the named check; "
@@ -305,7 +337,10 @@ RUNTIME FILESYSTEM
         can_land = Path(working_directory) == Path(worktree)
     else:
         can_land = can_write_worktree
-    landing_contract = PLAN_LANDING_CONTRACT if can_land else ""
+    if not can_land:
+        landing_contract = ""
+    else:
+        landing_contract = BRIEF_LANDING_CONTRACT if brief else PLAN_LANDING_CONTRACT
     closure_authority_contract = CLOSURE_AUTHORITY_CONTRACT if can_land else ""
     # The check is composed with this run's own id so the worker can execute the
     # line as written. A composing caller that supplies no id still gets a
@@ -339,7 +374,7 @@ RUNTIME FILESYSTEM
         )
     return f"""{_invariant_prompt_prefix()}{node.id}
 GOAL     {node.goal}
-PLAN     {project}:{node.plan}{section}
+{task_authority}
 ROLE     {node.role}
 {specification_guidance}{host_context}{delivery_directory_note}
 
