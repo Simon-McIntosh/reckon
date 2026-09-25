@@ -583,8 +583,10 @@ def _bucket(word: str) -> str | None:
 
 
 def test_every_emitted_word_maps_to_exactly_one_bucket(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    if NEGATIVE_CONTROL in {"bucket-mapping", "all"}:
+        _MUTATIONS["bucket-mapping"](monkeypatch)
     emitted = set()
     repo, base = _worktree_with_commit(tmp_path, "tree-buckets")
     with _live_child() as worker_pid:
