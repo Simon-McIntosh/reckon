@@ -13,8 +13,8 @@
   <meta name="plan-recorded-at" content="2026-09-23">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python project venv; detached git worktree">
-  <meta name="plan-commits" content="9125b986,c72c460e,ed6f3f3c,7bdadce0,d31707b5,dc52fa08">
-  <meta name="plan-artifacts" content="reckon/_backends.py,tests/test_launch_plan_fences_the_home.py,tests/test_backends.py,tests/test_each_run_owns_its_harness_home.py,docs/figures/a-worker-cannot-write-your-home/fence-layering.svg,docs/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg,tests/test_launch_plan_attaches_images.py,tests/test_backend_environment.py,tests/test_backend_sandbox_delivery.py,docs/figures/a-worker-cannot-write-your-home/gate-base.txt,docs/figures/a-worker-cannot-write-your-home/gate-head.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-neighbour-argv.txt,docs/figures/a-worker-cannot-write-your-home/reproduction-symlink-bind-refused.txt,docs/figures/a-worker-cannot-write-your-home/repaired-composition-real-home.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-symlink-bind.txt,docs/figures/a-worker-cannot-write-your-home/gate-symlink-base.txt,docs/figures/a-worker-cannot-write-your-home/gate-symlink-head.txt">
+  <meta name="plan-commits" content="9125b986,c72c460e,ed6f3f3c,7bdadce0,d31707b5,dc52fa08,5f570af2">
+  <meta name="plan-artifacts" content="reckon/_backends.py,tests/test_launch_plan_fences_the_home.py,tests/test_backends.py,tests/test_each_run_owns_its_harness_home.py,docs/figures/a-worker-cannot-write-your-home/fence-layering.svg,docs/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg,tests/test_launch_plan_attaches_images.py,tests/test_backend_environment.py,tests/test_backend_sandbox_delivery.py,docs/figures/a-worker-cannot-write-your-home/gate-base.txt,docs/figures/a-worker-cannot-write-your-home/gate-head.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-neighbour-argv.txt,docs/figures/a-worker-cannot-write-your-home/reproduction-symlink-bind-refused.txt,docs/figures/a-worker-cannot-write-your-home/repaired-composition-real-home.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-symlink-bind.txt,docs/figures/a-worker-cannot-write-your-home/gate-symlink-base.txt,docs/figures/a-worker-cannot-write-your-home/gate-symlink-head.txt,docs/figures/a-worker-cannot-write-your-home/reproduction-ancestor-bind-refused.txt,docs/figures/a-worker-cannot-write-your-home/real-home-launch.txt,docs/figures/a-worker-cannot-write-your-home/real-home-execution.txt,docs/figures/a-worker-cannot-write-your-home/lint-symlink-ancestor.txt,docs/figures/a-worker-cannot-write-your-home/gate-symlink-ancestor.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-ancestor-leaf-only.txt">
   <title>A Worker Cannot Write Your Home &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -475,10 +475,65 @@ the stub ran: False</pre>
     vacuous. Logs:
     <code>docs/figures/a-worker-cannot-write-your-home/gate-symlink-base.txt</code> and
     <code>&hellip;/gate-symlink-head.txt</code>. Lint over the two touched paths on a complete
-    <code>git archive</code> tree is unchanged, <code>_backends.py</code> 8&nbsp;&rarr;&nbsp;8,
-    and <code>ruff format --check</code> reports both already formatted.</p>
+    <code>git archive</code> tree is unchanged, <code>_backends.py</code>
+    6&nbsp;&rarr;&nbsp;6 with the test file contributing zero in both arms. (An earlier note
+    here recorded <code>8&nbsp;&rarr;&nbsp;8</code>; the count was re-measured on a complete
+    tree with this repository's own <code>ruff</code> over its own <code>pyproject</code>
+    configuration, and 6 is the figure that measurement gives.)
+    <code>ruff format --check</code> reports both already formatted. Instrument and log:
+    <code>docs/figures/a-worker-cannot-write-your-home/lint-symlink-ancestor.txt</code>.</p>
 
-    <p>The repaired composition is committed at <code>dc52fa08</code>.</p>
+    <h3 id="s2-symlink-ancestor-resolution">The second repair, measured: every ancestor is resolved, not only the leaf</h3>
+
+    <p><strong>Reproduced.</strong> The first repair asked <code>is_symlink()</code> of the
+    protected path <em>itself</em>, so a path whose <em>ancestor</em> is the link kept its
+    unresolved path as a mount destination and bubblewrap refused the launch with
+    <code>Can't mkdir</code>, exit&nbsp;1 &mdash; a different refusal from the leaf case's
+    <code>Can't create file</code> that the first repair answered. Hand-built against
+    bubblewrap&nbsp;0.4.1, the leaf of the refused destination is not itself a link and the
+    highest link sits above it, <code>.config &rarr; realconfig</code>:</p>
+
+    <pre>$ bwrap --dev-bind / / --ro-bind &hellip;/home/.config/reckon &hellip;/home/.config/reckon /bin/true
+bwrap: Can't mkdir &hellip;/home/.config/reckon: No such file or directory
+exit: 1
+
+$ bwrap --dev-bind / / --ro-bind &hellip;/home/realconfig/reckon &hellip;/home/realconfig/reckon /bin/true
+exit: 0</pre>
+
+    <p>So the leaf's own <code>is_symlink()</code> is not the trigger: the mount fails because a
+    link sits above the destination, and <code>resolved_destination</code> now resolves the
+    whole ancestry. A destination whose path carries a symlink at any level is never composed.
+    The write roots are resolved with the overlays, so a grant inside a symlinked protected
+    tree stays writable instead of vanishing into the containment test. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/reproduction-ancestor-bind-refused.txt</code>.</p>
+
+    <p><strong>Measured on this host's real home.</strong> The fence composed for this host's
+    <code>HOME</code> is executed with <code>/bin/true</code> in place of the harness. At base
+    <code>4088c1ae</code> it exits&nbsp;1 with 64 mount destinations, one of them
+    (<code>~/.gitconfig</code>) carrying a link; at head <code>5f570af2</code> it exits&nbsp;0
+    with 63 destinations and no linked one. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/real-home-execution.txt</code>.</p>
+
+    <p><strong>The declared negative control.</strong> The mutation <em>restore leaf-only
+    resolution so a protected path below a symlinked directory is bound at its unresolved
+    path; the stub launch must exit nonzero</em> is applied in a scratch tree and logged. With
+    resolution restored to the leaf, <code>test_launch_plan_fences_the_home.py</code> gives
+    <code>1 failed, 6 passed</code>: the failure is the new test's destination assertion,
+    <code>assert not _has_symlink_component(destination)</code>, on the destination below the
+    link &mdash; and the symlinked-leaf test still passes, so the new test isolates exactly the
+    newly-required shape rather than restating the old one. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/negative-control-ancestor-leaf-only.txt</code>.</p>
+
+    <p><strong>A second control for the skip.</strong> Skipping a target an already-sealed
+    directory covers has no effect a live run can observe, because bubblewrap accepts a
+    redundant duplicate bind &mdash; so the observable is taken from the argv itself: no
+    <code>--ro-bind</code> destination may sit inside another destination. The declared
+    mutation <em>remove the inside-a-protected-path skip so a path an already-sealed directory
+    covers is bound a second time; the redundant-overlay check must catch it</em> flips that
+    observable from <code>[]</code> to one entry and the check fires.</p>
+
+    <p>The ancestor repair is committed at <code>5f570af2</code>, on top of
+    <code>dc52fa08</code>.</p>
   </section>
 </main>
 </body>

@@ -282,12 +282,47 @@
         refuses the mount, the stub never runs and the exit is 1
         (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-symlink-bind.txt</code>).</p>
 
+        <p><strong>Every ancestor is resolved, not only the leaf.</strong> The first repair tested
+        <code>is_symlink()</code> on the path <em>itself</em>, so a protected path whose
+        <em>ancestor</em> is the link was still bound at its unresolved path and bubblewrap refused
+        the launch with <code>Can't mkdir</code>, exit 1 &mdash; reproduced on this host by naming a
+        leaf below a symlinked directory as a mount destination
+        (<code>docs/figures/a-worker-cannot-write-your-home/reproduction-ancestor-bind-refused.txt</code>).
+        <code>resolved_destination</code> now resolves the whole ancestry, and no destination whose
+        path carries a symlink at any level is ever composed. The write roots are resolved with the
+        overlays, so a grant inside a symlinked protected tree stays writable instead of vanishing
+        into the containment test, and the grant's own destination is link-free too.</p>
+
+        <p><strong>Measure.</strong> The composed argv for this host's real home runs to exit 0 with
+        <code>/bin/true</code> in place of the harness; at base it exits 1 with 64 destinations, one
+        of them (<code>~/.gitconfig</code>) carrying a link, and at head it exits 0 with 63
+        destinations and no linked one
+        (<code>docs/figures/a-worker-cannot-write-your-home/real-home-execution.txt</code>). The
+        declared negative control &mdash; <em>restore leaf-only resolution so a protected path below
+        a symlinked directory is bound at its unresolved path; the stub launch must exit nonzero</em>
+        &mdash; is applied and logged
+        (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-ancestor-leaf-only.txt</code>):
+        with the resolution restored to the leaf, the fence test fails on
+        <code>assert not _has_symlink_component(destination)</code> for the destination below the
+        link while the symlinked-leaf test still passes, so the new test isolates exactly the
+        newly-required shape. A second control &mdash; <em>remove the inside-a-protected-path skip so
+        a path an already-sealed directory covers is bound a second time; the redundant-overlay check
+        must catch it</em> &mdash; flips the overlay-pair observable from <code>[]</code> to one
+        entry, giving the clause an observable that execution cannot supply, because bubblewrap
+        accepts a redundant duplicate bind, so a live run cannot catch it.</p>
+
         <p><strong>Gate.</strong> The six launch-plan test files on this node's own allocation:
-        base <code>4088c1ae</code> <code>3 failed, 67 passed</code>, head <code>dc52fa08</code>
-        <code>3 failed, 69 passed</code>, the same three pre-existing budget-parsing failures
-        with identical ids, so this change adds none. Lint over the two touched paths unchanged
-        (<code>_backends.py</code> 8&nbsp;&rarr;&nbsp;8 on a complete tree) and both formatted.
-        Commit <code>dc52fa08</code>. Evidence:
+        base <code>4088c1ae</code> <code>3 failed, 67 passed</code>, head <code>5f570af2</code>
+        <code>3 failed, 72 passed</code>, the same three pre-existing budget-parsing failures with
+        identical ids, so this change adds none
+        (<code>docs/figures/a-worker-cannot-write-your-home/gate-symlink-ancestor.txt</code>).
+        Lint over the two touched
+        paths is <em>unchanged</em>: <code>_backends.py</code> 6&nbsp;&rarr;&nbsp;6 with the test
+        file contributing zero in both arms, measured on a complete <code>git archive</code> of each
+        revision with this repository's own <code>ruff</code> over its own <code>pyproject</code>
+        configuration
+        (<code>docs/figures/a-worker-cannot-write-your-home/lint-symlink-ancestor.txt</code>); both
+        files are formatted. Commits <code>dc52fa08</code> and <code>5f570af2</code>. Evidence:
         <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-symlink-protected-path</code>,
         figures under <code>/reckon/figures/a-worker-cannot-write-your-home/</code>. This unblocks
         the section's owed real-worker falsifier, which this node did not run.</p></div>
