@@ -74,6 +74,16 @@ def _write_pointer(run_id: str, *, node: str | None = None) -> None:
     )
 
 
+def _file_mtimes(*roots: Path) -> dict[str, int]:
+    """Snapshot every file mtime below the supplied evidence roots."""
+    return {
+        str(path): path.stat().st_mtime_ns
+        for root in roots
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+
+
 def _row(
     run_id: str,
     classification: str,
@@ -184,9 +194,9 @@ def test_every_session_duty_has_identity_age_and_its_exact_next_command(
         ],
     )
     monkeypatch.setattr(
-        recovery,
-        "recover",
-        lambda **_kwargs: {"runs": live_rows},
+        obligations_module,
+        "_classified_rows",
+        lambda _project: live_rows,
     )
     monkeypatch.setattr(
         runs,
@@ -247,6 +257,57 @@ def test_every_session_duty_has_identity_age_and_its_exact_next_command(
     }
 
 
+def test_obligations_reads_scoring_without_observing_or_dispatching(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_id = "run-pure-read"
+    config_home = repository.parent / "config"
+    head = _git(repository, "rev-parse", "HEAD")
+    manifest = config_home / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir()
+    manifest.write_text(
+        f"node: {run_id}\nstatus: complete\ncommits: [{head}]\n",
+        encoding="utf-8",
+    )
+    runs._write_json(
+        runs.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "session": SESSION,
+            "repo": str(repository),
+            "worktree": str(repository),
+            "base_sha": head,
+            "process_alive": False,
+            "launch": "in-harness",
+            "role": "implement",
+            "manifest_path": str(manifest),
+            "node": {
+                "id": "pure-read",
+                "plan": "fixture-plan",
+                "section": "fixture-section",
+                "time_budget": "20m",
+                "write_paths": ["seed.txt"],
+            },
+        },
+    )
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+
+    def side_effect(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("a read reached a mutating dispatch or observe entry point")
+
+    monkeypatch.setattr(dispatch_module, "dispatch", side_effect)
+    monkeypatch.setattr(dispatch_module, "observe", side_effect)
+    before = _file_mtimes(config_home, repository / "docs")
+
+    result = obligations_module.obligations(PROJECT, SESSION)
+
+    after = _file_mtimes(config_home, repository / "docs")
+    assert [item["kind"] for item in result["obligations"]] == ["review-missing"]
+    assert result["obligations"][0]["run_id"] == run_id
+    assert after == before
+
+
 @pytest.mark.parametrize(
     ("recovery_classification", "expected"),
     [("blocked", "blocked"), ("needs-help", "needs-help")],
@@ -265,7 +326,7 @@ def test_blocked_recovery_causes_keep_their_distinct_kind(
         recovery_classification=recovery_classification,
     )
     _write_pointer("run-blocked")
-    monkeypatch.setattr(recovery, "recover", lambda **_kwargs: {"runs": [row]})
+    monkeypatch.setattr(obligations_module, "_classified_rows", lambda _project: [row])
     monkeypatch.setattr(
         runs, "drain", lambda *_args, **_kwargs: {"unreconciled_runs": 1}
     )
@@ -332,7 +393,7 @@ def test_a_review_of_an_earlier_head_is_still_missing(
     _store_complete_review(run_id, base=base, head=base)
     row = recovery.classify_pointer(pointer, now_seconds=OBSERVED_AT.timestamp())
     assert row["classification"] == "scoring"
-    monkeypatch.setattr(recovery, "recover", lambda **_kwargs: {"runs": [row]})
+    monkeypatch.setattr(obligations_module, "_classified_rows", lambda _project: [row])
     monkeypatch.setattr(
         runs, "drain", lambda *_args, **_kwargs: {"unreconciled_runs": 1}
     )
@@ -342,7 +403,103 @@ def test_a_review_of_an_earlier_head_is_still_missing(
     assert [item["kind"] for item in result["obligations"]] == ["review-missing"]
 
 
-def test_a_review_in_flight_for_the_current_head_suppresses_missing(
+def test_a_legacy_review_record_of_the_current_head_is_review_ready(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_id = "run-legacy-review"
+    head = _git(repository, "rev-parse", "HEAD")
+    manifest = tmp_path / "legacy-manifest.md"
+    manifest.write_text(
+        f"node: {run_id}\nstatus: complete\ncommits: [{head}]\n",
+        encoding="utf-8",
+    )
+    pointer = {
+        "run_id": run_id,
+        "project": PROJECT,
+        "session": SESSION,
+        "repo": str(repository),
+        "worktree": str(repository),
+        "base_sha": head,
+        "process_alive": False,
+        "launch": "in-harness",
+        "role": "implement",
+        "manifest_path": str(manifest),
+        "node": {
+            "id": "legacy-review",
+            "plan": "fixture-plan",
+            "section": "fixture-section",
+            "time_budget": "20m",
+            "write_paths": ["seed.txt"],
+        },
+    }
+    runs._write_json(runs.pointer_path(run_id), pointer)
+    emitted = "\n".join(
+        f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
+    )
+    review = review_module.parse_review(emitted)
+    review.update(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": run_id,
+            "review_run_id": f"review-of-{run_id}",
+            "timestamp": "2030-01-01T00:00:00+00:00",
+        }
+    )
+    legacy = review_module.store_review(review)
+    assert legacy == review_module.review_path(PROJECT, run_id)
+    assert not review_module.review_path(
+        PROJECT, run_id, reviewed_head_sha=head
+    ).exists()
+    row = recovery.classify_pointer(pointer, now_seconds=OBSERVED_AT.timestamp())
+    assert row["classification"] == "promotable"
+    row["terminal_age_seconds"] = 100
+    monkeypatch.setattr(obligations_module, "_classified_rows", lambda _project: [row])
+    monkeypatch.setattr(
+        runs, "drain", lambda *_args, **_kwargs: {"unreconciled_runs": 1}
+    )
+
+    result = obligations_module.obligations(PROJECT, SESSION)
+
+    assert [item["kind"] for item in result["obligations"]] == ["review-ready"]
+
+
+def test_a_review_in_flight_for_an_older_head_does_not_suppress_missing(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = "run-source-old-review"
+    review = "run-review-old-head"
+    old_head = _git(repository, "rev-parse", "HEAD")
+    (repository / "seed.txt").write_text("current head\n", encoding="utf-8")
+    _git(repository, "add", "seed.txt")
+    _git(repository, "commit", "-q", "-m", "test: advance review source")
+    _write_pointer(source, node="source-old-review")
+    source_pointer = runs.read_pointer(source)
+    source_pointer.update({"repo": str(repository), "worktree": str(repository)})
+    runs._write_json(runs.pointer_path(source), source_pointer)
+    _write_pointer(review, node="review-of-source-old-review")
+    review_pointer = runs.read_pointer(review)
+    review_pointer["node"]["write_paths"] = [
+        str(review_module.review_path(PROJECT, source)),
+        str(review_module.review_path(PROJECT, source, reviewed_head_sha=old_head)),
+    ]
+    runs._write_json(runs.pointer_path(review), review_pointer)
+    row = _row(
+        source,
+        "scoring",
+        60,
+        "reckon crew dispatch --node review-of-source-old-review",
+    )
+    monkeypatch.setattr(obligations_module, "_classified_rows", lambda _project: [row])
+    monkeypatch.setattr(
+        runs, "drain", lambda *_args, **_kwargs: {"unreconciled_runs": 2}
+    )
+
+    result = obligations_module.obligations(PROJECT, SESSION)
+
+    assert [item["kind"] for item in result["obligations"]] == ["review-missing"]
+
+
+def test_a_review_from_another_session_for_the_current_head_suppresses_missing(
     repository: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     source = "run-source"
@@ -355,6 +512,7 @@ def test_a_review_in_flight_for_the_current_head_suppresses_missing(
     runs._write_json(runs.pointer_path(source), source_pointer)
     _write_pointer(review, node="review-of-source-node")
     review_pointer = runs.read_pointer(review)
+    review_pointer["session"] = "peer-coordinator"
     review_pointer["node"]["write_paths"] = [
         str(review_module.review_path(PROJECT, source)),
         str(keyed),
@@ -366,7 +524,7 @@ def test_a_review_in_flight_for_the_current_head_suppresses_missing(
         60,
         "reckon crew dispatch --node review-of-source-node",
     )
-    monkeypatch.setattr(recovery, "recover", lambda **_kwargs: {"runs": [row]})
+    monkeypatch.setattr(obligations_module, "_classified_rows", lambda _project: [row])
     monkeypatch.setattr(
         runs, "drain", lambda *_args, **_kwargs: {"unreconciled_runs": 2}
     )
