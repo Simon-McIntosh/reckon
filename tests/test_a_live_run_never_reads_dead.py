@@ -62,7 +62,11 @@ def _isolated_crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
 # guard its case is about, so a failure names the guard and not a neighbour.
 _MUTATIONS = {
     "worker-json-wait": lambda mp: mp.setattr(
-        recovery, "_PRE_SPAWN_PHASES", frozenset()
+        recovery,
+        "_observed_phase",
+        lambda phase, **kwargs: (
+            "working" if phase in recovery._PRE_SPAWN_PHASES else phase
+        ),
     ),
     "worker-pid-probe": lambda mp: mp.setattr(
         recovery, "_worker_record_liveness", lambda record: None
@@ -355,6 +359,7 @@ def test_a_pre_spawn_launch_is_not_abandoned(
 
     assert row["classification"] == "running"
     assert row["classification"] != "abandoned"
+    assert row["effective_phase"] == "starting"
 
 
 # ── Case 3: a resumed run inheriting an old complete manifest ─────────────
