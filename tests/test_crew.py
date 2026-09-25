@@ -2534,7 +2534,7 @@ def test_a_failed_launch_leaves_no_worktree_holding_write_scope(home, repo) -> N
     def exploding_launcher(plan, *, log_path, stderr_path, prompt_path):
         raise OSError("no such executable")
 
-    with pytest.raises(OSError):
+    with pytest.raises(crew.CrewError) as excinfo:
         crew.dispatch(
             node=_node(),
             project="proj",
@@ -2543,6 +2543,8 @@ def test_a_failed_launch_leaves_no_worktree_holding_write_scope(home, repo) -> N
             session="sess",
             launcher=exploding_launcher,
         )
+    assert isinstance(excinfo.value.__cause__, OSError)
+    assert str(excinfo.value.__cause__) == "no such executable"
     listed = subprocess.run(
         ["git", "worktree", "list"],
         cwd=repo,

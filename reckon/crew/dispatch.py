@@ -4082,32 +4082,47 @@ def dispatch(
         # which lives under the configuration home outside every repository.
         # Dispatch waits for neither the snapshot nor the spawn.
         if launch_kind == "cli" and plan is not None:
-            if launcher is None:
-                spec_path = directory / SUPERVISOR_SPEC_NAME
-                _write_json(
-                    spec_path,
-                    _supervisor_spec(
-                        run_id=run_id,
-                        run_directory=directory,
-                        repo_root=repo_root,
-                        worktree=Path(worktree["path"]),
-                        plan=plan,
-                        prompt_path=prompt_path,
+            # Starting the worker is the one step a caller-supplied launcher
+            # stands in for and the one that fails for reasons outside
+            # dispatch's own writes: a harness executable that is absent or not
+            # executable, a refused fork, an exhausted process table. The plan
+            # above is wrapped for exactly that reason; the spawn is not, so an
+            # OSError from it would escape as a traceback. It is a launch
+            # refusal and it is rendered as one, and because it is raised
+            # inside the unwind below the refusal still leaves no pointer, run
+            # directory or worktree behind.
+            try:
+                if launcher is None:
+                    spec_path = directory / SUPERVISOR_SPEC_NAME
+                    _write_json(
+                        spec_path,
+                        _supervisor_spec(
+                            run_id=run_id,
+                            run_directory=directory,
+                            repo_root=repo_root,
+                            worktree=Path(worktree["path"]),
+                            plan=plan,
+                            prompt_path=prompt_path,
+                            log_path=log_path,
+                            stderr_path=stderr_path,
+                        ),
+                    )
+                    spawned_pid = _start_supervisor(spec_path, directory, run_id)
+                else:
+                    spawned_pid = launcher(
+                        plan,
                         log_path=log_path,
                         stderr_path=stderr_path,
-                    ),
-                )
-                spawned_pid = _start_supervisor(spec_path, directory, run_id)
-            else:
+                        prompt_path=prompt_path,
+                    )
+            except OSError as exc:
+                raise CrewError(
+                    format_refusal("D22", f"the worker launch could not start: {exc}")
+                ) from exc
+            if launcher is not None:
                 # A caller-supplied launcher is a test seam that stands in for
                 # the supervisor: it spawns synchronously and the boundary
                 # baseline is taken inline, exactly as the supervisor would.
-                spawned_pid = launcher(
-                    plan,
-                    log_path=log_path,
-                    stderr_path=stderr_path,
-                    prompt_path=prompt_path,
-                )
                 record["repository_tree_snapshot"] = _repository_tree_snapshot(
                     repo_root
                 )

@@ -748,6 +748,85 @@
       <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-no-watch-producer-outlives-the-suite">landed
       evidence</a>, figure <a href="/reckon/figures/the-suite-is-green-at-head/watch-producer-session-check.png">watch
       producer session check</a>.</p>
+
+    <div class="r-note" data-reckon="landed" data-node="a-launcher-oserror-is-a-refusal" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; a dispatch whose worker launch cannot start now refuses with a
+      remedy instead of escaping as an <code>OSError</code>. A start-time <code>OSError</code> from
+      the supervisor fork or a caller-supplied launcher is converted to a <code>CrewError</code>
+      launch refusal that names its resolving action, and the teardown that unlinks the pointer,
+      removes the run directory and removes the worktree still runs.</strong> Commit
+      <code>bdfff7f4</code> <em>fix(crew): refuse a dispatch whose worker launch cannot start</em>.</p>
+      <p><strong>Cause, named with file and line.</strong> <code>reckon/crew/dispatch.py</code>
+      wraps the launch-plan resolution so a <code>BackendError</code>, a flight error or an
+      <code>OSError</code> while building the plan becomes a refusal
+      (<code>reckon/crew/dispatch.py:3983-4002</code>), but the spawn beneath it &mdash;
+      <code>_start_supervisor</code> and the caller-supplied <code>launcher</code> seam at
+      <code>reckon/crew/dispatch.py:4100-4110</code> &mdash; sat outside that wrap. A missing
+      harness executable or a refused fork therefore reached the command surface as an
+      <code>OSError</code> traceback, where the surface owed an operator a refusal with a remedy.
+      The spawned worker is started for the same <code>OSError</code> family and rendered through
+      the shared refusal formatter.</p>
+      <p><strong>Measured by delta against base, in this worktree.</strong>
+      <code>tests/test_refused_dispatch_leaves_no_pointer.py::test_a_pre_pointer_spawn_refusal_leaves_no_trace</code>
+      fails at base (<code>OSError: no exec</code> escaping where the test requires
+      <code>CrewError</code>) and passes at head. <code>tests/test_dispatch_spawns_through_the_fleet.py</code>
+      passes at base and head. Across the 89 test files that import
+      <code>reckon.crew.dispatch</code> (each run at its own base and head revision on the fleet
+      node), the failure set moves from 14 red ids at base to 13 at head: the pre-pointer refusal
+      id is repaired, and <strong>one id is added</strong> &mdash;
+      <code>tests/test_crew.py::test_a_failed_launch_leaves_no_worktree_holding_write_scope</code>,
+      which pins the old contract with <code>pytest.raises(OSError)</code> for exactly the launcher
+      <code>OSError</code> this change converts. That file is another node's exclusive write path,
+      so the assertion is named for the coordinator in <strong>Follow-ons</strong> rather than moved
+      here. No test file is edited by this node. Declared negative control: <em>unwrap the launcher
+      call so its <code>OSError</code> propagates as <code>OSError</code>; the pre-pointer refusal
+      test must fail</em> &mdash; satisfied, the mutated run fails with the probe. Logs at
+      <code>~/.cache/a-launcher-oserror/{base-target,head-target,base-set,head-set,negative-control}.log</code>.
+      The figure shows the wrap boundary before and after:
+      <a href="/reckon/figures/the-suite-is-green-at-head/launcher-oserror-refusal.png">where the launcher
+      OSError lands</a>.</p>
+      <p><strong>Follow-ons.</strong> <code>tests/test_crew.py::test_a_failed_launch_leaves_no_worktree_holding_write_scope</code>
+      asserts <code>pytest.raises(OSError)</code> around a launcher that raises
+      <code>OSError("no such executable")</code>; with the spawn now wrapped the raised object is a
+      <code>CrewError</code>, so the assertion moves to <code>crew.CrewError</code>. The file is a
+      concurrent node's scope (<code>redispatch-delivery-test-is-deterministic</code>), so the
+      one-line change belongs to that owner or to a follow-up node the coordinator cuts. Full
+      record:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-a-launcher-oserror-is-a-refusal">landed
+      evidence</a>.</p>
+    </div>
+
+    <div class="r-note" data-reckon="landed" data-node="a-failed-launch-test-expects-the-refusal" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; the worktree-atomicity test now expects the launch refusal the
+      launcher fix raises, and pins the conversion by its cause.</strong> The one test named in the
+      launcher node's follow-on moves its assertion from <code>pytest.raises(OSError)</code> to
+      <code>pytest.raises(crew.CrewError)</code> and adds
+      <code>assert isinstance(excinfo.value.__cause__, OSError)</code> with
+      <code>assert str(...) == "no such executable"</code>, so it pins the conversion rather than
+      merely the raised type. Its two clean-trace assertions &mdash; no <code>node-a</code> worktree,
+      no live pointer &mdash; are unchanged. One test edited in <code>tests/test_crew.py</code>; no
+      product code touched. Commits <code>c11eaf2f</code>, <code>8b9ee037</code>.</p>
+      <p><strong>Measured.</strong> The unedited test fails at the node base <code>eafdb655</code>
+      because the launcher now raises <code>CrewError</code> where the test asked for
+      <code>OSError</code>; the edited test passes at head, together with the pre-pointer refusal id
+      (2 passed). Over the 89 test files that import <code>reckon.crew.dispatch</code>, each arm
+      <code>-n 6</code> with its own <code>--basetemp</code>: base <strong>15 failed / 1216
+      passed</strong>, head <strong>13 failed / 1218 passed</strong>, and the one stable
+      red&rarr;green id is the target. The single head-only id,
+      <code>test_watch_arming_isolation.py::test_a_dispatch_under_the_shared_fixture_arms_no_producer</code>,
+      passes alone and is load-sensitive, so it is not counted as added; the base-only extras are
+      likewise load/ordering-dependent and named in the evidence. <strong>Zero added failures.</strong>
+      <code>tests/test_crew.py</code> at head is 1 failed / 204 passed, the one red id the peer-owned
+      <code>launch-failed</code> attention gap.</p>
+      <p><strong>Declared negative control:</strong> <em>unwrap the launcher call in a scratch copy so
+      the OSError propagates; the edited test must fail</em> &mdash; satisfied: the mutant tree
+      restores the pre-fix <code>dispatch.py</code> and the edited test fails with
+      <code>OSError: no such executable</code> from the launcher. Logs at
+      <code>~/.cache/a-failed-launch-test/</code>. Figure:
+      <a href="/reckon/figures/the-suite-is-green-at-head/failed-launch-assertion-pins-the-cause.png">the
+      assertion before and after, with the cause chain</a>. Full record:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-a-failed-launch-test-expects-the-refusal">landed
+      evidence</a>.</p>
     </div>
 
     <section data-reckon="followups" id="followups" class="r-followups">
