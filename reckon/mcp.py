@@ -3966,6 +3966,26 @@ def _audit_document(
     }
 
 
+def _audit_plan_state(path: Path) -> PlanState:
+    """Return the lenient :class:`PlanState` for one authored document.
+
+    ``_plan_html.from_html`` reads and parses the whole document on every call,
+    so the audit's validation loop re-parsed every unchanged plan on every warm
+    read. Keying the parse on the file's stat identity through
+    :func:`reckon.file_memo.memoized` reuses it while the bytes are unchanged —
+    moving size, mtime or inode re-parses — and reuses the shared text read so
+    the file itself is opened once. The memo hands back a deep copy, so a
+    caller that mutates the state cannot poison the next reader.
+    """
+    from reckon.file_memo import memoized
+
+    return memoized(
+        "audit_plan_state",
+        path,
+        lambda: _plan_html.from_html(_plan_html._read_plan_text(path)),
+    )
+
+
 def _audit(
     project: str | None = None,
     checkout_path: str | None = None,
@@ -4077,8 +4097,7 @@ def _audit(
             seen_resources[resource_key] = html_file
         html_files.append(html_file)
         try:
-            text = html_file.read_text(encoding="utf-8", errors="replace")
-            state = _plan_html.from_html(text)
+            state = _audit_plan_state(html_file)
         except Exception as e:  # noqa: BLE001 — audit must not crash on one bad file
             violations.append({"slug": html_file.stem, "errors": [f"parse error: {e}"]})
             checked += 1
