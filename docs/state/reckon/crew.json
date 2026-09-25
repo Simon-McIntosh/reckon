@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T07:12:19",
+  "updated": "2026-09-25T07:14:00",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -390624,6 +390624,406 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T035550325744-a-section-without-its-contract-is-refused",
+        "plan": "section-contract-and-computed-impl",
+        "section": "\u00a72",
+        "node": "a-section-without-its-contract-is-refused",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1298,
+                "cached_input_tokens": 758051,
+                "input_tokens": 759351,
+                "output_tokens": 1024,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 760375,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "Using the section record landed in \u00a71 (reckon/_plan_html.py parse and reckon/_schema.py PlanState): edit_plan's state mode gains an append target sections (id, title, body HTML, effort_hours, capability, links) in _apply_append in reckon/_store.py that writes the h2 and its record and refuses a missing or off-enum effort or capability exactly as an off-enum status is refused; a text-mode edit whose new_html introduces an h2 with a new id=\"sN\" and no section record is refused naming the missing field; both refusal messages carry a worked example of a valid record. Plans that already exist and carry no records are unaffected: an edit that does not add a section is accepted unchanged. New tests/test_section_contract_is_refused.py exercises the append success path, each of the two refusals, and the unaffected existing-plan path, all through the store boundary. The declared negative control is executed and logged: removing the text-mode check makes the text refusal case fail. Every existing test file importing reckon._store or reckon._plan_html passes at your head, judged by delta against the base revision; the audit-doc warning half of \u00a72 is a follow_on (it needs reckon/cli.py, held by a peer). Your landing record is appended to the plan's \u00a72.",
+          "estimated_hours": null,
+          "goal": "The plan write boundary refuses a new section that does not carry its typed contract",
+          "id": "a-section-without-its-contract-is-refused",
+          "lane_declaration": {
+            "backend": "codex-astra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-25T03:55:52Z",
+            "read_at": "2026-09-25T03:55:53Z",
+            "resolved_backend": "codex-astra",
+            "utilisation_pct": 8.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T035550325744-a-section-without-its-contract-is-refused/manifest.md",
+          "negative_control": "remove the check that refuses a text-mode edit introducing a new h2 without a section record in reckon/_store.py; the text refusal case in tests/test_section_contract_is_refused.py must fail",
+          "plan": "section-contract-and-computed-impl",
+          "requested_backend": "codex-astra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/_store.py",
+            "reckon/_plan_html.py",
+            "reckon/_schema.py",
+            "tests/test_section_contract_is_refused.py",
+            "docs/plans/section-contract-and-computed-impl.html",
+            "docs/evidence/archive/section-contract-and-computed-impl-landed.html",
+            "docs/figures/section-contract-and-computed-impl"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "serving-origin",
+        "backend": "codex-astra",
+        "local": false,
+        "agent": {
+          "alias": "astra6",
+          "backend": "codex-astra",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-6-astra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-25T03:56:16Z",
+        "completed_at": "2026-09-25T04:24:15Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1679,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1679,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "0bbeb7ec5559e4a9e0aa1a1d96f4b2c735e927e9",
+        "commits": [
+          "1a819a671286ce674f4e7eb32cc006dd7fe5d9d5",
+          "ae15796309309739255391b206dbd1cf92ae4b5c",
+          "9c3c35be4d9354f9d1860e717206d862c2206657"
+        ],
+        "changed_lines": {
+          "added": 595,
+          "removed": 2,
+          "files": 5
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_section_contract_is_refused.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T035550325744-a-section-without-its-contract-is-refused/focused.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T035550325744-a-section-without-its-contract-is-refused/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d6b6-d1d8-7a63-8fe2-e1421c719a03",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 7483648,
+            "cached_input_tokens_cumulative": 7483648,
+            "input_tokens": 7689821,
+            "input_tokens_cumulative": 7689821,
+            "output_tokens": 44672,
+            "output_tokens_cumulative": 44672,
+            "reasoning_output_tokens": 14418,
+            "reasoning_output_tokens_cumulative": 14418
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-25T04:24:15Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 9.0,
+              "resets_at": 1790869123,
+              "observed_at": "2026-09-25T04:24:15Z"
+            }
+          ],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "notional_cost_usd": "no_dated_rate",
+            "rate_basis": "no_dated_rate"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 194,
+              "budget_seconds": 2700,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "starting",
+              "elapsed_seconds": 2894,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1583,
+              "log_fresh": false,
+              "manifest_commits": [
+                "6925df2092d174e87f55246afb84974518759e7d",
+                "3e08625a14a9729cc11f962bd423951fd49e2f80"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "d25a26675c2d7f38f311d2a8794832ed4604dc8ec5fbe41ca02276259b367bea",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T024104740578-colliding-node-cells-carry-a-distinguishing-suffix/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-monitor-row-reads-at-a-glance --section '\u00a75' --role review --spec-level exact --node review-of-colliding-node-cells-carry-a-distinguishing-suffix --goal 'attach an independent review to run r-20260925T024104740578-colliding-node-cells-carry-a-distinguishing-suffix' --done-when 'the review for r-20260925T024104740578-colliding-node-cells-carry-a-distinguishing-suffix stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T024104740578-colliding-node-cells-carry-a-distinguishing-suffix.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T024104740578-colliding-node-cells-carry-a-distinguishing-suffix.at-3e08625a14a9729cc11f962bd423951fd49e2f80.json --time-budget 45m --session s22-coord --allow-unreconciled-runs --backend clive",
+              "node": "colliding-node-cells-carry-a-distinguishing-suffix",
+              "phase": "starting",
+              "plan": "a-monitor-row-reads-at-a-glance",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T024104740578-colliding-node-cells-carry-a-distinguishing-suffix",
+              "session": "s22-coord",
+              "terminal_age_seconds": 1627,
+              "terminal_at": "2026-09-25T03:28:50Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/colliding-node-cells-carry-a-distinguishing-suffix"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1500,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "starting",
+              "elapsed_seconds": 1492,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1032,
+              "log_fresh": false,
+              "manifest_commits": [
+                "ff3fc8dd",
+                "97d72106"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "35f7f867bd8a0f6dbcf322fc2e93a8fa364ab90bd804c334f38f1036040f283f",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T031341167096-no-registration-pin-covers-the-references/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan reckon-skill-overhaul --section '\u00a73' --role review --spec-level exact --node review-of-no-registration-pin-covers-the-references --goal 'attach an independent review to run r-20260925T031341167096-no-registration-pin-covers-the-references' --done-when 'the review for r-20260925T031341167096-no-registration-pin-covers-the-references stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T031341167096-no-registration-pin-covers-the-references.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T031341167096-no-registration-pin-covers-the-references.at-97d72106d23c31b0a82c34ace594c8d701dd684e.json --time-budget 25m --session s22-coord --allow-unreconciled-runs --backend clive",
+              "node": "no-registration-pin-covers-the-references",
+              "phase": "starting",
+              "plan": "reckon-skill-overhaul",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T031341167096-no-registration-pin-covers-the-references",
+              "session": "s22-coord",
+              "terminal_age_seconds": 1065,
+              "terminal_at": "2026-09-25T03:38:13Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/no-registration-pin-covers-the-references"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 16,
+            "fit": 19,
+            "goal_fidelity": 15,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 89
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 7483648,
+          "cumulative_input_tokens": 7689821,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 59090,
+          "generation_seconds": 1492.063,
+          "machine_seconds": 62.244,
+          "tokens_per_second": 39.6
+        },
+        "follow_on_paths": [
+          "tests/test_ledger.py::test_a_promoted_row_carries_the_budget_fallback_its_pointer_held",
+          "tests/test_promotion_reads_the_terminal_record.py::test_a_stream_that_never_receives_a_terminal_record_keeps_the_mtime_fallback",
+          "tests/test_receipt_after_release.py::test_a_live_writer_that_never_emits_a_receipt_keeps_the_fallback",
+          "reckon/cli.py.",
+          "tests/test_edit_plan_section_writes.py;",
+          "reckon/mcp.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-section-without-its-contract-is-refused",
+          "session_id": "01a0d6b6-d1d8-7a63-8fe2-e1421c719a03",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T04:24:15Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T04:24:20Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-25T03:58:20Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T035550325744-a-section-without-its-contract-is-refused",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 400,
+          "worker_pid": 2883638
+        },
+        "promoted_revision": "9c3c35be4d9354f9d1860e717206d862c2206657",
+        "plan_impl_at_dispatch": 0.41,
+        "impl_move": {
+          "plan": "section-contract-and-computed-impl",
+          "at_dispatch": 0.41,
+          "at_complete": 0.5,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_section_contract_is_refused.py"
+          ],
+          "declaration": "remove the check that refuses a text-mode edit introducing a new h2 without a section record in reckon/_store.py; the text refusal case in tests/test_section_contract_is_refused.py must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T035550325744-a-section-without-its-contract-is-refused/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T035550325744-a-section-without-its-contract-is-refused/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "codex-astra",
+          "burn_multiple": 1.0939181550983497,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'codex-astra' is projected to exhaust at 2026-10-01T02:16:34Z, which is after this node's 3300s horizon ending 2026-09-25T04:50:53.511275+00:00",
+          "horizon_ends_at": "2026-09-25T04:50:53.511275+00:00",
+          "horizon_seconds": 3300,
+          "metered": true,
+          "observed_at": "2026-09-25T03:55:52Z",
+          "precedes_horizon": false,
+          "projected_exhaustion_at": "2026-10-01T02:16:34Z",
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 560570,
+          "state": "quiet",
+          "utilisation_pct": 8.0
+        },
+        "lane_declaration": {
+          "backend": "codex-astra",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-25T03:55:52Z",
+          "read_at": "2026-09-25T03:55:53Z",
+          "resolved_backend": "codex-astra",
+          "utilisation_pct": 8.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 167.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -390936,6 +391336,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2693
+    "_version": 2694
   }
 }
