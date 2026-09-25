@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from reckon import _plan_html, crew
+from reckon import _plan_html, crew, ledger
 from reckon.crew import promotion, recovery
 from reckon.crew.runs import _write_json, pointer_path
 
@@ -131,14 +131,19 @@ def _promote(repository: Path, run_id: str = "r-landing") -> dict[str, Any]:
 
 
 def _stored_row(repository: Path, run_id: str) -> dict[str, Any]:
-    data = json.loads(
-        (repository / "docs" / "state" / PROJECT / "crew.json").read_text(
-            encoding="utf-8"
-        )
+    path = ledger.run_path(PROJECT, run_id, repository)
+    row = json.loads(path.read_text(encoding="utf-8"))
+    assert row["run_id"] == run_id
+    rows = [
+        item for item in ledger.runs(PROJECT, repository) if item["run_id"] == run_id
+    ]
+    assert rows == [row]
+    assert path.read_text(encoding="utf-8") == ledger.serialize_run(row)
+    assert (
+        _git(repository, "show", f"HEAD:{path.relative_to(repository)}")
+        == ledger.serialize_run(row).strip()
     )
-    rows = [row for row in data["data"]["runs"] if row["run_id"] == run_id]
-    assert len(rows) == 1
-    return rows[0]
+    return row
 
 
 def _all_values(value: Any) -> list[str]:
@@ -184,7 +189,7 @@ def test_promotion_carries_a_bounded_fleet_reading_without_changing_the_ledger(
     assert "fleet_state" not in stored
     assert stored == result["record"]
 
-    ledger_path = repository / "docs" / "state" / PROJECT / "crew.json"
+    ledger_path = ledger.run_path(PROJECT, "r-landing", repository)
     ledger_before_read = ledger_path.read_bytes()
     assert promotion._fleet_state_reading(PROJECT)["fleet_state"] == "measured"
     assert ledger_path.read_bytes() == ledger_before_read

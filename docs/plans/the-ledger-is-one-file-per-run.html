@@ -111,6 +111,72 @@
       promotion landed and moves index lag from zero to one, and a rebuild returns it to zero. The negative control makes
       <code>append_run</code> rewrite one shared file, and the two concurrent promotions must then show
       a repeated write or a conflict.</p>
+      <aside id="append-file-landing">
+        <h3>Append implementation recorded in the worker checkout</h3>
+        <p><strong>2026-09-25.</strong> Commit <code>e7b5051de4b66e29642c2c3bc7a757ae4b6b95ec</code>
+        creates one run file exclusively, scans aggregate bytes before parsing any matching id,
+        and attempts the index once after closing the file. New records omit <code>store_write</code>;
+        <code>index_lag</code> observes existing index membership without rebuilding it.</p>
+        <p>All 17 new append cases pass. The declared negative control executes the base
+        aggregate writer and fails the exact <code>crew.json bytes changed during append</code>
+        assertion. The regression gate has added failures outside this node's write scope;
+        its result and full failure inventory are retained in
+        <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#append-writer">the append evidence</a>.
+        The zero-added-failures measure remains unmet. Promotion staging, integrated verification,
+        and section closure remain separate coordinator-owned work.</p>
+        <p><strong>Expanded test scope, 2026-09-25.</strong> Existing test expectations now
+        check canonical per-run files, unchanged aggregate bytes and versions, one index
+        attempt after the file, and observable index lag. The focused repair gate passes
+        43 cases; the full six-module remeasurement reports 241 passed and 23 failed,
+        reducing the earlier 42 failures by 19. The remaining 23 reach the unchanged
+        production promotion stager, which still selects <code>crew.json</code> and leaves
+        the run file untracked. All tests and their substantive assertions remain enabled;
+        the node still requires the separately owned promotion change.</p>
+      </aside>
+      <aside id="promotion-file-landing">
+        <h3>Combined append and promotion landing recorded in the worker checkout</h3>
+        <p><strong>2026-09-25.</strong> Test commit <code>a25c8ee0fdbf1d2f59833ea03490553f33f4538e</code>
+        and implementation <code>7f9fe3f11247e79a892923a8bd75d42c89a405e7</code> build on
+        <code>0a1d9a266bb81a15e36166cf9cf43947b06a4072</code>, which combines the append
+        implementation and expectation repairs through <code>0548c94b</code> with main.
+        Promotion stages the path returned by <code>append_run</code>. Release keeps its
+        existing safety decisions and atomically records its receipt in that same run file,
+        through the common serialiser; the final promotion commit contains no aggregate ledger.</p>
+        <p>Two real <code>crew complete</code> calls succeed in each of two temporary repository
+        layouts, with and without an existing aggregate. Their commit lists contain exactly one
+        run file apiece, their prior run and aggregate bytes remain unchanged, and their release
+        receipts are committed. A write observer detects a deliberate forbidden write in its
+        positive control and observes no attempted writes into the real configuration home or
+        pointer directory during completion. All three contract cases and all nine existing
+        release cases pass. Restoring aggregate staging fails the declared one-run-file assertion.</p>
+        <p><strong>The broader gate remains blocked.</strong> All 23 previously recorded promotion
+        failures now pass, but the 21-module gate moves from 62 failed / 353 passed to
+        19 failed / 396 passed: 55 resolved, seven retained and 12 added failing ids. The
+        remaining tests are outside this node's write fence and were neither triaged nor edited.
+        The zero-added-failures measure is not met. Full ids, receipts, the combined implementation
+        sequence and the scope boundary are retained in
+        <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-run-file">the promotion evidence</a>.
+        Coordinator review, ownership of the residual failures, merged verification and the first
+        live promotion receipt remain required; the section and driving followup remain open.</p>
+        <p><strong>Scope-expanded repair, 2026-09-25.</strong> Commit
+        <code>a105c0602fe182e7cc33da56fd480d7e8f64193f</code> updates the authorized promotion
+        tests to check the per-run file, exact commit contents and observable index lag,
+        preserving their substantive fleet and receipt assertions. It also fixes
+        <code>verify-gate</code> writing a conflicting aggregate copy: the locked per-file
+        recording decision now uses the same atomic serialiser as release.</p>
+        <p><strong>The zero-added-failures measure is now met.</strong> The same 21-module
+        cohort reports <strong>414 passed, one inherited failure</strong>, against 353 passed
+        and 62 failed at <code>0a1d9a26</code>: 61 resolved, one retained, zero added. All
+        12 added failing ids in the earlier delivery are repaired, all 23 original promotion
+        failures pass, and all nine release cases remain green. The sole retained failure is
+        <code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code>,
+        an unchanged error-message expectation. The three new contract cases and four further
+        verify-gate cases pass; the declared staging mutation still fails the exact assertion.
+        <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-contract-repair">The repair receipt</a>
+        maps all 20 affected test ids to their governing clause or production correction.
+        This supersedes the worker delivery's scope blocker above; independent merged
+        verification, the live promotion receipt and closure remain coordinator-owned.</p>
+      </aside>
     </section>
 
     <section id="s2" data-reckon="section">

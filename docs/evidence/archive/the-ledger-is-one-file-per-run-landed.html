@@ -126,6 +126,280 @@
       paths remain owned by the later writer/roster/migration work named in the audit.</p>
     </section>
 
+    <section id="append-writer">
+      <h2>§1 — One append creates one immutable run file</h2>
+      <p><strong>Implementation:</strong> <code>e7b5051de4b66e29642c2c3bc7a757ae4b6b95ec</code>;
+      contract tests: <code>8db7ee860f32522b22f2ec3cfea03a56bb985fed</code>.
+      The dispatch base is <code>e160b02da36e795399de72503f197180c1fd993c</code>.
+      The source changes are confined to <code>reckon/ledger.py</code> and
+      <code>reckon/run_store.py</code>; the new tests are in
+      <code>tests/test_append_run_writes_one_run_file.py</code>.
+      <code>reckon/crew/promotion.py</code> is unchanged.</p>
+      <figure>
+        <img src="/reckon/figures/the-ledger-is-one-file-per-run/append-flow.svg"
+             alt="Concurrent appends preserve crew.json and create separate run files before updating the shared rebuildable index."
+             style="width:100%;max-width:1000px;height:auto">
+        <figcaption>Exclusive target creation arbitrates a reused id. An index failure cannot undo the file, and observing index lag cannot conceal the failure by rebuilding the cache.</figcaption>
+      </figure>
+      <p><strong>Defect reproduced before repair.</strong> The receipt reports
+      <code>crew_bytes_changed: true</code>, <code>new_run_file_exists: false</code>, and
+      <code>index_write_before_file: true</code>. The new byte-preservation assertion also
+      fails against the unmodified source with
+      <code>AssertionError: crew.json bytes changed during append</code>.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Observed contract</th></tr></thead>
+        <tbody>
+          <tr><td>Two concurrent processes, different ids</td><td>Both succeed; each opens only its own run file once in exclusive mode and attempts one index insert. No retry, aggregate write, staged path or commit.</td></tr>
+          <tr><td>Two concurrent processes, same id</td><td>Exactly one succeeds; the other refuses and names <code>runs/r-alpha.json</code>.</td></tr>
+          <tr><td>Existing file, directory or dangling symlink</td><td>Each refuses before aggregate reads or index writes and names the existing target path.</td></tr>
+          <tr><td>Top-level legacy row</td><td><code>r-historical</code> refuses and names the temporary project's <code>crew.json</code>; no new run file is created.</td></tr>
+          <tr><td>Nested id and byte-scan miss</td><td>A nested id triggers one parse without a false refusal. A miss parses no aggregate JSON and opens no unrelated run file, even one containing malformed JSON.</td></tr>
+          <tr><td>Complete record</td><td>Canonical Unicode serialization retains wide fields, omits only <code>store_write</code>, and leaves the caller's mapping untouched.</td></tr>
+          <tr><td>Index failure</td><td>The full file exists before the deliberate exception. Append returns <code>status: failed</code> in its store outcome without raising; lag reads 1 twice, index bytes unchanged, then 0 after a reader rebuild.</td></tr>
+          <tr><td>Missing index</td><td>Returns <code>no index</code> without creating an index or its parent directory.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>New contract gate:</strong> 17 passed in 10.88 seconds. The focused log contains
+      the actual same-id, existing-target and legacy-row refusal messages, including their
+      absolute temporary paths. The regression gate also includes this new module.</p>
+      <p><strong>Negative control:</strong>
+      <q>make append_run rewrite crew.json with the new row appended instead of writing one run file; the crew.json-untouched assertion in tests/test_append_run_writes_one_run_file.py must fail</q>.
+      The driver loads the actual dispatch-base <code>append_run</code> body into an isolated
+      test process. Its one selected case fails at the byte-preservation assertion with
+      <code>AssertionError: crew.json bytes changed during append</code>, exit 1. The current
+      worker source remains unchanged by the mutation.</p>
+      <p><strong>Regression delta:</strong> the dispatch base passed 247 tests with zero failures
+      in 187.73 seconds. At the implementation commit the same five modules plus the new
+      contract module report <strong>42 failed, 222 passed in 205.39 seconds</strong>:
+      42 added failing ids, none in the new contract module. All failures are in
+      <code>tests/test_ledger.py</code> or
+      <code>tests/test_a_promotion_never_creates_a_ledger.py</code>, both outside this node's
+      write scope. The full failure-id census is in <code>after-command.json</code> and
+      the manifest; the baseline census is empty. Existing assertions include aggregate
+      creation, shared version increments and committed <code>store_write</code>, and the
+      separate promotion stager is unchanged. These failures are retained as follow-ons
+      without editing or triaging those paths. <strong>The zero-added-failures measure is
+      unmet; this worker delivery is blocked.</strong> The coordinator must reconcile the
+      companion writer/test work and dispatch the merged verification before closure.</p>
+      <p><strong>Interface and integration boundary.</strong> <code>append_run</code> returns the
+      new per-run path, the record without <code>store_write</code>, and the single index
+      outcome under <code>store</code>. The retained <code>version</code> key is
+      <code>None</code> because no shared version is incremented; <code>attempts</code> is
+      accepted for call compatibility but does not trigger retries. The history guard for
+      an absent aggregate is retained while legacy rows remain unsplit. No live promotion
+      or migration was executed. The existing promotion stager and old-contract test
+      updates require their separate owners before integration can be verified.</p>
+      <p><strong>Durable receipts:</strong> all logs and the manifest are under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T074635678902-append-run-writes-one-run-file/</code>:
+      <code>reproduction.log</code>, <code>reproduction-test.log</code>,
+      <code>baseline.log</code>, <code>baseline-command.json</code>,
+      <code>focused.log</code>, <code>after.log</code>, <code>after-command.json</code>,
+      <code>negative-control.log</code>, <code>negative-control-driver.py</code>,
+      <code>lint-before.log</code>, <code>lint-after.log</code>, and
+      <code>committed-markers.log</code>. Baseline and head lint both report the same 13
+      pre-existing findings, with zero added. Gate logs name the revision, tree and command.
+      The committed-marker receipt verifies exclusive creation and the new lag API directly
+      from the committed source.</p>
+      <h3>Expanded-scope expectation repair</h3>
+      <p><strong>2026-09-25.</strong> The write fence was extended to
+      <code>tests/test_ledger.py</code> and
+      <code>tests/test_a_promotion_never_creates_a_ledger.py</code>. Their assertions now
+      require canonical per-run files, preserved aggregate bytes and versions, exact
+      singleton promotion commit contents, one index attempt after reading the complete
+      file, missing-index reporting and lag that survives observation until a rebuild.
+      Historical backfill fixtures explicitly seed unsplit rows; all their preview,
+      timestamp, missing-stream and idempotence checks remain.</p>
+      <p>The two files retain their 96 and nine test functions with no skips or xfails.
+      Assertion counts increase from 417 to 448 and from 30 to 41. The focused gate
+      reports <strong>43 passed in 25.91 seconds</strong>. The full six-module gate reports
+      <strong>23 failed, 241 passed in 205.91 seconds</strong>, against the retained
+      dispatch-base result of 247 passed and zero failures. Nineteen of the original
+      42 failing cases are repaired. The two test files retain the same 11 pre-existing
+      lint findings with none added.</p>
+      <p><strong>The remaining failures are a production dependency.</strong> Twenty-two
+      tests fail inside <code>crew.complete</code> with a landing-commit refusal:
+      <code>nothing added to commit but untracked files present</code>, naming
+      <code>docs/state/proj/runs/</code>. The CLI completion case fails to decode the same
+      refusal as JSON. The unchanged production call still passes
+      <code>ledger.ledger_path(project, ledger_root)</code> to the commit helper.
+      No test mocks that helper, skips promotion, or substitutes success. Consequently
+      the zero-added-failures gate remains blocked until the companion stager is integrated.</p>
+      <p><strong>Traceability:</strong> <code>repair-test-clause-map.json</code> maps every
+      original failure id and three additional historical-fixture consumers to its §1
+      clause, replacement assertion or retained production dependency. The same 45
+      mappings appear directly in the manifest. Receipts in the run directory are
+      <code>repair-focused.log</code>, <code>repaired.log</code>,
+      <code>repaired-command.json</code>, <code>test-repair.patch</code>,
+      <code>promotion-dependency.log</code>, <code>repair-lint-before.log</code> and
+      <code>repair-lint-after.log</code>. The patch digest in the gate header identifies
+      the measured test contents. No promotion source, plan lifecycle metadata or
+      driving followup was changed.</p>
+    </section>
+
+
+    <section id="promotion-run-file">
+      <h2>§1 — Completion stages its own run file and retains the release receipt</h2>
+      <p><strong>Combined implementation:</strong> the assigned base
+      <code>0a1d9a266bb81a15e36166cf9cf43947b06a4072</code> merges the ledger half at
+      <code>0548c94bbe93fd656e88cc167d8a7fcf2c7b27fb</code> with current main at
+      <code>eb60b33e9463fd96f1b4043241d9a4d3974dcba8</code>. It contains the release work
+      merged at <code>f45260c4</code>. This node adds the regression test in
+      <code>a25c8ee0fdbf1d2f59833ea03490553f33f4538e</code> and promotion implementation in
+      <code>7f9fe3f11247e79a892923a8bd75d42c89a405e7</code>. The supplied comparison spelling
+      <code>30ad6c2b</code> does not resolve in this object store; the measured baseline is
+      the actual assigned merge above, not a guessed replacement revision.</p>
+      <figure>
+        <img src="/reckon/figures/the-ledger-is-one-file-per-run/promotion-flow.svg"
+             alt="Append and release use the same file for each run; separate promotions preserve each other's files."
+             style="width:100%;max-width:1000px;height:auto">
+        <figcaption>Release follows the initial landing commit and amends the same run file,
+        preserving the committed cleanup decision without reintroducing a shared aggregate write.</figcaption>
+      </figure>
+      <p><strong>Reproduction before repair.</strong> Both new completion cases fail on the
+      assigned base. With an existing aggregate, the command says
+      <q>nothing added to commit but untracked files present</q> and names
+      <code>docs/state/reckon/runs/</code>. Without one, the command reports success, but the
+      observed commit contains <code>crew.json</code> and <code>index.json</code>, not the run
+      file: release amended the seed commit after the initial stager selected no target.
+      Both fail <code>one-run-file commit assertion</code>. The write-observer positive
+      control passes, proving it detects a forbidden pointer write.</p>
+      <p><strong>Changed behavior.</strong> <code>reckon/crew/promotion.py</code> stages
+      <code>Path(written["path"])</code>, uses that path in the rollback receipt, and reports
+      the run-file path on duplicate/retry paths. Release reads and atomically replaces only
+      the promoted run file through <code>ledger.serialize_run</code>, then stages that
+      same path for the existing amendment. Historical aggregate-only release handling remains.
+      The release eligibility, process signalling and worktree retention logic is unchanged.</p>
+      <p><strong>Contract gate at the committed implementation:</strong>
+      <code>tests/test_promotion_stages_its_one_run_file.py</code> reports
+      <strong>3 passed in 6.42 seconds</strong>. Each repository layout drives two different
+      runs through the real CLI, without substituting the append, staging, commit or release
+      functions. Each final commit contains precisely its own run file; that file's canonical
+      bytes include the release receipt. The second promotion leaves the first file unchanged;
+      aggregate bytes are unchanged or the aggregate stays absent. Both pointers and clean
+      worktrees are released, and the repository is clean. The observer sees writes in the
+      isolated config home and its pointer directory, and zero attempted mutations of the real
+      config home or real pointer directory.</p>
+      <p><strong>Declared negative control:</strong>
+      <q>restore staging of ledger.ledger_path (crew.json) in the promote commit; the one-run-file commit assertion in tests/test_promotion_stages_its_one_run_file.py must fail</q>.
+      The driver replaces exactly the staging argument in the actual completion function,
+      leaving append and release unchanged. The selected CLI case fails at
+      <code>AssertionError: one-run-file commit assertion</code>, exit 1. The log starts
+      with the exact declaration. Mutation is confined to the test process; committed source
+      still carries the returned-path staging marker.</p>
+      <p><strong>Regression delta:</strong> 21 ledger, run-store and promotion modules,
+      four pytest workers on the existing compute allocation, a separate node-local basetemp
+      and a 60-second per-test bound. The baseline has <strong>62 failed, 353 passed</strong>
+      in 178.87 seconds; the implementation has <strong>19 failed, 396 passed</strong>
+      in 194.04 seconds. There are no skips or errors in either arm. Fifty-five previously
+      failing ids pass, seven still fail, and 12 previously passing ids now fail. All 23
+      promotion failures from the append worker's repaired gate now pass, as do all five
+      cases in <code>tests/test_promotion_release.py</code> and all four in
+      <code>tests/test_promotion_releases_its_worktree.py</code>.</p>
+      <table>
+        <thead><tr><th>Remaining failing module, outside this node's scope</th><th>Base failures</th><th>Head failures</th><th>Added failing ids</th></tr></thead>
+        <tbody>
+          <tr><td><code>tests/test_crew_promotion.py</code></td><td>15</td><td>9</td><td>4</td></tr>
+          <tr><td><code>tests/test_ledger.py</code></td><td>24</td><td>1</td><td>0</td></tr>
+          <tr><td><code>tests/test_promotion_beat_carries_fleet_state.py</code></td><td>0</td><td>2</td><td>2</td></tr>
+          <tr><td><code>tests/test_promotion_harvests_the_receipt.py</code></td><td>2</td><td>7</td><td>6</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Blocked at the write fence.</strong> Those four modules were not changed,
+      triaged, mocked, skipped or bypassed. The complete ids are in the baseline/head receipts
+      and <code>delta.json</code>. The zero-added-failures measure is unmet, so the manifest
+      reports <code>blocked</code>. The coordinator must assign the remaining failures and
+      obtain the separately dispatched merged-result verification before promotion and closure.</p>
+      <p><strong>Durable receipts:</strong> all are under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T113540308665-promotion-stages-its-one-run-file/</code>:
+      <code>reproduction.log</code>, <code>baseline.log</code>,
+      <code>baseline-command.json</code>, <code>after.log</code>,
+      <code>after-command.json</code>, <code>delta.json</code>,
+      <code>committed-contract.log</code>, <code>negative-control.log</code>,
+      <code>negative-control-driver.py</code>, <code>committed-markers.log</code>,
+      <code>lint-base.log</code> and <code>lint-head.log</code>. Gate headers name the
+      executed command, revision, resolved working directory and imported promotion module.
+      Lint reports the same ten pre-existing production findings and no new test findings.</p>
+      <p><strong>Landing boundary.</strong> This is worker-checkout evidence, not a live
+      promotion or migration receipt. Plan prose is appended using the documented direct-edit
+      fallback because no Reckon MCP edit tool is available to this worker and the dispatch
+      requires unchanged version/modified metadata. No prior evidence, lifecycle state,
+      section declaration or driving followup is replaced or resolved.</p>
+    </section>
+
+
+    <section id="promotion-contract-repair">
+      <h2>§1 — Expanded test scope closes the added-failure delta</h2>
+      <p><strong>2026-09-25.</strong> The test fence was explicitly widened to
+      <code>tests/test_crew_promotion.py</code>,
+      <code>tests/test_promotion_beat_carries_fleet_state.py</code>,
+      <code>tests/test_promotion_harvests_the_receipt.py</code> and
+      <code>tests/test_ledger.py</code>. Repair commit
+      <code>a105c0602fe182e7cc33da56fd480d7e8f64193f</code> changes the first three
+      and <code>reckon/crew/promotion.py</code>; <code>tests/test_ledger.py</code>
+      remains unchanged. The manifest was updated immediately after that commit, before
+      the full cohort was measured.</p>
+      <p><strong>Reproduction retained.</strong> Before editing, the relevant source and test
+      paths at <code>02921aa4</code> were confirmed byte-identical to the measured
+      <code>7f9fe3f1</code> paths. Their recorded failures were missing <code>crew.json</code>,
+      exact commit sets expecting that aggregate instead of the run file, missing
+      <code>store_write</code>, and two verify-gate commands refusing conflicting history.</p>
+      <table>
+        <thead><tr><th>Contract or defect</th><th>Repair and retained assertion</th></tr></thead>
+        <tbody>
+          <tr><td>§1 writes and commits one run file</td><td>Exact commit sets now name <code>runs/&lt;run_id&gt;.json</code>; plan-comment cardinality, verdict, commit body and exclusion of unrelated dirty files remain asserted. Refusal/rollback cases also require no run file to survive.</td></tr>
+          <tr><td>§1 retains the complete canonical record</td><td>Receipt and fleet helpers read the run file, retain unique-row checking, and add row identity, canonical bytes, union-reader agreement and committed-content checks. All quota, pricing and fleet assertions remain.</td></tr>
+          <tr><td>§1 reports index health outside the durable record</td><td>The ordinary success/failure payload remains checked. Durable <code>store_write</code> is explicitly absent. An injected index failure observes the complete file, attempts exactly once, leaves lag at one through repeated reads, and returns to zero after an explicit rebuild.</td></tr>
+          <tr><td>Locked per-file integrated-gate recording</td><td>The production writer updates and commits the existing run file instead of creating a differing aggregate copy. Existing finding and no-finding assertions remain; tests add canonical, committed report and exact-path checks. Release shares the same atomic serializer.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>No tests were removed, skipped or marked xfail.</strong> The three test modules
+      retain all 58 test functions. Their assertion counts move from 204 to 228, 26 to 29,
+      and 59 to 62, respectively. <code>expanded-test-clause-map.json</code> records all
+      20 affected test ids, including helper consumers and every one of the 12 added failures;
+      the same mapping is embedded directly in the manifest.</p>
+      <table>
+        <thead><tr><th>Identical 21-module cohort</th><th>Passed</th><th>Failed</th><th>Errors / skipped</th></tr></thead>
+        <tbody>
+          <tr><td>Dispatch base <code>0a1d9a266bb81a15e36166cf9cf43947b06a4072</code></td><td>353</td><td>62</td><td>0 / 0</td></tr>
+          <tr><td>Repair <code>a105c0602fe182e7cc33da56fd480d7e8f64193f</code></td><td>414</td><td>1</td><td>0 / 0</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Zero added failures:</strong> 61 baseline failing ids resolve and one remains.
+      The complete base and head failure inventories are recorded in the manifest and
+      <code>expanded-delta.json</code>. All 12 added failing ids from the earlier delivery
+      and all 23 promotion failures from the ledger worker now pass. The retained failure is
+      <code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code>:
+      the unchanged test expects an older list of view names in the error message. This is
+      a passing delta against the stated base, not an entirely green suite.</p>
+      <p><strong>Release and command verification:</strong> the cohort includes all five
+      <code>tests/test_promotion_release.py</code> cases and all four
+      <code>tests/test_promotion_releases_its_worktree.py</code> cases; all pass. At the
+      committed repair, the three new CLI contract cases pass in 4.92 seconds and the four
+      <code>tests/test_verify_gate_command_option.py</code> cases pass in 5.37 seconds.
+      The full cohort finishes in 181.94 seconds. The focused precommit repair gate passed
+      all 73 cases in 33.75 seconds.</p>
+      <p><strong>Negative control retained at the repair commit:</strong> restoring
+      <code>ledger.ledger_path</code> staging fails the exact one-run-file commit assertion,
+      exit 1, with the required declaration as the log's first line. The earlier negative
+      receipt is preserved as <code>negative-control-before-expansion.log</code>. Lint
+      reports the same 22 pre-existing findings across the widened paths, with none added.</p>
+      <p><strong>Receipts</strong> remain under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T113540308665-promotion-stages-its-one-run-file/</code>:
+      <code>expanded-reproduction.log</code>, <code>expanded-focused.log</code>,
+      <code>expanded-cohort.log</code>, <code>expanded-cohort-command.json</code>,
+      <code>expanded-contract.log</code>, <code>expanded-verify-gate.log</code>,
+      <code>expanded-delta.json</code>, <code>expanded-test-clause-map.json</code>,
+      <code>expanded-assertion-counts.json</code>, <code>expanded-repair.patch</code>,
+      <code>expanded-lint-base.json</code>, <code>expanded-lint-head.json</code> and
+      <code>expanded-committed-markers.log</code>. Every gate receipt identifies the
+      revision, command, resolved checkout and imported promotion module.</p>
+      <p><strong>Boundary.</strong> The worker's zero-added-failures obligation is met.
+      Independent verification after integration, the first live promotion commit receipt,
+      the retained unrelated view-message test and plan closure remain coordinator work.
+      This append preserves all prior evidence and leaves lifecycle metadata and the driving
+      followup unchanged, using the previously announced direct-prose fallback.</p>
+    </section>
+
   </main>
 </body>
 </html>

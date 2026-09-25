@@ -578,12 +578,13 @@ def test_a_successful_store_write_is_reported_written_on_the_command_payload(
     assert invoked.exit_code == 0
     payload = json.loads(invoked.output)
     assert payload["ok"] is True
-    # A working shadow reports written rather than nothing, on the ordinary
-    # success payload, so a healthy shadow is distinguishable from an absent
-    # store and from a missing field.
+    # Index health is reported on the payload without changing the run record.
     assert payload["store"] == {"status": "written"}
-    assert payload["record"]["store_write"] == {"status": "written"}
+    assert "store_write" not in payload["record"]
     assert payload["record"]["run_id"] == run_id
+    run_file = ledger.run_path(PROJECT, run_id, repository)
+    assert run_file.read_text() == ledger.serialize_run(payload["record"])
+    assert ledger.index_lag(PROJECT, repository) == 0
 
 
 def test_a_failing_store_write_is_reported_on_the_ordinary_success_payload(
@@ -596,24 +597,38 @@ def test_a_failing_store_write_is_reported_on_the_ordinary_success_payload(
     _write_commit_pointer(repository, run_id, base)
     gate_log = tmp_path / "gate.log"
     gate_log.write_text("probe check passed\n", encoding="utf-8")
+    with run_store.RunStore():
+        pass
+    assert ledger.index_lag(PROJECT, repository) == 0
+    attempts = []
 
     def broken_append(_project: str, _record_entry: dict) -> None:
+        path = ledger.run_path(PROJECT, run_id, repository)
+        assert json.loads(path.read_text()) == _record_entry
+        attempts.append(_record_entry["run_id"])
         raise RuntimeError("injected store failure")
 
     monkeypatch.setattr(run_store, "append", broken_append)
 
     invoked = _invoke_complete_cli(run_id, gate_log, commit)
 
-    # The promotion itself still succeeds: the committed row lands and the
-    # exit status is the ordinary success one, unchanged by the shadow.
+    # The committed row survives an index failure, which leaves observable lag.
     assert invoked.exit_code == 0
     payload = json.loads(invoked.output)
     assert payload["ok"] is True
     assert payload["store"]["status"] == "failed"
     assert "RuntimeError" in payload["store"]["error"]
-    assert payload["record"]["store_write"]["status"] == "failed"
+    assert "store_write" not in payload["record"]
     assert payload["record"]["run_id"] == run_id
+    assert attempts == [run_id]
+    run_file = ledger.run_path(PROJECT, run_id, repository)
+    assert run_file.read_text() == ledger.serialize_run(payload["record"])
+    assert ledger.index_lag(PROJECT, repository) == 1
+    assert ledger.index_lag(PROJECT, repository) == 1
     assert [row["run_id"] for row in ledger.runs(PROJECT, repository)] == [run_id]
+    assert ledger.index_lag(PROJECT, repository) == 1
+    run_store.import_ledger(PROJECT, root=repository)
+    assert ledger.index_lag(PROJECT, repository) == 0
 
 
 @pytest.mark.parametrize("commits", [None, "none"])
@@ -1527,7 +1542,7 @@ def test_a_successful_promotion_leaves_its_two_stores_committed_and_clean(
     run_id = "r-20260914T190321183448-landing"
     _promote(repository, run_id, outcome="the landing leaves no dirty state")
 
-    ledger_file = repository / "docs" / "state" / PROJECT / "crew.json"
+    ledger_file = ledger.run_path(PROJECT, run_id, repository)
     plan_file = repository / "docs" / "plans" / f"{PLAN}.html"
     assert ledger_file.is_file()
     assert run_id in plan_file.read_text(encoding="utf-8")
@@ -1535,7 +1550,14 @@ def test_a_successful_promotion_leaves_its_two_stores_committed_and_clean(
     # No uncommitted change remains at either path promotion wrote.
     porcelain = _porcelain(repository)
     assert not any(
-        "crew.json" in line or f"docs/plans/{PLAN}.html" in line for line in porcelain
+        str(ledger_file.relative_to(repository)) in line
+        or f"docs/plans/{PLAN}.html" in line
+        for line in porcelain
+    )
+    assert not ledger.ledger_path(PROJECT, repository).exists()
+    assert (
+        _git(repository, "show", f"HEAD:{ledger_file.relative_to(repository)}")
+        == ledger_file.read_text().strip()
     )
 
 
@@ -1550,7 +1572,7 @@ def test_the_landing_commit_names_the_run_id_and_the_gate_verdict(
     assert "passed" in subject
     assert _git(repository, "log", "-1", "--format=%b").strip()
     assert set(_landing_commit_paths(repository)) == {
-        f"docs/state/{PROJECT}/crew.json",
+        f"docs/state/{PROJECT}/runs/{run_id}.json",
         f"docs/plans/{PLAN}.html",
     }
 
@@ -1575,7 +1597,7 @@ def test_a_landing_commit_never_stages_an_unrelated_dirty_file(
     assert "loose.txt" not in committed
     assert "seed.txt" not in committed
     assert set(committed) == {
-        f"docs/state/{PROJECT}/crew.json",
+        f"docs/state/{PROJECT}/runs/{run_id}.json",
         f"docs/plans/{PLAN}.html",
     }
 
@@ -1638,6 +1660,7 @@ def test_a_checkout_that_cannot_commit_refuses_before_any_store_is_written(
 
     # Neither store was written: no ledger row and an untouched plan file.
     assert not (root / "docs" / "state" / PROJECT / "crew.json").exists()
+    assert not ledger.run_path(PROJECT, run_id, root).exists()
     assert plan_file.read_text(encoding="utf-8") == before
 
 
@@ -1651,6 +1674,7 @@ def test_a_commit_failure_restores_both_stores_and_refuses(
     # the plan file returned to its committed state, and the pointer survives
     # for a retry.
     assert not (repository / "docs" / "state" / PROJECT / "crew.json").exists()
+    assert not ledger.run_path(PROJECT, run_id, repository).exists()
     plan_file = repository / "docs" / "plans" / f"{PLAN}.html"
     assert "commit-fails" not in plan_file.read_text(encoding="utf-8")
     assert pointer_path(run_id).exists()
@@ -1798,7 +1822,9 @@ def test_promotion_appends_no_second_comment_when_the_worker_authored_the_record
     # the landing commit carried only the ledger row.
     plan, _version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
     assert (plan["comments"].get("s2") or []) == []
-    assert set(_landing_commit_paths(repository)) == {f"docs/state/{PROJECT}/crew.json"}
+    assert set(_landing_commit_paths(repository)) == {
+        f"docs/state/{PROJECT}/runs/{run_id}.json"
+    }
     assert not pointer_path(run_id).exists()
 
 
@@ -1833,7 +1859,7 @@ def test_a_run_without_a_worker_authored_record_still_lands_exactly_one_comment(
     ]
     assert len(matching) == 1
     assert set(_landing_commit_paths(repository)) == {
-        f"docs/state/{PROJECT}/crew.json",
+        f"docs/state/{PROJECT}/runs/{run_id}.json",
         f"docs/plans/{PLAN}.html",
     }
 
@@ -2006,6 +2032,17 @@ def test_verify_gate_cli_records_a_finding_against_the_run(repository: Path) -> 
     assert report["integrated_verdict"] == "failed"
     assert report["checkout_revision"] == integrated
     assert report["finding"]["integrated_verdict"] == "failed"
+    path = ledger.run_path(PROJECT, run_id, repository)
+    assert payload["ledger_path"] == str(path)
+    assert path.read_text() == ledger.serialize_run(row)
+    assert not ledger.ledger_path(PROJECT, repository).exists()
+    assert _landing_commit_paths(repository) == [
+        path.relative_to(repository).as_posix()
+    ]
+    assert (
+        json.loads(_git(repository, "show", f"HEAD:{path.relative_to(repository)}"))
+        == row
+    )
 
 
 def test_verify_gate_cli_records_an_agreeing_head_without_a_finding(
@@ -2040,6 +2077,17 @@ def test_verify_gate_cli_records_an_agreeing_head_without_a_finding(
     row = ledger.load(PROJECT, root=repository)[0]["runs"][0]
     assert row["integrated_gate_check"]["integrated_verdict"] == "passed"
     assert row["integrated_gate_check"]["finding"] is None
+    path = ledger.run_path(PROJECT, run_id, repository)
+    assert payload["ledger_path"] == str(path)
+    assert path.read_text() == ledger.serialize_run(row)
+    assert not ledger.ledger_path(PROJECT, repository).exists()
+    assert _landing_commit_paths(repository) == [
+        path.relative_to(repository).as_posix()
+    ]
+    assert (
+        json.loads(_git(repository, "show", f"HEAD:{path.relative_to(repository)}"))
+        == row
+    )
 
 
 def test_verify_gate_cli_refuses_a_run_without_a_ledger_row(repository: Path) -> None:

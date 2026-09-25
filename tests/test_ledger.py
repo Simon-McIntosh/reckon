@@ -50,9 +50,12 @@ PROJECT = "proj"
 SESSION_ID = "019ff509-8a60-7723-94fd-65942a6d8faa"
 
 
-def _written(record: dict) -> dict:
-    """A committed row always records its shadow store outcome."""
-    return {**record, "store_write": {"status": "written"}}
+def _assert_run_file(project: str, root: Path, record: dict) -> Path:
+    """Verify the complete promoted record in its own canonical file."""
+    path = root / "docs" / "state" / project / "runs" / f"{record['run_id']}.json"
+    assert path.read_text() == ledger.serialize_run(record)
+    assert "store_write" not in json.loads(path.read_text())
+    return path
 
 
 # The complete observed row keeps checkout routing independent of which
@@ -288,8 +291,9 @@ def _historical_record(
     completed_at_source: str = "provided",
     worker_seconds: int = 7200,
 ) -> None:
-    ledger.append_run(
-        PROJECT,
+    """Seed an unsplit historical row for the aggregate repair entry points."""
+    data, version = ledger.load(PROJECT, repo)
+    data["runs"].append(
         ledger.build_record(
             run_id=run_id,
             plan="plan-a",
@@ -298,9 +302,10 @@ def _historical_record(
             completed_at=completed_at,
             completed_at_source=completed_at_source,
             worker_seconds=worker_seconds,
-        ),
-        root=repo,
+        )
     )
+    ledger.write(PROJECT, data, version, repo)
+    assert not ledger.run_path(PROJECT, run_id, repo).exists()
 
 
 def _historical_stream(
@@ -352,12 +357,16 @@ def test_a_foreign_projects_promoted_row_reaches_its_registered_checkout(
         "imas-codex", MISROUTED_PROMOTED_ROW, root=repo, allow_create=True
     )
 
-    owner_ledger = owner_state / "crew.json"
+    owner_run = _assert_run_file("imas-codex", owner, MISROUTED_PROMOTED_ROW)
     stray_ledger = repo / "docs" / "state" / "imas-codex" / "crew.json"
-    assert promoted["path"] == str(owner_ledger)
-    assert ledger.runs("imas-codex", owner) == [_written(MISROUTED_PROMOTED_ROW)]
-    assert promoted["run"] == _written(MISROUTED_PROMOTED_ROW)
+    assert promoted["path"] == str(owner_run)
+    assert ledger.runs("imas-codex", owner) == [MISROUTED_PROMOTED_ROW]
+    assert promoted["run"] == MISROUTED_PROMOTED_ROW
+    assert not (owner_state / "crew.json").exists()
     assert not stray_ledger.exists()
+    assert not ledger.run_path(
+        "imas-codex", MISROUTED_PROMOTED_ROW["run_id"], repo
+    ).exists()
 
 
 def test_an_explicit_checkout_is_used_when_the_mount_registry_is_absent(
@@ -365,9 +374,10 @@ def test_an_explicit_checkout_is_used_when_the_mount_registry_is_absent(
 ) -> None:
     promoted = ledger.append_run("imas-codex", MISROUTED_PROMOTED_ROW, root=repo)
 
-    requested_ledger = repo / "docs" / "state" / "imas-codex" / "crew.json"
-    assert promoted["path"] == str(requested_ledger)
-    assert ledger.runs("imas-codex", repo) == [_written(MISROUTED_PROMOTED_ROW)]
+    requested_run = _assert_run_file("imas-codex", repo, MISROUTED_PROMOTED_ROW)
+    assert promoted["path"] == str(requested_run)
+    assert ledger.runs("imas-codex", repo) == [MISROUTED_PROMOTED_ROW]
+    assert not ledger.ledger_path("imas-codex", repo).exists()
     assert not (home / "mounts.json").exists()
 
 
@@ -395,9 +405,10 @@ def test_a_projects_own_checkout_remains_its_promotion_target(home, repo) -> Non
 
     promoted = ledger.append_run(PROJECT, row, root=repo)
 
-    expected = repo / "docs" / "state" / PROJECT / "crew.json"
+    expected = _assert_run_file(PROJECT, repo, row)
     assert promoted["path"] == str(expected)
-    assert ledger.runs(PROJECT, repo) == [_written(row)]
+    assert ledger.runs(PROJECT, repo) == [row]
+    assert not ledger.ledger_path(PROJECT, repo).exists()
 
 
 def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
@@ -408,24 +419,27 @@ def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
     before = sorted(path.name for path in crew.live_dir().glob("*.json"))
     assert before == [f"{record['run_id']}.json"]
     assert ledger.member(PROJECT, record["member"], repo) is not None
+    aggregate = ledger.ledger_path(PROJECT, repo)
+    aggregate_before = aggregate.read_bytes()
 
     result = crew.complete(
         record["run_id"], gate="passed", commits=[record["base_sha"]]
     )
 
-    assert result["ledger_path"] == str(repo / "docs" / "state" / PROJECT / "crew.json")
-    assert result["ledger_version"] == 2
+    run_file = _assert_run_file(PROJECT, repo, result["record"])
+    assert result["ledger_path"] == str(run_file)
+    assert result["ledger_version"] is None
+    assert aggregate.read_bytes() == aggregate_before
     assert result["pointer_removed"] is True
     assert sorted(path.name for path in crew.live_dir().glob("*.json")) == []
     stored = ledger.runs(PROJECT, repo)
     assert [item["run_id"] for item in stored] == [record["run_id"]]
     assert stored[0]["gate"] == "passed"
     assert stored[0]["commits"] == [record["base_sha"]]
-    # The promotion commits its own ledger row, so no state file is left
-    # uncommitted — and the ledger is the only state it touched.
+    # Promotion commits its own run file and leaves no dirty state behind.
     changed = [line for line in _porcelain(repo) if "docs/state" in line]
     assert changed == []
-    ledger_relative = f"docs/state/{PROJECT}/crew.json"
+    run_relative = f"docs/state/{PROJECT}/runs/{record['run_id']}.json"
     committed = subprocess.run(
         ["git", "show", "--name-only", "--format=", "HEAD"],
         cwd=str(repo),
@@ -433,7 +447,7 @@ def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
         text=True,
         check=True,
     ).stdout.split()
-    assert ledger_relative in committed
+    assert committed == [run_relative]
 
 
 def test_promotion_reads_terminal_time_and_usage_without_observe(home, repo) -> None:
@@ -1143,6 +1157,8 @@ def test_completion_repair_command_requires_write_flag_to_persist(home, repo) ->
 def test_record_reads_filter_by_target_time_and_count(home, repo) -> None:
     from reckon import mcp
 
+    aggregate = ledger.ledger_path(PROJECT, repo)
+    assert not aggregate.exists()
     for run_id, plan, completed_at in (
         ("run-early", "alpha", "2027-01-01T01:00:00Z"),
         ("run-other", "beta", "2027-01-01T03:00:00Z"),
@@ -1178,7 +1194,9 @@ def test_record_reads_filter_by_target_time_and_count(home, repo) -> None:
 
     assert [record["run_id"] for record in selected] == ["run-latest"]
     assert [record["run_id"] for record in exposed["runs"]] == ["run-latest"]
-    assert exposed["version"] == 4
+    assert exposed["version"] == 0
+    assert not aggregate.exists()
+    assert len(list(aggregate.parent.joinpath("runs").glob("*.json"))) == 4
     assert "members" not in exposed
     assert "holds" not in exposed
 
@@ -1432,33 +1450,40 @@ def test_a_stale_expected_version_is_refused(home, repo) -> None:
 
 
 def test_two_interleaved_promotions_both_survive(home, repo, monkeypatch) -> None:
-    """The loser re-reads the winner's ledger and appends to that."""
+    """Interleaved appends write separate files without a shared version retry."""
+    ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
+    aggregate = ledger.ledger_path(PROJECT, repo)
+    before = aggregate.read_bytes()
     first = ledger.build_record(run_id="r-one", plan="plan-a", gate="passed")
     ledger.append_run(PROJECT, first, root=repo)
 
-    real_write = _store._write_json_envelope
+    real_open = Path.open
     intruder = ledger.build_record(run_id="r-two", plan="plan-a", gate="passed")
-    calls: list[int] = []
+    calls: list[str] = []
+    backoffs: list[int] = []
 
-    def racing_write(path, project, slug, data, expected_version):
-        calls.append(expected_version)
-        if len(calls) == 1:
-            # A concurrent orchestrator lands its record first.
-            competing, version = ledger.load(project, repo)
-            competing["runs"].append(dict(intruder))
-            real_write(path, project, slug, competing, version)
-        return real_write(path, project, slug, data, expected_version)
+    def racing_open(path, mode="r", *args, **kwargs):
+        if mode == "x" and path.parent == aggregate.parent / "runs":
+            calls.append(path.name)
+            if path.name == "r-three.json":
+                ledger.append_run(PROJECT, intruder, root=repo)
+        return real_open(path, mode, *args, **kwargs)
 
-    monkeypatch.setattr(_store, "_write_json_envelope", racing_write)
+    monkeypatch.setattr(Path, "open", racing_open)
+    monkeypatch.setattr(ledger, "_retry_backoff", backoffs.append)
     third = ledger.build_record(run_id="r-three", plan="plan-a", gate="passed")
     ledger.append_run(PROJECT, third, root=repo)
 
-    assert [item["run_id"] for item in ledger.runs(PROJECT, repo)] == [
+    assert sorted(item["run_id"] for item in ledger.runs(PROJECT, repo)) == [
         "r-one",
-        "r-two",
         "r-three",
+        "r-two",
     ]
-    assert len(calls) > 1, "the interleaved write must have forced a retry"
+    assert calls == ["r-three.json", "r-two.json"]
+    assert backoffs == []
+    assert aggregate.read_bytes() == before
+    for row in (first, intruder, third):
+        _assert_run_file(PROJECT, repo, row)
 
 
 def test_promotion_refuses_a_merge_conflicted_ledger(home, repo) -> None:
@@ -2218,6 +2243,9 @@ def test_the_crew_tool_reads_the_ledger_and_the_live_pointers(home, repo) -> Non
     from reckon import mcp
 
     record = _dispatch(repo)
+    aggregate = ledger.ledger_path(PROJECT, repo)
+    before = aggregate.read_bytes()
+    _, version_before = ledger.load(PROJECT, repo)
     ledger.append_run(
         PROJECT,
         ledger.build_record(run_id="r-one", plan="plan-a", gate="passed"),
@@ -2228,7 +2256,9 @@ def test_the_crew_tool_reads_the_ledger_and_the_live_pointers(home, repo) -> Non
     live = mcp._crew(PROJECT, view="live", checkout_path=str(repo))
 
     assert [item["run_id"] for item in committed["runs"]] == ["r-one"]
-    assert committed["version"] == 2
+    assert committed["version"] == version_before
+    assert aggregate.read_bytes() == before
+    _assert_run_file(PROJECT, repo, ledger.runs(PROJECT, repo)[0])
     assert [row["run_id"] for row in live["runs"]] == [record["run_id"]]
     assert live["runs"][0]["classification"] == "running"
 
@@ -2356,18 +2386,17 @@ def _measured_config(default: str) -> dict:
 
 
 def _row_from_disk(repo: Path, run_id: str) -> dict:
-    """Read one promoted row back out of the ledger file itself.
+    """Read one promoted row back out of its own run file.
 
     Deliberately not from the promotion return value and not from the pointer:
     the claim under test is that the figures reach durable storage, and a record
     handed back in memory cannot demonstrate that.
     """
-    stored = json.loads((repo / "docs" / "state" / PROJECT / "crew.json").read_text())
-    rows = [
-        item for item in stored["data"]["runs"] if str(item.get("run_id")) == run_id
-    ]
-    assert len(rows) == 1
-    return rows[0]
+    path = repo / "docs" / "state" / PROJECT / "runs" / f"{run_id}.json"
+    stored = json.loads(path.read_text())
+    assert stored["run_id"] == run_id
+    assert "store_write" not in stored
+    return stored
 
 
 def _terminal_result(fixture: str) -> dict:
@@ -2736,8 +2765,13 @@ def test_backfill_fills_two_figures_and_reports_missing_streams_as_skipped(
         changed_lines={"added": 4, "removed": 0, "files": 1},
         manifest_path=str(home / "crew" / "runs" / "r-missing" / "manifest.md"),
     )
-    for record in (filled, missing):
-        ledger.append_run(PROJECT, record, root=repo)
+    # The backfill consumes unsplit historical rows; append_run creates only
+    # current per-run files, so seed the historical source explicitly.
+    ledger.write(
+        PROJECT, {"members": [], "holds": [], "runs": [filled, missing]}, 0, repo
+    )
+    assert not ledger.run_path(PROJECT, "r-fillable", repo).exists()
+    assert not ledger.run_path(PROJECT, "r-missing", repo).exists()
 
     result = backfill_run_figures(PROJECT, root=repo)
 
@@ -2992,35 +3026,52 @@ def test_a_raising_store_write_is_recorded_and_never_propagated(
     assert real_store.exists() == was_present
 
 
-def test_a_successful_store_write_is_recorded_written_on_the_committed_row(
-    home, repo
+def test_a_successful_index_write_follows_the_file_and_is_reported(
+    home, repo, monkeypatch
 ) -> None:
+    from reckon import run_store
+
     record = ledger.build_record(run_id="r-store-ok", plan="plan-a", gate="passed")
     real_store = _real_store_path()
     was_present = real_store.exists()
+    append = run_store.append
+    attempts = []
+
+    def observed_append(project, row):
+        _assert_run_file(project, repo, row)
+        attempts.append(row["run_id"])
+        append(project, row)
+
+    monkeypatch.setattr(run_store, "append", observed_append)
 
     result = ledger.append_run(PROJECT, record, root=repo)
 
     assert result["store"] == {"status": "written"}
     stored = ledger.runs(PROJECT, repo)[0]
-    # A working shadow reports written rather than nothing, so the durable
-    # record can distinguish a healthy shadow from a promotion that predates
-    # the store entirely.
-    assert stored["store_write"] == {"status": "written"}
-    assert ledger.failed_store_write_count(PROJECT, repo) == 0
+    assert stored == record
+    assert "store_write" not in stored
+    assert attempts == [record["run_id"]]
+    assert ledger.index_lag(PROJECT, repo) == 0
     assert real_store.exists() == was_present
 
 
-def test_failed_store_writes_are_durable_and_countable(home, repo, monkeypatch) -> None:
+def test_failed_index_writes_leave_files_and_visible_lag(
+    home, repo, monkeypatch
+) -> None:
     from reckon import run_store
 
     first = ledger.build_record(run_id="r-store-first", plan="plan-a", gate="passed")
-    ledger.append_run(PROJECT, first, root=repo)
+    succeeded = ledger.append_run(PROJECT, first, root=repo)
     raw = ledger.runs(PROJECT, repo)[0]
-    assert raw["store_write"] == {"status": "written"}
-    assert ledger.failed_store_write_count(PROJECT, repo) == 0
+    assert raw == first
+    assert succeeded["store"] == {"status": "written"}
+    assert "store_write" not in raw
+    assert ledger.index_lag(PROJECT, repo) == 0
+    attempts = []
 
-    def broken_append(_project: str, _record_entry: dict) -> None:
+    def broken_append(project: str, record_entry: dict) -> None:
+        _assert_run_file(project, repo, record_entry)
+        attempts.append(record_entry["run_id"])
         raise RuntimeError("injected store failure")
 
     monkeypatch.setattr(run_store, "append", broken_append)
@@ -3029,11 +3080,19 @@ def test_failed_store_writes_are_durable_and_countable(home, repo, monkeypatch) 
 
     assert failed["store"]["status"] == "failed"
     stored = {entry["run_id"]: entry for entry in ledger.runs(PROJECT, repo)}
-    assert stored["r-store-first"]["store_write"] == {"status": "written"}
-    assert stored["r-store-second"]["store_write"]["status"] == "failed"
-    assert "RuntimeError" in stored["r-store-second"]["store_write"]["error"]
-    # The count is a number over the ledger, independent of any command output.
-    assert ledger.failed_store_write_count(PROJECT, repo) == 1
+    assert stored["r-store-first"] == first
+    assert stored["r-store-second"] == second
+    assert "store_write" not in stored["r-store-first"]
+    assert "store_write" not in stored["r-store-second"]
+    assert "RuntimeError" in failed["store"]["error"]
+    assert attempts == [second["run_id"]]
+    index_before = run_store.store_path().read_bytes()
+    assert ledger.index_lag(PROJECT, repo) == 1
+    assert ledger.index_lag(PROJECT, repo) == 1
+    assert run_store.store_path().read_bytes() == index_before
+    run_store.import_ledger(PROJECT, root=repo)
+    assert ledger.index_lag(PROJECT, repo) == 0
+    _assert_run_file(PROJECT, repo, second)
 
 
 def test_existing_readers_are_identical_with_the_store_present_and_deleted(
@@ -3125,20 +3184,13 @@ def test_the_store_is_created_from_empty_and_counts_its_rows_as_a_number(
 def test_tearing_the_store_down_leaves_the_committed_file_byte_identical(
     home, repo
 ) -> None:
-    """Reverting the expand stage is deleting a file the committed file never depended on.
-
-    The store is a shadow nothing reads: after four promotions it holds four
-    rows and the committed ledger holds the same four, and tearing the store
-    down leaves the committed file's bytes untouched. No reader was cut over
-    to the store, so the number of readers that notice its removal is zero —
-    the same file bytes and the same reader answers before and after.
-    """
+    """Deleting the index preserves every authoritative run file and its readers."""
     from reckon import run_store
 
     real_store = _real_store_path()
     was_present = real_store.exists()
     store_file = run_store.store_path()
-    committed = ledger.ledger_path(PROJECT, repo)
+    aggregate = ledger.ledger_path(PROJECT, repo)
 
     for index in range(4):
         record = ledger.build_record(
@@ -3153,17 +3205,20 @@ def test_tearing_the_store_down_leaves_the_committed_file_byte_identical(
     with run_store.RunStore() as stored:
         stored_count = len(stored.durable_rows(PROJECT))
     assert stored_count == 4
-    before = committed.read_bytes()
+    before = {
+        path: path.read_bytes()
+        for path in aggregate.parent.joinpath("runs").glob("*.json")
+    }
+    assert len(before) == 4
+    assert not aggregate.exists()
     assert store_file.is_file()
 
     store_file.unlink()
     assert not store_file.exists()
 
-    # The committed file is byte-identical with the store torn down, which is
-    # what makes the expand stage reversible: deleting a file nothing reads.
-    assert committed.read_bytes() == before
-    # No reader was cut over: the number of readers the store's absence changes
-    # is zero, so the file still yields the same rows the store shadowed.
+    assert {path: path.read_bytes() for path in before} == before
+    assert ledger.index_lag(PROJECT, repo) == "no index"
+    assert not store_file.exists()
     assert [entry["run_id"] for entry in ledger.runs(PROJECT, repo)] == [
         "r-teardown-0",
         "r-teardown-1",

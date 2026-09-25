@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -887,14 +888,20 @@ def record_gate_rerun_at_integrated_revision(
         timeout_seconds=timeout_seconds,
         command=command,
     )
-    patched = [dict(item) for item in data["runs"]]
-    for index, item in enumerate(patched):
-        if str(item.get("run_id") or "") == run_id:
-            patched[index]["integrated_gate_check"] = report
-            break
-    new_version = ledger.write(
-        project, {**data, "runs": patched}, version, ledger_root
-    )
+    record_path = ledger.run_path(project, run_id, ledger_root)
+    if record_path.is_file():
+        _update_run_record(record_path, run_id, {"integrated_gate_check": report})
+        new_version = None
+    else:
+        record_path = ledger.ledger_path(project, ledger_root)
+        patched = [dict(item) for item in data["runs"]]
+        for index, item in enumerate(patched):
+            if str(item.get("run_id") or "") == run_id:
+                patched[index]["integrated_gate_check"] = report
+                break
+        new_version = ledger.write(
+            project, {**data, "runs": patched}, version, ledger_root
+        )
     from reckon import run_store
 
     store_synopsis = run_store.import_ledger(project, root=ledger_root)
@@ -902,7 +909,7 @@ def record_gate_rerun_at_integrated_revision(
         run_id=run_id,
         verdict=str(report.get("integrated_verdict") or "not-run"),
         checkout=checkout,
-        paths=[ledger.ledger_path(project, ledger_root)],
+        paths=[record_path],
         subject=f"record({run_id}): re-run gate at integrated {integrated_revision}",
         body=(
             "Re-run the run's stored gate command against the merged tree and "
@@ -914,9 +921,11 @@ def record_gate_rerun_at_integrated_revision(
     return {
         "run_id": run_id,
         "project": project,
-        "ledger_path": str(ledger.ledger_path(project, ledger_root)),
+        "ledger_path": str(record_path),
         "ledger_version": new_version,
-        "checkout_on_integrated_revision": report.get("checkout_on_integrated_revision"),
+        "checkout_on_integrated_revision": report.get(
+            "checkout_on_integrated_revision"
+        ),
         "checkout_revision": report.get("checkout_revision"),
         "report": report,
         "finding": report.get("finding"),
@@ -3058,6 +3067,35 @@ def _release_after_promotion(
         }
 
 
+def _update_run_record(
+    path: Path, run_id: str, changes: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Amend only this run's record through the canonical serialiser."""
+    record = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(record, dict) or record.get("run_id") != run_id:
+        raise ledger.LedgerError(f"run {run_id!r} does not match {path}")
+    updated = {**record, **changes}
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as stream:
+            temporary = Path(stream.name)
+            stream.write(ledger.serialize_run(updated))
+            stream.flush()
+            os.fsync(stream.fileno())
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+    return updated
+
+
 def _record_release_on_ledger(
     *,
     project: str,
@@ -3073,24 +3111,29 @@ def _record_release_on_ledger(
     outcome durable as well: later readers can distinguish a removed tree from
     one retained for a dirty, unintegrated, live-referenced, or failed run.
     """
-    path = ledger.ledger_path(project, root)
+    path = ledger.run_path(project, run_id, root)
+    per_run = path.is_file()
+    if not per_run:
+        path = ledger.ledger_path(project, root)
     last_error: Exception | None = None
     for _attempt in range(12):
-        data, version = ledger.load(project, root=root)
-        rows = list(data.get("runs") or [])
-        updated: dict[str, Any] | None = None
-        replaced: list[dict[str, Any]] = []
-        for row in rows:
-            candidate = dict(row)
-            if str(candidate.get("run_id") or "") == run_id:
-                candidate["release"] = dict(release)
-                updated = candidate
-            replaced.append(candidate)
-        if updated is None:
-            return dict(release), None
-        data["runs"] = replaced
         try:
-            ledger.write(project, data, version, root=root)
+            if per_run:
+                updated = _update_run_record(path, run_id, {"release": dict(release)})
+            else:
+                data, version = ledger.load(project, root=root)
+                updated = None
+                replaced = []
+                for row in data.get("runs") or []:
+                    candidate = dict(row)
+                    if str(candidate.get("run_id") or "") == run_id:
+                        candidate["release"] = dict(release)
+                        updated = candidate
+                    replaced.append(candidate)
+                if updated is None:
+                    return dict(release), None
+                data["runs"] = replaced
+                ledger.write(project, data, version, root=root)
             if checkout is not None:
                 staged = _git(checkout, "add", "--", str(path), check=False)
                 if staged.returncode:
@@ -3114,7 +3157,7 @@ def _record_release_on_ledger(
                         f"{amended.stderr.strip() or amended.stdout.strip()}",
                         rollback,
                     )
-        except (ledger.LedgerError, CrewError, OSError) as exc:
+        except (ledger.LedgerError, CrewError, OSError, ValueError) as exc:
             last_error = exc
             continue
         return dict(release), updated
@@ -3791,9 +3834,12 @@ def _complete_locked(
         None,
     )
     if existing is not None:
+        existing_path = ledger.run_path(project, run_id, ledger_root)
+        if not existing_path.is_file():
+            existing_path = ledger.ledger_path(project, ledger_root)
         with _report_written_ledger_row(
             run_id,
-            ledger_path=ledger.ledger_path(project, ledger_root),
+            ledger_path=existing_path,
             row_present=lambda: _ledger_holds_row(project, ledger_root, run_id),
         ):
             comment = (
@@ -3845,7 +3891,7 @@ def _complete_locked(
             result = {
                 "run_id": run_id,
                 "project": project,
-                "ledger_path": str(ledger.ledger_path(project, ledger_root)),
+                "ledger_path": str(existing_path),
                 "ledger_version": ledger_version,
                 "pointer_removed": not path.exists(),
                 "record": dict(existing),
@@ -4267,14 +4313,17 @@ def _complete_locked(
         if existing is None:
             raise
         already_promoted = True
+        existing_path = ledger.run_path(project, run_id, ledger_root)
+        if not existing_path.is_file():
+            existing_path = ledger.ledger_path(project, ledger_root)
         written = {
-            "path": str(ledger.ledger_path(project, ledger_root)),
+            "path": str(existing_path),
             "version": ledger_version,
             "run": dict(existing),
         }
     with _report_written_ledger_row(
         run_id,
-        ledger_path=ledger.ledger_path(project, ledger_root),
+        ledger_path=written["path"],
         row_present=lambda: _ledger_holds_row(project, ledger_root, run_id),
     ):
         # The shadow store outcome rides on the ordinary payload, not a flag or a
@@ -4294,7 +4343,7 @@ def _complete_locked(
             verdict=str(gate).strip().lower(),
             checkout=checkout,
             paths=[
-                ledger.ledger_path(project, ledger_root),
+                Path(written["path"]),
                 *_plan_comment_store_path(
                     project=project,
                     plan=str(node.get("plan") or ""),
