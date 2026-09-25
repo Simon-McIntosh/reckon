@@ -134,8 +134,45 @@ def watch_stream_path(project: str) -> Path:
     return watch_lock_path(project).with_suffix(".events")
 
 
+# One source file's content digest, kept beside the stat that vouches for it.
+# A follower re-checks its stamp at a bounded cadence and most ticks find
+# nothing new, so the mtime and size let an untouched file reuse the digest it
+# had last time rather than reading every follower module on every tick.
+_follower_source_digests: dict[str, tuple[int, int, str]] = {}
+
+
+def _source_content_digest(source: Path, metadata: os.stat_result) -> str:
+    """Return a digest of a source file's bytes, reused while its stat holds.
+
+    The stat is a pre-check, not the identity: a tool that rewrites a file with
+    identical bytes — a formatter, a checkout restoring the same revision —
+    moves the mtime alone, and a stamp keyed on it reloaded every follower for
+    nothing. An unchanged mtime and size reuse the last digest; a moved one
+    reads the bytes and finds them the same, so the stamp does not move.
+    """
+    key = str(source)
+    cached = _follower_source_digests.get(key)
+    if (
+        cached is not None
+        and cached[0] == metadata.st_mtime_ns
+        and cached[1] == metadata.st_size
+    ):
+        return cached[2]
+    try:
+        digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    except OSError:
+        digest = ""
+    _follower_source_digests[key] = (metadata.st_mtime_ns, metadata.st_size, digest)
+    return digest
+
+
 def follower_code_stamp() -> str:
-    """Return a stamp that advances when code used by a follower changes."""
+    """Return a stamp that advances when code used by a follower changes.
+
+    Keyed on content rather than on the mtime and size alone, because a touched
+    file whose bytes are unchanged is not new code and must not reload a
+    running follower.
+    """
     package_dir = Path(__file__).resolve().parent.parent
     sources = [package_dir / "cli.py", *sorted((package_dir / "crew").glob("*.py"))]
     stamp = hashlib.sha256()
@@ -145,7 +182,7 @@ def follower_code_stamp() -> str:
         except OSError:
             continue
         stamp.update(str(source.relative_to(package_dir)).encode())
-        stamp.update(f":{metadata.st_mtime_ns}:{metadata.st_size}\n".encode())
+        stamp.update(f":{_source_content_digest(source, metadata)}\n".encode())
     return stamp.hexdigest()
 
 

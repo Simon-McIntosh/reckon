@@ -2,6 +2,7 @@ import json
 import os
 import shlex
 import shutil
+import subprocess
 import sys
 import time
 from collections.abc import Iterable, Mapping
@@ -1731,6 +1732,28 @@ def _import_root(module) -> Path:
     raise RuntimeError(f"cannot identify the import root for {module.__name__}")
 
 
+# A follower re-executes itself into new code on every stamp change. If the new
+# image cannot load — a merge midway through a module leaves conflict markers,
+# and the replacement dies with SyntaxError before it can draw a row for the run
+# that just needed its coordinator — the follower is gone until someone notices
+# an empty pane. So the reload is proven safe in a throwaway interpreter before
+# it is performed: every module the follower's package carries is compiled (the
+# conflict-marker case is a syntax error, which compiling finds even where an
+# import would not reach), and the entry modules are imported so an import-time
+# failure is caught too.
+_FOLLOWER_RELOAD_PROBE = (
+    "import pathlib, sys\n"
+    "root = sys.argv[1]\n"
+    "sys.path.insert(0, root)\n"
+    "package = pathlib.Path(root, 'reckon')\n"
+    "for path in sorted(package.rglob('*.py')):\n"
+    "    compile(path.read_bytes(), str(path), 'exec')\n"
+    "import reckon.cli, reckon.crew.dispatch, reckon.crew.runs\n"
+)
+
+_FOLLOWER_RELOAD_PROBE_TIMEOUT = 30.0
+
+
 class _FollowerReloader:
     """Replace a stale follower only at a complete stream-record boundary."""
 
@@ -1742,12 +1765,14 @@ class _FollowerReloader:
         stream=None,
         deadline: float | None = None,
         owner: tuple[int, str] | None = None,
+        color: bool = False,
     ) -> None:
         from reckon.crew import runs
 
         self.project = project
         self.registration = registration
         self.stream = stream
+        self.color = color
         # The instant this arming ends, handed to the replacement only through
         # the environment ``os.execve`` passes: it never enters this image's
         # ``os.environ``, so no child started here inherits it.
@@ -1761,6 +1786,35 @@ class _FollowerReloader:
         self.import_root = _import_root(runs)
         self.checked_at: float | None = None
         self.failed = False
+        # The stamp whose replacement was proven unimportable and therefore not
+        # performed. Kept so the check is not repeated and the deferred line is
+        # not reprinted on every tick; a reload retries only once the code
+        # changes again.
+        self.deferred_stamp: str | None = None
+
+    def _replacement_imports(self) -> tuple[bool, str]:
+        """Prove the replacement image loads before re-executing into it.
+
+        Run in a throwaway interpreter against the same import root the exec
+        leads with, because this process is the wrong place to discover that the
+        new code does not parse: a failed import here would take the live pane
+        down with it. Returns whether the image is safe and, when it is not, one
+        line naming why.
+        """
+        try:
+            completed = subprocess.run(
+                [sys.executable, "-c", _FOLLOWER_RELOAD_PROBE, str(self.import_root)],
+                capture_output=True,
+                text=True,
+                timeout=_FOLLOWER_RELOAD_PROBE_TIMEOUT,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            return False, f"{type(exc).__name__}: {exc}"
+        if completed.returncode == 0:
+            return True, ""
+        lines = (completed.stderr or completed.stdout or "").strip().splitlines()
+        return False, (lines[-1] if lines else f"exit {completed.returncode}")
 
     def poll(self, checkpoint: Mapping[str, Any]) -> None:
         """Check at a bounded cadence and re-exec with the reader checkpoint."""
@@ -1776,7 +1830,22 @@ class _FollowerReloader:
         ):
             return
         self.checked_at = moment
-        if runs.follower_code_stamp() == self.code_stamp:
+        current_stamp = runs.follower_code_stamp()
+        if current_stamp == self.code_stamp:
+            return
+        if current_stamp == self.deferred_stamp:
+            return
+        reloadable, reason = self._replacement_imports()
+        if not reloadable:
+            self.deferred_stamp = current_stamp
+            line = (
+                "reckon crew follow deferred its reload: the new image does not "
+                f"import ({reason}); keeping the current image, retrying when the "
+                "code changes"
+            )
+            if self.color:
+                line = _dim_history_line(line)
+            _echo_follow_line(line, stream=self.stream)
             return
 
         os.environ[_FOLLOWER_CHECKPOINT_ENV] = json.dumps(
@@ -2653,7 +2722,11 @@ def crew_follow(
 
     def stream_events(registration):
         reloader = _FollowerReloader(
-            project, registration, deadline=deadline_epoch, owner=owner
+            project,
+            registration,
+            deadline=deadline_epoch,
+            owner=owner,
+            color=getattr(grid, "color", False),
         )
 
         def poll(checkpoint) -> None:
