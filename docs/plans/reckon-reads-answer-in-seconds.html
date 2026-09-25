@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="reckon-reads-answer-in-seconds">
   <meta name="plan-title" content="Reckon Reads Answer In Seconds">
   <meta name="plan-summary" content="A warm project audit, roadmap summary and discovery answer in seconds rather than approaching the 30 s storage deadline.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-commits" content="436c75f3,37c8988a,f7f6fe29,057d8ad0,4784f497">
-<meta name="plan-impl" content="0.85">
-<meta name="plan-version" content="16">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="17">
 </head>
 <body>
   <main class="plan-doc">
@@ -114,20 +114,23 @@
     <pre class="r-fu-prompt">/reckon-build reckon-reads-answer-in-seconds §2</pre>
     <p class="r-fu-outcome">§2 profiled the slow reads (73fe3c82); §3 landed the stat-keyed parse_plan memo and the audit's shared parse (merged at 3045e05c): warm audit 35.4 → 14.6 s, roadmap summary 11.8 → 7.8 s, discovery 9.7 → 1.0 s.</p>
     </article>
-<article class="r-fu" data-id="f-rraiss-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-09-25" data-recommends-skill="/reckon-build reckon-reads-answer-in-seconds" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-rraiss-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-09-25" data-recommends-skill="/reckon-build reckon-reads-answer-in-seconds" data-resolved-at="2026-09-25T16:28:57+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">Bring the audit and roadmap under five seconds</h4>
     <div class="r-fu-body"><p>The residual profile after the parse memo: <code>_plan_html.read_state</code> and <code>from_html</code> in the MCP validation path (about 18 s profiled across 184 calls) and <code>partition_live_runs</code> (about 17 s, 9.8 s of it observing logs). Memoize <code>read_state</code> in <code>reckon/_store.py</code> on the same file signature, and make live-run partitioning read the watch producer's recorded classification, as sprint liveness now does.</p></div>
     <pre class="r-fu-prompt">/reckon-build reckon-reads-answer-in-seconds</pre>
+    <p class="r-fu-outcome">done, no followup: roadmap met its bound through the read-state memo and recorded live-run classification, and a warm audit now answers in 0.914 s median against the 5 s bound</p>
     </article>
-<article class="r-fu" data-id="f-rraiss-one-read-pairs-state-and-text" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-25" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-rraiss-one-read-pairs-state-and-text" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-25" data-recommends-skill="" data-resolved-at="2026-09-25T16:28:57+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">A plan read takes its state and its text from one read of the file</h4>
     <div class="r-fu-body"><p>Found by the review of read-state-and-live-runs-reuse (86). In <code>reckon/_store.py</code> <code>read_plan</code>, the state comes from <code>_plan_html.read_state_file(html_file)</code> and the text from <code>_plan_html._read_plan_text(html_file)</code>. These are two independent memoized lookups, each keyed on its own stat of the file. A write landing between them pairs a state parsed from the old bytes with text from the new, and <code>_unparsed_section_warnings</code> then reports authored children of a section that the stale state shows empty. Before the memo, one read produced both.</p><p>The fix: one call that stats and reads the file once and returns the parsed state and the text that state was parsed from, memoized as a pair on one file signature. <code>read_plan</code> uses that pair. Keep the memo's speed: a warm read must not parse twice.</p><p>Test: replace the file between the two halves of a read (monkeypatch the text read to rewrite the file first). Assert that the state and text a read returns come from the same bytes. The test must fail at the current head.</p></div>
     <pre class="r-fu-prompt">/reckon-build reckon-reads-answer-in-seconds f-rraiss-one-read-pairs-state-and-text</pre>
+    <p class="r-fu-outcome">landed in f3bf0d55 and a32f80d8 (merged 3bdd35cd): read_state_and_text_file returns the parsed state and the text it was parsed from out of one read, memoized as a pair; the replacement test is red at base and green at head; review 90</p>
     </article>
-<article class="r-fu" data-id="f-rraiss-mcp-validation-reads-through-memo" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-25" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-rraiss-mcp-validation-reads-through-memo" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-25" data-recommends-skill="" data-resolved-at="2026-09-25T16:28:57+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">The MCP validation loop reads each plan through the memo</h4>
     <div class="r-fu-body"><p>read-state-and-live-runs-reuse brought roadmap under its bound. Audit still has a median of 8.01 s against the 5 s target. The remaining cost is a direct <code>from_html</code> loop in <code>reckon/mcp.py</code>'s validation path, which parses each plan's HTML itself rather than going through the memoized read. Route that loop through the memoized parse, so a warm audit parses each unchanged plan at most once.</p><p>Done when: a warm <code>reckon audit --project reckon</code> has a median under 5 s over three interleaved runs against the base on one host, each run's log kept. The audit's findings are unchanged between base and head, compared as sorted sets. The named mcp and audit tests show no added failures.</p></div>
     <pre class="r-fu-prompt">/reckon-build reckon-reads-answer-in-seconds f-rraiss-mcp-validation-reads-through-memo</pre>
+    <p class="r-fu-outcome">landed in e2045fc6 and 30a75b95 (merged 984e8538): the audit validation loop reads each plan through the stat-keyed memo; warm audit median 5.519 s to 0.914 s over three interleaved runs per arm, 155 findings identical, 74 to 81 passed; review 96</p>
     </article>
 </section>
 
