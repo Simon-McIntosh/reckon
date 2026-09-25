@@ -518,6 +518,18 @@
       <code>test.log</code>. No negative control is declared: a docstring-only change carries no
       behaviour a test could fail against.
     </p>
+    <p>
+      <strong>Follow-up text pass (<code>1a494b54</code>).</strong> A fuller line-by-line scan of
+      <code>reckon/crew/promotion.py</code> found three further comments carrying the same
+      overstatement with different wording: the routing-evidence comment said the run directory is
+      deleted after the manifest is read; the worker-exit comment said the record is copied before
+      the directory is released; and the shadow-contamination comment said the directory is
+      released after the append. All three now say promotion releases the live pointer and the
+      worktree and the run directory survives until <code>crew gc</code>. A grep of the module for
+      <code>directory is released</code>, <code>directory is deleted</code>, and
+      <code>released.*run directory</code> returns nothing; <code>tests/test_promotion_keeps_the_worker_exit.py</code>
+      2 passed at the follow-up head. Comments only, no code line changed.
+    </p>
 
     <h2 id="s10">&sect;10 &mdash; The launch leaves through the allocation's batch step</h2>
     <p>
