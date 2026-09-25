@@ -214,7 +214,13 @@ def test_spawn_merges_declared_environment_over_inherited_values(
     assert environment["API_BASE"] == "https://endpoint.invalid"
 
 
-def test_run_record_agent_configuration_excludes_environment(home, repo) -> None:
+def test_run_record_agent_configuration_excludes_environment(
+    home, repo, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The run owns a harness home only when it is fenced, so the fence is opted
+    # into here: without it the plan environment carries the declared entries
+    # alone and the comparison below would be measuring the unfenced path.
+    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
     launched: dict[str, object] = {}
     config = copy.deepcopy(CONFIG)
     config["backends"]["alpha"]["environment"] = {"API_TOKEN": "must-not-enter-ledger"}

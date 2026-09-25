@@ -15,10 +15,11 @@ Two properties, and the third is what makes the first two mean anything:
   refused with the main checkout's plan file byte-identical;
 * the operator's codex login is bound read-only into the run's codex home and
   stays readable and unremovable there;
-* a codex launch outside the fence keeps the operator's own home: the run's
-  codex home and its bound login exist to answer the fence, so with no fence
-  there is neither, and CODEX_HOME is left as the operator set it rather than
-  pointed at an empty run home that holds no login;
+* a launch outside the fence keeps the operator's own home: the run's harness
+  home and its bound codex login exist to answer the fence, so with no fence
+  there is neither, and CLAUDE_CONFIG_DIR and CODEX_HOME are left as the
+  operator set them rather than pointed at an empty run home that holds no
+  login;
 * the declared negative control leaves ``CLAUDE_CONFIG_DIR`` unset, and the
   harness then writes its state under the stand-in ``~/.claude``, where the
   fence refuses it. Without the control the suite would pass against a wiring
@@ -459,12 +460,13 @@ def test_an_unfenced_codex_launch_keeps_the_operators_home(
 ) -> None:
     """No fence means no home to answer, so the operator's own is kept.
 
-    The run's codex home exists to survive the fence, which seals the
-    operator's ``~/.codex`` read-only and exposes the login into the run. With
-    no fence there is neither a seal to answer nor a login bound in, so a
-    CODEX_HOME pointed at an empty run home would displace the operator's login
-    with nothing. The unfenced launch therefore sets no CODEX_HOME and seeds no
-    home, while the fenced launch beside it does both.
+    The run's harness home exists to survive the fence, which seals the
+    operator's ``~/.claude`` and ``~/.codex`` read-only and exposes the codex
+    login into the run. With no fence there is neither a seal to answer nor a
+    login bound in, so a home pointed at an empty run directory would displace
+    the operator's own state with nothing. An unfenced launch therefore sets
+    neither ``CLAUDE_CONFIG_DIR`` nor ``CODEX_HOME`` and seeds no home, while
+    the fenced launches beside it do both.
     """
     fixture = Fixture(tmp_path)
     fixture.isolate(monkeypatch)
@@ -486,13 +488,14 @@ def test_an_unfenced_codex_launch_keeps_the_operators_home(
         str(codified / "auth.json"),
     ] in _bind_pairs(fenced.argv, "--ro-bind")
 
-    # The claude-shaped harness still adopts its home unfenced: a transcript
-    # must land in the run whichever way the worker was launched, and only the
-    # codex home is a fence artefact.
+    # Every dialect keeps the operator's home unfenced: the run's own home is a
+    # fence artefact, and with no fence the operator's hooks, memory and
+    # sessions must be the ones the harness reads.
     claude_unfenced = fixture.plan(fence=False)
-    assert claude_unfenced.environment["CLAUDE_CONFIG_DIR"] == str(
-        fixture.run / "harness"
-    )
+    assert "CLAUDE_CONFIG_DIR" not in claude_unfenced.environment
+    assert "CODEX_HOME" not in claude_unfenced.environment
+    assert not (fixture.run / "harness").exists()
+    assert claude_unfenced.argv[0] != _backends.FENCE_BINARY
 
 
 @requires_bwrap

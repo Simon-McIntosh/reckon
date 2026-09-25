@@ -1,14 +1,18 @@
 """A resume of a fenced run reaches its harness, not the fence wrapped round it.
 
-The fence became the composition default, so every dispatch's argv is
-``<fence> <binds...> -- <harness> ...`` and the first element names the fence.
-A run record keeps the harness in two places: the explicit ``command`` field,
-written from the composed argv's first element, and the argv itself. For a
-fenced launch the field therefore holds the fence, and a resume that fed it back
-as the harness composed a fence inside a fence — bubblewrap was handed the
-harness's own flags, refused them, and the resumed run produced no turn. The
-recorded ``command`` field stays the authority for an unfenced or placed launch,
-where it is the only place the harness was recorded beside the scheduler.
+A fenced dispatch's argv is ``<fence> <binds...> -- <harness> ...`` and the
+first element names the fence. A run record keeps the harness in two places:
+the explicit ``command`` field, written from the composed argv's first element,
+and the argv itself. For a fenced launch the field therefore holds the fence,
+and a resume that fed it back as the harness composed a fence inside a fence —
+bubblewrap was handed the harness's own flags, refused them, and the resumed run
+produced no turn. The recorded ``command`` field stays the authority for an
+unfenced or placed launch, where it is the only place the harness was recorded
+beside the scheduler.
+
+The fence is opt-in through ``dispatch.FENCE_WORKERS``, so a test of fenced
+resume states the fence it tests: each case below sets ``FENCE_WORKERS`` true
+before it resumes, rather than relying on a launcher default.
 
 Four properties:
 
@@ -156,6 +160,7 @@ def test_a_fenced_clive_resume_reaches_the_clive_harness(
     """
     fixture = Fixture(tmp_path, "clive")
     fixture.isolate(monkeypatch)
+    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
     record, plan = fixture.resume(fence=True)
     argv = list(plan.argv)
 
@@ -187,6 +192,7 @@ def test_a_fenced_codex_resume_finds_the_runs_own_rollout(
     """
     fixture = Fixture(tmp_path, "codex")
     fixture.isolate(monkeypatch)
+    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
     _, plan = fixture.resume(fence=True)
     argv = list(plan.argv)
 
@@ -223,6 +229,7 @@ def test_a_placed_records_command_field_is_still_the_harness(
     """
     fixture = Fixture(tmp_path, "clive")
     fixture.isolate(monkeypatch)
+    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
     record = fixture.record(fence=False)
     record["argv"] = ["srun", "--job-name", fixture.run_id, *record["argv"]]
     assert Path(record["command"]).name == "clive"
@@ -244,13 +251,14 @@ def test_the_negative_control_reads_the_command_field_as_today(
 ) -> None:
     """The declared mutation: the recorded field is taken as the harness.
 
-    Before the fence became the default this was the whole rule, so removing the
-    fence refusal restores it. The fenced clive case must then yield the fence
-    as the inner command: if it did not, the refusal would not be the reason the
-    inner command is the harness.
+    With the fence off this is the whole rule, so removing the fence refusal
+    restores it. The fenced clive case must then yield the fence as the inner
+    command: if it did not, the refusal would not be the reason the inner
+    command is the harness.
     """
     fixture = Fixture(tmp_path, "clive")
     fixture.isolate(monkeypatch)
+    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
     monkeypatch.setattr(dispatch_module, "_names_the_fence", lambda command: False)
 
     _, plan = fixture.resume(fence=True)
@@ -270,12 +278,15 @@ def _negative_control_report(root: Path) -> list[str]:
     config_home.mkdir(parents=True, exist_ok=True)
     saved_home = os.environ.get("RECKON_HOME")
     saved_probe = dispatch_module._names_the_fence
+    saved_fence = dispatch_module.FENCE_WORKERS
     os.environ["RECKON_HOME"] = str(config_home)
+    dispatch_module.FENCE_WORKERS = True
     dispatch_module._names_the_fence = lambda command: False
     try:
         record, plan = fixture.resume(fence=True)
     finally:
         dispatch_module._names_the_fence = saved_probe
+        dispatch_module.FENCE_WORKERS = saved_fence
         if saved_home is None:
             os.environ.pop("RECKON_HOME", None)
         else:
