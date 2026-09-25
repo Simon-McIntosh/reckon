@@ -3811,6 +3811,7 @@ def dispatch(
                 )
             except _backends.BackendError as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
+        dispatch_host = _current_host_facts()
         prompt = compose_prompt(
             node=node,
             project=project,
@@ -3831,6 +3832,7 @@ def dispatch(
                 for peer in adjacent_peers
             },
             peer_channel_path=str(_channel_root(run_id)),
+            host_line=_worker_host_line(dispatch_host, directory),
         )
         if shadow_lineage:
             prompt += (
@@ -3993,7 +3995,8 @@ def dispatch(
                         writable_directories=resolution.sandbox_write_roots or (),
                         final_message_path=str(final_path),
                         resume_session=reuse_session,
-                    )
+                    ),
+                    facts=dispatch_host,
                 )
                 # Read before the placement wraps the plan: the harness is
                 # argv[0] here, and after the wrap argv[0] is the scheduler.
@@ -4058,6 +4061,10 @@ def dispatch(
                 },
                 "worktree": worktree["path"],
             }
+            if dispatch_host.in_allocation:
+                record["directive"]["environment"] = {
+                    "PATH": launch_search_path(facts=dispatch_host)
+                }
 
         # Publish the pointer before probing the watcher. Otherwise a watcher
         # could drain an empty fleet between the probe and this write, leaving
@@ -4107,6 +4114,7 @@ def dispatch(
                             prompt_path=prompt_path,
                             log_path=log_path,
                             stderr_path=stderr_path,
+                            facts=dispatch_host,
                         ),
                     )
                     spawned_pid = _start_supervisor(spec_path, directory, run_id)
@@ -4575,16 +4583,76 @@ class LaunchResolutionError(CrewError):
     """A backend command could not be resolved against the launching PATH."""
 
 
-def launch_search_path(environment: Mapping[str, str] | None = None) -> str:
-    """Return the PATH a launch will search: the plan's environment, then ours."""
+def _current_host_facts() -> Any:
+    """Read placement once at the decision that consumes it."""
+    from reckon import host
+
+    return host.host_facts()
+
+
+def _worker_shim_directory() -> Path:
+    """Return the scheduler-shim directory from its owning module."""
+    from reckon.nested_launch import shim_directory
+
+    return shim_directory()
+
+
+def _worker_host_line(facts: Any, run_directory: str | Path) -> str:
+    """State the compute-host contract in one worker-prompt line."""
+    if not facts.in_allocation:
+        return ""
+    node = facts.node or "unknown"
+    job = facts.job_id or "unknown"
+    scratch = "/tmp"  # noqa: S108 — the host probe's explicit scratch path
+    tmp_clause = (
+        f"{scratch} is node-local"
+        if facts.tmp_is_node_local
+        else f"{scratch} is not node-local"
+    )
+    return (
+        f"HOST — ALLOCATION: node {node}; job {job}; {tmp_clause}; do not use "
+        "srun, sbatch or salloc because the worker already runs on the node; "
+        f"logs a later reader needs go under {run_directory}."
+    )
+
+
+def launch_search_path(
+    environment: Mapping[str, str] | None = None,
+    *,
+    facts: Any | None = None,
+) -> str:
+    """Return the effective worker PATH, adding scheduler shims on compute."""
     merged = {**os.environ, **(environment or {})}
-    return str(merged.get("PATH") or os.defpath)
+    inherited = str(merged.get("PATH") or os.defpath)
+    placement = _current_host_facts() if facts is None else facts
+    if not placement.in_allocation:
+        return inherited
+    shim_directory = _worker_shim_directory()
+    resolved_shim = os.path.realpath(shim_directory)
+    inherited_entries = [
+        entry
+        for entry in inherited.split(os.pathsep)
+        if entry and os.path.realpath(entry) != resolved_shim
+    ]
+    return os.pathsep.join([str(shim_directory), *inherited_entries])
+
+
+def _launch_environment(
+    environment: Mapping[str, str] | None = None,
+    *,
+    facts: Any | None = None,
+) -> dict[str, str]:
+    """Return the process environment with its effective worker search path."""
+    merged = {**os.environ, **(environment or {})}
+    merged["PATH"] = launch_search_path(environment, facts=facts)
+    return merged
 
 
 def resolve_launch_executable(
     plan: _backends.LaunchPlan,
     *,
     environment: Mapping[str, str] | None = None,
+    facts: Any | None = None,
 ) -> _backends.LaunchPlan:
     """Return the plan with argv[0] replaced by an absolute executable path.
 
@@ -4598,11 +4666,8 @@ def resolve_launch_executable(
     ``environment`` is the overlay the launch will run with; absent, the plan's
     own environment is used, which is what every construction site passes.
     """
-    merged = {
-        **os.environ,
-        **(plan.environment if environment is None else environment),
-    }
-    searched = str(merged.get("PATH") or os.defpath)
+    selected_environment = plan.environment if environment is None else environment
+    searched = launch_search_path(selected_environment, facts=facts)
     binary = str(plan.argv[0]) if plan.argv else ""
     resolved = shutil.which(binary, path=searched) if binary else None
     if not resolved:
@@ -4920,6 +4985,7 @@ def _supervisor_spec(
     prompt_path: Path,
     log_path: Path,
     stderr_path: Path,
+    facts: Any | None = None,
 ) -> dict[str, Any]:
     """Describe everything the supervisor needs to take over the launch.
 
@@ -4943,7 +5009,7 @@ def _supervisor_spec(
         "plan": {
             "argv": list(plan.argv),
             "cwd": plan.cwd,
-            "environment": dict(plan.environment),
+            "environment": _launch_environment(plan.environment, facts=facts),
             "dialect": plan.dialect,
             "backend": plan.backend,
         },
