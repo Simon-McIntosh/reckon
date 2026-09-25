@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-informs" content="agent-plan-authoring">
@@ -432,6 +432,9 @@ Done-when
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260925T041106765340-registration-census-read-set-is-pinned" data-who="reckon-build" data-when="2026-09-25T04:18:29Z">
     <div class="r-comment-body"><p><strong>The census read set is now pinned</strong> — commit <code>1d176dd7</code>. The census built its read set from <code>SKILL.md</code> plus every file under <code>references/</code>, but nothing asserted the set stayed that wide: measured at base <code>636909e6</code>, narrowing the read set to <code>[root / "SKILL.md"]</code> still passed (1 passed, 55 deselected, exit 0), so an instruction moved out of <code>SKILL.md</code> into a reference would be reported clean by a check that no longer read it. The test now asserts <code>SKILL.md</code>, <code>references/sprint-orchestration.md</code> and <code>references/conditional-guidance.md</code> are in the read set before the census runs — membership, not exact-set equality, so a new conditional reference needs no registration to keep the test green. <code>tests/test_skill_contracts.py</code>: <strong>56 passed</strong>, exit 0, the same count as base (the pin adds an assertion inside the existing census test, not a new test). The declared negative control was executed and logged: narrowing the read set to <code>SKILL.md</code> alone fails the new assertion, naming <code>references/sprint-orchestration.md</code> as dropped, and the file was restored to its identical SHA-256 before re-running green. No skill file change is carried. Full record: <a href="/reckon/evidence/archive/reckon-skill-overhaul-landed.html#registration-census-read-set-pinned">the census read set is pinned</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260925T033922570489-review-of-no-registration-pin-covers-the-references" data-who="reckon-build" data-when="2026-09-25T04:10:39.501Z">
+    <div class="r-comment-body"><p>review of no-registration-pin-covers-the-references stored: 17-20, unpinned read set routed to registration-census-read-set-is-pinned</p></div>
 </div>
 </section>
 </main>
