@@ -24,7 +24,6 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew, flight, ledger
-from reckon.calibration import agent_configuration_key
 from reckon.crew import recovery, review, runs
 from reckon.crew.dispatch import shadow as dispatch_shadow
 from reckon.crew.refusals import format_refusal
@@ -2893,6 +2892,8 @@ def test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first(
     original_session = "019ff509-8a60-7723-94fd-65942a6d8faa"
     fresh_session = "019ff509-8a60-7723-94fd-65942a6d8fab"
     ledger.register_member("proj", "worker-a", harness="alpha", root=repo)
+    roster_path = repo / "docs" / "state" / "proj" / "crew.json"
+    roster_before = roster_path.read_bytes()
     first = crew.dispatch(
         node=_node(),
         project="proj",
@@ -2904,6 +2905,8 @@ def test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first(
     )
     Path(first["log_path"]).write_text((FIXTURES / "codex-turn.jsonl").read_text())
     crew.observe(first["run_id"])
+
+    original_record = crew.read_pointer(first["run_id"])
 
     other_config = {
         **CONFIG,
@@ -2934,7 +2937,7 @@ def test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first(
     )
     Path(second["log_path"]).write_text(fresh_stream)
     observed = crew.observe(second["run_id"])
-    member = ledger.member("proj", "worker-a", repo)
+    fresh_record = crew.read_pointer(second["run_id"])
 
     original_agent = {
         "backend": "alpha",
@@ -2947,12 +2950,16 @@ def test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first(
 
     assert observed["session_id"] == fresh_session
     assert observed["session_capture"]["captured"] is True
-    assert member["session_id"] == original_session
-    assert member["session_model"] == "some-model"
-    assert member["sessions"] == {
-        agent_configuration_key({"agent": original_agent}): original_session,
-        agent_configuration_key({"agent": fresh_agent}): fresh_session,
-    }
+    assert original_record["session_id"] == original_session
+    assert original_record["session_harness"] == "codex"
+    assert original_record["session_model"] == "some-model"
+    assert original_record["agent"] == original_agent
+    assert fresh_record["session_id"] == fresh_session
+    assert fresh_record["session_harness"] == "codex"
+    assert fresh_record["session_model"] == "other-model"
+    assert fresh_record["agent"] == fresh_agent
+    assert crew.read_pointer(first["run_id"]) == original_record
+    assert roster_path.read_bytes() == roster_before
 
 
 def test_observe_records_a_backends_headroom_when_it_reports_one(home, repo) -> None:

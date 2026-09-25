@@ -167,7 +167,7 @@ def test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it
     assert recorded["session_id"] == captured
     assert recorded["session_harness"] == "codex"
     assert recorded["session_model"] == MEDIUM_AGENT["model"]
-    assert recorded["agent"] == {**MEDIUM_AGENT, "dialect": "codex"}
+    assert recorded["agent"] == MEDIUM_AGENT
     assert ledger.member("proj", "worker-a", repo) == entry
     assert roster_path.read_bytes() == roster_before
 
