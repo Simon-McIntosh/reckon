@@ -837,7 +837,11 @@ exit: 0</pre>
     refusal whenever <code>RECKON_RUN_ID</code> is in its environment, which is true of
     any pytest process a worker starts. The first version of this record reported that
     as a follow-on, because the test files it lands in were outside the node's write
-    scope; review found it fleet-breaking and the scope was extended to close it.</p>
+    scope; review found it fleet-breaking and directed the fixture that closes it into
+    <code>tests/conftest.py</code>. The run's dispatch fence still does not name that
+    file &mdash; a worker may not move its own fence, and a widen refuses a run whose
+    manifest reports complete &mdash; so the delivery carries that one scope finding for
+    the coordinator to resolve at promotion.</p>
 
     <p><strong>The measurement, before and after.</strong> With <code>RECKON_RUN_ID</code>
     exported in the invoking shell, as it is in every worker's shell, over the seven

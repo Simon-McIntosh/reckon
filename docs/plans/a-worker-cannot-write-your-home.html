@@ -432,22 +432,28 @@
         exports <code>RECKON_RUN_ID</code> into every worker, so any worker whose gate
         runs the plan-write tests met the refusal for a run that is not the test's:
         with the variable exported, <code>tests/test_edit_plan.py</code> reads
-        <code>66 failed / 13 passed</code>, and the eight declared files read
-        <code>72 failed / 119 passed</code>. The scope was extended to close it. An
+        <code>66 failed / 13 passed</code>, and the seven declared files read
+        <code>72 failed / 107 passed</code>. The fixture that closes it lives in
+        <code>tests/conftest.py</code>, which the run's dispatch fence does not include,
+        so the delivery carries that one scope finding for the coordinator to resolve at
+        promotion rather than a fence this worker may move. An
         autouse fixture in <code>tests/conftest.py</code> now removes
         <code>RECKON_RUN_ID</code>, <code>RECKON_MANIFEST</code> and
         <code>RECKON_ATTEMPT_STARTED_AT</code> for every test, so no test inherits the
         identity of the worker running it, and a test whose subject <em>is</em> the run
         scope sets what it needs itself. Measured with the variable exported in the
         invoking shell, as it is in a worker's shell: base (feature commit, no fixture)
-        <code>72 failed / 119 passed</code>, head <code>196 passed / 0 failed</code> over
-        the nine files. The same review found the no-readable-pointer branch untested;
+        <code>72 failed / 107 passed</code>, head (<code>e784afea</code>)
+        <code>196 passed / 0 failed</code> over the nine files. The same review found the
+        no-readable-pointer branch untested;
         <code>test_a_run_with_no_readable_pointer_is_refused</code> now covers it and
         asserts the refusal names the run and leaves both plan files byte-identical.
         Lint clean on both repaired files at base and head. Commit
         <code>4dce31a2</code>; logs at
         <code>docs/figures/a-worker-cannot-write-your-home/gate-ambient-base.txt</code>,
         <code>gate-ambient-head.txt</code>,
+        <code>gate-ambient-base-nine.txt</code>,
+        <code>gate-head-with-ambient-run-id.txt</code>,
         <code>edit-plan-ambient-before.txt</code>,
         <code>edit-plan-ambient-after.txt</code>. Evidence:
         <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-plan-write</code>.</p></div>
