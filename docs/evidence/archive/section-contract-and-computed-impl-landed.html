@@ -407,6 +407,125 @@ sections.0.effort_hours
     its header (revision, tree, command, imported module path) is
     <code>cohort-at-head.log</code> &mdash; see <code>cohort-at-head.log</code>.</p>
   </section>
+  <section id="typed-section-write-boundary">
+    <h2>§2 — Typed section creation, with the wider gate retained as blocked</h2>
+    <p><strong>Measured 2026-09-25.</strong> The implementation is committed locally in
+    <code>ae15796309309739255391b206dbd1cf92ae4b5c</code>, following the contract-test
+    commit <code>1a819a671286ce674f4e7eb32cc006dd7fe5d9d5</code>. Changed source and test
+    paths are <code>reckon/_store.py</code> and
+    <code>tests/test_section_contract_is_refused.py</code>. The existing
+    <code>SectionRecord</code> schema and HTML record writer are reused without changes.
+    This record does not declare the section closed: the wider gate has three added
+    failures in concurrently owned tests.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/write-boundary.svg"
+           alt="A section append validates its record before writing heading, body and metadata. Invalid records and new numbered text headings without records are refused with an example. Existing prose keeps its normal edit path.">
+      <figcaption>The two paths covered here are state-mode append and text replacement.
+      The separate legacy insert_section operation remains a follow-on.</figcaption>
+    </figure>
+    <h3>What the write boundary now does</h3>
+    <p><code>append</code> with <code>target="sections"</code> accepts an item containing
+    <code>id</code>, <code>title</code>, body HTML, <code>effort_hours</code>,
+    <code>capability</code> and explicit <code>links</code> (an empty list is valid).
+    It validates the existing quarter-hour effort, capability and reference contract,
+    initializes tool-owned attempts to zero, preserves a predeclared section status or
+    defaults it to implementable, and queues heading/prose insertion with the typed
+    record for one atomic versioned write. An invalid item, duplicate identity, embedded
+    heading or structured-state fragment is refused before persistence. A plan with no
+    structured collections can append before its closing main element.</p>
+    <p>A text edit compares actual numbered heading identities before and after replacement.
+    A newly introduced <code>h2 id="sN"</code> without a typed record is refused. Partial
+    record validation failures also carry a worked example. Text edits to existing
+    unrecorded headings remain valid; escaped examples of headings and headings in research
+    documents do not introduce plan work. Existing structured-state protections still apply.</p>
+    <h3>Reproduction and refusal receipts</h3>
+    <p>At base <code>0bbeb7ec5559e4a9e0aa1a1d96f4b2c735e927e9</code>, the initial 32-case
+    reproduction reported <strong>30 failed, 2 passed</strong>. Valid appends failed with
+    <code>unsupported plan append target 'sections'</code>; the new-heading text refusal
+    assertion failed with <code>DID NOT RAISE ValueError</code>. Both legacy-edit controls
+    passed, showing that the fixture could reach the working text-write path.</p>
+    <p>The public edit_plan wrapper was exercised against an isolated document fixture at
+    the committed implementation head. State-mode append returned <code>ok: true</code>,
+    version 1, and a reread contained all six record fields. Text-mode insertion then
+    returned <code>ok: false</code>, <code>error: text_edit_error</code>, with this detail:</p>
+    <pre><code>new sections ['s3'] missing effort_hours and capability: no typed section record.
+Use edit_plan mode=state. Example: {"op": "append", "target": "sections", "item": {
+  "id": "s2", "title": "Implement and verify",
+  "body": "&lt;p&gt;Describe the work and its acceptance check.&lt;/p&gt;",
+  "effort_hours": 1.25,
+  "capability": {"version": "1.0", "class": "general", "requirements": {
+    "reasoning": "standard", "verification": "strict", "risk": "low"}},
+  "links": []}}</code></pre>
+    <p>The refused public edit leaves both state and version unchanged. The tests also
+    parse the JSON example from each contract refusal and successfully submit it through
+    the same store boundary; the example is executable evidence rather than a substring
+    assertion. The final test file contains <strong>41 passing cases</strong>. The focused
+    gate including the existing record round-trip and section-write files reports
+    <strong>86 passed in 3.44 seconds</strong>. Intermediate focused logs retain two
+    fixture corrections: adding the required plan title, and asserting section order without
+    requiring an empty followup placeholder that the writer correctly removes.</p>
+    <h3>The declared negative control</h3>
+    <p>The exact declaration was executed at the committed implementation head:</p>
+    <pre><code>remove the check that refuses a text-mode edit introducing a new h2 without a section record in reckon/_store.py; the text refusal case in tests/test_section_contract_is_refused.py must fail</code></pre>
+    <p>The control removes exactly the new check from <code>_replace_authored_html</code>
+    in an isolated Python process using its parsed syntax tree. The committed file is
+    unchanged, and the mutated function is retained as an artifact. The designated test
+    fails with <code>DID NOT RAISE ValueError</code>: <strong>1 failed in 0.43 seconds</strong>,
+    exit 1. The red log begins with the declaration verbatim and prints the source module
+    path, revision and working directory.</p>
+    <h3>The required broader gate does not pass by delta</h3>
+    <table>
+      <thead><tr><th>Revision</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Added failure IDs</th></tr></thead>
+      <tbody>
+        <tr><td>base <code>0bbeb7ec5559e4a9e0aa1a1d96f4b2c735e927e9</code></td><td>2709</td><td>5</td><td>3</td><td>baseline</td></tr>
+        <tr><td>implementation <code>ae15796309309739255391b206dbd1cf92ae4b5c</code></td><td>2747</td><td>8</td><td>3</td><td><strong>3</strong></td></tr>
+      </tbody>
+    </table>
+    <p>Selection uses Python import syntax: all 77 existing test files importing
+    <code>reckon._store</code> or <code>reckon._plan_html</code>, including imports via
+    <code>from reckon import ...</code>. The after arm adds the new test file. Both arms
+    run on compute allocation <code>1277272</code> with the shared project interpreter,
+    <code>PYTHONPATH</code> pinned to the assigned worktree, four pytest workers,
+    a 90-second per-test bound and distinct node-local basetemps. Base elapsed time is
+    359.15 seconds; after elapsed time is 352.70 seconds. All five baseline failure IDs
+    remain, and no new contract test fails. Three other IDs are added:</p>
+    <table>
+      <thead><tr><th>Added failure ID</th><th>Observed assertion receipt</th></tr></thead>
+      <tbody>
+        <tr><td><code>tests/test_ledger.py::test_a_promoted_row_carries_the_budget_fallback_its_pointer_held</code></td><td><code>assert _outside_state() == outside</code> differs on a live peer-run pointer timestamp and the snapshot item list.</td></tr>
+        <tr><td><code>tests/test_promotion_reads_the_terminal_record.py::test_a_stream_that_never_receives_a_terminal_record_keeps_the_mtime_fallback</code></td><td><code>assert 6.618664166890085 &lt; 5.0</code></td></tr>
+        <tr><td><code>tests/test_receipt_after_release.py::test_a_live_writer_that_never_emits_a_receipt_keeps_the_fallback</code></td><td><code>assert 5.516770105808973 &lt; 5.0</code></td></tr>
+      </tbody>
+    </table>
+    <p>These files belong to the concurrent timing-bounds node. Their failure receipts are
+    reported without triage, repair, rerunning for a different result, or attribution to
+    a candidate change. The required zero-added-failure gate is therefore
+    <strong>blocked</strong>. The coordinator can reconcile that owner's work and dispatch
+    the separately owned merged-head verification.</p>
+    <h3>Artifacts, remaining scope and integrity</h3>
+    <p>The durable run directory is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T035550325744-a-section-without-its-contract-is-refused/</code>.
+    It retains <code>gate-targets.json</code>, <code>baseline.log</code>,
+    <code>after.log</code>, their JSON receipts, <code>failure-delta.json</code>,
+    <code>added-failure-receipts.json</code>, <code>reproduction.log</code>,
+    <code>focused-complete.log</code>, <code>negative-control.log</code>,
+    <code>negative-control-mutated-function.py</code>,
+    <code>public-boundary-receipts.json</code> and <code>lint-delta.json</code>.
+    Every cohort log names its revision, tree, command and imported source path.
+    Lint is unchanged at 14 pre-existing findings, with zero added; both changed Python
+    files pass the formatting check.</p>
+    <p>Follow-ons remain explicit: the audit-doc warning requires the peer-owned CLI path;
+    the MCP op vocabulary does not yet advertise <code>append sections</code>; and the
+    existing <code>insert_section</code> operation still allows untyped insertion, a
+    compatibility behavior pinned by <code>tests/test_edit_plan_section_writes.py</code>.
+    That route needs a coordinated contract migration before the broader promise that
+    every possible section-creation route refuses untyped work can be made.</p>
+    <p>The landing prose and this evidence anchor are append-only. Plan declarations,
+    driving followups, status, implementation fraction, version and modified date are
+    unchanged. Direct prose editing follows the worker contract requiring unchanged
+    stamps; the version-stamping edit_plan route was not used for this landing record.
+    The coordinator owns integration, closure and the outstanding gate.</p>
+  </section>
 </main>
 </body>
 </html>

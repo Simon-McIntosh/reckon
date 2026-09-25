@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 370" role="img" aria-labelledby="title description">
+  <title id="title">Typed section creation at the write boundary</title>
+  <desc id="description">A state append validates the section record, then writes its heading, prose and metadata atomically. An invalid contract or a text edit introducing a numbered heading without a record reaches refusal before writing. Text edits that introduce no new section keep the existing prose-edit path.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7" fill="none" stroke="#334155"/></marker>
+  </defs>
+  <g font-family="system-ui, sans-serif" font-size="17" fill="#172b3a">
+    <text x="24" y="42" font-size="21" font-weight="600">Validate before writing; existing prose remains editable</text>
+    <text x="24" y="107">append sections</text>
+    <path d="M182 101H292" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+    <rect x="300" y="72" width="240" height="58" rx="4" fill="#eff8f7" stroke="#16736d"/>
+    <text x="420" y="98" text-anchor="middle">Validate SectionRecord</text>
+    <text x="420" y="119" text-anchor="middle" font-size="14">effort · capability · links</text>
+    <path d="M540 101H715" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+    <text x="610" y="88" font-size="14">valid</text>
+    <text x="730" y="99">Write heading + body + record</text>
+    <text x="730" y="123" font-size="14">One versioned, atomic write</text>
+    <path d="M420 130V190H715" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+    <text x="433" y="166" font-size="14">invalid</text>
+    <rect x="725" y="163" width="291" height="61" rx="4" fill="#fff5ed" stroke="#9a4b14"/>
+    <text x="740" y="187" font-weight="600">Refuse before writing</text>
+    <text x="740" y="210" font-size="14">Name the field + show a valid append</text>
+    <text x="24" y="259">text edit</text>
+    <path d="M111 253H292" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+    <rect x="300" y="226" width="270" height="56" rx="4" fill="#eff8f7" stroke="#16736d"/>
+    <text x="435" y="249" text-anchor="middle">Compare numbered h2 identities</text>
+    <text x="435" y="271" text-anchor="middle" font-size="14">before → after</text>
+    <path d="M570 250H650V204H715" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+    <text x="666" y="247" font-size="14">new heading,</text>
+    <text x="666" y="265" font-size="14">no record</text>
+    <path d="M435 282V329H715" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+    <text x="454" y="314" font-size="14">no new section</text>
+    <text x="730" y="334">Keep the usual prose-edit checks</text>
+  </g>
+</svg>
