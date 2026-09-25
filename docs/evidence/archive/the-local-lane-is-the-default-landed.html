@@ -1056,6 +1056,36 @@ E  reckon.crew.ScopeConflict: write scope 'pkg/hot.py' conflicts with live claim
     it does not claim the separately assembled merged head. The worker leaves the driving followup
     open and makes no terminal plan-state change for the coordinator to adjudicate.</p>
   </section>
+
+  <section id="headroom-publishes-real-readings">
+    <h2>&sect;5 — Codex rollouts and local occupancy now reach the published document
+      <a class="anchor" href="#headroom-publishes-real-readings">#</a></h2>
+    <p><strong>Cause confirmed.</strong> The prior gatherer asked only live run session
+    readers for Codex quota data, while Codex writes its <code>rate_limits</code> windows into
+    session rollouts. The repair scans recent rollout files, attributes a raw provider account
+    to the configured Codex profile when a run identifies one, and keeps the newest reading per
+    account. Claude continues through the existing stream reader. The publisher also reads
+    <code>~/public/imas-ambix/lane.json</code> and carries its running count, derived ceiling,
+    headroom, router width and in-flight count, waiting counts, KV occupancy, prefix hit rate,
+    observation time and per-block staleness in <code>local_lane</code>.</p>
+    <table>
+      <thead><tr><th>Evidence</th><th>Observed</th></tr></thead>
+      <tbody>
+        <tr><td>Node test</td><td><code>tests/test_headroom_publishes_real_readings.py</code>: 4 passed; Codex rollout, real Claude stream, local fixture and atomic temp publish all asserted</td></tr>
+        <tr><td>Compatibility gate</td><td><code>tests/test_paid_lanes_document.py tests/test_budget.py</code>: 84 passed, 0 failures</td></tr>
+        <tr><td>Host publish</td><td><code>host-publish.json</code> records 10 accounts; observed windows are present for <code>claude</code>, <code>claude-opus</code>, <code>codex</code>, <code>codex-astra</code>, <code>codex-luna</code> and <code>codex-terra</code>, of which the receipt marks four stale: <code>claude</code> (53 h), <code>claude-opus</code> (21 d), <code>codex-astra</code> (2.8 h) and <code>codex-terra</code> (13 h), so only <code>codex</code> and <code>codex-luna</code> carry current readings; the local block is <code>state=measured</code></td></tr>
+        <tr><td>Host local block</td><td>From <code>host-publish.json</code>: <code>running=12</code>, <code>ceiling=19</code>, <code>headroom=7</code>, <code>gate_width=14</code>, <code>in_flight=13</code>, <code>gate_waiting=0</code>, <code>kv_occupancy=0.28</code>, <code>prefix_hit_rate=0.988</code>, <code>stale=false</code></td></tr>
+        <tr><td>Negative control</td><td>Removing the rollout reader makes the Codex account assertion fail; the declared first line is retained in the red log</td></tr>
+      </tbody>
+    </table>
+    <p>The implementation and test are in commit <code>904d3baf</code>. Gate logs and the
+    host receipt are under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T115122496308-headroom-publishes-real-readings/</code>:
+    <code>headroom-focused.log</code>, <code>paid-budget-focused.log</code>,
+    <code>host-publish.log</code> and <code>host-publish.json</code>. The negative control is
+    <code>negative-control.log</code>. Timer durability and the refresh figure remain separate
+    follow-on work.</p>
+  </section>
 </main>
 </body>
 </html>

@@ -441,6 +441,9 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260925T132804824009-review-of-worker-digest-generator" data-who="reckon-build" data-when="2026-09-25T13:39:52Z">
     <div class="r-comment-body"><p>review record stored and read by the coordinator</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260925T115122496308-headroom-publishes-real-readings" data-who="reckon-build" data-when="2026-09-25T14:06:00Z">
+    <div class="r-comment-body"><p>Cause repaired in <code>904d3baf</code>, with shelf-life handling added in <code>6b51b1ee</code> and a real Claude stream fixture added in <code>f863abdb</code>: the publisher reads recent Codex <code>rate_limits</code> from rollout JSONL, maps a rollout to its configured Codex profile when the run identifies one, retains the Claude stream reader, and publishes a measured <code>local_lane</code> block from <code>lane.json</code>. The node gate is 4 passed in <code>tests/test_headroom_publishes_real_readings.py</code>; the paid-lanes and budget compatibility gate is 84 passed. The committed host artifact <code>host-publish.json</code> records 10 accounts, observed windows for <code>claude</code>, <code>claude-opus</code>, <code>codex</code>, <code>codex-astra</code>, <code>codex-luna</code> and <code>codex-terra</code>, and a measured local block (<code>running=12</code>, <code>ceiling=19</code>, <code>headroom=7</code>, <code>gate_width=14</code>, <code>in_flight=13</code>, <code>gate_waiting=0</code>, <code>kv_occupancy=0.28</code>, <code>prefix_hit_rate=0.988</code>, <code>stale=false</code>). The declared rollout-removal negative control and the stream-removal case are red/unknown in the run record. This node leaves the driving followup and terminal status to the coordinator.</p></div>
+</div>
 </section>
 </main>
 </body>

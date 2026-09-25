@@ -77,6 +77,12 @@ RECKON_HOME_ENV = "RECKON_HOME"
 #: can point every reader at one document without editing code.
 DOCUMENT_ENV = "RECKON_PAID_LANES_DOCUMENT"
 
+# The local service publishes this document independently of the metered
+# account timer.  The override exists so an isolated publisher can read a
+# fixture without consulting the operator's live lane.
+LOCAL_LANE_DOCUMENT_PATH = "~/public/imas-ambix/lane.json"
+LOCAL_LANE_DOCUMENT_ENV = "RECKON_LOCAL_LANE_DOCUMENT"
+
 #: The user units the refresh deployment installs. The service publishes the
 #: document once; the timer activates that service on its own clock so no
 #: dispatch or pre-flight has to be the thing that refreshes it.
@@ -148,6 +154,55 @@ class Candidate:
 
     source: str
     reading: window_reading.WindowReading
+
+
+def local_lane_path(path: str | Path | None = None) -> Path:
+    """Resolve the local-lane telemetry document."""
+    if path is not None:
+        return Path(path).expanduser()
+    override = os.environ.get(LOCAL_LANE_DOCUMENT_ENV)
+    return Path(override or LOCAL_LANE_DOCUMENT_PATH).expanduser()
+
+
+def read_local_lane(
+    path: str | Path | None = None,
+    *,
+    moment: datetime | None = None,
+    stale_seconds: float = DEFAULT_STALE_SECONDS,
+) -> dict[str, Any]:
+    """Read the local lane's published occupancy and mark an old sample stale."""
+    now = moment or datetime.now(tz=UTC)
+    try:
+        with local_lane_path(path).open(encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except (OSError, ValueError):
+        payload = None
+    if not isinstance(payload, Mapping):
+        return {"state": UNKNOWN, "observed_at": None, "stale": False}
+    observed = _parse_stamp(payload.get("observed_at"))
+    if observed is None:
+        return {"state": UNKNOWN, "observed_at": None, "stale": False}
+    gate = payload.get("router_generation_gate")
+    gate = gate if isinstance(gate, Mapping) else {}
+    age = (now - observed).total_seconds()
+    shelf_life = payload.get("suggested_shelf_life_seconds")
+    if isinstance(shelf_life, bool) or not isinstance(shelf_life, (int, float)):
+        shelf_life = stale_seconds
+    return {
+        "state": str(payload.get("state") or "measured"),
+        "running": payload.get("running"),
+        "ceiling": payload.get("concurrent_requests"),
+        "headroom": payload.get("headroom"),
+        "gate_width": gate.get("width"),
+        "in_flight": gate.get("in_flight"),
+        "waiting": payload.get("waiting"),
+        "gate_waiting": gate.get("waiting"),
+        "kv_occupancy": payload.get("kv_occupancy"),
+        "prefix_hit_rate": payload.get("prefix_hit_rate"),
+        "observed_at": observed.isoformat(),
+        "age_seconds": age,
+        "stale": age > float(shelf_life),
+    }
 
 
 def document_path(path: str | Path | None = None) -> Path:
@@ -328,6 +383,7 @@ def compose_document(
     | None = None,
     moment: datetime | None = None,
     stale_seconds: float = DEFAULT_STALE_SECONDS,
+    local_lane: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compose the one published document, one entry per account.
 
@@ -352,6 +408,7 @@ def compose_document(
         "generated_by": "reckon.crew.paid_lanes",
         "observed_at": now.isoformat(),
         "accounts": entries,
+        "local_lane": dict(local_lane or {"state": UNKNOWN}),
     }
 
 
@@ -472,6 +529,7 @@ def gather_sources(
     records: Iterable[Mapping[str, Any]] | None = None,
     pointers: Iterable[Mapping[str, Any]] | None = None,
     rollouts: Callable[[str], object] | None = None,
+    rollout_root: str | Path | None = None,
 ) -> dict[str, list[Candidate]]:
     """Gather each account's candidate readings from the three recorded homes.
 
@@ -482,6 +540,7 @@ def gather_sources(
     reconciled reading could not say.
     """
     from reckon import budget, crew, ledger
+    from reckon.crew import rollout as rollout_module
 
     now = moment or datetime.now(tz=UTC)
     if records is not None:
@@ -556,7 +615,111 @@ def gather_sources(
         )
         if stream is not None:
             by_account[name].append(Candidate(source="stream", reading=stream))
+
+    # A promoted or unrelated Codex run may have no live crew pointer at all.
+    # Its client rollout still records the account's rate limits, so scan the
+    # durable rollout homes and let the newest event for each account speak.
+    session_backends = {
+        str(row.get("session_id")): budget._run_backend(row)
+        for row in [*rows, *live]
+        if isinstance(row, Mapping) and row.get("session_id")
+    }
+    if rollouts is None:
+        rollout_candidates = _codex_rollout_candidates(
+            wanted,
+            root=rollout_root or rollout_module.CLIENT_SESSIONS_DIR,
+            moment=now,
+            session_backends=session_backends,
+        )
+        for account, candidate in rollout_candidates.items():
+            by_account.setdefault(account, []).append(candidate)
     return by_account
+
+
+ROLLOUT_TAIL_BYTES = 1_048_576
+
+
+def _codex_rollout_candidates(
+    accounts: set[str],
+    *,
+    root: str | Path,
+    moment: datetime,
+    session_backends: Mapping[str, str],
+) -> dict[str, Candidate]:
+    """Read the newest in-window Codex rollout reading for each account."""
+    from reckon import budget
+
+    newest: dict[str, tuple[datetime, Candidate]] = {}
+    base = Path(root).expanduser()
+    if not base.is_dir():
+        return {}
+    for path in base.glob("*/*/*/rollout-*.jsonl"):
+        try:
+            age = (
+                moment - datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+            ).total_seconds()
+            if age > 7 * 24 * 3600:
+                continue
+        except OSError:
+            continue
+        latest: tuple[datetime, Mapping[str, Any]] | None = None
+        session_id = ""
+        try:
+            with path.open("rb") as stream:
+                first = stream.readline()
+                size = stream.seek(0, os.SEEK_END)
+                stream.seek(max(0, size - ROLLOUT_TAIL_BYTES))
+                tail = stream.read().decode("utf-8", errors="ignore")
+            lines = [first.decode("utf-8", errors="ignore"), *tail.splitlines()]
+            for line in lines:
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(record, Mapping):
+                    continue
+                payload = record.get("payload")
+                if record.get("type") == "session_meta" and isinstance(
+                    payload, Mapping
+                ):
+                    session_id = str(
+                        payload.get("session_id") or payload.get("id") or ""
+                    )
+                if not isinstance(payload, Mapping):
+                    continue
+                limits = payload.get("rate_limits")
+                stamp = budget._parse_stamp(record.get("timestamp"))
+                if (
+                    isinstance(limits, Mapping)
+                    and stamp is not None
+                    and (latest is None or stamp > latest[0])
+                ):
+                    latest = (stamp, limits)
+        except (OSError, UnicodeError):
+            continue
+        if latest is None:
+            continue
+        observed, limits = latest
+        account = str(limits.get("limit_id") or "").strip()
+        profile = session_backends.get(session_id, "")
+        # Profiles share a provider account in the raw object.  When a run
+        # explicitly names a configured Codex profile, retain that account key
+        # so the document reflects the backend the run actually used.
+        if profile.startswith("codex") and profile in accounts:
+            account = profile
+        if account not in accounts:
+            continue
+        if (moment - observed).total_seconds() > 7 * 24 * 3600:
+            continue
+        reading = budget._rate_limits_reading(
+            limits, observed_at=observed, moment=moment
+        )
+        if not reading.known:
+            continue
+        candidate = Candidate(source="rollout", reading=reading)
+        if account not in newest or observed > newest[account][0]:
+            newest[account] = (observed, candidate)
+    return {account: candidate for account, (_stamp, candidate) in newest.items()}
 
 
 def systemd_user_dir() -> Path:
@@ -742,7 +905,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         if accounts and project
         else {}
     )
-    document = compose_document(accounts, sources=sources, moment=moment)
+    document = compose_document(
+        accounts,
+        sources=sources,
+        moment=moment,
+        local_lane=read_local_lane(moment=moment),
+    )
     written = write_document_atomically(document, path)
     print(f"wrote {written}: {len(document['accounts'])} account(s)")
     return 0

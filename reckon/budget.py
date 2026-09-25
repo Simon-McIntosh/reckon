@@ -52,6 +52,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Callable, Iterable, Mapping
 
 from reckon import _backends, crew, ledger
@@ -2339,6 +2340,45 @@ def _rollout_reading(
         figures=tuple(figures),
         observed_at=observed_at,
         age_seconds=(moment - observed_at).total_seconds(),
+    )
+
+
+def _rate_limits_reading(
+    rate_limits: Mapping[str, Any], *, observed_at: datetime, moment: datetime
+) -> window_reading.WindowReading:
+    """Translate one raw Codex ``rate_limits`` object into window figures.
+
+    Rollout files retain the provider object directly, while the normal lanes
+    reader receives a :class:`RolloutReceipt`.  Keeping this conversion beside
+    that reader makes both surfaces use the same window mapping and percentage
+    handling; a missing or malformed field remains an unknown window.
+    """
+    readings: dict[int, rollout_module.QuotaReading] = {}
+    for name in ("primary", "secondary"):
+        row = rate_limits.get(name)
+        if not isinstance(row, Mapping):
+            continue
+        minutes = row.get("window_minutes")
+        used = row.get("used_percent")
+        if (
+            isinstance(minutes, bool)
+            or not isinstance(minutes, int)
+            or minutes <= 0
+            or isinstance(used, bool)
+            or not isinstance(used, (int, float))
+        ):
+            continue
+        readings[minutes] = rollout_module.QuotaReading(
+            window_minutes=minutes,
+            used_percent=used,
+            resets_at=row.get(
+                "resets_at", rollout_module.Unmeasured.NO_RATE_LIMIT_VALUE
+            ),
+        )
+    return _rollout_reading(
+        SimpleNamespace(quota_readings=readings),
+        observed_at=observed_at,
+        moment=moment,
     )
 
 
