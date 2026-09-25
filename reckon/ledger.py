@@ -633,8 +633,26 @@ def _run_ledger_root(project: str, root: str | Path | None) -> Path | None:
     )
 
 
-def load(project: str, root: str | Path | None = None) -> tuple[dict[str, Any], int]:
-    """Read the ledger, returning its data and current version.
+def serialize_run(record: Mapping[str, Any]) -> str:
+    """Encode a complete run identically for comparison, export and promotion."""
+    return json.dumps(dict(record), sort_keys=True, indent=2, ensure_ascii=False) + "\n"
+
+
+def run_path(project: str, run_id: str, root: str | Path | None = None) -> Path:
+    """Resolve a run beside the project's aggregate ledger."""
+    if not _SAFE_ID.fullmatch(str(run_id)):
+        raise LedgerError(f"run id {run_id!r} must match {_SAFE_ID.pattern}")
+    return ledger_path(project, root).parent / "runs" / f"{run_id}.json"
+
+
+def _run_files(project: str, root: str | Path | None = None) -> list[Path]:
+    return sorted((ledger_path(project, root).parent / "runs").glob("*.json"))
+
+
+def _load_aggregate(
+    project: str, root: str | Path | None
+) -> tuple[dict[str, Any], int]:
+    """Read the aggregate collections and their current version.
 
     An absent ledger is the ordinary state of a project that has run no workers
     yet, so it reads as an empty roster at version 0 rather than an error. A
@@ -646,7 +664,7 @@ def load(project: str, root: str | Path | None = None) -> tuple[dict[str, Any], 
     if not path.exists():
         return {"members": [], "runs": [], "holds": []}, version
     members = data.get("members")
-    runs = data.get("runs")
+    runs = data.get("runs", [])
     holds = data.get("holds")
     malformed = [
         name
@@ -667,6 +685,65 @@ def load(project: str, root: str | Path | None = None) -> tuple[dict[str, Any], 
         },
         version,
     )
+
+
+def run_ids(project: str, root: str | Path | None = None) -> set[str]:
+    """Read index membership without decoding the individual run payloads."""
+    data, _version = _load_aggregate(project, root)
+    return {
+        str(record["run_id"])
+        for record in data["runs"]
+        if isinstance(record, Mapping) and record.get("run_id")
+    } | {path.stem for path in _run_files(project, root)}
+
+
+def load(project: str, root: str | Path | None = None) -> tuple[dict[str, Any], int]:
+    """Read the union of aggregate and per-run records, refusing disagreements.
+
+    An interrupted export can leave two copies of a run. They count once only
+    when their canonical serialisations agree; disagreement refuses the entire
+    read so a caller cannot accidentally count an incomplete history.
+    """
+    data, version = _load_aggregate(project, root)
+    path = ledger_path(project, root)
+    by_id = {
+        str(record["run_id"]): record
+        for record in data["runs"]
+        if isinstance(record, Mapping) and record.get("run_id")
+    }
+    added = False
+    for source in _run_files(project, root):
+        try:
+            record = json.loads(source.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise LedgerError(
+                f"cannot read run {source.stem!r} at {source}: {exc}"
+            ) from exc
+        if not isinstance(record, dict) or record.get("run_id") != source.stem:
+            raise LedgerError(
+                f"run {source.stem!r} at {source} must hold its own run_id"
+            )
+        run_id = record["run_id"]
+        if run_id in by_id:
+            if serialize_run(by_id[run_id]) != serialize_run(record):
+                raise LedgerError(
+                    f"run {run_id!r} differs between {path} and {source}; "
+                    "refusing to read conflicting history"
+                )
+            continue
+        data["runs"].append(record)
+        by_id[run_id] = record
+        added = True
+    if added:
+        # Completion order survives splitting records across either source.
+        # Run ids break ties and order historical rows without a completion stamp.
+        data["runs"].sort(
+            key=lambda record: (
+                str(record.get("completed_at") or record.get("run_id") or ""),
+                str(record.get("run_id") or ""),
+            )
+        )
+    return data, version
 
 
 def _roster_ids(entries: Any) -> set[str]:

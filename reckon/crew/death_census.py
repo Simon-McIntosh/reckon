@@ -35,7 +35,6 @@ attributed to a lane and is reported as unattributed rather than guessed at.
 from __future__ import annotations
 
 import json
-import sqlite3
 from collections import defaultdict
 from collections.abc import Mapping
 from os import PathLike
@@ -164,35 +163,23 @@ def pointer_process_alive(run_id: str, live_dir: str | PathLike[str]) -> bool | 
 def recorded_runs(db_path: str | PathLike[str]) -> dict[str, dict[str, Any]]:
     """Read every recorded run's lane attributes from the ledger's store.
 
-    Returns run id -> {backend, effort, sandbox, role}. A row whose payload
-    cannot be parsed is skipped rather than aborting the census: one corrupt
-    row must not hide every other run.
+    Returns run id -> {backend, effort, sandbox, role}. Missing or stale index
+    membership is rebuilt from the committed records before answering.
     """
+    from reckon.run_store import RunStore
+
     records: dict[str, dict[str, Any]] = {}
-    try:
-        connection = sqlite3.connect(f"file:{Path(db_path)}?mode=ro", uri=True)
-    except sqlite3.Error:
-        return records
-    with connection:
-        try:
-            rows = connection.execute("select run_id, payload from runs")
-        except sqlite3.Error:
-            return records
-        for run_id, payload in rows:
-            try:
-                record = json.loads(payload)
-            except (TypeError, ValueError):
-                continue
-            if not isinstance(record, Mapping):
-                continue
-            agent = record.get("agent")
-            agent = agent if isinstance(agent, Mapping) else {}
-            records[str(run_id)] = {
-                "backend": agent.get("backend"),
-                "effort": agent.get("effort"),
-                "sandbox": agent.get("sandbox"),
-                "role": record.get("role"),
-            }
+    with RunStore(Path(db_path)) as store:
+        rows = store.records()
+    for run_id, record in rows.items():
+        agent = record.get("agent")
+        agent = agent if isinstance(agent, Mapping) else {}
+        records[run_id] = {
+            "backend": agent.get("backend"),
+            "effort": agent.get("effort"),
+            "sandbox": agent.get("sandbox"),
+            "role": record.get("role"),
+        }
     return records
 
 

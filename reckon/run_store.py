@@ -1,59 +1,20 @@
-"""The run ledger's embedded store, shadowing the committed file.
+"""A rebuildable SQLite index of the committed run records.
 
-The committed ledger file (``docs/state/<project>/crew.json``) is the store
-every reader reads. This module keeps the same rows in an embedded SQLite
-database beside it — for now a shadow that nothing reads, whose writes must
-never break the file write. A run row is split into a durable half and a wide
-detail half keyed to it; that split is what a later rotation stage can use to
-wash wide detail out while every durable field survives.
+Run files and remaining aggregate rows, read through ``ledger.load``, are the
+authority. A keyed reader checks membership against those sources and rebuilds
+an absent or out-of-date index before answering. A cache rebuild cannot make
+an authoritative answer depend on a successful cache write.
 
-The classification is inverted so that the failure boundary sits where it
-keeps data rather than deleting it: the single ``DETAIL_FIELDS`` declaration
-names the wide fields a later rotation may wash out, and every other field on
-a run record is durable by default and lands in the runs payload. Forgetting
-to classify a new field therefore keeps it forever rather than deleting it,
-which is the direction that cannot lose a permanent record. The declaration
-is the only place the list of washable fields is spelled out; the durable set
-is defined as its complement.
-
-The runs row carries that whole durable record as one JSON payload and, beside
-it, the five query keys — run id and the four in ``QUERY_KEYS`` — as real
-indexed columns. A question routed through one of the keys is answered by an
-index search rather than by the whole-table scan plus per-row JSON parse the
-flat file costs, while an unclassified field is still kept forever in the
-payload. A store created under an older schema is rebuilt in place on open
-rather than failing its next write, because ``CREATE TABLE IF NOT EXISTS``
-leaves an existing table exactly as the version that created it left it.
-
-Nothing here is read by any existing reader, and this module exposes no read
-API for run data yet beyond the durable/detail readers the rotation contract
-asserts against — only the append a promotion needs, the schema it creates on
-first use, and the path helper the isolation assertions resolve.
-
-The one reader the swap itself introduces is the standing equality check
-(``compare``): it reads both the committed ledger, resolved by project name
-through the ordinary ledger loader, and the store rows scoped to that project —
-the database is shared across every project on this config home, so a row's
-``project`` column is what ties it to one committed file. ``import_ledger`` is
-its pairing write: a re-runnable pass that brings a project's committed corpus
-into the store, inserting absent runs and correcting already-present runs whose
-durable record disagrees (a store predating the current shape stored subset
-rows), while leaving already-identical rows byte-for-byte untouched so a second
-pass is a no-op. Neither ever writes ``store_write``: that field records what
-happened at one promotion, not current state, so it never becomes store content
-and is excluded from the durable comparison.
-
-A rate-limit refusal is a second kind of durable record in the same store. A
-refused dispatch kills the run, so no ledger row is ever written for it — the
-stamp is the record the refusal would otherwise never reach, kept outside both
-the reclaimable run directory and the ledger file that will not exist. Each
-refusal is its own row keyed by the refusal's own time, and the stamps are read
-back after a run directory is reclaimed.
+``DETAIL_FIELDS`` names the wide fields a rotation may remove. Every other
+field is durable by default. Refusal stamps are independent durable records:
+a refused dispatch has no promoted run file, so rebuilding run rows must never
+remove those stamps.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sqlite3
 from collections.abc import Mapping
@@ -224,7 +185,10 @@ def _split_durable(project: str, record: Mapping[str, Any]) -> tuple[str, dict, 
 class RunStore:
     """One embedded SQLite store, creating its schema on first use."""
 
-    def __init__(self, path: str | Path | None = None) -> None:
+    def __init__(
+        self, path: str | Path | None = None, *, root: str | Path | None = None
+    ) -> None:
+        self._root = Path(root).expanduser().resolve() if root is not None else None
         self._path = Path(path) if path is not None else store_path()
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self._path))
@@ -279,9 +243,8 @@ class RunStore:
         ]
         rows = self._conn.execute('SELECT * FROM "runs"').fetchall()
         with self._conn:
-            # The added columns are nullable, unlike a fresh table's payload;
-            # nothing reads the store yet, so the constraint is not worth the
-            # rebuild an ALTER that adds NOT NULL would cost.
+            # Added columns are nullable because SQLite cannot add a NOT NULL
+            # payload without rebuilding the table; the backfill supplies it.
             for name in (*QUERY_KEYS, "payload"):
                 if name not in columns:
                     self._conn.execute(f'ALTER TABLE "runs" ADD COLUMN "{name}" TEXT')
@@ -375,6 +338,116 @@ class RunStore:
             )
             return "updated"
 
+    def _ledger_roots(self) -> dict[str, Path | None]:
+        """Find ledger owners through state routing and the mount registry."""
+        from reckon import flight, ledger
+
+        state = self._root / "docs" / "state" if self._root else _store._state_root()
+        roots = (
+            {
+                entry.name: self._root
+                for entry in sorted(state.iterdir())
+                if entry.is_dir() and ledger._SAFE_ID.fullmatch(entry.name)
+            }
+            if state.is_dir()
+            else {}
+        )
+        if self._root is None and not os.environ.get("RECKON_STATE_ROOT"):
+            for project, docs in flight.mounted_project_docs().items():
+                if project not in roots and (docs / "state" / project).is_dir():
+                    roots[project] = docs.parent
+        return roots
+
+    def _indexed_records(self) -> dict[str, dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT r.run_id, r.payload, d.detail FROM runs r "
+            "LEFT JOIN run_details d ON r.run_id = d.run_id"
+        )
+        return {
+            str(run_id): {
+                **json.loads(payload),
+                **(json.loads(detail) if detail else {}),
+            }
+            for run_id, payload, detail in rows
+        }
+
+    def _refresh(self, project: str | None = None) -> dict[str, dict[str, Any]] | None:
+        """Return file-backed answers when membership forced a cache rebuild.
+
+        Only filenames and aggregate ids are read on the matching-index path.
+        Unregistered standalone stores retain their own rows: no absent mount
+        or unrelated project can authorise deleting a project's cached history.
+        """
+        from reckon import ledger
+
+        roots = self._ledger_roots()
+        changed = {}
+        for name, root in roots.items():
+            if project is not None and name != project:
+                continue
+            indexed = {
+                str(row[0])
+                for row in self._conn.execute(
+                    "SELECT run_id FROM runs WHERE project = ?", (name,)
+                )
+            }
+            if indexed != ledger.run_ids(name, root):
+                data, _version = ledger.load(name, root)
+                changed[name] = data["runs"]
+        if not changed:
+            return None
+        records = {
+            run_id: record
+            for run_id, record in self._indexed_records().items()
+            if record.get("project") not in changed
+        }
+        for name, rows in changed.items():
+            for row in rows:
+                run_id, payload, detail = _split_durable(name, row)
+                records[run_id] = {**payload, **detail}
+        try:
+            with self._conn:
+                for name, rows in changed.items():
+                    self._conn.execute(
+                        "DELETE FROM run_details WHERE run_id IN "
+                        "(SELECT run_id FROM runs WHERE project = ?)",
+                        (name,),
+                    )
+                    self._conn.execute("DELETE FROM runs WHERE project = ?", (name,))
+                    for record in rows:
+                        run_id, payload, detail = _split_durable(name, record)
+                        self._conn.execute(
+                            _RUNS_INSERT,
+                            (
+                                run_id,
+                                *(payload.get(key) for key in QUERY_KEYS),
+                                json.dumps(
+                                    payload, sort_keys=True, separators=(",", ":")
+                                ),
+                            ),
+                        )
+                        self._conn.execute(
+                            "INSERT INTO run_details (run_id, detail) VALUES (?, ?)",
+                            (
+                                run_id,
+                                json.dumps(
+                                    detail, sort_keys=True, separators=(",", ":")
+                                ),
+                            ),
+                        )
+        except sqlite3.Error as exc:
+            logging.getLogger(__name__).warning(
+                "Cannot rebuild run index %s; answering from committed files: %s",
+                self._path,
+                exc,
+            )
+        return records
+
+    def records(self) -> dict[str, dict[str, Any]]:
+        """Read complete records for census consumers, refreshing the cache."""
+        records = self._refresh()
+        return records if records is not None else self._indexed_records()
+
     def get_run(self, run_id: str) -> dict[str, Any] | None:
         """Return one run's durable half as a dict, or None when absent.
 
@@ -383,6 +456,10 @@ class RunStore:
         rotation deletes the detail row, every field this answers is still
         answerable.
         """
+        records = self._refresh()
+        if records is not None:
+            record = records.get(run_id)
+            return _durable_record(str(record["project"]), record) if record else None
         row = self._conn.execute(
             'SELECT "payload" FROM "runs" WHERE "run_id" = ?', (run_id,)
         ).fetchone()
@@ -397,6 +474,10 @@ class RunStore:
         carried; it is what rotation washes out, so it returns None once the
         detail row has been rotated away.
         """
+        records = self._refresh()
+        if records is not None:
+            record = records.get(run_id)
+            return _split_durable(str(record["project"]), record)[2] if record else None
         row = self._conn.execute(
             'SELECT "detail" FROM "run_details" WHERE "run_id" = ?', (run_id,)
         ).fetchone()
@@ -404,7 +485,9 @@ class RunStore:
             return None
         return json.loads(row[0])
 
-    def durable_rows(self, project: str) -> dict[str, dict[str, Any]]:
+    def durable_rows(
+        self, project: str, *, refresh: bool = True
+    ) -> dict[str, dict[str, Any]]:
         """Return {run_id: durable payload} for one project's stored runs.
 
         The database is shared across every project on this config home, so a
@@ -412,6 +495,13 @@ class RunStore:
         project column rather than trusting that all rows belong to the same
         file.
         """
+        records = self._refresh(project) if refresh else None
+        if records is not None:
+            return {
+                run_id: _durable_record(project, record)
+                for run_id, record in records.items()
+                if record.get("project") == project
+            }
         rows = self._conn.execute(
             'SELECT "run_id", "payload" FROM "runs" WHERE "project" = ?', (project,)
         ).fetchall()
@@ -570,7 +660,7 @@ def compare(
         for record in data["runs"]
     }
     with RunStore() as store:
-        store_durable = store.durable_rows(project)
+        store_durable = store.durable_rows(project, refresh=False)
     file_ids = set(file_durable)
     store_ids = set(store_durable)
     file_only = file_ids - store_ids
