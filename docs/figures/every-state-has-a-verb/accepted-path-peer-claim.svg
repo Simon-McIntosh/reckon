@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 330" width="100%" role="img"
+     aria-label="Decision diagram: how an accepted path is tested against a live peer claim, showing the three measured cases.">
+  <text x="0" y="16" font-family="system-ui, sans-serif" font-size="12" fill="#5a5a5a">accepted path P, live peer claim C</text>
+
+  <rect x="0" y="30" width="200" height="40" rx="6" fill="#eef2f7" stroke="#8a9bb0"/>
+  <text x="100" y="55" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a" text-anchor="middle">test P against C</text>
+
+  <path d="M200 50 L250 50" stroke="#8a9bb0" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="#8a9bb0"/>
+    </marker>
+  </defs>
+
+  <polygon points="330,20 410,50 330,80 250,50" fill="#fdf6e3" stroke="#b8a05a"/>
+  <text x="330" y="47" font-family="system-ui, sans-serif" font-size="12" fill="#1a1a1a" text-anchor="middle">P and C overlap</text>
+  <text x="330" y="63" font-family="system-ui, sans-serif" font-size="12" fill="#1a1a1a" text-anchor="middle">by component?</text>
+  <text x="245" y="44" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">no</text>
+  <text x="415" y="44" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">yes</text>
+
+  <path d="M330 20 L330 6" stroke="#8a9bb0" stroke-width="1.5"/>
+  <text x="340" y="12" font-family="system-ui, sans-serif" font-size="12" fill="#2b6b2b">accept: no claim to honour</text>
+
+  <path d="M410 50 L470 50" stroke="#8a9bb0" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <polygon points="550,20 640,50 550,80 460,50" fill="#fdf6e3" stroke="#b8a05a"/>
+  <text x="550" y="47" font-family="system-ui, sans-serif" font-size="12" fill="#1a1a1a" text-anchor="middle">P equals C and P is on</text>
+  <text x="550" y="63" font-family="system-ui, sans-serif" font-size="12" fill="#1a1a1a" text-anchor="middle">the shared-write list?</text>
+
+  <path d="M550 20 L550 96" stroke="#2b6b2b" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+  <defs>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="#2b6b2b"/>
+    </marker>
+  </defs>
+  <text x="558" y="40" font-family="system-ui, sans-serif" font-size="11" fill="#2b6b2b">yes</text>
+  <rect x="440" y="100" width="220" height="34" rx="6" fill="#e8f4e8" stroke="#2b6b2b"/>
+  <text x="550" y="122" font-family="system-ui, sans-serif" font-size="13" fill="#1f4d1f" text-anchor="middle">accepted, co-claim admitted</text>
+
+  <path d="M640 50 L690 50 L690 168 L120 168" stroke="#8a1c1c" stroke-width="1.5" marker-end="url(#arrowRed)"/>
+  <defs>
+    <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="#8a1c1c"/>
+    </marker>
+  </defs>
+  <text x="648" y="40" font-family="system-ui, sans-serif" font-size="11" fill="#8a1c1c">no</text>
+  <rect x="0" y="186" width="400" height="34" rx="6" fill="#f7e8e8" stroke="#8a1c1c"/>
+  <text x="200" y="208" font-family="system-ui, sans-serif" font-size="13" fill="#6d1414" text-anchor="middle">refused: "cannot accept P: live run claims C"</text>
+
+  <line x1="0" y1="240" x2="720" y2="240" stroke="#c8c8c8" stroke-width="1"/>
+  <text x="0" y="258" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">measured cases (peer alive, temporary repository, through the completion command)</text>
+  <text x="0" y="278" font-family="system-ui, sans-serif" font-size="12" fill="#1a1a1a">exact shared file  P = C = artifact.png, on the list</text>
+  <text x="470" y="278" font-family="system-ui, sans-serif" font-size="12" fill="#1f4d1f">accepted</text>
+  <text x="0" y="296" font-family="system-ui, sans-serif" font-size="12" fill="#1a1a1a">same claim, off the list</text>
+  <text x="470" y="296" font-family="system-ui, sans-serif" font-size="12" fill="#6d1414">refused</text>
+  <text x="0" y="314" font-family="system-ui, sans-serif" font-size="12" fill="#1a1a1a">directory claim C = rendered/ containing shared file</text>
+  <text x="470" y="314" font-family="system-ui, sans-serif" font-size="12" fill="#6d1414">refused (both P under C and the shared file itself)</text>
+</svg>
