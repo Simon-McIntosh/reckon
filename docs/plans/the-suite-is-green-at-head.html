@@ -605,6 +605,36 @@
       </tbody>
     </table>
 
+    <div class="r-note" data-reckon="landed" data-node="surface-test-pins-its-working-directory" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; the public-surface test's child interpreter imports <code>reckon</code>
+      from this checkout whatever directory it is launched from.</strong> Commit <code>382d2a8b</code>
+      <em>fix(tests): pin the surface test's child interpreter to the checkout root</em>. Cause, named
+      with file and line: <code>_fresh_surface</code> (<code>tests/test_crew_surface.py:64</code>) spawned
+      <code>python -c</code> with <code>PYTHONPATH</code> naming this checkout but no <code>cwd</code>.
+      A <code>-c</code> child puts its own working directory (<code>''</code>) at <code>sys.path[0]</code>,
+      ahead of every <code>PYTHONPATH</code> entry, so a launch from a directory holding another
+      <code>reckon</code> checkout imported that tree's facade and compared it to this checkout's
+      fixture. Both child launches now pass <code>cwd=PACKAGE_ROOT</code>; the sibling import test had
+      the same unset <code>cwd</code> and is pinned the same way.</p>
+      <p><strong>Measured.</strong> Base <code>2a72458c</code> materialised with <code>git archive</code>
+      into a scratch tree, and a second checkout extracted the same way at <code>f217e535</code>: the
+      base test file launched from that directory resolves
+      <code>/tmp/other-reckon-surface/reckon/__init__.py</code> and is red with
+      <code>Extra items in the right set: 'record_gate_rerun_at_integrated_revision'</code> &mdash; the
+      one facade name that differs between the two trees &mdash; while the sibling concern-import test
+      still passes, so the wrong-tree import is silent for it. At head the same file passes 2 of 2 when
+      pytest is launched from the repository root and from the other checkout's directory, and the pinned
+      child resolves this checkout's <code>reckon</code>/<code>__init__.py</code> in both. Declared negative
+      control: <em>remove the cwd argument and observe the launch from the other checkout's directory
+      measure the wrong facade</em> &mdash; satisfied by the base arm, whose log opens with that string.
+      No test is skipped, xfailed, deleted or weakened; only <code>cwd</code> and a docstring changed.
+      Logs <code>logs/base-arm-other-checkout-red.log</code>, <code>logs/head-arm-from-root.log</code>,
+      <code>logs/head-arm-from-other-checkout.log</code> in the run record; figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/surface-test-cwd-resolution.png">which reckon a
+      <code>-c</code> child imports, before and after</a>.</p>
+      <p><strong>Follow-ons.</strong> None.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">

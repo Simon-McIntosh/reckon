@@ -52,9 +52,14 @@ def _fresh_surface() -> set[str]:
     imports ``reckon.crew.<concern>`` adds that name to ``dir(reckon.crew)`` for
     every test collected after it in the same process. The snapshot describes
     the facade's exports, not the collection order, so it is read in an
-    interpreter that has none of that history. ``PYTHONPATH`` names this
-    checkout's root first, so the child resolves the tree under test rather
-    than an installed copy of the package.
+    interpreter that has none of that history.
+
+    The child's working directory is pinned to this checkout's root. A ``-c``
+    child puts its own working directory (``''``) ahead of ``PYTHONPATH`` on
+    ``sys.path``, so a child that inherited the caller's directory would import
+    the ``reckon`` tree living there and measure the wrong facade. Pinning
+    ``cwd`` makes the resolution a property of the checkout under test rather
+    than of wherever pytest happened to be launched.
     """
     env = dict(os.environ)
     inherited = env.get("PYTHONPATH")
@@ -67,6 +72,7 @@ def _fresh_surface() -> set[str]:
         text=True,
         check=True,
         env=env,
+        cwd=PACKAGE_ROOT,
     )
     return set(result.stdout.splitlines())
 
@@ -84,6 +90,7 @@ def test_concern_modules_import_in_fresh_interpreters() -> None:
             capture_output=True,
             text=True,
             check=False,
+            cwd=PACKAGE_ROOT,
         )
 
         assert result.returncode == 0, result.stderr
