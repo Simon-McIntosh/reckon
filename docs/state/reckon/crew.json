@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T04:48:45",
+  "updated": "2026-09-25T04:52:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -379636,6 +379636,355 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T020550606508-resumed-runs-line-reads-the-elapsed-cell",
+        "plan": "the-suite-is-green-at-head",
+        "section": "\u00a73",
+        "node": "resumed-runs-line-reads-the-elapsed-cell",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2272,
+                "cached_input_tokens": 751103,
+                "input_tokens": 753377,
+                "output_tokens": 1560,
+                "reasoning_output_tokens": 277,
+                "total_tokens": 754937,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "0d0d70e3-b7cb-4ea4-8096-629c3a5077d0",
+            "session_id": "suite-green-at-head"
+          },
+          "done_when": "tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers is first observed failing at base with AttributeError on ticker.RATE and that red log recorded; after the change it asserts the measured elapsed-time value in the row's single hours-and-minutes measure cell (the design recorded in a-monitor-row-reads-at-a-glance section 4, merge b33172e3), not a marker; tests/test_crew_recovery.py passes in full; no other file is edited and no test is skipped, xfailed, deleted or weakened",
+          "estimated_hours": null,
+          "goal": "test_crew_recovery's resumed-runs line test asserts the ticker row's shipped elapsed-time cell instead of the removed rate cell",
+          "id": "resumed-runs-line-reads-the-elapsed-cell",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T02:05:52Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 2,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 16,
+            "mean_context": 80000,
+            "observed_at": "2026-09-25T02:05:50Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T020550606508-resumed-runs-line-reads-the-elapsed-cell/manifest.md",
+          "negative_control": "restore the ticker.RATE reference and observe the AttributeError return",
+          "plan": "the-suite-is-green-at-head",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_crew_recovery.py",
+            "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+            "docs/figures/the-suite-is-green-at-head",
+            "docs/plans/the-suite-is-green-at-head.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "suite-green-g",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T02:06:07Z",
+        "completed_at": "2026-09-25T02:21:57.051Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 711,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 950,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "de965e07c1e9701b203133be247ff547bed4b776",
+        "commits": [
+          "d1cf9e2364270fe2d3f04ecefb395cdbe43a09a4"
+        ],
+        "changed_lines": {
+          "added": 134,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recovery.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T020550606508-resumed-runs-line-reads-the-elapsed-cell/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T020550606508-resumed-runs-line-reads-the-elapsed-cell/manifest.md",
+        "scope_changed": false,
+        "session_id": "571a50d7-ccc8-4e81-b045-a37bacd11644",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5505148,
+            "input_tokens_cumulative": 5505148,
+            "output_tokens": 25320,
+            "output_tokens_cumulative": 25320,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T02:21:57.051Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 750,
+              "budget_seconds": 2700,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 3450,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1132,
+              "log_fresh": false,
+              "manifest_commits": [
+                "6d00c88d",
+                "6d813b38"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "cffed32746f3e75b961a6c678fd04344306aae89b1781bfcc79c0dcc28a91d07",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T000001970735-no-watch-producer-outlives-the-suite/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan the-suite-is-green-at-head --section '\u00a73' --role review --spec-level exact --node review-of-no-watch-producer-outlives-the-suite --goal 'attach an independent review to run r-20260925T000001970735-no-watch-producer-outlives-the-suite' --done-when 'the review for r-20260925T000001970735-no-watch-producer-outlives-the-suite stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T000001970735-no-watch-producer-outlives-the-suite.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T000001970735-no-watch-producer-outlives-the-suite.at-6d813b38781758043c1d1c6eec591a14df76a9b4.json --time-budget 45m --session suite-green-at-head --allow-unreconciled-runs --backend clive",
+              "node": "no-watch-producer-outlives-the-suite",
+              "phase": "working",
+              "plan": "the-suite-is-green-at-head",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T000001970735-no-watch-producer-outlives-the-suite",
+              "session": "suite-green-at-head",
+              "terminal_age_seconds": 1186,
+              "terminal_at": "2026-09-25T01:46:08Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/suite-green-at-head/no-watch-producer-outlives-the-suite"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 19,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 96
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 5505148,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 715.196,
+          "generated_tokens": 25320,
+          "generation_seconds": 640.105,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 25.3,
+          "machine_seconds": 75.091,
+          "peak_input_tokens": 121370,
+          "tokens_per_second": 39.56,
+          "wall_tokens_per_second": 35.4
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/suite-green-at-head/resumed-runs-line-reads-the-elapsed-cell",
+          "session_id": "571a50d7-ccc8-4e81-b045-a37bacd11644",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T02:21:57.051Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T02:21:57Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T02:09:58Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T020550606508-resumed-runs-line-reads-the-elapsed-cell",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 3039,
+          "worker_pid": 2408309
+        },
+        "promoted_revision": "d1cf9e2364270fe2d3f04ecefb395cdbe43a09a4",
+        "plan_impl_at_dispatch": 0.75,
+        "impl_move": {
+          "plan": "the-suite-is-green-at-head",
+          "at_dispatch": 0.75,
+          "at_complete": 0.8,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_crew_recovery.py"
+          ],
+          "declaration": "restore the ticker.RATE reference and observe the AttributeError return",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T020550606508-resumed-runs-line-reads-the-elapsed-cell/logs/negative-control-restore-rate.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T020550606508-resumed-runs-line-reads-the-elapsed-cell/logs/negative-control-restore-rate.log"
+        },
+        "commit_list_shortfall": {
+          "kind": "presented_commits_subset_of_manifest",
+          "presented": 1,
+          "declared": 2,
+          "missing": [
+            "41737d3e9143d494bc9116cd24f32f106ee9b9f4"
+          ],
+          "message": "run 'r-20260925T020550606508-resumed-runs-line-reads-the-elapsed-cell' has a passing gate presenting 1 commit(s) of the 2 its manifest declares; missing: 41737d3e9143d494bc9116cd24f32f106ee9b9f4. The out-of-scope boundary check runs against the presented commits, so an incomplete presentation narrows it. This is a report, not a refusal \u2014 present the full list, or the boundary check may not cover the node's work"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T02:35:52.029568+00:00",
+          "horizon_seconds": 1800,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T02:05:52Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 2,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 16,
+          "mean_context": 80000,
+          "observed_at": "2026-09-25T02:05:50Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 63.0,
+        "orientation_input_tokens": 1103662.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -379948,6 +380297,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2645
+    "_version": 2646
   }
 }
