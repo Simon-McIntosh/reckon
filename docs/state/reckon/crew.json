@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T07:59:36",
+  "updated": "2026-09-25T08:02:26",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -394536,6 +394536,368 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T043805585389-recovery-reads-the-exit-record",
+        "plan": "worker-death-is-recorded",
+        "section": "\u00a75",
+        "node": "recovery-reads-the-exit-record",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 716,
+                "cached_input_tokens": 819061,
+                "input_tokens": 819779,
+                "output_tokens": 1359,
+                "reasoning_output_tokens": 393,
+                "total_tokens": 821138,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "Recovery's classification in reckon/crew/recovery.py reads the run directory's exit.json (EXIT_RECORD_NAME, written by the supervisor in reckon/crew/dispatch.py) when present: a recorded signal, a nonzero exit code, stream_records_seen of 0 (a launch failure) or a normal exit each decide the state, and a run is inferred dead from a missing pid only when no exit record exists. New tests/test_recovery_reads_the_exit_record.py drives crew observe over three run directories built in a temporary config home, one with an exit record carrying a signal, one with exit code 0 and one with stream_records_seen 0, and asserts each classifies as its record says. The declared negative control is executed and logged: making recovery ignore exit.json reverts all three to the pid-inference verdict and the test fails. Every existing test file importing reckon.crew.recovery passes at your head, judged by delta against the base revision with both failure-id sets recorded; your landing record is appended to the plan's \u00a75. Items (2) and (3) of \u00a75 are not this node's.",
+          "estimated_hours": null,
+          "goal": "Recovery classifies a finished worker from its recorded exit rather than from a missing pid",
+          "id": "recovery-reads-the-exit-record",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T04:38:06Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 17,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 17,
+            "mean_context": 100000,
+            "observed_at": "2026-09-25T04:37:49Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T043805585389-recovery-reads-the-exit-record/manifest.md",
+          "negative_control": "make recovery ignore exit.json so classification falls back to pid inference; tests/test_recovery_reads_the_exit_record.py must fail on all three cases",
+          "plan": "worker-death-is-recorded",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_recovery_reads_the_exit_record.py",
+            "docs/plans/worker-death-is-recorded.html",
+            "docs/evidence/archive/worker-death-is-recorded-landed.html",
+            "docs/figures/worker-death-is-recorded"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-terminal-budget",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T04:38:13Z",
+        "completed_at": "2026-09-25T06:00:25.241Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4823,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4932,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "2bf6587bebc9b23363b3ef7e4a1be3c025c584d3",
+        "commits": [
+          "2e2704be2acf901d2e3510e2c3b4eae336ce3720",
+          "ffc3775d4dc58521b65e3c8d8b32dbf8ee89994a",
+          "a683aaacd0849d16c49592dbe05ee3a7664d991d"
+        ],
+        "changed_lines": {
+          "added": 3669,
+          "removed": 21,
+          "files": 12
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_recovery_reads_the_exit_record.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T043805585389-recovery-reads-the-exit-record/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T043805585389-recovery-reads-the-exit-record/manifest.md",
+        "scope_changed": false,
+        "session_id": "4637a1fa-74f8-4c37-a02c-02d4e7ff3ed2",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 459440,
+            "input_tokens_cumulative": 459440,
+            "output_tokens": 565,
+            "output_tokens_cumulative": 565,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T06:00:25.241Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: Importer done-when unmet: tests/test_crew_members.py::test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it is outside this node write scope and outside the declared exception set; no triage or repair performed.; Importer done-when unmet: tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers is outside this node write scope and outside the declared exception set; no triage or repair performed.; Importer done-when unmet: tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt is outside this node write scope and outside the declared exception set; no triage or repair performed.",
+              "effective_phase": "starting",
+              "elapsed_seconds": 1944,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1738,
+              "log_fresh": false,
+              "manifest_commits": [
+                "f0324bd11afe806559137d0673703f2610c874b5",
+                "70b8eb4fd10531e85b9b9d1dcd3373e014e3fb74",
+                "ae05630c11da75eb820e04f2a66c8a902adf9143",
+                "fd272fd7de16ba421ed1a62b0eb9cb3031cc3fd8",
+                "199069f16c2e3a41231a9652eb02baa4d6d3d945",
+                "88740ddc776933687f82d20f16dd07c982fabbee",
+                "2dd38c461a3d39827263a8fcaeaf608b06e0cd68",
+                "3eb57e55ac50452a71a1fb07a30c44575e59e685"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "bf285da743d24f3afb5b33f3d1c1d5096c24692d4589c819c56e04d8d351377c",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033627599580-session-on-its-run-keeps-its-contracts/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033627599580-session-on-its-run-keeps-its-contracts/manifest.md; resolve the blocker before resuming the run",
+              "node": "session-on-its-run-keeps-its-contracts",
+              "phase": "starting",
+              "plan": "new-work-gets-a-new-worker",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T033627599580-session-on-its-run-keeps-its-contracts",
+              "session": "s22-coord",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260925T033627599580-session-on-its-run-keeps-its-contracts",
+                "session_id": "01a0d6a6-ecbe-7483-9b3b-9ef0f9c0940a",
+                "source": "stream"
+              },
+              "terminal_age_seconds": 1781,
+              "terminal_at": "2026-09-25T04:08:26Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/session-on-its-run-keeps-its-contracts"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 19,
+            "fit": 18,
+            "goal_fidelity": 18,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 92
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 16752242,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 13.54,
+          "generated_tokens": 109353,
+          "generation_seconds": 12.931,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 32.0,
+          "machine_seconds": 0.609,
+          "peak_input_tokens": 153499,
+          "tokens_per_second": 8456.65,
+          "wall_tokens_per_second": 8076.29
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 3,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/recovery-reads-the-exit-record",
+          "session_id": "4637a1fa-74f8-4c37-a02c-02d4e7ff3ed2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T06:00:25.241Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T05:13:43Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T04:39:51Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T043805585389-recovery-reads-the-exit-record",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 18462,
+          "worker_pid": 3097582
+        },
+        "promoted_revision": "a683aaacd0849d16c49592dbe05ee3a7664d991d",
+        "plan_impl_at_dispatch": 0.86,
+        "impl_move": {
+          "plan": "worker-death-is-recorded",
+          "at_dispatch": 0.86,
+          "at_complete": 0.95,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_recovery_reads_the_exit_record.py"
+          ],
+          "declaration": "make recovery ignore exit.json so classification falls back to pid inference; tests/test_recovery_reads_the_exit_record.py must fail on all three cases",
+          "log": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/recovery-reads-the-exit-record/docs/figures/worker-death-is-recorded/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/recovery-reads-the-exit-record/docs/figures/worker-death-is-recorded/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T05:28:06.209078+00:00",
+          "horizon_seconds": 3000,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T04:38:06Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 17,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 17,
+          "mean_context": 100000,
+          "observed_at": "2026-09-25T04:37:49Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 124.0,
+        "orientation_input_tokens": 3682854.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -394848,6 +395210,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2706
+    "_version": 2707
   }
 }
