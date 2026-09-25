@@ -1,4 +1,10 @@
-"""Session-scoped roster provisioning for unnamed dispatches."""
+"""Disposable per-dispatch identities for unnamed dispatches.
+
+A dispatch that names no member carries an identity minted from its own run id
+and registers no roster row, so two unnamed dispatches of one coordinator never
+serialise against each other. The session a run captures still lands on its own
+pointer, and no later dispatch composes it.
+"""
 
 from __future__ import annotations
 
@@ -88,6 +94,18 @@ def _node(node_id: str, manifest: Path) -> crew.TaskNode:
 def test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session(
     isolated_home: Path, repository: Path
 ) -> None:
+    """Two unnamed dispatches are disposable; neither registers nor composes a session.
+
+    One named member is registered and committed first, so the roster the
+    unnamed dispatches leave alone is one these assertions have already seen
+    hold a row.
+    """
+    ledger.register_member(
+        "proj", "keeper", harness="worker", root=repository, commit=True
+    )
+    roster_path = ledger.ledger_path("proj", repository)
+    roster_before = roster_path.read_bytes()
+
     def launch(node_id: str, coordinator_session: str) -> dict:
         return crew.dispatch(
             node=_node(node_id, isolated_home / f"{node_id}.md"),
@@ -107,17 +125,17 @@ def test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session(
         first, second = [future.result(timeout=10) for future in futures]
 
     assert refusals == [None, None]
-    assert first["member"]
-    assert second["member"]
+    assert first["member"] == "disposable-" + str(first["run_id"])
+    assert second["member"] == "disposable-" + str(second["run_id"])
     assert first["member"] != second["member"]
+    assert first["session_id"] is None
+    assert second["session_id"] is None
     assert {entry["id"] for entry in ledger.members("proj", root=repository)} == {
-        first["member"],
-        second["member"],
+        "keeper"
     }
+    assert roster_path.read_bytes() == roster_before
 
     captured_session = "019ff509-8a60-7723-94fd-65942a6d8faa"
-    roster_path = ledger.ledger_path("proj", repository)
-    roster_before = roster_path.read_bytes()
     Path(first["log_path"]).write_text(
         "\n".join(
             [
@@ -138,11 +156,10 @@ def test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session(
     assert captured["session_model"] == "some-model"
     assert roster_path.read_bytes() == roster_before
 
-    # A later dispatch from the same coordinator reuses its private member, but
-    # the session a run continues is keyed to the task it belongs to, so a
-    # different node of that member starts a fresh conversation and the record
-    # names that as the reason it carries no session id.
+    # A later dispatch from the same coordinator is a third disposable identity:
+    # it composes no session, and the record names the task rule as the reason.
     resumed = launch("followup-node", "left-coordinator")
-    assert resumed["member"] == first["member"]
+    assert resumed["member"] == "disposable-" + str(resumed["run_id"])
+    assert resumed["member"] != first["member"]
     assert resumed["session_id"] is None
     assert resumed["session_id_absent"]["point"] == "dispatch-no-same-task-session"

@@ -233,6 +233,25 @@
       <p><strong>Falsifier.</strong> Two reflex reviews for two different runs dispatch back to back and
       both launch, with distinct members and no resume. A dispatch naming an explicit member still
       serialises on it, because that remains a deliberate choice.</p>
+      <p class="landed-summary"><strong>Member tests adapted 2026-09-25; coordinator commits and
+      closes.</strong> Node <code>member-tests-follow-disposable-identity</code>, based on
+      <code>ecd1528c</code>, rewrites the last two cases that asserted the retired shared session
+      member. <code>test_a_dispatch_naming_no_member_commits_its_registration</code> now requires
+      <code>disposable-&lt;run id&gt;</code>, no composed session, zero commits, and a committed
+      and served roster holding only the named member it registers first. The ephemeral-members
+      case now requires two distinct disposable identities that register nothing, keep the roster
+      byte-identical, still capture the session on the run pointer, and dispatch a later node as a
+      third identity naming <code>dispatch-no-same-task-session</code> rather than reusing the
+      captured one; a named-member companion case keeps registration and the
+      <code>MemberInFlight</code> refusal. Both cases are red at base <code>ecd1528c</code>
+      (2 failed); the three gate files pass whole at the head (13 passed) and the 25
+      dispatch, routing and member test files show <strong>zero added failure IDs</strong>
+      against <code>7e90064d</code> — 173/2 and 175/1 in matched scratch trees, plus 176 passed
+      and 1 skipped in the real worktree. No <code>reckon/</code> source changed. The host mounts
+      the shared <code>.git</code> read-only, so the test content is uncommitted in the worktree
+      and the coordinator commits the digests recorded in the
+      <a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed#disposable-member-tests">evidence
+      anchor</a>; the driving followup and section closure remain with the coordinator.</p>
     </section>
 
     <section id="s5" data-reckon="section">

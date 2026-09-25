@@ -654,6 +654,102 @@ tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_
 tests/test_session_lives_on_its_run.py::test_redispatch_resume_uses_the_new_harness_session
 tests/test_session_lives_on_its_run.py::test_resume_starts_fresh_when_the_current_harness_has_no_session</pre></details>
   </section>
+  <section id="disposable-member-tests">
+    <h2>§4 &mdash; The two member tests assert the disposable identity</h2>
+    <p><strong>Worker test delivery, 2026-09-25.</strong> Node
+    <code>member-tests-follow-disposable-identity</code>, based on
+    <code>ecd1528c40223e0a84b2cee08492a8e9a344ff54</code>. The two cases that still
+    asserted the retired shared session member are rewritten in place &mdash; both test
+    ids are unchanged, so the assertion that replaced each removed one is read at the
+    same address &mdash; and no <code>reckon/</code> source file is touched. The content
+    is uncommitted in this worktree: the node's host mounts the shared
+    <code>.git</code> read-only, so this record carries the digests of the measured
+    files for the coordinator to commit.
+    <code>tests/test_member_registration_commits.py</code> sha256
+    <code>a4c5fb216b2011cfd640ed8b5c383922580534af0ad398c67ef3eaea0ae2f15c</code>;
+    <code>tests/test_crew_ephemeral_members.py</code> sha256
+    <code>b1f4d366d19f6109493e59c2ee76ade37eff8b752dc592736565264e7abcafed</code>.
+    The head arms below ran before a single formatting wrap inside the rewritten
+    ephemeral case; the gate and the format check were re-run on these final digests, and the
+    reformat touches no assertion.</p>
+    <table>
+      <thead><tr><th>Case</th><th>Reproduced assertion at base <code>ecd1528c</code></th><th>Replacement assertion at the head</th></tr></thead>
+      <tbody>
+        <tr><td><code>tests/test_member_registration_commits.py::test_a_dispatch_naming_no_member_commits_its_registration</code></td>
+        <td><code>assert False</code> on
+        <code>assert str(record["member"]).startswith("session-")</code>, where the id is
+        <code>disposable-r-20260925T181901437306-node-a</code>: the dispatch was required to
+        carry a <code>session-</code> member id and to leave one
+        <code>chore(roster): register …</code> commit naming only the roster file.</td>
+        <td><code>assert str(record["member"]) == "disposable-" + str(record["run_id"])</code>,
+        <code>record["session_id"] is None</code>, <code>rev-list --count base..HEAD == "0"</code>,
+        and the committed and served rosters each hold only <code>named-member</code>, which the
+        case registers and commits first so the untouched roster is read by one already shown to
+        hold a row.</td></tr>
+        <tr><td><code>tests/test_crew_ephemeral_members.py::test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session</code></td>
+        <td><code>assert set() == {'disposable-r-20260925T181903546638-right-node', 'disposable-r-20260925T181903546876-left-node'}</code>,
+        on the assertion that both unnamed dispatches appear as roster rows; the same case then
+        required a later dispatch to reuse <code>first["member"]</code> as its private member.</td>
+        <td>Both dispatches are distinct <code>disposable-&lt;run id&gt;</code> identities with
+        <code>session_id is None</code> and no refusals; the roster is byte-identical to the
+        pre-registered <code>keeper</code> row; the capture still lands on the run pointer
+        (<code>session_id</code>, <code>session_harness</code>, <code>session_model</code>); and a
+        later dispatch of a different node is a third disposable identity whose
+        <code>session_id_absent.point</code> is <code>dispatch-no-same-task-session</code>.</td></tr>
+      </tbody>
+    </table>
+    <p>A companion case,
+    <code>tests/test_member_registration_commits.py::test_a_dispatch_naming_a_member_still_registers_and_serialises</code>,
+    keeps the named half of the falsifier: the named dispatch carries
+    <code>named-member</code>, adds no commit, and a second in-flight dispatch to that member is
+    refused <code>MemberInFlight</code> without reaching the launcher. The peer's
+    <code>tests/test_no_member_dispatch_runs_alone.py</code> is unchanged and passes whole.</p>
+    <p><strong>Reproduction.</strong> At base <code>ecd1528c</code> the two named cases are
+    <strong>2 failed in 3.24 s</strong> (exit 1), and no assertion is deleted without a
+    replacement: every assertion removed above has a counterpart in the middle column of the
+    table. At the head the three gate files report <strong>13 passed in 6.23 s</strong> (exit 0).</p>
+    <p><strong>Failure delta over the dispatch, routing and member test files.</strong> The set is
+    the 25 files matching <code>ls tests/ | grep -E "dispatch|routing|member"</code>, run whole in
+    each arm with the root environment's interpreter and <code>-p no:cacheprovider</code>.</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Revision and tree</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Base</td><td><code>7e90064d</code>, <code>git archive</code> into the scratch tree
+        <code>/tmp/base-arm-7e90064d</code></td><td><strong>173 passed, 2 failed, 1 skipped</strong>
+        (exit 1) in 117.72 s</td></tr>
+        <tr><td>Head</td><td><code>ecd1528c</code> plus the two rewritten files, scratch tree
+        <code>/tmp/head-arm-scratch</code></td><td><strong>175 passed, 1 failed, 1 skipped</strong>
+        (exit 1) in 113.61 s</td></tr>
+        <tr><td>Head, real worktree</td><td><code>ecd1528c</code> plus the two rewritten files, the
+        node's own checkout with its <code>.git</code> present</td><td><strong>176 passed, 1
+        skipped</strong> (exit 0) in 116.23 s</td></tr>
+      </tbody>
+    </table>
+    <details><summary>Base failure IDs</summary><pre>tests/test_member_registration_commits.py::test_the_live_home_and_the_shared_checkout_are_untouched
+tests/test_no_member_dispatch_runs_alone.py::test_two_unnamed_reviews_launch_with_disposable_members</pre></details>
+    <details><summary>Head failure IDs (scratch tree)</summary><pre>tests/test_member_registration_commits.py::test_the_live_home_and_the_shared_checkout_are_untouched</pre></details>
+    <p><strong>Zero added failure IDs.</strong> The one id present in both arms is the scratch
+    environment, not the code: that case runs <code>git status</code> in the checkout it is
+    imported from, and a <code>git archive</code> tree has no <code>.git</code>, so it fails in
+    both scratch arms and passes in the real worktree. The base-only id
+    <code>tests/test_no_member_dispatch_runs_alone.py::test_two_unnamed_reviews_launch_with_disposable_members</code>
+    is the red that drove <code>ecd1528c</code>: it is green at the head. The failure IDs above
+    are recorded from the run headers, which name the revision, the tree, the command, the
+    resolved working directory and the imported module path
+    (<code>reckon.__file__</code>) for each arm.</p>
+    <pre>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q --no-header tests/test_member_registration_commits.py tests/test_crew_ephemeral_members.py tests/test_no_member_dispatch_runs_alone.py</pre>
+    <p><strong>Declared control: none.</strong> Both rewritten cases are red at base
+    <code>ecd1528c</code> before the rewrite, and the base-arm log named in the manifest carries
+    that reproduction: the two failures above are the instrument shown to see the retired
+    contract before the absence of it is reported.</p>
+    <p>Receipts under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T181651809360-member-tests-follow-disposable-identity/logs</code>:
+    <code>base-arm-named-tests.log</code>, <code>head-arm-three-files.log</code>,
+    <code>base-arm-dispatch-routing-member.log</code>,
+    <code>head-arm-dispatch-routing-member.log</code>,
+    <code>head-arm-scratch-dispatch-routing-member.log</code>. The scratch trees are temporary;
+    the logs are durable.</p>
+  </section>
 </main>
 </body>
 </html>
