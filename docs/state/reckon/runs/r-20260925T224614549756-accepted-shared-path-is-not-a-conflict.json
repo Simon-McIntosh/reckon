@@ -80,6 +80,27 @@
     "reason": "every-state-has-a-verb is shipped at impl 1.0; this is a repair of its accepted-path check reported by a peer coordinator, not new plan scope",
     "verdict": "waived"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "checkout_on_integrated_revision": false,
+    "checkout_revision": "80bfffced4421de130eda8f4a1aeb4c0ffbb3c3b",
+    "exit_status": null,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": null,
+      "integrated_revision": "e2b0ea6dda37a18c5fffb97c83f6a61578ea0d1d",
+      "integrated_verdict": "not-run",
+      "message": "the gate passed at the worker's base but reports not-run on the integrated revision e2b0ea6dda37: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": "the checkout is at 80bfffced442, not the integrated revision e2b0ea6dda37: a gate run here would verify the wrong tree. Check the integrated revision out, or name the revision the checkout actually carries"
+    },
+    "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_promotion_scope.py tests/test_crew_promotion.py",
+    "gate_command_source": "stored",
+    "integrated_revision": "e2b0ea6dda37a18c5fffb97c83f6a61578ea0d1d",
+    "integrated_verdict": "not-run",
+    "ran": false,
+    "reason": "the checkout is at 80bfffced442, not the integrated revision e2b0ea6dda37: a gate run here would verify the wrong tree. Check the integrated revision out, or name the revision the checkout actually carries",
+    "timed_out": false
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
