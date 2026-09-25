@@ -335,7 +335,12 @@
     and classifies what it returns: the signalled run reads <code>interrupted</code> with
     <code>ended by SIGTERM</code>, the exit-0 run reads <code>abandoned</code> with
     <code>exited with code 0</code>, and the 0-record run reads
-    <code>launch-failed</code>, all eight tests passing. The declared negative control
+    <code>launch-failed</code>, all nine tests passing. A review found the launch-failed
+    arm reading its exit record on a route where a pointer holds the phase and nothing
+    else behind it, which raised rather than classified; that pointer is now a test of
+    its own, red before the guard with an <code>AttributeError</code> at
+    <code>recovery.py:3727</code> and green after it, and the arm names an end only
+    where a record was written. The declared negative control
     (&ldquo;make recovery ignore <code>exit.json</code> so classification falls back to
     pid inference&rdquo;) reverts all three to the inference verdict &mdash;
     <strong>4 failed, 4 passed</strong>, the three declared cases among them; log

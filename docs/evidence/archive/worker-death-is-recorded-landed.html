@@ -455,12 +455,24 @@
       <h3>What was measured</h3>
       <ul>
         <li>Focused gate <code>tests/test_recovery_reads_the_exit_record.py</code>:
-        <strong>8 passed</strong>, exit 0. Each case drives the real
+        <strong>9 passed</strong>, exit 0. Each case drives the real
         <code>dispatch.observe</code> fold over a run directory built in a temporary
         config home &mdash; signalled reads <code>interrupted</code> with
         <code>ended by SIGTERM</code>, exit 0 reads <code>abandoned</code> with
         <code>exited with code 0</code>, 0 stream records reads
         <code>launch-failed</code>.</li>
+        <li>Review-repaired crash: a pointer holding the <code>launch-failed</code>
+        phase with an empty failure list and no exit record raised
+        <code>AttributeError: 'NoneType' object has no attribute 'get'</code> at
+        <code>recovery.py:3727</code> instead of classifying. That pointer is now a
+        test of its own, run red before the guard and green after it; the arm names an
+        end only where a record was written, which is the guard the sibling reader
+        <code>resumption._launch_failure_block</code> already applies. Logs
+        <code>launch-failed-no-record-red.log</code> (1 failed, 8 passed) and
+        <code>launch-failed-no-record-green.log</code> (9 passed).</li>
+        <li>Delta gate re-run at the repaired head: <strong>922 passed</strong>, exit 0,
+        over the same population file and against the same base set &mdash;
+        <code>delta-head-after-guard.log</code>.</li>
         <li>Declared negative control (&ldquo;make recovery ignore
         <code>exit.json</code> so classification falls back to pid inference&rdquo;),
         executed in a scratch copy of this tree: <strong>4 failed, 4 passed</strong>,

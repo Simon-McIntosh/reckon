@@ -3722,9 +3722,18 @@ def classify_pointer(
                 f"{'s' if len(failures) != 1 else ''} recorded; no model was reached"
             )
         else:
+            # The phase and the failure list are written by the launcher and the
+            # exit record by the supervisor, so a pointer can hold the phase with
+            # neither of the others behind it. Nothing was recorded to name then,
+            # and naming an end anyway would be an invention.
+            recorded_end = (
+                _exit_record_end_phrase(ended_exit)
+                if ended_exit is not None
+                else "ended without a recorded exit"
+            )
             detail = (
                 f"the launch for backend {record.get('backend')!r} "
-                f"{_exit_record_end_phrase(ended_exit)} before writing any "
+                f"{recorded_end} before writing any "
                 f"stream record ({cause}); no model was reached"
             )
         action = (

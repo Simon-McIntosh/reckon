@@ -346,6 +346,34 @@ def test_an_orphaned_pointer_with_no_record_is_still_interrupted(
     assert row["exit_record"] is None
 
 
+def test_a_launch_failed_pointer_with_nothing_recorded_still_classifies(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A phase can be set with neither a failure entry nor a record behind it.
+
+    The launcher writes the phase and the failure list, and the supervisor writes
+    the exit record — a pointer holding the phase alone is what a reader sees
+    between the two, and it must classify rather than raise on the end it does
+    not have.
+    """
+    run_id = "r-exit-record-launch-failed-bare-phase"
+    pointer = _build_run(
+        tmp_path,
+        monkeypatch,
+        run_id=run_id,
+        end=None,
+        launch="in-harness",
+    )
+    _rewrite_phase(run_id, pointer, "launch-failed")
+
+    row = _observed_classification(run_id)
+
+    assert row["classification"] == "launch-failed"
+    assert row["exit_record"] is None
+    assert "ended without a recorded exit" in row["detail"]
+    assert "no model was reached" in row["detail"]
+
+
 def _rewrite_phase(run_id: str, pointer: dict, phase: str) -> None:
     """Record the phase a pointer held when its process was last seen."""
     updated = {**pointer, "phase": phase, "process_alive": pointer["process_alive"]}
