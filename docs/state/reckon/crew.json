@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T13:27:16",
+  "updated": "2026-09-25T13:34:31",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -425741,6 +425741,384 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T075055787676-promotion-releases-its-worktree",
+        "plan": "a-crew-process-ends-with-its-owner",
+        "section": "\u00a74",
+        "node": "promotion-releases-its-worktree",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 397,
+                "cached_input_tokens": 188552,
+                "input_tokens": 188951,
+                "output_tokens": 695,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 189646,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "the five-case test named in f-acpewio-release-at-promotion passes, its declared negative control (remove the live-pointer check; the kept case fails) is executed and logged, the gate adds no failures over the promotion test files against base, and the evidence record carries an anchor for the landing",
+          "estimated_hours": null,
+          "goal": "implement followup f-acpewio-release-at-promotion as written on the plan: a passing crew complete removes the run worktree when integrated, clean and referenced by no other live pointer, and records what it kept and why otherwise",
+          "id": "promotion-releases-its-worktree",
+          "lane_declaration": {
+            "backend": "codex-luna",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-25T07:50:56Z",
+            "read_at": "2026-09-25T07:50:57Z",
+            "resolved_backend": "codex-luna",
+            "utilisation_pct": 13.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075055787676-promotion-releases-its-worktree/manifest.md",
+          "negative_control": "remove the live-pointer check so a worktree another live run names is removed; the kept case must fail",
+          "plan": "a-crew-process-ends-with-its-owner",
+          "requested_backend": "codex-luna",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_promotion_releases_its_worktree.py",
+            "tests/test_crew_promotion.py",
+            "docs/evidence/archive/a-crew-process-ends-with-its-owner-landed.html",
+            "docs/figures/a-crew-process-ends-with-its-owner",
+            "docs/plans/a-crew-process-ends-with-its-owner.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-mcp-reach",
+        "backend": "codex-luna",
+        "local": false,
+        "agent": {
+          "alias": "luna5.6",
+          "backend": "codex-luna",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-luna",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-25T07:51:09Z",
+        "completed_at": "2026-09-25T11:30:15Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": null,
+        "worker_seconds_source": "stalled",
+        "wall_seconds": 13146,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "6daecfc17f00ad90153ea988761b6dfd54150145",
+        "commits": [
+          "c676b011dad96a083a31f320592b7d68da212687",
+          "ed020ee584889d28966af737b257004b8ac563bb",
+          "c35d6f7e75288302913841d168706b0d5a9940c5",
+          "5069a24d3f01abdfc95d2516525e620f74c1d453",
+          "ad2cc9ad4de5308300a64097301578d1f6820d26",
+          "b08b27ca6d77d1f09905701c1c90c264c8fc1dc1"
+        ],
+        "changed_lines": {
+          "added": 617,
+          "removed": 28,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_release.py tests/test_crew_promotion.py tests/test_promotion_releases_its_worktree.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075055787676-promotion-releases-its-worktree/promotion-after-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075055787676-promotion-releases-its-worktree/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d78c-4b26-7f31-a4bc-ede1a3ee644c",
+        "session_harness": "codex",
+        "session_model": "gpt-5.6-luna",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 43278592,
+            "cached_input_tokens_cumulative": 43278592,
+            "input_tokens": 43918025,
+            "input_tokens_cumulative": 43918025,
+            "output_tokens": 85310,
+            "output_tokens_cumulative": 85310,
+            "reasoning_output_tokens": 29263,
+            "reasoning_output_tokens_cumulative": 29263
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-25T11:30:15Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 15.0,
+              "resets_at": 1790869124,
+              "observed_at": "2026-09-25T11:30:15Z"
+            }
+          ],
+          "notional_cost_usd": 11.2471,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-luna",
+            "input_per_million": 0.2,
+            "output_per_million": 1.2,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: the fence refuses to launch any worker on this host. At base 51d80b95; with ~/.gitconfig the only symlink among the thirteen named protected paths at this home; both dispatched nodes died in bubblewrap before a harness process existed (stream.jsonl 0 bytes; empty harness and codex-home; no session_id). Reproduce with `bwrap --dev-bind / / --ro-bind ~/.gitconfig ~/.gitconfig -- /bin/true`; which exits 1 with the same message; with no reckon process involved.",
+              "effective_phase": "starting",
+              "elapsed_seconds": 2962,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:13:38Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T06:25:55Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 21822,
+                "worker_pid": 3666579
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2241,
+              "log_fresh": false,
+              "manifest_commits": [
+                "4088c1ae05ee2de968547377ea80cb013d3de7ee"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "a61eba31d7f454aff87081f11b6395ac935d9c2d36dd62a2952dd3f537a24ea1",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md; resolve the blocker before resuming the run",
+              "node": "fenced-workers-smoke",
+              "phase": "starting",
+              "plan": "a-worker-cannot-write-your-home",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+              "session": "s21-coord",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "session_id": "eb46c4e0-0ac6-4891-b9b6-6fd5fb4773e4",
+                "source": "stream"
+              },
+              "terminal_age_seconds": 2278,
+              "terminal_at": "2026-09-25T07:13:01Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fenced-workers-smoke"
+            }
+          ]
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 43278592,
+          "cumulative_input_tokens": 43918025,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 114573,
+          "generation_seconds": 12587.408,
+          "machine_seconds": 536.996,
+          "tokens_per_second": 9.1
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 3,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T08:12:05Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-25T07:51:30Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T075055787676-promotion-releases-its-worktree",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 338,
+          "worker_pid": 4030781
+        },
+        "promoted_revision": "b08b27ca6d77d1f09905701c1c90c264c8fc1dc1",
+        "plan_impl_at_dispatch": 0.25,
+        "impl_move": {
+          "plan": "a-crew-process-ends-with-its-owner",
+          "at_dispatch": 0.25,
+          "at_complete": 0.33,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_crew_promotion.py",
+            "tests/test_promotion_releases_its_worktree.py"
+          ],
+          "declaration": "remove the live-pointer check so a worktree another live run names is removed; the kept case must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075055787676-promotion-releases-its-worktree/negative-retention.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075055787676-promotion-releases-its-worktree/negative-retention.log",
+          "reason": "the declared mutation's own log is negative-control.log beside the manifest: its first line repeats the declared live-pointer mutation verbatim and the run is red; the manifest's negative_control_log cites the later retention control (negative-retention.log), which is also red"
+        },
+        "review_waiver": {
+          "reason": "the re-review at 5069a24d scored 95 and closed both findings; the only later commits (ad2cc9ad, b08b27ca) realign three legacy tests to the rule that review approved and record it, with the promotion suite exiting 0 at base and head"
+        },
+        "lane_advisory": {
+          "backend": "codex-luna",
+          "burn_multiple": 1.3478245962903281,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'codex-luna' is projected to exhaust at 2026-09-30T00:28:18Z, which is after this node's 3600s horizon ending 2026-09-25T08:50:57.303748+00:00",
+          "horizon_ends_at": "2026-09-25T08:50:57.303748+00:00",
+          "horizon_seconds": 3600,
+          "metered": true,
+          "observed_at": "2026-09-25T07:50:56Z",
+          "precedes_horizon": false,
+          "projected_exhaustion_at": "2026-09-30T00:28:18Z",
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 546466,
+          "state": "quiet",
+          "utilisation_pct": 13.0
+        },
+        "lane_declaration": {
+          "backend": "codex-luna",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-25T07:50:56Z",
+          "read_at": "2026-09-25T07:50:57Z",
+          "resolved_backend": "codex-luna",
+          "utilisation_pct": 13.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 109.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        },
+        "release": {
+          "worktree_released": true,
+          "process_signalled": false,
+          "process_withheld": "process is not alive",
+          "worktree_audit": {
+            "counts": {
+              "dirty": 0,
+              "disposable": 0,
+              "integrated": 0,
+              "live-referenced": 0,
+              "retained-for-resume": 0,
+              "unintegrated": 0
+            },
+            "worktrees": [
+              {
+                "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/promotion-releases-its-worktree",
+                "available": false,
+                "detail": "tree is no longer available"
+              }
+            ]
+          }
+        }
       }
     ],
     "holds": [
@@ -426053,6 +426431,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2791
+    "_version": 2793
   }
 }
