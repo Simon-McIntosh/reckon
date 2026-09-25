@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built-landed">
+  <meta name="plan-title" content="A plan is reviewed before it is built &mdash; landed evidence">
+  <meta name="plan-summary" content="One section per node: the plan-review record, its fingerprint join and its store (PR-1).">
+  <meta name="plan-evidence-for" content="reckon:a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-verifies" content="reckon:a-plan-is-reviewed-before-it-is-built#s2">
+  <meta name="plan-recorded-at" content="2026-09-25">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux compute node; Python project venv; detached git worktree">
+  <meta name="plan-commits" content="b906f66b">
+  <meta name="plan-artifacts" content="reckon/crew/plan_review.py,tests/test_plan_review_store.py,docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-store.svg">
+  <title>A plan is reviewed before it is built &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A plan is reviewed before it is built &mdash; landed evidence</h1>
+    <p class="plan-summary">The plan-review record: one durable file per reviewed version,
+    joined to the plan content it read by a fingerprint that drops the metadata
+    scalars the store rewrites on every edit.</p>
+  </header>
+
+  <section id="plan-review-record-and-store">
+    <h2>&sect;2 &mdash; The plan-review record and its store</h2>
+    <p><strong>Node:</strong> <code>plan-review-record-and-store</code>.</p>
+
+    <p><strong>What landed.</strong> One module, <code>reckon/crew/plan_review.py</code>,
+    owning the plan-review record: <code>plan_review_path</code>,
+    <code>store_plan_review</code>, <code>read_plan_review</code>,
+    <code>list_plan_reviews</code>, <code>plan_fingerprint</code>,
+    <code>record_response</code> and <code>declined_recurrence</code>. The record lives at
+    <code>reviews/&lt;project&gt;/plan-&lt;slug&gt;.v&lt;N&gt;.json</code> beside the code
+    reviews, with a <code>.at-&lt;blob8&gt;</code> sibling the second review of one version
+    lands on, so a re-review accumulates beside its predecessor instead of over it.</p>
+    <p><strong>The fingerprint join.</strong> The plan store and the MCP write path bump
+    <code>version</code> on every write, including the impl-only edit that must not produce a
+    review, so a record keyed to the integer would be orphaned at the first impl bump and
+    no review could clear the later gate. The record is therefore joined to plan content by
+    <code>plan_fingerprint</code>, which drops exactly the ten server-managed metadata
+    scalars (<code>version, modified, impl, status, roi, effort_hours, owner, sprint, tags,
+    archived</code>) and digests the authored content. An authored edit moves the fingerprint
+    and a metadata-only edit does not, so the review-due rule and the dispatch gate agree by
+    construction.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-plan-is-reviewed-before-it-is-built/plan-review-store.svg"
+           alt="The plan-review pipeline: a plan write is fingerprinted with the metadata scalars dropped, stored keyed by version and blob, answered per finding, and counted for recurrence across distinct plans.">
+      <figcaption>One write, one fingerprint, one durable record per reviewed version; a
+      finding type declined across three distinct plans surfaces to the lead.</figcaption>
+    </figure>
+    <h3>Method and the five named cases</h3>
+    <p><code>tests/test_plan_review_store.py</code> runs five cases, each named for the
+    property it holds:</p>
+    <ul>
+      <li><code>test_two_versions_of_one_plan_are_two_records</code> &mdash; reviews of
+      versions 1 and 2 land at <code>plan-demo.v1.json</code> and
+      <code>plan-demo.v2.json</code>, and a fingerprint filter selects the right one.</li>
+      <li><code>test_metadata_only_edit_keeps_the_fingerprint</code> &mdash; every excluded
+      scalar moves while no content key does, and the two fingerprints are equal; a content
+      edit moves the fingerprint.</li>
+      <li><code>test_re_reviewing_one_version_keeps_both_files</code> &mdash; a second review
+      of one version lands at <code>plan-demo.v1.at-bbbbbbbb.json</code> and the first file
+      survives; re-storing identical content is idempotent on the plain path.</li>
+      <li><code>test_a_response_without_a_reason_is_refused</code> &mdash; a reasonless
+      decline raises before any write, the stored record is untouched, and an act or a
+      decline-with-reason closes the finding.</li>
+      <li><code>test_recurrence_counts_distinct_plans</code> &mdash; one type declined in
+      three distinct plans surfaces (<code>plan_count 3, surfaced true</code>) and in two does
+      not; a plan carrying two declines of one type still counts once.</li>
+    </ul>
+    <h3>Gate</h3>
+    <p>The gate is <code>pytest -q tests/test_plan_review_store.py</code>, run in the
+    worktree at revision <code>8877d879</code> with the root project interpreter. It reports
+    <code>5 passed</code> (exit 0). Log:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/gate-plan-review-store.log</code>,
+    whose header names the revision, the tree, the command and the imported
+    <code>module.__file__</code>. This measures only this node's own change; both touched
+    files are clean under <code>ruff check</code> and <code>ruff format --check</code>.</p>
+
+    <h3>Negative control</h3>
+    <p><strong>Declared mutation:</strong> <em>plan_fingerprint folds in the version meta,
+    so the metadata-only case must fail</em>. Applied &mdash; <code>"version"</code> removed
+    from <code>PLAN_METADATA_SCALARS</code> &mdash; the metadata-only case fails at its first
+    assertion, and for that reason:</p>
+    <pre>assert module.plan_fingerprint(base) == module.plan_fingerprint(edited)
+E  AssertionError: assert '8f34a50a748c...443e3909cc2fd' == '76f6ef0be68b...c2ff058413926'
+FAILED tests/test_plan_review_store.py::test_metadata_only_edit_keeps_the_fingerprint
+1 failed in 0.55s</pre>
+    <p>The mutation was then reverted and the file's sha256 re-checked against its
+    pre-mutation digest (<code>64c8bfcf&hellip;30a4b1</code>), and the gate re-run green.
+    The red log's first line is the declared mutation verbatim:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/negative-control-plan-review-store.log</code>.</p>
+  </section>
+</main>
+</body>
+</html>
