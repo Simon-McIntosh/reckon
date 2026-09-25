@@ -24,9 +24,9 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="19">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
-<meta name="plan-impl" content="0.25">
+<meta name="plan-version" content="20">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -329,6 +329,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260924T232220353072-review-of-settle-the-ledger-readings" data-who="reckon-build" data-when="2026-09-25T00:03:21.664Z">
     <div class="r-comment-body"><p>review of settle-the-ledger-readings stored: 14-19, one data-leaning finding, moot after the decision was locked</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s22-ledger-s1-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>Section 1 landed as two nodes merged together at e72705cf. append-run-writes-one-run-file (review 87) makes append_run write one run file and never rewrite crew.json. It was widened to the old-contract ledger tests through the repaired crew widen. promotion-stages-its-one-run-file (review 96) makes the promote commit stage that one run file, built on integration commit 0a1d9a26 with the worktree-release change. Zero added failures. Two followups come next on promotion.py: f-tlioefpr-promotion-never-amends, which also removes the unused attempts=12 parameter on append_run (review 87 finding, reckon/ledger.py near :1922), and then the worker-retirement node on a-crew-process-ends-with-its-owner.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
