@@ -758,6 +758,115 @@
       <code>/home/ITER/mcintos/.cache/reckon-ticker-collision/negative-control-suffix-from-the-id-tail.log</code>.
     </p>
 
+  <h2 id="the-reason-clause-is-cut-at-a-word">&sect;6 &mdash; The reason clause is cut at a word</h2>
+
+    <p>
+      <code>single_clause</code> bounded a clause by searching for the last space inside the field and
+      then abandoning that space whenever it fell in the field's first half — the cut went to
+      <code>limit - 1</code> instead, landing inside whatever word sat at the edge. The search stays;
+      the half-field heuristic is gone, so the cut takes the last boundary in the room wherever in the
+      room it falls. A mid-word fill survives only where there is no boundary to take at all: a clause
+      whose first word alone is as wide as the room, a shape an unbroken id or path has and prose does
+      not. The transition record and the follower's JSON output were never cut, and the row is a
+      rendering of the record, so the clause reaches a machine whole either way.
+    </p>
+
+    <h3>The cells as rendered, read off the row's own columns</h3>
+    <p>
+      The room is derived from the row's own geometry rather than pinned to a screen column: every
+      cell ahead of the clause is fixed-width and ends at column 116, so a row asked for 146 columns
+      leaves the clause exactly 30, and the probe asserts that equality before reading the cell. Base
+      is <code>cfcac1da</code>; this revision is <code>59f9a2ff</code>.
+    </p>
+    <table>
+      <thead>
+        <tr><th>clause</th><th>base cell, 30 columns</th><th>this revision's cell</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>forty short words</td>
+          <td><code>the same focused pytest…</code></td>
+          <td><code>the same focused pytest…</code></td>
+        </tr>
+        <tr>
+          <td><code>unpromoted review-of-sgc-sweep-control-…</code></td>
+          <td><code>unpromoted review-of-sgc-swee…</code></td>
+          <td><code>unpromoted…</code></td>
+        </tr>
+        <tr>
+          <td><code>pytest exited 1</code></td>
+          <td><code>pytest exited 1</code></td>
+          <td><code>pytest exited 1</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The first row is why the recorded defect is not reachable through the done-when's own case: a
+      clause of short words already had a boundary in the field's second half, so the base cut it
+      there and both revisions agree. The defect lives in the heuristic rather than in the search, and
+      the second row is its shape — a whole first word that fits the room, discarded for a fragment of
+      the word after it. The third row is a clause that fits: rendered verbatim, no ellipsis. In the
+      second row this revision leaves twenty columns unused, which is what the rule prescribes: the
+      last boundary that fits is the one after <code>unpromoted</code>, and every later boundary is
+      outside the room.
+    </p>
+
+    <h3>Gate measure, as executed</h3>
+    <p>
+      Fourteen files import <code>reckon.crew.ticker</code> at this base, not the thirteen the brief
+      named; the fifteenth importing file is this node's own. Whatever the count, both arms ran the
+      same population. Base <code>cfcac1da</code>, the fourteen
+      base files: <strong>305 passed, 0 failed</strong>. This revision at <code>59f9a2ff</code>, the
+      same fourteen plus the new file: <strong>309 passed, 0 failed</strong> — the four tests over
+      base's own 305 are the new file's. Added failures: <strong>zero</strong>, so there is no failure
+      id to attribute. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260925T040545376349-reason-clause-is-cut-at-a-word/logs/base-arm-ticker-files.log</code>
+      and <code>…/after-arm-ticker-files.log</code>. The base arm ran in a tree exported from HEAD with
+      <code>git archive</code>, and the module that served it was checked rather than assumed —
+      <code>reckon.crew.ticker.__file__</code> resolved inside that tree, not in the main checkout.
+    </p>
+
+    <h3>The owned test, and the case the base keeps green</h3>
+    <p>
+      <code>tests/test_ticker_reason_cut_at_a_word.py</code> renders a forty-word clause into thirty
+      columns and asserts the kept text is a boundary prefix of the clause, that its last token is a
+      whole token of the clause, that no later boundary falls inside the room, and that the cell does
+      not overrun it. A second case renders a clause that fits and asserts it is verbatim with no
+      ellipsis; a third renders the long-token clause and asserts the cut keeps the first word whole;
+      a fourth builds the transition through <code>_watch_transition</code> with
+      <code>spend_runs=[]</code> — no reading of live run state — and asserts the record and its JSON
+      carry every word while the row rendered from that same record is the cut one. Run against the
+      base tree, three pass and one fails:
+      <code>test_a_clause_whose_first_word_fills_the_room_keeps_that_word</code> renders
+      <code>unpromoted review-of-sgc-swee…</code> where the room had already been shown to hold
+      <code>unpromoted</code>, so the recorded defect reproduces at base and the case that carries it
+      is red there. Log: <code>…/logs/base-arm-new-test-file.log</code>.
+    </p>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared: <em>restore the mid-word cut of the reason clause in
+      <code>reckon/crew/ticker.py</code>; the whole-word case in
+      <code>tests/test_ticker_reason_cut_at_a_word.py</code> must fail</em>. The mutation replaces the
+      boundary search with an unconditional <code>boundary = limit - 1</code> — the base's own
+      fallback line, applied to every clause — so the cut lands inside a word by construction.
+      Executed: <strong>3 failed, 1 passed</strong>; the whole-word case fails on
+      <code>FORTY_WORDS.startswith(kept + " ")</code> with <code>kept = 'the same focused pytest
+      comma'</code>, the fragment the defect produces, and the long-token and record cases fail with
+      it. The clause that fits stays green, as it must — no cut is made at all. The source was then
+      restored and proven byte-identical: <code>sha256</code>
+      <code>5b9e36164ae87ea2f2d7c300f8f2ffc5fb6a18e03d606fefecfb54cd49ea92d4</code> before the
+      mutation and after the restore, and the new file is green again on the restored source. Log:
+      <code>…/logs/negative-control-mid-word-cut.txt</code>.
+    </p>
+
+    <h3>Figure</h3>
+    <p>
+      No figure. The change is which character an existing thirty-column cell stops at, and the
+      rendered cells above are the evidence — there is no geometry to plot that the cells do not
+      already show.
+    </p>
+
   </main>
 </body>
 </html>

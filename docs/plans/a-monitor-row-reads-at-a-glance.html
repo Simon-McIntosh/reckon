@@ -254,6 +254,34 @@
     in the live view.</p>
     <p><strong>Done when</strong> a reason clause of forty words rendered into thirty columns ends in
     a whole word followed by an ellipsis, and a clause that fits is unchanged.</p>
+    <p class="r-landing"><strong>Landed 2026-09-25</strong> at <code>59f9a2ff</code> in a worktree,
+    base <code>cfcac1da</code>. <code>single_clause</code> no longer abandons a space that falls in
+    the first half of the field: the cut takes the last boundary inside the room wherever in the
+    room it falls, and the mid-word fill survives only for a clause with no boundary in the room at
+    all. That branch is narrow by measurement rather than by assumption — the room at the
+    180-column default is <strong>64 columns</strong>, the reason cell beginning at column 116, so
+    it is reachable only by a clause whose first word is 64 columns wide: an unbroken id or path
+    rather than prose. Where the rule and the room disagree the rule wins and the room is left
+    short: <code>unpromoted review-of-sgc-sweep-control-…</code> into thirty columns now renders
+    <code>unpromoted…</code> rather than filling the field with <code>unpromoted
+    review-of-sgc-swee…</code>, because the last boundary that fits is after the first word. The
+    transition record and the follower's JSON output are untouched; the row is a rendering of the
+    record, so the clause reaches a machine whole.</p>
+    <p class="r-landing">The new <code>tests/test_ticker_reason_cut_at_a_word.py</code> renders a
+    forty-word clause into thirty columns, derives the room from the grid's own constants, and
+    asserts the kept text is a boundary prefix of the clause and the last boundary that fits; a
+    clause that fits renders verbatim; a long first token does not drag the cut inside itself; and
+    the record behind the row keeps every word, its JSON included. At base the recorded defect
+    reproduces through the branch: the long-token case renders <code>unpromoted
+    review-of-sgc-swee…</code> and is the one failing case of the four against base, the
+    forty-word case having already been cut at a boundary there. Over the ticker-importing test
+    files the delta is <strong>zero added failures</strong> — 305 passed and none failed at base
+    against 309 passed and none failed here, the four being this node's. Fourteen files import the
+    ticker at this base and not the thirteen the brief named; the fifteenth is this node's own. The
+    declared negative control, restoring the mid-word cut, was applied and the whole-word case
+    failed as required (<code>the same focused pytest comma…</code>), after which the source was
+    restored to a byte-identical <code>sha256</code>. No figure: the change is which character the
+    cut stops at, and the rendered cells above are the evidence.</p>
 
     <h2 id="s7">&sect;7 &mdash; The baseline marker is its own word</h2>
     <p>The independent review of &sect;2's landing, scored 89 on 2026-09-23, found that a baseline
