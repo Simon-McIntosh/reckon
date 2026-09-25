@@ -1,0 +1,445 @@
+{
+  "agent": {
+    "alias": "luna5.6",
+    "backend": "codex-luna",
+    "effort": "high",
+    "launch": "cli",
+    "model": "gpt-5.6-luna",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "codex-luna",
+  "base_sha": "9d5f2815ec4b75ba62d086d0abc76c7f12c8b5af",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 22375168,
+      "cached_input_tokens_cumulative": 22375168,
+      "input_tokens": 22922965,
+      "input_tokens_cumulative": 22922965,
+      "output_tokens": 56074,
+      "output_tokens_cumulative": 56074,
+      "reasoning_output_tokens": 16252,
+      "reasoning_output_tokens_cumulative": 16252
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 469,
+    "files": 5,
+    "removed": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "904d3baff95c5475438fb3eca4d737251841d060",
+    "b44fcb9de8cd3bad2c4012b40cb7fd7be29548d6",
+    "6b51b1eed00945564e977674b5a11d97751805ff",
+    "f863abdbce8ae32fb7131e290663e467c92f8933",
+    "2aad37b3bbc20ed96776c5e37f9980802f4da234"
+  ],
+  "completed_at": "2026-09-25T13:25:03Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-09-25T11:51:38Z",
+  "dispute_count": 0,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_headroom_publishes_real_readings.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T115122496308-headroom-publishes-real-readings/headroom-final.log"
+  },
+  "impl_move": {
+    "at_complete": 0.42,
+    "at_dispatch": 0.33,
+    "plan": "the-local-lane-is-the-default",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "codex-luna",
+    "burn_multiple": 1.2468389224848817,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'codex-luna' is projected to exhaust at 2026-09-30T10:23:14Z, which is after this node's 3000s horizon ending 2026-09-25T12:41:24.325305+00:00",
+    "horizon_ends_at": "2026-09-25T12:41:24.325305+00:00",
+    "horizon_seconds": 3000,
+    "metered": true,
+    "observed_at": "2026-09-25T11:51:23Z",
+    "precedes_horizon": false,
+    "projected_exhaustion_at": "2026-09-30T10:23:14Z",
+    "resets_at": "2026-10-01T15:38:44Z",
+    "seconds_until_reset": 532040,
+    "state": "quiet",
+    "utilisation_pct": 15.0
+  },
+  "lane_declaration": {
+    "backend": "codex-luna",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-09-25T11:51:23Z",
+    "read_at": "2026-09-25T11:51:24Z",
+    "resolved_backend": "codex-luna",
+    "utilisation_pct": 15.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null
+  },
+  "lane_receipt": {
+    "effective_context_window": 380000,
+    "notional_cost_usd": 4.6519,
+    "observed_at": "2026-09-25T13:25:03Z",
+    "quota_state": "measured",
+    "quota_windows": [
+      {
+        "observed_at": "2026-09-25T13:25:03Z",
+        "resets_at": 1790869124,
+        "used_percent": 19.0,
+        "window_minutes": 10080
+      }
+    ],
+    "rate_basis": {
+      "as_of": "2026-09-09",
+      "input_per_million": 0.2,
+      "model_identifier": "gpt-5.6-luna",
+      "output_per_million": 1.2
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T115122496308-headroom-publishes-real-readings/manifest.md",
+  "member": "crew-mcp-reach",
+  "negative_control": {
+    "declaration": "remove the rollout reader; the codex account must then read unknown",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T115122496308-headroom-publishes-real-readings/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T115122496308-headroom-publishes-real-readings/negative-control.log",
+    "test_paths": [
+      "tests/test_headroom_publishes_real_readings.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "headroom-publishes-real-readings",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1099,
+          "cached_input_tokens": 691447,
+          "input_tokens": 692548,
+          "output_tokens": 2045,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 694593,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+      "session_id": "s21-coord"
+    },
+    "done_when": "tests/test_headroom_publishes_real_readings.py passes over a codex rollout fixture, a Claude stream fixture and a lane.json fixture; a publish on this host into a temp path shows a non-unknown reading for every account with a rollout or stream event inside its window plus a local-lane block, logged under the run dir; the declared negative control is executed and logged; the gate adds no failures over the paid-lanes and budget test files against base; the evidence record carries an anchor",
+    "estimated_hours": null,
+    "goal": "implement comment c-20260925T1352-readings-cause on the-local-lane-is-the-default: the published headroom document reads codex-family windows from ~/.codex/sessions rollouts, keeps the Claude stream path, and publishes the local lane occupancy block from ~/public/imas-ambix/lane.json",
+    "id": "headroom-publishes-real-readings",
+    "lane_declaration": {
+      "backend": "codex-luna",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-09-25T11:51:23Z",
+      "read_at": "2026-09-25T11:51:24Z",
+      "resolved_backend": "codex-luna",
+      "utilisation_pct": 15.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T115122496308-headroom-publishes-real-readings/manifest.md",
+    "negative_control": "remove the rollout reader; the codex account must then read unknown",
+    "plan": "the-local-lane-is-the-default",
+    "requested_backend": "codex-luna",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§5",
+    "spec_level": "exact",
+    "time_budget": "50m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/paid_lanes.py",
+      "reckon/budget.py",
+      "tests/test_headroom_publishes_real_readings.py",
+      "docs/evidence/archive/the-local-lane-is-the-default-landed.html",
+      "docs/figures/the-local-lane-is-the-default",
+      "docs/plans/the-local-lane-is-the-default.html"
+    ]
+  },
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "plan": "the-local-lane-is-the-default",
+  "plan_impl_at_dispatch": 0.33,
+  "promoted_revision": "2aad37b3bbc20ed96776c5e37f9980802f4da234",
+  "release": {
+    "process_signalled": false,
+    "process_withheld": "process is not alive",
+    "worktree_audit": {
+      "counts": {
+        "dirty": 0,
+        "disposable": 0,
+        "integrated": 0,
+        "live-referenced": 0,
+        "retained-for-resume": 0,
+        "unintegrated": 0
+      },
+      "worktrees": [
+        {
+          "available": false,
+          "detail": "tree is no longer available",
+          "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/headroom-publishes-real-readings"
+        }
+      ]
+    },
+    "worktree_released": true
+  },
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 17,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 91
+  },
+  "role": "implement",
+  "run_id": "r-20260925T115122496308-headroom-publishes-real-readings",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§5",
+  "session_harness": "codex",
+  "session_id": "01a0d868-a69d-7550-a176-2ffc754c24ee",
+  "session_model": "gpt-5.6-luna",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 22375168,
+    "cumulative_input_tokens": 45298133,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 72326
+  },
+  "time_budget": "50m",
+  "tool_steps": 106.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "blocked",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports blocked: the fence refuses to launch any worker on this host. At base 51d80b95; with ~/.gitconfig the only symlink among the thirteen named protected paths at this home; both dispatched nodes died in bubblewrap before a harness process existed (stream.jsonl 0 bytes; empty harness and codex-home; no session_id). Reproduce with `bwrap --dev-bind / / --ro-bind ~/.gitconfig ~/.gitconfig -- /bin/true`; which exits 1 with the same message; with no reckon process involved.",
+        "effective_phase": "complete",
+        "elapsed_seconds": 2962,
+        "exit_record": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T07:13:38Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T06:25:55Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 21822,
+          "worker_pid": 3666579
+        },
+        "external_wait": null,
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 16667,
+        "log_fresh": false,
+        "manifest_commits": [
+          "4088c1ae05ee2de968547377ea80cb013d3de7ee"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "a61eba31d7f454aff87081f11b6395ac935d9c2d36dd62a2952dd3f537a24ea1",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "blocked",
+        "manifest_status": "blocked",
+        "marker": "!",
+        "needs_help_complete": false,
+        "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md; resolve the blocker before resuming the run",
+        "node": "fenced-workers-smoke",
+        "phase": "complete",
+        "plan": "a-worker-cannot-write-your-home",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "decide",
+        "recovery_classification": "blocked",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+        "session": "s21-coord",
+        "session_resolution": {
+          "consulted": [
+            "pointer",
+            "stream",
+            "ledger"
+          ],
+          "resolved": true,
+          "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+          "session_id": "eb46c4e0-0ac6-4891-b9b6-6fd5fb4773e4",
+          "source": "pointer"
+        },
+        "terminal_age_seconds": 16705,
+        "terminal_at": "2026-09-25T07:13:01Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fenced-workers-smoke"
+      },
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "working",
+        "elapsed_seconds": 1042,
+        "exit_record": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T07:46:59Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T07:19:15Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 9469,
+          "worker_pid": 3903304
+        },
+        "external_wait": null,
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 2301,
+        "log_fresh": false,
+        "manifest_commits": [
+          "dc52fa08 72e0ff48 5f570af2 608d1917 edc04cc5"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "85727a19ac3e42f2af27cda494ae6b044e30614b6aac1341e183f044455b34ca",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan a-worker-cannot-write-your-home --section '§2' --role review --spec-level exact --node review-of-a-symlinked-protected-path-cannot-block-launch --goal 'attach an independent review to run r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch' --done-when 'the review for r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch.at-edc04cc542b84e45694c0aaa3b4760bdcd0a680e.json --time-budget 60m --session s21-coord --allow-unreconciled-runs --backend clive",
+        "node": "a-symlinked-protected-path-cannot-block-launch",
+        "phase": "working",
+        "plan": "a-worker-cannot-write-your-home",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch",
+        "session": "s21-coord",
+        "terminal_age_seconds": 2456,
+        "terminal_at": "2026-09-25T11:10:29Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/a-symlinked-protected-path-cannot-block-launch"
+      }
+    ]
+  },
+  "wall_seconds": 5605,
+  "watch_override": null,
+  "worker_exit": {
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-25T12:08:11Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-09-25T11:52:11Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260925T115122496308-headroom-publishes-real-readings",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 314,
+    "worker_pid": 631513
+  },
+  "worker_seconds": 5605,
+  "worker_seconds_source": "wall_fallback",
+  "worktree_retention": null
+}
