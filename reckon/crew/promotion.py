@@ -4177,8 +4177,8 @@ def _complete_locked(
             ],
         )
 
-        # The session id lives only in the pointer until it reaches the roster, so
-        # it has to be captured before the pointer goes.
+        # Return capture metadata while the pointer still exists. Session
+        # ownership has already been copied onto the committed ledger row.
         capture = _capture_member_session(record)
         pointer_path(run_id).unlink(missing_ok=True)
         release = _release_after_promotion(

@@ -79,8 +79,8 @@ def pointer_path(run_id: str) -> Path:
 def capture_run_session(record: dict[str, Any]) -> dict[str, Any] | None:
     """Bind a captured session to this run's harness without writing a roster.
 
-    The caller persists the pointer under its lock. The agent's dialect also
-    travels through promotion, so a committed row retains the session's owner.
+    The caller persists the pointer under its lock. Promotion copies session
+    ownership from the run into explicit fields on the committed row.
     """
     session_id = str(record.get("session_id") or "").strip()
     if not session_id:
