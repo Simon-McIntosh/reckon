@@ -6,8 +6,10 @@ reads the real ``/proc``. The shim directory is put on the fixture ``PATH`` and
 a fake real binary records the argv it was handed, which is how the exec paths
 are told from the refusal path.
 
-The declared mutation — remove the in-allocation check — is loaded here and run
-by ``docs/figures/a-worker-knows-it-is-on-compute/`` against the refusal test.
+The mutations this file declares — remove the in-allocation check, and drop the
+shim-directory filter from the lookup that finds the real binary — are loaded
+here and run by ``docs/figures/a-worker-knows-it-is-on-compute/`` against the
+case each one is declared for.
 """
 
 from __future__ import annotations
@@ -19,12 +21,15 @@ from pathlib import Path
 
 import pytest
 
-from reckon.nested_launch import REFUSAL_STATUS
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SHIM_DIR = REPO_ROOT / "reckon" / "host_shims"
 VENV_PYTHON = REPO_ROOT / ".venv" / "bin" / "python"
 TOOLS = ("srun", "sbatch", "salloc")
+
+# The bound the shim-directory-first case runs under. With the filter in place
+# the shim reaches the fake in about a second; without it the shim re-execs
+# itself and never returns; the bound is what turns the second into a report.
+SELF_EXEC_BOUND_SECONDS = 20
 
 # The fact injection: install the fixture facts before the shim calls main, and
 # pop its own markers so the fake binary the shim execs into never sees them.
@@ -76,16 +81,40 @@ _FAKE = """#!/bin/sh
 exit "${FAKE_LAUNCH_EXIT:-0}"
 """
 
-# The mutation the runner under docs/figures/ loads. The mutation removes the
+# The mutations the runner under docs/figures/ loads. The first removes the
 # refusal gate in ``main``, so a plain srun inside the allocation execs instead
-# of being refused. The anchor must stay in step with reckon/nested_launch.py.
+# of being refused. The second drops the shim-directory filter from
+# ``real_binary``, so a lookup that reaches the shim directory first resolves
+# the shim itself and re-execs it. Both anchors must stay in step with
+# reckon/nested_launch.py.
 DECLARED_MUTATION = "remove the in-allocation check so plain srun always execs"
+SHIM_LOOKUP_MUTATION = "drop the shim-directory filter from the real-binary lookup"
+
 _MUTATION_ANCHOR = (
     "    if refuses_implicit_launch(tool, argv, facts, env):\n"
     "        print(refusal_message(tool, facts), file=sys.stderr)\n"
     "        return REFUSAL_STATUS\n"
 )
 _MUTATION_REPLACEMENT = ""
+_SHIM_LOOKUP_ANCHOR = (
+    "    kept = [\n"
+    "        entry\n"
+    "        for entry in str(path).split(os.pathsep)\n"
+    "        if entry and os.path.realpath(entry) != skipped\n"
+    "    ]\n"
+)
+_SHIM_LOOKUP_REPLACEMENT = (
+    "    kept = [entry for entry in str(path).split(os.pathsep) if entry]\n"
+)
+_MUTATIONS: dict[str, tuple[str, str]] = {
+    DECLARED_MUTATION: (_MUTATION_ANCHOR, _MUTATION_REPLACEMENT),
+    SHIM_LOOKUP_MUTATION: (_SHIM_LOOKUP_ANCHOR, _SHIM_LOOKUP_REPLACEMENT),
+}
+
+
+def mutation_names() -> tuple[str, ...]:
+    """The mutations this file declares, in the order the runner reads them."""
+    return tuple(_MUTATIONS)
 
 
 @dataclasses.dataclass
@@ -134,14 +163,14 @@ def launch_env(
 
 
 def run_shim(
-    tool: str, argv: list[str], env: dict[str, str]
+    tool: str, argv: list[str], env: dict[str, str], *, timeout: float = 120
 ) -> subprocess.CompletedProcess:
     return subprocess.run(
         [str(SHIM_DIR / tool), *argv],
         env=env,
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=timeout,
         check=False,
     )
 
@@ -161,13 +190,16 @@ def recorded(record: Path) -> list[tuple[str, tuple[str, ...]]]:
     return invocations
 
 
-def load_declared_mutant(scratch: Path) -> Path:
+def load_declared_mutant(scratch: Path, mutation: str = DECLARED_MUTATION) -> Path:
+    if mutation not in _MUTATIONS:
+        raise AssertionError(f"no mutation is declared as {mutation!r}")
+    anchor, replacement = _MUTATIONS[mutation]
     source = (REPO_ROOT / "reckon" / "nested_launch.py").read_text(encoding="utf-8")
-    if _MUTATION_ANCHOR not in source:
+    if anchor not in source:
         raise AssertionError(
-            "the in-allocation check is not where the mutation expects it"
+            f"the code {mutation!r} targets is not where the mutation expects it"
         )
-    mutated = source.replace(_MUTATION_ANCHOR, _MUTATION_REPLACEMENT)
+    mutated = source.replace(anchor, replacement)
     if mutated == source:
         raise AssertionError("the mutation changed nothing")
     path = scratch / "nested_launch_mutant.py"
@@ -212,7 +244,10 @@ def test_the_fixture_install_is_live(tmp_path: Path) -> None:
 def test_plain_srun_inside_the_allocation_is_refused(tmp_path: Path) -> None:
     fixture = make_fixture(tmp_path)
     result = run_shim("srun", ["true"], launch_env(fixture, inside=True))
-    assert result.returncode == REFUSAL_STATUS, result.stderr
+    # 97 is asserted as the literal the contract names, not as the module's own
+    # constant: importing it would restate the implementation and pass whatever
+    # value the implementation happened to hold.
+    assert result.returncode == 97, result.stderr
     assert "4242" in result.stderr
     assert "98dci4-clu-2058" in result.stderr
     assert "RECKON_ALLOW_NESTED_LAUNCH=1" in result.stderr
@@ -263,10 +298,40 @@ def test_the_override_discharges_the_refusal(tmp_path: Path) -> None:
 def test_sbatch_and_salloc_are_refused_inside(tmp_path: Path, tool: str) -> None:
     fixture = make_fixture(tmp_path)
     result = run_shim(tool, ["true"], launch_env(fixture, inside=True))
-    assert result.returncode == REFUSAL_STATUS, result.stderr
+    assert result.returncode == 97, result.stderr
     assert "RECKON_ALLOW_NESTED_LAUNCH=1" in result.stderr
     assert "4242" in result.stderr
     assert recorded(fixture.record) == []
+
+
+def test_the_shim_directory_first_on_path_does_not_reexec_the_shim(
+    tmp_path: Path,
+) -> None:
+    """The shim directory ahead of the shim must still reach the real binary.
+
+    Every other case puts the fake binary ahead of the shim directory, so a
+    lookup that never filters the shim directory out still finds the fake, and
+    the filter is not exercised at all. Here the shim directory comes first,
+    which is the order the filter exists for. The observable is the record the
+    fake writes: without the filter the shim resolves its own path instead, so
+    the fake is never run and the record stays empty however the re-exec then
+    ends. The run is bounded because a self-exec can also loop rather than
+    return.
+    """
+    fixture = make_fixture(tmp_path)
+    env = launch_env(fixture, inside=False)
+    env["PATH"] = os.pathsep.join(
+        [str(SHIM_DIR), str(fixture.fake_bin), env.get("PATH", "")]
+    )
+    try:
+        result = run_shim("srun", ["true"], env, timeout=SELF_EXEC_BOUND_SECONDS)
+    except subprocess.TimeoutExpired:
+        pytest.fail(
+            f"the shim did not reach the real binary within "
+            f"{SELF_EXEC_BOUND_SECONDS}s: it resolved itself first on PATH"
+        )
+    assert recorded(fixture.record) == [(str(fixture.fake_bin / "srun"), ("true",))]
+    assert result.returncode == 0, result.stderr
 
 
 def test_the_declared_mutation_makes_the_refusal_go_away(tmp_path: Path) -> None:
