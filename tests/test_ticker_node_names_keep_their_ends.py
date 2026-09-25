@@ -56,7 +56,16 @@ def _node_cell(line: str) -> str:
     the assertion is about the cell a reader sees.
     """
     start = (
-        ticker_module.CLOCK + ticker_module.GAP + ticker_module.ROLE + ticker_module.GAP
+        ticker_module.CLOCK
+        + ticker_module.GAP
+        + ticker_module.ATTENTION
+        + ticker_module.GAP
+        + ticker_module.MODEL
+        + ticker_module.GAP
+        + ticker_module.EFFORT
+        + ticker_module.GAP
+        + ticker_module.ROLE
+        + ticker_module.GAP
     )
     return line[start : start + ticker_module.NODE]
 

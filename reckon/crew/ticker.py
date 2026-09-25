@@ -9,10 +9,19 @@ text is truncated to the room the grid leaves rather than allowed to overrun.
 
 Colour carries two questions that must not share an axis. *Which worker is
 this?* is answered by the node's own hue, handed out in order of first
-appearance. *Does this need me?* is answered by the destination state, painted
-by the verdict that state names. Identity is kept perceptually clear of the four
-verdict hues, so a worker's colour is never mistaken for a verdict about that
-worker.
+appearance. *Does this need me?* is answered by a one-character attention
+column and by the destination state, painted by the verdict that state names.
+Identity is kept perceptually clear of the four verdict hues, so a worker's
+colour is never mistaken for a verdict about that worker.
+
+The attention column is ``!`` for a run that needs a coordinator: a blocked,
+failed, stalled, stopped, abandoned, unreadable, unwritten, interrupted or
+otherwise help-seeking run; a wait that has aged or was never probed; and a
+completion awaiting review or promotion. Running, dispatched, self-lifting
+waits and promoted work leave it blank. The recovery vocabulary still owns the
+specific remedy, but the row never prints that action word: the transition says
+what happened, the attention column says whether to look, and the plain reason
+clause says why.
 """
 
 from __future__ import annotations
@@ -39,26 +48,14 @@ NODE = 36
 # node cell. The stamp and never the id's own tail, which repeats the node name
 # the cell already carries and so separates nothing.
 RUN_STAMP_TAIL = 4
-# One glyph, not a name. The only decision-relevant thing about the owning
-# session is whether the row is the reader's to act on, and a run id spelled in
-# full — a shadow's least of all, since it is synthesised from its primary's —
-# spends eighteen columns saying it. An unscoped reader gets the glyph; a scoped
-# reader gets nothing, because every row it receives is its own by construction.
-OWNER = 1
-# The middle dot that joins the state to the action the coordinator takes. The
-# state cell carries both so a reader scans one column for *what is this run
-# doing* and *what do I do about it*.
-ACTION_SEP = " · "
-# The longest recovery verb the classification vocabulary carries (investigate,
-# eleven). Held as a width bound rather than imported from the vocabulary that
-# states it, because that module imports this one; the render test over every
-# classification carrying a remedy asserts each action renders whole, so a
-# longer verb fails there rather than being cut to a wrong instruction.
-ACTION = 11
+# One glyph answers whether the destination state needs the coordinator. It is
+# a column rather than a prefix on the reason so its position never depends on
+# how long the transition or explanation is.
+ATTENTION = 1
 # Model and effort are two cells so a reader scans the effort down a column
-# instead of parsing it out of a composed label. The cells sit one space apart
-# — PAIR_GAP, not GAP — so effort begins at the same screen column on every
-# row while no row carries padding wider than the alias it pads. The model
+# instead of parsing it out of a composed label. Every boundary uses the same
+# two-column gutter, so effort begins at the same screen column on every row
+# while no row carries padding wider than the alias it pads. The model
 # cell is sized from the longest alias the resolved flight config declares, so
 # a pane whose rows all carry a configured alias lands its effort column on one
 # screen column. MODEL is the width used only when the config declares no alias
@@ -68,12 +65,11 @@ ACTION = 11
 # is that a long unaliased id shows a prefix, which is the same trade every
 # fixed-width column in this row makes.
 MODEL = 10
-PAIR_GAP = 1
+PAIR_GAP = GAP = 2
 EFFORT = 7
-GAP = 2
 
-# The measure block: the run's elapsed time, behind the fleet counters so the
-# always-populated columns lead. The cell is right-aligned to a fixed width, so
+# The measure block is the run's elapsed time, immediately after the transition
+# and before the fleet counters. The cell is right-aligned to a fixed width, so
 # the column a reader scans for a run over its budget stays put as the figure
 # changes. It is the only measure the row carries. The generation rate sat
 # beside it and rendered the absence marker on nearly every row of the fleet
@@ -175,13 +171,16 @@ STATE_HUE = {
     },
 }
 
-# The state cell carries the state word and the verbatim action beside it, so a
-# reader scans one column for *what is this run doing* and *what do I do about
-# it*. Sized from the widest state the classifier emits and the widest action it
-# can name, joined by the separator. An action cut to a prefix is a wrong
-# instruction, so the cell holds the longest word rather than eliding it.
+# A transition is two state words around one arrow. The previous word is
+# right-aligned and the destination is left-aligned, which pins the arrow to one
+# screen column even when either word changes length. A first sighting has no
+# previous word, so the left half and arrow are blank while the destination
+# keeps its column.
 STATE_WORD = max(len(word) for word in STATE_HUE["light"])
-STATE = STATE_WORD + len(ACTION_SEP) + ACTION
+ARROW = "→"
+ARROW_GAP = 1
+STATE = STATE_WORD + ARROW_GAP + len(ARROW) + ARROW_GAP + STATE_WORD
+NEW_STATE_OFFSET = STATE_WORD + ARROW_GAP + len(ARROW) + ARROW_GAP
 
 # States a reader must act on: the ones that have stopped progressing and want
 # the coordinator. An overdue wait is in the set: its external condition has
@@ -207,35 +206,31 @@ NEEDS_ACTION = frozenset(
     }
 )
 
+# Every destination or recovery classification that makes the attention column
+# visible. The recovery module imports this renderer, so the display contract
+# cannot import its actionable set without a cycle; this is the one documented
+# display copy, and the property test covers the classifier's full vocabulary.
+ATTENTION_STATES = NEEDS_ACTION | frozenset(
+    {
+        "complete",
+        "completed_unpromoted",
+        "ended-without-manifest",
+        "held",
+        "interrupted",
+        "needs-help",
+        "promotable",
+        "ready",
+        "refused-at-admission",
+        "scoring",
+        "unpromoted",
+        "unwritten",
+    }
+)
+
 # An internal classification longer than the column it must occupy. The display
 # term matches the bucket the fleet counter already reports, so one word means
 # one thing across the whole line.
 DISPLAY = {"completed_unpromoted": "unpromoted"}
-
-# The two words a departure renders as. A run that leaves the live set has been
-# promoted when the ledger holds the row the promote command wrote for it, and
-# has merely vanished otherwise: a refused dispatch, a discarded run, or a
-# reflex review whose worker never started. A `promoted` word is a claim that a
-# record exists, so a reader who sees it stops waiting on the run — which is
-# why the two must not render the same.
-PROMOTED = "promoted"
-WITHDRAWN = "withdrawn"
-
-
-def departure_word(event: Mapping[str, Any]) -> str:
-    """Promoted only when the ledger recorded the run, withdrawn otherwise.
-
-    The ledger fact is read from the transition's own ``ledger_row``, defaulting
-    to promoted when the field is absent: a record written before the departure
-    carried its verdict holds no evidence either way, and inventing a withdrawal
-    for every one of them would relabel real promotions. A refusal is the same
-    departure with its cause known — a dispatch that never ran has nothing to
-    promote — so it renders withdrawn whatever the ledger holds.
-    """
-    if str(event.get("event") or "") == "refused" or event.get("refused"):
-        return WITHDRAWN
-    return PROMOTED if event.get("ledger_row", True) else WITHDRAWN
-
 
 # The dispatch vocabulary, verbatim. Kept here rather than derived from a
 # config so that a role is known the moment it is dispatched; the word IS the
@@ -256,38 +251,17 @@ ROLE = max(len(word) for word in DISPATCH_ROLES)
 # admitted unknown.
 ROLE_UNKNOWN = "?"
 
-# What marks a row another session dispatched, on an unscoped stream. Another
-# session's runs are not this reader's to act on, so the row is marked rather
-# than named.
-FOREIGN_OWNER = "~"
-
-# The row shows the state a run moved into and not the one it left. A
-# from-state column cost ten columns and an arrow between them three more, and
-# both were read as decoration: the question a reader brings to a row is where
-# the run is now. Dropping the pair is what pays for the reason clause, which
-# is the row's payload.
-#
-# What a baseline row prints in the state's own cell, instead of a bullet
-# beside it. A baseline is inventory the follower emitted because it attached,
-# and a restart emits one per live run inside a second or two; a lone glyph at
-# small size was read as a fresh dispatch, so the record says what it is in a
-# word. Read from the kind the log records, never from an absent from-state: a
-# genuine transition into a first sighting also has no source, and conflating
-# the two makes a restart read as a burst of news.
-#
-# The state cell carries the state alone: the marker word is retained for
-# readers of this record but no longer printed, because a row that says what it
-# is in its own state word needs no second label ahead of it.
+# A baseline is inventory the follower emits when it attaches. It has no
+# previous state, so the transition's left half and arrow stay blank while its
+# destination keeps the same column as a later transition. The legacy marker
+# word remains exported only so compatibility checks can assert it is absent.
 BASELINE_MARKER = "now"
 
-# The state region is the state cell and the gap that keeps the model cell off
-# it. The marker cell that once preceded the state is gone: the state cell is
-# wide enough for the whole word, so a reader finds it on one screen column
-# without a second cell holding the column for it.
-STATE_REGION = STATE + 1
-# The width the retired marker cell occupied. Kept so a caller measuring a row
-# against the grid it came from does not have to know the cell was removed.
-MARKER = len(BASELINE_MARKER) + 1
+# The state region is the transition plus its two-column gutter. ``MARKER`` is
+# retained as a geometry alias for callers that locate the destination word:
+# it now means the fixed offset from the transition's start to that word.
+STATE_REGION = STATE + GAP
+MARKER = NEW_STATE_OFFSET
 
 # States a run does not leave. A baseline row for one of these is inventory
 # about work that is already over — the alarming-looking rows a reattaching
@@ -353,17 +327,21 @@ STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (len(_MAX_CEL
 MIN_WIDTH = (
     CLOCK
     + GAP
+    + ATTENTION
+    + GAP
+    + MODEL
+    + GAP
+    + EFFORT
+    + GAP
     + ROLE
     + GAP
     + NODE
     + GAP
-    + OWNER
-    + STATE_REGION
-    + MODEL
-    + PAIR_GAP
-    + EFFORT
+    + STATE
+    + GAP
     + SPEND_GAP
     + SPEND
+    + GAP
     + STATS
     + GAP
 )
@@ -662,7 +640,7 @@ def bound_cells(report: Mapping[str, Any] | None) -> list[tuple[str, Any]]:
 
 
 def _display_state(state: Any) -> str:
-    return elide(DISPLAY.get(str(state or ""), str(state or "")), STATE)
+    return elide(DISPLAY.get(str(state or ""), str(state or "")), STATE_WORD)
 
 
 def _display_role(role: Any) -> str:
@@ -761,18 +739,6 @@ def _model_and_effort(event: Mapping[str, Any]) -> tuple[str, str]:
         model, _, effort = agent.partition("/")
         return model.strip(), effort.strip()
     return agent, ""
-
-
-def _display_marker(event: Mapping[str, Any]) -> str:
-    """The needs-action glyph a blocked state may carry, derived at render time.
-
-    New-shape lines persist ``needs_help_complete`` — the fact — and the glyph is
-    derived from it. A legacy line persisted the glyph itself and has no fact
-    underneath, so it renders its persisted value. Never written back to the log.
-    """
-    if "needs_help_complete" in event:
-        return "?" if event.get("needs_help_complete") else "!"
-    return str(event.get("marker") or "")
 
 
 def is_shadow(event: Mapping[str, Any]) -> bool:
@@ -910,6 +876,13 @@ class Ticker:
         # its baselines through this same grid.
         self._node_claims: dict[str, str] = {}
         self._colliding_runs: set[str] = set()
+        # The state this pane last put on screen for each run. A producer may
+        # skip an intermediate observation in its own ``from_state``; the pane
+        # must not rewrite the story it already showed, so every later left side
+        # comes from here. Synthetic unit events that carry no event kind are
+        # independent render probes rather than stream rows and do not enter the
+        # chain.
+        self._reported: dict[str, str] = {}
 
     def _model_width(self, project: str | None) -> int:
         """The model cell's width for ``project``, resolved once and remembered.
@@ -973,17 +946,15 @@ class Ticker:
     def render(self, event: Mapping[str, Any], *, with_session: bool = False) -> str:
         """One transition as one line, exactly ``width`` visible characters.
 
-        ``with_session`` marks the owning session, which an unscoped reader
-        needs and a session-scoped one does not: every line a scoped follower
-        receives is its own by construction, so the column would only take room
-        from the node beside it.
+        ``with_session`` is accepted for call-site compatibility. Ownership is
+        no longer a row column: the follower already scopes delivery, while an
+        extra glyph between the time and model would make the lead's reading
+        order conditional.
 
-        The counters precede the optional measure, which sits before the
-        reason, because the pane clips its own right edge: the always-populated
-        columns lead. Everything before the reason is fixed-width, so a row
-        rendered wider than the pane can spare loses trailing free text and
-        nothing else; with the counters last, a width read one column too wide
-        silently ate the fleet's numbers instead.
+        Everything before the reason is fixed-width, in the reading order set
+        by the pane: time, attention, model, effort, role, node, transition,
+        elapsed and fleet counters. A row rendered wider than the pane can
+        spare loses trailing free text and nothing else.
         """
         node = str(event.get("node") or event.get("run_id") or "unknown")
         # The row names its own project, so the model column is sized from the
@@ -1006,47 +977,65 @@ class Ticker:
             else raw_to_state
         )
         to_state = _display_state(entry_state)
-        if to_state == PROMOTED:
-            # A departure is a promotion only when the ledger recorded it, so a
-            # run that left the live set with no row behind it renders
-            # withdrawn rather than claiming a record a reader would trust.
-            to_state = departure_word(event)
-        # The action the coordinator takes on this state travels in the state
-        # cell beside it, so a reader scans one column for both halves of the
-        # decision. It is verbatim from the classification vocabulary rather
-        # than composed here, and a row with no remedy names only its state.
-        action = str(event.get("recovery") or "").strip()
-        state_cell = f"{to_state}{ACTION_SEP}{action}" if action else to_state
+        run_id = str(event.get("run_id") or node)
+        stream_event = bool(str(event.get("event") or "").strip())
+        reported = self._reported.get(run_id) if stream_event else None
+        if reported == to_state:
+            return ""
+        from_state = reported
+        if from_state is None:
+            from_state = _display_state(event.get("from_state"))
+        if stream_event:
+            self._reported[run_id] = to_state
+
+        unprobed = _unprobed_wait(event)
+        needs_attention = (
+            entry_state in ATTENTION_STATES
+            or typed_state in ATTENTION_STATES
+            or unprobed
+        )
+        attention = "!" if needs_attention else " "
         role = _display_role(event.get("role"))
         model_cell, effort_cell = _model_and_effort(event)
+        hues = STATE_HUE[self.theme]
 
         cells: list[tuple[str, Any]] = [
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
             (" " * GAP, None),
+            (f"{attention:<{ATTENTION}}", hues.get(to_state, "dim")),
+            (" " * GAP, None),
+            (f"{elide(model_cell, model_width):<{model_width}}", "dim"),
+            (" " * GAP, None),
+            (f"{effort_cell:<{EFFORT}}", "dim"),
+            (" " * GAP, None),
             (f"{role:<{ROLE}}", "dim"),
             (" " * GAP, None),
             (
-                f"{self._node_cell(node, str(event.get('run_id') or '')):<{NODE}}",
+                f"{self._node_cell(node, run_id):<{NODE}}",
                 self.hue(node),
             ),
+            (" " * GAP, None),
         ]
-        if with_session:
-            owner = FOREIGN_OWNER if str(event.get("session") or "") else " "
-            cells += [(" " * GAP, None), (f"{owner:<{OWNER}}", "dim")]
-        # The state cell carries the destination and the remedy together, and
-        # it is held on every row so the state column never moves. The baseline
-        # marker that once held the column ahead of it is gone: the state word
-        # is wide enough to be concise at a glance.
-        hues = STATE_HUE[self.theme]
-        cells += [
-            (f"{state_cell:<{STATE}}", hues.get(to_state, "dim")),
-            (" ", None),
-            (f"{elide(model_cell, model_width):<{model_width}}", "dim"),
-            (" " * PAIR_GAP, None),
-            (f"{effort_cell:<{EFFORT}}", "dim"),
-        ]
-        cells.extend(self._stats(event))
+        if from_state:
+            cells.extend(
+                [
+                    (f"{from_state:>{STATE_WORD}}", hues.get(from_state, "dim")),
+                    (" " * ARROW_GAP, None),
+                    (ARROW, "dim"),
+                    (" " * ARROW_GAP, None),
+                ]
+            )
+        else:
+            cells.append((" " * NEW_STATE_OFFSET, None))
+        cells.extend(
+            [
+                (f"{to_state:<{STATE_WORD}}", hues.get(to_state, "dim")),
+                (" " * GAP, None),
+            ]
+        )
         cells.extend(self._spend_cells(event, to_state))
+        cells.append((" " * GAP, None))
+        cells.extend(self._stats(event))
         cells.append((" " * GAP, None))
 
         head = sum(len(text) for text, _ in cells)
@@ -1084,13 +1073,13 @@ class Ticker:
         spellings. A gate reading the rendered form is a gate that says nothing
         about work the pane is counting.
 
-        The state cell's own words are derived here from the same inputs the row
-        composes them from — the entry state's rendered word and the record's
-        remedy — so the clause can avoid saying any of them a second time. The
-        remedy renders in the state cell rather than here because that is where
-        a reader looks for the action to take.
+        The destination state's own word is derived here from the same input the
+        row composes it from, so the clause can avoid saying it a second time.
+        The remedy remains a structured event fact and is deliberately not
+        printed: the attention column says whether the coordinator must look,
+        while this clause says what happened.
         """
-        explained = NEEDS_ACTION | {
+        explained = ATTENTION_STATES | {
             "waiting",
             "wait-aged",
             "held",
@@ -1109,21 +1098,12 @@ class Ticker:
         detail = event.get("detail")
         if detail is None:
             detail = event.get("reason")
-        if entry_state in {"blocked", "needs-help"}:
-            marker = _display_marker(event)
-        else:
-            marker = "!" if entry_state == "wait-aged" else ""
+        marker = ""
         if unprobed:
-            # Additive, never a replacement: the age and needs-help glyphs are
-            # signals about the run that a reader acts on, and a wait whose
-            # probe never ran is one fact more rather than one of them
-            # overruled. The marker's width is carried in the reserve below.
-            marker = UNPROBED_MARKER + marker
-        # The remedy is not printed here: it renders in the state cell beside
-        # the state word, where a reader looks for the action, and the clause
-        # carries the explanation alone. Its width therefore does not reserve
-        # room in the clause, and a clause that opened with the same word would
-        # be saying twice what one cell already says — stripped below.
+            # This glyph is a measurement fact, not the attention signal: it
+            # says the declared probe never ran. The attention column carries
+            # the separate fact that the coordinator must look at it.
+            marker = UNPROBED_MARKER
         reserve = len(marker) + (1 if marker else 0)
         clause = single_clause(detail, limit=max(0, room - reserve))
         if not clause and entry_state == LAUNCH_FAULT_STATE:
@@ -1133,10 +1113,8 @@ class Ticker:
             # this names the fault itself for a record that carried the state
             # without one, rather than rendering a number with no reason.
             clause = single_clause(LAUNCH_FAULT_CLAUSE, limit=max(0, room - reserve))
-        action = str(event.get("recovery") or "").strip()
         state_word = _display_state(entry_state)
-        state_cell = f"{state_word}{ACTION_SEP}{action}" if action else state_word
-        clause = self._strip_repeated_label(clause, state_cell)
+        clause = self._strip_repeated_label(clause, state_word)
         if marker and clause:
             return f"{marker} {clause}"
         return marker or clause

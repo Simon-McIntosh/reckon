@@ -12,8 +12,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
-from reckon import ledger
+from reckon import crew, ledger
 from reckon.crew import recovery
 from reckon.crew import ticker as ticker_module
 
@@ -89,6 +88,8 @@ def _event(**overrides) -> dict:
         "reason": "first clause",
     }
     event.update(overrides)
+    if "run_id" not in overrides:
+        event["run_id"] = f"r-{event['node']}"
     return event
 
 
@@ -198,16 +199,10 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
     # The stamp is stored UTC and rendered in the reader's own zone, because
     # the pane sits beside a harness that timestamps locally.
     assert line.startswith(ticker_module.local_clock(_event()["observed_at"]))
-    # Which node, then what it did, then what ran it: the varying fields come
-    # first, and the near-constant agent label sits after the state rather than
-    # in the position the eye reaches straight after the clock.
-    assert line.index("ticker-node") < line.index("blocked")
-    # The row carries the state the run moved into and no other: the source it
-    # came from is not on the line, and no arrow joins the two.
-    assert "blocked" in line
-    assert "working" not in line
+    assert line.index("ticker-node") < line.index("working")
+    # The row carries one transition, centred on its fixed arrow.
+    assert "working → blocked" in line
     assert ticker_module.BASELINE_MARKER not in line
-    assert "→" not in line
     # The counts are a fixed grid whose digits share a column, each number
     # followed by its state's single letter.
     assert " 3w· 1b· 0u" in line
@@ -235,9 +230,7 @@ def test_cli_follow_prints_compact_transition_lines_by_default(
     assert result.exit_code == 0
     assert result.output.count("\n") == 1
     assert "ticker-node" in result.output
-    assert "blocked" in result.output
-    assert "working" not in result.output
-    assert "→" not in result.output
+    assert "working → blocked" in result.output
     assert not result.output.startswith("{")
 
 
@@ -398,9 +391,7 @@ def test_cli_watch_follows_without_being_asked(home, monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert "ticker-node" in result.output
-    assert "blocked" in result.output
-    assert "working" not in result.output
-    assert "→" not in result.output
+    assert "working → blocked" in result.output
 
 
 def test_cli_watch_returns_after_one_event_only_when_asked(home, monkeypatch) -> None:
@@ -501,10 +492,8 @@ def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
     between = line[line.index(model_cell) : line.index("high")]
     assert "\u00b7" not in between
     assert "gpt-5.6-sol/high" not in line
-    # After the state, not before the node. On a uniform wave this column
-    # repeats the same value on every row, so it must not occupy the position
-    # the eye reaches first; the node and its state vary and go there instead.
-    assert line.index("ticker-node") < line.index(model_cell)
+    # The reading order puts model and effort immediately after attention.
+    assert line.index(model_cell) < line.index("ticker-node")
     assert line.index(model_cell) > line.index(
         ticker_module.local_clock(_event()["observed_at"])
     )
@@ -612,6 +601,8 @@ def _fact_event(**overrides) -> dict:
         "needs_help_complete": False,
     }
     event.update(overrides)
+    if "run_id" not in overrides:
+        event["run_id"] = f"r-{event['node']}"
     return event
 
 
@@ -637,10 +628,7 @@ def test_a_follower_delivers_only_lines_with_a_node_and_a_state_pair(monkeypatch
     assert len(plain_lines) == 2
     for line, node in zip(plain_lines, ("ticker-node", "second-node"), strict=True):
         assert node in line, line
-        # The destination is on the line; the source it came from is not.
-        assert "blocked" in line, line
-        assert "working" not in line, line
-        assert "→" not in line, line
+        assert "working → blocked" in line, line
 
     json_lines = CliRunner().invoke(
         cli_module.main, ["crew", "follow", "--project", "proj", "--json"]
@@ -673,7 +661,7 @@ def _state_cell_start(row: str, state: str) -> int:
     it is reporting. The marker cell that once held the column ahead of it is
     retired, so there is no offset between the two.
     """
-    return row.index(state)
+    return row.index(state) - ticker_module.NEW_STATE_OFFSET
 
 
 def test_the_retired_baseline_marker_never_renders(
@@ -692,7 +680,7 @@ def test_the_retired_baseline_marker_never_renders(
         monkeypatch,
         [
             _fact_event(event="baseline", from_state=None, to_state="working"),
-            _fact_event(from_state="dispatched", to_state="working"),
+            _fact_event(from_state="working", to_state="blocked"),
             _fact_event(node="fresh-node", from_state=None, to_state="dispatched"),
             _fact_event(node="settled-node", event="baseline", to_state="complete"),
         ],
@@ -708,13 +696,12 @@ def test_the_retired_baseline_marker_never_renders(
     # the only label a row prints.
     assert not re.search(r"\bnow\b", "\n".join(rows))
     assert ticker_module.BASELINE_MARKER not in "\n".join(rows)
-    assert "working" in baseline and "working" in transition
-    # Neither row claims the state it left, and neither claims any state but
-    # the one it moved into: `dispatched` is the source of the transition and
-    # the destination of the first sighting, and it appears on no row here.
+    assert "working" in baseline and "working → blocked" in transition
+    # The baseline has no arrow, while the transition names both sides.
     assert "dispatched" not in baseline
     assert "dispatched" not in transition
-    assert "\u2192" not in "\n".join(rows)
+    assert "\u2192" not in baseline
+    assert "\u2192" in transition
 
     # The kind, never the absent source: this transition has no from-state and
     # is still rendered as a transition — no marker, and the state it moved
@@ -738,7 +725,7 @@ def test_a_baseline_row_keeps_the_state_column_of_a_transition(
         monkeypatch,
         [
             _fact_event(event="baseline", from_state=None, to_state="working"),
-            _fact_event(from_state="dispatched", to_state="working"),
+            _fact_event(from_state="working", to_state="blocked"),
         ],
         "--width",
         "180",
@@ -748,11 +735,11 @@ def test_a_baseline_row_keeps_the_state_column_of_a_transition(
     # The word is on no row, and the state is not printed twice on one.
     assert not re.search(r"\bnow\b", "\n".join(rows))
     assert baseline.count("working") == 1
-    assert transition.count("working") == 1
+    assert transition.count("blocked") == 1
 
     # The state cell begins at the same screen column on both rows.
     assert _state_cell_start(baseline, "working") == _state_cell_start(
-        transition, "working"
+        transition, "blocked"
     )
 
 
@@ -890,12 +877,8 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
         }
         assert len(columns) == 1, (letter, spelling)
 
-    # The owner column is one glyph, and it marks rather than names: a row this
-    # unscoped reader does not own is flagged, and its session id never appears.
-    owner_column = rows[1].index(ticker_module.FOREIGN_OWNER)
+    # Session identity is a delivery scope, not another row column.
     assert "ship-s15-20260903" not in "\n".join(rows)
-    assert rows[0][owner_column] == ticker_module.FOREIGN_OWNER
-    assert rows[3][owner_column] == " "
 
 
 def test_pinning_the_width_gives_the_same_rows_with_or_without_a_terminal(

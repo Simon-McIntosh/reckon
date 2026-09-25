@@ -9,7 +9,7 @@ import re
 import subprocess
 import time
 from collections.abc import Mapping
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -53,7 +53,7 @@ def _write_pointer(home: Path, run_id: str, *, terminal: bool) -> None:
             "project": "proj",
             "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
             "phase": "complete" if terminal else "working",
-            "created_at": datetime.now(tz=timezone.utc).isoformat(),
+            "created_at": datetime.now(tz=UTC).isoformat(),
             "manifest_path": str(manifest),
             "log_path": str(stream),
             "process_alive": None,
@@ -407,7 +407,7 @@ def _snapshot_pointer(
         "project": "proj",
         "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
         "phase": phase,
-        "created_at": datetime.now(tz=timezone.utc).isoformat(),
+        "created_at": datetime.now(tz=UTC).isoformat(),
         "manifest_path": str(manifest),
         "log_path": str(home / "streams" / f"{run_id}.jsonl"),
         "process_alive": alive,
@@ -1759,7 +1759,7 @@ def _blocked_record(home: Path, run_id: str, *, manifest_text: str) -> dict:
         "project": "proj",
         "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
         "phase": "working",
-        "created_at": datetime.now(tz=timezone.utc).isoformat(),
+        "created_at": datetime.now(tz=UTC).isoformat(),
         "manifest_path": str(manifest),
         "log_path": str(home / "streams" / f"{run_id}.jsonl"),
         "process_alive": False,
@@ -2152,7 +2152,9 @@ def test_a_shadow_pointer_dims_the_row_it_emits(home, monkeypatch) -> None:
     # hue — the node and either side of the arrow among them — renders dim
     # instead, so the line carries no hue selector, while the identical row
     # with the lineage removed does.
-    control = painter.render({**transition, "lineage": None})
+    control = ticker_module.Ticker(theme="light", color=True).render(
+        {**transition, "lineage": None}
+    )
     assert re.search(r"\x1b\[38;5;", control) is not None
     assert ticker_module._DIM in shadow_line
     assert re.search(r"\x1b\[38;5;", shadow_line) is None
@@ -2390,18 +2392,20 @@ def _spend_column(model_width: int) -> tuple[int, int]:
     prefix = (
         ticker_module.CLOCK
         + ticker_module.GAP
+        + ticker_module.ATTENTION
+        + ticker_module.GAP
+        + model_width
+        + ticker_module.GAP
+        + ticker_module.EFFORT
+        + ticker_module.GAP
         + ticker_module.ROLE
         + ticker_module.GAP
         + ticker_module.NODE
-        + ticker_module.STATE_REGION
-        + model_width
-        + ticker_module.PAIR_GAP
-        + ticker_module.EFFORT
+        + ticker_module.GAP
+        + ticker_module.STATE
+        + ticker_module.GAP
+        + ticker_module.SPEND_GAP
     )
-    prefix += sum(3 for _ in ticker_module._MAX_CELLS) + (
-        len(ticker_module._MAX_CELLS) - 1
-    )
-    prefix += ticker_module.SPEND_GAP
     return (prefix, ticker_module.WALL)
 
 
@@ -2828,7 +2832,7 @@ def test_watchdog_still_stops_a_live_over_grace_worker_with_a_token_budget(
     stops an over-grace live CLI worker must still act on the wall-clock
     ceiling, never wait for a token verdict that will not come.
     """
-    started = datetime.now(tz=timezone.utc) - timedelta(seconds=21)
+    started = datetime.now(tz=UTC) - timedelta(seconds=21)
     record: dict[str, Any] = {
         "run_id": "r-watchdog-token",
         "launch": "cli",

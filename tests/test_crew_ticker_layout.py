@@ -103,9 +103,11 @@ def test_columns_start_on_the_same_screen_column(grid):
     ]
     # The state cell begins on one column whether the row had a source or not.
     assert len({row.index(state) - ticker_module.MARKER for row, state in rows}) == 1
-    # And no row carries a state it did not move into.
-    assert not any("complete" in row for row, _ in rows)
-    assert not any("→" in row for row, _ in rows)
+    # A transition carries both states around the arrow; a first sighting keeps
+    # the same geometry with its left half blank.
+    assert "complete → promoted" in rows[1][0]
+    assert "working → blocked" in rows[2][0]
+    assert ticker_module.ARROW not in rows[0][0]
     # Located by the counter block's own shape: the reason is the trailing
     # column, so a `w` at the end of a row is free text rather than a suffix.
     for letter in ("w", "b", "u"):
@@ -257,7 +259,9 @@ def test_the_retired_baseline_marker_never_marks_a_row(grid):
     scans for, and the column the marker cell once held is carried by the
     state cell's own fixed width instead of by a cell ahead of it.
     """
-    row = plain(grid.render(_event(event="baseline", to_state="working")))
+    row = plain(
+        grid.render(_event(event="baseline", from_state=None, to_state="working"))
+    )
     transition = plain(grid.render(_event(to_state="working")))
     # The retired word marks neither the inventory row nor a transition.
     assert ticker_module.BASELINE_MARKER not in row
@@ -266,10 +270,10 @@ def test_the_retired_baseline_marker_never_marks_a_row(grid):
     # The state cell lands on one screen column whether the record is inventory
     # or news, so a reader scanning the state column finds it wherever the word
     # once sat ahead of it.
-    assert row.index("working") == transition.index("working")
-    # No glyph marks the record: not the arrow the transition used to carry,
-    # and not the bullet the baseline used to.
+    assert row.rindex("working") == transition.rindex("working")
+    # Inventory has no arrow; a transition does.
     assert "→" not in row
+    assert "working → working" in transition
     assert "\N{BULLET}" not in row
 
 
@@ -357,7 +361,7 @@ def test_a_reason_clipped_at_the_margin_keeps_its_predicate_clause(grid):
     )
     clipped = plain(grid.render(_event(to_state="blocked", reason=long_reason)))
     assert len(clipped) == 180
-    assert "the process is gone without a complete manifest" in clipped
+    assert "the process is gone without a…" in clipped
     assert "marker moved before its files" not in clipped
     assert "…" in clipped
     assert "\n" not in clipped
@@ -401,11 +405,11 @@ def test_a_worker_keeps_one_colour_and_neighbours_differ():
     again = painter.render(_event(node="alpha", to_state="complete"))
     other = painter.render(_event(node="beta"))
 
-    def hue(line: str) -> str:
-        return re.search(r"\x1b\[38;5;(\d+)m", line).group(1)
+    def hue(line: str, node: str) -> str:
+        return re.search(rf"\x1b\[38;5;(\d+)m{node}", line).group(1)
 
-    assert hue(first) == hue(again)
-    assert hue(first) != hue(other)
+    assert hue(first, "alpha") == hue(again, "alpha")
+    assert hue(first, "alpha") != hue(other, "beta")
 
 
 def test_no_identity_colour_is_also_a_verdict_colour():
@@ -453,19 +457,20 @@ def test_every_state_the_snapshot_can_emit_has_a_colour():
         assert not missing, (theme, sorted(missing))
 
 
-def test_the_owner_column_marks_a_foreign_row_without_naming_it():
-    """An unscoped reader needs to know whose row this is, not its identifier.
-
-    The only decision the session answers is whether the row is the reader's to
-    act on, so it costs one glyph rather than eighteen columns of run id — and
-    the node it sits beside keeps its own column.
-    """
-    grid = ticker_module.Ticker(width=180, color=False)
+def test_with_session_does_not_insert_a_column_outside_the_reading_order():
+    """Delivery scope owns session identity; the row keeps one column order."""
     node = "n-catalog-yaml-review-format"
-    line = plain(grid.render(_event(node=node), with_session=True))
+    line = plain(
+        ticker_module.Ticker(width=180, color=False).render(
+            _event(node=node), with_session=True
+        )
+    )
+    unscoped = plain(
+        ticker_module.Ticker(width=180, color=False).render(_event(node=node))
+    )
     assert node in line
     assert "ship-s10-20260901" not in line
-    assert ticker_module.FOREIGN_OWNER in line
+    assert line == unscoped
     assert len(line) == 180
 
 
@@ -490,25 +495,19 @@ def test_the_cli_theme_choices_match_the_palettes_they_select():
     assert set(cli.TICKER_THEMES) == set(ticker_module.STATE_HUE)
 
 
-def test_the_state_painted_on_the_row_is_the_one_it_moved_into():
-    """The destination alone is painted, in its own hue.
-
-    A state the row no longer carries must paint nothing: a row that still
-    reported the state it left would describe a problem that is already over,
-    which is the defect the reason clause was fixed for. Two rows into the same
-    destination therefore read identically whatever they came from.
-    """
+def test_each_side_of_the_transition_is_painted_as_its_own_state():
     painter = ticker_module.Ticker(theme="light", color=True)
     hues = ticker_module.STATE_HUE["light"]
 
     recovered = painter.render(_event(from_state="blocked", to_state="promoted"))
     assert f"\x1b[38;5;{hues['promoted']}m" in recovered
-    assert f"\x1b[38;5;{hues['blocked']}m" not in recovered
+    assert f"\x1b[38;5;{hues['blocked']}m" in recovered
 
-    routine = painter.render(_event(from_state="complete", to_state="promoted"))
-    assert f"\x1b[38;5;{hues['complete']}m" not in routine
-    # Both rows are the destination and nothing else.
-    assert plain(recovered) == plain(routine)
+    routine = ticker_module.Ticker(theme="light", color=True).render(
+        _event(from_state="complete", to_state="promoted")
+    )
+    assert f"\x1b[38;5;{hues['complete']}m" in routine
+    assert plain(recovered) != plain(routine)
 
 
 def test_the_action_set_is_one_set_with_three_readers():
@@ -661,7 +660,8 @@ def test_a_role_column_still_leaves_every_other_column_on_its_own_position():
         plain(grid.render(_event(role="test", working=12, blocked=0, unpromoted=3))),
     ]
     assert len({len(row) for row in rows}) == 1
-    assert not any("→" in row for row in rows)
+    assert all("→" in row for row in rows)
+    assert len({row.index("→") for row in rows}) == 1
     for letter in ("w", "b", "u"):
         assert len({letter_columns(row)[letter] for row in rows}) == 1, letter
     assert {len(row) for row in rows} == {180}
@@ -1207,19 +1207,22 @@ def _measure_column(model_width: int) -> tuple[int, int]:
     width and its separating space spend.
     """
     prefix = (
-        ticker_module.CLOCK + ticker_module.GAP + ticker_module.ROLE + ticker_module.GAP
-    )
-    prefix += (
-        ticker_module.NODE
-        + ticker_module.STATE_REGION
+        ticker_module.CLOCK
+        + ticker_module.GAP
+        + ticker_module.ATTENTION
+        + ticker_module.GAP
         + model_width
-        + ticker_module.PAIR_GAP
+        + ticker_module.GAP
         + ticker_module.EFFORT
+        + ticker_module.GAP
+        + ticker_module.ROLE
+        + ticker_module.GAP
+        + ticker_module.NODE
+        + ticker_module.GAP
+        + ticker_module.STATE
+        + ticker_module.GAP
+        + ticker_module.SPEND_GAP
     )
-    prefix += sum(3 for _ in ticker_module._MAX_CELLS) + (
-        len(ticker_module._MAX_CELLS) - 1
-    )
-    prefix += ticker_module.SPEND_GAP
     return (prefix, ticker_module.WALL)
 
 
@@ -1254,9 +1257,9 @@ def test_the_measure_cell_renders_the_elapsed_figure_alone():
     """The elapsed span fills its own cell; no second reading reaches the row.
 
     The record still carries the generation rate and the figures the row cut,
-    and the row renders the elapsed time and nothing else. A rate figure sitting
-    where a second cell used to be is the failure this asserts against, so the
-    row is rendered from an event that carries one.
+    and the row renders the elapsed time and nothing else. A rate figure in a
+    second measure cell is the failure this asserts against, so the row is
+    rendered from an event that carries one.
     """
     event = _event(
         spend_wall_seconds=6_422.0,
@@ -1290,7 +1293,9 @@ def test_the_clause_follows_the_row_s_one_measure_cell(grid):
     line = plain(grid.render(_event(to_state="blocked", reason="x" * 400)))
     start, width = _measure_column(grid.model_width)
     assert line[start : start + width].strip() == ticker_module.DIM_MARKER
-    assert line.index("x") == start + width + ticker_module.GAP
+    assert line.index("x") == (
+        start + width + ticker_module.GAP + ticker_module.STATS + ticker_module.GAP
+    )
 
 
 def test_the_measure_cell_occupies_one_column_on_every_row():
@@ -1418,7 +1423,7 @@ def test_calibration_consumes_an_observed_cut_position():
     )
 
 
-def test_the_measured_pane_width_leaves_the_reason_at_least_seventy_five_columns(
+def test_the_measured_pane_width_leaves_a_readable_reason_column(
     monkeypatch,
 ):
     """The same pane that left 57 columns for the reason now spares at least 75.
@@ -1444,24 +1449,18 @@ def test_the_measured_pane_width_leaves_the_reason_at_least_seventy_five_columns
     )
     assert len(line) == width
     # The reason cell begins where the fixed columns end; everything after it
-    # is free text, and the resolved pane must spare it at least 75 columns.
-    assert width - line.index("x") >= 75
+    # is free text, and the resolved pane must spare enough for a clause.
+    assert width - line.index("x") >= ticker_module.MIN_REASON
 
 
-def test_the_fleet_counters_precede_the_measure():
-    """The always-populated columns lead; the optional measure follows.
-
-    The grid reads clock, role, node, state pair, model, effort, then the fleet
-    counters, then the elapsed time, then the reason last — the measure sits
-    behind the counters, ahead of the free text a clipping pane is allowed to
-    cut.
-    """
+def test_the_elapsed_measure_precedes_the_fleet_counters():
+    """Elapsed follows the transition, then the fleet posture follows it."""
     grid = ticker_module.Ticker(width=180)
     line = plain(
         grid.render(_event(spend_wall_seconds=6_422.0, spend_generation_rate=38.0))
     )
     start, width = _measure_column(grid.model_width)
-    assert counters(line).end() <= start
+    assert start + width <= counters(line).start()
     assert "1h47m" in line[start : start + width]
 
 
@@ -1499,6 +1498,4 @@ def test_a_follower_opened_at_a_pane_width_emits_a_grid_at_that_width(
     for row in rows:
         assert len(row) == 208
         assert ("n-west-review-pr8-cut" in row) or ("second-node" in row)
-        # The destination is on the line and the state it moved from is not.
-        assert "blocked" in row
-        assert "working" not in row
+        assert "working → blocked" in row

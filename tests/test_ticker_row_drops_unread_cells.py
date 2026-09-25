@@ -26,33 +26,28 @@ ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 # a row used to spend on the oldest member of each outstanding bucket.
 AGE_PATTERN = re.compile(r"[0-9]+m[a-z]\b")
 
-# What the row no longer spends, in columns, measured rather than assumed. Each
-# figure below was read at the 180-column default from the revision's own
-# renderer with the blocked fixture this file uses: the previous revision's
-# render carries 120 fixed columns, a margin of 60, and starts its clause at
-# column 126 — the age cells took six of that margin. This revision carries 120
-# less the recovered six, a margin of 66, and starts its clause at column 114.
-# The assertions below tie the count to that geometry rather than to each other,
-# so a layout that moved without giving the columns back would fail here.
-RECOVERED_COLUMNS = 6
-# The state cell no longer holds the destination alone: it carries the remedy
-# beside it, so it is wider than the ten-column cell it replaces by the longest
-# state word, the separator and the longest verb, less the marker cell the row
-# no longer holds (the marker's own word and the space that separated it).
-STATE_CELL_GROWTH = ticker_module.STATE + 1 - (ticker_module.MARKER + 10 + 1)
-# The queued counter renders on every row now, so a row whose event carries no
-# waiting key — this file's fixture — spends one more two-digit counter, its
-# letter and one separator than it did when the bucket appeared only while a run
-# waited. The floor below already counted the bucket; the rendered row did not.
-QUEUE_CELL_GROWTH = 4
-# Both figures above are read at the 180-column default from this revision's own
-# renderer with the blocked fixture below, and the assertions tie the recovered
-# count to that geometry rather than to each other, so a layout that moved
-# without giving the columns back would fail here.
-FLOOR_BEFORE = 127 + STATE_CELL_GROWTH
-FIXED_BEFORE = 120 + STATE_CELL_GROWTH + QUEUE_CELL_GROWTH
-REASON_ROOM_BEFORE = 60
-REASON_ROOM_AFTER = 66 - STATE_CELL_GROWTH - QUEUE_CELL_GROWTH
+TRANSITION_COLUMN = (
+    ticker_module.CLOCK
+    + ticker_module.GAP
+    + ticker_module.ATTENTION
+    + ticker_module.GAP
+    + ticker_module.MODEL
+    + ticker_module.GAP
+    + ticker_module.EFFORT
+    + ticker_module.GAP
+    + ticker_module.ROLE
+    + ticker_module.GAP
+    + ticker_module.NODE
+    + ticker_module.GAP
+)
+ELAPSED_COLUMN = (
+    TRANSITION_COLUMN
+    + ticker_module.STATE
+    + ticker_module.GAP
+    + ticker_module.SPEND_GAP
+)
+COUNTER_COLUMN = ELAPSED_COLUMN + ticker_module.SPEND + ticker_module.GAP
+REASON_COLUMN = COUNTER_COLUMN + ticker_module.STATS + ticker_module.GAP
 
 # The clause the blocked fixture renders, so the row's fixed columns can be
 # lifted clear of it.
@@ -101,6 +96,11 @@ def fixed_columns(line: str) -> str:
     return text[: text.index(CLAUSE)].rstrip() if CLAUSE in text else text
 
 
+def elapsed_cell(line: str) -> str:
+    text = plain(line)
+    return text[ELAPSED_COLUMN : ELAPSED_COLUMN + ticker_module.SPEND]
+
+
 @pytest.fixture
 def grid():
     """A grid whose model cell is pinned, so the row's columns are its own."""
@@ -140,17 +140,17 @@ def test_the_measure_block_holds_the_elapsed_figure_alone(grid, with_rate):
         if not with_rate:
             event.pop("spend_generation_rate")
         line = plain(grid.render(event))
-        head = fixed_columns(line)
-        assert ticker_module.DIM_MARKER not in head, (name, line)
-        assert head.endswith("57m"), (name, line)
+        cell = elapsed_cell(line)
+        assert ticker_module.DIM_MARKER not in cell, (name, line)
+        assert cell.strip() == "57m", (name, line)
 
 
 def test_an_unmeasured_span_marks_the_elapsed_position_once(grid):
     """An unmeasured span marks its own cell and adds no second marker."""
     line = plain(grid.render(_event(spend_wall_seconds=None)))
-    head = fixed_columns(line)
-    assert head.split()[-1] == ticker_module.DIM_MARKER, line
-    assert head.count(ticker_module.DIM_MARKER) == 1, line
+    cell = elapsed_cell(line)
+    assert cell.strip() == ticker_module.DIM_MARKER, line
+    assert plain(line).count(ticker_module.DIM_MARKER) == 1, line
 
 
 @pytest.mark.parametrize(
@@ -168,14 +168,13 @@ def test_an_unmeasured_span_marks_the_elapsed_position_once(grid):
 def test_elapsed_renders_hours_and_minutes_not_a_clock(grid, seconds, expected):
     """The span is a duration a reader compares, not a clock they decode."""
     line = plain(grid.render(_event(spend_wall_seconds=seconds)))
-    head = fixed_columns(line)
-    assert head.endswith(expected), (seconds, line)
-    assert ":" not in head.split()[-1], (seconds, line)
+    cell = elapsed_cell(line)
+    assert cell.strip() == expected, (seconds, line)
+    assert ":" not in cell, (seconds, line)
 
 
-def test_the_floor_falls_by_the_recovered_columns():
-    """The row's fixed-column floor is the recovered count shorter."""
-    assert ticker_module.MIN_WIDTH == FLOOR_BEFORE - RECOVERED_COLUMNS
+def test_the_floor_is_the_fixed_grid_before_the_reason():
+    assert ticker_module.MIN_WIDTH == REASON_COLUMN
 
 
 def test_the_clause_starts_at_the_measured_column(grid):
@@ -188,9 +187,8 @@ def test_the_clause_starts_at_the_measured_column(grid):
     cells spent — so the count is read off the row rather than taken from the
     constant beside it.
     """
-    at = plain(grid.render(_event(to_state="blocked"))).index(CLAUSE)
-    assert at == FIXED_BEFORE - RECOVERED_COLUMNS, at
-    assert at == 180 - REASON_ROOM_AFTER, at
+    at = plain(grid.render(_event(to_state="blocked"))).index("the gate refused")
+    assert at == REASON_COLUMN, at
 
 
 def test_the_clause_gains_the_recovered_columns(grid):
@@ -200,11 +198,10 @@ def test_the_clause_gains_the_recovered_columns(grid):
     more is elided, so the room claimed is the room: the pair is what says the
     recovered columns reached the clause rather than stopping at the counters.
     """
-    room = 180 - plain(grid.render(_event(to_state="blocked"))).index(CLAUSE)
-    assert room == REASON_ROOM_AFTER, room
-    assert room == (
-        REASON_ROOM_BEFORE + RECOVERED_COLUMNS - STATE_CELL_GROWTH - QUEUE_CELL_GROWTH
-    ), room
+    room = 180 - plain(grid.render(_event(to_state="blocked"))).index(
+        "the gate refused"
+    )
+    assert room == 180 - REASON_COLUMN, room
     whole = grid.render(_event(to_state="blocked", detail=("x" * (room - 1)) + "z"))
     elided = grid.render(_event(to_state="blocked", detail=("x" * room) + "z"))
     assert whole.rstrip().endswith("x" * (room - 1) + "z"), whole
