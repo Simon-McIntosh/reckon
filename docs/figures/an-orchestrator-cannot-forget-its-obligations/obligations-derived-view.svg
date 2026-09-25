@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 520" role="img" aria-labelledby="title description">
+  <title id="title">Coordinator obligations derived from fleet evidence</title>
+  <desc id="description">Recovery classifications, the promoted-run ledger and the drain view feed one session-filtered obligations result with identity, age, next command and closure summary.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#60758a"/>
+    </marker>
+    <style>
+      .box { fill: #f7fafc; stroke: #60758a; stroke-width: 2; rx: 12; }
+      .accent { fill: #e7f4ef; stroke: #277a62; stroke-width: 2.5; rx: 12; }
+      .summary { fill: #fff4dc; stroke: #9b6a13; stroke-width: 2; rx: 12; }
+      .label { fill: #1e2933; font: 600 18px system-ui, sans-serif; }
+      .body { fill: #34495e; font: 15px system-ui, sans-serif; }
+      .code { fill: #1e2933; font: 14px ui-monospace, SFMono-Regular, monospace; }
+      .arrow { fill: none; stroke: #60758a; stroke-width: 2.5; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect class="box" x="30" y="35" width="300" height="250"/>
+  <text class="label" x="55" y="70">Recovery rows for this session</text>
+  <text class="code" x="55" y="108">scoring → review-missing</text>
+  <text class="code" x="55" y="140">promotable → review-ready</text>
+  <text class="code" x="55" y="172">blocked / needs-help</text>
+  <text class="code" x="55" y="204">interrupted → turn-ended-early</text>
+  <text class="body" x="55" y="244">Current-head review activity</text>
+  <text class="body" x="55" y="267">suppresses duplicate review duty.</text>
+
+  <rect class="box" x="30" y="325" width="300" height="150"/>
+  <text class="label" x="55" y="360">Promoted-run evidence</text>
+  <text class="body" x="55" y="398">Ledger identity + Git worktree</text>
+  <text class="body" x="55" y="423">registry → worktree-held</text>
+  <text class="body" x="55" y="451">Completion stamp supplies age.</text>
+
+  <rect class="accent" x="430" y="120" width="300" height="270"/>
+  <text class="label" x="455" y="157">Derived obligations</text>
+  <text class="body" x="455" y="197">Filter by coordinator session</text>
+  <text class="body" x="455" y="227">Apply promotion grace</text>
+  <text class="body" x="455" y="257">Keep recovery's exact remedy</text>
+  <text class="body" x="455" y="287">Sort oldest duty first</text>
+  <line x1="455" y1="311" x2="705" y2="311" stroke="#277a62" stroke-width="1.5"/>
+  <text class="code" x="455" y="342">kind · run_id · node</text>
+  <text class="code" x="455" y="370">age_seconds · next_command</text>
+
+  <rect class="summary" x="830" y="105" width="300" height="170"/>
+  <text class="label" x="855" y="142">Actionable list</text>
+  <text class="body" x="855" y="181">One row per outstanding duty</text>
+  <text class="body" x="855" y="211">Healthy working and reconciled</text>
+  <text class="body" x="855" y="236">promoted runs are absent.</text>
+
+  <rect class="summary" x="830" y="325" width="300" height="150"/>
+  <text class="label" x="855" y="362">Closure summary</text>
+  <text class="code" x="855" y="402">count</text>
+  <text class="code" x="855" y="430">oldest_age_seconds</text>
+  <text class="code" x="855" y="458">unreconciled_runs</text>
+
+  <path class="arrow" d="M 330 190 C 375 190, 385 210, 430 220"/>
+  <path class="arrow" d="M 330 400 C 375 400, 385 350, 430 335"/>
+  <path class="arrow" d="M 730 220 C 775 220, 785 190, 830 190"/>
+  <path class="arrow" d="M 730 315 C 775 315, 785 390, 830 400"/>
+  <text class="body" x="749" y="365">drain view</text>
+</svg>
