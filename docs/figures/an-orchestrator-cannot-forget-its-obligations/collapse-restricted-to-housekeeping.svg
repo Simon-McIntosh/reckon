@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 420" width="780" height="420" role="img" aria-label="Two panels. At the base, two review-ready duties sharing one run-less promotion sentence collapse into a single counted line and both run ids are lost. With this change, only worktree-held duties collapse into one counted line carrying the oldest age, while the two review-ready duties render as two lines that each name their own run.">
+  <style>
+    .box { fill: #f7f7f5; stroke: #555; stroke-width: 1.5; }
+    .lbl { font: 13px sans-serif; fill: #222; }
+    .row { font: 12px monospace; fill: #222; }
+    .cap { font: 11px sans-serif; fill: #666; }
+    .edge { stroke: #333; stroke-width: 1.5; fill: none; marker-end: url(#a); }
+    .bad { fill: #fdeeee; stroke: #b03030; stroke-width: 2; }
+    .good { fill: #eef4fb; stroke: #2a6bbf; stroke-width: 2; }
+    .kept { fill: #fdf6e3; stroke: #b58900; stroke-width: 1; stroke-dasharray: 3 3; }
+    .badrow { font: 12px monospace; fill: #8c1f1f; font-weight: bold; }
+    .goodrow { font: 12px monospace; fill: #164a86; font-weight: bold; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" preserveAspectRatio="xMidYMid meet" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333"/>
+    </marker>
+  </defs>
+
+  <text class="lbl" x="20" y="24">which duties may collapse: the rule this change narrows</text>
+
+  <!-- base panel -->
+  <rect class="box" x="20" y="40" width="350" height="360" rx="8"/>
+  <text class="lbl" x="34" y="64">base 91690da5 — any kind, by kind + next command</text>
+
+  <text class="row" x="34" y="92">[review-ready] run-hook-alpha</text>
+  <text class="row" x="34" y="110">[review-ready] run-hook-beta</text>
+  <text class="cap" x="34" y="132">same kind, same command text, no run named</text>
+  <path class="edge" d="M46,144 L46,168"/>
+  <rect class="bad" x="34" y="170" width="320" height="42" rx="6"/>
+  <text class="badrow" x="44" y="190">[review-ready] 2 items (oldest 0s old):</text>
+  <text class="badrow" x="44" y="205">promote the completed review run ...</text>
+  <text class="cap" x="34" y="230">both run ids are gone: one review is off the list</text>
+  <text class="cap" x="34" y="250">the coordinator cannot tell which run it owes</text>
+
+  <text class="row" x="34" y="286">[worktree-held] held-run-00 … held-run-24</text>
+  <path class="edge" d="M46,298 L46,322"/>
+  <rect class="good" x="34" y="324" width="320" height="42" rx="6"/>
+  <text class="goodrow" x="44" y="344">[worktree-held] 25 items (oldest 49m0s old):</text>
+  <text class="goodrow" x="44" y="359">reckon crew gc --repo R --project P --apply</text>
+
+  <!-- after panel -->
+  <rect class="box" x="410" y="40" width="350" height="360" rx="8"/>
+  <text class="lbl" x="424" y="64">this change — worktree-held only</text>
+
+  <text class="row" x="424" y="92">[review-ready] run-hook-alpha</text>
+  <text class="row" x="424" y="110">[review-ready] run-hook-beta</text>
+  <rect class="kept" x="418" y="76" width="336" height="46" rx="6"/>
+  <text class="cap" x="424" y="140">two duties, two lines, each naming its run:</text>
+  <text class="cap" x="424" y="156">reading one run's review is not another's work</text>
+
+  <text class="row" x="424" y="192">[worktree-held] held-run-00 … held-run-24</text>
+  <path class="edge" d="M436,204 L436,228"/>
+  <rect class="good" x="424" y="230" width="320" height="42" rx="6"/>
+  <text class="goodrow" x="434" y="250">[worktree-held] 25 items (oldest 49m0s old):</text>
+  <text class="goodrow" x="434" y="265">reckon crew gc --repo R --project P --apply</text>
+  <text class="cap" x="424" y="292">one repository-wide remedy for every tree</text>
+  <text class="cap" x="424" y="308">it reaches, counted once, oldest age by value</text>
+
+  <text class="cap" x="424" y="346">every other kind keeps a line per run:</text>
+  <text class="cap" x="424" y="362">review-missing, review-ready, blocked,</text>
+  <text class="cap" x="424" y="378">needs-help, turn-ended-early, promotable-stale</text>
+
+  <text class="cap" x="20" y="414">the set names what may collapse, so a kind added later keeps its own line by default</text>
+</svg>

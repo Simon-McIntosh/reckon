@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import runs
+from reckon.hooks.coordinator_obligations import format_checklist
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOK = REPO_ROOT / "reckon" / "hooks" / "coordinator_obligations.py"
@@ -92,17 +93,19 @@ def repository(tmp_path: Path, config_home: Path) -> Path:
     return root
 
 
-def _blocked_run(
+def _live_run(
     repository: Path,
     tmp_path: Path,
     *,
-    run_id: str = RUN_ID,
-    node_id: str = NODE_ID,
+    run_id: str,
+    node_id: str,
+    status: str,
+    role: str,
 ) -> Path:
-    """Record one live run whose manifest holds its own turn open."""
+    """Record one live run whose manifest reports ``status`` under its own role."""
     manifest = tmp_path / "manifests" / f"{run_id}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
-    manifest.write_text(f"node: {node_id}\nstatus: blocked\n", encoding="utf-8")
+    manifest.write_text(f"node: {node_id}\nstatus: {status}\n", encoding="utf-8")
     runs._write_json(
         runs.pointer_path(run_id),
         {
@@ -113,7 +116,7 @@ def _blocked_run(
             "worktree": str(repository),
             "base_sha": _git(repository, "rev-parse", "HEAD"),
             "process_alive": False,
-            "role": "implement",
+            "role": role,
             "manifest_path": str(manifest),
             "node": {
                 "id": node_id,
@@ -125,6 +128,46 @@ def _blocked_run(
         },
     )
     return manifest
+
+
+def _blocked_run(
+    repository: Path,
+    tmp_path: Path,
+    *,
+    run_id: str = RUN_ID,
+    node_id: str = NODE_ID,
+) -> Path:
+    """Record one live run whose manifest holds its own turn open."""
+    return _live_run(
+        repository,
+        tmp_path,
+        run_id=run_id,
+        node_id=node_id,
+        status="blocked",
+        role="implement",
+    )
+
+
+def _review_ready_run(
+    repository: Path,
+    tmp_path: Path,
+    *,
+    run_id: str,
+    node_id: str,
+) -> Path:
+    """Record one completed review run, whose duty action names no run.
+
+    A review run's deliverable is the review it wrote, so a complete manifest
+    under the review role is promotable rather than scoring.
+    """
+    return _live_run(
+        repository,
+        tmp_path,
+        run_id=run_id,
+        node_id=node_id,
+        status="complete",
+        role="review",
+    )
 
 
 def _retained_worktrees(repository: Path, tmp_path: Path, count: int) -> None:
@@ -224,6 +267,14 @@ def _expected_checklist(*, unreconciled: int) -> str:
 def _normalised(checklist: str, *, manifest: Path) -> str:
     """Replace the two wall-clock ages so the rest of the text compares exactly."""
     return AGE.sub("<age>", checklist).replace(str(manifest), "<manifest>")
+
+
+def _age_seconds(rendered: str) -> int:
+    """The seconds an age the hook rendered stands for, read back."""
+    return sum(
+        int(value) * {"d": 86_400, "h": 3_600, "m": 60, "s": 1}[unit]
+        for value, unit in re.findall(r"(\d+)([dhms])", rendered)
+    )
 
 
 def _registered_parent_pid() -> int:
@@ -392,7 +443,8 @@ def test_items_sharing_a_command_collapse_to_one_counted_line(
     each one's own manifest. The collapsed line carries the count, the oldest
     age and the command once; each blocked item keeps its own line and its run
     id; and the checklist stays inside the size a coordinator reads at the open
-    of a turn.
+    of a turn. The retention ages are staggered newest-last, so the collapsed
+    line's age is compared against the oldest member by value.
     """
     _retained_worktrees(repository, tmp_path, HELD_ITEMS)
     first_manifest = _blocked_run(
@@ -435,6 +487,94 @@ def test_items_sharing_a_command_collapse_to_one_counted_line(
         f"reckon obligations for session {SESSION} (project {PROJECT}): "
         f"{HELD_ITEMS + 2} outstanding, oldest "
     )
+    rendered_oldest = _age_seconds(
+        re.search(r"oldest (\S+) old", collapsed[0]).group(1)
+    )
+    newest_member_age = HELD_OLDEST_AGE - HELD_AGE_STEP * (HELD_ITEMS - 1)
+    assert rendered_oldest >= HELD_OLDEST_AGE
+    assert rendered_oldest > newest_member_age
     assert checklist.endswith(AUTHORITY_LINE)
     assert len(lines) <= 8
     assert len(checklist) < 2_000
+
+
+def test_two_review_ready_items_sharing_a_run_less_command_keep_their_own_lines(
+    repository: Path, tmp_path: Path
+) -> None:
+    """Two completed review runs share one promotion sentence and keep two lines.
+
+    A review run's duty action names no run, so the two duties carry identical
+    command text while being two different reviews to read. Collapsing them
+    would hide one run's review behind a count, so each keeps its own line
+    carrying its own run id.
+    """
+    _review_ready_run(repository, tmp_path, run_id=FIRST_RUN_ID, node_id=FIRST_NODE_ID)
+    _review_ready_run(
+        repository, tmp_path, run_id=SECOND_RUN_ID, node_id=SECOND_NODE_ID
+    )
+
+    with runs.follower_claim(PROJECT, SESSION):
+        completed = _hook("prompt", _prompt_payload(repository, "harness-session"))
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    checklist = json.loads(completed.stdout)["hookSpecificOutput"]["additionalContext"]
+    lines = checklist.splitlines()
+
+    review = [line for line in lines if line.startswith("- [review-ready]")]
+    assert len(review) == 2, checklist
+    commands = {line.split("): ", 1)[1] for line in review}
+    assert len(commands) == 1, (
+        "the two duties must share one command for this case to bite"
+    )
+    shared = commands.pop()
+    assert FIRST_RUN_ID not in shared and SECOND_RUN_ID not in shared, (
+        "the shared command must name no run, so only the renderer separates the lines"
+    )
+    assert sorted(line.split()[2] for line in review) == sorted(
+        [FIRST_RUN_ID, SECOND_RUN_ID]
+    )
+    assert lines[0].startswith(
+        f"reckon obligations for session {SESSION} (project {PROJECT}): "
+        "2 outstanding, oldest "
+    )
+    assert lines[-1] == AUTHORITY_LINE
+
+
+def test_the_collapsed_line_reports_the_oldest_age_of_its_members() -> None:
+    """The counted line carries the oldest member's age by value, not the newest.
+
+    The two fixture ages render differently -- 3_000 seconds is ``50m0s`` and
+    600 is ``10m0s`` -- so a line matching the oldest age can only have read
+    the oldest member.
+    """
+    command = "reckon crew gc --repo /tmp/held-repo --project hook-fixture --apply"
+    payload = {
+        "project": PROJECT,
+        "session": SESSION,
+        "obligations": [
+            {
+                "kind": "worktree-held",
+                "run_id": "held-oldest",
+                "node": "held-oldest-node",
+                "age_seconds": 3_000,
+                "next_command": command,
+            },
+            {
+                "kind": "worktree-held",
+                "run_id": "held-newest",
+                "node": "held-newest-node",
+                "age_seconds": 600,
+                "next_command": command,
+            },
+        ],
+        "summary": {"count": 2, "oldest_age_seconds": 3_000, "unreconciled_runs": 0},
+    }
+
+    collapsed = [
+        line
+        for line in format_checklist(payload).splitlines()
+        if line.startswith("- [worktree-held]")
+    ]
+
+    assert collapsed == [f"- [worktree-held] 2 items (oldest 50m0s old): {command}"]

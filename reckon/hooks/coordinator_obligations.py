@@ -262,36 +262,39 @@ def _format_age(seconds: int) -> str:
     return f"{secs}s"
 
 
-def _work_key(item: Mapping[str, Any]) -> tuple[str, str]:
-    """The pair that makes two obligations the same work.
-
-    One remedy command under one kind means every item carrying it is answered
-    by performing that command, however many runs the command reaches.
-    """
-    return str(item.get("kind") or ""), str(item.get("next_command") or "")
+# Only housekeeping is collapsed. A worktree-held item's remedy is a single
+# repository-wide command that answers for every tree it reaches, so a fleet of
+# them is one piece of work. Every actionable kind keeps a line per run: two
+# completed review runs share the same promotion sentence, which names no run,
+# and reading one run's review is not the same work as reading another's.
+_COLLAPSIBLE_KINDS = frozenset({"worktree-held"})
 
 
 def _work_lines(items: Sequence[Mapping[str, Any]]) -> list[str]:
-    """One line per distinct work, so a shared remedy is counted rather than repeated.
+    """One counted line per shared remedy, and one line per run for the rest.
 
-    Items sharing a kind and a next command collapse into one line carrying the
-    count, the oldest age and the command once; the collapse is what keeps a
-    fleet's worth of identical remedies from pushing the actionable items off
-    the checklist. Every other item keeps its own line naming its run, because
-    a remedy that names a run is not the same work as another run's.
+    Items of a collapsible kind sharing a next command collapse into one line
+    carrying the count, the oldest age and the command once; the collapse is
+    what keeps a fleet's worth of identical housekeeping from pushing the
+    actionable items off the checklist. Every other item keeps its own line
+    naming its run and its own age, however its command happens to read.
     """
     grouped: dict[tuple[str, str], list[Mapping[str, Any]]] = {}
     for item in items:
-        grouped.setdefault(_work_key(item), []).append(item)
+        if str(item.get("kind") or "") not in _COLLAPSIBLE_KINDS:
+            continue
+        key = (str(item.get("kind") or ""), str(item.get("next_command") or ""))
+        grouped.setdefault(key, []).append(item)
+    collapsed = {key: members for key, members in grouped.items() if len(members) > 1}
     lines: list[str] = []
     emitted: set[tuple[str, str]] = set()
     for item in items:
-        key = _work_key(item)
-        if key in emitted:
-            continue
-        emitted.add(key)
-        members = grouped[key]
-        if len(members) > 1:
+        key = (str(item.get("kind") or ""), str(item.get("next_command") or ""))
+        members = collapsed.get(key)
+        if members is not None:
+            if key in emitted:
+                continue
+            emitted.add(key)
             oldest = max(int(member.get("age_seconds") or 0) for member in members)
             lines.append(
                 f"- [{key[0] or '?'}] {len(members)} items "
