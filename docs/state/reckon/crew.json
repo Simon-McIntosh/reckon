@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T04:33:20",
+  "updated": "2026-09-25T04:40:22",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -1274,11 +1274,13 @@
         "session_id": "89e757a8-6523-4ae4-87d7-591666c435e3",
         "session_model": "deepseek-v4.1-flash",
         "sessions": {
-          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "89e757a8-6523-4ae4-87d7-591666c435e3"
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "89e757a8-6523-4ae4-87d7-591666c435e3",
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "79032ec9-50ca-4ba3-bdce-37a52bd7a14e"
         },
         "created": "2026-09-23",
         "session_owners": {
-          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "ship-s20-20260923"
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "ship-s20-20260923",
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "s22-coord"
         }
       },
       {
@@ -377922,6 +377924,299 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T011629068862-long-node-names-keep-their-ends",
+        "plan": "a-monitor-row-reads-at-a-glance",
+        "section": "\u00a75",
+        "node": "long-node-names-keep-their-ends",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1928,
+                "cached_input_tokens": 572013,
+                "input_tokens": 573943,
+                "output_tokens": 1357,
+                "reasoning_output_tokens": 222,
+                "total_tokens": 575300,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "In reckon/crew/ticker.py a node name longer than the NODE cell is cut from the middle, keeping its start and its end, reusing or extending the existing elide helper rather than adding a second truncator; when two rows rendered by the same Ticker would still show identical node text, both append the last four characters of their run id. New tests/test_ticker_node_names_keep_their_ends.py asserts review-of-sgc-sweep-control-at-the-banked-seam and review-of-sgc-sweep-control-at-the-four-of-twenty render with different node text at the default width, that a name that fits is unchanged, and that two colliding names each carry their run-id suffix. The declared negative control is executed and logged: restoring a right-hand cut makes the distinct-names case fail. The thirteen test files importing reckon.crew.ticker show no failure id absent from their base set, judged by delta against your base revision; your landing record is appended to the plan's \u00a75. No figure.",
+          "estimated_hours": null,
+          "goal": "A node name longer than its ticker cell is cut from the middle, and colliding names are disambiguated by run id",
+          "id": "long-node-names-keep-their-ends",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T01:16:29Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 19,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 14,
+            "mean_context": 88000,
+            "observed_at": "2026-09-25T01:16:10Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011629068862-long-node-names-keep-their-ends/manifest.md",
+          "negative_control": "restore the right-hand cut of the node cell in reckon/crew/ticker.py; the distinct-names case in tests/test_ticker_node_names_keep_their_ends.py must fail",
+          "plan": "a-monitor-row-reads-at-a-glance",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "tests/test_ticker_node_names_keep_their_ends.py",
+            "docs/plans/a-monitor-row-reads-at-a-glance.html",
+            "docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html",
+            "docs/figures/a-monitor-row-reads-at-a-glance"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "follower-life",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T01:16:37Z",
+        "completed_at": "2026-09-25T02:09:58.511Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3107,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3201,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "18f3c201d7020ab553e73d8a63537e3adc75ecac",
+        "commits": [
+          "9e91c274be25dfcf1ae4a8692e66043f71cc92d3",
+          "27e2439d2731e7be8d909e71372097543731d2fa",
+          "4fa74516882a043695288c09ea51602f738e300d"
+        ],
+        "changed_lines": {
+          "added": 311,
+          "removed": 4,
+          "files": 4
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ticker_node_names_keep_their_ends.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011629068862-long-node-names-keep-their-ends/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011629068862-long-node-names-keep-their-ends/manifest.md",
+        "scope_changed": false,
+        "session_id": "79032ec9-50ca-4ba3-bdce-37a52bd7a14e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8593213,
+            "input_tokens_cumulative": 8593213,
+            "output_tokens": 89578,
+            "output_tokens_cumulative": 89578,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T02:09:58.511Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 14,
+            "evidence": 17,
+            "fit": 19,
+            "goal_fidelity": 15,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 85
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 8761098,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 3120.79,
+          "generated_tokens": 98776,
+          "generation_seconds": 2699.311,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 421.479,
+          "peak_input_tokens": 166585,
+          "tokens_per_second": 36.59,
+          "wall_tokens_per_second": 31.65
+        },
+        "follow_on_paths": [
+          "tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers",
+          "ticker_module.RATE"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/long-node-names-keep-their-ends",
+          "session_id": "79032ec9-50ca-4ba3-bdce-37a52bd7a14e",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T02:09:58.511Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T02:09:58Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T01:17:54Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T011629068862-long-node-names-keep-their-ends",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 20683,
+          "worker_pid": 2186278
+        },
+        "promoted_revision": "4fa74516882a043695288c09ea51602f738e300d",
+        "plan_impl_at_dispatch": 0.67,
+        "impl_move": {
+          "plan": "a-monitor-row-reads-at-a-glance",
+          "at_dispatch": 0.67,
+          "at_complete": 0.67,
+          "verdict": "waived",
+          "reason": "the middle cut landed; review 14-20 reopened the collision half (suffix from run_id[-4:] repeats the node name, and collisions compare node names not rendered cells), so \u00a75 stays implementable"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_ticker_node_names_keep_their_ends.py"
+          ],
+          "declaration": "restore the right-hand cut of the node cell in reckon/crew/ticker.py; the distinct-names case in tests/test_ticker_node_names_keep_their_ends.py must fail",
+          "log": "/home/ITER/mcintos/.cache/reckon-ticker-node-names/negative-control-right-hand-cut.log",
+          "resolved_log": "/home/ITER/mcintos/.cache/reckon-ticker-node-names/negative-control-right-hand-cut.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T02:01:29.533771+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T01:16:29Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 19,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 14,
+          "mean_context": 88000,
+          "observed_at": "2026-09-25T01:16:10Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 90.0,
+        "orientation_input_tokens": 3557960.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -378234,6 +378529,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2637
+    "_version": 2639
   }
 }
