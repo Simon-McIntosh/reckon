@@ -147,6 +147,22 @@
       <p><strong>Verification and limits.</strong> The exact capture commands, complete 47-kind table, median timing, five-minute recovery rule, figure and policy are in the research page. This is a dated append-only receipt, not a live rate. Re-arm replay is follower-only and is not falsely claimed to be present in the producer stream. No product file changed.</p>
     </section>
 
+    <section id="follower-signal-audit-census-reproduces">
+      <h2>The follower census reproduces from the page</h2>
+      <p><strong>Change.</strong> The research record <a href="/reckon/research/follower-signal-audit.html">follower-signal-audit</a> now carries the complete census script and its verbatim output, in commit <code>fae72759170a04b9c6b47d1394b36c6e7fd797f3</code>. The script bounds its selection at the capture instant <code>2026-09-25T12:55:21Z</code> — records whose <code>observed_at</code> falls on <code>2026-09-25</code> and is no later than that instant — so the appends that followed the capture cannot move the counts, and the printed output block is that script's own stdout. The bound is load-bearing: at <code>2026-09-25T15:43:35Z</code>, still on the capture day, the same two streams carried 3,172 and 154 records dated <code>2026-09-25</code> against the 2,618 the census selects, so an unbounded read taken later would print a different table.</p>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Script extracted from the page's own capture block and run unchanged</td><td>the page's output block reproduced byte for byte, 66 lines, 0 mismatches</td><td><code>run_recorded_script.py</code>, <code>extracted-census.py</code>, <code>extracted-stdout.txt</code> and <code>gate-recorded-script.log</code> in the node's run directory.</td></tr>
+          <tr><td>Every row of the 47-kind table against that run's output block</td><td>47 rows, 0 mismatches</td><td>counts, medians and five-minute recovery shares; <code>compare.py</code>.</td></tr>
+          <tr><td>Per-stream split at the bound</td><td>2,573 Reckon and 45 imas-ambix records</td><td>replaces the hand-composed 2,554 and 64 at the same 2,618 total, 273 runs and 47 kinds.</td></tr>
+          <tr><td><code>reckon audit-doc docs/research/follower-signal-audit.html --project reckon</code></td><td>exit 0</td><td><code>audit-doc-research.log</code>: the page is OK.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Reproduction.</strong> Extract the <code>python3 - &lt;&lt;'PY'</code> block from the page, run it, and compare its stdout with the page's output block. Both streams are read at their absolute paths; only the bound above makes the result independent of their growth.</p>
+      <p><strong>Limits.</strong> Verifying the merged result belongs to a separately dispatched test node. The per-stream counts were the only claim replaced; the census methodology, the kind table's contents, the timing figure and the recommended policy are the audit node's and are unchanged.</p>
+    </section>
+
     <section id="ticker-row-is-one-transition">
       <h2>The ticker row is one aligned transition</h2>
       <p>Commits <code>926b8743</code> and <code>c74841cb</code> replace the destination-and-action cell with one fixed-width transition and size both state halves from every lifecycle and recovery word the classifier can emit. Each row reads time, one-character attention, model, effort, role, node, previous state right-aligned to that width, one fixed <code>→</code>, destination state left-aligned, elapsed, the fixed <code>w b u q</code> counters and the reason clause. Every field boundary has at least two spaces; the long lead examples retain their node-name gutter.</p>

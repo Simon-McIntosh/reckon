@@ -174,6 +174,12 @@
   <p>The measured policy separates 449 launch-flicker rows, 202 first-commit exit-phantom rows, 48 stall-flap rows and 296 same-state rows from the actionable/observer population. Source correction at <code>40e24067</code> owns the liveness and exit classes; follower continuation owns same-state and re-arm presentation. No product file changed. The worker does not resolve the driving followup or change terminal plan state.</p>
 </article>
 
+<article id="follower-signal-audit-census-reproduces-landing">
+  <h3>Census reproduction landing</h3>
+  <p>The census now reproduces from the research page alone, in commit <code>fae72759170a04b9c6b47d1394b36c6e7fd797f3</code>. The capture block records the complete 126-line script, and its selection is bounded at the capture instant — records whose <code>observed_at</code> falls on <code>2026-09-25</code> and is no later than <code>2026-09-25T12:55:21Z</code> — so the appends that followed the capture cannot move the counts. The output block is that script's verbatim stdout, replacing the hand-composed per-stream counts: <strong>2,573</strong> Reckon and <strong>45</strong> imas-ambix records against the printed 2,554 and 64, at the same 2,618 total, 273 runs and 47 kinds.</p>
+  <p>The block extracted from the page and run unchanged prints the page's output block byte for byte (66 lines, 0 mismatches), and every count, median and five-minute recovery share in the 47-kind table agrees with that run. The stated selection rule, the zero-gap ordering rule and the three recovery targets now describe the script that produced the table, and <code>reckon audit-doc</code> exits 0 over the page. The script, its extracted copy, its stdout and the gate log are in the node's run directory. The change is provenance, so the page's existing timing figure remains its only figure. The worker does not resolve the driving followup or change terminal plan state.</p>
+</article>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-counter-census-landed" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
