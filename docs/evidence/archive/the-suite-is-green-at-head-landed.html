@@ -1027,6 +1027,96 @@ docs/state/proj/crew.json; commit or discard that roster write before retrying</
       is likewise red at base and at head under the same selection, and belongs to the
       <code>test_ledger</code> node.</p>
     </section>
+  <section id="node-a-watch-row-renders-the-same-in-any-order">
+      <h2>a-watch-row-renders-the-same-in-any-order &mdash; each transition renders on its own grid</h2>
+      <p><strong>Cause, named with file and line.</strong> <code>format_watch_transition</code>
+      (<code>reckon/crew/recovery.py:4803</code>) took its grid from a module-level
+      <code>_PLAIN = Ticker()</code> (<code>:4765</code>) when the caller passed none
+      (<code>:4827</code>). A <code>Ticker</code> holds per-run state &mdash; each node's claimed
+      hue and, from <code>_register</code>, the moment each run entered its bucket
+      (<code>reckon/crew/ticker.py:886</code>). The bucket-entry stamps are what
+      <code>_oldest_age</code> (<code>:907</code>) turns into a row's age cell, so one shared
+      instance made a row's text a function of every row rendered before it, and of the order
+      threads reached the instance. This node repairs that one product defect; the sibling node
+      <code>rendered-and-skill-contracts-match</code> found it, deselected the id from its gate and
+      named it here as a follow-on.</p>
+
+      <h3>Reproduction, quoted from the base arm</h3>
+      <p>With the shared grid restored (the declared mutation below), the identical baseline event
+      renders differently as a pane's first row and after a subsequent transition. The base run of
+      the monitor-output id fails on exactly this, first differing cell at index 0:</p>
+      <pre><code>['12:00:00  ?   baseline-1   working   0w· 0b· 0u   –   –                  ',  ...
+ '12:00:00  ?   baseline-1   working   0w· 0b· 0u   –   –   0mu           ']</code></pre>
+      <p>The same baseline row carries an empty unpromoted age cell as the first row and
+      <code>0mu</code> once a baseline or transition precedes it &mdash; the renderer is order- and
+      thread-dependent.</p>
+
+      <h3>Repair</h3>
+      <p>The module-level <code>_PLAIN</code> is removed. When the caller supplies no grid, one is
+      built for this call alone, so a row's text is a function of the row and not of a shared
+      instance's history. A caller that wants a bucket's oldest-member age across a stream still
+      passes its own grid for the whole stream, which both CLI follow paths do
+      (<code>reckon/cli.py:2425</code>, <code>:2544</code>). No test file is edited.</p>
+
+      <h3>Measure &mdash; the done-when</h3>
+      <table>
+        <thead><tr><th>Check</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Monitor-output id at the node's base</td>
+            <td><strong>1 failed</strong> (the order dependence)</td></tr>
+          <tr><td>Monitor-output id at the node's head</td>
+            <td><strong>1 passed</strong></td></tr>
+          <tr><td>Recorded order check: baseline rendered before and after a transition</td>
+            <td>identical both times; the unpromoted age cell is <code>0mu</code> before and after</td></tr>
+          <tr><td>Negative control &mdash; shared module-level grid restored</td>
+            <td>monitor-output id <strong>fails</strong>; the order check's age cell differs
+            (<code>0mu</code> then <code>1mu</code>)</td></tr>
+          <tr><td>Zero added, 59 files importing <code>reckon.crew.recovery</code></td>
+            <td>base 7 failed / 905 passed &rarr; head 6 failed / 906 passed; the only id that moved
+            is the monitor-output one, fail&nbsp;&rarr;&nbsp;pass</td></tr>
+        </tbody>
+      </table>
+      <p>Both arms ran on the fleet compute node (<code>98dci4-clu-2058</code>, job
+      <code>1277272</code>) in identical scratch trees outside the worktrees root, one pytest
+      process set per arm with <code>-n 8</code> and a private <code>--basetemp</code>; each log
+      header names the revision, the tree, the command, the imported
+      <code>reckon.crew.recovery.__file__</code> and the resolved working directory. A first head
+      arm run from inside the worktree is discarded: dispatch refused with
+      <code>refusing to nest another reckon-worktrees root</code> and 143 failures followed, so both
+      arms were re-run from mirrored scratch trees that share their conditions.</p>
+      <p>The residual six reds are red at base and red at head &mdash; stale expectations and
+      defects owned by other nodes &mdash; so this node neither added nor removed them. No test was
+      skipped, xfailed, deleted or weakened and no test file was touched.</p>
+
+      <h3>Negative control</h3>
+      <p>Declared mutation: <em>render through the shared module-level <code>Ticker</code> again; the
+      monitor-output test must fail</em>. Applied to <code>recovery.py</code> and run: the id failed,
+      and the order check's second baseline render read <code>1mu</code> against a first-read
+      <code>0mu</code>. The file's sha256 was recorded before the mutation and matched after the
+      revert, so the head measured is the tree delivered. The mutation is recorded here though no
+      red log is required: this node's write paths include no test file.</p>
+
+      <h3>Follow-on &mdash; a test created a repository that escaped into the checkout</h3>
+      <p>Named for the coordinator, not repaired here. Running the gate with
+      <code>--basetemp</code> <em>inside</em> the worktree let the failing id
+      <code>tests/test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion</code>
+      write a synthetic repository at
+      <code>.bt-head/popen-gw4/test_refusal_recovery_remedy_s0/repository/</code>, and a promotion
+      driven from there committed two of its files into the enclosing worktree's repository at
+      <code>43019ed7</code> (a dangling detached-HEAD commit whose parent is the node's base
+      <code>6f1c8e4b</code>). The commit was unwound and the scratch removed, so HEAD carries only
+      this node's change. The exposure is a test-isolation defect: a test that promotes must not be
+      able to reach a checkout above its temporary root, and here it reached one. With
+      <code>--basetemp</code> under <code>/tmp</code> the same id fails because there is no
+      enclosing repository at all, which is why it is red in both arms and is not this node's to
+      repair.</p>
+
+      <figure>
+        <img src="/reckon/figures/the-suite-is-green-at-head/watch-row-order-independence.png"
+             alt="Left: passing and failing node ids in the 59-file gate at base and head, 905/7 to 906/6, with the monitor-output id moving fail to pass. Right: the identical baseline event's unpromoted age cell rendered before and after a transition — identical (0mu, 0mu) with a fresh grid per render, differing (0mu, 1mu) with the shared grid.">
+        <figcaption>Zero added in the gate, and the age cell the fix makes order-independent.</figcaption>
+      </figure>
+    </section>
   </main>
 </body>
 </html>
