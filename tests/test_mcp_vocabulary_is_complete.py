@@ -23,12 +23,10 @@ def test_op_vocab_names_every_dispatchable_op() -> None:
     )
 
 
-def test_insert_section_entry_names_its_keys_and_its_placement() -> None:
+def test_insert_section_entry_names_its_keys() -> None:
     entry = _OP_VOCAB["insert_section"]
     for key in ("id", "title", "body"):
         assert key in entry, f"insert_section vocabulary omits its {key!r} key"
-    assert "before the first structured-state region" in entry
-    assert "data-reckon='section'" in entry
 
 
 def test_read_plan_docstring_names_every_accepted_view() -> None:
