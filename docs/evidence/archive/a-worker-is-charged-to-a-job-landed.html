@@ -13,8 +13,8 @@
   <meta name="plan-recorded-at" content="2026-09-20">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; login node; Python 3.14 in the repository's own root environment; detached git worktree at base 3a05f4f8 for the liveness record">
-  <meta name="plan-commits" content="740e4065,09e27b83,bf160b8e,2d58b953,d417b411,0a2cb56a,67b3ad49,1ace8694">
-  <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,reckon/crew/dispatch.py,reckon/crew/promotion.py,tests/test_crew_placement.py,reckon/crew/runs.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/routing.py,reckon/crew/claims.py,reckon/crew/node.py,reckon/crew/directory.py,tests/test_crew_record_liveness.py,tests/test_crew_workspace_requirements.py,reckon/crew/placement.py,reckon/cli.py,tests/test_crew_placement_reservation.py">
+  <meta name="plan-commits" content="740e4065,09e27b83,bf160b8e,2d58b953,d417b411,0a2cb56a,67b3ad49,1ace8694,eaeef031">
+  <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,reckon/crew/dispatch.py,reckon/crew/promotion.py,tests/test_crew_placement.py,reckon/crew/runs.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/routing.py,reckon/crew/claims.py,reckon/crew/node.py,reckon/crew/directory.py,tests/test_crew_record_liveness.py,tests/test_crew_workspace_requirements.py,reckon/crew/placement.py,reckon/cli.py,tests/test_crew_placement_reservation.py,tests/test_placement_steps_under_reservation.py">
   <title>A worker is charged to a job — landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -549,6 +549,10 @@
     terminal status is set, because only the coordinator observes the other nodes. The six-file focused set
     is chosen by which tests reach the placement path, not a whole-suite run; verifying the merged result
     belongs to a separately dispatched test node.</p>
+        <table>
+      <caption>What each clause of the measure asserts, and the case that pins it</caption>
+      <thead><tr><th>Clause</th><th>Behaviour</th><th>Case</th></tr></thead>
+      <tbody>
         <tr><td>holds the reservation once</td><td><code>salloc --no-shell</code> at 32 cores and 128 GB, job id published into the shared crew state</td><td><code>test_the_ensure_command_holds_one_reservation_at_the_decided_size</code></td></tr>
         <tr><td>a second call starts nothing</td><td>a held reservation is reported, no second allocation is asked for</td><td><code>test_a_second_ensure_reports_the_reservation_and_starts_nothing</code></td></tr>
         <tr><td>a finished reservation is replaced</td><td>a record whose job has left the system is superseded rather than reported as held</td><td><code>test_a_reservation_whose_job_has_left_is_replaced</code></td></tr>
@@ -592,6 +596,78 @@
     under which id, not what the cluster does with them. No plan state is touched: the driving followup stays
     open and no terminal status is set, because only the coordinator observes the other nodes. Verifying the
     merged result belongs to a separately dispatched test node.</p>
+
+    <h3 id="reservation-stands-until-answered">The reservation stands until the scheduler answers for it</h3>
+
+    <p><strong>What is landed.</strong> Commit <code>eaeef031</code> in <code>reckon/crew/placement.py</code>.
+    A state query has three outcomes, not two: the scheduler reports the job (<code>True</code>), the scheduler
+    ran and named no such job (<code>False</code>), or the question could not be asked at all — no reporting
+    client on the PATH, a non-zero exit, or a controller silent inside the query's own bound
+    (<code>None</code>). <code>reservation_state</code> returns that three-valued reading and
+    <code>reservation_alive</code> answers <code>is not False</code>, so only an answer releases the record. The
+    step form, the publish-and-read path and the roster cap are as the section above landed them; this node
+    corrects which answer releases them, and the correction is stated once in the module so both callers inherit
+    it.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-is-charged-to-a-job/reservation-query-decides-the-launch.svg"
+           alt="A published reservation is asked about with squeue: an answer naming the job places the worker as an srun step, an answer naming no job releases it to the declared wrapping and a fresh allocation, and a question that could not be asked leaves the record standing so the worker still steps. A dashed arrow shows the unanswerable case reaching the release branch, which is the reading removed."
+           style="max-width:100%;height:auto">
+      <figcaption>The question a placement asks, its three outcomes, and the dashed path the unanswerable case
+      used to take.</figcaption>
+    </figure>
+
+    <p><strong>The defect, reproduced at the base before the change.</strong> On a tree at base
+    <code>b453d763</code> — the base, with only this node's new case file copied in — and with a published
+    reservation whose state query cannot be asked, the second worker of the placement is handed the declared
+    wrapping, <code>srun --partition=all …</code> with no <code>--jobid</code>, which is an allocation of its
+    own; and a second <code>ensure</code> spends a second allocation instead of reporting the reservation it
+    read. <strong>2 failed, 3 passed</strong>, the two failures being
+    <code>test_two_workers_share_one_reservation</code> and
+    <code>test_the_ensure_command_starts_nothing_when_the_query_cannot_be_asked</code>. The two are one defect
+    read from the placing side and the holding side: an unaskable question taken for an answer. At the landed
+    head the same file is <strong>5 passed</strong>, and the reproduction log's header names the scratch tree and
+    the module path so the run cannot be read against the case file's own tree.</p>
+
+    <p><strong>The reading is asserted from the scheduler's log, not inferred.</strong> The cases place a
+    recording fake scheduler — <code>srun</code>, <code>salloc</code> and, in the cases that need an answer,
+    <code>squeue</code> — on the PATH inside a synthesised config home, and read back from its own log which
+    questions were put and which commands were submitted (the answer that releases is shown, from that log, to
+    have been asked for first). The stub names itself by shell expansion because the PATH it runs under holds
+    nothing but the stubs, and the repertoire is asserted: in the shared-id and <code>ensure</code> cases the
+    path carries no <code>squeue</code> at all, which is what makes the query unaskable rather than unasked.
+    The shared state is redirected to a temporary home whose sibling in the ambient config home is captured
+    before the redirection and compared after, so a record that leaked out would fail the case rather than pass
+    it, and the listing is taken from the pinned path rather than re-derived through the redirected home.</p>
+
+    <p><strong>Gate, and the delta.</strong> <code>tests/test_placement_steps_under_reservation.py</code> —
+    <strong>5 passed, exit 0</strong> at the landed head; <strong>2 failed, 3 passed</strong> at base, as above.
+    Regression arms <code>tests/test_reserve.py</code>, <code>tests/test_crew_lane_agnostic_placement.py</code>
+    and <code>tests/test_crew_placement_reservation.py</code>: <strong>21 passed / 1 failed at both
+    revisions</strong>, one and the same id
+    (<code>test_adding_a_backend_needs_no_placement_code</code>, which pins the absolute
+    <code>/usr/bin/srun</code> while a dispatch from inside an allocation resolves the host shim), pre-existing
+    at the dispatch base and unrelated to this change — zero added. The seeded reservation id the new cases use
+    is the constant the two-sessions case already used, so the step form asserted here and the form asserted
+    there are the same form rather than two parallel ones.</p>
+
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: make
+    <code>apply_backend_placement</code> mint one reservation per worker again (the reservation branch taken out
+    of the composition). It reddens 3 of the 5 cases — the shared-id case, which is the named one, and both
+    cases that rest on the scheduler's own answer — and leaves the no-record case and the <code>ensure</code>
+    case green. The mutation is the defect the node exists to close rather than a nearby line: a reading that
+    collapses an unanswerable query into a released job passes every case with a scheduler to ask, and fails only
+    where the question cannot be put. The red log's first line repeats the mutation verbatim, and its header
+    names the scratch tree and the mutated module so the peer's <code>dispatch.py</code> is shown untouched.</p>
+
+    <p><strong>What is not here.</strong> No reservation was held on the cluster from this work and no worker was
+    launched from it, so the queue wait, the real job id and the per-worker resident memory across a wave remain
+    unmeasured: the fix is a reading rather than a cluster behaviour, and the scheduler is faked in every case
+    because the property under test is which answer releases the record, not what the cluster does with the
+    steps. The first rung remains owed, and the roster cap still moves on its memory reading rather than on a
+    core count. No plan state is touched by this node: the driving followup stays open and no terminal status is
+    set, because only the coordinator observes the other nodes, and verifying the merged result belongs to a
+    separately dispatched test node.</p>
   </section>
 </main>
 </body>
