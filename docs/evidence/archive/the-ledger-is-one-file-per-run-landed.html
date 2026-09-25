@@ -58,6 +58,74 @@
       <h2>Verification</h2>
       <p><code>reckon audit-doc docs/plans/the-ledger-is-one-file-per-run.html</code> and the matching evidence audit both reported <code>OK</code> with exit 0. The durable receipt is <code>~/.config/reckon/crew/runs/r-20260924T231118938600-settle-the-ledger-readings/audit-doc.log</code>.</p>
     </section>
+    <section id="reader-files">
+      <h2>§2 — Readers share the committed run records</h2>
+      <p><strong>Implementation:</strong> <code>3d02a02f8112f2518d8548674c8717440dcb1273</code>,
+      based on <code>60943d24700e65854f3bfda12c2bec10dd872d2f</code>. The changed source paths are
+      <code>reckon/ledger.py</code>, <code>reckon/run_store.py</code>,
+      <code>reckon/crew/death_census.py</code> and <code>reckon/crew/carryover_census.py</code>;
+      the new assertions live in <code>tests/test_ledger_files_and_index_agree.py</code>.
+      Existing tests and promotion writers are unchanged.</p>
+      <figure>
+        <img src="/reckon/figures/the-ledger-is-one-file-per-run/reader-flow.svg"
+             alt="Aggregate and run files feed one checked union; matching indexes answer directly and mismatched indexes rebuild from that union."
+             style="width:100%;max-width:1000px;height:auto">
+        <figcaption>The committed sources decide membership. The cache cannot hide a run when it is absent or has a different id set.</figcaption>
+      </figure>
+      <p><strong>Defect reproduced before repair.</strong> With three rows present only as run files
+      and the index deleted, <code>ledger.load</code> answered <code>[]</code>, keyed reads returned
+      missing records and the two census readers lost their metadata. The reproduction selected
+      24 cases: 21 failed and three aggregate-backed controls passed. The three passes prove that
+      the fixture and existing aggregate reader could supply rows.</p>
+      <table>
+        <thead><tr><th>Reader</th><th>Placement/cache measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>load</code>, <code>runs</code>, <code>read_records</code></td><td>Aggregate, files and split; index present, deleted and rebuilt</td><td>Same complete rows; members, holds and version retained</td></tr>
+          <tr><td><code>get_run</code>, <code>get_detail</code>, <code>durable_rows</code></td><td>Same nine combinations; missing, extra and equal-count/wrong-id cache entries</td><td>Same durable/detail answers; cache id set repaired without removing refusal stamps or unrelated project rows</td></tr>
+          <tr><td>Death and carryover census readers</td><td>Same nine combinations and three stale-index directions</td><td>Same lane/member metadata; live pointers keep precedence; store location override honoured</td></tr>
+          <tr><td>Identical duplicate</td><td>Aggregate plus differently ordered JSON keys in the run file</td><td>One returned row and one file read</td></tr>
+          <tr><td>Differing duplicate</td><td>Same id, different outcome</td><td>Whole load refused; id and both absolute paths named</td></tr>
+          <tr><td>Failed index rebuild</td><td>SQLite trigger raises <code>cache refused</code></td><td>File-backed answer retained despite the refused cache insert</td></tr>
+          <tr><td>Source routing</td><td>State symlink, mount registration, explicit checkout</td><td>Each resolves its own synthetic project; no live state is used</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Negative control.</strong> The declared mutation is
+      <q>make ledger.load skip the per-run files; with all rows in run files and the index absent it must return an empty runs list and the new test must fail</q>.
+      At the implementation commit, the receipt prints <code>Positive input control at read: 3 actual run files</code>,
+      then <code>Mutated ledger.load runs: []</code>; the exact new
+      <code>test_readers_agree[deleted-files-load]</code> assertion fails with three missing rows.
+      An earlier harness sampled before fixture population and printed zero; those logs are retained
+      but superseded by the observation made inside the skipped read.</p>
+      <p><strong>Duplicate refusal receipt.</strong> The executed guard reports
+      <code>run 'r-alpha' differs between /tmp/ledger-reader-refusal/test_differing_duplicate_refus0/config/state/example/crew.json and /tmp/ledger-reader-refusal/test_differing_duplicate_refus0/config/state/example/runs/r-alpha.json; refusing to read conflicting history</code>.</p>
+      <p><strong>Focused gates.</strong> The initial focused gate passed 133 tests. Extended edge cases
+      passed 101 tests and promotion-order checks passed three more. The new module therefore has
+      104 cases, including 72 placement/cache cases. Scoped lint remains at the same 13 pre-existing
+      findings, all in <code>ledger.py</code>; this change adds none.</p>
+      <p><strong>Broader gate at the implementation commit:</strong> 77 modules selected from direct
+      ledger API imports plus the census modules, four pytest workers on compute allocation
+      <code>1277272</code>, separate local basetemp, 60-second per-test bound:
+      <strong>1,352 passed, one skipped, one failed in 513.15 seconds</strong>. All 104 new reader
+      contract cases passed in this gate. The failed existing test is
+      <code>tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact</code>.
+      Its timeout stack is <code>mcp._audit → doccheck.audit_links → doccheck._collect_corpus → Path.read_text</code>
+      while scanning HTML, outside the changed reader paths. It is reported under
+      <code>follow_ons</code> to the concurrent owner of <code>tests/test_ledger.py</code>, without
+      modifying that file or diagnosing its separate scope. The broader gate is therefore not green;
+      it is not represented as integrated verification or a completed promotion gate.</p>
+      <p><strong>Durable receipts.</strong> All logs are under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T060824882496-every-reader-reads-the-run-files/</code>:
+      <code>reproduction.log</code>, <code>focused.log</code>, <code>edges-fixed.log</code>,
+      <code>order.log</code>, <code>duplicate-refusal.log</code>, <code>negative-control-observed.log</code>,
+      <code>regression.log</code> and <code>regression-command.json</code>. Every gate header names its
+      revision, checkout and executed command. The manifest records the dispositions of all 35 sites
+      in the supplied reader audit.</p>
+      <p><strong>Boundary.</strong> This is worker-checkout evidence. No production ledger was migrated,
+      no live promotion was attempted, and the driving followup and section status stay open for
+      coordinator integration. The four aggregate-file existence checks and aggregate-specific writer
+      paths remain owned by the later writer/roster/migration work named in the audit.</p>
+    </section>
+
   </main>
 </body>
 </html>
