@@ -173,6 +173,28 @@
       <p>The assertions that pinned the preceding row geometry now read the new cells from the renderer's constants: <code>CLAUSE_COLUMN</code> and the transition/elapsed/counter starts in <code>tests/test_ticker_reads_cleanly.py</code>; <code>_measure_column</code> in <code>tests/test_crew_ticker_layout.py</code>; <code>_spend_column</code> in <code>tests/test_crew_recovery.py</code>; <code>_reason_start</code> in <code>tests/test_ticker_reason_cut_at_a_word.py</code>; node-cell extraction in <code>tests/test_ticker_node_names_keep_their_ends.py</code>; and baseline, stream-chain, wait-marker and departure expectations in <code>tests/test_crew_ticker.py</code>, <code>tests/test_crew_watch_stream.py</code>, <code>tests/test_ticker_renders_wait_facts.py</code> and <code>tests/test_ticker_row_drops_unread_cells.py</code>.</p>
       <p><strong>Retained limit.</strong> Carrying the Ticker's in-memory <code>reported</code> map through a process re-arm belongs to the follower continuation node, because <code>reckon/cli.py</code> and the checkpoint store are outside this node's write scope. This commit supplies the pane-owned chain and its state-map contract; the coordinator must reconcile the re-arm carry separately.</p>
     </section>
+
+    <section id="ticker-row-drops-the-attention-mark">
+      <h2>The ticker row drops the attention mark</h2>
+      <p>Commit <code>66c1daae</code> retires the one-character attention column the preceding transition work had placed between the time and the model. The mark was dropped at the lead's direction on 2026-09-25: the orchestrator reads the transition and decides, and the destination state's colour already carries urgency, so <code>!</code> only repeated what the new state said while spending a column of the pane. The row now reads time, model, effort, role, node, transition, elapsed, the fixed <code>w b u q</code> counters and the reason clause, with no reserved blank column where the mark stood — the model cell follows the time's two-column gutter directly.</p>
+      <p>The clause's own allow-list is renamed from <code>ATTENTION_STATES</code> to <code>CLAUSE_STATES</code>, since it now gates whether a destination state may explain itself rather than a mark. The model cell is unchanged: it is sized from the widest alias the resolved flight config declares, so no configured alias is truncated.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-counters-count-the-fleet/row-drops-the-attention-mark.svg" alt="A follower row before and after: a red attention cell between the time and the model on the before row, absent on the after row, with the reason clause gaining the three retired columns.">
+        <figcaption>The before row carries the retired <code>!</code> cell; the after row lets the model cell start at the time's gutter and gives the three columns to the reason clause.</figcaption>
+      </figure>
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Assigned ticker, watch and recovery files at <code>66c1daae</code></td><td>267 passed</td><td>Absolute project interpreter <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code>, <code>-p no:cacheprovider</code>; log <code>gate.log</code> in the node run directory.</td></tr>
+          <tr><td>No row carries a <code>!</code> column; every classifier state pair, none-to-state, three node-name widths, seven elapsed boundaries, queued and not</td><td>29,484 cases, no <code>!</code></td><td><code>tests/test_ticker_row_is_one_transition.py</code>; the fixed-column watch set is arrow, elapsed, counters and reason, and the model cell is asserted to start at <code>CLOCK + GAP</code>.</td></tr>
+          <tr><td>Every alias a flight config declares renders whole</td><td>no ellipsis on any declared alias</td><td><code>tests/test_ticker_row_is_one_transition.py</code>, <code>test_no_configured_model_alias_is_truncated</code>, against a config written into a temporary home; <code>dsv4.1-flash</code> is held whole and the grid width is its length.</td></tr>
+          <tr><td><code>render the attention mark again</code></td><td>failed as required (24 failed)</td><td><code>mutation-render-the-attention-mark-again.log</code>; re-inserting the <code>!</code> cell before the model made the no-mark assertion and the column assertions fail.</td></tr>
+          <tr><td>Ruff on every edited Python file</td><td>3 findings, from 13 at base</td><td>The retained <code>FURB162</code> in <code>ticker.py</code> is pre-existing; <code>ruff format --check</code> accepts all ten files.</td></tr>
+        </tbody>
+      </table>
+      <p>The assertions that pinned the retired column are brought onto the new row. The transition, node-cell, measure and reason offset helpers in <code>tests/test_ticker_reads_cleanly.py</code>, <code>tests/test_ticker_node_names_keep_their_ends.py</code>, <code>tests/test_crew_ticker_layout.py</code>, <code>tests/test_crew_recovery.py</code>, <code>tests/test_ticker_reason_cut_at_a_word.py</code> and <code>tests/test_ticker_row_drops_unread_cells.py</code> drop the three retired columns. The attention-column assertion in <code>tests/test_ticker_reads_cleanly.py</code> and <code>tests/test_ticker_renders_wait_facts.py</code> becomes a no-mark assertion, and one clause-cut expectation in <code>tests/test_crew_ticker_layout.py</code> moves one word further because the clause now owns the retired columns. No assertion is deleted or loosened.</p>
+    </section>
   </main>
 </body>
 </html>
