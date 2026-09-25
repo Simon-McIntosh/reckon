@@ -7,12 +7,15 @@ import os
 import shlex
 import subprocess
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from reckon.hooks import worker_stop as hook
 
 HOOK_PATH = Path(hook.__file__).resolve()
 REAL_SETTINGS = Path.home() / ".claude" / "settings.json"
+IGNORE_ATTEMPT_START = "ignore the attempt start in the hook"
+IGNORE_ATTEMPT_START_ENV = "RECKON_TEST_IGNORE_ATTEMPT_START"
 
 
 def _run_dir(tmp_path: Path, name: str = "run") -> Path:
@@ -78,6 +81,37 @@ def test_complete_manifest_is_allowed(tmp_path, monkeypatch) -> None:
     run = _run_dir(tmp_path)
     manifest = _write_manifest(run, "complete")
     _bind(monkeypatch, manifest, tmp_path / "config")
+
+    blocked, reason = hook.decide(_stop_payload(run))
+
+    assert blocked is False
+    assert reason is None
+
+
+def test_terminal_manifest_older_than_attempt_is_blocked(tmp_path, monkeypatch) -> None:
+    run = _run_dir(tmp_path)
+    manifest = _write_manifest(run, "complete")
+    attempt_started_at = datetime.now(tz=UTC)
+    older = (attempt_started_at - timedelta(seconds=2)).timestamp()
+    os.utime(manifest, (older, older))
+    _bind(monkeypatch, manifest, tmp_path / "config")
+    monkeypatch.setenv("RECKON_ATTEMPT_STARTED_AT", attempt_started_at.isoformat())
+    if os.environ.get(IGNORE_ATTEMPT_START_ENV) == IGNORE_ATTEMPT_START:
+        monkeypatch.setattr(hook, "_manifest_predates_attempt", lambda _path: False)
+
+    blocked, reason = hook.decide(_stop_payload(run))
+
+    assert blocked is True
+    assert reason is not None
+    assert "predates this attempt" in reason
+
+
+def test_terminal_manifest_newer_than_attempt_is_allowed(tmp_path, monkeypatch) -> None:
+    run = _run_dir(tmp_path)
+    manifest = _write_manifest(run, "complete")
+    attempt_started_at = datetime.now(tz=UTC) - timedelta(seconds=2)
+    _bind(monkeypatch, manifest, tmp_path / "config")
+    monkeypatch.setenv("RECKON_ATTEMPT_STARTED_AT", attempt_started_at.isoformat())
 
     blocked, reason = hook.decide(_stop_payload(run))
 

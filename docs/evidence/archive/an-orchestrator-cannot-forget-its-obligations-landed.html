@@ -316,6 +316,28 @@
       </table>
       <p><strong>The declared mutation was observed to fail.</strong> The per-entry skip was deleted in a scratch mutant tree, so every entry is appended whether or not its commands are registered, with <code>HOME</code> isolated: the two duplicate cases fail (2 failed, 11 passed, exit 1). Declared string: <code>append every entry whether or not its commands are registered under the event; the duplicate cases in tests/test_hook_installer.py must fail</code>. The receipt prints the mutant module path, the surviving region around the deleted branch, and the same probe run against both trees: the head yields two <code>Stop</code> entries with one skipped, the mutant three with a duplicated worker entry and none skipped. Log: <code>runs/r-20260925T114234476907-installer-carries-the-worker-stop-hook/negative-control-entry-skip.log</code>.</p>
       <p><strong>Superseded record.</strong> The section above, <code>hook-installer-prints-before-it-writes</code>, and the plan's &sect;5 landing record for <code>fbf1bca1</code> describe the merge as it was at that revision: a whole-install refusal naming the first duplicate found. That description stays as the record of that revision and is superseded here for the duplicate case; the refusal remains only for a settings file that cannot carry the fragment.</p>
+
+    <section id="worker-environment-carries-its-run">
+      <h2>Every worker attempt carries its run identity</h2>
+      <p>Commit <code>5d67909a9e01c0a8f86dce426b3afb1165cba93b</code> exports <code>RECKON_RUN_ID</code>, <code>RECKON_MANIFEST</code>, and the ISO-UTC <code>RECKON_ATTEMPT_STARTED_AT</code> at the worker-spawn boundary for fresh dispatches, resumes, lane changes, and delegated launches. Claude Code and <code>clive</code> append <code>X-Reckon-Run-Id</code> and <code>X-Reckon-Session</code> to an inherited <code>ANTHROPIC_CUSTOM_HEADERS</code> value with newline separation; Codex launches remove that header. The persisted supervisor environment retains only the configured overlay plus the existing scheduler-path rule, so per-attempt attribution is reconstructed at spawn and is not stored as launch configuration.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/worker-attempt-attribution.svg" alt="Fresh dispatch and resume converge on a runtime-only environment carrying run, manifest and attempt start. Claude gets appended attribution headers, Codex gets none, and the Stop hook refuses a terminal manifest older than the attempt.">
+        <figcaption>One runtime identity reaches every attempt; the Stop hook accepts terminal state only after that attempt has written it.</figcaption>
+      </figure>
+      <p>The recorded defect reproduced before repair: a complete manifest written two minutes earlier with an attempt start one minute later returned <code>stale_terminal_blocked=False reason=None</code>. The hook now compares the manifest's nanosecond modification time with the exported attempt start. A terminal manifest that predates the attempt is refused with <code>predates this attempt</code>; a newer terminal manifest is allowed.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Observed result</th><th>Receipt</th></tr></thead>
+        <tbody>
+          <tr><td>Fresh <code>clive</code> dispatch and resume</td><td>All three variables present; inherited header retained; run and coordinator-session headers appended in order.</td><td><code>precommit-gate.log</code></td></tr>
+          <tr><td>Fresh Codex dispatch</td><td>All three variables present; <code>ANTHROPIC_CUSTOM_HEADERS</code> absent from the process environment.</td><td><code>precommit-gate.log</code></td></tr>
+          <tr><td>Persisted supervisor specification</td><td>No run, manifest, attempt-start, or appended attribution value persisted; the inherited header remained unchanged.</td><td><code>precommit-gate.log</code></td></tr>
+          <tr><td>Focused compatibility gate</td><td>51 passed, 0 failed across the new tests and the required worker Stop, scheduler-path, prompt, and backend-environment files.</td><td><code>precommit-gate.log</code></td></tr>
+          <tr><td>Mutation: drop the export on resume</td><td>1 failed, 1 passed; the resume assertion could not read <code>RECKON_ATTEMPT_STARTED_AT</code>.</td><td><code>negative-drop-resume-export.log</code></td></tr>
+          <tr><td>Mutation: ignore the attempt start in the hook</td><td>1 failed, 14 passed; the stale terminal manifest was allowed.</td><td><code>negative-ignore-attempt-start.log</code></td></tr>
+          <tr><td>Ruff delta</td><td><code>dispatch.py</code> remained at 7 pre-existing findings; the hook and both focused test files report no findings.</td><td>base/head concise checks</td></tr>
+        </tbody>
+      </table>
+      <p>The receipts live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131108748775-worker-env-carries-its-run/</code>. The first line of each mutation receipt repeats its declared mutation verbatim. <code>reckon/crew/recovery.py</code> is intentionally unchanged: all resume launch-plan construction already converges in <code>reckon/crew/dispatch.py</code>, while that module was concurrently claimed by another node. Integrated-head verification remains coordinator-owned.</p>
     </section>
   </main>
 </body>
