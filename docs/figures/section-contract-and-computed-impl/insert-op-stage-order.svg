@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 440" role="img" aria-labelledby="title description">
+  <title id="title">The state-mode insert_section path, and the case that holds each stage</title>
+  <desc id="description">A state-mode insert_section request passes five stages in order: the authored id, title and body are checked; the typed SectionRecord is validated against the plan schema and refused with the field named and a worked append example; the write effect is queued and the record registered with plan state; the file is scanned for a duplicate id, a nested heading, structured plan state and plan metadata; and one atomic versioned write adds the heading, body and record. Each stage is held by a named case in the section-write tests. A stale batch is the one path that ends early: the comment-only merge compares the documents' other fields, refuses the whole batch, and the same batch lands once rebased onto the peer's revision.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7" fill="none" stroke="#334155"/></marker>
+  </defs>
+  <g font-family="system-ui, sans-serif" font-size="15" fill="#172b3a">
+    <text x="24" y="38" font-size="21" font-weight="600">One insert_section request, five stages, one case holding each</text>
+
+    <rect x="24" y="64" width="196" height="76" rx="4" fill="#f4f6f8" stroke="#5b6b7b"/>
+    <text x="122" y="94" text-anchor="middle">Authored fields</text>
+    <text x="122" y="116" text-anchor="middle" font-size="13">id · title · body</text>
+
+    <path d="M220 102H250" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+
+    <rect x="258" y="64" width="196" height="76" rx="4" fill="#eff8f7" stroke="#16736d"/>
+    <text x="356" y="88" text-anchor="middle">Validate SectionRecord</text>
+    <text x="356" y="110" text-anchor="middle" font-size="13">effort · capability · links</text>
+    <text x="356" y="129" text-anchor="middle" font-size="13">refused before any bytes</text>
+
+    <path d="M454 102H484" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+
+    <rect x="492" y="64" width="196" height="76" rx="4" fill="#f4f6f8" stroke="#5b6b7b"/>
+    <text x="590" y="94" text-anchor="middle">Queue write effect</text>
+    <text x="590" y="116" text-anchor="middle" font-size="13">record joins plan state</text>
+
+    <path d="M688 102H718" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+
+    <rect x="726" y="64" width="196" height="76" rx="4" fill="#eff8f7" stroke="#16736d"/>
+    <text x="824" y="88" text-anchor="middle">Scan the file</text>
+    <text x="824" y="110" text-anchor="middle" font-size="13">unsafe authored fragments</text>
+
+    <path d="M922 102H952" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+
+    <rect x="960" y="64" width="176" height="76" rx="4" fill="#f4f6f8" stroke="#5b6b7b"/>
+    <text x="1048" y="94" text-anchor="middle">Atomic write</text>
+    <text x="1048" y="116" text-anchor="middle" font-size="13">heading + body + record</text>
+
+    <text x="258" y="176" font-size="13" fill="#16736d" font-weight="600">record-less insert</text>
+    <text x="258" y="195" font-size="13" fill="#16736d">refused, fields named,</text>
+    <text x="258" y="213" font-size="13" fill="#16736d">worked example attached</text>
+
+    <text x="726" y="176" font-size="13" fill="#16736d" font-weight="600">four unsafe-fragment cases</text>
+    <text x="726" y="195" font-size="13" fill="#16736d">duplicate id (state schema)</text>
+    <text x="726" y="213" font-size="13" fill="#16736d">nested h2 · structured state · metadata</text>
+
+    <text x="960" y="180" font-size="13" fill="#16736d">structured-boundary case:</text>
+    <text x="960" y="199" font-size="13" fill="#16736d">placement, record,</text>
+    <text x="960" y="217" font-size="13" fill="#16736d">audit exits 0</text>
+
+    <rect x="24" y="264" width="1112" height="150" rx="4" fill="#fff5ed" stroke="#9a4b14"/>
+    <text x="44" y="294" font-weight="600">A stale batch ends at the queue, whole</text>
+    <text x="44" y="322" font-size="14">The batch appends a comment and inserts a section; the insert moves sections, so the writers no longer agree</text>
+    <text x="44" y="344" font-size="14">about the document and the comment-only merge refuses the batch outright — nothing is half-applied.</text>
+    <text x="44" y="372" font-size="14">Rebased onto the revision the peer left, the same batch lands at version 2 with both comments and the section:</text>
+    <text x="44" y="394" font-size="14">the queued insertion is refused, never silently dropped. One case holds that pair.</text>
+  </g>
+</svg>

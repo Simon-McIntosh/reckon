@@ -175,6 +175,32 @@
       cannot enter the file without its effort and capability.</figcaption>
     </figure>
 
+    <p><strong>The pinned cases carry their record, and the route's own checks are live again,
+    2026-09-25.</strong> Commit
+    <code>98c976c5e1db9bde6e82fd47c49955ca31fd0e2f</code> repairs the six cases that pinned the
+    pre-contract <code>insert_section</code> behaviour: each inserts through the same op and
+    carries a <code>SectionRecord</code> — effort, capability and links as §2's schema requires
+    — so the check each case names is the check that fires, not the contract refusal standing
+    in front of it. The defect was reproduced before repair: at the parent revision the file
+    reads <strong>6 failed, 4 passed</strong>, one failure per named case. Two refusals moved
+    rather than disappeared, and the movement follows from the record itself rather than from
+    a lost check. A duplicate id is now refused by the state schema, which sees the duplicate
+    record before the heading scan reaches the file; and a stale batch that appends a comment
+    and inserts a section is refused whole by the comment-only merge, which compares the
+    documents' other fields and no longer finds them equal — rebased onto the peer's revision
+    the same batch lands with both comments intact, so nothing is silently dropped. One new
+    case pins the refusal of a record-less insert, asserting the missing fields and the worked
+    example are named and that no byte is written. The op's authored-fragment checks are
+    exercised only here, so the repair keeps them reached rather than relaxing them.
+    Gate and control receipts:
+    <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#section-writes-cases-carry-their-record">the section-write cases record</a>.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/insert-op-stage-order.svg"
+           alt="A state-mode insert_section request passes five stages in order — authored fields, the typed-record validation, the queued write effect, the file scan for unsafe authored fragments, and the atomic versioned write. Each stage is annotated with the case that holds it: the record-less insert refusal, the four unsafe-fragment cases, and the structured-boundary case. A stale batch ends at the queue whole, refused by the comment-only merge, and lands with both comments once rebased.">
+      <figcaption>The op's stage order and the case holding each stage. A stale batch is the
+      one path that ends early, refused whole rather than half-applied.</figcaption>
+    </figure>
+
     <h2 id="s3">§3 — impl is computed from section effort, never authored</h2>
     <p>impl becomes the sum of effort over sections whose status is done, divided by that sum plus the predicted
     effort of every remaining implementable section; deferred sections are outside the denominator, as the
