@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" role="img" aria-labelledby="title desc">
+  <title id="title">The age bound on a recorded liveness state</title>
+  <desc id="desc">Three runs against one stall window. A recorded working record older than the window with a stream that is equally quiet has no live evidence and falls back to not live. The same old record beside a stream written inside the window stays live; a record observed inside the window stays live on its own.</desc>
+  <rect width="960" height="400" fill="#fffdf8"/>
+  <g font-family="system-ui, sans-serif" fill="#17212b">
+    <text x="44" y="42" font-size="23" font-weight="700">A recorded liveness state has an age bound</text>
+    <text x="44" y="70" font-size="14" fill="#43515c">A record carries liveness only while its observation is inside the stall window, or the run's own stream was written inside it.</text>
+
+    <rect x="596" y="104" width="150" height="252" rx="8" fill="#e5f2ed" stroke="#13795b" stroke-dasharray="5 4"/>
+    <text x="671" y="96" font-size="14" text-anchor="middle" fill="#13795b">stall window (15m)</text>
+    <line x1="200" y1="378" x2="900" y2="378" stroke="#c3ccd2" stroke-width="2"/>
+    <text x="200" y="395" font-size="13" fill="#43515c" text-anchor="start">older</text>
+    <text x="900" y="395" font-size="13" fill="#43515c" text-anchor="end">now</text>
+
+    <g font-size="15">
+      <text x="44" y="150" font-weight="600">run A</text>
+      <text x="44" y="172" font-size="13" fill="#43515c">record + stream both stale</text>
+      <text x="44" y="240" font-weight="600">run B</text>
+      <text x="44" y="262" font-size="13" fill="#43515c">stale record, fresh stream</text>
+      <text x="44" y="330" font-weight="600">run C</text>
+      <text x="44" y="352" font-size="13" fill="#43515c">record observed inside window</text>
+    </g>
+
+    <g stroke="#253746" stroke-width="2">
+      <line x1="230" y1="140" x2="780" y2="140"/>
+      <line x1="230" y1="230" x2="780" y2="230"/>
+      <line x1="230" y1="320" x2="780" y2="320"/>
+    </g>
+
+    <g fill="#253746">
+      <circle cx="250" cy="140" r="7"/>
+      <rect x="243" y="184" width="14" height="14"/>
+      <circle cx="250" cy="230" r="7"/>
+      <rect x="683" y="274" width="14" height="14"/>
+      <circle cx="690" cy="320" r="7"/>
+    </g>
+
+    <g font-size="13" fill="#43515c">
+      <text x="262" y="196">recorded event</text>
+      <text x="704" y="286">stream write</text>
+    </g>
+
+    <g font-size="14">
+      <rect x="792" y="126" width="132" height="28" rx="6" fill="#fde8e8" stroke="#b3261e"/>
+      <text x="858" y="145" text-anchor="middle" fill="#b3261e">not live -&gt; fallback</text>
+      <rect x="792" y="216" width="132" height="28" rx="6" fill="#e5f2ed" stroke="#13795b"/>
+      <text x="858" y="235" text-anchor="middle" fill="#13795b">live</text>
+      <rect x="792" y="306" width="132" height="28" fill="#e5f2ed" stroke="#13795b" rx="6"/>
+      <text x="858" y="325" text-anchor="middle" fill="#13795b">live</text>
+    </g>
+
+    <g font-size="13" fill="#43515c">
+      <text x="44" y="120">circle = the record's own observed_at; square = the run stream's mtime</text>
+    </g>
+  </g>
+  <rect x="0" y="0" width="960" height="400" fill="none" stroke="#e7ded0"/>
+</svg>

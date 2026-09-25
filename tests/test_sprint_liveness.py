@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 import os
+import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -78,6 +80,42 @@ def _write_pointer(
     live_dir.mkdir(parents=True, exist_ok=True)
     (live_dir / f"{run_id}.json").write_text(json.dumps(record), encoding="utf-8")
     return record
+
+
+def _iso_utc(seconds: float) -> str:
+    """Render an epoch reading the way the watcher records its own stamps."""
+    return (
+        datetime.fromtimestamp(seconds, tz=UTC)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
+
+
+def _age_file(path: Path, seconds: float) -> None:
+    """Push a file's mtime back to a chosen instant, in seconds."""
+    os.utime(path, (seconds, seconds))
+
+
+def _write_watch_event(
+    home: Path, run_id: str, session: str, state: str, *, observed_at: str
+) -> None:
+    """Append one watcher transition carrying its own observation time."""
+    stream = runs.watch_stream_path(PROJECT)
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    with stream.open("a", encoding="utf-8") as handle:
+        handle.write(
+            json.dumps(
+                {
+                    "event": "baseline",
+                    "project": PROJECT,
+                    "run_id": run_id,
+                    "session": session,
+                    "to_state": state,
+                    "observed_at": observed_at,
+                }
+            )
+            + "\n"
+        )
 
 
 def _fixture(tmp_path: Path) -> tuple[Path, Path]:
@@ -301,3 +339,75 @@ def test_a_stored_active_sprint_status_does_not_make_it_live(
     assert after == before, "the read changed a file's mtime"
     assert result["S102"]["live"] is False
     assert [sid for sid in result if result[sid]["live"]] == ["S100", "S101"]
+
+
+def test_a_stale_recorded_state_does_not_outlive_a_dead_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A recorded working event older than the stall window is not liveness.
+
+    The record says working and its manifest is non-terminal, so on the record
+    alone the sprint would read live. But the run's own stream has not been
+    written since the record, so the process is gone: record and stream are both
+    older than the window. A recorded verdict carries liveness only while it is
+    fresh, so this one falls through to the bounded fallback — which finds no
+    recent stream write — and the sprint must read not live. Without the bound
+    this case reads live, which is the stale-verdict defect the bound removes.
+    """
+    home, docs = _fixture(tmp_path)
+    _write_plan(docs, "plan-alpha", "S100")
+    pointer = _write_pointer(
+        home,
+        "run-a1",
+        "plan-alpha",
+        "s-a1",
+        phase="working",
+        alive=False,
+        manifest_status="in-progress",
+    )
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    stale = time.time() - 3 * 3600
+    _write_watch_event(home, "run-a1", "s-a1", "working", observed_at=_iso_utc(stale))
+    _age_file(Path(str(pointer["log_path"])), stale)
+
+    result = sl.sprint_liveness(PROJECT, docs, [pointer])
+
+    assert result["S100"]["live"] is False
+    assert result["S100"]["live_runs"] == []
+
+
+def test_a_fresh_recorded_state_carries_a_live_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A record observed inside the stall window is trusted as recorded.
+
+    The pointer's own files read failed and its stream went quiet, so every
+    on-disk signal says the run is finished. The watcher observed it working
+    seconds ago, inside the stall window, and that fresh observation is the
+    authority: the run reads live. This is the positive arm of the age bound —
+    the same record aged past the window reads not live in the test above.
+    """
+    home, docs = _fixture(tmp_path)
+    _write_plan(docs, "plan-alpha", "S100")
+    pointer = _write_pointer(
+        home,
+        "run-a1",
+        "plan-alpha",
+        "s-a1",
+        phase="failed",
+        alive=False,
+        manifest_status="failed",
+    )
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    _write_watch_event(
+        home, "run-a1", "s-a1", "working", observed_at=_iso_utc(time.time() - 5)
+    )
+    _age_file(Path(str(pointer["log_path"])), time.time() - 3 * 3600)
+
+    result = sl.sprint_liveness(PROJECT, docs, [pointer])
+
+    assert result["S100"]["live"] is True
+    assert result["S100"]["live_runs"] == ["run-a1"]
+    assert result["S100"]["live_sessions"] == ["s-a1"]

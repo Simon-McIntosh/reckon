@@ -92,6 +92,29 @@
       <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html">cumulative landed record</a>.</p>
     </div>
 
+    <div class="r-note" data-reckon="landed" data-node="recorded-liveness-has-an-age-bound" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; a recorded state is trusted only while it is fresh.</strong>
+      Commit <code>81279f94</code> carries each watch-stream record's own
+      <code>observed_at</code> beside its <code>to_state</code> and uses the recorded state
+      only while that observation is inside the stall window the fleet classifier uses
+      (<code>DEFAULT_WATCH_STALL_WINDOW</code>, 15m) or the run's own stream was written
+      inside it. An older record falls through to the unchanged bounded manifest-status and
+      stream-mtime fallback, so a run that died after its last recorded working event no
+      longer reads live. The sprint row shape and the read-only behaviour are unchanged.</p>
+      <p><strong>Measured.</strong> <code>tests/test_sprint_liveness.py</code>: 7 passed,
+      exit 0; scoped ruff check and format check: clean. Two new tests: a recorded
+      <code>working</code> event aged 3h with a stream aged 3h reads <code>live: false</code>,
+      and a record observed 5s ago against a quiet, terminal manifest reads
+      <code>live: true</code>. The declared mutation &mdash; trusting the recorded state with
+      no age bound &mdash; makes the stale-record test fail (<code>assert True is False</code>,
+      1 failed / 6 passed); its log begins with the declared string at
+      <code>~/.config/reckon/crew/runs/r-20260925T135516711111-recorded-liveness-has-an-age-bound/negative-control.log</code>.
+      Three read-only warm calls on the real reckon fleet (39 pointers) took
+      <code>0.174067s</code>, <code>0.153108s</code> and <code>0.148877s</code>, all under
+      0.5s. Evidence:
+      <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html">cumulative landed record</a>.</p>
+    </div>
+
     <h2 id="s3">&sect;3 &mdash; Every summary lists open and recently closed sprints</h2>
     <p>Discovery's <code>read_plan(project)</code> and <code>roadmap(view="summary")</code> both gain a compact <code>sprints</code> list:</p>
     <ul>

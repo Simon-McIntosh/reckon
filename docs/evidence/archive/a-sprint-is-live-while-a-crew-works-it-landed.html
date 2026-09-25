@@ -11,7 +11,7 @@
   <meta name="plan-evidence-for" content="a-sprint-is-live-while-a-crew-works-it">
   <meta name="plan-verifies" content="a-sprint-is-live-while-a-crew-works-it#s2,a-sprint-is-live-while-a-crew-works-it#s4,a-sprint-is-live-while-a-crew-works-it#s4-focus,a-sprint-is-live-while-a-crew-works-it#s4-focus-remeasure,a-sprint-is-live-while-a-crew-works-it#s5">
   <meta name="plan-verdict" content="pass">
-  <meta name="plan-commits" content="6c92861d,0ad5a171,21077dfa,bec9f24a">
+  <meta name="plan-commits" content="6c92861d,0ad5a171,21077dfa,bec9f24a,81279f94">
   <title>A Sprint Is Live While A Crew Works It — landed record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -132,6 +132,61 @@
         paths are <code>reckon/sprint_liveness.py</code>,
         <code>tests/test_sprint_liveness.py</code>, this cumulative evidence record, the
         plan landing note, and the recorded-stream flow figure.</p>
+
+      <h3 id="s2-age-bound">An age bound on the recorded state</h3>
+      <p>The recorded state was trusted with no bound on its age. A run that died
+        after its last recorded working event kept reading live: the record still
+        said <code>working</code>, the watcher had stopped writing, and nothing
+        compared the record against the clock. Commit <code>81279f94</code> carries
+        each record's own <code>observed_at</code> beside its <code>to_state</code>
+        and uses the recorded state only while that observation is inside the stall
+        window the fleet classifier uses (<code>DEFAULT_WATCH_STALL_WINDOW</code>,
+        15m) or the run's own stream was written inside it. An older record falls
+        through to the unchanged bounded fallback: the manifest status prefix and
+        the stream mtime against the same window.</p>
+
+      <p>The second clause is load-bearing. A long turn whose last recorded
+        transition is older than the window stays live while its engine is still
+        producing output, because the run's own stream is being written inside the
+        window. When the process dies, both clocks go stale together, so neither
+        clause holds and a stale <code>working</code> cannot outlive the run.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-sprint-is-live-while-a-crew-works-it/recorded-state-age-bound.svg"
+             alt="Three runs against one stall window: a record and stream both older than the window read not live; an old record with a fresh stream reads live; a record inside the window reads live.">
+        <figcaption>The recorded state is trusted only while its own observation is
+          inside the stall window, or the run's stream was written inside it.</figcaption>
+      </figure>
+
+      <table>
+        <thead><tr><th>Check</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Gate — <code>tests/test_sprint_liveness.py</code></td>
+            <td>7 passed, exit 0</td></tr>
+          <tr><td>Stale-record arm</td>
+            <td>a recorded <code>working</code> event aged 3h with a stream aged 3h reads
+              <code>live: false</code></td></tr>
+          <tr><td>Fresh-record arm</td>
+            <td>a record observed 5s ago, against a quiet stream and a terminal manifest,
+              reads <code>live: true</code> with its run and session</td></tr>
+          <tr><td>Recorded defect reproduced — the declared mutation</td>
+            <td>trusting the record with no age bound makes the stale-record fixture read
+              live: <code>assert True is False</code>, 1 failed / 6 passed, exit 1</td></tr>
+          <tr><td>Real-project timing</td>
+            <td>39-pointer fleet; warm calls 0.174067s, 0.153108s, 0.148877s; 4 rows,
+              3 live in each — all under 0.5s</td></tr>
+          <tr><td>Scoped lint</td>
+            <td>ruff check and format check for the two owned files: clean, no new findings
+              against the base revision</td></tr>
+        </tbody>
+      </table>
+
+      <p>The negative control is the module's own fresh-guard removed in a scratch
+        tree, never the reviewed file: the mutant module is copied in and the gate
+        is run against it. Its log begins with the declared string
+        <code>trust the recorded state with no age bound</code> and reports the
+        mutated module's own path on its header, so the red is against the changed
+        code and nothing else.</p>
     </section>
     <section id="s4">
     <h2 id="s4">§4 — The one-active cap, push no longer demotes</h2>
