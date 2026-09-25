@@ -114,6 +114,7 @@ from reckon.mcp_views import (
     ResourceSelector,
     ViewRequestError,
     audit_view,
+    authored_plan_text,
     crew_lanes_view,
     discovery_view,
     error_response,
@@ -529,6 +530,7 @@ def _read_plan(
     include_questions: bool = True,
     resource: dict[str, Any] | None = None,
     view: str | None = None,
+    section: str | None = None,
     cursor: str | None = None,
     include_prompts: bool = False,
 ) -> dict[str, Any]:
@@ -551,9 +553,10 @@ def _read_plan(
             action compact. ``detail`` adds current metadata and unresolved
             workflow, ``history`` paginates prior workflow, ``version`` returns
             only typed identity and the concurrency token, ``raw`` returns the
-            lossless storage state, and ``schema`` describes the response plus
-            the selected resource's storage schema. Full followup prompts require
-            ``view="detail", include_prompts=True``.
+            lossless storage state, ``section`` returns one authored h2 section
+            selected by its ``section`` identity, and ``schema`` describes the
+            response plus the selected resource's storage schema. Full followup
+            prompts require ``view="detail", include_prompts=True``.
 
       read_plan(project)                 [slug omitted/None]
           → DISCOVERY: { project, plans, followups, questions, sprints,
@@ -583,6 +586,7 @@ def _read_plan(
             doc_type=doc_type,
             resource=resource,
             view=view,
+            section=section,
             cursor=cursor,
             limit=limit,
             include_prompts=include_prompts,
@@ -611,6 +615,23 @@ def _read_plan(
                 "detail": str(exc),
             }
         inventory = [_inventory_row(item) for item in discovered.get("inventory", [])]
+        if search:
+            inventory = [
+                {
+                    **item,
+                    "body_text": authored_plan_text(
+                        _plan_html_text(
+                            project,
+                            str(item.get("slug") or ""),
+                            checkout_path,
+                            str(item.get("type") or "plan"),
+                        )
+                    ),
+                }
+                if item.get("type") == "plan"
+                else item
+                for item in inventory
+            ]
         plans = _filter_inventory(
             inventory,
             status=status,
@@ -621,6 +642,8 @@ def _read_plan(
             search=search,
             limit=limit,
         )
+        for plan in plans:
+            plan.pop("body_text", None)
         selected_slugs = {plan.get("slug") for plan in plans if plan.get("slug")}
         followups_all = list_followups_across(
             project, unresolved_only=True, root=checkout_path
@@ -677,7 +700,7 @@ def _read_plan(
         }
     if data and canonical_type(data.get("type")) == "plan":
         # The standalone declaration is authored markup the state engine
-        # leaves untouched, so it is read from the plan's own header: a plan
+        # leaves untouched, so it is read from its own header: a plan
         # that declares itself standalone round-trips its reason through read.
         reason = standalone_reason(
             _plan_html_text(project, slug, checkout_path, doc_type)
@@ -746,6 +769,7 @@ def _read_plan_tool(
     include_questions: bool = True,
     resource: dict[str, Any] | None = None,
     view: str | None = None,
+    section: str | None = None,
     cursor: str | None = None,
     include_prompts: bool = False,
 ) -> dict[str, Any]:
@@ -775,6 +799,7 @@ def _read_plan_tool(
         include_questions=include_questions,
         resource=resource,
         view=selected_view,
+        section=section,
         cursor=cursor,
         include_prompts=include_prompts,
     )
@@ -842,6 +867,28 @@ def _typed_resource_provenance(
     return content_provenance(docs_dir.parent, content_path)
 
 
+def _typed_resource_text(
+    selector: ResourceSelector,
+    checkout_path: str | None,
+) -> str:
+    """Read the exact live or archived typed artifact selected by a view."""
+
+    docs_dir = _docs_dir_for_project(selector.project, checkout_path)
+    if docs_dir is None or selector.type not in {"plan", "research", "evidence"}:
+        return ""
+    resource = resource_map(
+        docs_dir,
+        selector.project,
+        include_archived=True,
+    ).get((selector.type, selector.id, selector.archived))
+    if resource is None:
+        return ""
+    try:
+        return resource.path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
 def _distributed(docs_dir: Path) -> bool:
     """Report whether a docs tree's typed resources are the canonical store."""
     from reckon.project_state import ProjectStateError, project_state_mode
@@ -907,6 +954,21 @@ def _read_legacy_project_resource(
     return data, version
 
 
+def _require_section_resource(
+    selected_view: str,
+    resource: dict[str, Any] | None,
+    slug: str | None,
+) -> None:
+    """Refuse a section view that has no single plan identity to select from."""
+
+    if selected_view == "section" and resource is None and slug is None:
+        raise ViewRequestError(
+            "section_resource_required",
+            "view='section' requires one selected plan resource.",
+            "Pass project and slug, or a typed plan resource selector.",
+        )
+
+
 def _read_plan_view(
     *,
     project: str | None,
@@ -915,6 +977,7 @@ def _read_plan_view(
     doc_type: str | None,
     resource: dict[str, Any] | None,
     view: str | None,
+    section: str | None,
     cursor: str | None,
     limit: int | None,
     include_prompts: bool,
@@ -931,6 +994,7 @@ def _read_plan_view(
     selector: ResourceSelector | None = None
     try:
         selected_view = normalize_view(view)
+        _require_section_resource(selected_view, resource, slug)
         if resource is not None:
             selector = normalize_selector(resource, fallback_project=project)
             if project not in (None, selector.project):
@@ -1141,6 +1205,12 @@ def _read_plan_view(
             cursor=cursor,
             limit=limit,
             include_prompts=include_prompts,
+            section=section,
+            html_text=(
+                _typed_resource_text(selector, checkout_path)
+                if selected_view == "section"
+                else None
+            ),
             storage_schema=storage_schema_for(selector.type),
             op_vocab=_OP_VOCAB,
             dos_donts=_DOS_DONTS,
@@ -1450,6 +1520,7 @@ def _matches_search(item: dict[str, Any], search: str | None) -> bool:
             "environment",
             "source",
             "source_quality",
+            "body_text",
         )
     ).lower()
     return needle in haystack
