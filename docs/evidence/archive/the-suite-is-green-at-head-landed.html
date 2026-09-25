@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
   <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
-  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df,2bb4fd6d,6d813b38,bdfff7f4,41737d3e,7288cb66,34e1b0d2">
+  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df,2bb4fd6d,6d813b38,bdfff7f4,41737d3e,7288cb66,34e1b0d2,124cbf09">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <title>The Suite Is Green At Head — landed evidence | reckon</title>
@@ -1907,6 +1907,78 @@ FAILED /tmp/freshness-arms/neg2/test_follower_freshness.py::test_two_probe_rows_
       <a href="/reckon/figures/the-suite-is-green-at-head/event-wait-durations.png">per-test before and
       after with both violated-bound results</a>. This gate measures only this node's own two files;
       the merged result is a separate test node's measure.</p>
+    </section>
+    <section id="node-timing-bounds-hold-under-load">
+      <h2>timing-bounds-hold-under-load &mdash; the bound timed the promotion, not the settle ceiling</h2>
+
+      <p><strong>Four load-sensitive tests now bound the property they pin rather than a wall
+      clock that also covers the promotion's own landing commit.</strong> The settle ceiling
+      bounds only the wait for a closed writer's stream tail; the assertion wrapped the whole
+      <code>crew.complete()</code> call, so under contention the landing commit stretched the
+      elapsed figure past a bound that had nothing to do with it. Under <code>-n 8</code> with
+      four concurrent <code>-n 8</code> copies of the same files loading the node, the base arm
+      observed <code>assert 10.25 &lt; 2.0</code> for the endless-writer test and
+      <code>assert 16.46 &lt; 5.0</code> for its no-receipt sibling and the promotion
+      mtime-fallback test, so all three failed while the property held.</p>
+
+      <h3>The defect, reproduced before repair</h3>
+      <p>Base arm, run at the recorded revision from the revision's own test files under
+      <code>-n 8</code> with six concurrent <code>-n 8</code> copies of the same four files
+      (48 workers on 28 cores). Red log
+      <code>logs/negative-control-red.log</code>, whose first line repeats the declared mutation
+      verbatim; its failing ids and observed figures:</p>
+      <ul>
+        <li><code>tests/test_receipt_after_release.py::test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code>
+        &mdash; <code>assert 10.252602200955153 &lt; 2.0</code> (the settle ceiling under test is
+        <code>0.5</code>);</li>
+        <li><code>tests/test_receipt_after_release.py::test_a_live_writer_that_never_emits_a_receipt_keeps_the_fallback</code>
+        &mdash; <code>assert 16.457772059366107 &lt; 5.0</code>;</li>
+        <li><code>tests/test_promotion_reads_the_terminal_record.py::test_a_stream_that_never_receives_a_terminal_record_keeps_the_mtime_fallback</code>
+        &mdash; <code>assert 14.870334581006318 &lt; 5.0</code>;</li>
+        <li><code>tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact</code>
+        &mdash; <code>KeyError: 'view'</code>, because the whole-project discovery read was
+        reported as an unknown (<code>storage-slow</code>) result: 36.3 s measured against the
+        production read deadline of 30 s.</li>
+      </ul>
+      <p>All four pass alone at the recorded revision
+      (<code>logs/head-ids.log</code>: 7 passed, the four plus the two recorded ids below).</p>
+
+      <h3>The shipped change</h3>
+      <p><code>tests/test_receipt_after_release.py</code> and
+      <code>tests/test_promotion_reads_the_terminal_record.py</code> now assert
+      <code>elapsed &lt; _PROMOTION_HANG_GUARD_SECONDS</code>, a named <code>60.0</code>. The bound
+      is finite on purpose: the endless writer never quiesces, so a fold that waited on the writer
+      instead of the ceiling would never return, and <code>60</code> still fails against the
+      suite's own <code>300 s</code> per-test timeout. It no longer doubles as a stopwatch on the
+      landing commit, which the ceiling does not bound. The fold-source assertions
+      (<code>completed_at_source == "stream_mtime"</code>, <code>worker_seconds_source ==
+      "wall_fallback"</code>, the absence of a measured throughput) are unchanged and remain the
+      property each test pins. <code>tests/test_ledger.py</code> raises the read deadline for its
+      <code>home</code> fixture to a generous <code>240 s</code>
+      (<code>RECKON_MCP_READ_DEADLINE_SECONDS</code>), still under the suite timeout, so a slow
+      mount no longer turns a correct read into an unknown; every assertion on what each view
+      returns is unchanged. No <code>reckon/</code> path was edited; no test was skipped, xfailed,
+      deleted or weakened.</p>
+
+      <h3>Recorded, not repaired</h3>
+      <p>Three ids named for this measure were observed <strong>passing</strong> under load and are
+      left unmodified, so the property each pins is not disturbed:
+      <code>tests/test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row</code>
+      (28 consecutive loaded attempts, no failure),
+      <code>tests/test_crew.py::test_redispatch_does_not_inherit_a_terminal_delivery</code> and
+      <code>tests/test_crew.py::test_complete_clears_a_pointer_when_the_run_is_already_ledgered</code>.
+      The first asserts an observation count (<code>reads["count"] &gt;= 3</code>) whose fixture keyed
+      the harness' terminal append on a read index; it was not observed to collapse, so relaxing it
+      would risk the property rather than protect it. The two <code>test_crew</code> ids have never
+      reproduced a failure under any load instrument tried here, which matches the earlier
+      whole-file finding that the redispatch test is load-sensitive rather than defective.</p>
+
+      <h3>Measure</h3>
+      <p>Three loaded rounds, each one <code>-n 8</code> run of the three repaired files with four
+      concurrent <code>-n 8</code> copies of the same files loading the node; logs
+      <code>logs/verify-round-1.log</code> &hellip; <code>logs/verify-round-3.log</code>.
+      Figure <a href="/reckon/figures/the-suite-is-green-at-head/timing-bounds-base-vs-head.png">the
+      base bound, the observed figure it fell to, and the head bound, per test</a>.</p>
     </section>
   </main>
 </body>

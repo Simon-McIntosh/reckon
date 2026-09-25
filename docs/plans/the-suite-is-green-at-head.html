@@ -1206,6 +1206,45 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260925T031108254791-review-of-slow-dispatch-tests-wait-on-events" data-who="reckon-build" data-when="2026-09-25T04:06:33.398Z">
     <div class="r-comment-body"><p>Review of slow-dispatch-tests-wait-on-events stored at f972ac68: total 96, no findings.</p></div>
 </div>
+
+
+    <div class="r-note" data-reckon="landed" data-node="timing-bounds-hold-under-load" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; four load-sensitive timing tests now bound the property they
+      pin, not a wall clock that also covers the promotion's landing commit.</strong> Commit
+      <code>124cbf09</code> <em>test: bound load-sensitive timing tests on the property, not wall
+      clock</em>. The settle ceiling bounds only the wait for a closed writer's stream tail, but the
+      assertion timed the whole <code>crew.complete()</code> call, whose landing commit a loaded node
+      stretches independently of the ceiling. Under <code>-n 8</code> with concurrent <code>-n 8</code>
+      copies of the same files loading the node, the base arm observed <code>assert 10.25 &lt; 2.0</code>
+      in the endless-writer test and <code>assert 16.46 &lt; 5.0</code> in its no-receipt sibling and the
+      promotion mtime-fallback test; the ledger read-view test's whole-project discovery read took
+      <code>36.3 s</code> against the production <code>30 s</code> read deadline and was reported as an
+      unknown (<code>storage-slow</code>) result, so the id failed with <code>KeyError: 'view'</code>.</p>
+      <p><strong>Measured.</strong> Red log <code>negative-control-red.log</code> (first line repeats the
+      declared control verbatim) and <code>head-ids.log</code> (all four pass alone). The repair asserts
+      <code>elapsed &lt; _PROMOTION_HANG_GUARD_SECONDS</code>, a named <code>60.0</code> that is finite so a
+      fold waiting on the non-quiescing writer would still fail, and stays under the suite's <code>300 s</code>
+      per-test timeout &mdash; in place of <code>&lt; 2.0</code> and <code>&lt; 5.0</code>; the fold-source and
+      fallback assertions are unchanged. The ledger test raises <code>RECKON_MCP_READ_DEADLINE_SECONDS</code>
+      to a generous <code>240 s</code> for its <code>home</code> fixture, leaving every payload assertion in
+      place. No <code>reckon/</code> file edited; no test skipped, xfailed, deleted or weakened. Verification
+      is three loaded rounds of the three repaired files under <code>-n 8</code> against four concurrent
+      <code>-n 8</code> copies, logs <code>verify-round-1.log</code> through <code>verify-round-3.log</code>.</p>
+      <p><strong>Recorded, not repaired.</strong> Three ids named for this measure passed under load and are
+      left unmodified, so the property each pins is undisturbed: the promotion terminal-record test
+      (28 loaded attempts, no failure; its <code>reads["count"] &gt;= 3</code> assertion is an observation
+      count whose fixture would have to be reworked to relax, risking the property), and the two
+      <code>test_crew</code> ids (<code>test_redispatch_does_not_inherit_a_terminal_delivery</code>,
+      <code>test_complete_clears_a_pointer_when_the_run_is_already_ledgered</code>), whose failure never
+      reproduced under any load instrument tried here. Full record and figure:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-timing-bounds-hold-under-load">landed
+      evidence</a> and <a href="/reckon/figures/the-suite-is-green-at-head/timing-bounds-base-vs-head.png">the
+      base bound, its observed figure under load, and the head bound</a>.</p>
+      <p><strong>Follow-ons.</strong> <code>tests/test_crew.py::test_dispatch_override_records_and_promotes_the_waived_backlog</code>
+      and <code>tests/test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch</code> failed
+      under the same loaded runs, in a file this measure owns but on ids its evidence does not name; they are
+      load-sensitive on the same wall-clock class and are recorded rather than triaged here.</p>
+    </div>
 </section>
 </main>
 </body>

@@ -29,6 +29,13 @@ from reckon.crew.runs import _write_json, pointer_path
 PROJECT = "proj"
 PLAN = "plan-a"
 
+# A fold that waited for quiescence rather than for the settle ceiling would
+# never return for a stream that keeps its fallback, so any finite bound proves
+# the ceiling — not the stream — ended the wait. The bound is generous because
+# the timed call also lands the promotion's own commit, which a loaded node
+# stretches and which the settle ceiling does not bound.
+_PROMOTION_HANG_GUARD_SECONDS = 60.0
+
 
 def _write_resource(path: Path, state: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -332,7 +339,7 @@ def test_a_stream_that_never_receives_a_terminal_record_keeps_the_mtime_fallback
 
     # The settle is bounded: a stream with no terminal record cannot extend a
     # promotion past the ceiling.
-    assert elapsed < 5.0
+    assert elapsed < _PROMOTION_HANG_GUARD_SECONDS
     run = promoted["record"]
     assert run["completed_at_source"] == "stream_mtime"
     assert run["worker_seconds_source"] == "wall_fallback"

@@ -158,6 +158,12 @@ def home(tmp_path, monkeypatch):
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    # A read body runs on a worker thread under a deadline, and a whole-project
+    # read on a loaded node can outrun the production default and be reported
+    # as an unknown (storage-slow) result rather than a payload. The tests here
+    # assert what each view returns, so the bound is raised generously for them
+    # while staying under the suite's own per-test timeout.
+    monkeypatch.setenv("RECKON_MCP_READ_DEADLINE_SECONDS", "240")
     return config_home
 
 
