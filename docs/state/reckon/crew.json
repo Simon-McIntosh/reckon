@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T15:12:01",
+  "updated": "2026-09-25T15:13:13",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -440278,6 +440278,522 @@
             ]
           }
         }
+      },
+      {
+        "run_id": "r-20260925T082237222506-placement-steps-run-under-one-reservation",
+        "plan": "a-worker-is-charged-to-a-job",
+        "section": "\u00a73",
+        "node": "placement-steps-run-under-one-reservation",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2825,
+                "cached_input_tokens": 373044,
+                "input_tokens": 375871,
+                "output_tokens": 786,
+                "reasoning_output_tokens": 116,
+                "total_tokens": 376657,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "reckon/crew/placement.py composes the step form with the overlap choice the plan fixes, taking the reservation id from the backend's declared placement rather than from a per-worker allocation; the new test file tests/test_placement_steps_under_reservation.py puts a recording fake scheduler on PATH inside a synthesised config home and asserts the real config home is untouched and that two workers of one placement record one reservation id and one step; the assertion the negative control turns red is that the second worker declares the same reservation id as the first; tests/test_reserve.py and tests/test_crew_lane_agnostic_placement.py add zero failures against the dispatch base.",
+          "estimated_hours": null,
+          "goal": "Make a placeable backend run a worker as a step inside one held reservation rather than minting a reservation per worker.",
+          "id": "placement-steps-run-under-one-reservation",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T08:22:37Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 6,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 0,
+            "mean_context": 78182,
+            "observed_at": "2026-09-25T08:22:31Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082237222506-placement-steps-run-under-one-reservation/manifest.md",
+          "negative_control": "Make apply_backend_placement mint one reservation per worker again, which must redden tests/test_placement_steps_under_reservation.py::test_two_workers_share_one_reservation",
+          "plan": "a-worker-is-charged-to-a-job",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/placement.py",
+            "tests/test_placement_steps_under_reservation.py",
+            "docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html",
+            "docs/figures/a-worker-is-charged-to-a-job",
+            "docs/plans/a-worker-is-charged-to-a-job.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "spend-scout",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T08:22:52Z",
+        "completed_at": "2026-09-25T11:58:31.075Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 12884,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 12939,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "b453d7632ec4d56392caba3b1efde4aa0475b23b",
+        "commits": [
+          "eaeef0313cf56716d91e111532381d0ed89597e5",
+          "b295d0cf16040e2d6eaba612200cf24b09ad53da",
+          "6cc5477966d53cd14d9cc74f380744a4b18e356d"
+        ],
+        "changed_lines": {
+          "added": 522,
+          "removed": 15,
+          "files": 5
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_placement_steps_under_reservation.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082237222506-placement-steps-run-under-one-reservation/gate-steps-explicit.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082237222506-placement-steps-run-under-one-reservation/manifest.md",
+        "scope_changed": false,
+        "session_id": "f946f44b-f4a0-4dd5-bb8b-da60026c57ed",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 18484641,
+            "input_tokens_cumulative": 18484641,
+            "output_tokens": 130757,
+            "output_tokens_cumulative": 130757,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T11:58:31.075Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "complete",
+              "elapsed_seconds": 2748,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:35:46Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T06:51:35Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T064946090143-audit-doc-reports-missing-section-contract",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 17231,
+                "worker_pid": 3793055
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2814,
+              "log_fresh": false,
+              "manifest_commits": [
+                "c84c7323931581c6e9f74caaaeb908ecda2c04d0",
+                "3e20997245bcfe9bf5d3345e71fb6b10b067fdba"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "da0116ab2f78d334e7c76be5f6e90d387f4cad8d21a241e9890bbc978d13a903",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T064946090143-audit-doc-reports-missing-section-contract/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan section-contract-and-computed-impl --section '\u00a72' --role review --spec-level exact --node review-of-audit-doc-reports-missing-section-contract --goal 'attach an independent review to run r-20260925T064946090143-audit-doc-reports-missing-section-contract' --done-when 'the review for r-20260925T064946090143-audit-doc-reports-missing-section-contract stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T064946090143-audit-doc-reports-missing-section-contract.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T064946090143-audit-doc-reports-missing-section-contract.at-3e20997245bcfe9bf5d3345e71fb6b10b067fdba.json --time-budget 60m --session s22-coord --allow-unreconciled-runs --backend clive",
+              "node": "audit-doc-reports-missing-section-contract",
+              "phase": "complete",
+              "plan": "section-contract-and-computed-impl",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T064946090143-audit-doc-reports-missing-section-contract",
+              "session": "s22-coord",
+              "terminal_age_seconds": 2923,
+              "terminal_at": "2026-09-25T07:33:57Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/audit-doc-reports-missing-section-contract"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2700,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "complete",
+              "elapsed_seconds": 2105,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:37:15Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T07:03:49Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T070159296467-death-row-reads-any-final-record",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 14580,
+                "worker_pid": 3837959
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2725,
+              "log_fresh": false,
+              "manifest_commits": [
+                "c5b2e184",
+                "7db40838"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "55ce7e2bd87d8c0129072ad925ccf6e09c7c7bee47516b21f3916ac1f7a1e8a6",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T070159296467-death-row-reads-any-final-record/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-stalled-row-says-whether-the-worker-lives --section '\u00a72' --role review --spec-level exact --node review-of-death-row-reads-any-final-record --goal 'attach an independent review to run r-20260925T070159296467-death-row-reads-any-final-record' --done-when 'the review for r-20260925T070159296467-death-row-reads-any-final-record stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T070159296467-death-row-reads-any-final-record.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T070159296467-death-row-reads-any-final-record.at-7db4083899846e6873bce2092595ebf639951a92.json --time-budget 45m --session s22-coord --allow-unreconciled-runs --backend clive",
+              "node": "death-row-reads-any-final-record",
+              "phase": "complete",
+              "plan": "a-stalled-row-says-whether-the-worker-lives",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T070159296467-death-row-reads-any-final-record",
+              "session": "s22-coord",
+              "terminal_age_seconds": 2802,
+              "terminal_at": "2026-09-25T07:35:59Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/death-row-reads-any-final-record"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: The required zero-added-failures measure is unmet: base failure_count=0, head failure_count=42. Repair requires coordinator-owned companion work and/or scope extension for existing tests.",
+              "effective_phase": "complete",
+              "elapsed_seconds": 805,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T08:00:16Z",
+                "last_record_type": "turn.completed",
+                "launched_at": "2026-09-25T07:47:13Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T074635678902-append-run-writes-one-run-file",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 318,
+                "worker_pid": 4013835
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1346,
+              "log_fresh": false,
+              "manifest_commits": [
+                "8db7ee860f32522b22f2ec3cfea03a56bb985fed",
+                "e7b5051de4b66e29642c2c3bc7a757ae4b6b95ec",
+                "94ff9739134efc7c36bff4478aee3f93c68c60a6"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "97ce1648e0329429f5032a9f5917be01abe5b87b5fb532648bb5e50ad5e9fee7",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T074635678902-append-run-writes-one-run-file/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T074635678902-append-run-writes-one-run-file/manifest.md; resolve the blocker before resuming the run",
+              "node": "append-run-writes-one-run-file",
+              "phase": "complete",
+              "plan": "the-ledger-is-one-file-per-run",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T074635678902-append-run-writes-one-run-file",
+              "session": "s22-coord",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260925T074635678902-append-run-writes-one-run-file",
+                "session_id": "01a0d788-5dfe-7c82-a89c-48ded3441e32",
+                "source": "pointer"
+              },
+              "terminal_age_seconds": 1373,
+              "terminal_at": "2026-09-25T07:59:48Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/append-run-writes-one-run-file"
+            }
+          ]
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 20916424,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 8752.523,
+          "generated_tokens": 159765,
+          "generation_seconds": 8573.253,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.4,
+          "machine_seconds": 179.27,
+          "peak_input_tokens": 164973,
+          "tokens_per_second": 18.64,
+          "wall_tokens_per_second": 18.25
+        },
+        "follow_on_paths": [
+          "tests/test_crew_lane_agnostic_placement.py::test_adding_a_backend_needs_no_placement_code",
+          "/usr/bin/srun",
+          "reckon/host_shims;",
+          "arms-base.log"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T08:38:19Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T08:23:19Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T082237222506-placement-steps-run-under-one-reservation",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 2834,
+          "worker_pid": 4152162
+        },
+        "promoted_revision": "6cc5477966d53cd14d9cc74f380744a4b18e356d",
+        "plan_impl_at_dispatch": 0.9,
+        "impl_move": {
+          "plan": "a-worker-is-charged-to-a-job",
+          "at_dispatch": 0.9,
+          "at_complete": 0.9,
+          "verdict": "waived",
+          "reason": "plan impl already reads 0.9 against stale section declarations; section 3 is now declared done"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_placement_steps_under_reservation.py"
+          ],
+          "declaration": "Make apply_backend_placement mint one reservation per worker again, which must redden tests/test_placement_steps_under_reservation.py::test_two_workers_share_one_reservation",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082237222506-placement-steps-run-under-one-reservation/negative-control-red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082237222506-placement-steps-run-under-one-reservation/negative-control-red.log"
+        },
+        "review_waiver": {
+          "reason": "the review (90) is at b295d0cf; the only later commit, 6cc54779, is a two-line plan-doc correction naming the gate command, with no code change, so the reviewed code is what lands"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T09:22:37.851829+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T08:22:37Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 6,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 0,
+          "mean_context": 78182,
+          "observed_at": "2026-09-25T08:22:31Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 20.0,
+        "orientation_input_tokens": 5983054.0,
+        "store_write": {
+          "status": "written"
+        },
+        "release": {
+          "worktree_released": true,
+          "process_signalled": false,
+          "process_withheld": "process is not alive",
+          "worktree_audit": {
+            "counts": {
+              "dirty": 0,
+              "disposable": 0,
+              "integrated": 0,
+              "live-referenced": 0,
+              "retained-for-resume": 0,
+              "unintegrated": 0
+            },
+            "worktrees": [
+              {
+                "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/placement-steps-run-under-one-reservation",
+                "available": false,
+                "detail": "tree is no longer available"
+              }
+            ]
+          }
+        }
       }
     ],
     "holds": [
@@ -440590,6 +441106,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2849
+    "_version": 2851
   }
 }
