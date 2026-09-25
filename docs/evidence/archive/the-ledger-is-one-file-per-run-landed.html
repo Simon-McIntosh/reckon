@@ -644,27 +644,31 @@ worker's own commit, which `reckon crew recover` reports as the run's next actio
       <table>
         <tr><th>arm</th><th>revision</th><th>result</th><th>failures</th></tr>
         <tr><td>base</td><td><code>f64f60ee</code>, scratch tree via <code>git archive</code>, new test copied in</td><td>4 failed, 155 passed, 127.55 s</td><td>the four refusal cases of the new file</td></tr>
-        <tr><td>head</td><td><code>f64f60ee</code> + the change</td><td>1 failed, 158 passed, 135.05 s</td><td><code>test_complete_manifest_with_changed_paths_and_commit_promotes</code></td></tr>
+        <tr><td>head</td><td><code>f64f60ee</code> + the change, before the fixture repair</td><td>1 failed, 158 passed, 135.05 s</td><td><code>test_complete_manifest_with_changed_paths_and_commit_promotes</code></td></tr>
+        <tr><td>head, repaired</td><td><code>f64f60ee</code> + the change and the repaired fixture</td><td>159 passed, 127.12 s</td><td>none</td></tr>
       </table>
-      <p><strong>The one added failure, and where it is.</strong>
+      <p><strong>The one added failure, and its repair.</strong>
       <code>tests/test_crew_promotion.py::test_complete_manifest_with_changed_paths_and_commit_promotes</code>
-      writes its pointer with <code>base=commit</code> and then cites that same commit, so
-      the fixture records the cited commit as the run's own base. Every sibling case in
-      that file passes the true base to the pointer. It is the state this change exists to
-      refuse, and its file is outside the change's write scope, so it is carried to the
-      coordinator as a follow-on: the fixture's base set to the cited commit's parent, one
-      argument, after which the case exercises the same manifest guard it was written for.
-      No other pre-existing case changed verdict.</p>
+      wrote its pointer with <code>base=commit</code> and then cited that same commit, so
+      the fixture recorded the cited commit as the run's own base. Every sibling case in
+      that file passes the true base to the pointer. It was the state this change exists to
+      refuse. The fixture now records the candidate's parent as the base and cites the
+      candidate, so the case exercises the manifest guard it was written for: its
+      assertions are unchanged, the guard is unchanged, and the case passes. No other
+      pre-existing case changed verdict, and the repaired arm shows <strong>159 passed, 0
+      failed</strong> against the base arm's four failures being the new cases.</p>
       <p><strong>Receipts</strong> under
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T201256753388-promotion-refuses-a-base-commit/</code>:
       <code>logs/cohort-base.log</code>, <code>logs/cohort-head.log</code>,
+      <code>logs/cohort-head-2.log</code> (the repaired arm),
       <code>logs/new-test-first-run.log</code>, <code>logs/negative-control.log</code>,
       and the mutation applied by <code>remove-base-descendant-check.py</code>. Each
       cohort log's header names its revision, tree, command, the module under test as
       imported and the resolved working directory.</p>
-      <p><strong>Boundary.</strong> This section records the change inside its own write
-      scope. The added failure above is outside it and is not repaired here; merged
-      verification, the coordinator's fixture repair and followup closure remain
+      <p><strong>Boundary.</strong> The guard refuses a citation that is the run's base, so the
+      fixture that recorded one was repaired rather than the guard narrowed, and the added
+      failure is gone: the repaired arm is 159 passed, 0 failed against a base arm whose
+      only failures are the new cases. Merged verification and followup closure remain
       coordinator work.</p>
     </section>
   </main>

@@ -287,14 +287,15 @@
         at <code>f64f60ee</code>, the two promotion cases passing on both arms. The
         promotion cohort — twenty files matching <code>tests/test_*promotion*.py</code>
         plus <code>tests/test_refused_promotion_leaves_no_trace.py</code>, 159 tests —
-        moves from 4 failed, 155 passed at <code>f64f60ee</code> to 1 failed, 158 passed at
-        the head: the four base-arm failures are the new cases, and one failure is added,
+        moves from 4 failed, 155 passed at <code>f64f60ee</code> to 159 passed at the head:
+        the four base-arm failures are the new cases, and no failure is added. The one case
+        that failed in between was
         <code>tests/test_crew_promotion.py::test_complete_manifest_with_changed_paths_and_commit_promotes</code>,
-        whose fixture records the commit it cites as the run's own base
+        whose fixture recorded the commit it cites as the run's own base
         (<code>base=commit</code>) where every sibling case in that file passes the true
-        base. That file is outside this change's write scope, so the delta is carried to
-        the coordinator rather than repaired here, and the candidate repair is the
-        fixture's base set to the cited commit's parent.</p>
+        base — the very state the guard refuses. The repair is the fixture's base set to
+        the cited commit's parent, so the case still asserts what it asserted, now over a
+        pointer that records a real base, and the guard is untouched.</p>
         <p>Receipts: <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-refuses-a-base-commit">the anchored evidence</a>
         retains both cohort arms, the header-lined logs and the declared negative control.
         Independent merged verification and followup closure remain coordinator-owned.</p>

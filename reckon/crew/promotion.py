@@ -233,8 +233,7 @@ def _declared_repository_roots(
         except (OSError, KeyError, ValueError):
             manifest = {}
         declared += [
-            str(path)
-            for path in _changed_paths_inside_repository(manifest, record)
+            str(path) for path in _changed_paths_inside_repository(manifest, record)
         ]
     return _repository_scope_paths(
         declared,
@@ -311,9 +310,7 @@ def _require_commits_beyond_base(
     held = [
         path
         for path in uncommitted
-        if any(
-            Path(path) == root or Path(path).is_relative_to(root) for root in roots
-        )
+        if any(Path(path) == root or Path(path).is_relative_to(root) for root in roots)
     ]
     if not held:
         return
