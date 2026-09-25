@@ -1933,6 +1933,90 @@ reading taken as an authority it was not.</p>
       to <code>crew-observability-truth.html</code> can turn red.</p>
   </section>
 
+  <section id="s11-refusal-names-the-roots">
+    <h2 id="s11-refusal-names-the-roots-h">&sect;11 &mdash; the write-scope refusal names the delivery roots it checked</h2>
+    <p>Recorded 2026-09-25 by the node that repaired it, landed under commit
+    <code>27311d59</code>. A role that may not write repository paths is refused when a declared
+    path is not one of its delivery roots, and the refusal said every such path
+    &mdash; including one outside the repository altogether &mdash; resolved inside the
+    repository.</p>
+    <p><strong>The defect, reproduced at base <code>b453d763</code></strong> before the repair, in
+    a scratch tree cut from that revision with the imported module file printed to prove the tree
+    under test was the base one. The declared path is an absolute path under a scratch directory
+    whose name carries the repository's flattened path, which is what made the sentence read
+    plausibly:</p>
+    <pre>inside cwd repo : False
+properties      : ['scoped']
+message         : role 'test' may not write repository paths, but
+                  &lt;scratch&gt;/verification-report.md resolve inside the repository; a
+                  verifier writes only its manifest, report and logs, which live outside it
+                  &mdash; dispatch an implement node for source edits
+asserts repo    : True</pre>
+    <p>The containment test the code elsewhere uses answers <code>False</code> for that path while
+    the message asserts <code>True</code>: the guard refused correctly &mdash; the path is not a
+    delivery root &mdash; and reported a fact it had never checked. The directory name is the only
+    reason the wording did not look wrong at the point of use. Full log:
+    <code>repro/repro-at-base.txt</code> under the run directory named below.</p>
+    <p><strong>After the change</strong>, five cases read from the emitted messages rather than
+    from a constant, in the head arm:</p>
+    <pre>A outside both roots   : ... is outside the repository &lt;root&gt; and outside every delivery
+                         root this role may write (&lt;runs&gt;, &lt;reports&gt;, &lt;manifest&gt;);
+                         declare the path under one of those roots, or dispatch an implement
+                         node when the work changes the worktree
+B inside the repository: ... resolves inside the repository &lt;root&gt;; a verifier writes only
+                         its manifest, report and logs, which live outside it ...
+C relative path        : ... resolves inside the repository &lt;root&gt; ...   (by construction)
+D delivery roots only  : (clean)
+E implement role       : (clean)</pre>
+    <table>
+      <thead><tr><th>Branch of the classification</th><th>Refusal</th></tr></thead>
+      <tbody>
+        <tr><td>admitted by a delivery root</td><td>none &mdash; the three roots are what this
+          role may write</td></tr>
+        <tr><td>inside the repository</td><td>the sentence that was already correct, now naming
+          the root it was checked against</td></tr>
+        <tr><td>outside the repository and outside every delivery root</td><td>names the three
+          roots and the correction they allow; <strong>this</strong> is the branch the base
+          reported with the row above's sentence</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/write-scope-refusal-classification.svg"
+           alt="Three branches for a declared write path: admitted by a delivery root; inside the repository, refused as resolving inside it; outside both, refused with the enumerated delivery roots named and the correction of declaring the path under one of them. The base emitted the middle branch's sentence for the right-hand branch too."
+           style="max-width:760px;width:100%">
+      <figcaption>The two refused branches call for opposite corrections, which is why one
+      sentence could not serve both, and why the base's sentence for the right-hand branch sent
+      its reader looking for source edits for a report path.</figcaption>
+    </figure>
+    <p><strong>Measure:</strong> both arms run the two regression files the change can reach
+    (<code>tests/test_role_write_scope.py</code>,
+    <code>tests/test_launch_plan_fences_the_home.py</code>) in a scratch tree cut from the
+    revision under test, each printing the module file it imported so a tree falling through to
+    the main checkout cannot read as the arm it names: <strong>23 passed</strong> at base
+    <code>b453d763</code> and <strong>23 passed</strong> at commit <code>27311d59</code>, exit 0
+    at both, <strong>zero added failures</strong>. The wider cohort including the new file
+    (<code>tests/test_role_write_scope_wording.py</code>) is <strong>41 passed</strong> across
+    four files. The new file synthesises a repository and a role home and asserts both that the
+    real config home is untouched and that the injected roots are the ones the messages name, so
+    a home that silently stopped being honoured cannot pass it.</p>
+    <p><strong>Negative control, executed:</strong> restoring the single sentence &mdash;
+    classifying every declared path that is not a delivery root as a repository path, which is
+    exactly the recorded defect &mdash; reddens
+    <code>test_a_path_outside_the_repository_names_the_roots_checked</code> at its first
+    assertion, the one requiring the enumerated roots in the outside-both message, and the
+    mutation is asserted applied and asserted to be what the test process imported, with the
+    source restored byte-for-byte afterwards (sha256 checked). The red log's first line is the
+    declared mutation, verbatim.</p>
+    <p><strong>Leaves behind:</strong> whether the merged result holds, which belongs to a
+    separately dispatched verification node; the section's status and its driving followup,
+    which the coordinator closes rather than this node. Evidence on disk, all under
+    <code>~/.config/reckon/crew/runs/r-20260925T082220783770-refusal-names-the-roots-it-checked/</code>:
+    <code>repro/repro-at-base.txt</code> and <code>repro/cases-after-fix.txt</code> (the two
+    quoted runs), <code>gate-base-head-arms.txt</code> (both arms with revisions and imported
+    module files), <code>gate-regression-2.txt</code> (the four-file cohort), and
+    <code>negative-control-1.log</code> (the declared mutation and the reddening).</p>
+  </section>
+
 </main>
 </body>
 </html>

@@ -544,6 +544,75 @@
       declaring a path outside both the repository and the delivery roots and requiring the
       first wording, and a path inside the repository and requiring the second.
     </p>
+    <p>
+      <strong>Landed 2026-09-25.</strong> The defect was reproduced before it was repaired, in a
+      scratch tree cut from the dispatch base: a declared path under a scratch directory is
+      <em>not</em> inside the repository (<code>inside cwd repo : False</code>) while the refusal
+      asserts the opposite (<code>asserts repo : True</code>).
+    </p>
+    <p>
+      The refusal is now composed from the check that was made rather than from a conclusion
+      about the path. <code>write_scope_refusal</code> in <code>reckon/crew/node.py</code>
+      classifies every declared path as admitted by a delivery root, inside the repository, or
+      outside both, and each refused class carries its own clause: a path inside the repository
+      still reads <em>resolves inside the repository &lt;root&gt;</em>, and a path outside both
+      reads <em>is outside the repository &lt;root&gt; and outside every delivery root this role
+      may write</em>, with the roots enumerated &mdash; the run directory, the reports directory
+      and the node's own manifest &mdash; followed by the correction they allow. A declaration
+      mixing the two classes carries both clauses rather than being collapsed onto whichever
+      check ran first. The repository a path is judged against comes from the dispatch's own
+      working directory through <code>repository_identity</code>, which collapses a linked
+      worktree onto the repository it was cut from, so two spellings of one repository cannot
+      read as two.
+    </p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/write-scope-refusal-classification.svg"
+           alt="Three branches for a declared write path: admitted by a delivery root; inside the repository, refused as resolving inside it; outside both, refused with the enumerated delivery roots named and the correction of declaring the path under one of them. The base emitted the middle branch's sentence for the right-hand branch too."
+           style="max-width:760px;width:100%">
+      <figcaption>The two refused branches call for opposite corrections, which is why one
+      sentence could not serve both. The figure is the classification the refusal now reports;
+      the table below is what a caller actually reads.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Declared path</th><th>Refusal before</th><th>Refusal after</th></tr></thead>
+      <tbody>
+        <tr><td>inside the repository</td>
+          <td rowspan="2"><code>role 'test' may not write repository paths, but
+            &lt;path&gt; resolve inside the repository; a verifier writes only its manifest,
+            report and logs, which live outside it &mdash; dispatch an implement node for source
+            edits</code> &mdash; one sentence for both rows, so the two cases were
+            indistinguishable</td>
+          <td><code>&lt;path&gt; resolves inside the repository &lt;root&gt;</code>, unchanged,
+            and the root it was checked against is now named in it</td></tr>
+        <tr><td>outside the repository <em>and</em> outside every delivery root</td>
+          <td><code>&lt;path&gt; is outside the repository &lt;root&gt; and outside every
+            delivery root this role may write (&lt;runs&gt;, &lt;reports&gt;,
+            &lt;manifest&gt;); declare the path under one of those roots, or dispatch an
+            implement node when the work changes the worktree</code></td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Measure.</strong> Both arms run the two regression files this change can reach
+      (<code>tests/test_role_write_scope.py</code>,
+      <code>tests/test_launch_plan_fences_the_home.py</code>) in a scratch tree cut from the
+      revision under test, each printing the module file it imported so a tree falling through
+      to the main checkout cannot read as the arm it names: <strong>23 passed</strong> at base
+      <code>b453d763</code> and <strong>23 passed</strong> at the commit, exit 0 at both, zero
+      added failures. The wider cohort including the new file is 41 passed. The new check drives
+      both cases through <code>validate_node</code> and <code>plan_dispatch</code> and reads the
+      wording out of the emitted message rather than a constant, and a synthesised repository
+      plus a synthesised role home are asserted untouched against the real config home. The
+      declared negative control &mdash; restoring the single sentence &mdash; reddens
+      <code>test_a_path_outside_the_repository_names_the_roots_checked</code> at its first
+      assertion, the one requiring the enumerated roots, with the source restored byte-for-byte
+      afterwards. Landed under commit <code>27311d59</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#s11-refusal-names-the-roots">&#167;11 landed</a>.
+    </p>
+    <p>
+      <strong>Leaves behind.</strong> Whether the merged result holds belongs to a separately
+      dispatched verification node, and the section's status and driving followup are closed by
+      the coordinator rather than by this node.
+    </p>
 
     <h2 id="s12">&#167;12 &mdash; Two fields on one manifest line disarm the guard that reads them</h2>
     <p>
