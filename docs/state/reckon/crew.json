@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T11:23:08",
+  "updated": "2026-09-25T11:30:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -413441,6 +413441,301 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T062456932626-headless-tabs-survive-attach",
+        "plan": "a-dispatch-returns-without-its-worker",
+        "section": "\u00a710",
+        "node": "headless-tabs-survive-attach",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2667,
+                "cached_input_tokens": 838658,
+                "input_tokens": 841327,
+                "output_tokens": 1872,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 843199,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "In reckon/crew/fleet_supervisor.py, the session verb creates the session with attach --create-background and its layout as today, then attaches a short-lived client on a pty of fixed size (200 columns by 50 rows, set with TIOCSWINSZ) while the layout's tabs are created, and detaches it once zellij reports every tab. This is the workaround from zellij-org/zellij#5594, commented in the code as removable once a release carries PR #5612. tests/test_fleet_supervisor.py drives a stub zellij recording its invocations, and asserts the sized client attaches after the background create and before the tab-count check completes, then detaches; a session line still returns only after the tabs exist. The declared negative control is executed and logged: with the sized-client attach removed, that ordering assertion fails. An on-node check with the real ~/.local/bin/zellij 0.45.1 is logged at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/headless-tabs-survive-attach/on-node.log. It creates one throwaway session headless with a four-tab layout through the verb, named s21-headless-probe followed by the checking process's own pid, attaches a second client for 5 s under timeout, then asserts that the session's zellij log carries no 'Not enough room for panes' or 'failed to attach client' line and that 'zellij action query-tab-names' lists four tabs. It then removes only that one session with 'zellij delete-session --force' given its exact name, and logs that removal. tests/test_fleet_supervisor.py passes in full. No other file changes.",
+          "estimated_hours": null,
+          "goal": "A fleet session created headless keeps every layout tab when its first client attaches",
+          "id": "headless-tabs-survive-attach",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T06:24:57Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 19,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 16,
+            "mean_context": 88000,
+            "observed_at": "2026-09-25T06:24:38Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062456932626-headless-tabs-survive-attach/manifest.md",
+          "negative_control": "remove the sized-client attach from the session verb; the ordering assertion must fail",
+          "plan": "a-dispatch-returns-without-its-worker",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a710",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/fleet_supervisor.py",
+            "tests/test_fleet_supervisor.py",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/headless-tabs-survive-attach",
+            "docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html",
+            "docs/figures/a-dispatch-returns-without-its-worker",
+            "docs/plans/a-dispatch-returns-without-its-worker.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "watcher-unit",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T06:25:06Z",
+        "completed_at": "2026-09-25T08:20:04.641Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 6792,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6898,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "0260fc7bbe6193ef5a42afd1d6b74bced266ece7",
+        "commits": [
+          "6494baff73bd78fc174b5a3ce8c99bcc1b676440",
+          "4f7dacd214918953c2bdbd596acd52f1ad889536",
+          "ce399498b4021f7cf33bb5a8cfe3388ec49d2b6f"
+        ],
+        "changed_lines": {
+          "added": 604,
+          "removed": 6,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_supervisor.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062456932626-headless-tabs-survive-attach/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062456932626-headless-tabs-survive-attach/manifest.md",
+        "scope_changed": false,
+        "session_id": "31617d88-a4d8-437c-9031-e5bba8c2ee5a",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 10209889,
+            "input_tokens_cumulative": 10209889,
+            "output_tokens": 42861,
+            "output_tokens_cumulative": 42861,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T08:20:04.641Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 16,
+            "fit": 18,
+            "goal_fidelity": 18,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 90
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 22309283,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1909.823,
+          "generated_tokens": 146904,
+          "generation_seconds": 1831.287,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 78.536,
+          "peak_input_tokens": 166666,
+          "tokens_per_second": 80.22,
+          "wall_tokens_per_second": 76.92
+        },
+        "follow_on_paths": [
+          "zellij-org/zellij#5612).",
+          "0.45.1"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/headless-tabs-survive-attach",
+          "session_id": "31617d88-a4d8-437c-9031-e5bba8c2ee5a",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T08:20:04.641Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T07:08:56Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T06:26:44Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T062456932626-headless-tabs-survive-attach",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 14569,
+          "worker_pid": 3671113
+        },
+        "promoted_revision": "ce399498b4021f7cf33bb5a8cfe3388ec49d2b6f",
+        "plan_impl_at_dispatch": 0.56,
+        "impl_move": {
+          "plan": "a-dispatch-returns-without-its-worker",
+          "at_dispatch": 0.56,
+          "at_complete": 0.62,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_fleet_supervisor.py"
+          ],
+          "declaration": "remove the sized-client attach from the session verb; the ordering assertion must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/headless-tabs-survive-attach/negative_control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/headless-tabs-survive-attach/negative_control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T07:24:57.666338+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T06:24:57Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 19,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 16,
+          "mean_context": 88000,
+          "observed_at": "2026-09-25T06:24:38Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 107.0,
+        "orientation_input_tokens": 1939667.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -413753,6 +414048,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2760
+    "_version": 2761
   }
 }
