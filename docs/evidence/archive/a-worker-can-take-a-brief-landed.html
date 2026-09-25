@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Cumulative execution evidence: one anchor per landed node, carrying its commit, gate measure, tests and negative findings.">
   <meta name="plan-evidence-for" content="a-worker-can-take-a-brief">
   <meta name="plan-verifies" content="a-worker-can-take-a-brief#s3">
-  <meta name="plan-commits" content="488d3e92">
+  <meta name="plan-commits" content="488d3e92,e4d70125">
   <meta name="plan-artifacts" content="reckon/crew/prompts.py,tests/test_brief_prompt.py,docs/figures/a-worker-can-take-a-brief/prompt_slots_by_carrier.png">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="passed">
@@ -83,6 +83,22 @@
         <strong>Scope of this measure.</strong> The gate measures this node's own change only.
         Verifying the merged result belongs to a separately dispatched test node; a failure
         outside the declared scope is reported as a follow-on rather than triaged here.
+      </p>
+      <h3>Correction &mdash; the record's directory is not committed</h3>
+      <p>
+        Independent review found the first brief landing contract untrue. It sent the record to
+        this run's own directory and then said both go into the final commit, but that directory is
+        <code>crew_home()/runs/&lt;run_id&gt;</code>, which lies outside the worktree, so git
+        refuses a path under it with <em>outside repository</em> (exit 128). The instruction named
+        an act the worker cannot perform. Commit <code>e4d70125</code> rewrites the contract to
+        state where the record goes, that the directory is never committed, that the node commits
+        only the repository files it changes, and that the manifest carries the record's absolute
+        path. Two tests hold the correction: one asserts the brief prompt carries no instruction to
+        commit the run-directory record, one asserts the contract names the run directory as the
+        record's home and says it is not committed. The figure convention and the meta-line ban are
+        unchanged, the plan contract is untouched and the plan prompt stays byte-identical, and the
+        declared mutation &mdash; restoring the commit instruction to the brief contract &mdash;
+        fails both new tests at exit 1.
       </p>
     </section>
   </main>

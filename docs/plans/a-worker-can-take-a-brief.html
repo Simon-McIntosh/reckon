@@ -115,6 +115,16 @@
       This gate measures this node's own change; verifying the merged result belongs to a
       separately dispatched test node.
     </p>
+    <p>
+      <strong>Correction.</strong> Independent review found the first brief landing contract
+      untrue: it sent the record to this run's own directory and then said both go into the final
+      commit, but that directory lies outside the worktree and git refuses a path under it.
+      Commit <code>e4d70125</code> states where the record goes, that it is never committed, that
+      the node commits only the repository files it changes, and that the manifest carries the
+      record's absolute path; the figure convention, the meta-line ban and the plan contract are
+      untouched. The gate now passes <strong>13</strong> tests at exit 0, and the declared
+      mutation &mdash; restoring the commit instruction &mdash; fails both new tests at exit 1.
+    </p>
 
     <h2 id="s4">&sect;4 &mdash; Promotion records a brief run's owner</h2>
     <p><code>reckon/crew/promotion.py</code> promotes a brief run with <code>plan: null</code> and the brief digest on its ledger row, and skips the impl-move guard. An implement-role brief run is refused unless <code>--plan-link</code> or <code>--unplanned-reason</code> is given. The refusal names both discharges.</p>
