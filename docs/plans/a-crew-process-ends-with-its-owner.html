@@ -316,8 +316,12 @@
       red. Failed and blocked promotions retain the tree but still signal a live terminal
       writer and include <code>worktree_audit</code>; the no-terminal-manifest control stays
       alive. The repaired gate is 4 passed, while the reviewed base is 3 failed and 1 passed.
-      Three legacy assertions in <code>tests/test_crew_promotion.py</code> still expect the
-      superseded retention policy and remain a coordinator follow-on outside this node's scope.</p>
+      The three legacy assertions in <code>tests/test_crew_promotion.py</code> were updated to
+      preserve their intent under the new rule: integrated complete work is released,
+      unintegrated work remains for its own artifact reason, and incomplete session work remains
+      resumable. The peer-population audit now uses an incomplete manifest and still proves that
+      promotion inspects only its own worktree. All promotion files pass: 59 at head versus 54
+      at base, with zero added failures.</p>
     </div>
 
     <h2 id="s5">&sect;5 &mdash; Every storage read has a deadline</h2>

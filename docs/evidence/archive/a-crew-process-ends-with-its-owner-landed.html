@@ -268,8 +268,12 @@
       writer and recording <code>worktree_audit</code>. A no-terminal-manifest control keeps
       the writer alive, confirming that the signal remains guarded by terminal evidence.
       The three existing session-retention assertions in
-      <code>tests/test_crew_promotion.py</code> still encode the superseded unconditional
-      retention policy and are reported as an out-of-scope follow-on.</p>
+      <code>tests/test_crew_promotion.py</code> now encode the superseded policy correctly:
+      integrated complete work is released, unintegrated work is retained for its artifact
+      reason, and an incomplete session retains the tree for resume. The peer-population audit
+      uses an incomplete manifest so it continues to measure only its own worktree. The full
+      promotion set is <strong>59 passed</strong> at the committed head versus
+      <strong>54 passed</strong> on the reviewed base, with zero added failures.</p>
     </section>
   </main>
 </body>
