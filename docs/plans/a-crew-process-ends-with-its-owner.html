@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="73">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="74">
+<meta name="plan-impl" content="0.55">
 </head>
 <body>
   <main class="plan-doc">
@@ -853,10 +853,11 @@
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
     <p class="r-fu-outcome">Landed at merge 6cfbe2c7 (commits ce1f6281, 9e1cc40e). crew resume and crew redispatch now launch through the per-run supervisor on every lane, so the pointer pid names the supervisor, and worker.json and exit.json describe the current attempt through attempt-numbered receipts keyed by attempt_started_at (the same field the worker Stop hook reads). The review scored 92 with no findings. The merge conflicted with main's widened exit handler. The coordinator kept main's CrewError catch and used the per-attempt writer, and verify-gate re-runs the gate at the merged head.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-stall-clock-starts-at-the-attempt" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25T17:15:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-stall-clock-starts-at-the-attempt" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-25T17:15:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="2026-09-25T20:29:22+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A resumed run&#x27;s stall clock starts at its attempt, not its previous stream</h4>
     <div class="r-fu-body"><p>Two false rows today, both on live processes, are the last flicker class the producer fix did not cover. At 17:13:26 lane-readers-share-the-gate-aware-headroom went <code>complete → stalled</code> with "stream quiet for 1919s", 27 s after <code>crew resume</code> had started a new attempt whose log was 1 s old. The stall rule measured quiet time from the previous attempt's last stream record. At 17:13:07 review-of-fenced-resume-reaches-its-harness went <code>working → unwritten</code> 8 minutes into a live run, and returned to working 38 s later. Now that every attempt writes <code>attempt_started_at</code>, a stall or unwritten verdict should measure from <code>max(last stream record, attempt_started_at)</code>, so a fresh attempt cannot inherit its predecessor's silence. The done-when should include a resumed-run case in which the old stream is older than the stall threshold and the run must classify working.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
+    <p class="r-fu-outcome">Landed at merge 97924aa8 (commits 40102f8b, 299dac8a). The stall verdict measures quiet time from the later of the last stream record and the current attempt's attempt_started_at, so a resumed or redispatched run no longer reads stalled on its predecessor's silence. The review scored 92; its one finding was a miscounted pre-existing lint figure in the manifest (8, not 9). The unwritten flicker at 17:13 was a separate transient, and it did not recur on runs launched after the producer fix.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
