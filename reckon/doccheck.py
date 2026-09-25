@@ -1305,8 +1305,9 @@ def _collect_corpus(
     from reckon.resources import INFRA_DIRS, NON_RESOURCE_FILES
 
     del project
-    for html_file in sorted(docs_dir.rglob("*.html")):
-        relative = html_file.relative_to(docs_dir)
+    docs_root = docs_dir.resolve()
+    for html_file in sorted(docs_root.rglob("*.html")):
+        relative = html_file.relative_to(docs_root)
         if html_file.name in NON_RESOURCE_FILES or any(
             part in INFRA_DIRS for part in relative.parts[:-1]
         ):
@@ -1482,7 +1483,9 @@ def audit_links(
 
         # (g) Check <a href> internal links.
         for href in record["hrefs"]:
-            target, anchor = _resolve_href(href, path, docs_dir, proj, slug_to_file)
+            target, anchor = _resolve_href(
+                href, path.resolve(), docs_dir.resolve(), proj, slug_to_file
+            )
             if target is None:
                 continue  # external or infra — skip
             if target is False:

@@ -108,3 +108,30 @@ def test_returned_plan_is_isolated_from_the_memo(tmp_path: Path) -> None:
     second = parse_plan(path)
     assert second["slug"] == "target"
     assert second["followups"] == []
+
+
+def test_relative_corpus_resolves_absolute_anchor_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    docs_dir = tmp_path / "docs"
+    source = docs_dir / "plans" / "source.html"
+    target = docs_dir / "evidence" / "archive" / "target.html"
+    source.parent.mkdir(parents=True)
+    target.parent.mkdir(parents=True)
+    source.write_text(
+        _plan("source").replace(
+            "</body>",
+            '<a href="/proj/evidence/archive/target#result">result</a></body>',
+        ),
+        encoding="utf-8",
+    )
+    target.write_text(
+        _plan("target").replace('<h1 id="top">', '<h1 id="result">'),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    assert (
+        audit_links([Path("docs/plans/source.html")], Path("docs"), project="proj")
+        == {}
+    )
