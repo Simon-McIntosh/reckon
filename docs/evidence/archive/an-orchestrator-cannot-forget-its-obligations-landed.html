@@ -153,6 +153,35 @@
           <tr><td>head</td><td><code>f97cd292</code></td><td>&#8212;</td><td><code>recovery.classify_pointer</code></td><td>1 failed, 1 passed, exit 1</td></tr>
         </tbody>
       </table>
+
+    <section id="hook-installer-prints-before-it-writes">
+      <h2>The installer prints by default and merges only on request</h2>
+      <p>Commit <code>fbf1bca147dc2c3bfc924cbcfb98d9f8df8d1997</code> adds <code>reckon/hooks/install.py</code> and <code>tests/test_hook_installer.py</code>. The module builds the settings fragment that binds <code>reckon/hooks/coordinator_obligations.py</code> under <code>UserPromptSubmit</code> and <code>SessionStart</code> in prompt mode and under <code>Stop</code> in stop mode. Its default call prints the fragment as JSON and returns it without opening the settings file; only an explicit write merges it, into the path the caller names and into the user-scope settings file when the caller names none.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/hook-install-default-and-write.svg" alt="The default call prints the fragment and opens no file; the write call refuses a duplicate command, merges while preserving existing keys, and composes the replacement beside the target.">
+        <figcaption>One call, two paths, and the receipt each one leaves behind.</figcaption>
+      </figure>
+      <p>The merge keeps every other key and every existing hook group, and refuses when a command it would add is already present anywhere in the target's hooks, naming the event and the command it found. The refusal is raised before the document is written, so it leaves the file byte-identical. The write itself is atomic: the document is composed inside the target's directory and moved into place, and a settings file that changed between the read and the write is not overwritten.</p>
+      <table>
+        <thead><tr><th>Case</th><th>Observed</th></tr></thead>
+        <tbody>
+          <tr><td>Dry run over a file that exists</td><td>Printed the fragment, not a merged document; the file kept its bytes and its mtime.</td></tr>
+          <tr><td>Dry run over a file its owner cannot read</td><td>Still printed: the default call opens nothing at all, so a mode-000 settings file changes nothing.</td></tr>
+          <tr><td>Write merge</td><td>Three entries appended; a pre-existing <code>PreToolUse</code> guard, a pre-existing <code>Stop</code> command, and unrelated keys (<code>model</code>, <code>permissions</code>) all survived, in the returned document and on disk.</td></tr>
+          <tr><td>Second write</td><td>Refused, naming <code>UserPromptSubmit</code> and the command already carrying it; the file was unchanged after the refusal.</td></tr>
+          <tr><td>Real user settings file</td><td>mtime, size and digest identical before and after the run: <code>1790169285 4965 6bafa8d7&#8230;</code> at both ends.</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Hook test files at the dispatch base</td><td>33 passed, 0 failed</td><td>Base log, scratch tree at <code>d8f13a61</code>; the log records the imported module resolving inside that tree.</td></tr>
+          <tr><td>Hook test files at the worktree head</td><td>43 passed, 0 failed</td><td>After log; the same four files plus the installer's ten tests. Added failures: 0.</td></tr>
+          <tr><td>Declared mutation: the default call writes instead of printing</td><td>failed as required</td><td>3 failed, 7 passed, the byte-identical dry-run case among the failures. Run in a scratch mutant tree with an isolated home; the log's first line is the declared mutation verbatim.</td></tr>
+          <tr><td><code>ruff check</code> and <code>ruff format --check</code></td><td>passed</td><td>No findings in the module or its test file.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Scope retained:</strong> the CLI verb that calls this module is another node's, and independent verification at the merged head remains coordinator-owned.</p>
     </section>
   </main>
 </body>
