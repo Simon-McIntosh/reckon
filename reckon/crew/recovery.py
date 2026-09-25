@@ -2863,36 +2863,108 @@ def _run_chain_manifest_freshness(record: Mapping[str, Any]) -> tuple[bool, bool
     return _manifest_freshness(chain_record)
 
 
+# The run directory's account of how a worker's process ended, written by the
+# per-run supervisor in :mod:`reckon.crew.dispatch`. The supervisor is the only
+# process holding the worker's parentage, so this file is where an exit is
+# recorded even when the pointer is never updated again — and unlike a pid it
+# stays meaningful on a machine that never launched the worker.
+EXIT_RECORD_NAME = "exit.json"
+
+
+def _run_exit_record(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The supervisor's exit record for a run, or None when there is none.
+
+    Read verbatim and defensively: a file that cannot be read or parsed, or
+    that names a different run, is absent rather than an error, so a damaged
+    record classifies a run on its other evidence instead of refusing it.
+    """
+    run_id = str(record.get("run_id") or "")
+    try:
+        payload = json.loads(
+            (_run_directory(record) / EXIT_RECORD_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    recorded = str(payload.get("run_id") or "")
+    if run_id and recorded and recorded != run_id:
+        return None
+    return dict(payload)
+
+
+def _exit_record_end_phrase(exit_record: Mapping[str, Any]) -> str:
+    """How the recorded process ended, in the record's own terms."""
+    if exit_record.get("signal") is not None:
+        name = exit_record.get("signal_name") or f"signal {exit_record['signal']}"
+        return f"ended by {name}"
+    exit_code = exit_record.get("exit_code")
+    if exit_code is None:
+        return "ended with no wait status recorded"
+    return f"exited with code {exit_code}"
+
+
+def _exit_record_is_launch_failure(exit_record: Mapping[str, Any]) -> bool:
+    """Whether the record itself says the launch never reached a model."""
+    if str(exit_record.get("ended_during") or "") == "launch":
+        return True
+    try:
+        return int(exit_record.get("stream_records_seen")) == 0
+    except (TypeError, ValueError):
+        return False
+
+
 def _interruption_evidence(
-    record: Mapping[str, Any], *, phase: str, process_alive: bool | None
+    record: Mapping[str, Any],
+    *,
+    phase: str,
+    process_alive: bool | None,
+    exit_record: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any] | None, int]:
     """Return why unfinished work stopped involuntarily, plus retained commits.
 
-    A launcher's wait status is direct evidence that a signal ended the worker.
-    Where no exit was recorded, death alone is ambiguous: an orphaned pointer
-    already records that no terminal event arrived, while commits beyond the
-    dispatch base prove an apparently working run left recoverable work behind.
-    A deliberate stop or a recorded completion/promotion always outranks either
-    inference.
+    A recorded wait status or exit record is direct evidence that a signal
+    ended the worker. Where no exit was recorded, death alone is ambiguous: an
+    orphaned pointer already records that no terminal event arrived, while
+    commits beyond the dispatch base prove an apparently working run left
+    recoverable work behind. A deliberate stop or a recorded
+    completion/promotion always outranks either inference, and a recorded exit
+    outranks the death inferences: it is the end itself rather than a reading
+    of a vanished pid, so a run that chose its exit is not an interruption.
     """
     if phase in {"complete", "promoted", "stopped"} or record.get("promoted_at"):
         return None, 0
 
+    signal_number = None
+    signal_name = None
+    signal_exit_code = None
     wait_status = record.get("wait_status")
     if isinstance(wait_status, Mapping) and wait_status.get("signal") is not None:
         signal_number = wait_status.get("signal")
         signal_name = str(wait_status.get("signal_name") or f"signal {signal_number}")
+        signal_exit_code = wait_status.get("exit_code")
+    elif exit_record is not None and exit_record.get("signal") is not None:
+        # The pointer carries no wait status: that field is written by the
+        # launcher holding the wait, and a supervisor-launched worker's exit
+        # lands in the run directory instead. Same fact, recorded by the
+        # process that collected it.
+        signal_number = exit_record.get("signal")
+        signal_name = str(exit_record.get("signal_name") or f"signal {signal_number}")
+        signal_exit_code = exit_record.get("exit_code")
+    if signal_number is not None:
         return (
             {
                 "reason": "signal",
                 "signal": signal_number,
                 "signal_name": signal_name,
-                "exit_code": wait_status.get("exit_code"),
+                "exit_code": signal_exit_code,
             },
             0,
         )
 
     if process_alive is not False:
+        return None, 0
+    if exit_record is not None:
         return None, 0
     if phase == "orphaned":
         return (
@@ -3012,6 +3084,18 @@ def classify_pointer(
     else:
         alive = stored_alive
         liveness_proven = False
+    # The run's own supervisor records the worker's exit in the run directory,
+    # and that account survives a pointer nobody updates and a pid no machine
+    # but the launching one can look up. It is consulted only where the process
+    # table has not answered that the worker is still there, because a resumed
+    # attempt reuses the run directory and the record an earlier attempt left
+    # behind must not call the new worker dead. Where the pid cannot answer, the
+    # record is the proof of the end that a bare pid never was, so the run stops
+    # being inferred dead from a missing process and is read from its record.
+    exit_record = _run_exit_record(record)
+    ended_exit = exit_record if exit_record is not None and alive is not True else None
+    if ended_exit is not None:
+        alive = False
     # The liveliest stream the run has, taken through the shared reader, so a
     # resumed or lane-changed run is aged against what it is writing now rather
     # than the first file the pointer named. Absent a non-empty stream the
@@ -3138,7 +3222,7 @@ def classify_pointer(
     interruption_commits = 0
     if manifest_status not in TERMINAL_MANIFEST_STATUSES:
         interruption, interruption_commits = _interruption_evidence(
-            record, phase=phase, process_alive=alive
+            record, phase=phase, process_alive=alive, exit_record=ended_exit
         )
         commits_beyond_base = interruption_commits
     review: dict[str, Any] | None = None
@@ -3615,22 +3699,34 @@ def classify_pointer(
                 "evidence of death"
             )
         action = f"reckon crew observe --run {run_id}"
-    elif phase == "launch-failed":
+    elif phase == "launch-failed" or (
+        ended_exit is not None and _exit_record_is_launch_failure(ended_exit)
+    ):
         # A launch that never wrote a stream record reached no model, so this
         # is an infrastructure fault rather than a worker turn. It sits on its
         # own state so a reader sees it apart from a working run, and the lift
-        # refuses it until a person acts.
+        # refuses it until a person acts. The exit record decides this from the
+        # run directory, so a run whose pointer never reached the launch-failed
+        # phase is read the same way as one the launcher labelled.
         failures = list(record.get("launch_failures") or ())
         latest = failures[-1] if failures else {}
         tail = str(latest.get("stderr_tail") or "").strip().splitlines()
         cause = tail[-1] if tail else "the process exited before any turn"
         classification = "launch-failed"
-        detail = (
-            f"the launch for backend {latest.get('backend') or record.get('backend')!r} "
-            f"exited with status {latest.get('exit_status')} before writing any "
-            f"stream record ({cause}); {len(failures)} launch failure"
-            f"{'s' if len(failures) != 1 else ''} recorded; no model was reached"
-        )
+        if failures:
+            detail = (
+                f"the launch for backend "
+                f"{latest.get('backend') or record.get('backend')!r} "
+                f"exited with status {latest.get('exit_status')} before writing any "
+                f"stream record ({cause}); {len(failures)} launch failure"
+                f"{'s' if len(failures) != 1 else ''} recorded; no model was reached"
+            )
+        else:
+            detail = (
+                f"the launch for backend {record.get('backend')!r} "
+                f"{_exit_record_end_phrase(ended_exit)} before writing any "
+                f"stream record ({cause}); no model was reached"
+            )
         action = (
             f"fix the command and PATH for backend "
             f"{latest.get('backend') or record.get('backend')!r}, then resume "
@@ -3649,10 +3745,20 @@ def classify_pointer(
         # point and never falls here, because a dead process says nothing about
         # what the run delivered before it died.
         classification = "abandoned"
-        detail = (
-            "the process is gone without a complete manifest; nothing is eligible "
-            "for promotion"
-        )
+        if ended_exit is not None:
+            # The end is recorded rather than inferred from a vanished pid, so
+            # the row states how the process ended and when, and the reader is
+            # not left to reconstruct it from a launch log.
+            detail = (
+                f"the worker process {_exit_record_end_phrase(ended_exit)} "
+                f"(recorded at {ended_exit.get('exited_at') or 'an unrecorded moment'}) "
+                "without a complete manifest; nothing is eligible for promotion"
+            )
+        else:
+            detail = (
+                "the process is gone without a complete manifest; nothing is eligible "
+                "for promotion"
+            )
         action = (
             f"read launch log {record.get('stderr_path')}; the worktree at "
             f"{record.get('worktree')} is left in place for review and is never "
@@ -3773,6 +3879,12 @@ def classify_pointer(
             INTERRUPTED_RUN_PHASE if classification == INTERRUPTED_RUN_PHASE else phase
         ),
         "interruption": interruption,
+        # The run directory's own account of the worker's exit, when it was
+        # consulted: carried whole so a reader sees the receipt — signal, exit
+        # code, whether a model was reached, and when the supervisor wrote it —
+        # rather than a verdict with no record behind it. None when no record
+        # exists or a live process outranked it.
+        "exit_record": ended_exit,
         "process_alive": alive,
         # False when the stored answer was carried because the launching host
         # could not be shown to be this host, or there is no pid to ask about.

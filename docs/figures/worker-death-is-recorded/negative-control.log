@@ -1,0 +1,32 @@
+make recovery ignore exit.json so classification falls back to pid inference; tests/test_recovery_reads_the_exit_record.py must fail on all three cases
+revision=2bf6587bebc9b23363b3ef7e4a1be3c025c584d3 + node edits + the declared mutation (recovery.py: ended_exit forced to None, so the exit record is never consulted)
+tree=/tmp/wdr-control (scratch copy of the node worktree, mutated; the worktree itself is untouched)
+command=env -C /tmp/wdr-control PYTHONPATH=/tmp/wdr-control /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --tb=line tests/test_recovery_reads_the_exit_record.py
+measurement_cwd= /tmp/wdr-control
+measurement_module= /tmp/wdr-control/reckon/__init__.py
+FFF...F.                                                                 [100%]
+=================================== FAILURES ===================================
+E   assert 'ended by SIGTERM' in "the worker process is gone with no recorded exit; its pointer had already recorded that no terminal event arrived; session 'fixture-session' survives in the pointer record"
+/tmp/wdr-control/tests/test_recovery_reads_the_exit_record.py:204: assert 'ended by SIGTERM' in "the worker process is gone with no recorded exit; its pointer had already recorded that no terminal event arrived; session 'fixture-session' survives in the pointer record"
+E   AssertionError: assert 'interrupted' == 'abandoned'
+      
+      - abandoned
+      + interrupted
+/tmp/wdr-control/tests/test_recovery_reads_the_exit_record.py:203: AssertionError: assert 'interrupted' == 'abandoned'
+E   AssertionError: assert 'interrupted' == 'launch-failed'
+      
+      - launch-failed
+      + interrupted
+/tmp/wdr-control/tests/test_recovery_reads_the_exit_record.py:203: AssertionError: assert 'interrupted' == 'launch-failed'
+E   AssertionError: assert 'interrupted' == 'abandoned'
+      
+      - abandoned
+      + interrupted
+/tmp/wdr-control/tests/test_recovery_reads_the_exit_record.py:322: AssertionError: assert 'interrupted' == 'abandoned'
+=========================== short test summary info ============================
+FAILED tests/test_recovery_reads_the_exit_record.py::test_observe_classifies_a_finished_worker_from_its_exit_record[signalled-end0-interrupted-ended by SIGTERM]
+FAILED tests/test_recovery_reads_the_exit_record.py::test_observe_classifies_a_finished_worker_from_its_exit_record[clean-exit-end1-abandoned-exited with code 0]
+FAILED tests/test_recovery_reads_the_exit_record.py::test_observe_classifies_a_finished_worker_from_its_exit_record[launch-failure-end2-launch-failed-exited with code 1]
+FAILED tests/test_recovery_reads_the_exit_record.py::test_a_chosen_exit_is_not_an_interruption_for_an_orphaned_pointer
+4 failed, 4 passed in 0.46s
+EXIT=1

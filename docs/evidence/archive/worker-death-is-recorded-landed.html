@@ -435,6 +435,67 @@
       failures are environmental (a pytest temporary repository is not a git worktree,
       so promotion refuses) and are reported under <code>follow_ons</code>.</p>
     </section>
+
+    <section id="s5-1-exit-record">
+      <h2>&sect;5.1 &mdash; recovery reads the record of the end, not the absence of a process</h2>
+      <p>Recovery classifies a finished worker from the account its supervisor wrote
+      beside it. <code>recovery._run_exit_record</code> reads
+      <code>exit.json</code> in the run directory the pointer names, refusing a record
+      written for another run, an unreadable one and a missing one alike; where it reads
+      one, the classification takes the end from it. A recorded signal names an
+      <code>interrupted</code> run and the signal that ended it. An exit code with
+      stream records behind it is an <code>abandoned</code> run, its detail carrying the
+      code and the moment recorded. A record whose
+      <code>stream_records_seen</code> is 0 is the <code>launch-failed</code> path, read
+      from the count rather than from a phase that may never have been written. The
+      dead-pid inferences survive only where no record exists, and a process the
+      process table proves alive outranks the record, so a resumed attempt reusing a
+      run directory is not called dead by the earlier attempt's record.</p>
+
+      <h3>What was measured</h3>
+      <ul>
+        <li>Focused gate <code>tests/test_recovery_reads_the_exit_record.py</code>:
+        <strong>8 passed</strong>, exit 0. Each case drives the real
+        <code>dispatch.observe</code> fold over a run directory built in a temporary
+        config home &mdash; signalled reads <code>interrupted</code> with
+        <code>ended by SIGTERM</code>, exit 0 reads <code>abandoned</code> with
+        <code>exited with code 0</code>, 0 stream records reads
+        <code>launch-failed</code>.</li>
+        <li>Declared negative control (&ldquo;make recovery ignore
+        <code>exit.json</code> so classification falls back to pid inference&rdquo;),
+        executed in a scratch copy of this tree: <strong>4 failed, 4 passed</strong>,
+        with all three declared cases reverted to the inference verdict. First line of
+        <code>docs/figures/worker-death-is-recorded/negative-control.log</code> repeats
+        the declared mutation verbatim.</li>
+        <li>Delta gate over every test file importing <code>reckon.crew.recovery</code>,
+        population held fixed at the base revision (61 files): <strong>2 failed, 920
+        passed</strong> at base <code>2bf6587b</code> and <strong>922 passed</strong> at
+        this head. Both base failures pass in isolation at the base, so they are
+        order-sensitive within the combined run rather than defects, and no failure is a
+        new one. Logs <code>delta-base.log</code> and <code>delta-head.log</code>, each
+        naming its revision, tree, command and the module file the run resolved.</li>
+        <li>Ordering proof: a pointer whose launching host is this host and whose pid is
+        the live test process classifies <code>running</code> with
+        <code>exit_record</code> null, so the record cannot call a live worker dead.</li>
+      </ul>
+
+      <h3>Mechanism</h3>
+      <p>The reader asks three questions in order: is the launching host this host (then
+      the process table answers and liveness is proven), did the supervisor record an
+      exit here (then the record decides), and only otherwise is death inferred from the
+      missing pid as before. Drawn at
+      <a href="/reckon/figures/worker-death-is-recorded/exit-record-reader.svg">the
+      exit-record reader figure</a>.</p>
+
+      <h3>Boundary</h3>
+      <p>This node reads the record; it does not widen what is recorded, and it does not
+      change the exit-0 case into a completion &mdash; only the manifest's status says a
+      node was delivered, which is why an exit-0 run with nothing delivered is reported
+      as abandoned with its code in the detail rather than as finished. Items (2) and
+      (3) of &sect;5 &mdash; the redispatch pointer refresh and the failed-resume session
+      id &mdash; are other nodes', and the death-shape correlation in
+      <code>a-review-dies-where-nobody-is-looking</code> &sect;1 depends on them.</p>
+    </section>
 </main>
 
 </body>
