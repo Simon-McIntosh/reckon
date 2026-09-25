@@ -128,6 +128,14 @@
     its own, so no library call reads a workstation-global file by default. The production callers
     (<code>reckon/cli.py</code> and <code>reckon/mcp.py</code> preflight) do not name it yet, and
     with the five-minute refresh deployment and the dispatch-side read they remain open.</p>
+    <p><strong>Landed (2026-09-25):</strong> <code>--help</code> and <code>-h</code> now print usage
+    and return <code>0</code> without composing or writing any document.
+    <code>python -m reckon.crew.paid_lanes --help</code> used to parse the flag as an inert token and
+    fall through to the publishing path, so asking what the command does wrote the document it
+    described to the named or default path. The argv loop now records the request and
+    <code>main</code> prints <code>USAGE</code> before resolving any config; every other invocation
+    is unchanged. The construction node is done; the production pre-flight callers and the
+    five-minute refresh deployment remain open, as recorded above.</p>
 
     <h2 id="s6">&sect;6 &mdash; A warning comes early enough to change the decision</h2>
     <p>Today's codex hold was the first signal, arriving at 100%. The published state is graded:
