@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T06:34:57",
+  "updated": "2026-09-25T06:43:57",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -389028,6 +389028,301 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T015518138129-production-preflight-reads-the-published-document",
+        "plan": "the-local-lane-is-the-default",
+        "section": "\u00a75",
+        "node": "production-preflight-reads-the-published-document",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 393,
+                "cached_input_tokens": 680770,
+                "input_tokens": 681167,
+                "output_tokens": 1045,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 682212,
+                "uncached_input_tokens": 4
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "The two production preflight callers, reckon/cli.py crew_preflight (~964) and reckon/mcp.py (~3509), name the published document (paid_lanes' default path). budget.preflight then takes each backend's figures from the document when the document carries a fresh reading for that backend, and from the recorded windows it takes today otherwise: when the document is absent, unreadable, carries no reading for that backend, or that reading is stale. The report names which source each backend's figures came from. tests/test_preflight_reads_the_published_document.py, in a temporary home with no workstation-global read, shows four cases: a fresh document reading wins over a recorded window; an absent document leaves every figure equal to today's recorded-window result; a stale reading for one backend falls back for that backend alone; and the CLI and MCP paths produce the same per-backend figures. The declared negative control is executed and logged: with the per-backend fallback removed, the absent-document case fails. The files importing reckon.budget, reckon.cli or reckon.mcp show zero added failures against the base revision, and any id that fails only under parallelism is re-run alone before it is counted. No new crew verb is registered.",
+          "estimated_hours": null,
+          "goal": "Production preflight reads the published paid-lanes document, falling back per backend to the recorded windows",
+          "id": "production-preflight-reads-the-published-document",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T01:55:20Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 2,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 9,
+            "mean_context": 126667,
+            "observed_at": "2026-09-25T01:55:18Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T015518138129-production-preflight-reads-the-published-document/manifest.md",
+          "negative_control": "remove the per-backend fallback so an absent document yields no figures; the absent-document test must fail",
+          "plan": "the-local-lane-is-the-default",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/budget.py",
+            "reckon/cli.py",
+            "reckon/mcp.py",
+            "tests/test_preflight_reads_the_published_document.py",
+            "docs/evidence/archive/the-local-lane-is-the-default-landed.html",
+            "docs/figures/the-local-lane-is-the-default",
+            "docs/plans/the-local-lane-is-the-default.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "pace-preflight",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T01:55:41Z",
+        "completed_at": "2026-09-25T03:58:24.315Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7121,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7363,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "9645fd62101a595101006aaac16996b1c6ec9201",
+        "commits": [
+          "ca43ac530c8936d25a5e588dfbca0917cdf0052a",
+          "dfebd2b191b2ee5208c2a2b5da30f6275bb1528b",
+          "1928299d539a9f3b38e28aed7b80677983415b60",
+          "2ec9517370dfa044255faa4956ae54589524a1cb"
+        ],
+        "changed_lines": {
+          "added": 730,
+          "removed": 27,
+          "files": 7
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_preflight_reads_the_published_document.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T015518138129-production-preflight-reads-the-published-document/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T015518138129-production-preflight-reads-the-published-document/manifest.md",
+        "scope_changed": false,
+        "session_id": "dcbe255c-286a-40f8-a8f4-60051bf1d329",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 12289391,
+            "input_tokens_cumulative": 12289391,
+            "output_tokens": 47792,
+            "output_tokens_cumulative": 47792,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T03:58:24.315Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 16,
+            "fit": 17,
+            "goal_fidelity": 17,
+            "scope_discipline": 18
+          },
+          "absent": [],
+          "total": 86
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 23695567,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2922.508,
+          "generated_tokens": 99510,
+          "generation_seconds": 1304.531,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.8,
+          "machine_seconds": 1617.977,
+          "peak_input_tokens": 166853,
+          "tokens_per_second": 76.28,
+          "wall_tokens_per_second": 34.05
+        },
+        "follow_on_paths": [
+          "tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact",
+          "storage/monitoring"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/production-preflight-reads-the-published-document",
+          "session_id": "dcbe255c-286a-40f8-a8f4-60051bf1d329",
+          "session_source": "stream",
+          "retained_at": "2026-09-25T03:58:24.315Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T02:26:58Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T01:59:31Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T015518138129-production-preflight-reads-the-published-document",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 6277,
+          "worker_pid": 2387601
+        },
+        "promoted_revision": "2ec9517370dfa044255faa4956ae54589524a1cb",
+        "plan_impl_at_dispatch": 0.25,
+        "impl_move": {
+          "plan": "the-local-lane-is-the-default",
+          "at_dispatch": 0.25,
+          "at_complete": 0.3,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_preflight_reads_the_published_document.py"
+          ],
+          "declaration": "remove the per-backend fallback so an absent document yields no figures; the absent-document test must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T015518138129-production-preflight-reads-the-published-document/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T015518138129-production-preflight-reads-the-published-document/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T02:55:20.164322+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T01:55:20Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 2,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 9,
+          "mean_context": 126667,
+          "observed_at": "2026-09-25T01:55:18Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 100.0,
+        "orientation_input_tokens": 2173325.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -389340,6 +389635,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2687
+    "_version": 2688
   }
 }
