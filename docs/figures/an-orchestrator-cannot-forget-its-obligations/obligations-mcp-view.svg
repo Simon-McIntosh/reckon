@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" width="720" height="260" role="img" aria-label="The crew MCP tool routes a view named obligations to the derived view function and returns its payload unchanged.">
+  <style>
+    .box { fill: #f7f7f5; stroke: #555; stroke-width: 1.5; }
+    .lbl { font: 13px sans-serif; fill: #222; }
+    .mono { font: 12px monospace; fill: #222; }
+    .edge { stroke: #333; stroke-width: 1.5; fill: none; marker-end: url(#a); }
+    .cap { font: 11px sans-serif; fill: #666; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" preserveAspectRatio="xMidYMid meet" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333"/>
+    </marker>
+  </defs>
+
+  <rect class="box" x="20" y="100" width="180" height="60" rx="8"/>
+  <text class="mono" x="34" y="126">crew(</text>
+  <text class="mono" x="34" y="144">view="obligations",</text>
+  <text class="caption mono" x="34" y="158" style="font-size:11px">session, project)</text>
+
+  <rect class="box" x="270" y="40" width="180" height="52" rx="8"/>
+  <text class="lbl" x="284" y="62">session present?</text>
+  <text class="cap" x="284" y="80">no session &#8594; missing_session</text>
+
+  <rect class="box" x="270" y="150" width="180" height="72" rx="8"/>
+  <text class="mono" x="282" y="174">obligations(</text>
+  <text class="mono" x="282" y="190">project, session)</text>
+  <text class="cap" x="282" y="210">reckon.crew.obligations</text>
+
+  <rect class="box" x="520" y="100" width="180" height="72" rx="8"/>
+  <text class="mono" x="532" y="124">{"ok": true,</text>
+  <text class="mono" x="532" y="140">"obligations": [&#8230;],</text>
+  <text class="mono" x="532" y="156">"summary": {&#8230;}}</text>
+  <text class="cap" x="532" y="182">payload unchanged</text>
+
+  <path class="edge" d="M200,130 L268,66"/>
+  <path class="edge" d="M200,130 L268,186"/>
+  <path class="edge" d="M450,186 L518,150"/>
+  <path class="edge" d="M450,66 L620,98" stroke-dasharray="4 3"/>
+
+  <text class="cap" x="300" y="30">refusal path</text>
+  <text class="cap" x="360" y="240">the dispatcher adds only ok and view; the derivation is not reshaped here</text>
+</svg>

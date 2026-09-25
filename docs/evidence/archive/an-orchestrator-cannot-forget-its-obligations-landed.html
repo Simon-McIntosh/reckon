@@ -67,6 +67,26 @@
       </table>
       <p><strong>Scope retained:</strong> this node adds no CLI or MCP surface. Independent verification at the merged head remains coordinator-owned.</p>
     </section>
+
+    <section id="obligations-mcp-view">
+      <h2>Obligations as a crew MCP view</h2>
+      <p>Commit <code>da226e1e</code> exposes the derivation through the crew tool. <code>reckon/mcp.py</code> accepts <code>view="obligations"</code>, requires <code>project</code> and <code>session</code>, and returns <code>reckon.crew.obligations.obligations(project, session)</code> unchanged inside the <code>ok</code> envelope — the dispatcher adds only <code>ok</code> and <code>view</code> and does not reshape the payload. A missing session is refused with the named error <code>missing_session</code> rather than guessed. The view name joins the accepted-views list and the tool docstring in one clause.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-mcp-view.svg" alt="The crew tool validates the session, calls the derived obligations function unchanged, and wraps it in the ok envelope.">
+        <figcaption>The MCP view is a thin router: the derivation, its ordering and its closure summary are read from the function, not re-expressed at the surface.</figcaption>
+      </figure>
+      <p><strong>Done when:</strong> <code>reckon/mcp.py</code>'s crew dispatcher accepts <code>view="obligations"</code> with project and session and returns <code>reckon.crew.obligations.obligations(project, session)</code> unchanged inside the ok envelope; a missing session is refused with a named error; the existing view, vocabulary and response-budget tests pass unchanged, including the 24 KiB schema budget; and the declared mutation, dropping the obligations branch, is observed to fail with its log recorded.</p>
+      <p>Result: <strong>passed</strong>. <code>tests/test_mcp_crew_obligations.py</code> drives both directions on a synthetic config home: the view's <code>obligations</code> and <code>summary</code> equal the function's own output for two classified rows, and a session-less call returns <code>ok: false</code>, <code>error: missing_session</code>. Two tests passed. The gate also ran <code>tests/test_mcp_views.py</code> (48 passed), <code>tests/test_mcp_vocabulary_is_complete.py</code> and <code>tests/test_mcp_response_budget.py</code> unchanged.</p>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td><code>pytest -q tests/test_mcp_crew_obligations.py</code></td><td>passed</td><td>2 tests; view equals function output; missing session refused.</td></tr>
+          <tr><td><code>ruff check --output-format=concise reckon/mcp.py</code></td><td>no new findings</td><td>18 findings at base, 18 after — identical codes, shifted line numbers only.</td></tr>
+          <tr><td>Declared mutation: drop the obligations branch</td><td>failed as required</td><td>Both focused tests red; both failures trace to the removed branch.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Known pre-existing failure.</strong> <code>tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers</code> — the read_plan <code>schema</code> view measures 24,938 characters against the 24 KiB budget. It fails identically at the node's base revision <code>d8f13a61</code> (same 24,938), so the growth is not this node's; the read_plan schema is not in this node's write scope.</p>
+    </section>
   </main>
 </body>
 </html>
