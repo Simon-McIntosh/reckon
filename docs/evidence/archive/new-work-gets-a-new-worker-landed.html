@@ -438,6 +438,84 @@ tests/test_run_record_reports_actual_resume.py
     repairs and dispatches verification at the merged result. This record leaves the driving
     followup, section declaration, lifecycle and implementation fraction untouched.</p>
   </section>
+
+  <section id="session-contract-repairs">
+    <h2>Session contracts preserved around run-owned capture</h2>
+    <p><strong>Worker repairs recorded 2026-09-25; importer gate unmet.</strong>
+    The assigned base was <code>c6abaeb9c1fe7e932ee3cd46475632672ea11975</code>.
+    All seven named regressions reproduced there, while the seven dedicated run-session
+    cases passed. At repair head <code>199069f16c2e3a41231a9652eb02baa4d6d3d945</code>
+    the same gate reports <strong>14 passed, zero failed</strong>.
+    Only <code>tests/test_crew_ephemeral_members.py</code> changed, replacing the removed
+    roster-session assertion with id, harness and model on the persisted run plus
+    byte-identical roster content. The other six listed tests remain byte-identical.</p>
+    <table><thead><tr><th>Contract</th><th>Repair commit</th><th>Result</th></tr></thead>
+      <tbody><tr><td>Agent configuration equality</td><td><code>f0324bd1</code></td><td>Session harness and model are explicit run/ledger fields; the agent mapping keeps its established keys.</td></tr>
+<tr><td>Promoted row completeness</td><td><code>f0324bd1</code></td><td>Promotion passes session_harness and session_model into the ledger builder, which emits both keys even when no session was captured.</td></tr>
+<tr><td>Unchecked resume wording</td><td><code>70b8eb4f</code></td><td>The pointer continues to say without re-verifying context fit.</td></tr>
+<tr><td>Read-only stream recovery</td><td><code>ae05630c</code></td><td>Resume composes the recovered session without caching it as session_id; session_resumed records the actual launch invocation.</td></tr>
+<tr><td>Interruption classification</td><td><code>fd272fd7</code></td><td>A run with no harness boundary resolves its recorded session before any dialect translation is required.</td></tr>
+<tr><td>Concurrent unnamed registration</td><td><code>199069f1</code></td><td>A repository lock covers lookup, write and commit; the updated assertion requires run-owned session identity and byte-identical roster content.</td></tr>
+<tr><td>Follower deprecation channels</td><td><code>unchanged</code></td><td>The listed case passes in the focused repaired-head gate. Its initial fixed-delay failure is retained; no timing assertion or source was changed for it.</td></tr></tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/new-work-gets-a-new-worker/session-contracts.svg"
+           alt="Observation and promotion carry session identity on the run and ledger, while resume resolves a session without caching a stream identity and agent configuration keeps its shape.">
+      <figcaption>Session ownership and the agent configuration have separate storage contracts.</figcaption>
+    </figure>
+    <h3>Reproductions and controls</h3>
+    <p>The initial equality failure reads <code>Left contains 1 more item:
+    {'dialect': 'codex'}</code>. The initial resume-side-effect failure reads
+    <code>assert '01a0635f-62a3-7283-a81b-61cd39bedb60' is None</code>.
+    The unsupported-command path raises <code>no launch translation for command 'python'</code>
+    before interruption classification. All three reproduction traces remain in
+    <code>reproduction.log</code>.</p>
+    <p>Four registration trials of four concurrent calls reproduce <strong>13 failures
+    out of 16</strong>, including <code>index.lock': File exists</code> and uncommitted-roster
+    refusals. With the transaction lock the identical probe reports <strong>0 failures
+    out of 16</strong>. The existing unnamed-dispatch and registration-commit files
+    report <strong>10 passed</strong>.</p>
+    <p>The declared mutation is <q>re-add the dialect key to the recorded agent configuration; tests/test_backend_environment.py::test_run_record_agent_configuration_excludes_environment must fail</q>.
+    <code>negative-control.log</code> starts with that exact text and records
+    <strong>one expected assertion failure</strong>, solely on the extra dialect key.
+    The clean repaired-head test passes; there are no fixture or import errors in the control.</p>
+    <h3>Importer comparison</h3>
+    <table><thead><tr><th>Arm</th><th>Population and revision</th><th>Result</th></tr></thead><tbody>
+      <tr><td>Base</td><td>248 importing files at <code>0bd7a7c9667176b07d0d7912d07a1e8739581d03</code></td><td>24 failed, 3033 passed, 4 skipped, 17 warnings in 863.44s (0:14:23)</td></tr>
+      <tr><td>Repaired</td><td>251 importing files at <code>199069f16c2e3a41231a9652eb02baa4d6d3d945</code></td><td>25 failed, 3056 passed, 4 skipped, 18 warnings in 794.93s (0:13:14)</td></tr>
+      <tr><td>Failure-ID delta</td><td>7 added; 6 no longer failing</td><td>3 added outside the four declared peer exceptions</td></tr>
+    </tbody></table>
+    <p>The population includes direct imports of the six measured modules, imports
+    through <code>reckon.crew</code>, and literal module imports. The base arm is a
+    <code>git archive</code> export of <code>0bd7a7c9</code>; its log prints the imported
+    dispatch module and resolved cwd in that export. Both arms run on allocation
+    <code>1277272</code> with four pytest workers, a 90-second per-test bound, separate
+    basetemps and the repository's shared interpreter. Expanded commands and the full
+    failure-ID sets are in the JSON receipts. Two raw base failures, in the shared-checkout safety checks in <code>test_member_registration_commits.py</code> and <code>test_roster_write_commits.py</code>, fail because the archive has no Git metadata. Both pass in the repaired arm; <code>baseline-instrument-limits.json</code> excludes them from the baseline exemption set, so neither can excuse a repaired-head failure.</p>
+    <table><thead><tr><th>Added failure ID</th><th>Asserts roster write?</th><th>Disposition</th></tr></thead>
+      <tbody><tr><td><code>tests/test_crew.py::test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first</code></td><td>yes</td><td>declared peer exception</td></tr>
+<tr><td><code>tests/test_crew_members.py::test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it</code></td><td>no</td><td>outside the exception set; returned without repair</td></tr>
+<tr><td><code>tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers</code></td><td>no</td><td>outside the exception set; returned without repair</td></tr>
+<tr><td><code>tests/test_follower_checks_its_owner.py::test_a_reloaded_follower_still_leaves_when_the_original_owner_dies</code></td><td>no</td><td>declared peer exception</td></tr>
+<tr><td><code>tests/test_ledger.py::test_a_later_session_is_not_written_over_the_captured_one</code></td><td>yes</td><td>declared peer exception</td></tr>
+<tr><td><code>tests/test_ledger.py::test_a_member_with_a_null_session_captures_one_from_its_first_run</code></td><td>yes</td><td>declared peer exception</td></tr>
+<tr><td><code>tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code></td><td>no</td><td>outside the exception set; returned without repair</td></tr></tbody>
+    </table>
+    <p>All run logs and scripts live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033627599580-session-on-its-run-keeps-its-contracts</code>:
+    <code>reproduction.log</code>, <code>repaired.log</code>,
+    <code>registration-before.log</code>, <code>registration-after.log</code>,
+    <code>negative-control.log</code>, <code>baseline.log</code>, <code>after.log</code>,
+    and <code>suite-delta.json</code>. The scoped lint and format receipts show no added
+    findings or formatting debt. <code>committed-markers.json</code> reads introduced
+    markers from committed source. Subsequent diagram and explanatory-comment commits
+    change no runtime code; <code>runtime-content-receipt.json</code> compares executable
+    syntax against the measured repair head.</p>
+    <p>The coordinator owns the remaining failure dispositions, integration, section
+    closure and the driving followup. This worker changes no lifecycle status,
+    implementation fraction, section declaration, version, modified stamp or followup.
+    Next action: review these commits and the explicit delta, then run the separately
+    assigned merged-head verification.</p>
+  </section>
 </main>
 </body>
 </html>
