@@ -788,28 +788,76 @@ def _project_derivations(project: str, repo: Path) -> dict[str, list[str]]:
     return read_project_derivations(docs_dir, project)
 
 
+SHARED_WRITE_PATHS_FILENAME = "shared-write-paths.json"
+
+
+def _shared_write_paths(project: str | None, repo: Path) -> frozenset[str]:
+    """Return the files this project declares safe for concurrent live claims.
+
+    A project may list repository-relative files in
+    ``docs/state/<project>/shared-write-paths.json`` whose concurrent editors
+    work in different functions often enough that refusing the second claimant
+    costs more than it protects. Each entry names one file and why it is
+    shareable. Only the named file is shareable: a directory that merely
+    contains it stays exclusive. An absent, unreadable or malformed list
+    declares nothing, so the refusal is a whole-file refusal as before.
+    """
+    if not project:
+        return frozenset()
+    manifest = repo / "docs" / "state" / str(project) / SHARED_WRITE_PATHS_FILENAME
+    try:
+        raw = json.loads(manifest.read_text())
+    except (OSError, json.JSONDecodeError):
+        return frozenset()
+    entries = raw.get("paths") if isinstance(raw, Mapping) else raw
+    if not entries:
+        return frozenset()
+    shared: set[str] = set()
+    for entry in entries:
+        path = entry.get("path") if isinstance(entry, Mapping) else entry
+        if not isinstance(path, str) or not path.strip():
+            continue
+        normalized = _repository_relative_scope(path, repo)
+        if normalized is not None:
+            shared.add(normalized)
+    return frozenset(shared)
+
+
 def _raise_live_scope_conflict(
     node: TaskNode,
     claims: Iterable[_LiveScopeClaim],
     repo: Path,
     derivations: Mapping[str, Iterable[str]] | None = None,
+    *,
+    project: str | None = None,
 ) -> None:
-    """Refuse the first deterministic collision with an existing live claim."""
+    """Refuse the first deterministic collision with an existing live claim.
+
+    Every overlap is refused except when the candidate and the live claim are
+    the same file this project has declared shareable. Both claims then stand,
+    so the co-claimants remain visible in ``scope_claims``. A directory claim
+    that contains a shared file still collides, because only the named file is
+    shareable rather than the directory holding it.
+    """
     candidates = [
         path
         for path, _declared, _derived_from in _expanded_scope_paths(
             node.write_paths, repo, derivations
         )
     ]
+    shared = _shared_write_paths(project, repo)
     for candidate in candidates:
         for claim in claims:
-            if _scopes_overlap(candidate, claim.path):
-                raise ScopeConflict(
-                    run_id=claim.run_id,
-                    node_id=claim.node_id,
-                    candidate_path=candidate,
-                    claimed_path=claim.path,
-                )
+            if not _scopes_overlap(candidate, claim.path):
+                continue
+            if candidate in shared and candidate == claim.path:
+                continue
+            raise ScopeConflict(
+                run_id=claim.run_id,
+                node_id=claim.node_id,
+                candidate_path=candidate,
+                claimed_path=claim.path,
+            )
 
 
 def _merge_peer_scopes(

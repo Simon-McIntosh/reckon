@@ -1,0 +1,29 @@
+{
+  "project": "reckon",
+  "paths": [
+    {
+      "path": "reckon/crew/dispatch.py",
+      "reason": "A preflight node, a wave-planning node and a scope-resolution node each edit a different region of this file, so a whole-file claim serialises work that does not actually collide."
+    },
+    {
+      "path": "reckon/crew/promotion.py",
+      "reason": "The promotion path and the review-gate checks are separate concerns, and nodes repairing one rarely touch the other."
+    },
+    {
+      "path": "reckon/crew/recovery.py",
+      "reason": "Resume, death-row classification and stream measurement are independent repairs against one file."
+    },
+    {
+      "path": "reckon/mcp.py",
+      "reason": "Each MCP op or view lands in its own handler, so two nodes extending different ops edit disjoint regions of a large file."
+    },
+    {
+      "path": "reckon/cli.py",
+      "reason": "CLI verbs are added by independent nodes at separate call sites and in separate subcommand groups."
+    },
+    {
+      "path": "reckon/roadmap.py",
+      "reason": "Derived roadmap facts and the surfaces that read them are extended by independent nodes at separate points in the module."
+    }
+  ]
+}
