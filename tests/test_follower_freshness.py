@@ -76,6 +76,19 @@ def _is_probe_row(line: str) -> bool:
     return PROBE_NODE_PREFIX in line
 
 
+# A follower that reloads onto new code mid-stream prints one line of its own to
+# say why the rows below it changed format. That line belongs to the pane rather
+# than to the fleet, so it is not one of the transitions under measurement here:
+# it is skipped exactly as a probe row is, and the measured count below is the
+# count of *run* rows either way.
+FORMAT_MARKER = "ticker format updated"
+
+
+def _is_pane_line(line: str) -> bool:
+    """Whether a printed line belongs to the pane rather than to the fleet."""
+    return _is_probe_row(line) or FORMAT_MARKER in line
+
+
 def _drain_probe_rows(lines: queue.Queue) -> None:
     """Discard every probe row already queued, so the measure starts clean.
 
@@ -89,7 +102,7 @@ def _drain_probe_rows(lines: queue.Queue) -> None:
             row = lines.get_nowait()
         except queue.Empty:
             return
-        assert _is_probe_row(row), f"a measured row arrived before the measure: {row!r}"
+        assert _is_pane_line(row), f"a measured row arrived before the measure: {row!r}"
 
 
 def _await_attached(
@@ -122,11 +135,14 @@ def _await_attached(
 def _measured_rows(
     lines: queue.Queue, count: int, *, timeout: float = 5.0
 ) -> list[str]:
-    """Read ``count`` rows carrying a measured node, ignoring any probe row.
+    """Read ``count`` rows carrying a measured node, ignoring the pane's own lines.
 
     A probe row is evidence of the attach and not a transition under
     measurement, so it is skipped rather than counted: a row left over from
-    proving the attach can never stand in for a measured one.
+    proving the attach can never stand in for a measured one. The pane's own
+    lines — the reload's format marker — are skipped for the same reason: they
+    are about the follower rather than about a run, so counting one would drop a
+    genuine transition from the measure.
     """
     rows: list[str] = []
     deadline = time.monotonic() + timeout
@@ -135,7 +151,7 @@ def _measured_rows(
         if remaining <= 0:
             raise AssertionError(f"only {len(rows)} of {count} measured rows arrived")
         row = lines.get(timeout=remaining)
-        if _is_probe_row(row):
+        if _is_pane_line(row):
             continue
         rows.append(row)
     return rows

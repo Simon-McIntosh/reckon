@@ -255,6 +255,13 @@ slots:
   summary:
     range: SummaryConfig
 
+  ticker:
+    description: >-
+      The follower pane's own memory of what it has rendered. A reader tracking
+      a fleet across re-arms wants the rows it just saw restored rather than an
+      empty pane; these bounds decide how much of the view comes back.
+    range: TickerConfig
+
   name:
     description: Map key for an inlined entry.
     identifier: true
@@ -541,6 +548,23 @@ slots:
       count.
     pattern: "^[0-9]+[smh]$"
 
+  history_rows:
+    description: >-
+      Most rows a follower re-emits as history when it re-arms. A pane restored
+      from a long outage should show recent work rather than the whole session,
+      so the cap counts rendered rows and is applied with `history_window`,
+      whichever admits fewer.
+    range: integer
+    minimum_value: 1
+
+  history_window:
+    description: >-
+      Oldest history row a follower re-emits when it re-arms, written as an
+      integer followed by a unit — `s`, `m` or `h`. Trimmed against
+      `history_rows`, whichever admits fewer, so a quiet session's short log is
+      not replayed in full after a long gap.
+    pattern: "^[0-9]+[smh]$"
+
   token_budget:
     description: >-
       Worker allowance denominated in generated output tokens — the quantity
@@ -663,6 +687,7 @@ classes:
       - fences
       - worktree
       - summary
+      - ticker
 
   BackendConfig:
     description: One worker backend and the routing knobs that apply to it.
@@ -813,3 +838,12 @@ classes:
     slots:
       - reflex
       - at
+
+  TickerConfig:
+    description: >-
+      Bounds on the follower pane's own memory. The follower keeps the rows it
+      rendered so a re-arm can restore a reader's view rather than opening
+      empty; the caps decide how much of that view comes back.
+    slots:
+      - history_rows
+      - history_window

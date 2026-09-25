@@ -1839,6 +1839,13 @@ class _FollowerReloader:
 # is the one fact about the follower a reader must act on.
 FOLLOWER_END_EVENT = "follower-end"
 
+# A re-arm reached for the pane's stored history instead of a fresh baseline,
+# and an in-place reload needs its format switch marked. Both are about the pane
+# rather than the fleet, so they travel as their own events and are never
+# rendered as a run's row.
+FOLLOWER_RESUME_EVENT = "follower-resume"
+FOLLOWER_FORMAT_EVENT = "follower-format-changed"
+
 
 def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, str]]:
     """List the owning session's runs whose state needs the coordinator now.
@@ -2020,7 +2027,7 @@ def _follow_watch_lines(
     fleet-only vocabulary, because the end of the stream is the one fact about
     the follower a reader must act on.
     """
-    from reckon.crew import runs
+    from reckon.crew import follow_checkpoint, runs
 
     selected_runs = tuple(run_ids)
     observed_sessions = frozenset(observed)
@@ -2086,7 +2093,12 @@ def _follow_watch_lines(
     def _stopped() -> bool:
         return stop is not None and stop.is_set()
 
-    def _record_checkpoint(stream_path: Path, offset: int) -> None:
+    def _record_checkpoint(
+        stream_path: Path,
+        offset: int,
+        *,
+        identity: Mapping[str, Any] | None = None,
+    ) -> None:
         """Persist this follower's place, so its next arming continues here.
 
         Written as lines are delivered, so the place advances with the stream
@@ -2094,6 +2106,10 @@ def _follow_watch_lines(
         its own teardown has still left behind everything it delivered. A
         checkpoint that cannot be written costs a later re-arm its place and
         must never cost this arming its stream, so it is not allowed to raise.
+
+        ``identity`` is the open stream's own identity when the offset was read
+        from that handle, so a replacement landing between the read and this
+        write cannot pair the old offset with the new file's inode.
         """
         from reckon.crew import follow_checkpoint
 
@@ -2104,11 +2120,17 @@ def _follow_watch_lines(
                 stream_path=stream_path,
                 offset=offset,
                 reported=reported,
+                identity=identity,
             )
         except OSError:
             return
 
-    def _tick(*, stream_path: Path | None = None, offset: int = 0) -> None:
+    def _tick(
+        *,
+        stream_path: Path | None = None,
+        offset: int = 0,
+        identity: Mapping[str, Any] | None = None,
+    ) -> None:
         """Run the caller's per-wait work — reclaiming a registration, say."""
         if on_poll is not None:
             on_poll(
@@ -2119,7 +2141,7 @@ def _follow_watch_lines(
                 }
             )
         if stream_path is not None:
-            _record_checkpoint(stream_path, offset)
+            _record_checkpoint(stream_path, offset, identity=identity)
         _check_lifetime()
         _check_consumer()
 
@@ -2162,9 +2184,23 @@ def _follow_watch_lines(
         except Exception:  # noqa: BLE001 - a failed recovery must not end the pane
             return
 
+    # A resume handed in the environment is an image replacing itself, which
+    # already has the pane's rows on screen and needs only the format switch
+    # marked. A resume read from the durable checkpoint is a re-arm, whose pane
+    # is empty and must be given the stored history before anything else.
+    reloading = bool(resume_state)
+    # Only the first pass through the loop is an attachment. A later pass is the
+    # stream still not existing, and the pane has already been told what it
+    # needed to know; re-announcing it would replay the history on every poll.
+    first_attach = True
+
     while not _stopped() and not lifetime_elapsed and not consumer_gone:
-        _sweep_on_cadence()
         if not runs.producer_live(project):
+            # The sweep runs here rather than at the top of the loop: a pane
+            # must show its rows before the recovery sweep's cost is paid,
+            # because the sweep is the long call and the rows are what the
+            # reader is waiting for.
+            _sweep_on_cadence()
             _tick()
             sleeper(poll_interval)
             continue
@@ -2188,13 +2224,36 @@ def _follow_watch_lines(
                     yield selected
         else:
             # A continuation picks the stream up where the previous arming left
-            # it: at the recorded boundary for a file that has only advanced, or
+            # it: at the recorded offset for a file that has only advanced, or
             # at the file's own start when it was replaced or truncated — with
             # the runs already reported sitting in ``reported`` either way, so
             # only what moved is delivered and nothing is re-announced.
             cursor["offset"] = offset
             reported.clear()
             reported.update(recorded)
+            if first_attach and not reloading:
+                # Continue each run's chain from what the pane last showed it,
+                # for the runs the checkpoint does not name. The checkpoint is
+                # the primary carrier and is read first; the log is the memory
+                # for a re-arm whose checkpoint is gone, so a run renders
+                # ``abandoned → working`` rather than restarting from a state
+                # the reader never saw. ``setdefault`` keeps the checkpoint's
+                # word when both carry one.
+                for run_id, state in follow_checkpoint.seed_states(
+                    follow_checkpoint.read_history(project, session)
+                ).items():
+                    reported.setdefault(run_id, state)
+            # The pane's own line, before the gap's: a restored history or the
+            # format switch, never a run's row and never a baseline re-derived
+            # from the fleet as it stands now.
+            if first_attach:
+                yield {
+                    "event": (
+                        FOLLOWER_FORMAT_EVENT if reloading else FOLLOWER_RESUME_EVENT
+                    ),
+                    "project": project,
+                    "session": session or "",
+                }
         # Left behind before the first read rather than after the first line:
         # an arming that starts against a quiet stream and then ends has still
         # established its place. Without this the baseline's own arming wrote
@@ -2202,6 +2261,14 @@ def _follow_watch_lines(
         # and replayed the baseline — the defect this removes, on the quiet path.
         _record_checkpoint(stream_path, cursor["offset"])
         resume_state = {}
+        reloading = False
+        first_attach = False
+        # After the first row is on screen, not before it: on a first arming
+        # that is the baseline, on a re-arm the history burst. Deferring the
+        # sweep past them is what stops a long recovery from holding an empty
+        # pane, and the cadence is unchanged because the pass after the first
+        # row gates the same as any other.
+        _sweep_on_cadence()
 
         while not stream_path.exists() and not consumer_gone:
             if not runs.producer_live(project):
@@ -2217,6 +2284,11 @@ def _follow_watch_lines(
 
         with stream_path.open(encoding="utf-8") as stream:
             stream.seek(cursor["offset"])
+            # The open file's identity, taken once here and carried with every
+            # offset read from it: a replacement that lands while this handle is
+            # open changes the path's inode but not this file's, and the recorded
+            # place must describe the stream this reader is actually reading.
+            stream_file_identity = follow_checkpoint.identity_of(stream)
             while True:
                 line = stream.readline()
                 if line:
@@ -2224,7 +2296,11 @@ def _follow_watch_lines(
                     selected = None if event is None else _emit(event)
                     if selected is not None:
                         yield selected
-                    _tick(stream_path=stream_path, offset=stream.tell())
+                    _tick(
+                        stream_path=stream_path,
+                        offset=stream.tell(),
+                        identity=stream_file_identity,
+                    )
                     if lifetime_elapsed or consumer_gone:
                         break
                     _sweep_on_cadence()
@@ -2236,7 +2312,11 @@ def _follow_watch_lines(
                     return
                 if not runs.producer_live(project):
                     break
-                _tick(stream_path=stream_path, offset=stream.tell())
+                _tick(
+                    stream_path=stream_path,
+                    offset=stream.tell(),
+                    identity=stream_file_identity,
+                )
                 if lifetime_elapsed or consumer_gone:
                     break
                 # The gate is time-based, so calling it from the wait pass as
@@ -2267,6 +2347,91 @@ def _echo_follow_line(line: str, *, stream=None) -> None:
     output = stream or click.get_text_stream("stdout")
     click.echo(line, file=output, color=True)
     output.flush()
+
+
+# A replayed history row is marked dim so a reader never mistakes a restored
+# row for news. The ticker owns the escape it paints with; these two mirror that
+# pair here rather than reaching into its private names, and a test binds them
+# so the two cannot drift.
+HISTORY_DIM = "\x1b[2m"
+HISTORY_RESET = "\x1b[0m"
+
+
+def _dim_history_line(text: str) -> str:
+    """Wrap one replayed row in the dim styling, leaving its own bytes intact.
+
+    The row's text is exactly what it was first rendered as; the mark is applied
+    around it, never by rewriting the row, so a reader comparing a replayed row
+    with the original sees the same columns and the same clock.
+    """
+    return f"{HISTORY_DIM}{text}{HISTORY_RESET}"
+
+
+def _follow_history_caps(project: str) -> tuple[int, float]:
+    """The pane-history caps for this project, from flight config or shipped.
+
+    Both caps are configuration: rows and a wall-clock window, applied together
+    so whichever admits fewer governs. A config that cannot be read falls back
+    to the shipped defaults rather than silencing the pane — the misconfigured
+    layer already surfaces on ``reckon flight``, and a reader watching a pane is
+    not the person to tell about it.
+    """
+    from reckon.crew.follow_checkpoint import (
+        DEFAULT_HISTORY_ROWS,
+        DEFAULT_HISTORY_SECONDS,
+    )
+
+    fallback = (DEFAULT_HISTORY_ROWS, DEFAULT_HISTORY_SECONDS)
+    try:
+        from reckon import flight as flight_module
+        from reckon.crew.node import parse_duration
+
+        config = flight_module.resolve(project).config
+        ticker = config.get("ticker") or {}
+        rows = int(ticker.get("history_rows", DEFAULT_HISTORY_ROWS))
+        window = str(ticker.get("history_window") or "").strip()
+        seconds = float(parse_duration(window)) if window else DEFAULT_HISTORY_SECONDS
+    except Exception:  # noqa: BLE001 - a pane must not die for its caps
+        return fallback
+    if rows < 1 or seconds <= 0:
+        return fallback
+    return rows, seconds
+
+
+def _follow_row_stamp(event: Mapping[str, Any]) -> float:
+    """The epoch a delivered row was drawn under, read from its own stamp.
+
+    The history window is measured against the time each row carried, not the
+    time the log was written, so a re-arm after a long outage replays the rows
+    that are still inside the window rather than the ones written most recently.
+    A row whose stamp cannot be read is placed at the moment of reading.
+    """
+    text = str(event.get("observed_at") or "")
+    for candidate in (text.replace("Z", "+00:00"), f"{text}+00:00"):
+        try:
+            moment = datetime.fromisoformat(candidate)
+        except ValueError:
+            continue
+        if moment.tzinfo is not None:
+            return moment.timestamp()
+    return time.time()
+
+
+def _follow_history_burst(rows, *, dim=_dim_history_line) -> str:
+    """Compose a re-arm's history replay as one string, to be written once.
+
+    One string rather than one write per row: a consumer that batches the stream
+    into notifications then sees the whole replay as a single event.
+    """
+    if not rows:
+        return ""
+    header = (
+        f"── history {time.strftime('%H:%M', time.localtime(rows[0]['at']))}"
+        f"–{time.strftime('%H:%M', time.localtime(rows[-1]['at']))}"  # noqa: RUF001 - a span, not a hyphen
+        f" · {len(rows)} rows ──"
+    )
+    separator = f"── re-armed {time.strftime('%H:%M')} · live below ──"
+    return "\n".join([header, *(dim(row["text"]) for row in rows), separator])
 
 
 # The themes the ticker paints. Named here rather than imported because
@@ -2503,6 +2668,14 @@ def crew_follow(
                 registration.acquire()
             reloader.poll(checkpoint)
 
+        from reckon.crew import follow_checkpoint as history_module
+
+        # The pane's memory of what it drew, for a session that will re-arm.
+        # A session-less follower exists to observe the whole fleet in one
+        # pass, so it has no pane to restore and keeps no log.
+        history_caps = _follow_history_caps(project) if session is not None else None
+        replay_dim = _dim_history_line if getattr(grid, "color", False) else str
+
         for event in _follow_watch_lines(
             project,
             session=session,
@@ -2521,6 +2694,43 @@ def crew_follow(
                 else:
                     _echo_follow_line(str(event.get("line") or ""))
                 continue
+            if event.get("event") == FOLLOWER_FORMAT_EVENT:
+                # The follower reloaded onto a new image mid-stream. The rows it
+                # drew before the reload were drawn by the old format and are
+                # replayed verbatim from the log, so the marker stands between
+                # them and the new ones; the DIM row is the reader's signal that
+                # the drawing style changed here.
+                if json_output:
+                    _emit({"ok": True, **event}, pretty)
+                elif session is not None:
+                    _echo_follow_line(replay_dim(history_module.FORMAT_CHANGED_TEXT))
+                    history_module.append_history(
+                        project,
+                        session,
+                        text=history_module.FORMAT_CHANGED_TEXT,
+                        at=time.time(),
+                        kind=history_module.FORMAT_CHANGED_KIND,
+                        max_rows=history_caps[0],
+                        max_seconds=history_caps[1],
+                    )
+                continue
+            if event.get("event") == FOLLOWER_RESUME_EVENT:
+                # A re-arm, before any fresh row: replay the pane exactly as the
+                # reader last saw it, in one write so a Monitor shows the whole
+                # view as a single event, then let the live rows follow.
+                if json_output:
+                    _emit({"ok": True, **event}, pretty)
+                elif session is not None:
+                    restored = history_module.cap_history(
+                        history_module.read_history(project, session),
+                        now=time.time(),
+                        max_rows=history_caps[0],
+                        max_seconds=history_caps[1],
+                    )
+                    burst = _follow_history_burst(restored, dim=replay_dim)
+                    if burst:
+                        _echo_follow_line(burst)
+                continue
             if json_output:
                 _emit({"ok": True, **event}, pretty)
             elif not _row_is_stale_inventory(event):
@@ -2528,16 +2738,29 @@ def crew_follow(
                 # the grid stays aligned, and the owning session's own rows are
                 # blanked in it; only the observed rows carry the foreign glyph.
                 with_session = session is None or bool(observe_sessions)
-                _echo_follow_line(
-                    format_watch_transition(
-                        _follow_render_event(
-                            event, session=session, observed=observe_sessions
-                        ),
-                        with_session=with_session,
-                        ticker=grid,
-                        session=session,
-                    )
+                rendered = format_watch_transition(
+                    _follow_render_event(
+                        event, session=session, observed=observe_sessions
+                    ),
+                    with_session=with_session,
+                    ticker=grid,
+                    session=session,
                 )
+                _echo_follow_line(rendered)
+                if history_caps is not None:
+                    # The row's bytes as drawn, and the stamp it carried, so a
+                    # later re-arm replays the pane rather than a re-derivation
+                    # of it: the clock a reader saw is the clock that returns.
+                    history_module.append_history(
+                        project,
+                        session,
+                        text=rendered,
+                        at=_follow_row_stamp(event),
+                        run_id=str(event.get("run_id") or ""),
+                        state=str(event.get("to_state") or ""),
+                        max_rows=history_caps[0],
+                        max_seconds=history_caps[1],
+                    )
 
     try:
         if session is None:

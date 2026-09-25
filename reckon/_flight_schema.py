@@ -199,6 +199,7 @@ class FlightConfig(ConfiguredBaseModel):
     fences: Optional[FenceConfig] = Field(default=None)
     worktree: Optional[WorktreeConfig] = Field(default=None)
     summary: Optional[SummaryConfig] = Field(default=None)
+    ticker: Optional[TickerConfig] = Field(default=None, description="""The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back.""")
 
 
 class BackendConfig(ConfiguredBaseModel):
@@ -430,6 +431,27 @@ class SummaryConfig(ConfiguredBaseModel):
     at: Optional[list[SummaryOccasion]] = Field(default=None, description="""Occasions on which a worker emits a summary.""")
 
 
+class TickerConfig(ConfiguredBaseModel):
+    """
+    Bounds on the follower pane's own memory. The follower keeps the rows it rendered so a re-arm can restore a reader's view rather than opening empty; the caps decide how much of that view comes back.
+    """
+    history_rows: Optional[int] = Field(default=None, description="""Most rows a follower re-emits as history when it re-arms. A pane restored from a long outage should show recent work rather than the whole session, so the cap counts rendered rows and is applied with `history_window`, whichever admits fewer.""", ge=1)
+    history_window: Optional[str] = Field(default=None, description="""Oldest history row a follower re-emits when it re-arms, written as an integer followed by a unit — `s`, `m` or `h`. Trimmed against `history_rows`, whichever admits fewer, so a quiet session's short log is not replayed in full after a long gap.""")
+
+    @field_validator('history_window')
+    def pattern_history_window(cls, v):
+        pattern=re.compile(r"^[0-9]+[smh]$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid history_window format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid history_window format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
 # Model rebuild
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 FlightConfig.model_rebuild()
@@ -447,3 +469,4 @@ BudgetConfig.model_rebuild()
 FenceConfig.model_rebuild()
 WorktreeConfig.model_rebuild()
 SummaryConfig.model_rebuild()
+TickerConfig.model_rebuild()
