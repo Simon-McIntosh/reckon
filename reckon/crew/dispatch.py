@@ -4102,8 +4102,8 @@ def dispatch(
         # which lives under the configuration home outside every repository.
         # Dispatch waits for neither the snapshot nor the spawn.
         if launch_kind == "cli" and plan is not None:
-            # Starting the worker is the one step a caller-supplied launcher
-            # stands in for and the one that fails for reasons outside
+            # Starting the worker is the responsibility a caller-supplied
+            # launcher stands in for, and the operation fails for reasons outside
             # dispatch's own writes: a harness executable that is absent or not
             # executable, a refused fork, an exhausted process table. The plan
             # above is wrapped for exactly that reason; the spawn is not, so an
@@ -4113,6 +4113,13 @@ def dispatch(
             # directory or worktree behind.
             try:
                 if launcher is None:
+                    _prepare_attempt_records(
+                        directory,
+                        run_id=run_id,
+                        attempt=int(record["attempt"]),
+                        attempt_kind=str(record["attempt_kind"]),
+                        attempt_started_at=str(record["attempt_started_at"]),
+                    )
                     spec_path = directory / SUPERVISOR_SPEC_NAME
                     _write_json(
                         spec_path,
@@ -4126,6 +4133,9 @@ def dispatch(
                             log_path=log_path,
                             stderr_path=stderr_path,
                             facts=dispatch_host,
+                            attempt=int(record["attempt"]),
+                            attempt_kind=str(record["attempt_kind"]),
+                            attempt_started_at=str(record["attempt_started_at"]),
                         ),
                     )
                     spawned_pid = _start_supervisor(spec_path, directory, run_id)
@@ -4853,7 +4863,50 @@ def _spawn(
     stderr_path: Path,
     prompt_path: Path,
 ) -> int:
-    """Start the backend detached, with its event stream landing on disk.
+    """Start one backend attempt, supervising continuations by run identity.
+
+    Fresh dispatches already construct their supervisor before reaching this
+    compatibility seam. The two callers that execute a later attempt name that
+    attempt in its stream path: ``resume-*`` for a same-lane continuation and
+    ``lane-change-*`` for a redispatch. Those attempts must leave through the
+    same supervisor as the first one so the pointer names the supervisor and a
+    worker exit is collected after the caller returns.
+
+    Other callers retain the detached worker helper below. They are internal
+    launch probes with no continuation identity; treating an arbitrary stream
+    filename as a run attempt would make its parent directory into a run by
+    accident.
+    """
+    stream_name = Path(log_path).name
+    if stream_name.startswith(("resume-", "lane-change-")):
+        directory = Path(log_path).parent
+        record = read_pointer(directory.name)
+        worktree = str(record.get("worktree") or "")
+        return supervised_launch(
+            plan,
+            run_directory=directory,
+            repo_root=Path(str(record.get("repo") or directory)),
+            worktree=Path(worktree) if worktree else directory,
+            log_path=Path(log_path),
+            stderr_path=Path(stderr_path),
+            prompt_path=Path(prompt_path),
+        )
+    return _spawn_detached_worker(
+        plan,
+        log_path=log_path,
+        stderr_path=stderr_path,
+        prompt_path=prompt_path,
+    )
+
+
+def _spawn_detached_worker(
+    plan: _backends.LaunchPlan,
+    *,
+    log_path: Path,
+    stderr_path: Path,
+    prompt_path: Path,
+) -> int:
+    """Start a backend process detached, with its event stream landing on disk.
 
     The prompt is fed from a file rather than a pipe so the caller never blocks
     on a full pipe buffer, and so the exact prompt stays recoverable beside the
@@ -4911,6 +4964,7 @@ SUPERVISOR_SPEC_NAME = "supervisor.json"
 TREE_SNAPSHOT_NAME = "tree-snapshot.json"
 WORKER_RECORD_NAME = "worker.json"
 EXIT_RECORD_NAME = "exit.json"
+ATTEMPT_RECORD_NAME = "attempt.json"
 
 # The argv token that runs this module as the per-run supervisor. Named with
 # underscores so it can never collide with a real crew subcommand.
@@ -4988,6 +5042,84 @@ def _stream_record_facts(paths: Iterable[Path]) -> tuple[int, Any]:
     return total, newest_type
 
 
+def _attempt_artifact_path(run_directory: Path, name: str, attempt: int) -> Path:
+    """Return the immutable path carrying one attempt's worker or exit record."""
+    return run_directory / f"attempt-{attempt}-{name}"
+
+
+def _prepare_attempt_records(
+    run_directory: Path,
+    *,
+    run_id: str,
+    attempt: int,
+    attempt_kind: str,
+    attempt_started_at: str,
+) -> None:
+    """Publish current attempt identity and retire prior canonical records.
+
+    The immutable attempt files retain every worker and exit receipt. The two
+    canonical names remain the classifier's current-attempt surface, so they
+    are cleared before a new supervisor can start. Publishing the marker first
+    prevents a late exit from the previous supervisor from reclaiming those
+    canonical names while the replacement is launching.
+    """
+    _supervisor_write(
+        run_directory / ATTEMPT_RECORD_NAME,
+        {
+            "run_id": run_id,
+            "attempt": attempt,
+            "attempt_kind": attempt_kind,
+            "attempt_started_at": attempt_started_at,
+        },
+    )
+    for name in (WORKER_RECORD_NAME, EXIT_RECORD_NAME):
+        current = run_directory / name
+        try:
+            payload = json.loads(current.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            payload = None
+        if isinstance(payload, Mapping):
+            archived = dict(payload)
+            try:
+                recorded_attempt = int(archived.get("attempt") or attempt - 1)
+            except (TypeError, ValueError):
+                recorded_attempt = max(1, attempt - 1)
+            archived["attempt"] = recorded_attempt
+            _supervisor_write(
+                _attempt_artifact_path(run_directory, name, recorded_attempt),
+                archived,
+            )
+        current.unlink(missing_ok=True)
+
+
+def _attempt_is_current(run_directory: Path, attempt: int) -> bool:
+    """Whether the run directory still names this supervisor's attempt."""
+    try:
+        marker = json.loads(
+            (run_directory / ATTEMPT_RECORD_NAME).read_text(encoding="utf-8")
+        )
+        return isinstance(marker, Mapping) and int(marker.get("attempt")) == attempt
+    except (OSError, TypeError, ValueError):
+        return False
+
+
+def _write_attempt_artifact(
+    run_directory: Path,
+    name: str,
+    payload: Mapping[str, Any],
+    *,
+    attempt: int,
+) -> bool:
+    """Write an immutable receipt and expose it only while its attempt is current."""
+    record = {**payload, "attempt": attempt}
+    written = _supervisor_write(
+        _attempt_artifact_path(run_directory, name, attempt), record
+    )
+    if _attempt_is_current(run_directory, attempt):
+        written = _supervisor_write(run_directory / name, record) and written
+    return written
+
+
 def _supervisor_spec(
     *,
     run_id: str,
@@ -4999,6 +5131,9 @@ def _supervisor_spec(
     log_path: Path,
     stderr_path: Path,
     facts: Any | None = None,
+    attempt: int = 1,
+    attempt_kind: str = "dispatch",
+    attempt_started_at: str = "",
 ) -> dict[str, Any]:
     """Describe everything the supervisor needs to take over the launch.
 
@@ -5015,6 +5150,9 @@ def _supervisor_spec(
         "prompt_path": str(prompt_path),
         "log_path": str(log_path),
         "stderr_path": str(stderr_path),
+        "attempt": attempt,
+        "attempt_kind": attempt_kind,
+        "attempt_started_at": attempt_started_at or _utc_now(),
         # The argv the fleet's batch step runs verbatim when it is asked to
         # spawn this run, carried in the spec so the batch step stays free of
         # any knowledge of reckon's module layout.
@@ -5226,6 +5364,18 @@ def supervised_launch(
     dispatch path writes it, so a fleet spawn always finds its stderr path on
     disk.
     """
+    record = read_pointer(run_directory.name)
+    attempt = int(record.get("attempt") or 1) + 1
+    stream_name = Path(log_path).name
+    attempt_kind = "lane-change" if stream_name.startswith("lane-change-") else "resume"
+    attempt_started_at = _utc_now()
+    _prepare_attempt_records(
+        run_directory,
+        run_id=run_directory.name,
+        attempt=attempt,
+        attempt_kind=attempt_kind,
+        attempt_started_at=attempt_started_at,
+    )
     spec_path = run_directory / SUPERVISOR_SPEC_NAME
     _write_json(
         spec_path,
@@ -5238,6 +5388,9 @@ def supervised_launch(
             prompt_path=prompt_path,
             log_path=log_path,
             stderr_path=stderr_path,
+            attempt=attempt,
+            attempt_kind=attempt_kind,
+            attempt_started_at=attempt_started_at,
         ),
     )
     return _start_supervisor(spec_path, run_directory, run_directory.name)
@@ -5353,6 +5506,7 @@ def _supervisor_tree_snapshot(spec: Mapping[str, Any]) -> None:
 def _supervisor_exit_record(
     *,
     run_id: str,
+    attempt: int,
     worker_pid: int | None,
     launched_at: str,
     status: int | None,
@@ -5363,6 +5517,7 @@ def _supervisor_exit_record(
     count, last_type = _stream_record_facts(paths)
     record: dict[str, Any] = {
         "run_id": run_id,
+        "attempt": attempt,
         "recorded_by": "supervisor",
         "worker_pid": worker_pid,
         "launched_at": launched_at,
@@ -5420,6 +5575,10 @@ def _run_supervisor(spec_path: Path) -> int:
     if not isinstance(spec, Mapping):
         return 0
     run_directory = Path(str(spec.get("run_directory") or ""))
+    try:
+        attempt = int(spec.get("attempt") or 1)
+    except (TypeError, ValueError):
+        attempt = 1
     stop_requested = _record_stop_before_spawn()
     _supervisor_tree_snapshot(spec)
     launched_at = _utc_now()
@@ -5428,43 +5587,52 @@ def _run_supervisor(spec_path: Path) -> int:
         # so none is spawned and the launch is over before it began. The one
         # launch-failure record is still written, because the run directory
         # outlives the pointer a discard removes.
-        _supervisor_write(
-            run_directory / EXIT_RECORD_NAME,
+        _write_attempt_artifact(
+            run_directory,
+            EXIT_RECORD_NAME,
             _supervisor_exit_record(
                 run_id=str(spec.get("run_id") or ""),
+                attempt=attempt,
                 worker_pid=None,
                 launched_at=launched_at,
                 status=None,
                 run_directory=run_directory,
             )
             | {"detail": "crew stop arrived before the worker was spawned"},
+            attempt=attempt,
         )
         return 0
     try:
         pid = _supervisor_spawn_worker(spec)
     except (OSError, ValueError, KeyError) as exc:
-        _supervisor_write(
-            run_directory / EXIT_RECORD_NAME,
+        _write_attempt_artifact(
+            run_directory,
+            EXIT_RECORD_NAME,
             _supervisor_exit_record(
                 run_id=str(spec.get("run_id") or ""),
+                attempt=attempt,
                 worker_pid=None,
                 launched_at=launched_at,
                 status=None,
                 run_directory=run_directory,
             )
             | {"detail": f"worker did not spawn: {type(exc).__name__}: {exc}"},
+            attempt=attempt,
         )
         return 0
-    _supervisor_write(
-        run_directory / WORKER_RECORD_NAME,
+    _write_attempt_artifact(
+        run_directory,
+        WORKER_RECORD_NAME,
         {
             "run_id": str(spec.get("run_id") or ""),
+            "attempt": attempt,
             "pid": pid,
             "pid_start_time": _process_start_time(pid),
             "launched_at": launched_at,
             "backend": str(spec["plan"].get("backend") or ""),
             "argv": list(spec["plan"].get("argv") or ()),
         },
+        attempt=attempt,
     )
     try:
         _, status = os.waitpid(pid, 0)
@@ -5472,15 +5640,18 @@ def _run_supervisor(spec_path: Path) -> int:
         status = None
     except OSError:
         status = None
-    _supervisor_write(
-        run_directory / EXIT_RECORD_NAME,
+    _write_attempt_artifact(
+        run_directory,
+        EXIT_RECORD_NAME,
         _supervisor_exit_record(
             run_id=str(spec.get("run_id") or ""),
+            attempt=attempt,
             worker_pid=pid,
             launched_at=launched_at,
             status=status,
             run_directory=run_directory,
         ),
+        attempt=attempt,
     )
     return 0
 
