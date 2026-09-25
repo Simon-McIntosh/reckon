@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T09:45:09",
+  "updated": "2026-09-25T09:46:01",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -402574,6 +402574,295 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T064115204245-worker-path-carries-the-shims",
+        "plan": "a-worker-knows-it-is-on-compute",
+        "section": "\u00a74",
+        "node": "worker-path-carries-the-shims",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3565,
+                "cached_input_tokens": 762669,
+                "input_tokens": 766236,
+                "output_tokens": 1468,
+                "reasoning_output_tokens": 586,
+                "total_tokens": 767704,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+            "session_id": "s23-coord"
+          },
+          "done_when": "when reckon.host.host_facts().in_allocation is true at dispatch, the worker launch PATH carries reckon/host_shims ahead of every other entry (built in launch_search_path, reckon/crew/dispatch.py near :4511 per reuse map Node B2 at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s23-coord/s23-reuse-map/reuse-map.md) and the composed worker prompt carries one host line naming the node, the job id, that /tmp is node-local, that srun/sbatch/salloc must not be used because the worker already runs on the node, and that logs a later reader needs go under the run directory; when in_allocation is false neither appears; tests/test_worker_path_carries_shims.py asserts both cases on fixture host facts without reading the real /proc, and asserts the real srun still resolves outside the shim directory; the declared mutation (the PATH prepend removed) is applied and the inside-allocation test observed to fail with its log recorded; existing tests covering launch_search_path and prompt composition pass unchanged; ruff --output-format=concise on each edited source file reports no more findings than at base",
+          "estimated_hours": null,
+          "goal": "put reckon/host_shims first on a worker's PATH and state the host facts in the worker prompt when the dispatcher is inside the allocation",
+          "id": "worker-path-carries-the-shims",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-25T06:41:16Z",
+            "read_at": "2026-09-25T06:41:17Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 11.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T064115204245-worker-path-carries-the-shims/manifest.md",
+          "negative_control": "remove the shim-directory PATH prepend",
+          "plan": "a-worker-knows-it-is-on-compute",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/prompts.py",
+            "tests/test_worker_path_carries_shims.py",
+            "docs/evidence/archive/a-worker-knows-it-is-on-compute-landed.html",
+            "docs/figures/a-worker-knows-it-is-on-compute",
+            "docs/plans/a-worker-knows-it-is-on-compute.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-i",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-25T06:41:32Z",
+        "completed_at": "2026-09-25T07:09:57Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1705,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1705,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "2d07ce0809dadcb4023c4f4643348f1d0d06eb17",
+        "commits": [
+          "a690ab92498ac6c03477537b7332b5e17a106513",
+          "f2784a34b55d0f379414d70fa7e3186ea7170b8d",
+          "7326f7fefc06e1de1bee5623cd9ee968f0325d90",
+          "2130295fa506f1a9a57f27727c8e9eec37e3d4c6"
+        ],
+        "changed_lines": {
+          "added": 508,
+          "removed": 14,
+          "files": 5
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_worker_path_carries_shims.py tests/test_crew_prompts.py tests/test_backend_environment.py tests/test_crew_launch_failure.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T064115204245-worker-path-carries-the-shims/persistence-fix-focused.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T064115204245-worker-path-carries-the-shims/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d74d-af9d-7f61-a39b-0bdd413fe4b2",
+        "session_harness": "codex",
+        "session_model": "gpt-5.6-sol",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 22541696,
+            "cached_input_tokens_cumulative": 22541696,
+            "input_tokens": 22805817,
+            "input_tokens_cumulative": 22805817,
+            "output_tokens": 63568,
+            "output_tokens_cumulative": 63568,
+            "reasoning_output_tokens": 19867,
+            "reasoning_output_tokens_cumulative": 19867
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-25T07:09:57Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 12.0,
+              "resets_at": 1790869124,
+              "observed_at": "2026-09-25T07:09:57Z"
+            }
+          ],
+          "notional_cost_usd": 92.4946,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-sol",
+            "input_per_million": 4.0,
+            "output_per_million": 20.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 19,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 95
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 22541696,
+          "cumulative_input_tokens": 22805817,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 83435,
+          "generation_seconds": 1503.88,
+          "machine_seconds": 105.579,
+          "tokens_per_second": 55.48
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/worker-path-carries-the-shims",
+          "session_id": "01a0d74d-af9d-7f61-a39b-0bdd413fe4b2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T07:09:57Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T07:00:14Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-25T06:43:07Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T064115204245-worker-path-carries-the-shims",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 336,
+          "worker_pid": 3760448
+        },
+        "promoted_revision": "2130295fa506f1a9a57f27727c8e9eec37e3d4c6",
+        "plan_impl_at_dispatch": 0.6,
+        "impl_move": {
+          "plan": "a-worker-knows-it-is-on-compute",
+          "at_dispatch": 0.6,
+          "at_complete": 0.8,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_worker_path_carries_shims.py"
+          ],
+          "declaration": "remove the shim-directory PATH prepend",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T064115204245-worker-path-carries-the-shims/remove-shim-path-prepend.red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T064115204245-worker-path-carries-the-shims/remove-shim-path-prepend.red.log"
+        },
+        "lane_advisory": {
+          "backend": "codex",
+          "burn_multiple": 1.2284965099530967,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'codex' is projected to exhaust at 2026-09-30T11:11:43Z, which is after this node's 3000s horizon ending 2026-09-25T07:31:17.235919+00:00",
+          "horizon_ends_at": "2026-09-25T07:31:17.235919+00:00",
+          "horizon_seconds": 3000,
+          "metered": true,
+          "observed_at": "2026-09-25T06:41:16Z",
+          "precedes_horizon": false,
+          "projected_exhaustion_at": "2026-09-30T11:11:43Z",
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 550646,
+          "state": "quiet",
+          "utilisation_pct": 11.0
+        },
+        "lane_declaration": {
+          "backend": "codex",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-25T06:41:16Z",
+          "read_at": "2026-09-25T06:41:17Z",
+          "resolved_backend": "codex",
+          "utilisation_pct": 11.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 119.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -402886,6 +403175,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2732
+    "_version": 2733
   }
 }

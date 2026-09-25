@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-commits" content="9e695b0c,bf1725d6,2700bda6,a4bbb242,f2810b50,87a3ed30,c0b25024,20822ec8,b0ffdd18,a690ab92,f2784a34,7326f7fe,2130295f">
 <meta name="plan-impl" content="0.8">
 </head>
@@ -285,6 +285,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260925-shims-on-path" data-who="reckon-build" data-when="2026-09-25T07:52:00Z">
     <div class="r-comment-body"><p>Run <code>r-20260925T064115204245-worker-path-carries-the-shims</code> (codex sol5.6) landed, merged at <code>4801760b</code>. This is fleet-release gate 8.</p><p>When the dispatcher is inside the allocation, <code>reckon/host_shims</code> leads the worker's launch PATH. The worker prompt then carries one host line naming the node, the job, whether <code>/tmp</code> is node-local, the no-srun/sbatch/salloc rule, and where durable logs go.</p><p>The coordinator rejected the first head, which wrote the dispatcher's entire environment, credentials included, into the supervisor spec in the run directory. The same session fixed it: the spec and in-harness directive now persist only the overlay plus PATH, and a sentinel test fails on the old head. The gate is 48 passed, and the review scored 95/100 with no findings.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260925T064115204245-worker-path-carries-the-shims" data-who="reckon-build" data-when="2026-09-25T07:09:57Z">
+    <div class="r-comment-body"><p>reckon/host_shims leads the worker PATH inside the allocation and the prompt carries a host line; the persisted spec holds only overlay plus PATH (sentinel test; first head leaked the whole environment); 48 passed; review 95</p></div>
 </div>
 </section>
 </main>
