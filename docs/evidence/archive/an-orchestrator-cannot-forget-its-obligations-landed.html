@@ -12,6 +12,8 @@
   <meta name="plan-verifies" content="an-orchestrator-cannot-forget-its-obligations#s2">
   <meta name="plan-commits" content="66d08fa6caad67f2b0a762f1c09aac2a0c723a42,9f7ea716ef16db2eb834fdb35e8f5248d56f5f4c">
   <meta name="plan-artifacts" content="reckon/crew/obligations.py,tests/test_crew_obligations.py,docs/figures/an-orchestrator-cannot-forget-its-obligations/obligations-derived-view.svg">
+  <meta name="plan-commits" content="66d08fa6caad67f2b0a762f1c09aac2a0c723a42,71dc997286b9778efc2078a6209b2f91f5f8a6e2,baba32acbfc77bd2262343d3ff0163cb4562d1ed">
+  <meta name="plan-artifacts" content="reckon/crew/obligations.py,tests/test_crew_obligations.py,docs/figures/an-orchestrator-cannot-forget-its-obligations/obligations-derived-view.svg,reckon/hooks/coordinator_obligations.py,tests/test_coordinator_obligations_hook.py,docs/figures/an-orchestrator-cannot-forget-its-obligations/obligations-hook-binds-the-harness.svg">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="fleet allocation with the project root virtual environment">
@@ -209,6 +211,31 @@
         </tbody>
       </table>
       <p>The fixture reuses the census module's seeding helpers (<code>_git</code>, <code>_write_pointer</code>, <code>_store_complete_review</code>, <code>_file_mtimes</code>) and its <code>PROJECT</code> and <code>SESSION</code> vocabulary rather than defining a second copy. The test first asserts the derivation's item kinds are exactly the two seeded and non-empty, then asserts the view's <code>obligations</code> and <code>summary</code> equal the function's own output; the missing-session test is unchanged. Both declarations are restored byte-identically and the working tree is clean after each.</p>
+    </section>
+
+    <section id="obligations-hook">
+      <h2>The harness is bound to the list</h2>
+      <p>Commit <code>71dc997286b9778efc2078a6209b2f91f5f8a6e2</code> adds <code>reckon/hooks/coordinator_obligations.py</code>. The prompt mode returns the checklist as <code>additionalContext</code> with the authority line last; the stop mode returns <code>{"decision": "block"}</code> with the same checklist as its reason while duties remain, and stays silent when <code>stop_hook_active</code> marks a turn that has already continued on that reason. The crew session is resolved through the follower registration, whose record names the process that armed it: a registration is this session's when that process descends from this session's harness process, or when the crew session name is the harness session id verbatim. The project is resolved from the hook's working directory through the mounts, including a session worktree's path name, so no git call sits in the hook path.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-hook-binds-the-harness.svg" alt="Hook JSON resolves through the mounts and the follower registry into derived obligations, which the prompt and stop modes emit, with unmounted, unregistered and empty cases exiting silently.">
+        <figcaption>One resolution path and three silent exits; the stop mode's single continuation is what keeps a block from looping.</figcaption>
+      </figure>
+      <p>Commit <code>baba32acbfc77bd2262343d3ff0163cb4562d1ed</code> adds <code>tests/test_coordinator_obligations_hook.py</code>, which drives the script as a subprocess with recorded hook JSON against a synthesised mounts file, config home and follower registration. The emitted JSON is compared in full, with only the two wall-clock ages normalised; each silent case asserts empty stdout and exit 0.</p>
+      <table>
+        <thead><tr><th>Recorded case</th><th>Input</th><th>Emitted</th></tr></thead>
+        <tbody>
+          <tr><td>Coordinating session holding one blocked run</td><td>prompt mode, mounted directory, registered follower</td><td>checklist in <code>additionalContext</code>, authority line last</td></tr>
+          <tr><td>Same list, stop mode</td><td><code>stop_hook_active</code> absent</td><td><code>{"decision": "block", "reason": &lt;checklist&gt;}</code></td></tr>
+          <tr><td>Same list, continued turn</td><td><code>stop_hook_active</code> true</td><td>nothing, exit 0</td></tr>
+          <tr><td>Nothing outstanding</td><td>registered session, no live duty</td><td>nothing in either mode</td></tr>
+          <tr><td>Directory outside the mounts</td><td>working directory under no mount</td><td>nothing, exit 0</td></tr>
+          <tr><td>No follower registered</td><td>duty present, no registration</td><td>nothing, exit 0</td></tr>
+          <tr><td>Another session's follower</td><td>arming process outside this session's tree</td><td>nothing, exit 0</td></tr>
+        </tbody>
+      </table>
+      <p>The checklist itself is exact: the fixture's blocked run produced one item carrying its kind, node, age and recovery command, the drain view's unreconciled figure, and <code>mirror these into your task list; reckon's list is the authority</code> as the final line.</p>
+      <p><strong>Declared mutation:</strong> the stop mode was made to block regardless of <code>stop_hook_active</code> in a scratch copy of the committed tree. The continuation assertion failed as declared and no other case moved (1 failed, 6 passed). The receipt is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080904634390-obligations-hook-binds-the-harness/negative-control-stop-hook-active.log</code>, whose first line records the declared mutation verbatim.</p>
+      <p><strong>Scope retained:</strong> the installer half of the section (<code>reckon hooks install</code> prints the snippet and writes nothing) belongs to a separate node, and the acknowledged case waits on &sect;3's deferral store; neither is asserted here. The real settings home and config home were read before and after every run and required unchanged, because the hook must be provably unable to touch them.</p>
     </section>
   </main>
 </body>
