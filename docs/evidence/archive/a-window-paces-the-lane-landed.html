@@ -1942,14 +1942,25 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     <h2>&sect;5b &mdash; A wallet's pace, bar and reserve resolve once per wallet</h2>
 
     <p><strong>What landed.</strong> <code>reckon/crew/budget_group.py</code> gains
-    <code>group_figures(group, config, readings, *, block=None, now=None)</code>, returning a
+    <code>group_figures(group, config, windows, *, block=None, now=None)</code>, returning a
     <code>GroupFigures</code> payload carrying the declared wallet's <code>fill</code>,
-    <code>pace</code>, <code>bar</code> and <code>reserve_pct</code>. The figure is taken from the
-    wallet's freshest member reading &mdash;
-    the position the module already resolved &mdash; and each part is delegated to the module that owns
-    its arithmetic: <code>crew.pace.allowance_for_group</code> for the allowance,
-    <code>crew.bar</code> for the threshold and
-    <code>crew.reserve.reserve_pct</code> for the withheld fraction. Commit <code>bb971efb</code>.</p>
+    <code>pace</code>, <code>bar</code> and <code>reserve_pct</code>. The figures are taken from the
+    wallet's freshest member report and each part is delegated to the module that owns its arithmetic:
+    <code>crew.pace.allowance_for_group</code> for the allowance, <code>crew.bar</code> for the
+    threshold and <code>crew.reserve.reserve_pct</code> for the withheld fraction. Commits
+    <code>bb971efb</code> and <code>5d3f52e4</code>.</p>
+
+    <p><strong>The vocabulary is the crew's own.</strong> <code>windows</code> maps a backend to its
+    window reading &mdash; an already read <code>crew.window_reading.WindowReading</code> or a stream
+    source the reader can open &mdash; the shape <code>budget.group_pace</code> consumes: the provider's
+    own period names, each utilisation a fraction of its own window, the reset stamp the window
+    publishes. The first form read <code>five_hour_used_percent</code>,
+    <code>seven_day_used_percent</code> and <code>seven_day_reset_at</code>, keys nothing in reckon
+    writes; the fixture was their only author, and the gate stayed green because it proved its own
+    fixture round-tripped. The rework changes the consumer rather than adding a producer: an invented key
+    resolves no figure through a real stream, the test's fixture is the provider's own event read through
+    the crew's reader, and a parity case holds the wallet's figure against the entry
+    <code>budget.group_pace</code> publishes from the same streams.</p>
 
     <p><strong>A lane is not a wallet, and the code says so.</strong> The function requires a declared
     group identifier and raises the same <code>ValueError</code> <code>group_position</code> raises:
@@ -1987,7 +1998,9 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
       </thead>
       <tbody>
         <tr><td><code>tests/test_budget_group_declaration.py</code></td><td>absent (new file)</td>
-        <td><strong>8 passed</strong></td><td>0</td></tr>
+        <td><strong>12 passed</strong></td><td>0</td></tr>
+        <tr><td>selection: declaration, hold, preflight pace</td><td>n/a (new file)</td>
+        <td><strong>62 passed</strong></td><td>0</td></tr>
         <tr><td>cohort: reserve, pace, budget_group, hold</td><td>54 passed</td>
         <td><strong>54 passed</strong></td><td>0</td></tr>
       </tbody>
@@ -2010,8 +2023,9 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     before, three after). <code>import reckon</code> resolves to the scratch tree, printed in the log
     before the run. The named case is red on its membership assertion &mdash; <code>assert 3 == 4</code>,
     the wallet's members being <code>['codex', 'codex-astra', 'codex-terra']</code> &mdash; and the file
-    reports <strong>2 failed, 6 passed</strong>: the second red is the same mutation's effect on the
-    figures case, and the six that pass are the control that the copied tree itself runs.</p>
+    reports <strong>2 failed, 10 passed</strong>: the second red is the same mutation's effect on
+    <code>test_a_wallets_figures_resolve_once_for_the_wallet</code>, which resolves a wallet of three
+    lanes, and the ten that pass are the control that the copied tree itself runs.</p>
 
     <h3>What this record does not claim</h3>
 

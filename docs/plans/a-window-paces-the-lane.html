@@ -594,15 +594,27 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 
     <h3 id="s5b-wallet-figures">Landing &mdash; a wallet's pace, bar and reserve resolve once per wallet</h3>
 
-    <p><strong>Landed 2026-09-25</strong> (commit <code>bb971efb</code>).
-    <code>reckon/crew/budget_group.py</code> now carries
-    <code>group_figures(group, config, readings, *, block=None, now=None)</code>: the declared wallet's
-    fill, allowance, bar and reserve, taken from the wallet's freshest member reading and delegated to the
+    <p><strong>Landed 2026-09-25</strong> (first form <code>bb971efb</code>, reworked
+    <code>5d3f52e4</code>). <code>reckon/crew/budget_group.py</code> now carries
+    <code>group_figures(group, config, windows, *, block=None, now=None)</code>: the declared wallet's
+    fill, allowance, bar and reserve, taken from the wallet's freshest member report and delegated to the
     module that owns each figure &mdash; <code>crew.pace</code> for the allowance, <code>crew.bar</code>
     for the threshold, <code>crew.reserve</code> for the withheld fraction. It takes a declared group
     identifier exactly as <code>group_position</code> does, and refuses a lane name with the same
     <code>ValueError</code>, so one lane's quarter of a shared allowance has no entry point through which
     it could be reported as the wallet's own.</p>
+
+    <p><strong>The figures read the crew's own reports.</strong> <code>windows</code> maps a backend to
+    its window reading &mdash; an already read <code>crew.window_reading.WindowReading</code> or a stream
+    source the reader can open &mdash; the vocabulary <code>budget.group_pace</code> already consumes:
+    the provider's own period names, and each utilisation a fraction of its own window. The first form
+    read <code>five_hour_used_percent</code>, <code>seven_day_used_percent</code> and
+    <code>seven_day_reset_at</code>; nothing in reckon writes those keys, the test fixture was their only
+    author, and on a real workstation the wallet resolved no fill, bar or pace while the gate stayed
+    green. The rework fixes the consumer rather than adding a producer: the test now builds each lane's
+    fixture as the provider's own stream event and reads it through the crew's reader, and a parity case
+    asserts the wallet's figure against the entry <code>budget.group_pace</code> publishes from those
+    same streams, so an invented key fails the file instead of silencing it.</p>
 
     <p><strong>Absence is not zero.</strong> A wallet whose reading can be aged for no member reports no
     fill, no bar and no pace at all rather than a zero fill, which would read as an empty window and admit
@@ -615,18 +627,19 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     </figure>
 
     <p><strong>Evidence.</strong> <code>tests/test_budget_group_declaration.py</code> &mdash;
-    <strong>8 passed</strong> &mdash; synthesises a configuration home carrying the declarations and
+    <strong>12 passed</strong> &mdash; synthesises a configuration home carrying the declarations and
     resolves it through the real resolver, so the path under test is the one a host layer reaches: the
     four sol-family lanes resolve to one wallet and spark to a second, with the undeclared lane
     <code>codex-orphan</code> in neither; the wallet's fill is its
-    freshest member's and never a stale lane's own; one wallet never paces on another wallet's reading;
-    and no per-lane figures entry point exists. The run snapshots the workstation's own configuration home
-    before it starts and requires it byte-identical afterwards, so it can neither depend on nor write host
-    state. The declared mutation &mdash; dropping one sol-family lane's <code>budget_group</code> so it
-    resolves to no group &mdash; reddens
+    freshest member's and never a stale lane's own; a report nothing can date does not supply the wallet;
+    one wallet never paces on another wallet's reading; a week clock with no reset yields no pace rather
+    than a guessed one; and no per-lane figures entry point exists. The run snapshots the workstation's
+    own configuration home before it starts and requires it byte-identical afterwards, so it can neither
+    depend on nor write host state. The declared mutation &mdash; dropping one sol-family lane's
+    <code>budget_group</code> so it resolves to no group &mdash; reddens
     <code>test_the_four_sol_lanes_resolve_to_one_group</code> on its membership assertion
     (<code>assert 3 == 4</code>) in a scratch tree whose <code>reckon</code> import resolves to that tree,
-    the file's other six cases still passing as the positive control. The cohort
+    the file's other ten cases still passing as the positive control. The cohort
     <code>tests/test_reserve.py tests/test_pace.py tests/test_budget_group.py tests/test_hold.py</code> is
     <strong>54 passed at the dispatch base and 54 at this head</strong>, and lint measured by delta against
     the base copy of the changed file adds no finding.</p>
