@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 470" font-family="system-ui, sans-serif" font-size="13">
+  <title>Where the recover stub went inert</title>
+  <rect width="760" height="470" fill="#ffffff"/>
+  <text x="24" y="30" font-size="16" font-weight="600">The MCP-view gate: green before the purity fix, red at the integrated head</text>
+
+  <!-- lane labels -->
+  <text x="24" y="66" font-size="12" fill="#555">test line (tests/test_mcp_crew_obligations.py, unchanged after da226e1e)</text>
+  <text x="24" y="234" font-size="12" fill="#555">code line (reckon/crew/obligations.py)</text>
+
+  <!-- test line -->
+  <rect x="24" y="76" width="240" height="58" rx="6" fill="#eef4ff" stroke="#7aa2e0"/>
+  <text x="36" y="98"><tspan font-weight="600">da226e1e</tspan> test added</text>
+  <text x="36" y="118" fill="#333">patches recovery.recover</text>
+
+  <rect x="300" y="76" width="270" height="58" rx="6" fill="#e9f7ec" stroke="#5aa96f"/>
+  <text x="312" y="98"><tspan font-weight="600">7c4be2b6</tspan> base arm</text>
+  <text x="312" y="118" fill="#14532d">2 passed — recover patch live</text>
+
+  <!-- code line -->
+  <rect x="24" y="244" width="240" height="58" rx="6" fill="#f4f4f4" stroke="#999"/>
+  <text x="36" y="266">obligations() calls</text>
+  <text x="36" y="286"><tspan font-family="monospace">recovery.recover</tspan></text>
+
+  <rect x="300" y="244" width="270" height="58" rx="6" fill="#fdecea" stroke="#c0504d"/>
+  <text x="312" y="266"><tspan font-weight="600">9f7ea716</tspan> purity fix</text>
+  <text x="312" y="286" fill="#7f1d1d">classify_pointer replaces recover</text>
+
+  <!-- arrows -->
+  <line x1="264" y1="105" x2="296" y2="105" stroke="#7aa2e0" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="264" y1="273" x2="296" y2="273" stroke="#c0504d" stroke-width="2" marker-end="url(#b)"/>
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#7aa2e0"/></marker>
+    <marker id="b" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#c0504d"/></marker>
+  </defs>
+  <line x1="435" y1="134" x2="435" y2="176" stroke="#888" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="435" y1="302" x2="435" y2="176" stroke="#888" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+  <rect x="300" y="178" width="270" height="46" rx="6" fill="#fff7e6" stroke="#d9a441"/>
+  <text x="312" y="198"><tspan font-weight="600">6eac9d30</tspan> merge</text>
+  <text x="312" y="216" fill="#6b4a12">test line and purity fix combine</text>
+
+  <line x1="435" y1="224" x2="435" y2="258" stroke="#888" stroke-width="2"/>
+
+  <!-- head arm -->
+  <rect x="24" y="330" width="546" height="76" rx="6" fill="#f8f0f0" stroke="#c0504d"/>
+  <text x="36" y="352"><tspan font-weight="600">f97cd292</tspan> head arm — 1 failed, 1 passed</text>
+  <text x="36" y="372" font-family="monospace" fill="#7f1d1d">assert [] == ['review-ready', 'review-missing']</text>
+  <text x="36" y="392" fill="#333">the stub returns nothing, so the kinds assertion at :116 is the one that trips</text>
+
+  <line x1="435" y1="302" x2="435" y2="330" stroke="#c0504d" stroke-width="2" marker-end="url(#b)"/>
+
+  <text x="24" y="436" font-size="12" fill="#555">Base 7c4be2b6 and head f97cd292 run the identical test file; the recover patch dies at 9f7ea716, not at the merge.</text>
+  <text x="24" y="0" fill="none"> </text>
+  <text x="24" y="454" font-size="12" fill="#555">Drain patch stays live throughout (summary.unreconciled_runs = 2 in the failing run): only the recover symbol left the path.</text>
+</svg>
