@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T03:05:08",
+  "updated": "2026-09-25T03:08:45",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -4027,11 +4027,13 @@
         "session_id": "01a0c3fb-6a1c-7f53-b2ee-01252a11817e",
         "session_model": "gpt-6-astra",
         "sessions": {
-          "{\"alias\":\"astra6\",\"backend\":\"codex-astra\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-6-astra\",\"sandbox\":\"worktree-full\"}": "01a0c3fb-6a1c-7f53-b2ee-01252a11817e"
+          "{\"alias\":\"astra6\",\"backend\":\"codex-astra\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-6-astra\",\"sandbox\":\"worktree-full\"}": "01a0c3fb-6a1c-7f53-b2ee-01252a11817e",
+          "{\"alias\":\"astra6\",\"backend\":\"codex-astra\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"gpt-6-astra\",\"sandbox\":\"worktree-full\"}": "01a0d5ad-c14e-7573-8a45-43f2331ac17e"
         },
         "created": "2026-09-21",
         "session_owners": {
-          "{\"alias\":\"astra6\",\"backend\":\"codex-astra\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-6-astra\",\"sandbox\":\"worktree-full\"}": "ship-crpc-20260921"
+          "{\"alias\":\"astra6\",\"backend\":\"codex-astra\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-6-astra\",\"sandbox\":\"worktree-full\"}": "ship-crpc-20260921",
+          "{\"alias\":\"astra6\",\"backend\":\"codex-astra\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"gpt-6-astra\",\"sandbox\":\"worktree-full\"}": "s22-coord"
         }
       },
       {
@@ -370698,6 +370700,303 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T230714304318-closure-gates-hold-a-terminal-write",
+        "plan": "dependency-edge-semantics",
+        "section": "\u00a74",
+        "node": "closure-gates-hold-a-terminal-write",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1203,
+                "cached_input_tokens": 401362,
+                "input_tokens": 402567,
+                "output_tokens": 984,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 403551,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "Following the locked transition-gate-shape decision (one-edge-with-transition), a plan can declare a closure gate naming a foreign plan (slug or slug#section) and the transition it gates, parsed and written through the existing gated_sections read and write paths in reckon/_plan_html.py. New tests/test_closure_gates.py asserts, in both directions: a plan with an open closure gate is in roadmap ready_now and dispatchable; a terminal status write to it through the store boundary in reckon/_store.py (beside the continuation-chain refusal near :2006) is refused naming the gate and its gating plan; once the gate carries a verdict the same write is accepted; and a decision gated by a foreign plan's outcome appears in roadmap decision_blockers with that gating plan named. The declared negative control is executed and logged: disabling the new refusal branch in reckon/_store.py makes the refused-write case pass the write, failing the test. Every existing test file importing reckon.roadmap, reckon._store or reckon._plan_html passes at your head, judged by delta against the base revision, with base and head failure ids recorded.",
+          "estimated_hours": null,
+          "goal": "A plan carrying a closure gate stays dispatchable and refuses a terminal write until its gate has a verdict",
+          "id": "closure-gates-hold-a-terminal-write",
+          "lane_declaration": {
+            "backend": "codex-astra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-24T23:07:14Z",
+            "read_at": "2026-09-24T23:07:16Z",
+            "resolved_backend": "codex-astra",
+            "utilisation_pct": 1.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230714304318-closure-gates-hold-a-terminal-write/manifest.md",
+          "negative_control": "disable the closure-gate refusal branch in reckon/_store.py; the refused-terminal-write case in tests/test_closure_gates.py must fail",
+          "plan": "dependency-edge-semantics",
+          "requested_backend": "codex-astra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/roadmap.py",
+            "reckon/_plan_html.py",
+            "reckon/_store.py",
+            "reckon/_schema.py",
+            "tests/test_closure_gates.py",
+            "docs/plans/dependency-edge-semantics.html",
+            "docs/evidence/archive/dependency-edge-semantics-landed.html",
+            "docs/figures/dependency-edge-semantics",
+            "docs/_shared/plan.schema.json"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "serving-origin",
+        "backend": "codex-astra",
+        "local": false,
+        "agent": {
+          "alias": "astra6",
+          "backend": "codex-astra",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-6-astra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-24T23:07:31Z",
+        "completed_at": "2026-09-24T23:58:41Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 3070,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 3070,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "c924a2446aca0078438a59ea05a18b1ae3978072",
+        "commits": [
+          "e280d50fd103b25d44ad1aacff91dd123708c2e3",
+          "3fb14fb27fc63a7f2040f6ebfc03b28e03ce80e7",
+          "e1d2c312d682c7239bddb041712a193a471f769d",
+          "8ff3d41fd6e6d88a95e4c22c8b672b300d73bb3f",
+          "c563da20d3f172073d3a5fde23c32006e3046309"
+        ],
+        "changed_lines": {
+          "added": 668,
+          "removed": 29,
+          "files": 9
+        },
+        "tests_added": 37,
+        "gate": "passed",
+        "gate_check": {
+          "command": "[\n  \"/home/ITER/mcintos/Code/reckon/.venv/bin/python\",\n  \"-m\",\n  \"pytest\",\n  \"-p\",\n  \"no:cacheprovider\",\n  \"-n\",\n  \"4\",\n  \"--dist\",\n  \"loadfile\",\n  \"--timeout=60\",\n  \"--basetemp=/tmp/cg-230714\",\n  \"-q\",\n  \"--tb=short\",\n  \"tests/test_append_decision_keeps_its_question.py\",\n  \"tests/test_archive.py\",\n  \"tests/test_audit.py\",\n  \"tests/test_cached_account_age.py\",\n  \"tests/test_capability.py\",\n  \"tests/test_config_home.py\",\n  \"tests/test_continuation.py\",\n  \"tests/test_crew_declared_negative_control.py\",\n  \"tests/test_crew_directory.py\",\n  \"tests/test_crew_placed_promotion.py\",\n  \"tests/test_crew_promotion.py\",\n  \"tests/test_crew_promotion_requires_review.py\",\n  \"tests/test_crew_recovery.py\",\n  \"tests/test_cross_project_refs.py\",\n  \"tests/test_dec_open.py\",\n  \"tests/test_discovery_reads_each_file_once.py\",\n  \"tests/test_dispatch_lifetime_probe.py\",\n  \"tests/test_dispatch_reads_derivations_cheaply.py\",\n  \"tests/test_dispatch_returns_without_worker.py\",\n  \"tests/test_doccheck.py\",\n  \"tests/test_doccheck_unwired_plan.py\",\n  \"tests/test_edit_plan.py\",\n  \"tests/test_evidence_from_report.py\",\n  \"tests/test_evidence_synthesis.py\",\n  \"tests/test_executable_remainder.py\",\n  \"tests/test_fleet_index.py\",\n  \"tests/test_gate_log_is_preserved.py\",\n  \"tests/test_gates.py\",\n  \"tests/test_graph_target.py\",\n  \"tests/test_landing_append_is_commutative.py\",\n  \"tests/test_landing_comment_authorship.py\",\n  \"tests/test_lane_advisory_on_dispatch.py\",\n  \"tests/test_ledger.py\",\n  \"tests/test_mcp_audit.py\",\n  \"tests/test_mcp_import_surface.py\",\n  \"tests/test_mcp_roadmap.py\",\n  \"tests/test_mcp_store.py\",\n  \"tests/test_mcp_tools.py\",\n  \"tests/test_mcp_views.py\",\n  \"tests/test_north_star_write.py\",\n  \"tests/test_plan_read_warns_unparsed.py\",\n  \"tests/test_plan_summary_bound.py\",\n  \"tests/test_plan_write_preserves_unparsed.py\",\n  \"tests/test_project_state.py\",\n  \"tests/test_project_state_cache.py\",\n  \"tests/test_project_state_parity.py\",\n  \"tests/test_promotion_beat_carries_fleet_state.py\",\n  \"tests/test_promotion_harvests_the_receipt.py\",\n  \"tests/test_promotion_keeps_the_worker_exit.py\",\n  \"tests/test_promotion_reads_the_terminal_record.py\",\n  \"tests/test_promotion_release.py\",\n  \"tests/test_promotion_requires_impl_move.py\",\n  \"tests/test_provenance.py\",\n  \"tests/test_ready_set_composition.py\",\n  \"tests/test_receipt_after_release.py\",\n  \"tests/test_refused_promotion_leaves_no_trace.py\",\n  \"tests/test_report_only_promotion.py\",\n  \"tests/test_review_composition.py\",\n  \"tests/test_review_gate_coverage.py\",\n  \"tests/test_review_roadmap.py\",\n  \"tests/test_review_scoring.py\",\n  \"tests/test_roadmap.py\",\n  \"tests/test_roadmap_endpoints.py\",\n  \"tests/test_roadmap_names_interrupted_runs.py\",\n  \"tests/test_roadmap_sprint_derivation.py\",\n  \"tests/test_roadmap_unwired_plan.py\",\n  \"tests/test_routing_evidence_fields.py\",\n  \"tests/test_schedule_derivation.py\",\n  \"tests/test_schedule_horizon_width.py\",\n  \"tests/test_schema.py\",\n  \"tests/test_section_record_round_trips.py\",\n  \"tests/test_served_schedule_payload.py\",\n  \"tests/test_spa_derived_flow.py\",\n  \"tests/test_spa_graph_authority.py\",\n  \"tests/test_sprint_membership_refs.py\",\n  \"tests/test_sprint_push_status.py\",\n  \"tests/test_sprint_summary_lists_pending.py\",\n  \"tests/test_tag_audit_findings.py\",\n  \"tests/test_tag_backfill.py\",\n  \"tests/test_tag_inventory.py\",\n  \"tests/test_tag_rename.py\",\n  \"tests/test_tag_rename_cli.py\",\n  \"tests/test_tags_field.py\",\n  \"tests/test_tool_arguments_accept_a_serialised_list.py\",\n  \"tests/test_typed_resources.py\",\n  \"tests/test_verify_gate_command_option.py\",\n  \"tests/test_closure_gates.py\"\n]",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230714304318-closure-gates-hold-a-terminal-write/current-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230714304318-closure-gates-hold-a-terminal-write/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d5ad-c14e-7573-8a45-43f2331ac17e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 16615808,
+            "cached_input_tokens_cumulative": 16615808,
+            "input_tokens": 16877245,
+            "input_tokens_cumulative": 16877245,
+            "output_tokens": 67849,
+            "output_tokens_cumulative": 67849,
+            "reasoning_output_tokens": 25179,
+            "reasoning_output_tokens_cumulative": 25179
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-24T23:58:41Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 4.0,
+              "resets_at": 1790869123,
+              "observed_at": "2026-09-24T23:58:41Z"
+            }
+          ],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "notional_cost_usd": "no_dated_rate",
+            "rate_basis": "no_dated_rate"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 17,
+            "fit": 18,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 92
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 16615808,
+          "cumulative_input_tokens": 16877245,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 93028,
+          "generation_seconds": 2767.717,
+          "machine_seconds": 224.207,
+          "tokens_per_second": 33.61
+        },
+        "follow_on_paths": [
+          "MCP/served-plan",
+          "reckon/lifecycle.py",
+          "reckon/mcp_views.py",
+          "reckon/serve.py",
+          "surface-follow-on.json",
+          "tests/test_crew_recovery.py::test_a_missing_manifest_still_abandons_with_its_existing_detail"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/closure-gates-hold-a-terminal-write",
+          "session_id": "01a0d5ad-c14e-7573-8a45-43f2331ac17e",
+          "session_source": "pointer",
+          "retained_at": "2026-09-24T23:58:41Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-24T23:20:02Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-24T23:08:48Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T230714304318-closure-gates-hold-a-terminal-write",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 284,
+          "worker_pid": 1665839
+        },
+        "promoted_revision": "c563da20d3f172073d3a5fde23c32006e3046309",
+        "plan_impl_at_dispatch": 0.67,
+        "impl_move": {
+          "plan": "dependency-edge-semantics",
+          "at_dispatch": 0.67,
+          "at_complete": 0.85,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_closure_gates.py"
+          ],
+          "declaration": "disable the closure-gate refusal branch in reckon/_store.py; the refused-terminal-write case in tests/test_closure_gates.py must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230714304318-closure-gates-hold-a-terminal-write/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230714304318-closure-gates-hold-a-terminal-write/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "codex-astra",
+          "burn_multiple": 0.22473246135552913,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "no projected exhaustion is available for 'codex-astra'; the burn projection needs a numeric utilisation bounded by a known window, and without one no horizon comparison is made",
+          "horizon_ends_at": "2026-09-25T00:02:16.007535+00:00",
+          "horizon_seconds": 3300,
+          "metered": true,
+          "observed_at": "2026-09-24T23:07:14Z",
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 577888,
+          "state": "quiet",
+          "utilisation_pct": 1.0
+        },
+        "lane_declaration": {
+          "backend": "codex-astra",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-24T23:07:14Z",
+          "read_at": "2026-09-24T23:07:16Z",
+          "resolved_backend": "codex-astra",
+          "utilisation_pct": 1.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 119.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -371010,6 +371309,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2603
+    "_version": 2605
   }
 }
