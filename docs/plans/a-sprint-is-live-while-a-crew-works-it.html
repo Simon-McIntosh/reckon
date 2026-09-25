@@ -65,6 +65,33 @@
       <li>The declared mutation, reading the stored <code>active</code> status instead of pointers, is applied, and the test is observed to fail. The log is recorded.</li>
     </ul>
 
+    <div class="r-note" data-reckon="landed" data-node="sprint-liveness-reads-the-recorded-fleet" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; the read uses the fleet's recorded classification.</strong>
+      Commit <code>17983be1</code> changes <code>reckon/sprint_liveness.py</code> to read
+      <code>runs.watch_stream_path(project)</code> once, parse it with
+      <code>runs.parse_stream_line</code>, and use the latest <code>to_state</code> per run.
+      A recorded <code>working</code>, <code>starting</code> or <code>dispatched</code> state is
+      live; <code>blocked</code> or an unpromoted completion is held. A run absent from the
+      stream uses only a bounded manifest status-prefix read and stream mtime against the
+      stall window. The sprint row shape and read-only behaviour remain unchanged.</p>
+      <p><strong>Measured.</strong> <code>tests/test_sprint_liveness.py</code>: 5 passed,
+      exit 0; scoped ruff check and format check: clean. The recorded-state test writes a
+      <code>working</code> event while the pointer itself says failed and patches both
+      classifier entry points to fail, proving the stream path is used. The fallback test
+      does the same for an unrecorded, recent, non-terminal pointer. The required negative
+      control is retained at
+      <code>~/.config/reckon/crew/runs/r-20260925T124727387419-sprint-liveness-reads-the-recorded-fleet/negative-control.log</code>:
+      its first line is <code>call classify_pointer per pointer again</code>, followed by
+      the two expected test failures against the per-pointer implementation.</p>
+      <p>On the real reckon project with 39 live pointers, three read-only calls took
+      <code>0.164233s</code>, <code>0.136719s</code> and <code>0.138047s</code> (all under
+      0.5s; 4 sprint rows, 4 live). The prior recorded comparison was 11.6s at
+      <code>bec9f24a</code> in
+      <code>active-sprint-follows-the-live-crew</code>'s
+      <code>logs/latency-interleaved.txt</code>. Evidence:
+      <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html">cumulative landed record</a>.</p>
+    </div>
+
     <h2 id="s3">&sect;3 &mdash; Every summary lists open and recently closed sprints</h2>
     <p>Discovery's <code>read_plan(project)</code> and <code>roadmap(view="summary")</code> both gain a compact <code>sprints</code> list:</p>
     <ul>
