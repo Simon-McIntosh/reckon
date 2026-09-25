@@ -11,13 +11,18 @@ known-present value.
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
+import pty
+import re
 import signal
 import stat
+import struct
 import subprocess
 import sys
+import termios
 import time
 from contextlib import ExitStack, suppress
 from pathlib import Path
@@ -57,11 +62,17 @@ ENV_DUMP_CHILD = (
 # environment it passes on, so the stub would lose its own configuration.
 # Nothing is left to the real zellij for the reader to start a session on this
 # machine.
+#
+# An ``attach`` blocks, so a client that is only asked to leave is still there
+# afterwards: the reader's detach is observable as the process ending, which it
+# would not be if the stub exited on its own. The sleep is bounded, so nothing
+# survives a run that does not detach for more than half a minute.
 ZELLIJ_STUB = """#!/bin/sh
 printf '%s\\n' "$*" >> "$RECKON_ZELLIJ_STUB_LOG"
 case "$1" in
   list-sessions) printf '%s' "$RECKON_ZELLIJ_STUB_SESSIONS" ;;
   action) printf '%s' "$RECKON_ZELLIJ_STUB_TAB_NAMES" ;;
+  attach) exec sleep 30 ;;
 esac
 exit 0
 """
@@ -462,11 +473,68 @@ def test_a_session_line_sizes_the_tabs_with_a_brief_client(reader, tmp_path) -> 
         )
         cursor = index + 1
 
-    # The read reported every tab the layout declares, and the client was gone
-    # by the time the session line returned, so the session is left headless.
+    # The size in the log is the pty's read-back, not the value the code meant
+    # to hand the ioctl, so this fails if the window size is never set. The
+    # companion case below reads the same value from the kernel directly.
     reader_log = _reader_log(reader.log)
-    assert "sized client attached to demo on a 200x50 pty" in reader_log, reader_log
-    assert "sized client detached from demo; 4 tabs" in reader_log, reader_log
+    attached = re.search(
+        r"sized client attached to demo on a (\d+)x(\d+) pty", reader_log
+    )
+    assert attached is not None, reader_log
+    assert (int(attached.group(1)), int(attached.group(2))) == (200, 50), reader_log
+
+    # The client must have ended, not merely been asked to: the status in this
+    # line is the process's own exit code, and the stub's attach blocks, so a
+    # detach that never signalled it would leave no status to report here.
+    detached = re.search(
+        r"sized client detached from demo \(exit (-?\d+)\); 4 tabs", reader_log
+    )
+    assert detached is not None, reader_log
+
+
+def test_a_slow_layout_is_not_called_complete_after_its_first_tab(
+    monkeypatch,
+) -> None:
+    """The tab wait holds until the list is quiet, not until two reads agree.
+
+    A layout's tabs appear one at a time, roughly 1.5 s apart on the recording
+    this behaviour comes from. A wait that returned as soon as two reads agreed
+    would call a four-tab layout complete after its first tab, detach the sizing
+    client, and leave the later tabs applied with no client attached — the
+    defect the client exists to prevent. The source here adds a tab every 0.3 s,
+    so equal reads happen long before the layout is done.
+    """
+    names = ["tab1", "tab2", "tab3", "tab4"]
+    started = time.monotonic()
+
+    def slow_tabs(name, environ=None) -> list[str]:
+        grown = int((time.monotonic() - started) / 0.3)
+        return names[: min(len(names), 1 + grown)]
+
+    monkeypatch.setattr(fleet_supervisor, "tab_names", slow_tabs)
+    read = fleet_supervisor._wait_for_tab_names("demo", {}, timeout=WAIT_SECONDS)
+    assert read == names, read
+
+
+def test_the_sized_client_pty_is_given_its_size() -> None:
+    """The window size reaches the pty the client will use.
+
+    Read back from the kernel rather than from the call, so a size that is
+    requested and never applied is visible: with the ioctl dropped the pty
+    keeps whatever size it was opened with, and the reader's own log line
+    reports that size rather than 200x50.
+    """
+    master, slave = pty.openpty()
+    try:
+        applied = fleet_supervisor._set_pty_size(slave, 200, 50)
+        kernel_rows, kernel_columns = struct.unpack(
+            "HHHH", fcntl.ioctl(slave, termios.TIOCGWINSZ, bytes(8))
+        )[:2]
+    finally:
+        os.close(slave)
+        os.close(master)
+    assert (kernel_columns, kernel_rows) == (200, 50), (kernel_columns, kernel_rows)
+    assert applied == (200, 50), applied
 
 
 def test_the_stripped_variables_are_absent_from_a_spawned_child(

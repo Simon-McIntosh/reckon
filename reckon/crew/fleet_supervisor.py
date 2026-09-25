@@ -83,8 +83,17 @@ START_MODE = "start"
 # newest release and still needs this.
 SIZED_CLIENT_COLUMNS = 200
 SIZED_CLIENT_ROWS = 50
+# A layout's tabs do not all appear at once: the recorded application on this
+# machine created tab 1 at 02:51:58.781 and tab 3 at 02:52:01.869, roughly 1.5 s
+# apart. Two equal reads one poll apart would therefore call a layout complete
+# after its first tab, detach the client, and leave the remaining tabs applied
+# with no client attached — the defect this sizing client exists to prevent. The
+# tab list is held unchanged for a settle window longer than that spacing
+# instead, and the whole wait is still bounded so a layout whose tabs never
+# appear cannot hold the batch step's reader open.
 TAB_POLL_SECONDS = 0.05
-TAB_WAIT_SECONDS = 10.0
+TAB_SETTLE_SECONDS = 2.5
+TAB_WAIT_SECONDS = 30.0
 DETACH_GRACE_SECONDS = 5.0
 
 # A session name and a layout name both reach a process argument, and the layout
@@ -261,22 +270,30 @@ def _wait_for_tab_names(
     name: str,
     environ: Mapping[str, str] | None = None,
     *,
+    settle: float = TAB_SETTLE_SECONDS,
     timeout: float = TAB_WAIT_SECONDS,
 ) -> list[str]:
-    """Poll until the tab list stops growing, so the layout has been applied.
+    """Wait until the tab list has been quiet for a settle window.
 
-    A list that is non-empty and unchanged between two reads means every tab
-    the layout declares now exists. The wait is bounded so a session whose tabs
-    never appear cannot hold the batch step's reader open.
+    A layout's tabs appear one at a time, roughly 1.5 s apart on the recording
+    this behaviour is drawn from, so a list read twice one poll apart can be
+    equal while the layout still has tabs to create. The list must therefore be
+    non-empty and unchanged for a settle window longer than that spacing before
+    the layout is treated as applied. The whole wait is bounded, so a layout
+    whose tabs never appear cannot hold the batch step's reader open.
     """
     deadline = time.monotonic() + timeout
+    settled_at: float | None = None
     previous: list[str] = []
     while True:
         names = tab_names(name, environ)
-        if names and names == previous:
+        now = time.monotonic()
+        if names != previous:
+            previous = names
+            settled_at = now if names else None
+        elif settled_at is not None and now - settled_at >= settle:
             return names
-        previous = names
-        if time.monotonic() >= deadline:
+        if now >= deadline:
             return names
         time.sleep(TAB_POLL_SECONDS)
 
@@ -288,19 +305,40 @@ def _drain_pty(fd: int) -> None:
             pass
 
 
+def _set_pty_size(fd: int, columns: int, rows: int) -> tuple[int, int]:
+    """Set a pty's window size and read it back, so the applied size is known.
+
+    The read-back is what the kernel holds for the terminal the client will use,
+    which is what the sizing depends on. Reporting the numbers that were asked
+    for would state the size this meant to set whether or not it took effect.
+    """
+    fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, columns, 0, 0))
+    applied_rows, applied_columns = struct.unpack(
+        "HHHH", fcntl.ioctl(fd, termios.TIOCGWINSZ, bytes(8))
+    )[:2]
+    return applied_columns, applied_rows
+
+
 def _detach_client(
     client: subprocess.Popen, *, grace: float = DETACH_GRACE_SECONDS
-) -> None:
-    """Take the sized client off the session, leaving the session headless."""
-    if client.poll() is not None:
-        return
-    client.terminate()
-    try:
-        client.wait(timeout=grace)
-    except subprocess.TimeoutExpired:
-        client.kill()
-        with suppress(subprocess.TimeoutExpired):
+) -> int | None:
+    """Take the sized client off the session, and report how it ended.
+
+    The status is read after the wait rather than inferred from having called
+    this function, so a caller reports that the client has gone rather than that
+    it was asked to go. It is ``None`` only if the client outlived both the
+    terminate and the kill, which a caller should treat as a detach that did not
+    happen.
+    """
+    if client.poll() is None:
+        client.terminate()
+        try:
             client.wait(timeout=grace)
+        except subprocess.TimeoutExpired:
+            client.kill()
+            with suppress(subprocess.TimeoutExpired):
+                client.wait(timeout=grace)
+    return client.poll()
 
 
 def size_tabs_with_a_client(
@@ -323,12 +361,13 @@ def size_tabs_with_a_client(
 
     The client's own terminal is a pty this function owns, so its detach is its
     termination rather than a keystroke the session's keybindings would have to
-    be trusted to honour.
+    be trusted to honour. The pty's size is read back after it is set, so what
+    the log reports is the size the tabs were laid out in.
     """
     child_environ = dict(os.environ if environ is None else environ)
     child_environ.pop("ZELLIJ_SESSION_NAME", None)
     master, slave = pty.openpty()
-    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", rows, columns, 0, 0))
+    columns, rows = _set_pty_size(slave, columns, rows)
     try:
         client = subprocess.Popen(
             ["zellij", "attach", name],
@@ -346,13 +385,14 @@ def size_tabs_with_a_client(
     threading.Thread(target=_drain_pty, args=(master,), daemon=True).start()
     log(f"sized client attached to {name} on a {columns}x{rows} pty")
     names: list[str] = []
+    status: int | None = None
     try:
         names = _wait_for_tab_names(name, child_environ)
     finally:
-        _detach_client(client)
+        status = _detach_client(client)
         with suppress(OSError):
             os.close(master)
-    log(f"sized client detached from {name}; {len(names)} tabs")
+    log(f"sized client detached from {name} (exit {status}); {len(names)} tabs")
     return names
 
 
