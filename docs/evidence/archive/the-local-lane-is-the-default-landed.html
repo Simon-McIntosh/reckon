@@ -385,6 +385,109 @@ FAILED tests/test_preflight_reads_the_published_document.py::test_an_absent_docu
       <code>crew preflight</code> command and the existing MCP <code>budget</code> view.</li>
     </ul>
   </section>
+
+  <section id="one-resolver-for-the-document-path">
+    <h2>&sect;5 — The publisher and the pre-flight resolve the document path through one resolver</h2>
+
+    <p><strong>The defect.</strong> The reader and the publisher had two rules for one path.
+    <code>budget.published_document_path()</code> preferred the environment override, then the document
+    under <code>RECKON_HOME</code>, then the <code>HOME</code>-based default;
+    <code>paid_lanes</code>' own resolution preferred the override and then went straight to the
+    default, with no crew-home step. The two agreed wherever <code>RECKON_HOME</code> was unset — which
+    is every ordinary run on the operator's host — and disagreed wherever a caller isolated a tree
+    through it: an isolated publisher wrote <code>$HOME/public/reckon/paid-lanes.json</code> while the
+    pre-flight that followed it read <code>$RECKON_HOME/paid-lanes.json</code>. The disagreement was
+    invisible in production and exactly wrong in every test that isolates.</p>
+
+    <p><strong>What landed.</strong> <code>reckon.crew.paid_lanes.document_path()</code> is the one
+    resolver, with the reader's four-step order: an explicit argument, then the
+    <code>DOCUMENT_ENV</code> override, then <code>$RECKON_HOME/paid-lanes.json</code> when
+    <code>RECKON_HOME</code> names a tree, then the default. <code>budget.published_document_path()</code>
+    delegates to it and keeps no second rule, so the file the publishing command writes is by
+    construction the file every pre-flight reads. The crew home is what a caller isolates to run
+    against its own tree, so the resolution an isolated run performs is the same one a production run
+    performs, one step shifted.</p>
+
+    <figure>
+      <img src="/reckon/figures/the-local-lane-is-the-default/one-resolver.png" alt="Left: the four-step resolution order — explicit argument, then the environment override, then the document under RECKON_HOME, then the default — first match wins. Right: after the change the publisher and the pre-flight both call document_path() and reach one file; before the change the publisher's two-step rule and the reader's three-step rule agreed only where RECKON_HOME was unset and, where it named a tree, wrote one file and read another.">
+      <figcaption>One order, called by both: the publisher and the pre-flight resolve through the same
+      four steps, replacing a two-step rule beside a three-step one that quietly diverged under
+      isolation.</figcaption>
+    </figure>
+
+    <table>
+      <caption>What the node asserted, and where the assertion is made.</caption>
+      <thead><tr><th>Property</th><th>Asserted in</th></tr></thead>
+      <tbody>
+        <tr><td>With the override set, the path the command writes is the path the pre-flight resolves</td><td><code>test_the_publisher_writes_where_the_preflight_reads[override]</code></td></tr>
+        <tr><td>With <code>RECKON_HOME</code> set, the command writes <code>$RECKON_HOME/paid-lanes.json</code> and the pre-flight resolves that same file</td><td><code>test_the_publisher_writes_where_the_preflight_reads[reckon_home]</code></td></tr>
+        <tr><td>With neither set, both resolve the default location</td><td><code>test_the_publisher_writes_where_the_preflight_reads[neither]</code></td></tr>
+        <tr><td><code>-h</code> prints usage and publishes nothing, beside the existing <code>--help</code> case</td><td><code>test_asking_for_help_prints_usage_and_publishes_nothing[-h]</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Gate</h3>
+
+    <p>The gate ran the twelve files that import <code>reckon.budget</code> or reach the changed
+    surface, at this worktree's base revision and at its head, each from this worktree so the module
+    under test names it:</p>
+
+    <pre><code># base (6d407358)
+module.__file__ = &lt;worktree&gt;/reckon/__init__.py
+command: python -m pytest -p no:cacheprovider -q &lt;12 test files&gt;
+170 passed in 48.17s   EXIT=0
+
+# head (this worktree, committed)
+module.__file__ = &lt;worktree&gt;/reckon/__init__.py
+command: same selection
+173 passed, 1 failed in 43.94s   EXIT=1</code></pre>
+
+    <p>The three net-new passes are the three arms. The one failure is deterministic and outside this
+    node's write scope: <code>tests/test_preflight_reads_the_published_document.py::test_a_document_under_the_operators_home_is_not_read</code>
+    plants a document under a stand-in <code>HOME</code> and then asserts <code>document_path()</code>
+    equals it, while the isolation fixture sets <code>RECKON_HOME</code> for every test — so the unified
+    resolver correctly answers with the isolated home and the assertion fails by construction. It is
+    reported under the node's <code>follow_ons</code> rather than repaired here; the file is not in this
+    node's fence. The focused file is <code>14 passed</code>, and <code>ruff check</code> adds no
+    finding (base 6 and head 6 on a complete <code>git archive HEAD</code> tree).</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> <em>restore budget's own RECKON_HOME rule and
+    remove paid_lanes'; the RECKON_HOME arm must fail</em> — the first line of the red log.
+    <code>paid_lanes.document_path()</code> was stripped of its crew-home step and
+    <code>budget.published_document_path()</code> restored its own crew-home rule, so the publisher
+    fell to <code>$HOME/public/reckon/paid-lanes.json</code> while the pre-flight followed the crew
+    home. The crew-home arm then failed at its first path assertion, the written path one file away
+    from the one the pre-flight resolves:</p>
+
+    <pre><code>&gt;       assert written.resolve() == expected.resolve(), arm
+E       AssertionError: reckon_home
+E       assert PosixPath('.../home/public/reckon/paid-lanes.json') == PosixPath('.../crew-home/paid-lanes.json')
+FAILED tests/test_paid_lanes_document.py::test_the_publisher_writes_where_the_preflight_reads[reckon_home]
+1 failed in 1.09s</code></pre>
+
+    <p><strong>Positive control:</strong> the same case in the unmutated tree is <code>1 passed</code>
+    and the whole file is <code>14 passed</code>, so the red is the mutation and not the selection. The
+    mutation was reverted and the tree verified clean (<code>git status --porcelain</code> empty)
+    before the implementation was committed. Log:
+    <code>~/.cache/reckon-the-document-path-has-one-resolver/negative-control.log</code>, alongside
+    <code>base.log</code>, <code>focus.log</code> and <code>after.log</code>.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+      change at its own head; verifying the merged result is a separately dispatched test node's job.</li>
+      <li><strong>The pre-existing failing id is not repaired here.</strong>
+      <code>test_a_document_under_the_operators_home_is_not_read</code> now asserts against behaviour
+      the unification changed; the one-line repair is on the node's <code>follow_ons</code>, in a file
+      outside this node's write scope.</li>
+      <li><strong>The five-minute refresh deployment is out of scope.</strong> Nothing in this node
+      schedules <code>paid_lanes</code>; until it runs, the published document is stale, which is what
+      the per-backend recorded-window fallback covers.</li>
+    </ul>
+  </section>
 </main>
 </body>
 </html>
