@@ -19,12 +19,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;deferred&quot;}">
   <title>The Fleet Counters Count The Fleet | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="5">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-version" content="6">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -91,6 +91,12 @@
       <li>A vanished reflex review must be reported as withdrawn. Otherwise the coordinator believes a review exists and waits on it.</li>
     </ul>
 
+    <h2 id="s4">§4 — A re-attach restores the view it left</h2>
+<p>The lead reported on 2026-09-25 that re-arming the follower every 30 minutes is fine, but every re-attach loses the view. Each live run is replayed as a fresh <code>now dispatched</code> row, with the start time and elapsed age reset, so the ticker no longer shows what it showed before. After this section, a re-attach restores the rows the previous follower showed, each with its original timestamp, and every age is computed from the run's real start rather than from the attach.</p><p>The work is folded in from <code>a-follower-outlives-its-monitor</code> &sect;4, whose falsifier is this section's done-when. The S22 coordinator agreed on 2026-09-25, and that plan's section declarations and evidence stay with S22.</p><p><strong>Done when:</strong></p><ul><li>A test attaches a follower, lets transitions arrive, detaches, and re-attaches against the same synthetic fleet. It asserts the replayed rows carry their original timestamps, and that each row's age equals now minus the run's recorded start.</li><li>No already-running run is rendered as <code>dispatched</code>.</li><li>The declared mutation, stamping replayed rows with the attach time, is observed to fail. The log is recorded.</li></ul><p>The node's fence names the follow and watch files a scout identifies. It does not guess them.</p>
+
+    <h2 id="s5">§5 — The unpromoted count says what each run needs</h2>
+<p>The <code>u</code> counter says a run is unpromoted but not why. On 2026-09-25 the lead saw <code>3u</code> while one of the three had no review at all. The reflex had reviewed only the run's first completion, and a resumed worker's new head sat idle for about ten minutes.</p><p>After this section, the follower emits a standing line, on change and on a cadence. The line names each of the session's unpromoted runs with its age, and says whether an independent review is in flight or the coordinator is needed.</p><p>The work is folded in from <code>a-follower-keeps-your-work-in-view</code> &sect;2, whose falsifier is this section's done-when. Re-reviewing a resumed run's new head is reflex logic in <code>reckon/crew/recovery.py</code>, which S21's review-reflex node carries or which follows it. It is not part of this section.</p><p><strong>Done when:</strong></p><ul><li>A test with three unpromoted runs asserts the standing line names all three with their ages. It labels the two with live reviews as review in flight and the one with no review as needs you.</li><li>The declared mutation, dropping the review-in-flight check, is observed to fail. The log is recorded.</li></ul>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-counter-census-landed" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
@@ -124,6 +130,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T211007162228-review-of-fleet-counter-census" data-who="reckon-build" data-when="2026-09-24T21:43:21.801Z">
     <div class="r-comment-body"><p>review of fleet-counter-census scored 87/100 (durability 12: synthetic ledger_rows line printed rather than read)</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260925-fold-follower-sections" data-who="reckon-build" data-when="2026-09-25T07:40:00Z">
+    <div class="r-comment-body"><p>&sect;4 and &sect;5 are folded in with the S22 coordinator's agreement, on three conditions:</p><ul><li>each section's plan falsifier is the done-when</li><li>the landing is recorded here as comments with the run id and shas</li><li>S22 closes its own two sections</li></ul><p>&sect;3, &sect;4 and &sect;5 dispatch as one <code>ticker.py</code> node once S21's liveness and review-reflex nodes release <code>reckon/crew/recovery.py</code>. That node also carries S21's removal of the <code>now</code> baseline marker.</p><p><em>Written with the new <code>insert_section</code> op, with no hand edit.</em></p></div>
 </div>
 </section>
 </main>
