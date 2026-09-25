@@ -1,0 +1,162 @@
+arm: base (gap-closure red arm)
+revision: c9ac064e (HEAD); guard blob 4ecc0f0d1c446cfb84ae3cf91ddf369fd1093149
+tree: git archive of HEAD overlaid with the working-tree tests/test_worker_git_guard.py
+cwd: /tmp/wgg-red-2427048
+module: /tmp/wgg-red-2427048/reckon/hooks/worker_git_guard.py
+cli: /tmp/wgg-red-2427048/reckon/cli.py
+command: python -m pytest -p no:cacheprovider -q tests/test_worker_git_guard.py
+---
+....FFFFF.F..                                                            [100%]
+=================================== FAILURES ===================================
+________________ test_a_verb_aliased_in_the_command_is_resolved ________________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11174/test_a_verb_aliased_in_the_com0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fc31b16d590>
+
+    def test_a_verb_aliased_in_the_command_is_resolved(tmp_path: Path, monkeypatch) -> None:
+        worktree, other = _fenced(tmp_path, monkeypatch)
+    
+        mutating = guard.decide(
+            _payload(f"git -c alias.co=checkout -C {other} co -- docs/plans/x.html", worktree)
+        )
+        read_only = guard.decide(_payload(f"git -c alias.st=status -C {other} st", worktree))
+        inside = guard.decide(
+            _payload(f"git -c alias.co=checkout -C {worktree} co -- docs/plans/x.html", worktree)
+        )
+    
+>       assert mutating[0] is False
+E       assert True is False
+
+tests/test_worker_git_guard.py:141: AssertionError
+_______ test_a_verb_the_command_does_not_define_is_not_assumed_read_only _______
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11174/test_a_verb_the_command_does_n0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fc31b0a1450>
+
+    def test_a_verb_the_command_does_not_define_is_not_assumed_read_only(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        """An alias configured outside the command cannot be expanded here.
+    
+        ``co`` may be a mutating alias in the operator's git config. The guard
+        cannot read that config, so an unknown verb aimed at another checkout is
+        refused rather than assumed harmless.
+        """
+        worktree, other = _fenced(tmp_path, monkeypatch)
+    
+        unknown = guard.decide(_payload(f"git -C {other} co -- docs/plans/x.html", worktree))
+        read_only = guard.decide(_payload(f"git -C {other} status --porcelain", worktree))
+    
+>       assert unknown[0] is False
+E       assert True is False
+
+tests/test_worker_git_guard.py:161: AssertionError
+____________ test_a_leading_assignment_names_the_target_repository _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11174/test_a_leading_assignment_name0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fc31b0a1a50>
+
+    def test_a_leading_assignment_names_the_target_repository(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        worktree, other = _fenced(tmp_path, monkeypatch)
+    
+        by_git_dir = guard.decide(
+            _payload(f"GIT_DIR={other} git checkout -- docs/plans/x.html", worktree)
+        )
+        by_work_tree = guard.decide(
+            _payload(f"GIT_WORK_TREE={other} git commit -m wip", worktree)
+        )
+        inside = guard.decide(_payload(f"GIT_DIR={worktree} git commit -m wip", worktree))
+    
+>       assert by_git_dir[0] is False
+E       assert True is False
+
+tests/test_worker_git_guard.py:186: AssertionError
+____________ test_a_mutating_verb_inside_a_nested_script_is_denied _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11174/test_a_mutating_verb_inside_a_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fc31b087d40>
+
+    def test_a_mutating_verb_inside_a_nested_script_is_denied(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        worktree, other = _fenced(tmp_path, monkeypatch)
+    
+        substitution = guard.decide(
+            _payload(f'echo "$(git -C {other} checkout -- docs/plans/x.html)"', worktree)
+        )
+        backtick = guard.decide(
+            _payload(f"echo `git -C {other} checkout -- docs/plans/x.html`", worktree)
+        )
+        shell_c = guard.decide(
+            _payload(f"bash -c 'cd {other} && git reset --hard HEAD~1'", worktree)
+        )
+        inside = guard.decide(
+            _payload(f"bash -c 'cd {worktree} && git commit -m wip'", worktree)
+        )
+    
+        for allowed, message in (substitution, backtick, shell_c):
+>           assert allowed is False
+E           assert True is False
+
+tests/test_worker_git_guard.py:215: AssertionError
+________ test_an_unparsable_command_carrying_a_mutating_verb_is_denied _________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11174/test_an_unparsable_command_car0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fc31b104b90>
+
+    def test_an_unparsable_command_carrying_a_mutating_verb_is_denied(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        worktree, other = _fenced(tmp_path, monkeypatch)
+    
+        mutating = guard.decide(
+            _payload(f"git -C {other} checkout -- docs/plans/x.html 'unclosed", worktree)
+        )
+        read_only = guard.decide(_payload("git status --porcelain 'unclosed", worktree))
+    
+>       assert mutating[0] is False
+E       assert True is False
+
+tests/test_worker_git_guard.py:233: AssertionError
+________ test_the_sync_installer_wires_the_guard_behind_the_same_opt_in ________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11174/test_the_sync_installer_wires_0')
+
+    def test_the_sync_installer_wires_the_guard_behind_the_same_opt_in(
+        tmp_path: Path,
+    ) -> None:
+        """The CLI path that installs the sibling guards can bind this one too.
+    
+        ``_configure_crew_guards`` composes the native-agent and worker-message
+        guards itself, so an entry only ``install.py`` knows about is reachable
+        from tests and from nothing an operator runs. The git guard is wired
+        through that same path, behind the same opt-in, and the real user-scope
+        settings file is fingerprinted to prove nothing was installed by the test.
+        """
+        from reckon import cli
+    
+        real_settings = Path(getpwuid(os.getuid()).pw_dir) / ".claude" / "settings.json"
+        before = real_settings.read_bytes() if real_settings.is_file() else None
+    
+        target = tmp_path / "settings.json"
+        default_changed = cli._configure_crew_guards(target, remove=False)
+        default_groups = json.loads(target.read_text())["hooks"]["PreToolUse"]
+        default_commands = [
+            hook["command"] for group in default_groups for hook in group.get("hooks", [])
+        ]
+    
+>       opted_changed = cli._configure_crew_guards(target, remove=False, include_git_guard=True)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: _configure_crew_guards() got an unexpected keyword argument 'include_git_guard'
+
+tests/test_worker_git_guard.py:295: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_worker_git_guard.py::test_a_verb_aliased_in_the_command_is_resolved
+FAILED tests/test_worker_git_guard.py::test_a_verb_the_command_does_not_define_is_not_assumed_read_only
+FAILED tests/test_worker_git_guard.py::test_a_leading_assignment_names_the_target_repository
+FAILED tests/test_worker_git_guard.py::test_a_mutating_verb_inside_a_nested_script_is_denied
+FAILED tests/test_worker_git_guard.py::test_an_unparsable_command_carrying_a_mutating_verb_is_denied
+FAILED tests/test_worker_git_guard.py::test_the_sync_installer_wires_the_guard_behind_the_same_opt_in
+6 failed, 7 passed in 0.23s

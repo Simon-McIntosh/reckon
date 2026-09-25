@@ -836,6 +836,55 @@ exit: 0</pre>
     <code>gate-worker-git-guard-companions-head.txt</code>,
     <code>negative-control-worker-git-guard.txt</code>, figure
     <code>/reckon/figures/a-worker-cannot-write-your-home/worker-git-guard-decision.svg</code>.</p>
+
+    <p><strong>Four gaps closed after review, 2026-09-26.</strong> A review of
+    <code>8d515f5e</code> scored it 88 and named four ways a mutating verb still reached another
+    checkout. Each is closed in <code>reckon/hooks/worker_git_guard.py</code> with a test that is red
+    before the fix. (1) A verb the command aliases with <code>-c
+    alias.&lt;name&gt;=&hellip;</code> was in neither verb set, so it passed; the guard now expands
+    the verb through the command's own alias settings, following the chain to a bounded depth, and
+    refuses an unknown verb aimed at another checkout when it cannot be expanded. (2) A leading
+    <code>GIT_DIR</code> or <code>GIT_WORK_TREE</code> assignment was stripped before the invocation
+    was read; both now name the target, with a command-line option taking precedence. (3) Command
+    substitutions (<code>$( )</code>), backtick substitutions, <code>bash -c</code> and
+    <code>sh -c</code> scripts and brace groups were not scanned; each is now scanned on its own
+    terms, tracking its own <code>cd</code>, and a command form the tokeniser cannot split
+    confidently is refused when it carries a mutating verb rather than allowed unexamined. (4)
+    <code>reckon/cli.py</code>'s <code>_configure_crew_guards</code> composed only the sibling
+    native-agent and worker-message guards, so the <code>install.py</code> entry was reachable from
+    tests alone; a <code>--include-git-guard</code> option on <code>reckon sync</code> now carries
+    the same opt-in down that path, and a remove takes the group back out because it is reckon's own.
+    Nothing is written to <code>~/.claude/settings.json</code>: the test fingerprints that file
+    around the default, opted-in and removal calls and asserts it byte-identical.</p>
+
+    <p><strong>Measure.</strong> <code>tests/test_worker_git_guard.py</code> grows from 7 to 13
+    tests. Against the pre-fix head with the new file in place, the six new tests fail and the seven
+    old ones pass (<code>6 failed, 7 passed</code>,
+    <code>docs/figures/a-worker-cannot-write-your-home/gate-worker-git-guard-gaps-base.txt</code>);
+    all 13 pass at <code>9db0672b</code>
+    (<code>gate-worker-git-guard-gaps-head.txt</code>). Both arms run from their own
+    <code>git archive</code> tree with the module path printed on the log header. The companion
+    suites — <code>test_hook_installer</code>, <code>test_guard_install</code>,
+    <code>test_worker_stop_hook</code> and <code>test_sync_hook_wiring</code> — are
+    <code>39 passed</code> at base <code>2cd573f1</code> and <code>39 passed</code> at head, zero
+    added (<code>gate-worker-git-guard-gaps-companions-base.txt</code>,
+    <code>gate-worker-git-guard-gaps-companions-head.txt</code>). Lint on the complete
+    <code>reckon</code> tree of each arm is 233&nbsp;&rarr;&nbsp;233, delta zero, and the three
+    changed source paths are formatted; the two remaining findings in <code>cli.py</code> are
+    present at base (<code>lint-worker-git-guard-gaps.txt</code>). Commit <code>9db0672b</code>.</p>
+
+    <p><strong>Declared negative control, re-run against the gap-fixed tree.</strong>
+    <em>allow a mutating git verb whose -C target is another checkout.</em> The mutation makes
+    <code>_git_target</code> consume a <code>-C</code> value without resolving the base against it.
+    The suite reports <code>5 failed, 8 passed</code> — every test that depends on the
+    <code>-C</code> resolution, including the declared string's own
+    <code>test_a_mutating_verb_against_another_checkout_is_denied</code> — and
+    <code>13 passed</code> with the mutation reverted on the same tree
+    (<code>negative-control-worker-git-guard-gaps.txt</code>,
+    <code>negative-control-worker-git-guard-gaps-reverted.txt</code>). The first log here is an
+    earlier arm on the same declared string taken from a different angle (at
+    <code>8d515f5e</code>, <code>2 failed, 5 passed</code>), and both files share the declaration's
+    first line, so the run directory's cumulative red log carries it verbatim.</p>
   </section>
 </main>
 </body>
