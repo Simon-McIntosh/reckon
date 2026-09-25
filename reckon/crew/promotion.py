@@ -2934,7 +2934,12 @@ def _release_run_workspace(
     elif repo is None or not repo.is_dir():
         result["worktree_withheld"] = "repository root is unavailable"
     else:
-        claims = _live_worktree_claims().get(worktree.resolve(), [])
+        run_id = str(record.get("run_id") or "")
+        claims = [
+            claim
+            for claim in _live_worktree_claims().get(worktree.resolve(), [])
+            if claim != run_id
+        ]
         shadow_record = record if _is_shadow(record) else None
         inspected = _inspect_workspace(repo, worktree, "HEAD", claims, shadow_record)
         classification = str(inspected["classification"])
@@ -2992,6 +2997,7 @@ def _release_after_promotion(
     retention: Mapping[str, str] | None = None,
     *,
     process_already_ended: bool = False,
+    gate: str = "",
 ) -> dict[str, Any]:
     """Release what promotion made transient, never at the cost of the ledger.
 
@@ -3002,6 +3008,16 @@ def _release_after_promotion(
     records a writer the promotion ended before the fold, so the release can
     report that outcome instead of a process that is merely absent.
     """
+    verdict = str(gate).strip().lower()
+    if verdict in {"blocked", "failed"}:
+        return {
+            "worktree_released": False,
+            "process_signalled": False,
+            "worktree_withheld": (
+                f"gate verdict {verdict!r} is not passing; worktree retained "
+                "for recovery"
+            ),
+        }
     try:
         return _release_run_workspace(
             record, retention, process_already_ended=process_already_ended
@@ -3012,6 +3028,74 @@ def _release_after_promotion(
             "process_signalled": False,
             "worktree_withheld": f"run {run_id!r} release step raised: {exc}",
         }
+
+
+def _record_release_on_ledger(
+    *,
+    project: str,
+    root: str | Path | None,
+    run_id: str,
+    release: Mapping[str, Any],
+    checkout: Path | None,
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Persist the release decision beside the promoted run.
+
+    Cleanup happens after the first landing commit so a removal failure cannot
+    erase the evidence. This second, narrow ledger write makes the cleanup
+    outcome durable as well: later readers can distinguish a removed tree from
+    one retained for a dirty, unintegrated, live-referenced, or failed run.
+    """
+    path = ledger.ledger_path(project, root)
+    last_error: Exception | None = None
+    for _attempt in range(12):
+        data, version = ledger.load(project, root=root)
+        rows = list(data.get("runs") or [])
+        updated: dict[str, Any] | None = None
+        replaced: list[dict[str, Any]] = []
+        for row in rows:
+            candidate = dict(row)
+            if str(candidate.get("run_id") or "") == run_id:
+                candidate["release"] = dict(release)
+                updated = candidate
+            replaced.append(candidate)
+        if updated is None:
+            return dict(release), None
+        data["runs"] = replaced
+        try:
+            ledger.write(project, data, version, root=root)
+            if checkout is not None:
+                staged = _git(checkout, "add", "--", str(path), check=False)
+                if staged.returncode:
+                    rollback = _restore_landing_writes(checkout, [path])
+                    raise _landing_refusal(
+                        f"could not stage the release outcome for run {run_id!r}: "
+                        f"{staged.stderr.strip() or staged.stdout.strip()}",
+                        rollback,
+                    )
+                amended = _git(
+                    checkout,
+                    "commit",
+                    "--amend",
+                    "--no-edit",
+                    check=False,
+                )
+                if amended.returncode:
+                    rollback = _restore_landing_writes(checkout, [path])
+                    raise _landing_refusal(
+                        f"could not amend the release outcome for run {run_id!r}: "
+                        f"{amended.stderr.strip() or amended.stdout.strip()}",
+                        rollback,
+                    )
+        except (ledger.LedgerError, CrewError, OSError) as exc:
+            last_error = exc
+            continue
+        return dict(release), updated
+
+    recorded = dict(release)
+    recorded["ledger_recorded"] = False
+    if last_error is not None:
+        recorded["ledger_error"] = str(last_error)
+    return recorded, None
 
 
 def _coordinator_supplied_predecessor(
@@ -3719,7 +3803,17 @@ def _complete_locked(
                 run_id,
                 record,
                 retention if isinstance(retention, Mapping) else None,
+                gate=str(gate),
             )
+            release, recorded = _record_release_on_ledger(
+                project=project,
+                root=ledger_root,
+                run_id=run_id,
+                release=release,
+                checkout=checkout,
+            )
+            if recorded is not None:
+                existing = recorded
             result = {
                 "run_id": run_id,
                 "project": project,
@@ -4190,7 +4284,17 @@ def _complete_locked(
             record,
             worktree_retention,
             process_already_ended=ended_writer,
+            gate=str(gate),
         )
+        release, recorded = _record_release_on_ledger(
+            project=project,
+            root=ledger_root,
+            run_id=run_id,
+            release=release,
+            checkout=checkout,
+        )
+        if recorded is not None:
+            written["run"] = recorded
         # This is a bounded fleet reading, not a readiness recommendation: the
         # result states only what promotion observed, and the orchestrator owns
         # every decision about what to do next.

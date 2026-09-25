@@ -296,6 +296,21 @@
     <code>the-boundary-check-reads-two-trees</code> &sect;1, which reduces the set of trees
     read. This section's invocation count is then measured on that reduced set.</p>
 
+    <div data-reckon="landing" data-node="promotion-releases-its-worktree" data-when="2026-09-25">
+      <h3>Landing record &mdash; promotion reclaims only an integrated, clean, unclaimed tree</h3>
+      <p><code>reckon/crew/promotion.py</code> now filters the promoted run from the live claim
+      set, retains blocked and failed worktrees, and persists the release outcome on the same
+      landing commit's ledger row. A clean integrated tree is removed with plain
+      <code>git worktree remove</code>; dirty, unintegrated, live-referenced, and failed cases
+      remain with their reason recorded. The gate is
+      <code>tests/test_promotion_releases_its_worktree.py</code>, and the worker manifest names
+      the exact local commits and logs.</p>
+      <p>The five-case gate passed, the base promotion files passed 54 tests, and the after suite
+      passed 55 with no added failure. The declared live-pointer mutation produced a red gate
+      whose first line repeats the declaration verbatim. Cumulative evidence:
+      <code>a-crew-process-ends-with-its-owner-landed.html#s4-promotion-releases-its-worktree</code>.</p>
+    </div>
+
     <h2 id="s5">&sect;5 &mdash; Every storage read has a deadline</h2>
     <p>The MCP server is the interface and stays the interface. What failed was that its
     reads had no bound. One <code>read_plan</code> held imas-ambix-af's server blocked on
