@@ -2195,6 +2195,12 @@ def _follow_watch_lines(
             cursor["offset"] = offset
             reported.clear()
             reported.update(recorded)
+        # Left behind before the first read rather than after the first line:
+        # an arming that starts against a quiet stream and then ends has still
+        # established its place. Without this the baseline's own arming wrote
+        # nothing, so a re-arm before the fleet next moved found no checkpoint
+        # and replayed the baseline — the defect this removes, on the quiet path.
+        _record_checkpoint(stream_path, cursor["offset"])
         resume_state = {}
 
         while not stream_path.exists() and not consumer_gone:

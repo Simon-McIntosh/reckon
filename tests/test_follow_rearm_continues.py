@@ -31,11 +31,13 @@ SESSION = "s1"
 RUN_A = "r-rearm-a"
 RUN_B = "r-rearm-b"
 
-# The follower's own lifetime for each arming, short enough to keep the test
-# quick and long enough for its first wait passes to deliver and record. The
-# stream poll is tighter than the host's, so an arming reaches its deadline
-# within a poll of granting it.
-ARM_LIFETIME = 0.35
+# The follower's own lifetime for each arming. Long enough that an arming
+# reaches its first read and records its place even when the host is loaded, and
+# short enough that a suite of them stays quick: an interpreter running the
+# whole file alongside other work can otherwise spend most of a shorter arming
+# before it reaches the stream at all, so an arming that expired early would
+# look like one that had nothing to deliver.
+ARM_LIFETIME = 0.75
 
 _FLEET_EVENTS = frozenset({"baseline", "transition", "manifest-rewritten"})
 
@@ -209,6 +211,39 @@ def test_a_rearm_with_nothing_new_prints_nothing(home) -> None:
         second = _arm(resume=None)
 
     assert second == [], f"a re-arm with nothing new must print nothing; got {second!r}"
+
+
+def test_a_rearm_after_a_quiet_baseline_arming_prints_nothing(home) -> None:
+    """A baseline arming against a quiet stream still leaves a place behind.
+
+    The baseline rows are derived from the live fleet, not read from the stream,
+    so an arming can emit them having read no line at all. Here the producer
+    holds its claim but has not written a line, so the stream this arming would
+    read does not exist and the read loop that advances the place is never
+    entered. If the place were written only as lines are delivered — or only
+    from a wait pass inside that read loop — the arming would leave nothing
+    behind, and the next arming would find no checkpoint and replay the
+    baseline: the same replay this section removes, on the quiet path.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        # A producer with a claim and no first line: the stream is absent, so
+        # nothing is read, and the producer being live is what lets the arming
+        # derive its baseline from the fleet at all.
+        Path(seat["stream_path"]).unlink()
+
+        first = _arm()
+        assert {event["run_id"] for event in first} == {RUN_A, RUN_B}, first
+        assert follow_checkpoint.read(PROJECT, SESSION), (
+            "a baseline arming leaves a durable place even when it reads no line"
+        )
+
+        second = _arm(resume=None)
+
+    assert second == [], (
+        f"a re-arm after a quiet baseline arming must print nothing; got {second!r}"
+    )
 
 
 def test_a_replaced_stream_emits_only_moved_runs_with_recorded_times(home) -> None:
