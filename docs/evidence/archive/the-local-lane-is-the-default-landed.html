@@ -794,6 +794,76 @@ E  reckon.crew.ScopeConflict: write scope 'pkg/hot.py' conflicts with live claim
       naturally a table.</li>
     </ul>
   </section>
+<section id="shared-claims-reach-the-live-check">
+    <h2>&sect;1 &mdash; The shared-path exemption reaches the dispatch claim check</h2>
+
+    <p><strong>The defect.</strong> The mechanism above landed in
+    <code>runs._raise_live_scope_conflict</code>, which no production caller reaches: a real
+    <code>crew dispatch</code> raises its refusal from
+    <code>dispatch._raise_repository_scope_conflict</code>. So a project's declared shareable file
+    still serialised the nodes the declaration exists to admit, on the path that actually fences
+    work.</p>
+
+    <p><strong>What landed.</strong> <code>_raise_repository_scope_conflict</code>, and the dry-run's
+    companion report <code>_live_conflict_rows</code>, now read the list through the same reader
+    (<code>runs._shared_write_paths</code>) and admit the exact named file while keeping the
+    whole-file refusal for a directory claim and for an unlisted path.
+    <code>runs._raise_live_scope_conflict</code> is now a thin delegate to that one check, so a
+    single claim check remains rather than two that can drift. The reckon list gains four more hot
+    modules &mdash; <code>reckon/mcp_views.py</code>, <code>reckon/doccheck.py</code>,
+    <code>reckon/_store.py</code> and <code>reckon/crew/ticker.py</code> &mdash; each with a reason.</p>
+
+    <table>
+      <caption>The cases the contract test asserts, driven through the real dispatch entry.</caption>
+      <thead><tr><th>Case</th><th>Expectation</th><th>Asserted in</th></tr></thead>
+      <tbody>
+        <tr><td>Two dispatches claim the declared file</td><td>both launch</td><td><code>test_two_dispatches_on_a_listed_file_both_launch</code></td></tr>
+        <tr><td>An unlisted file is claimed against a live claim</td><td>refused</td><td><code>test_an_unlisted_file_is_refused_against_a_live_claim</code></td></tr>
+        <tr><td>A directory claim overlaps the declared file</td><td>refused</td><td><code>test_a_directory_claim_containing_a_shared_file_is_refused</code></td></tr>
+        <tr><td>No list is present</td><td>the declared file is refused</td><td><code>test_a_shared_file_is_refused_when_no_list_is_present</code></td></tr>
+        <tr><td>Both co-claimants remain</td><td>both appear in <code>scope_claims</code></td><td><code>test_both_co_claimants_stay_visible_in_the_read_model</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Gate</h3>
+
+    <p><strong>The gate adds no failures over the dispatch scope</strong>, and it runs against base.
+    At head (this worktree) the selection is the contract file plus five scope files, all passing.
+    The base arm runs the same selection at the base revision, where the contract file is the
+    <em>old</em> one that drove the dead helper; the five scope files pass at both revisions, so the
+    gate adds no failure over them.</p>
+
+    <pre><code># head (e99035f3, this worktree)
+module.__file__ = &lt;worktree&gt;/reckon/crew/dispatch.py
+command: python -m pytest -p no:cacheprovider -q &lt;contract file + 5 scope files&gt;
+55 passed in 72.10s   EXIT=0
+
+# base arm and the negative control log paths are named on the manifest</code></pre>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> <em>the dispatch path ignores the
+    shared-write-paths list; the two-dispatch co-claim case must refuse</em> &mdash; the first line of
+    the red log. A driver rebinds <code>dispatch._shared_write_paths</code> to answer the empty set
+    and asserts the rebinding (<code>returns frozenset()</code>) before running the co-claim case,
+    which then refuses.</p>
+
+    <pre><code>the dispatch path ignores the shared-write-paths list; the two-dispatch co-claim case must refuse
+control applied: dispatch._shared_write_paths returns frozenset()
+FAILED .../tests/test_shared_claims_on_declared_hot_files.py::test_two_dispatches_on_a_listed_file_both_launch
+E  reckon.crew.ScopeConflict: write scope 'pkg/hot.py' conflicts with live claim 'pkg/hot.py' held by run ...</code></pre>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+      change at its own head; verifying the merged result belongs to a separately dispatched test
+      node.</li>
+      <li><strong>No figure is added.</strong> The mechanism is a decision over two paths (named file
+      versus anything else) and a five-row case table; a diagram would be an image of what is
+      naturally a table.</li>
+    </ul>
+  </section>
 </main>
 </body>
 </html></td>

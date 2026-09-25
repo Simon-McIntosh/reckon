@@ -60,6 +60,27 @@
       what "records the co-claimants" means here.</p>
     </div>
 
+    <div data-reckon="landing" data-node="shared-claims-reach-the-live-check">
+      <h3>Landed &mdash; the shared-path exemption reaches the dispatch claim check</h3>
+      <p>The exemption a project declares in <code>shared-write-paths.json</code> lived only in
+      <code>runs._raise_live_scope_conflict</code>, which no real dispatch calls. A real
+      <code>crew dispatch</code> raises its refusal from
+      <code>dispatch._raise_repository_scope_conflict</code>, so the declaration had no effect on the
+      path that actually fences work. That check, and the dry-run's conflict report
+      <code>_live_conflict_rows</code>, now read the same list through
+      <code>runs._shared_write_paths</code> and admit the exact named file while keeping the
+      whole-file refusal for a directory claim and for an unlisted path.
+      <code>runs._raise_live_scope_conflict</code> is now a thin delegate to that one check, so a
+      single claim check remains. The reckon list gains four more hot modules, each with a reason.</p>
+      <p>The contract test drives <code>crew.dispatch</code> against a synthesized repository: two
+      dispatches on the listed file both launch, an unlisted file is refused against a live claim, a
+      directory claim overlapping the listed file is refused, and with no list the listed file is
+      refused. The declared negative control ignores the list and the co-claim case then refuses.</p>
+      <p><strong>Done when</strong> the real dispatch path exempts a declared shared file. Met: the
+      gate runs the contract file and five scope files, 55 passed, and the negative control fails the
+      co-claim case.</p>
+    </div>
+
     <h2 id="s2">&sect;2 &mdash; Route by backend and model, not by per-model lane</h2>
     <p><strong>The lead's routing model.</strong> A <em>backend</em> is a provider:
     <code>clive</code> (Claude Code against the locally served model), <code>codex</code>, and
