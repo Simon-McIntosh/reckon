@@ -405,6 +405,59 @@
         file re-ran green. No skill file change is carried by this node.
       </p>
     </section>
+
+    <section id="registration-census-read-set-pinned">
+      <h2>The census read set is pinned, so narrowing it back fails</h2>
+
+      <p>
+        The census added at <code>ff3fc8dd</code> builds its read set from
+        <code>SKILL.md</code> plus every file under <code>references/</code>, and the
+        guard it carries is an absence check: no file in that set may instruct a
+        session to register a roster member. An absence check is only as wide as the
+        set it reads, and nothing asserted the set stayed that wide. Measured at
+        <code>636909e6</code>: with the read set narrowed to
+        <code>[root / "SKILL.md"]</code>, the census test still passed — 1 passed, 55
+        deselected, exit 0 — so an instruction moved out of <code>SKILL.md</code>
+        into a reference file would have been reported clean by a check that no
+        longer read it.
+      </p>
+
+      <p>
+        The census now asserts three members of its read set before it scans:
+        <code>SKILL.md</code>, loaded in full at the start of every session, and
+        <code>references/sprint-orchestration.md</code> and
+        <code>references/conditional-guidance.md</code>, the reference files a
+        session's pointers lead it into. The pin checks membership rather than
+        exact-set equality — it fails when the census narrows to a set without those
+        files, and does not constrain additions, so a new conditional reference does
+        not have to be registered in a list to keep the test green.
+      </p>
+
+      <figure>
+        <img src="/reckon/figures/reckon-skill-overhaul/registration-census-read-set-pinned.svg"
+             alt="Left: the read set the census builds — SKILL.md and every file under references/ — with SKILL.md, references/sprint-orchestration.md and references/conditional-guidance.md marked as asserted by the pin. Right: the declared mutation narrowing the set to SKILL.md alone passes at base with the narrowing unnoticed, and fails at head on the new read-set assertion.">
+        <figcaption>
+          The set the census reads and the pin that keeps it wide. The same mutation
+          is a green run at the parent revision and a failing assertion at this one.
+        </figcaption>
+      </figure>
+
+      <p>
+        Gate at <code>1d176dd7</code>: <code>tests/test_skill_contracts.py</code>
+        <strong>56 passed</strong>, exit 0, the same count as the parent revision
+        <code>636909e6</code> — the pin adds an assertion inside the existing census
+        test rather than a new test. The declared negative control was executed and
+        logged: narrowing the census read set to <code>SKILL.md</code> alone fails the
+        new assertion, naming
+        <code>references/sprint-orchestration.md</code> as dropped from the read set,
+        and <code>tests/test_skill_contracts.py</code> was restored to its identical
+        SHA-256
+        (<code>d99bfe9e18f3a998ed3971c806d7d7a9328f14b6b90dbd430b9a1ecda20cb19e</code>,
+        from <code>d7766248d145c51307a4d130c4f001ddfedba787be8ea04c631ed71b0d196fa5</code>
+        at base) before the file re-ran green. No skill file change is carried by this
+        node.
+      </p>
+    </section>
   </main>
 </body>
 </html>

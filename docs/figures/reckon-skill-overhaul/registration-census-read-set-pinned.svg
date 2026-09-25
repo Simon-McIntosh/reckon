@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 470" role="img" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">
+  <title>Read-set pin on the registration census</title>
+  <desc>Left: the read set the census builds — SKILL.md and every file under references/ — with the three files the new assertion pins marked. Right: the declared mutation, narrowing the set to SKILL.md alone, passing at base and failing at head on the new read-set assertion.</desc>
+  <rect width="940" height="470" fill="#ffffff"/>
+  <text x="20" y="30" font-size="17" font-weight="600" fill="#111827">The census read set is pinned, not assumed</text>
+  <text x="20" y="52" fill="#4b5563">test_no_build_skill_file_instructs_member_registration · tests/test_skill_contracts.py</text>
+
+  <!-- Panel A: the read set and its pinned members -->
+  <rect x="20" y="72" width="420" height="300" rx="8" fill="#f9fafb" stroke="#d1d5db"/>
+  <text x="36" y="96" font-weight="600" fill="#111827">Read set the census builds</text>
+  <text x="36" y="114" font-size="11" fill="#6b7280">SKILL.md plus every file under references/ — the material a session loads</text>
+
+  <g fill="#ffffff" stroke="#9ca3af">
+    <rect x="36" y="128" width="300" height="26" rx="4"/>
+    <rect x="36" y="160" width="300" height="26" rx="4"/>
+    <rect x="36" y="192" width="300" height="26" rx="4"/>
+    <rect x="36" y="224" width="300" height="26" rx="4"/>
+    <rect x="36" y="256" width="300" height="26" rx="4"/>
+    <rect x="36" y="288" width="300" height="26" rx="4"/>
+    <rect x="36" y="320" width="300" height="26" rx="4"/>
+  </g>
+  <g fill="#111827" font-size="12">
+    <text x="46" y="145">SKILL.md</text>
+    <text x="46" y="177">references/sprint-orchestration.md</text>
+    <text x="46" y="209">references/conditional-guidance.md</text>
+    <text x="46" y="241">references/worker-protocol.md</text>
+    <text x="46" y="273">references/worker-*.md (3)</text>
+    <text x="46" y="305">references/orchestrator-harness/*.md (2)</text>
+    <text x="46" y="337">references/effort-, lane-, outage-routing .md (3)</text>
+  </g>
+  <g stroke="#047857" stroke-width="2" fill="none">
+    <rect x="36" y="128" width="300" height="26" rx="4"/>
+    <rect x="36" y="160" width="300" height="26" rx="4"/>
+    <rect x="36" y="192" width="300" height="26" rx="4"/>
+  </g>
+  <g fill="#047857" font-size="11">
+    <text x="348" y="145">asserted by the pin</text>
+    <text x="348" y="177">asserted by the pin</text>
+    <text x="348" y="209">asserted by the pin</text>
+  </g>
+  <text x="36" y="360" font-size="11" fill="#6b7280">the pin checks membership: an instruction moved into a reference is inside</text>
+  <text x="36" y="374" font-size="11" fill="#6b7280">this set, so the census has to read it</text>
+
+  <!-- Panel B: the mutation against base and head -->
+  <rect x="460" y="72" width="460" height="300" rx="8" fill="#f9fafb" stroke="#d1d5db"/>
+  <text x="476" y="96" font-weight="600" fill="#111827">Declared mutation — narrow the read set to SKILL.md alone</text>
+
+  <rect x="476" y="112" width="428" height="34" rx="4" fill="#ffffff" stroke="#9ca3af"/>
+  <text x="486" y="134" font-family="ui-monospace, monospace" font-size="11" fill="#111827">paths = [root / "SKILL.md"]</text>
+
+  <path d="M 560 150 L 560 170 L 476 190" fill="none" stroke="#9ca3af" stroke-width="1.5"/>
+  <path d="M 560 150 L 560 170 L 800 190" fill="none" stroke="#9ca3af" stroke-width="1.5"/>
+
+  <rect x="476" y="190" width="180" height="120" rx="6" fill="#ffffff" stroke="#b45309"/>
+  <text x="488" y="210" font-weight="600" font-size="12" fill="#92400e">At base — no pin</text>
+  <text x="488" y="228" font-size="11" fill="#374151">census reads 1 file,</text>
+  <text x="488" y="242" font-size="11" fill="#374151">finds nothing,</text>
+  <text x="488" y="262" font-size="12" font-weight="600" fill="#b45309">PASSES</text>
+  <text x="488" y="280" font-size="11" fill="#6b7280">the narrowing goes</text>
+  <text x="488" y="294" font-size="11" fill="#6b7280">unnoticed</text>
+
+  <rect x="716" y="190" width="188" height="120" rx="6" fill="#ffffff" stroke="#b91c1c"/>
+  <text x="728" y="210" font-weight="600" font-size="12" fill="#7f1d1d">At head — pin added</text>
+  <text x="728" y="228" font-size="11" fill="#374151">read-set assertion runs</text>
+  <text x="728" y="242" font-size="11" fill="#374151">before the census,</text>
+  <text x="728" y="262" font-size="12" font-weight="600" fill="#b91c1c">FAILS</text>
+  <text x="728" y="280" font-size="11" fill="#6b7280">naming the dropped</text>
+  <text x="728" y="294" font-size="11" fill="#6b7280">reference file</text>
+
+  <text x="476" y="330" font-size="11" fill="#374151">Base 56 passed with the narrowed set (defect reproduced);</text>
+  <text x="476" y="346" font-size="11" fill="#374151">head fails on the new assertion — the guard fires, 1 failed.</text>
+
+  <text x="20" y="404" font-size="11" fill="#6b7280">Gate at 1d176dd7: tests/test_skill_contracts.py 56 passed, exit 0. No skill file changed — this pin guards the read set the census scans, not the skills it scans.</text>
+  <text x="20" y="424" font-size="11" fill="#6b7280">The pin asserts three named members, not exact-set equality: it fails if the census narrows to a set without them, and does not constrain additions.</text>
+  <text x="20" y="444" font-size="11" fill="#6b7280">Evidence: docs/evidence/archive/reckon-skill-overhaul-landed.html#registration-census-read-set-pinned</text>
+</svg>
