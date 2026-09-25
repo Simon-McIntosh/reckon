@@ -19,6 +19,14 @@ from reckon.crew import recovery, runs
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, parse_duration
 from reckon.crew.routing import _registered_worktrees
 
+CLASSIFICATION_DUTY_KINDS = {
+    "scoring": "review-missing",
+    "promotable": "review-ready",
+    "blocked": "blocked",
+    INTERRUPTED_RUN_PHASE: "turn-ended-early",
+}
+RECOVERY_CLASSIFICATION_DUTY_KINDS = {"needs-help": "needs-help"}
+
 
 def _utc_now() -> datetime:
     """Return the observation instant through a patchable clock boundary."""
@@ -196,16 +204,18 @@ def obligations(project: str, session: str) -> dict[str, Any]:
         if classification == "scoring":
             if str(row.get("run_id") or "") in reviews_in_flight:
                 continue
-            kind = "review-missing"
+            kind = CLASSIFICATION_DUTY_KINDS[classification]
         elif classification == "promotable":
             age = _row_age(row, now=now)
-            kind = "promotable-stale" if age > grace else "review-ready"
-        elif recovery_classification == "needs-help":
-            kind = "needs-help"
-        elif classification == "blocked":
-            kind = "blocked"
-        elif classification == INTERRUPTED_RUN_PHASE:
-            kind = "turn-ended-early"
+            kind = (
+                "promotable-stale"
+                if age > grace
+                else CLASSIFICATION_DUTY_KINDS[classification]
+            )
+        elif recovery_classification in RECOVERY_CLASSIFICATION_DUTY_KINDS:
+            kind = RECOVERY_CLASSIFICATION_DUTY_KINDS[recovery_classification]
+        else:
+            kind = CLASSIFICATION_DUTY_KINDS.get(classification, "")
         if kind:
             items.append(_live_item(row, kind=kind, now=now))
 
