@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-25">
-  <meta name="plan-version" content="22">
+  <meta name="plan-version" content="23">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -275,6 +275,11 @@
     <h4 class="r-fu-title">The death row misses a worker whose final stream record exceeds the 64 KiB tail window</h4>
     <div class="r-fu-body"><p>The independent review of §2 (score 90) measured the landed reader at head <code>e63245d1</code>: the tail read in <code>reckon/crew/recovery.py</code> is bounded to the last 64 KiB, so a worker killed mid-turn whose final stream record is larger reads as having no last record — <code>last_record_type</code> None, row state <code>working</code>, no death clause — which is exactly the stale working column §2 replaces. A 64.5 KiB final record fires; 65.5 KiB and 512 KiB do not; the small-record control fires. Repair: the tail read must return the last complete record however large it is (extend backwards until a record boundary is found), with a test at each of those three sizes.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives §2 — make the death row read the last stream record whatever its size</pre>
+    </article>
+<article class="r-fu" data-id="f-asrswtwl-live-worker-read-dead" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T07:20:00Z" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The watcher read two live workers as dead with retained work</h4>
+    <div class="r-fu-body"><p>Observed 2026-09-25 between 09:13 and 09:17 CEST. The follower emitted <code>blocked — the worker process is gone with no recorded exit and the worktree carries 1 commit</code> (the <code>dead-pid-with-retained-work</code> interruption in <code>reckon/crew/recovery.py</code>, which requires <code>process_alive is False</code>) for runs <code>r-20260925T065159936340-after-edge-reaches-every-roadmap-reader</code> and <code>r-20260925T065053546333-two-red-negative-control-cases-repaired</code>. At that moment both supervisors (pids 3795398, 3790946) and both workers (3801097, 3797308) were alive with streams written within the last second, and the MCP live view classified both <code>running — the process is alive</code>. The watcher process (pid 853019) had been running since 2026-09-24T19:00Z. The window coincides with a repo-wide <code>reckon crew gc --apply</code> removing 262 worktrees, so the misread may be a liveness probe racing a pointer or worktree scan under load rather than the probe itself; it was not reproduced. The consequence is a false <code>resume</code> offer on a live worker, which a reflex acting on it would duplicate. Measure: reproduce under concurrent gc or load, and make the interruption require a liveness reading that agrees on two consecutive snapshots before it is emitted.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives — a live worker must never read as dead with retained work</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
