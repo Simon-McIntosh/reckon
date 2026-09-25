@@ -30,6 +30,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -111,6 +112,20 @@ def read_status(manifest: Path) -> str | None:
     return None
 
 
+def _manifest_predates_attempt(manifest: Path) -> bool:
+    """Whether a manifest was last written before this worker attempt began."""
+    raw = os.environ.get("RECKON_ATTEMPT_STARTED_AT", "").strip()
+    if not raw or not manifest.is_file():
+        return False
+    try:
+        attempt_started_at = datetime.fromisoformat(raw)
+        return manifest.stat().st_mtime_ns < int(
+            attempt_started_at.timestamp() * 1_000_000_000
+        )
+    except (OSError, ValueError, OverflowError):
+        return False
+
+
 def _write_terminal_record(manifest: Path) -> None:
     """Set the manifest's top-level status to ``blocked`` with the reason.
 
@@ -154,7 +169,8 @@ def decide(payload: dict[str, Any]) -> tuple[bool, str | None]:
         return False, None
 
     status = read_status(manifest)
-    if status in TERMINAL_STATUSES:
+    predates_attempt = _manifest_predates_attempt(manifest)
+    if status in TERMINAL_STATUSES and not predates_attempt:
         return False, None
 
     counter = manifest.parent / COUNTER_NAME
@@ -174,7 +190,10 @@ def decide(payload: dict[str, Any]) -> tuple[bool, str | None]:
     except OSError:
         pass
 
-    what = "is absent" if status is None else f"has status '{status}'"
+    if predates_attempt:
+        what = "predates this attempt"
+    else:
+        what = "is absent" if status is None else f"has status '{status}'"
     reason = (
         f"worker stop refused: the run manifest {manifest} {what}; it must be "
         "present with a status of complete, blocked or failed before the turn "

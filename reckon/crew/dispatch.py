@@ -3871,6 +3871,7 @@ def dispatch(
         # so attribution lives there as well as at the pointer's top level.
         node_definition["coordinator"] = coordinator
 
+        attempt_started_at = _utc_now()
         record: dict[str, Any] = {
             "run_id": run_id,
             "project": project,
@@ -3938,7 +3939,7 @@ def dispatch(
             "attempt_kind": (
                 "shadow" if shadow_lineage else "redispatch" if lineage else "dispatch"
             ),
-            "attempt_started_at": _utc_now(),
+            "attempt_started_at": attempt_started_at,
             "phase": "starting",
             "session_id": reuse_session,
             # A run that carries no session id names why it does not, from the
@@ -4076,6 +4077,14 @@ def dispatch(
                 record["directive"]["environment"] = _persisted_worker_environment(
                     {}, facts=dispatch_host
                 )
+            record["directive"]["environment"] = _worker_runtime_environment(
+                record["directive"].get("environment"),
+                run_id=run_id,
+                manifest_path=node.manifest_path,
+                attempt_started_at=attempt_started_at,
+                coordinator_session=session,
+                claude_headers=False,
+            )
 
         # Publish the pointer before probing the watcher. Otherwise a watcher
         # could drain an empty fleet between the probe and this write, leaving
@@ -4655,10 +4664,92 @@ def _persisted_worker_environment(
 ) -> dict[str, str]:
     """Return only the launch overlay safe to persist in a run record."""
     persisted = dict(environment or {})
+    for key in (
+        "RECKON_RUN_ID",
+        "RECKON_MANIFEST",
+        "RECKON_ATTEMPT_STARTED_AT",
+    ):
+        persisted.pop(key, None)
+    headers = str(persisted.get("ANTHROPIC_CUSTOM_HEADERS") or "").splitlines()
+    if (
+        len(headers) >= 2
+        and headers[-2].startswith("X-Reckon-Run-Id:")
+        and headers[-1].startswith("X-Reckon-Session:")
+    ):
+        headers = headers[:-2]
+        if headers:
+            persisted["ANTHROPIC_CUSTOM_HEADERS"] = "\n".join(headers)
+        else:
+            persisted.pop("ANTHROPIC_CUSTOM_HEADERS", None)
     placement = _current_host_facts() if facts is None else facts
     if placement.in_allocation:
         persisted["PATH"] = launch_search_path(environment, facts=placement)
     return persisted
+
+
+def _worker_runtime_environment(
+    environment: Mapping[str, str] | None,
+    *,
+    run_id: str,
+    manifest_path: str,
+    attempt_started_at: str,
+    coordinator_session: str,
+    claude_headers: bool,
+) -> dict[str, str]:
+    """Add one attempt's identity to the environment inherited by its worker."""
+    runtime = dict(environment or {})
+    runtime.update(
+        {
+            "RECKON_RUN_ID": run_id,
+            "RECKON_MANIFEST": manifest_path,
+            "RECKON_ATTEMPT_STARTED_AT": attempt_started_at,
+        }
+    )
+    if claude_headers:
+        inherited = str(
+            runtime.get("ANTHROPIC_CUSTOM_HEADERS")
+            or os.environ.get("ANTHROPIC_CUSTOM_HEADERS")
+            or ""
+        ).rstrip("\n")
+        attribution = (
+            f"X-Reckon-Run-Id: {run_id}\nX-Reckon-Session: {coordinator_session}"
+        )
+        runtime["ANTHROPIC_CUSTOM_HEADERS"] = (
+            f"{inherited}\n{attribution}" if inherited else attribution
+        )
+    return runtime
+
+
+def _worker_runtime_plan(
+    plan: _backends.LaunchPlan,
+    *,
+    run_id: str,
+    manifest_path: str,
+    attempt_started_at: str,
+    coordinator_session: str,
+) -> _backends.LaunchPlan:
+    """Return a launch plan carrying the current run and attempt identity."""
+    return dataclasses.replace(
+        plan,
+        environment=_worker_runtime_environment(
+            plan.environment,
+            run_id=run_id,
+            manifest_path=manifest_path,
+            attempt_started_at=attempt_started_at,
+            coordinator_session=coordinator_session,
+            claude_headers=plan.dialect == "claude",
+        ),
+    )
+
+
+def _worker_process_environment(
+    environment: Mapping[str, str] | None, *, dialect: str
+) -> dict[str, str]:
+    """Merge inherited launch state while withholding Claude headers from Codex."""
+    merged = {**os.environ, **(environment or {})}
+    if dialect != "claude":
+        merged.pop("ANTHROPIC_CUSTOM_HEADERS", None)
+    return merged
 
 
 def resolve_launch_executable(
@@ -4874,7 +4965,10 @@ def _spawn(
         process = subprocess.Popen(
             plan.argv,
             cwd=plan.cwd,
-            env={**os.environ, **plan.environment},
+            env=_worker_process_environment(
+                plan.environment,
+                dialect=plan.dialect,
+            ),
             stdin=stdin,
             stdout=stdout,
             stderr=stderr,
@@ -5295,6 +5389,15 @@ def _worker_default_signals() -> None:
 def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     """Spawn the worker inside the supervisor's own process group."""
     plan = spec["plan"]
+    record = read_pointer(str(spec["run_id"]))
+    environment = _worker_runtime_environment(
+        plan.get("environment") or {},
+        run_id=str(spec["run_id"]),
+        manifest_path=str(record.get("manifest_path") or ""),
+        attempt_started_at=_utc_now(),
+        coordinator_session=str(record.get("session") or ""),
+        claude_headers=str(plan.get("dialect") or "") == "claude",
+    )
     with (
         open(str(spec["prompt_path"]), "rb") as stdin,
         open(str(spec["log_path"]), "wb") as stdout,
@@ -5303,7 +5406,10 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         process = subprocess.Popen(
             list(plan["argv"]),
             cwd=plan.get("cwd"),
-            env={**os.environ, **(plan.get("environment") or {})},
+            env=_worker_process_environment(
+                environment,
+                dialect=str(plan.get("dialect") or ""),
+            ),
             stdin=stdin,
             stdout=stdout,
             stderr=stderr,
@@ -5442,7 +5548,7 @@ def _run_supervisor(spec_path: Path) -> int:
         return 0
     try:
         pid = _supervisor_spawn_worker(spec)
-    except (OSError, ValueError, KeyError) as exc:
+    except (OSError, ValueError, KeyError, CrewError) as exc:
         _supervisor_write(
             run_directory / EXIT_RECORD_NAME,
             _supervisor_exit_record(
@@ -6190,6 +6296,7 @@ def resume_plan(
     # The plan is built — and its executable resolved — before anything is
     # written, so an unresolvable backend refuses a resume exactly as it
     # refuses a dispatch: no pointer field, no advice file, no stream.
+    attempt_started_at = _utc_now()
     plan = resolve_launch_executable(
         _backends.launch_plan(
             backend_name=str(record.get("backend") or ""),
@@ -6204,6 +6311,13 @@ def resume_plan(
             writable_directories=record.get("sandbox_write_roots") or (),
             resume_session=session_id or None,
         )
+    )
+    plan = _worker_runtime_plan(
+        plan,
+        run_id=run_id,
+        manifest_path=str(record.get("manifest_path") or ""),
+        attempt_started_at=attempt_started_at,
+        coordinator_session=str(record.get("session") or ""),
     )
 
     def capture(current: dict[str, Any]) -> dict[str, Any]:
@@ -6545,6 +6659,13 @@ def change_lane(
                 final_message_path=str(final_path),
                 resume_session=session_id if continued else None,
             )
+        )
+        target_plan = _worker_runtime_plan(
+            target_plan,
+            run_id=run_id,
+            manifest_path=str(record.get("manifest_path") or ""),
+            attempt_started_at=lane_change["changed_at"],
+            coordinator_session=str(record.get("session") or ""),
         )
     preview: dict[str, Any] = {
         "run_id": run_id,
