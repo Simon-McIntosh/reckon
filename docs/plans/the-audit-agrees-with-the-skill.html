@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-audit-agrees-with-the-skill">
+  <meta name="plan-title" content="The Audit Agrees With The Skill">
+  <meta name="plan-summary" content="audit-doc stops warning on the landed-section template the skill prescribes, refuses a slug two resource types share, and promotion reads a review's commitless manifest.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-sprint" content="S23">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-standalone" content="Three independent contract mismatches between reckon's own validators and the skill text; nothing upstream must land first, and §3 is sequenced by a file trigger rather than a plan edge.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <title>The Audit Agrees With The Skill | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">reckon &middot; validator and skill contract</p>
+      <h1>The audit agrees with the skill</h1>
+      <p class="lead">On 2026-09-24 and 25, the imas-ambix coordinator landing the fleet-view sections hit three places where reckon's own validators and reckon's own skill text disagree. Each disagreement cost a hand workaround, and one left a plan un-editable by slug.</p>
+    </header>
+
+    <h2 id="s1">&sect;1 &mdash; A landed section's header is not a spliced document</h2>
+    <p><code>reckon-build</code> SKILL.md &sect;6b prescribes <code>&lt;section class="section-landed"&gt;&lt;header&gt;&hellip;&lt;/header&gt;</code> for every landed section. Meanwhile, <code>reckon audit-doc</code> warns <code>header-duplicate</code> ("document carries 2 &lt;header&gt; elements &hellip; content from another document spliced into this one") on any plan with two landed sections. It was seen on imas-ambix <code>agent-sessions-live-on-the-fleet-node.html</code> (b46d1521) and <code>description-reader-migration.html</code>.</p>
+    <p>The template is the canonical shape and is already used across mounted projects, so the rule changes and the template stays. A <code>&lt;header&gt;</code> that is the direct child of a <code>section.section-landed</code> no longer counts toward <code>header-duplicate</code>. A second document-level header still does.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>Tests assert that a plan with three landed sections, each written in the &sect;6b template, produces no <code>header-duplicate</code> finding.</li>
+      <li>Tests assert that a plan with a second top-level <code>&lt;header&gt;</code> still produces it.</li>
+      <li>The declared mutation, removing the exemption, is applied, and the three-landed-sections case is observed to fail. The log is recorded.</li>
+    </ul>
+
+    <h2 id="s2">&sect;2 &mdash; A slug two resource types share is refused at audit</h2>
+    <p>A research note at <code>docs/research/fleet-view-rendering.html</code> carried the <code>plan-slug</code> of a live plan, <code>agent-sessions-live-on-the-fleet-node</code>. From then on, every slug-only <code>edit_plan</code> on the plan failed with "resource slug &hellip; is ambiguous across types: plan, research". The worker's gate was <code>reckon audit-doc</code>, and it passed.</p>
+    <p>A project-aware audit should report, as an ERROR, a <code>plan-slug</code> that another resource of a different type in the same mounted project already carries. The error names both paths.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test builds a synthetic project in which a research document and a plan share a slug. It asserts that auditing either document with the project reports the collision as an error naming both files, and that the command exits non-zero.</li>
+      <li>A project whose slugs are all unique produces no such finding.</li>
+      <li>The declared mutation, removing the cross-type check, is applied, and the collision test is observed to fail. The log is recorded.</li>
+    </ul>
+
+    <h2 id="s3">&sect;3 &mdash; A review's commitless manifest promotes without a hand edit</h2>
+    <p>Three local-lane reviews in a row wrote prose into <code>commits:</code>, for example <code>commits: none (review node; no repository change; &hellip;)</code>. <code>crew complete</code> then parsed that prose as commit ids and refused with "&hellip; does not resolve to an object". The coordinator blanked the line by hand each time. The runs were:</p>
+    <ul>
+      <li><code>r-20260924T222137833693-review-of-fleet-view-stall-cause</code></li>
+      <li><code>r-20260924T234352207203-review-of-fleet-view-note-repair</code></li>
+      <li><code>r-20260925T012953536800-review-of-fleet-view-unseen-surfaces</code></li>
+    </ul>
+    <p>A <code>commits:</code> value beginning <code>none</code> is read as an empty list on a node whose role produces no commit. The review prompt also says to leave <code>commits</code> empty.</p>
+    <p><strong>Trigger:</strong> deferred until no live run claims <code>reckon/crew/promotion.py</code> or <code>reckon/crew/prompts.py</code>. Today S21 claims the first and S22 the second.</p>
+    <p><strong>Done when:</strong> a promotion test on a review run whose manifest reads <code>commits: none (review node)</code> promotes with no commits and no refusal. The same prose on an implement run is still refused.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-taawts-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-09-25"
+               data-recommends-skill="/reckon-build the-audit-agrees-with-the-skill"
+               data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Land &sect;1 and &sect;2</h4>
+        <div class="r-fu-body"><p>&sect;1 and &sect;2 both write <code>reckon/doccheck.py</code> and run in order. &sect;3 waits on its trigger.</p></div>
+        <pre class="r-fu-prompt">/reckon-build the-audit-agrees-with-the-skill</pre>
+      </article>
+    </section>
+
+    <section data-reckon="comments" id="comments" class="r-comments">
+      <h2><span class="sec">§</span> Comments</h2>
+    </section>
+  </main>
+</body>
+</html>
