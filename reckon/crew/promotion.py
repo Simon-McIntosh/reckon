@@ -2807,10 +2807,23 @@ def _resume_worktree_retention(
     *,
     retained_at: str,
     discard: bool,
+    gate: str,
 ) -> dict[str, str] | None:
-    """Describe a worktree deliberately kept as a session's working directory."""
+    """Describe a worktree deliberately kept as a session's working directory.
+
+    A completed run has closed its work and can release an integrated tree even
+    when its session is still resolvable. Retention is for a promotion that did
+    not close the work, or for a manifest that is not complete.
+    """
     worktree = str(record.get("worktree") or "").strip()
     if recoverable_session is None or discard or not worktree:
+        return None
+    manifest = _fresh_manifest(record)
+    complete_manifest = (
+        manifest is not None
+        and str(manifest.get("status") or "").strip().lower() == "complete"
+    )
+    if str(gate).strip().lower() not in {"blocked", "failed"} and complete_manifest:
         return None
     if not Path(worktree).is_dir():
         return None
@@ -3857,6 +3870,7 @@ def _complete_locked(
         recoverable_session,
         retained_at=finished,
         discard=discard_resume_worktree,
+        gate=str(gate),
     )
     commit_list = [str(sha) for sha in commits if str(sha).strip()]
     if shadow and commit_list:

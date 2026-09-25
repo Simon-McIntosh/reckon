@@ -15,6 +15,7 @@ from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "proj"
 PLAN = "plan-a"
+STREAM_FIXTURE = Path(__file__).parent / "fixtures" / "backends" / "claude-turn.jsonl"
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -98,32 +99,43 @@ def _pointer(
     worktree: Path,
     *,
     status: str = "complete",
+    session_id: str = "",
+    stream: bool = False,
 ) -> None:
     manifest = root / "manifests" / f"{run_id}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(f"node: node-a\nstatus: {status}\n", encoding="utf-8")
+    record = {
+        "run_id": run_id,
+        "project": PROJECT,
+        "repo": str(repository),
+        "worktree": str(worktree),
+        "launch": "cli" if stream else "in-harness",
+        "role": "implement",
+        "member": "worker-a",
+        "backend": "beta" if stream else "native",
+        "created_at": "2026-09-25T07:00:00Z",
+        "base_sha": _git(repository, "rev-parse", "HEAD"),
+        "manifest_path": str(manifest),
+        "node": {
+            "id": "node-a",
+            "plan": PLAN,
+            "section": "§4",
+            "time_budget": "35m",
+            "write_paths": [],
+        },
+    }
+    if session_id:
+        record["session_id"] = session_id
+    if stream:
+        stream_path = root / "streams" / f"{run_id}.jsonl"
+        stream_path.parent.mkdir(parents=True, exist_ok=True)
+        stream_path.write_bytes(STREAM_FIXTURE.read_bytes())
+        record["argv"] = ["claude", "-p"]
+        record["log_path"] = str(stream_path)
     _write_json(
         pointer_path(run_id),
-        {
-            "run_id": run_id,
-            "project": PROJECT,
-            "repo": str(repository),
-            "worktree": str(worktree),
-            "launch": "in-harness",
-            "role": "implement",
-            "member": "worker-a",
-            "backend": "native",
-            "created_at": "2026-09-25T07:00:00Z",
-            "base_sha": _git(repository, "rev-parse", "HEAD"),
-            "manifest_path": str(manifest),
-            "node": {
-                "id": "node-a",
-                "plan": PLAN,
-                "section": "§4",
-                "time_budget": "35m",
-                "write_paths": [],
-            },
-        },
+        record,
     )
 
 
@@ -131,6 +143,52 @@ def _stored_run(repository: Path, run_id: str) -> dict:
     return next(
         run for run in ledger.runs(PROJECT, root=repository) if run["run_id"] == run_id
     )
+
+
+def test_complete_run_with_a_resolvable_session_releases_its_worktree(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if os.environ.get("PROMOTION_NEGATIVE_RETENTION"):
+        original = promotion._resume_worktree_retention
+
+        def unconditional_retention(
+            record, recoverable_session, *, retained_at, discard, gate=""
+        ):
+            return original(
+                record,
+                recoverable_session,
+                retained_at=retained_at,
+                discard=discard,
+                gate="failed",
+            )
+
+        monkeypatch.setattr(
+            promotion, "_resume_worktree_retention", unconditional_retention
+        )
+
+    run_id = "r-20260925T071000000000-resolvable-session"
+    worktree = _worktree(repository, tmp_path, "resolvable-session")
+    _pointer(
+        repository,
+        tmp_path,
+        run_id,
+        worktree,
+        session_id="7c49fef5-2fc0-46c7-87ad-0c69347d6d6d",
+        stream=True,
+    )
+
+    promoted = crew.complete(
+        run_id,
+        gate="passed",
+        outcome="a complete run closes its worktree despite a resolvable session",
+        review_waiver="the synthesized cleanup fixture has no code review",
+        root=repository,
+    )
+
+    assert promoted["release"]["worktree_released"] is True
+    assert not worktree.exists()
+    assert promoted["record"].get("worktree_retention") is None
+    assert _stored_run(repository, run_id)["release"]["worktree_released"] is True
 
 
 def test_promotion_releases_only_the_integrated_clean_case(
