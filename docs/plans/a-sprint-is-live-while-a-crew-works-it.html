@@ -149,6 +149,41 @@
     Evidence: <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html">execution
     record</a>.</p>
 
+    <h3 id="s4-focus">Landed &mdash; the focus follows the live crew, and its cost is the blocker</h3>
+    <p><code>active_sprint_id</code> now names the live sprint with the most recent stream
+    activity, and falls back to the stored <code>active</code> sprint when no crew is live. It sits
+    beside a new <code>live_sprint_ids</code> list, live sprints most recent first. Both surfaces
+    carry it: the composed project state and the roadmap report. The liveness read happens once per
+    composition, not once per sprint.</p>
+    <p>When several sprints are stored <code>active</code> and none is live, the choice is
+    deterministic: the first stored-active sprint that still carries an unfinished item, else the
+    first stored-active sprint, else the earliest sprint with unfinished work. The rule is stated in
+    <code>focus_sprint_id</code>'s docstring, and the <code>_sprint_status_buckets</code> docstring
+    no longer states the retired one-active rule.</p>
+    <p><strong>Blocked on cost, not on behaviour.</strong> The wiring is correct and the tests
+    pass, but the read it depends on is far too expensive to sit in a hot path. The done-when
+    allowed the roadmap summary to gain at most one second; measured against a base built from
+    <code>be8f1330</code> and run in the same minutes, it gains about twenty-four.
+    <code>reckon.sprint_liveness.sprint_liveness</code> costs 11.6&nbsp;s for the reckon project
+    &mdash; 34 live pointers, four live sprints, 340&nbsp;ms each &mdash; because
+    <code>classify_pointer</code> parses each run's whole stream (2.33&nbsp;M JSON lines across the
+    set). The roadmap summary path invokes it twice, so it pays 24.3&nbsp;s of a 68.6&nbsp;s read,
+    and the summary projection emits neither <code>active_sprint_id</code> nor
+    <code>live_sprint_ids</code>.</p>
+    <figure>
+      <img src="/reckon/figures/a-sprint-is-live-while-a-crew-works-it/roadmap-liveness-cost.png"
+           alt="Three panels: an interleaved base-versus-head roadmap summary latency comparison showing 12.7 and 10.8 seconds at base against 36.1 and 35.2 seconds at head; a stacked bar showing 24.3 of 68.6 seconds spent in two sprint_liveness calls; and a bar showing 6.7 of an 11.6 second liveness call spent parsing 2.33 million JSON lines.">
+      <figcaption>Left: the same read at base and at head, minutes apart on one host. Middle: two
+      <code>sprint_liveness</code> calls are 24.3&nbsp;s of the head read. Right: a single call is
+      dominated by parsing every live run's stream.</figcaption>
+    </figure>
+    <p>The behaviour itself is what &sect;4 asks for; the cost is the liveness reader's, and that
+    module is another node's. What unblocks this: classify a pointer from a bounded part of its
+    stream rather than all of it, or derive the focus from a liveness snapshot the fleet records
+    once. Evidence, with the interleaved numbers and the profile:
+    <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html#s4-focus">execution
+    record</a>.</p>
+
     <h2 id="s5">&sect;5 &mdash; The skills teach liveness, not the marker</h2>
     <p><code>reckon-sprint</code> SKILL.md's "One pushed sprint" section, and every <code>reckon-build</code> sentence that tells a coordinator to read <code>active_sprint_id</code>, are rewritten to the &sect;2 definition. The <code>push</code> op is described as a hint.</p>
     <p><strong>Done when:</strong></p>

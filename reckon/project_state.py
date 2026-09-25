@@ -26,7 +26,7 @@ import re
 import shutil
 import tempfile
 import threading
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from contextlib import ExitStack, contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
@@ -45,6 +45,7 @@ from reckon._schema import (
     resolve_plan_ref,
 )
 from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
+from reckon.sprint_liveness import sprint_liveness
 
 MARKER_RELATIVE = Path(".reckon/project-state-migration.json")
 RESOURCE_SCRIPT_ID = "reckon-resource-state"
@@ -1207,13 +1208,74 @@ def _plan_state_by_slug(
     return result
 
 
-def _derive_default_sprint_focus(sprints: list[dict[str, Any]]) -> str | None:
-    """Return the first sprint in composed order with unfinished plan work."""
-    for sprint in sprints:
-        for item in sprint.get("items", []):
-            status = item.get("status") if isinstance(item, dict) else None
-            if str(status or "") not in COMPLETED_STATUSES:
-                return str(sprint.get("id") or "") or None
+def live_sprint_ids(
+    liveness: Mapping[str, Mapping[str, Any]] | None,
+) -> list[str]:
+    """The live sprint ids, most recent stream activity first.
+
+    ``last_activity_at`` is an ISO-8601 UTC instant, so a descending sort orders
+    it chronologically; a tie is broken by sprint id ascending so the order is
+    total and two readers of one instant never disagree.
+    """
+    live = [
+        (str(sprint_id), str(row.get("last_activity_at") or ""))
+        for sprint_id, row in (liveness or {}).items()
+        if row.get("live")
+    ]
+    live.sort(key=lambda item: item[0])
+    live.sort(key=lambda item: item[1], reverse=True)
+    return [sprint_id for sprint_id, _ in live]
+
+
+def _has_unfinished_items(sprint: Mapping[str, Any]) -> bool:
+    """True when a sprint row carries an item that is not yet complete.
+
+    A bare slug string names an item whose state this layer cannot read, so it
+    counts as unfinished rather than being silently treated as done.
+    """
+    for item in sprint.get("items") or []:
+        if isinstance(item, str):
+            return True
+        if isinstance(item, Mapping) and (
+            str(item.get("status") or "") not in COMPLETED_STATUSES
+        ):
+            return True
+    return False
+
+
+def focus_sprint_id(
+    sprint_rows: Iterable[Mapping[str, Any]],
+    liveness: Mapping[str, Mapping[str, Any]] | None,
+) -> str | None:
+    """Which sprint a surface names as the focus.
+
+    A live crew decides: the live sprint with the most recent stream activity,
+    when one of the live sprints is present in ``sprint_rows``. With no live
+    crew the stored ``active`` status decides, and where several sprints are
+    stored active the first in composed order still carrying unfinished work
+    wins, falling back to the first active row — a deterministic choice, so two
+    readers at one instant agree. A project with no stored active sprint keeps
+    its earliest unfinished sprint.
+    """
+    ids = [str(sprint.get("id") or "") for sprint in sprint_rows]
+    for sprint_id in live_sprint_ids(liveness):
+        if sprint_id in ids:
+            return sprint_id
+
+    active = [
+        sprint
+        for sprint in sprint_rows
+        if str(sprint.get("status") or "").lower() == "active"
+    ]
+    for sprint in active:
+        if _has_unfinished_items(sprint):
+            return str(sprint.get("id") or "") or None
+    if active:
+        return str(active[0].get("id") or "") or None
+
+    for sprint in sprint_rows:
+        if _has_unfinished_items(sprint):
+            return str(sprint.get("id") or "") or None
     return None
 
 
@@ -1345,6 +1407,10 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
         sprints = list(composed.get("sprints", []))
         warnings = _item_lifecycle_warnings(sprints)
         composed["sprints"] = _hydrate_items(docs_dir, project, sprints)
+        liveness = sprint_liveness(project, docs_dir)
+        focus_id = focus_sprint_id(composed["sprints"], liveness)
+        composed["active_sprint_id"] = focus_id or composed.get("active_sprint_id")
+        composed["live_sprint_ids"] = live_sprint_ids(liveness)
         if warnings:
             composed["compatibility_warnings"] = [
                 *composed.get("compatibility_warnings", []),
@@ -1413,10 +1479,12 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
         for warning in sprint.get("compatibility_warnings", [])
     ]
     hydrated_sprints = _hydrate_items(docs_dir, project, sprints)
-    focus_id = _derive_default_sprint_focus(hydrated_sprints)
+    liveness = sprint_liveness(project, docs_dir)
+    focus_id = focus_sprint_id(hydrated_sprints, liveness)
     composed = {
         "_version": 0,
         "active_sprint_id": focus_id,
+        "live_sprint_ids": live_sprint_ids(liveness),
         "projects": [project_manifest],
         "sprints": hydrated_sprints,
         "milestones": milestones,

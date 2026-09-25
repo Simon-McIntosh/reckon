@@ -10,6 +10,7 @@ from reckon import mcp as mcp_module
 from reckon._schema import SPRINT_STATUS_ENUM
 from reckon.project_state import (
     ProjectStateConflict,
+    apply_resource_ops,
     create_project_state,
     push_sprint,
     read_resource,
@@ -78,6 +79,23 @@ def test_push_leaves_other_sprints_active(tmp_path: Path) -> None:
     _target, target_version = read_resource(docs, "sample", "sprint", "S2")
     result = push_sprint(docs, "sample", "S2", target_version)
     assert "demoted" not in result
+    assert _statuses(docs, "S1", "S2") == {"S1": "active", "S2": "active"}
+
+
+def test_push_op_warns_of_no_demotion_and_leaves_the_other_active(
+    tmp_path: Path,
+) -> None:
+    """The applied push op carries no demotion warning and does not touch S1."""
+    docs = _docs(tmp_path)
+    _write_sprint(docs, "S1", "active")
+    _write_sprint(docs, "S2", "open")
+    _, target_version = read_resource(docs, "sample", "sprint", "S2")
+    version, warnings = apply_resource_ops(
+        docs, "sample", "sprint", "S2", [{"op": "push"}], target_version
+    )
+    assert version == target_version + 1
+    assert warnings == []
+    assert not [warning for warning in warnings if "demote" in warning.lower()]
     assert _statuses(docs, "S1", "S2") == {"S1": "active", "S2": "active"}
 
 
