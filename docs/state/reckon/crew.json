@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T14:13:02",
+  "updated": "2026-09-25T14:13:40",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -433761,6 +433761,422 @@
             ]
           }
         }
+      },
+      {
+        "run_id": "r-20260925T115214466534-worker-context-budget",
+        "plan": "the-local-lane-is-the-default",
+        "section": "\u00a71",
+        "node": "worker-context-budget",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2729,
+                "cached_input_tokens": 695074,
+                "input_tokens": 697805,
+                "output_tokens": 1103,
+                "reasoning_output_tokens": 35,
+                "total_tokens": 698908,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "a checker script beside context.md recomputes the first-turn token figure for five named recent runs from their streams, and verifies each cited flag or setting against claude --help or the installed Claude Code documentation, printing any it cannot verify; its output is logged beside context.md with exit 0, and the manifest reads complete",
+          "estimated_hours": null,
+          "goal": "write, as the reports dir file context.md, a measured breakdown of the ~66.5k-token context every clive worker carries at its first turn in a reckon worktree (Claude Code base system prompt, built-in tool definitions, MCP servers and their tool schemas loaded in worker sessions, the CLAUDE.md import chain including ~/.agents/AGENTS.md at about 22.5k tokens and repo and sub-directory AGENTS.md files, the skills listing, auto-memory, and the dispatch prompt.txt), plus the growth to 120-145k in long review runs and the wall-time effect of effort xhigh against high for reviews, drawn from existing run streams under ~/.config/reckon/crew/runs. For each saving it names the mechanism by which reckon or clive can apply it per worker (a verified Claude Code flag, setting or environment variable, or a clive launch option), the estimated tokens saved, and the risk of dropping each guidance block a worker needs (git safety, commit rules, naming checks, test execution, environment), and it ranks the savings with a recommendation on whether a worker-scoped digest of the global AGENTS.md is advisable",
+          "id": "worker-context-budget",
+          "lane_declaration": {
+            "backend": "codex-luna",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-25T11:52:15Z",
+            "read_at": "2026-09-25T11:52:15Z",
+            "resolved_backend": "codex-luna",
+            "utilisation_pct": 15.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T115214466534-worker-context-budget/manifest.md",
+          "negative_control": "",
+          "plan": "the-local-lane-is-the-default",
+          "requested_backend": "codex-luna",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/worker-context-budget"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "exact",
+        "member": "crew-routing-guidance",
+        "backend": "codex-luna",
+        "local": false,
+        "agent": {
+          "alias": "luna5.6",
+          "backend": "codex-luna",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-5.6-luna",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-25T11:52:29Z",
+        "completed_at": "2026-09-25T12:08:26Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 957,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 957,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "9a359e668c2fb1d0f72e2ca47ac614167779bb0e",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T115214466534-worker-context-budget/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d869-6b4c-7282-9880-716b4086645d",
+        "session_harness": "codex",
+        "session_model": "gpt-5.6-luna",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 12295424,
+            "cached_input_tokens_cumulative": 12295424,
+            "input_tokens": 12568676,
+            "input_tokens_cumulative": 12568676,
+            "output_tokens": 35569,
+            "output_tokens_cumulative": 35569,
+            "reasoning_output_tokens": 16594,
+            "reasoning_output_tokens_cumulative": 16594
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-25T12:08:26Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 15.0,
+              "resets_at": 1790869124,
+              "observed_at": "2026-09-25T12:08:26Z"
+            }
+          ],
+          "notional_cost_usd": 2.5564,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-luna",
+            "input_per_million": 0.2,
+            "output_per_million": 1.2,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: the fence refuses to launch any worker on this host. At base 51d80b95; with ~/.gitconfig the only symlink among the thirteen named protected paths at this home; both dispatched nodes died in bubblewrap before a harness process existed (stream.jsonl 0 bytes; empty harness and codex-home; no session_id). Reproduce with `bwrap --dev-bind / / --ro-bind ~/.gitconfig ~/.gitconfig -- /bin/true`; which exits 1 with the same message; with no reckon process involved.",
+              "effective_phase": "complete",
+              "elapsed_seconds": 2962,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:13:38Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T06:25:55Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 21822,
+                "worker_pid": 3666579
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 16719,
+              "log_fresh": false,
+              "manifest_commits": [
+                "4088c1ae05ee2de968547377ea80cb013d3de7ee"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "a61eba31d7f454aff87081f11b6395ac935d9c2d36dd62a2952dd3f537a24ea1",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md; resolve the blocker before resuming the run",
+              "node": "fenced-workers-smoke",
+              "phase": "complete",
+              "plan": "a-worker-cannot-write-your-home",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+              "session": "s21-coord",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "session_id": "eb46c4e0-0ac6-4891-b9b6-6fd5fb4773e4",
+                "source": "pointer"
+              },
+              "terminal_age_seconds": 16756,
+              "terminal_at": "2026-09-25T07:13:01Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fenced-workers-smoke"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 1042,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:46:59Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T07:19:15Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 9469,
+                "worker_pid": 3903304
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2353,
+              "log_fresh": false,
+              "manifest_commits": [
+                "dc52fa08 72e0ff48 5f570af2 608d1917 edc04cc5"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "85727a19ac3e42f2af27cda494ae6b044e30614b6aac1341e183f044455b34ca",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-worker-cannot-write-your-home --section '\u00a72' --role review --spec-level exact --node review-of-a-symlinked-protected-path-cannot-block-launch --goal 'attach an independent review to run r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch' --done-when 'the review for r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch.at-edc04cc542b84e45694c0aaa3b4760bdcd0a680e.json --time-budget 60m --session s21-coord --allow-unreconciled-runs --backend clive",
+              "node": "a-symlinked-protected-path-cannot-block-launch",
+              "phase": "working",
+              "plan": "a-worker-cannot-write-your-home",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T071726174008-a-symlinked-protected-path-cannot-block-launch",
+              "session": "s21-coord",
+              "terminal_age_seconds": 2508,
+              "terminal_at": "2026-09-25T11:10:29Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/a-symlinked-protected-path-cannot-block-launch"
+            }
+          ]
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 12295424,
+          "cumulative_input_tokens": 24864100,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 52163
+        },
+        "follow_on_paths": [
+          "Claude/MCP",
+          "stream.jsonl"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": "read-only investigation: context.md and its verified check log under the reports dir",
+        "commit_resolution": null,
+        "worktree_retention": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T12:08:27Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-25T11:53:02Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T115214466534-worker-context-budget",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 261,
+          "worker_pid": 637513
+        },
+        "promoted_revision": "9a359e668c2fb1d0f72e2ca47ac614167779bb0e",
+        "plan_impl_at_dispatch": 0.33,
+        "impl_move": {
+          "plan": "the-local-lane-is-the-default",
+          "at_dispatch": 0.33,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:investigate"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "codex-luna",
+          "burn_multiple": 1.2459313584112726,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'codex-luna' is projected to exhaust at 2026-09-30T10:28:34Z, which is after this node's 2700s horizon ending 2026-09-25T12:37:15.982968+00:00",
+          "horizon_ends_at": "2026-09-25T12:37:15.982968+00:00",
+          "horizon_seconds": 2700,
+          "metered": true,
+          "observed_at": "2026-09-25T11:52:15Z",
+          "precedes_horizon": false,
+          "projected_exhaustion_at": "2026-09-30T10:28:34Z",
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 531987,
+          "state": "quiet",
+          "utilisation_pct": 15.0
+        },
+        "lane_declaration": {
+          "backend": "codex-luna",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-25T11:52:15Z",
+          "read_at": "2026-09-25T11:52:15Z",
+          "resolved_backend": "codex-luna",
+          "utilisation_pct": 15.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 82.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        },
+        "release": {
+          "worktree_released": true,
+          "process_signalled": false,
+          "process_withheld": "process is not alive",
+          "worktree_audit": {
+            "counts": {
+              "dirty": 0,
+              "disposable": 0,
+              "integrated": 0,
+              "live-referenced": 0,
+              "retained-for-resume": 0,
+              "unintegrated": 0
+            },
+            "worktrees": [
+              {
+                "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/worker-context-budget",
+                "available": false,
+                "detail": "tree is no longer available"
+              }
+            ]
+          }
+        }
       }
     ],
     "holds": [
@@ -434073,6 +434489,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2827
+    "_version": 2829
   }
 }
