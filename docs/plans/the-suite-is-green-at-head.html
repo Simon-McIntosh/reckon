@@ -579,6 +579,15 @@
       and no <code>reckon/</code> path was touched. <code>tests/test_watch_arming_isolation.py</code> now creates its
       ordinary-home and outside-home fixtures through the registered helper rather than a bare
       <code>tempfile.mkdtemp</code>, so a producer naming either is attributable to this run.</p>
+      <p><strong>Verification rework.</strong> Coordinator verification at this head, at pytest's default basetemp under
+      <code>-n 4</code>, found two failures in <code>tests/test_watch_arming_isolation.py</code>. Both were the file's
+      own assertion, which matched <code>crew watch --project &lt;name&gt;</code> across the whole host and so read a
+      peer's producer — and this node's new lookalike producers — as its own. The assertion is now bound to the
+      configuration home the run created, the same binding the session check uses, and the lookalike names a project no
+      other test uses. The refusal under test still raised: the guard's recognition of a throwaway home was never the
+      failure. The five files pass 34/34 serially three times and under <code>-n 4</code> on four of seven runs; the
+      three loaded runs failed only in files this node does not write, on a wall-clock bound and a git
+      <code>index.lock</code> collision, and the bound reproduced with this node's files excluded from the run.</p>
       <p><strong>Not closed here.</strong> This node records the check and its evidence; the merged-head full-suite run
       and the load-sensitive robustness measure remain §3's, and this node does not resolve its driving followup or set
       a terminal status. Full record:

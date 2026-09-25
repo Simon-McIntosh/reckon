@@ -1076,6 +1076,54 @@ docs/state/proj/crew.json; commit or discard that roster write before retrying</
       home the arming guard must treat as ordinary, and the outside home a record-attribution test must exclude from
       its search. Both are now created through the registered helper instead, so they are tracked rather than bare —
       the substance of the clause — while the guard's own definition of an ordinary home is preserved.</p>
+      <h3>Coordinator verification, and the binding it corrected</h3>
+      <p><strong>Verification found two failures at this node's head.</strong> Run with pytest's default basetemp
+      under <code>-n 4</code>, two tests in <code>tests/test_watch_arming_isolation.py</code> failed that pass at
+      main. Both failed at the same line, and the reading of the cause matters because the first thing the trace
+      looks like is not what it is.</p>
+      <p><strong>The refusal still raised.</strong> In
+      <code>test_arming_refuses_a_configuration_home_under_a_test_directory</code> the
+      <code>pytest.raises(crew.CrewError)</code> block completed and every assertion on the refusal message passed;
+      the failure was the next line. So the guard's recognition of a throwaway home was intact, and the ordinary
+      home's move to the registered helper did not change what the product recognises as a test directory — the
+      serial run of the same file was 8 passed at the default basetemp. The claim that the guard stopped refusing is
+      not supported by the log, and this record does not carry it.</p>
+      <p><strong>What actually failed: the assertion could see other tests' processes.</strong> Both tests ended with
+      <code>_producer_processes(project) == before</code>, a whole-host <code>ps</code> read matched on the substring
+      <code>crew watch --project sample</code>. Under <code>-n 4</code> that substring is also carried by another
+      test's real producer for the same project name, and by this node's new lookalike producers, so the two
+      snapshots differed on processes that were never this test's. The check was characterising the fleet, not the
+      code under test; a file that passes serially and fails under <code>-n 4</code> is what that looks like.</p>
+      <p><strong>The fix binds the assertion to this run's own home.</strong> The assertion is now
+      <code>pytest.conftest.producers_naming_home(config_home)</code>, which reads every live <code>crew watch</code>
+      process from <code>/proc</code> and keeps only those whose own environment names the home this test created — the
+      same binding the session check uses. A peer's producer names its own home and is invisible; the two-snapshot
+      equality is gone, because a difference between two host-wide snapshots was never the fact being asserted. The
+      lookalike producers additionally name a project no other test uses, so a peer's project-keyed scan cannot
+      mistake them for its own. A subtlety worth keeping: for the suppression test the binding is load-bearing, since
+      a still-working guard would arm a producer that inherits this test's <code>RECKON_HOME</code>.</p>
+      <table>
+        <thead><tr><th>Gate (default basetemp)</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Five files, serial, three runs</td><td>34 passed each run, exit 0 (logs <code>serial-1..3</code>)</td></tr>
+          <tr><td>Five files, <code>-n 4</code>, three runs required</td><td>34 passed on four of seven runs
+          (<code>n4-1</code>, <code>n4-2</code>, <code>n4-6</code>, <code>n4-7</code>)</td></tr>
+          <tr><td>The two originally-failing isolation tests</td><td>pass in every serial and every <code>-n 4</code>
+          run after the fix, including the three loaded runs that failed elsewhere</td></tr>
+          <tr><td>Remaining <code>-n 4</code> failures, and their attribution</td><td>in files this node does not
+          write: <code>test_concurrent_dispatches_arm_exactly_one_detached_producer</code> (the §3-listed load-sensitive
+          id) with a <code>.git/index.lock</code> collision between its own two concurrent dispatches, and
+          <code>test_dispatch_returns_once_its_supervisor_runs</code> exceeding its 5.0&nbsp;s bound at 5.27 and 5.93&nbsp;s
+          under load average ~20</td></tr>
+          <tr><td>Attribution control for the bound</td><td>with this node's two files excluded from the run, the same
+          bound failed at 5.376&nbsp;s — so it is host-load-sensitive, not a consequence of this change
+          (<code>attrib-1</code>, <code>attrib-2</code>)</td></tr>
+        </tbody>
+      </table>
+      <p><strong>The negative control still applies.</strong> This rework did not touch the session check's scan: the
+      teardown path in <code>tests/conftest.py</code> is unchanged and the added helper is a new function beside it, so
+      the recorded control — remove the session check and the deliberately leaked producer goes unreported, exit 0 with
+      the producer still alive — remains the control for the code as committed.</p>
     </section>
   </main>
 </body>

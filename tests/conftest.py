@@ -244,10 +244,34 @@ def _home_is_test_owned(home: Path, base: Path) -> bool:
         return True
     temp = Path(tempfile.gettempdir())
     if home.parent == temp:
-        return any(
-            home.name.startswith(prefix) for prefix in _TEST_TEMP_HOME_PREFIXES
-        )
+        return any(home.name.startswith(prefix) for prefix in _TEST_TEMP_HOME_PREFIXES)
     return False
+
+
+def producers_naming_home(home: Path) -> list[tuple[int, Path]]:
+    """Live ``crew watch`` producers whose own environment names ``home``.
+
+    The binding a caller asserts against is the configuration home, not a
+    project or an argv pattern: under a parallel run a peer's producer for the
+    same project is a different fact, and a scan that cannot tell the two apart
+    fails on whatever else the host happens to be running.
+    """
+    try:
+        wanted = home.resolve()
+    except OSError:
+        wanted = home
+    return [
+        (pid, named)
+        for pid, named in _live_watch_producers()
+        if _resolve(named) == wanted
+    ]
+
+
+def _resolve(path: Path) -> Path:
+    try:
+        return path.resolve()
+    except OSError:
+        return path
 
 
 def leaked_watch_producers(base: Path) -> list[tuple[int, Path]]:
