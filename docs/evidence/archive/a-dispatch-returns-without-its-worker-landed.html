@@ -500,6 +500,24 @@
       files. Judge by the delta, not the absolute count: the base is red and the change adds
       nothing to it.
     </p>
+    <p>
+      <strong>Wording correction (<code>5e7515e8</code>).</strong> The docstring of
+      <code>_promoted_worker_exit</code> in <code>reckon/crew/promotion.py</code> had said the run
+      directory is released at promotion and that the ledger row is the only record that outlives
+      the run. Promotion releases the run's live pointer and its worktree; the run directory
+      survives, <code>exit.json</code> with it, until <code>crew gc</code> prunes it on a
+      retention window, so the row is the durable copy once gc has run. The docstring now states
+      that, matching <code>_preserve_cited_gate_log</code>'s docstring in the same module, and the
+      section-opening paragraph above was corrected to the same fact. Text only &mdash; no code
+      line changed. The check that could have failed: a grep of
+      <code>reckon/crew/promotion.py</code> for <code>released at promotion</code> and
+      <code>only record that outlives</code> returns nothing (exit 1), logged
+      <code>grep.log</code>; a positive control in the same log shows the grep reading a phrase
+      the new docstring does carry (line 603), so the empty result is the file's, not the
+      instrument's. <code>tests/test_promotion_keeps_the_worker_exit.py</code>: 2 passed, logged
+      <code>test.log</code>. No negative control is declared: a docstring-only change carries no
+      behaviour a test could fail against.
+    </p>
 
     <h2 id="s10">&sect;10 &mdash; The launch leaves through the allocation's batch step</h2>
     <p>
