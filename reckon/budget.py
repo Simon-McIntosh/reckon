@@ -49,6 +49,7 @@ rather than a zero, which is the first rule above applied to a second quantity.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
@@ -1400,6 +1401,28 @@ def backends_for_roles(config: Mapping[str, Any], roles: Iterable[str]) -> list[
     return names
 
 
+def published_document_path() -> Path:
+    """Where the production callers look for the published headroom document.
+
+    Resolution is, in order: the environment override the observer and its
+    readers share, the file under the crew home, then the document's own
+    default. The crew home is what a caller isolates when it redirects
+    ``RECKON_HOME``, so a pre-flight reads its own temporary tree rather than
+    the operator's real home -- a path built from ``HOME`` alone would read
+    whatever document the workstation happened to hold, which is neither the
+    caller's fixture nor a reading the caller asked for.
+    """
+    from reckon.crew import paid_lanes
+
+    override = os.environ.get(paid_lanes.DOCUMENT_ENV)
+    if override:
+        return Path(override).expanduser()
+    home = os.environ.get("RECKON_HOME")
+    if home:
+        return Path(home).expanduser() / "paid-lanes.json"
+    return paid_lanes.document_path()
+
+
 def _published_windows(
     document: Mapping[str, Any] | None,
     document_path: str | Path | None,
@@ -1408,11 +1431,12 @@ def _published_windows(
     """Read the published headroom document into one window reading per account.
 
     The document is the observer's one reconciled record of every metered
-    account, so a caller that names no window source paces to it. Reading is
-    delegated to :mod:`reckon.crew.paid_lanes`, which owns the document's shape;
-    this module reads its own recorded evidence through :func:`recorded_windows`
-    and takes the published document only when nothing was injected, so an
-    explicit reading always wins.
+    account. Reading is delegated to :mod:`reckon.crew.paid_lanes`, which owns
+    the document's shape. A caller that names the document has its reading
+    merged with the caller's own recorded evidence per backend by
+    :func:`_merge_windows`: the document speaks for a backend it carries a fresh
+    reading for, and the recorded reading speaks everywhere else, so naming the
+    document adds its reading rather than replacing what the caller measured.
     """
     from reckon.crew import paid_lanes
 
@@ -1420,6 +1444,35 @@ def _published_windows(
     if resolved is None:
         resolved = paid_lanes.read_document(document_path)
     return paid_lanes.document_windows(resolved, moment=moment)
+
+
+def _reaged(
+    reading: window_reading.WindowReading, moment: datetime
+) -> window_reading.WindowReading:
+    """One published reading with every age recomputed against ``moment``.
+
+    The document bakes each figure's ``age_seconds`` at composition time, so a
+    figure read an hour after it was published would otherwise report the age it
+    had when written rather than the age it has now -- a figure the document
+    calls fresh while nothing has observed it for hours. The observation time
+    travels with the figure and does not drift, so the age is re-derived from it
+    against the read moment, at both the figure and the reading level, and the
+    figure's own age is what a clock reports downstream.
+    """
+    figures = tuple(
+        replace(
+            figure,
+            age_seconds=(moment - figure.observed_at).total_seconds(),
+        )
+        for figure in reading.figures
+    )
+    newest = max((figure.observed_at for figure in figures), default=None)
+    return replace(
+        reading,
+        figures=figures,
+        observed_at=newest if newest is not None else reading.observed_at,
+        age_seconds=(None if newest is None else (moment - newest).total_seconds()),
+    )
 
 
 def _published_fresh_windows(
@@ -1433,9 +1486,12 @@ def _published_fresh_windows(
     that treated the whole document as stale would drop a backend it had just
     measured, and one that treated it fresh would trust a backend untouched for
     hours. So each backend is judged on its own newest observation against the
-    document's staleness horizon, and only the fresh ones compete. An absent or
-    unreadable document resolves to none, which is what the per-backend fallback
-    then supplies for.
+    document's staleness horizon, and only the fresh ones compete. The judgement
+    is made on the recomputed age rather than the age the document baked at
+    composition, so a figure published long ago and read now falls back rather
+    than reading as fresh as the moment it was written. An absent or unreadable
+    document resolves to none, which is what the per-backend fallback then
+    supplies for.
     """
     from reckon.crew import paid_lanes
 
@@ -1443,9 +1499,10 @@ def _published_fresh_windows(
     horizon = paid_lanes.DEFAULT_STALE_SECONDS
     fresh: dict[str, window_reading.WindowReading] = {}
     for name, reading in published.items():
-        age = reading.age_seconds
+        current = _reaged(reading, moment)
+        age = current.age_seconds
         if age is None or age <= horizon:
-            fresh[name] = reading
+            fresh[name] = current
     return fresh
 
 

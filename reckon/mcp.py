@@ -3503,8 +3503,6 @@ def _crew(
                 **planned,
             }
         if view == "budget":
-            from reckon.crew import paid_lanes as paid_lanes_module
-
             config = flight_module.resolve(project, checkout_path=checkout_path).config
             return {
                 "ok": True,
@@ -3516,7 +3514,7 @@ def _crew(
                     windows=budget_module.recorded_windows(
                         project, config, root=checkout_path
                     ),
-                    document_path=paid_lanes_module.document_path(),
+                    document_path=budget_module.published_document_path(),
                     ready=candidates or [],
                 ),
             }
