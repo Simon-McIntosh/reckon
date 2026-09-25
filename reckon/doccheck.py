@@ -56,6 +56,7 @@ from reckon._schema import (
 from reckon._store import (
     PLAN_SUMMARY_MAX_LENGTH,
     _mounts_path,
+    _section_contract_refusal,
     plan_summary_length,
 )
 from reckon.lifecycle import TERMINAL_STATUSES
@@ -112,6 +113,36 @@ _VOID_ELEMENTS = frozenset(
 # collapse-on-landing template puts a <header> as the section's direct child, so
 # a header under one of these is presentation, not a spliced document header.
 _LANDED_SECTION_CLASS = "section-landed"
+
+# ── Section contract ───────────────────────────────────────────────────────
+#
+# A section is the unit that carries a stated effort, a capability and a place
+# in the roadmap; the plan's computed figure and its dispatch route both read
+# it. Two authored shapes leave work outside that unit: a section declared
+# implementable without a typed record, and a followup whose body states
+# section-sized work. Neither holds the fleet: the section finding is an error
+# only where the plan already carries a record to compare against, and the
+# followup finding is a warning, so plans that predate the contract stay
+# auditable while they are converted.
+_SECTION_WITHOUT_CONTRACT = "section-without-contract"
+_FOLLOWUP_DESCRIBES_SECTION_WORK = "followup-describes-section-work"
+_SECTION_RECORD_INVALID = "section-record-invalid"
+
+# Section identities are numbered from one: s0 states why the plan exists and
+# carries no work.
+_NUMBERED_SECTION_ID = re.compile(r"s[1-9][0-9]*")
+
+# A separately-stated deliverable in a followup body — the corpus's own
+# convention for a multipart remainder ("(1) … (2) …").
+_FOLLOWUP_WORK_ITEM = re.compile(r"\(\s*\d+\s*\)\s*\S")
+
+# Number of separately-stated deliverables at which a followup body describes
+# section-sized work rather than a remainder. A followup states no effort of
+# its own — the record has no such field, and an explicit hour figure appears
+# in 1 of 468 open followups over the mounted projects (measured 2026-09-25) —
+# so the work a body describes is sized by the deliverables it enumerates: one
+# item is a remainder, two or more is work the plan's own unit must carry.
+FOLLOWUP_WORK_ITEMS_THRESHOLD = 2
 
 SEVERITIES = ("error", "warn", "info")
 ACTIVE_PLAN_STALE_AFTER_DAYS = 30
@@ -861,6 +892,103 @@ def unwired_plan_finding(
     )
 
 
+def _implementable_section_ids(
+    state: Mapping[str, Any], heading_ids: list[str]
+) -> list[str]:
+    """Sections the plan states are still work, in document order.
+
+    The declarations map is the plan's own statement of what is implementable;
+    a plan that declares nothing at all states nothing, so its numbered
+    headings stand in for it. A section id declared implementable but carrying
+    no heading is a different defect — this check reports records, and would
+    otherwise report a section the reader cannot open.
+    """
+
+    declarations = state.get("section_declarations")
+    if isinstance(declarations, Mapping) and declarations:
+        return [
+            sid
+            for sid in heading_ids
+            if str(declarations.get(sid) or "").strip() == "implementable"
+        ]
+    return [sid for sid in heading_ids if _NUMBERED_SECTION_ID.fullmatch(sid)]
+
+
+def _section_contract_findings(
+    doc_type: str,
+    state: Mapping[str, Any],
+    soup: BeautifulSoup,
+) -> list[Finding]:
+    """Report an implementable section that carries no typed section record.
+
+    Severity is the plan's own state: a plan that already carries at least one
+    typed record is held to the contract at ``error``, and a plan that carries
+    none predates it and is reported at ``warn``, so converting the existing
+    plans does not stop the fleet. The message carries the same worked append
+    example the write boundary refuses with, because the lane that authors the
+    record needs a shape it can copy rather than a rule it must translate.
+    """
+
+    if doc_type != "plan":
+        return []
+    heading_ids = [str(h.get("id") or "") for h in soup.find_all("h2", id=True)]
+    recorded = {
+        str(record.get("id") or "")
+        for record in state.get("sections") or []
+        if isinstance(record, Mapping)
+    }
+    severity = "error" if recorded else "warn"
+    return [
+        Finding(
+            severity,
+            _SECTION_WITHOUT_CONTRACT,
+            _section_contract_refusal(
+                f"section {sid!r} is implementable but carries no typed section "
+                "record (effort_hours, capability, links)"
+            ),
+        )
+        for sid in _implementable_section_ids(state, heading_ids)
+        if sid not in recorded
+    ]
+
+
+def _followup_section_findings(
+    doc_type: str, state: Mapping[str, Any]
+) -> list[Finding]:
+    """Report an open followup whose body states section-sized work.
+
+    A followup states no effort, so the work it describes is sized by the
+    deliverables it enumerates; at ``FOLLOWUP_WORK_ITEMS_THRESHOLD`` or more
+    the body is describing work the plan's own unit should carry, where the
+    computed figure and the dispatch route can both see it.
+    """
+
+    if doc_type != "plan":
+        return []
+    out: list[Finding] = []
+    for followup in state.get("followups") or []:
+        if not isinstance(followup, Mapping):
+            continue
+        if str(followup.get("status") or "open").strip() != "open":
+            continue
+        body_soup = BeautifulSoup(str(followup.get("body") or ""), "html.parser")
+        items = len(_FOLLOWUP_WORK_ITEM.findall(_visible_text(body_soup)))
+        if items < FOLLOWUP_WORK_ITEMS_THRESHOLD:
+            continue
+        followup_id = str(followup.get("id") or "") or "<no-id>"
+        out.append(
+            Finding(
+                "warn",
+                _FOLLOWUP_DESCRIBES_SECTION_WORK,
+                f"followup {followup_id!r} states {items} deliverables — one is a "
+                "followup-sized remainder, more than one is section-sized work; "
+                "author it as a section so its effort, capability and route are "
+                "visible (edit_plan mode=state, append target 'sections')",
+            )
+        )
+    return out
+
+
 def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     """Audit one document's HTML, returning findings (worst-first ordering)."""
     soup = BeautifulSoup(html_text or "", "html.parser")
@@ -897,7 +1025,22 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
                 )
             )
 
-    state = _plan_html.read_state(html_text)
+    # A typed section record that does not parse raises out of the state read;
+    # letting it through ends the audit at the first malformed record and takes
+    # every later check with it, including the section finding written to catch
+    # exactly that. Report the record and audit the rest with the state that
+    # could be read.
+    state: dict[str, Any] = {}
+    try:
+        state = _plan_html.read_state(html_text)
+    except ValueError as exc:
+        out.append(
+            Finding(
+                "error",
+                _SECTION_RECORD_INVALID,
+                "typed section record does not parse: " + " ".join(str(exc).split()),
+            )
+        )
     summary = str(state.get("summary") or "")
     summary_length = plan_summary_length(summary)
     if doc_type == "plan" and summary_length > PLAN_SUMMARY_MAX_LENGTH:
@@ -940,6 +1083,11 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
             (rt.get("content") if rt else "") or "", state, soup, html_text, slug
         )
     )
+
+    # Section contract — the unit that carries effort, capability and a route.
+    declared_type = ((rt.get("content") if rt else "") or "").strip().lower()
+    out.extend(_section_contract_findings(declared_type, state, soup))
+    out.extend(_followup_section_findings(declared_type, state))
 
     # Project for image-path checks — meta, then fallback arg.
     dp = soup.find("meta", attrs={"name": "docs-project"})
@@ -1047,6 +1195,11 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
         )
     for sec in soup.select("section[data-reckon]"):
         sid = sec.get("data-reckon", "?")
+        # A section's typed record is an empty element by construction: it
+        # carries the section's effort, capability and status as attributes, and
+        # holds no items, so it is not an empty widget.
+        if sid == "section":
+            continue
         # A reckon section with a heading but no item rows is an empty stub.
         has_items = bool(sec.select(".r-dec, .r-fu, .r-q, .r-research, .r-comment"))
         if not has_items and not _visible_text(sec).strip().strip(
