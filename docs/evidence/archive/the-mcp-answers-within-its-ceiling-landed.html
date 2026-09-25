@@ -580,6 +580,86 @@
     <code>view="section"</code>, and behavioral tests pin every field. Merged-head integration remains
     the separately owned verification node.</p>
   </section>
+
+  <section id="s8-op-vocabulary-names-every-op">
+    <h2>&sect;8 &mdash; the agent-facing lists name every op and view</h2>
+    <p>Commit <code>3fc05501</code>, based on
+    <code>79a17c075dd2be4c1d55fd521a331fde39c82742</code>, changes
+    <code>reckon/mcp.py</code> and adds
+    <code>tests/test_mcp_vocabulary_is_complete.py</code>. Two hand-maintained lists advertise what
+    the machinery implements: <code>_OP_VOCAB</code> publishes <code>edit_plan</code>'s ops to the
+    context injector, and the <code>read_plan</code> tool docstring publishes the views an agent may
+    ask for. Each had fallen behind the code that implements it.</p>
+
+    <h3>The defect, reproduced</h3>
+    <p>At the base revision, <code>_OP_DISPATCH</code> carried ten dispatchable verbs while
+    <code>_OP_VOCAB</code> named nine of them plus the non-dispatch <code>create</code>; the missing
+    one was <code>insert_section</code>, added by &sect;7. <code>read_plan</code> routed every view
+    through <code>normalize_view</code>, whose accepted set is
+    <code>VIEW_NAMES</code> = <code>summary</code>, <code>detail</code>, <code>history</code>,
+    <code>version</code>, <code>raw</code>, <code>schema</code>, <code>section</code>; the docstring
+    named only <code>summary</code> and <code>raw</code>. Neither omission is visible from the
+    implementation, so an agent could use the op and the view only if it guessed them.</p>
+
+    <h3>The two records</h3>
+    <p><code>_OP_VOCAB</code> gains an <code>insert_section</code> entry naming its
+    <code>id</code>, <code>title</code> and <code>body</code> keys and stating that it lands the
+    section before the first structured-state region and after any
+    <code>data-reckon='section'</code> records. The <code>read_plan</code> docstring names all seven
+    accepted views and the positional <code>section</code> argument that <code>view='section'</code>
+    selects by, and records that a missing id is refused with <code>section_not_found</code>.</p>
+    <p>The new test holds each list against its source rather than against a copy of itself: every
+    key of <code>_OP_DISPATCH</code> must have an <code>_OP_VOCAB</code> entry, and every name in
+    <code>VIEW_NAMES</code> must appear quoted in the docstring. A third assertion pins the
+    <code>insert_section</code> entry to its three keys and its two placement clauses.</p>
+
+    <figure>
+      <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/vocabulary-coverage.svg"
+           alt="edit_plan's ops flow from the _OP_DISPATCH table to _OP_VOCAB and read_plan's views flow from VIEW_NAMES to the tool docstring; a test compares each published list with its source and both the missing op and the five missing views are now named.">
+      <figcaption>Each published list is measured against the table that implements it, so an entry cannot be added or dropped in one place only.</figcaption>
+    </figure>
+
+    <h3>Executed gate</h3>
+    <table>
+      <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+      <tbody>
+        <tr><td>Op coverage</td><td>the ten <code>_OP_DISPATCH</code> keys are all present in <code>_OP_VOCAB</code>; the only prior gap was <code>insert_section</code></td></tr>
+        <tr><td>View coverage</td><td>all seven <code>VIEW_NAMES</code> appear quoted in the <code>read_plan</code> docstring; five were missing before</td></tr>
+        <tr><td>insert_section entry</td><td>names <code>id</code>, <code>title</code>, <code>body</code>; states placement before the first structured-state region and after any <code>data-reckon='section'</code> records</td></tr>
+        <tr><td>Focused test</td><td><strong>3 passed</strong>, exit 0</td></tr>
+        <tr><td>Ruff delta for <code>reckon/mcp.py</code></td><td>18 findings at base; 18 at head; 0 added</td></tr>
+        <tr><td>New test lint and format</td><td>0 findings; formatted, then reformatted once</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Negative control</h3>
+    <p>Declared: <em>remove the insert_section vocabulary entry</em>. The entry was deleted from
+    <code>_OP_VOCAB</code> at the delivered head and the focused file rerun. It was
+    <strong>2 failed, 1 passed</strong>, exit 1: <code>test_op_vocab_names_every_dispatchable_op</code>
+    failed on <code>_OP_VOCAB omits dispatchable ops ['insert_section']</code> and
+    <code>test_insert_section_entry_names_its_keys_and_its_placement</code> failed on the absent key.
+    The first line of <code>negative-control.log</code> repeats the declared mutation verbatim. The
+    entry was restored and the three-test gate returned to green before the commit.</p>
+
+    <h3>Cross-node conflict, reported not repaired</h3>
+    <p>The <code>view="schema"</code> response inlines <code>op_vocab</code>, and
+    <code>tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers</code> asserts that
+    response is at most 24 KiB (<code>compact_size(schema) &lt;= 24 * 1024</code>). Measured in-tree,
+    the base payload is <strong>24,512 bytes</strong> — <strong>64 bytes</strong> of headroom — and
+    the same payload with the new entry is <strong>24,692</strong>, over by <strong>116</strong> for a
+    <strong>158-character</strong> entry. The smallest entry that still names the op's three keys
+    serialises to roughly 75 bytes, so no entry satisfying &sect;8 fits the existing budget. That
+    test file is outside this node's declared write scope, so the failure is recorded under
+    <code>follow_ons</code> rather than repaired. A coordinator fix is one of: raise the literal in
+    <code>tests/test_mcp_views.py:735</code>, or stop inlining <code>op_vocab</code> in the compact
+    schema view. Evidence: <code>budget-conflict.log</code>.</p>
+
+    <h3>Retained qualification</h3>
+    <p>This node advertises existing capability; it changes no op or view behaviour. The
+    <code>insert_section</code> handler, its placement rule and the <code>section</code> view are
+    all &sect;7 and &sect;6 landings, and their implementation is untouched here. The merged-head
+    suite remains the separately owned integration gate.</p>
+  </section>
 </main>
 </body>
 </html>

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 380" role="img" aria-labelledby="title desc">
+  <title id="title">Two agent-facing lists are held against the machinery that implements them</title>
+  <desc>edit_plan's ops are implemented in the _OP_DISPATCH table and published in _OP_VOCAB; read_plan's views are accepted from VIEW_NAMES and published in the tool docstring. A focused test compares each published list with its source, so the one op and the five views that were missing are now named.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#506784"/>
+    </marker>
+    <style>
+      .box { fill: #f7f9fc; stroke: #506784; stroke-width: 2; rx: 12; }
+      .source { fill: #eef8ef; stroke: #3d7a43; stroke-width: 2; rx: 10; }
+      .published { fill: #e8f3ff; stroke: #1769aa; stroke-width: 2.5; rx: 10; }
+      .agent { fill: #fdf3e3; stroke: #b4791f; stroke-width: 2; rx: 10; }
+      .label { font: 700 17px system-ui, sans-serif; fill: #172235; }
+      .text { font: 14px system-ui, sans-serif; fill: #26374d; }
+      .small { font: 12px system-ui, sans-serif; fill: #53657b; }
+      .mono { font: 13px ui-monospace, monospace; fill: #26374d; }
+      .arrow { stroke: #506784; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect class="box" x="20" y="24" width="920" height="150"/>
+  <text class="mono" x="42" y="52">edit_plan ops</text>
+  <rect class="source" x="44" y="66" width="220" height="88"/>
+  <text class="label" x="62" y="94">_OP_DISPATCH</text>
+  <text class="small" x="62" y="116">reckon/_store.py</text>
+  <text class="text" x="62" y="140">10 dispatchable verbs</text>
+  <path class="arrow" d="M264 110 L356 110"/>
+  <rect class="published" x="366" y="66" width="220" height="88"/>
+  <text class="label" x="384" y="94">_OP_VOCAB</text>
+  <text class="small" x="384" y="116">reckon/mcp.py</text>
+  <text class="text" x="384" y="140">10 entries (was 9)</text>
+  <path class="arrow" d="M586 110 L678 110"/>
+  <rect class="agent" x="688" y="66" width="232" height="88"/>
+  <text class="label" x="706" y="94">agent discovers</text>
+  <text class="small" x="706" y="116">from read_plan(with_schema=True)</text>
+  <text class="text" x="706" y="140">closed: insert_section</text>
+
+  <rect class="box" x="20" y="200" width="920" height="150"/>
+  <text class="mono" x="42" y="228">read_plan views</text>
+  <rect class="source" x="44" y="242" width="220" height="88"/>
+  <text class="label" x="62" y="270">VIEW_NAMES</text>
+  <text class="small" x="62" y="292">reckon/mcp_views.py</text>
+  <text class="text" x="62" y="304">summary detail history</text>
+  <text class="text" x="62" y="322">version raw schema section</text>
+  <path class="arrow" d="M264 286 L356 286"/>
+  <rect class="published" x="366" y="242" width="220" height="88"/>
+  <text class="label" x="384" y="270">read_plan docstring</text>
+  <text class="small" x="384" y="292">reckon/mcp.py</text>
+  <text class="text" x="384" y="316">all 7 named (was 2)</text>
+  <path class="arrow" d="M586 286 L678 286"/>
+  <rect class="agent" x="688" y="242" width="232" height="88"/>
+  <text class="label" x="706" y="270">agent discovers</text>
+  <text class="small" x="706" y="292">from the MCP tool schema</text>
+  <text class="text" x="706" y="316">closed: section</text>
+</svg>
