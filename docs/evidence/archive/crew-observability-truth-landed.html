@@ -86,6 +86,7 @@
         <tr><td>§12</td><td><a href="#unrecognised-status-field-refusal">unrecognised-status-field-refusal</a></td><td>839f8ad9</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#nested-manifest-key-stays-nested">nested-manifest-key-stays-nested</a></td><td>0d3c6cf5</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#block-scalar-ends-at-the-field-column">block-scalar-ends-at-the-field-column</a></td><td>dbd96dbd</td><td>run outcome</td></tr>
+        <tr><td>§22</td><td><a href="#widen-reaches-a-blocked-manifest">widen-reaches-a-blocked-manifest</a></td><td>bd10fb72</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#a-refusal-at-admission-is-named">a-refusal-at-admission-is-named</a></td><td>1f519333</td><td>run outcome</td></tr>
       </tbody>
     </table>
@@ -1931,6 +1932,81 @@ reading taken as an authority it was not.</p>
       &mdash; three added cases, zero added failures, every pre-existing case unchanged.</p>
     <p><strong>Leaves behind:</strong> none. No live-document check remains that a content edit
       to <code>crew-observability-truth.html</code> can turn red.</p>
+  </section>
+
+<section id="widen-reaches-a-blocked-manifest">
+    <h3>§22 — A blocked manifest widens the fence the phase-only check refused</h3>
+    <p>Node <code>widen-reaches-a-blocked-run</code>. Commit <code>bd10fb72</code>
+      changed <code>reckon/cli.py</code> and added
+      <code>tests/test_widen_reaches_a_blocked_run.py</code>.</p>
+    <p><strong>Reproduction:</strong> a worker that hits its fence writes
+      <code>status: blocked</code>, names the path it could not write, and ends its turn.
+      For a run launched through a backend the pointer's phase is folded from the stream's
+      terminal event, and a turn ending normally is not an error, so the phase folds to
+      <code>complete</code> over a run whose own manifest reports blocked.
+      <code>crew widen</code> read that folded phase alone, so it refused exactly the run
+      that was waiting for it: the reproduced state is a pointer whose phase reads
+      <code>complete</code> beside a fresh manifest whose status reads
+      <code>blocked</code>, and the refusal is what the new case drives the CLI runner
+      against. The only discharge left was discard and redispatch, which throws away the
+      session that had diagnosed the change.</p>
+    <p><strong>Mechanism:</strong> eligibility is now read from two accounts, the folded
+      phase and the status the run's own manifest reports. A manifest reporting
+      <code>complete</code> or <code>failed</code> refuses on its own — a run whose
+      account says the work ended has no scope decision to widen for — and otherwise
+      blocked in either account widens, adding the path to the fence while the session id
+      and every other recorded field are carried through unchanged. The manifest read is
+      gated on the freshness the dispatch baseline records, so a terminal status left at
+      the same delivery path by an earlier attempt is never believed; an absent,
+      unreadable, unsubstitutable or template manifest reports no status and eligibility
+      rests on the phase as before. The widening payload carries the manifest's reported
+      status, because a widening authorised by the manifest emits
+      <code>phase: complete</code> beside it and would otherwise read as a widening of a
+      finished run.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/widen-reads-both-accounts.svg"
+           alt="Top: the worker hits its fence, writes status blocked naming the missing write path, and ends its turn; the turn ending is not an error, so the stream's terminal event reads normal and crew observe folds the pointer's phase to complete; widen read the phase alone and refused with run is complete, not blocked, leaving discard and redispatch, which throws away the session that had diagnosed the change. Bottom: two accounts now feed one verdict, the folded phase and the status the run's own manifest reports; a manifest reporting complete or failed refuses on its own, otherwise blocked in either account widens the fence while the session id and the recorded commits are carried through untouched, and anything else refuses because a working run is writing against the boundary a widening would move. Below: an absent, unreadable, earlier-attempt or template manifest reports no status, so eligibility rests on the phase alone; restoring the phase-only check turns the blocked-manifest case red, three failed and three passed."
+           style="max-width:760px;width:100%">
+      <figcaption>The phase mirrors the run and is folded from the stream, so a run that
+      reported a block and then ended its turn reads finished in the mirror. The manifest is
+      the run&rsquo;s own account, and eligibility now consults both, with the manifest
+      decisive when it is terminal.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Falsifier half</th><th>Edit</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>the repair is needed</td>
+          <td>the eligibility predicate restored to the phase-only check it replaced
+            (the declared mutation, applied in the worktree; the source restored
+            byte-identically afterwards, sha256 verified)</td>
+          <td><strong>failed</strong> on
+            <code>test_a_blocked_manifest_widens_a_run_whose_phase_folded_complete</code>
+            and its session-preservation sibling — the blocked run was refused instead of
+            widened — <strong>3 failed, 3 passed</strong>, exit 1</td></tr>
+        <tr><td>the assertion still bites</td>
+          <td>the same mutation, converse direction: a blocked phase over a manifest that
+            reports complete</td>
+          <td><strong>failed</strong> on
+            <code>test_a_complete_manifest_is_refused_over_a_blocked_phase</code> — the
+            phase-only check widened a run whose own account said finished, so the
+            manifest-decisive refusal is load-bearing rather than decoration</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Measure:</strong> the gate cohort (<code>tests/test_fence_widening.py</code>,
+      <code>tests/test_crew_recovery.py</code>, <code>tests/test_widen_reaches_a_blocked_run.py</code>)
+      moves from <strong>99 passed</strong> at base <code>cdd0a1b0</code> to
+      <strong>105 passed</strong> at the commit, exit 0 at both arms and 7.6 s / 7.3 s —
+      six added cases, zero added failures, every pre-existing case unchanged. The new
+      cases drive the CLI runner against a synthesised run directory whose
+      <code>RECKON_HOME</code> is a temporary home, and the crew home the process resolved
+      before that substitution is watched byte for byte, with a case that makes the writer
+      fire so the guard is shown to speak.</p>
+    <p><strong>Leaves behind:</strong> the witness helper is duplicated from
+      <code>tests/test_fence_widening.py</code>, because <code>tests/conftest.py</code> is
+      outside this node's write fence: folding both into one shared fixture is a follow-on
+      for a node that owns that file. A pre-existing stale anchor count and a duplicated
+      <code>plan-summary</code> meta in this record were left as they are, since peer nodes
+      hold this file concurrently. Nothing in the widening path is left half-closed.</p>
   </section>
 
 </main>

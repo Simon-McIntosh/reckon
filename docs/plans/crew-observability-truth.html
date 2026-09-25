@@ -1542,6 +1542,31 @@
       </tbody>
     </table>
 
+    <p class="landed-summary">A run that hits its fence, writes
+      <code>status: blocked</code> naming the missing path, and ends its turn was
+      unreachable by the one command that exists to grant the path. <code>crew widen</code>
+      decided eligibility from the pointer's folded phase alone, and for a run launched
+      through a backend that phase is folded from the stream's terminal event &mdash; a turn
+      ending normally is not an error, so the fold wrote <code>complete</code> over the
+      mirror of a run whose own manifest said blocked. The only discharge left was discard
+      and redispatch, which throws away the session that had diagnosed the change.
+      Eligibility now reads two accounts, the folded phase and the status the run's own
+      manifest reports, and the manifest is decisive when it reports <code>complete</code>
+      or <code>failed</code>: a run whose account says the work ended has no scope decision
+      to widen for. A manifest read is gated on the freshness recorded at dispatch, so a
+      terminal status left at the same delivery path by an earlier attempt is never
+      believed, and an absent, unreadable or unsubstituted manifest reports no status, so
+      eligibility then rests on the phase alone as before. The widening payload carries
+      <code>manifest_status</code> because a widening authorised by the manifest emits
+      <code>phase: complete</code> beside it and would otherwise read as a widening of a
+      finished run. The focused gate moves <strong>99
+      passed</strong> at base <code>cdd0a1b0</code> to <strong>105 passed</strong> at the
+      change, exit 0 at both, six added cases and zero added failures; restoring the
+      phase-only check turns the blocked-manifest case red
+      (<strong>3 failed, 3 passed</strong>). Landed under commit
+      <code>bd10fb72</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#widen-reaches-a-blocked-manifest">&#167;22 widen reads the block its mirror lost</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="liveness-source" data-choice="reconcile-on-read" data-by="lead" data-when="2026-09-03T07:38:29+00:00">
