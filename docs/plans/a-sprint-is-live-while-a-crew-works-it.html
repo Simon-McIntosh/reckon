@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-commits" content="6c92861d,0ad5a171">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -173,7 +173,10 @@
     <div class="r-comment-body"><p>§2 implemented. <code>reckon/sprint_liveness.py</code> exposes <code>sprint_liveness(project, docs_dir, live_records)</code>, which derives one row per sprint from the project's live pointers: <code>live</code>, <code>live_runs</code>, <code>live_sessions</code>, <code>last_activity_at</code> and <code>held_runs</code>. It composes <code>classify_pointer</code> and the fleet watch state mapping (<code>working</code>/<code>dispatched</code> → live; blocked or unpromoted → held) and <code>list_live</code> for the default pointer read; the sprint's stored status is never consulted.</p><p>Gate <code>tests/test_sprint_liveness.py</code> seeds two sprints with live pointers (one also holding a blocked pointer) and a third whose only pointer is terminal: the two read live with the right run/session counts, the third reads false, and no file under the synthetic docs tree or config home changes mtime across the read — <strong>2 passed</strong>. The declared mutation (derive liveness from the stored status) is red: <strong>2 failed</strong>, <code>assert [] == ['S100', 'S101']</code>. Commit <code>6c92861d</code> adds the module and its test; no existing file is edited.</p><p>Evidence: <a href="/plan/reckon/a-sprint-is-live-while-a-crew-works-it-landed#s2">the landed record</a>. §2 is complete; §3–§5 remain, and the driving followup is left open for the coordinator to close.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T075630410443-review-of-sprint-liveness-from-live-crews" data-who="reckon-build" data-when="2026-09-25T09:18:51.981Z">
-    <div class="r-comment-body"><p>review of sprint-liveness-from-live-crews at d92277ef scored 84/100: the fixture seeds no stored sprint status, so a read that ORs the stored marker into liveness passes; returned to the node&#x27;s session to add a stored-active, no-pointer case</p></div>
+    <div class="r-comment-body"><p>review of sprint-liveness-from-live-crews at d92277ef scored 84/100: the fixture seeds no stored sprint status, so a read that ORs the stored marker into liveness passes; returned to the node's session to add a stored-active, no-pointer case</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260925T075521833231-sprint-push-keeps-other-sprints" data-who="reckon-build" data-when="2026-09-25T08:13:35.306Z">
+    <div class="r-comment-body"><p>push sets its target active as a scheduling hint and leaves every other sprint untouched; the demotion test now asserts both stay active and the restored demote loop trips it; 11 passed; review 94 (push description and multiple-active-sprints audit left to the mcp.py node; op-level push path unasserted)</p></div>
 </div>
 </section>
   </main>
