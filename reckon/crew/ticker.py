@@ -45,7 +45,16 @@ RUN_STAMP_TAIL = 4
 # spends eighteen columns saying it. An unscoped reader gets the glyph; a scoped
 # reader gets nothing, because every row it receives is its own by construction.
 OWNER = 1
-STATE = 10
+# The middle dot that joins the state to the action the coordinator takes. The
+# state cell carries both so a reader scans one column for *what is this run
+# doing* and *what do I do about it*.
+ACTION_SEP = " · "
+# The longest recovery verb the classification vocabulary carries (investigate,
+# eleven). Held as a width bound rather than imported from the vocabulary that
+# states it, because that module imports this one; the render test over every
+# classification carrying a remedy asserts each action renders whole, so a
+# longer verb fails there rather than being cut to a wrong instruction.
+ACTION = 11
 # Model and effort are two cells so a reader scans the effort down a column
 # instead of parsing it out of a composed label. The cells sit one space apart
 # — PAIR_GAP, not GAP — so effort begins at the same screen column on every
@@ -129,6 +138,7 @@ STATE_HUE = {
         "stalled": 130,
         "complete": 28,
         "promoted": 22,
+        "withdrawn": 130,
         "dispatched": 241,
         "working": 26,
         "running": 26,
@@ -150,6 +160,7 @@ STATE_HUE = {
         "stalled": 179,
         "complete": 78,
         "promoted": 71,
+        "withdrawn": 179,
         "dispatched": 245,
         "working": 75,
         "running": 75,
@@ -163,6 +174,14 @@ STATE_HUE = {
         "unpromoted": 80,
     },
 }
+
+# The state cell carries the state word and the verbatim action beside it, so a
+# reader scans one column for *what is this run doing* and *what do I do about
+# it*. Sized from the widest state the classifier emits and the widest action it
+# can name, joined by the separator. An action cut to a prefix is a wrong
+# instruction, so the cell holds the longest word rather than eliding it.
+STATE_WORD = max(len(word) for word in STATE_HUE["light"])
+STATE = STATE_WORD + len(ACTION_SEP) + ACTION
 
 # States a reader must act on: the ones that have stopped progressing and want
 # the coordinator. An overdue wait is in the set: its external condition has
@@ -192,6 +211,31 @@ NEEDS_ACTION = frozenset(
 # term matches the bucket the fleet counter already reports, so one word means
 # one thing across the whole line.
 DISPLAY = {"completed_unpromoted": "unpromoted"}
+
+# The two words a departure renders as. A run that leaves the live set has been
+# promoted when the ledger holds the row the promote command wrote for it, and
+# has merely vanished otherwise: a refused dispatch, a discarded run, or a
+# reflex review whose worker never started. A `promoted` word is a claim that a
+# record exists, so a reader who sees it stops waiting on the run — which is
+# why the two must not render the same.
+PROMOTED = "promoted"
+WITHDRAWN = "withdrawn"
+
+
+def departure_word(event: Mapping[str, Any]) -> str:
+    """Promoted only when the ledger recorded the run, withdrawn otherwise.
+
+    The ledger fact is read from the transition's own ``ledger_row``, defaulting
+    to promoted when the field is absent: a record written before the departure
+    carried its verdict holds no evidence either way, and inventing a withdrawal
+    for every one of them would relabel real promotions. A refusal is the same
+    departure with its cause known — a dispatch that never ran has nothing to
+    promote — so it renders withdrawn whatever the ledger holds.
+    """
+    if str(event.get("event") or "") == "refused" or event.get("refused"):
+        return WITHDRAWN
+    return PROMOTED if event.get("ledger_row", True) else WITHDRAWN
+
 
 # The dispatch vocabulary, verbatim. Kept here rather than derived from a
 # config so that a role is known the moment it is dispatched; the word IS the
@@ -230,16 +274,20 @@ FOREIGN_OWNER = "~"
 # word. Read from the kind the log records, never from an absent from-state: a
 # genuine transition into a first sighting also has no source, and conflating
 # the two makes a restart read as a burst of news.
+#
+# The state cell carries the state alone: the marker word is retained for
+# readers of this record but no longer printed, because a row that says what it
+# is in its own state word needs no second label ahead of it.
 BASELINE_MARKER = "now"
 
-# The marker cell is held on every row, blank on a transition, so the state
-# word beside it lands on one screen column whether the row is news or
-# inventory. The cell carries the marker and the space that separates it from
-# the state, because a marker butted against its state reads as one token
-# (`nowworking`) with no boundary to scan. The trailing column is the gap that
-# keeps the model cell off a ten-column state word.
+# The state region is the state cell and the gap that keeps the model cell off
+# it. The marker cell that once preceded the state is gone: the state cell is
+# wide enough for the whole word, so a reader finds it on one screen column
+# without a second cell holding the column for it.
+STATE_REGION = STATE + 1
+# The width the retired marker cell occupied. Kept so a caller measuring a row
+# against the grid it came from does not have to know the cell was removed.
 MARKER = len(BASELINE_MARKER) + 1
-STATE_REGION = MARKER + STATE + 1
 
 # States a run does not leave. A baseline row for one of these is inventory
 # about work that is already over — the alarming-looking rows a reattaching
@@ -958,7 +1006,17 @@ class Ticker:
             else raw_to_state
         )
         to_state = _display_state(entry_state)
-        baseline = is_baseline(event)
+        if to_state == PROMOTED:
+            # A departure is a promotion only when the ledger recorded it, so a
+            # run that left the live set with no row behind it renders
+            # withdrawn rather than claiming a record a reader would trust.
+            to_state = departure_word(event)
+        # The action the coordinator takes on this state travels in the state
+        # cell beside it, so a reader scans one column for both halves of the
+        # decision. It is verbatim from the classification vocabulary rather
+        # than composed here, and a row with no remedy names only its state.
+        action = str(event.get("recovery") or "").strip()
+        state_cell = f"{to_state}{ACTION_SEP}{action}" if action else to_state
         role = _display_role(event.get("role"))
         model_cell, effort_cell = _model_and_effort(event)
 
@@ -975,14 +1033,13 @@ class Ticker:
         if with_session:
             owner = FOREIGN_OWNER if str(event.get("session") or "") else " "
             cells += [(" " * GAP, None), (f"{owner:<{OWNER}}", "dim")]
-        # The state cell carries the destination alone. The marker cell ahead
-        # of it is present on every row so the state column never moves; a
-        # branch inside the cell (rather than a cell that appears) is what
-        # keeps a baseline row on the grid the transitions sit on.
+        # The state cell carries the destination and the remedy together, and
+        # it is held on every row so the state column never moves. The baseline
+        # marker that once held the column ahead of it is gone: the state word
+        # is wide enough to be concise at a glance.
         hues = STATE_HUE[self.theme]
         cells += [
-            (f"{BASELINE_MARKER if baseline else '':<{MARKER}}", "dim"),
-            (f"{to_state:<{STATE}}", hues.get(to_state, "dim")),
+            (f"{state_cell:<{STATE}}", hues.get(to_state, "dim")),
             (" ", None),
             (f"{elide(model_cell, model_width):<{model_width}}", "dim"),
             (" " * PAIR_GAP, None),
@@ -1026,6 +1083,12 @@ class Ticker:
         so the word is elided to fit it and the allow-list below holds the full
         spellings. A gate reading the rendered form is a gate that says nothing
         about work the pane is counting.
+
+        The state cell's own words are derived here from the same inputs the row
+        composes them from — the entry state's rendered word and the record's
+        remedy — so the clause can avoid saying any of them a second time. The
+        remedy renders in the state cell rather than here because that is where
+        a reader looks for the action to take.
         """
         explained = NEEDS_ACTION | {
             "waiting",
@@ -1056,9 +1119,12 @@ class Ticker:
             # probe never ran is one fact more rather than one of them
             # overruled. The marker's width is carried in the reserve below.
             marker = UNPROBED_MARKER + marker
-        recovery = str(event.get("recovery") or "").strip()
-        recovery_prefix = f"{recovery}: " if recovery else ""
-        reserve = len(marker) + (1 if marker else 0) + len(recovery_prefix)
+        # The remedy is not printed here: it renders in the state cell beside
+        # the state word, where a reader looks for the action, and the clause
+        # carries the explanation alone. Its width therefore does not reserve
+        # room in the clause, and a clause that opened with the same word would
+        # be saying twice what one cell already says — stripped below.
+        reserve = len(marker) + (1 if marker else 0)
         clause = single_clause(detail, limit=max(0, room - reserve))
         if not clause and entry_state == LAUNCH_FAULT_STATE:
             # The blocked bucket is where a launch failure's number arrives, so
@@ -1067,8 +1133,10 @@ class Ticker:
             # this names the fault itself for a record that carried the state
             # without one, rather than rendering a number with no reason.
             clause = single_clause(LAUNCH_FAULT_CLAUSE, limit=max(0, room - reserve))
-        if recovery_prefix:
-            clause = recovery_prefix + clause if clause else recovery_prefix.rstrip()
+        action = str(event.get("recovery") or "").strip()
+        state_word = _display_state(entry_state)
+        state_cell = f"{state_word}{ACTION_SEP}{action}" if action else state_word
+        clause = self._strip_repeated_label(clause, state_cell)
         if marker and clause:
             return f"{marker} {clause}"
         return marker or clause
@@ -1119,9 +1187,12 @@ class Ticker:
         surface a reader goes to for it rather than to a row.
         """
         cells: list[tuple[str, Any]] = []
-        wait_field = _COUNT_FIELD.get(_WAIT_CELL, _WAIT_CELL)
-        labels = (*_CELLS, _WAIT_CELL) if wait_field in event else _CELLS
-        for index, label in enumerate(labels):
+        # Every bucket the fleet can show renders on every row, at its own fixed
+        # width, so the block never changes shape when a run is queued and the
+        # columns after it never move. A zero is dimmed rather than dropped: a
+        # reader watching a drain needs to see the count reach zero rather than
+        # see the cell disappear and the row's right edge go ragged.
+        for index, label in enumerate(_MAX_CELLS):
             if index:
                 cells += [("·", "dim")]
             count = int(event.get(_COUNT_FIELD.get(label, label)) or 0)
@@ -1132,6 +1203,47 @@ class Ticker:
         # so the clause is absent rather than unknown.
         cells += bound_cells(event.get("bounds"))
         return cells
+
+    @staticmethod
+    def _reason_words(state_cell: str) -> set[str]:
+        """The words the state cell already says, so a clause repeats none."""
+        return set(re.findall(r"[A-Za-z0-9_-]+", state_cell))
+
+    def _strip_repeated_label(self, clause: str, state_cell: str) -> str:
+        """Drop a leading label whose words the state cell already carries.
+
+        A producer that prefixes its clause with the remedy — ``resume: ready
+        to resume: the worker process is gone`` — spends the shortest column on
+        the row saying what the state cell now says, and in the worst case says
+        it twice. The label is dropped when any of its words names the state or
+        its action, so what remains is the explanation; a leading word that
+        repeats the cell is dropped for the same reason.
+        """
+        if not clause:
+            return clause
+        own = self._reason_words(state_cell)
+        words = clause.split()
+        # A leading label — one or more words closed by a colon — spends the
+        # row's first column saying something the state cell already says, so
+        # the clause begins with the explanation instead. The search is bounded
+        # to the opening words so a colon later in the sentence, which is
+        # punctuation rather than a label, is left where it is; a single-word
+        # label is dropped whether or not it names the cell, because a clause
+        # that opens with ``word:`` is naming a category a reader already has.
+        for index, word in enumerate(words[:5]):
+            if not word.endswith(":"):
+                continue
+            label = set(re.findall(r"[A-Za-z0-9_-]+", " ".join(words[: index + 1])))
+            if label & own or index == 0:
+                words = words[index + 1 :]
+            break
+        while words:
+            head = re.findall(r"[A-Za-z0-9_-]+", words[0])
+            if head and head[0] in own:
+                words = words[1:]
+            else:
+                break
+        return " ".join(words).strip()
 
     def _paint(self, text: str, style: Any) -> str:
         if not self.color or style is None or not text:
