@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="17">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -105,7 +105,7 @@
   <li>When the checkpoint cannot be continued, because the stream was replaced or truncated, the follower falls back to state. It emits only runs whose state differs from the checkpoint's reported state, each stamped with the run's own recorded transition time, never the attach time.</li>
   <li>A session's first arming has no checkpoint and emits the baseline, stamped per run. The baseline's state must match what the live stream would say. In the lead's capture, runs that had been working for over twenty minutes replayed as <code>dispatched</code>. A run whose stream has advanced past its start renders <code>working</code>.</li>
   <li>Every row's age is computed from the run's recorded start.</li>
-  <li><strong>The pane keeps its history across a re-arm.</strong> The lead reported on 2026-09-25, after the checkpoint landed, that each re-arm still opens an empty Monitor pane. The checkpoint stops the replayed baseline and fills the gap, but the rows the previous arming showed, and their times, are gone from view, and a coordinator cannot track its work without them. So the follower keeps a per-session log of the rows it rendered: each row's rendered text and original timestamp, beside the checkpoint, capped at the most recent 200 rows or 12 hours. On a re-arm, before the gap lines, it re-emits that history as one burst of rows exactly as they were first rendered, with their original timestamps. Monitor batches lines written within 200 ms into one notification, so the history costs one notification per re-arm rather than one per row. The re-emitted rows are the log's rows, never a re-derived baseline, so no run is re-announced in a state it did not hold at that time.</li>
+  <li><strong>The pane keeps its history across a re-arm.</strong> The lead reported on 2026-09-25, after the checkpoint landed, that each re-arm still opens an empty Monitor pane. The checkpoint stops the replayed baseline and fills the gap, but the rows the previous arming showed, and their times, are gone from view, and a coordinator cannot track its work without them. So the follower keeps a per-session log of the rows it rendered: each row's rendered text and original timestamp, beside the checkpoint, capped at the most recent 200 rows or 12 hours. On a re-arm, before the gap lines, it re-emits that history as one burst of rows exactly as they were first rendered, with their original timestamps. Monitor batches lines written within 200 ms into one notification, so the history costs one notification per re-arm rather than one per row. The re-emitted rows are the log's rows, never a re-derived baseline, so no run is re-announced in a state it did not hold at that time. The burst ends with one dim separator line naming the re-arm time, for example <code>── re-armed 14:13 · rows above are history ──</code>. Every row above that line is history and every row below it is news, so a restored <code>abandoned</code> or <code>process gone</code> row is never taken for a new event. The rows themselves stay byte-identical to their first rendering, so the columns stay aligned.</li>
 </ul>
 <p>The work is folded in from <code>a-follower-outlives-its-monitor</code> &sect;4, whose falsifier this section's done-when extends. The S22 coordinator agreed on 2026-09-25, and that plan's section declarations and evidence stay with S22.</p>
 <p><strong>Done when:</strong></p>
@@ -124,7 +124,7 @@
       <li>ends the arming;</li>
       <li>re-arms.</li>
     </ul>
-    It asserts that the re-armed follower first emits the prior rows byte-identical to their first rendering, in order, with their original timestamps, then the gap transitions, and that the history is written within one flush so a line-batching consumer receives it as one notification. A second test asserts that the cap holds at 200 rows and at 12 hours, and that a first arming has no history to replay. The declared mutation, a re-arm that skips the history replay, is observed to fail. The log is recorded.</li>
+    It asserts that the re-armed follower first emits the prior rows byte-identical to their first rendering, in order, with their original timestamps, then exactly one history separator line, then the gap transitions, and that the history is written within one flush so a line-batching consumer receives it as one notification. A second test asserts that the cap holds at 200 rows and at 12 hours, and that a first arming has no history to replay. The declared mutation, a re-arm that skips the history replay, is observed to fail. The log is recorded.</li>
   <li>A test that replaces the stream between the two arms asserts that only changed runs are emitted, each stamped with its recorded time, and that no already-running run renders as <code>dispatched</code>.</li>
   <li>Two declared mutations are applied and each is observed to fail, with its log recorded:
     <ul>
