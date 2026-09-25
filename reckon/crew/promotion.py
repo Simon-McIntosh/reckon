@@ -3145,6 +3145,11 @@ def _record_release_on_ledger(
                         f"{staged.stderr.strip() or staged.stdout.strip()}",
                         rollback,
                     )
+                unchanged = _git(
+                    checkout, "diff", "--cached", "--quiet", "--", str(path), check=False
+                )
+                if unchanged.returncode == 0:
+                    return dict(release), updated
                 committed = _git(
                     checkout,
                     "commit",

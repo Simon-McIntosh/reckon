@@ -193,4 +193,17 @@ def test_complete_preserves_the_promotion_commit_through_release(
         assert any(
             path.is_relative_to(config) and path.suffix == ".db" for path in observed
         )
+        settled_head = _git(repo, "rev-parse", "HEAD")
+        replay_release, replay_row = promotion._record_release_on_ledger(
+            project="reckon",
+            root=repo,
+            run_id=run_id,
+            release=payload["release"],
+            checkout=repo,
+        )
+        assert replay_release == payload["release"], (
+            "identical release must be a durable no-op"
+        )
+        assert replay_row == row
+        assert _git(repo, "rev-parse", "HEAD") == settled_head
         assert forbidden == [], f"real config home changed: {forbidden}"
