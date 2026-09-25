@@ -79,7 +79,7 @@
     <a href="/reckon/plans/a-review-dies-where-nobody-is-looking">a-review-dies-where-nobody-is-looking</a>.
     This plan owns only what the follower emits.</p>
 
-    <h2 id="s2">&sect;2 &mdash; A worker's death is a row within one poll</h2>
+    <h2 id="s2">&sect;2 &mdash; A worker's death is a row within one poll <span class="r-landed">landed</span></h2>
     <h3 id="s2-terms">Terms shared by &sect;2 to &sect;8</h3>
     <p><em>Non-terminal</em> means the manifest's status is not in
     <code>TERMINAL_MANIFEST_STATUSES</code> in <code>reckon/crew/reports.py</code>
@@ -117,6 +117,28 @@
     &sect;8's and not this one. The negative control is executed and logged: with the new
     death branch deleted from the head, the first case's snapshot emits nothing for the run. The
     write paths are <code>reckon/crew/recovery.py</code> and that test.</p>
+
+    <h3 id="s2-landed">Landed &mdash; node <code>watch-reports-death-at-once</code></h3>
+    <p><strong>Landed</strong> (<code>8b759fa0</code>). <code>_watch_snapshot</code> in
+    <code>reckon/crew/recovery.py</code> now reads the newest stream's last complete record when the
+    process table has already falsified the manifest's word, and reports the death on that snapshot
+    instead of waiting out the stall window. A last record of type <code>result</code> is left for
+    &sect;8; any other last record moves the row to <code>blocked</code> carrying the classifier's
+    <code>interrupted</code> reading and the <code>redispatch</code> verb, with a reason that names
+    the end — the supervisor's recorded exit where there is one, and a death with nothing recorded
+    when there is not — and the stream record the death interrupted. Where a recorded exit carries a
+    signal the classifier already reads it as the interruption it is, so this branch covers the
+    deaths nothing recorded; it fires only for a run the classifier still calls running.</p>
+    <p><strong>Evidence:</strong> three cases in <code>tests/test_watch_reports_death_at_once.py</code>
+    (3 passed), the first driving the published watch stream through a project watch claim and
+    asserting one transition, its reason, and a quiet time under the window; the second requiring the
+    death reading to be absent for a <code>result</code> tail while the <code>assistant</code> arm on
+    the same run carries it; the third a recorded clean exit. The declared negative control was
+    executed and logged: with the death branch deleted, the killed case's snapshot emits nothing for
+    the run (<code>assert 0 == 1</code>). The existing recovery-importing suites pass at this head
+    (63 files, 933 passed, 0 failed). Landing record and figure in
+    <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#s2">&sect;2
+    of the landed evidence record</a>.</p>
 
     <h2 id="s3">&sect;3 &mdash; A stalled row says alive or gone</h2>
     <p>Every row entering <code>stalled</code> carries the process state in its reason, in words:

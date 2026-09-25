@@ -2558,6 +2558,78 @@ def newest_stream(
         return None
 
 
+# An engine writes one of these when a turn has run to its own conclusion, so
+# the process ending after it is an end of turn rather than a death mid-turn.
+# The two read differently on the pane because their remedies differ: a turn
+# that ended is continued, while a death mid-turn needs its cause read first.
+STREAM_RESULT_RECORD_TYPE = "result"
+
+# The tail a last-record read takes from a stream. The answer is one line, and
+# the watcher asks this per run per snapshot, so the whole file — megabytes on a
+# long run — is never read for it.
+_STREAM_TAIL_BYTES = 64 * 1024
+
+
+def _newest_stream_last_record_type(record: Mapping[str, Any]) -> str | None:
+    """The type of a run's newest stream's last complete record.
+
+    None answers "no last record to read": no stream, one that cannot be read,
+    or one whose tail holds no complete record. A trailing partial write is
+    skipped rather than parsed — an engine appending a record is not evidence
+    that the record completed — and a caller therefore never reads "could not
+    tell" as a particular type.
+    """
+    found = _record_newest_stream(record)
+    if found is None:
+        return None
+    try:
+        with found[0].open("rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            size = handle.tell()
+            handle.seek(max(0, size - _STREAM_TAIL_BYTES))
+            tail = handle.read()
+    except OSError:
+        return None
+    for raw in reversed(tail.splitlines()):
+        text = raw.strip()
+        if not text:
+            continue
+        try:
+            event = json.loads(text)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(event, Mapping):
+            continue
+        record_type = event.get("type")
+        if isinstance(record_type, str) and record_type:
+            return record_type
+    return None
+
+
+def _process_exit_reason(record: Mapping[str, Any], last_record_type: str) -> str:
+    """Why a dead worker's row says the process exited, in its records' terms.
+
+    The run directory's exit record is the supervisor's account of the end and
+    outranks the bare pid, so a kill is named by its signal and a clean end by
+    its code; a run with no recorded exit says so rather than inventing one.
+    The last record type travels beside it, because a stream that carried no
+    result record is what makes the end a death mid-turn rather than a turn
+    that finished.
+    """
+    exit_record = _run_exit_record(record)
+    if exit_record is not None:
+        end = (
+            f"the worker process {_exit_record_end_phrase(exit_record)} "
+            f"(recorded at {exit_record.get('exited_at') or 'an unrecorded moment'})"
+        )
+    else:
+        end = "the worker process is gone with no recorded exit"
+    return (
+        f"{end} before the run completed; the stream's last record is "
+        f"{last_record_type}, so the turn did not end"
+    )
+
+
 def _run_directory(record: Mapping[str, Any] | dict[str, Any]) -> Path:
     """The directory holding a run's streams, from its id or its log path."""
     run_id = str(record.get("run_id") or "")
@@ -4401,6 +4473,27 @@ def _watch_snapshot(
     else:
         state = classification or phase or "unknown"
 
+    # A dead worker is a row on the snapshot that observes the death, never one
+    # held behind the stall window. The deferrals above read a non-terminal
+    # manifest or retained commits as the worker's own last word, and that word
+    # was written before the process ended; the process table has now falsified
+    # it, so the deferral stops here. Which end this was is the stream's to say:
+    # a last record of result is a turn that ran to its own conclusion, whose
+    # remedy is to continue it, while any other last record is a death
+    # mid-turn, whose cause a reader has to see before choosing a recovery.
+    # The row then reads as the classifier's interrupted run — the reading it
+    # already owns for a worker that died — rather than as a second vocabulary
+    # this reducer would have to keep in step.
+    death_reason = None
+    if alive is False and state in ("dispatched", "working"):
+        last_record_type = _newest_stream_last_record_type(pointer)
+        if (
+            last_record_type is not None
+            and last_record_type != STREAM_RESULT_RECORD_TYPE
+        ):
+            death_reason = _process_exit_reason(pointer, last_record_type)
+            state = "blocked"
+
     detail = str(row.get("detail") or "")
     for prefix in (
         "the worker manifest reports blocked: ",
@@ -4410,7 +4503,12 @@ def _watch_snapshot(
             detail = detail[len(prefix) :]
             break
 
-    if state in ("dispatched", "working"):
+    if death_reason is not None:
+        # The classifier's clause for this record says the run was still
+        # working when the process ended, which is the reading this branch
+        # exists to replace; the death row states the end it observed instead.
+        detail = death_reason
+    elif state in ("dispatched", "working"):
         # A run stops progressing whether it dies during dispatch or mid-work,
         # so the stall check has to reach every non-terminal state a pointer
         # can sit in — gating it on "working" alone left a run killed before
@@ -4441,7 +4539,13 @@ def _watch_snapshot(
     recovery_classification = str(row.get("recovery_classification") or state)
     recovery_verb = str(row.get("recovery") or "")
     lifting_condition = row.get("lifting_condition")
-    if state == "stalled":
+    if death_reason is not None:
+        # A death row carries the classifier's own word for a worker that died,
+        # so the cause and remedy a reader sees match what every other surface
+        # already calls it rather than a second vocabulary composed here.
+        recovery_classification = INTERRUPTED_RUN_PHASE
+        recovery_verb = RECOVERY_VERBS[INTERRUPTED_RUN_PHASE]
+    elif state == "stalled":
         recovery_classification = "stalled"
         recovery_verb = RECOVERY_VERBS["stalled"]
         lifting_condition = None
