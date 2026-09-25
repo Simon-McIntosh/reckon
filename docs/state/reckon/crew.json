@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T02:39:45",
+  "updated": "2026-09-25T02:53:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -758,9 +758,13 @@
         "session_id": "94b0db3f-d7d6-4ba1-be3e-d243cae12e26",
         "session_model": "deepseek-v4-flash",
         "sessions": {
-          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "94b0db3f-d7d6-4ba1-be3e-d243cae12e26"
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "94b0db3f-d7d6-4ba1-be3e-d243cae12e26",
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "2b342044-6119-436a-a098-144e579a60cb"
         },
-        "created": "2026-09-06"
+        "created": "2026-09-06",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "s23-coord"
+        }
       },
       {
         "id": "crew-paused",
@@ -1544,9 +1548,13 @@
         "session_id": "01a08631-b1c8-7bf1-873e-4c6b206990f2",
         "session_model": "gpt-5.6-terra",
         "sessions": {
-          "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"worktree-full\"}": "01a08631-b1c8-7bf1-873e-4c6b206990f2"
+          "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"worktree-full\"}": "01a08631-b1c8-7bf1-873e-4c6b206990f2",
+          "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"worktree-full\"}": "01a0d5dd-9cfd-74f2-bed3-c9d095646394"
         },
-        "created": "2026-09-09"
+        "created": "2026-09-09",
+        "session_owners": {
+          "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"worktree-full\"}": "s22-coord"
+        }
       },
       {
         "id": "implement-terra-d",
@@ -366349,6 +366357,292 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T235922515513-build-skill-sheds-reference-material",
+        "plan": "reckon-skill-overhaul",
+        "section": "\u00a73",
+        "node": "build-skill-sheds-reference-material",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3550,
+                "cached_input_tokens": 472248,
+                "input_tokens": 475800,
+                "output_tokens": 924,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 476724,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "skills/reckon-build/SKILL.md loses passages that read as explanation or measured history rather than a rule an orchestrator applies mid-turn; each moved passage lands verbatim or tightened in an existing or new file under skills/reckon-build/references/ and SKILL.md keeps a one-line pointer to it naming the file and section; no binding rule (the hard rules, the fences in 4b to 4e, the launch-kind table, the closure and drain rules) is removed from SKILL.md. The estimate computed by test_engine_generated_dispatch_keeps_fixed_read_set_bounded in tests/test_skill_contracts.py falls by at least 3,000 tokens, stated before and after in the manifest, and FIXED_READ_SET_TOKEN_BUDGET is lowered to no more than 1,500 above the new estimate with its comment updated to say why. tests/test_skill_contracts.py passes at your head, judged by delta against the base revision, and every relative link from SKILL.md into references resolves. The declared negative control is executed and logged: restoring the original SKILL.md against the lowered bound makes that test fail.",
+          "estimated_hours": null,
+          "goal": "The reckon-build skill's fixed read set shrinks by moving explanatory passages into its references directory",
+          "id": "build-skill-sheds-reference-material",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-24T23:59:23Z",
+            "read_at": "2026-09-24T23:59:24Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 4.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235922515513-build-skill-sheds-reference-material/manifest.md",
+          "negative_control": "restore the base revision's skills/reckon-build/SKILL.md while keeping the lowered FIXED_READ_SET_TOKEN_BUDGET; the fixed-read-set test must fail",
+          "plan": "reckon-skill-overhaul",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a73",
+          "spec_level": "open",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "skills/reckon-build/SKILL.md",
+            "skills/reckon-build/references",
+            "tests/test_skill_contracts.py",
+            "docs/plans/reckon-skill-overhaul.html",
+            "docs/evidence/archive/reckon-skill-overhaul-landed.html",
+            "docs/figures/reckon-skill-overhaul"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "open",
+        "member": "implement-terra-c",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-24T23:59:34Z",
+        "completed_at": "2026-09-25T00:19:47Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1213,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1213,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "2a72458cad5f7843fc2b7637719b8510d0151788",
+        "commits": [
+          "1134809777674052c60e2722553e6ee3abe03dcb",
+          "65724950dd9771f4eb42ad779e1837f934bc0417"
+        ],
+        "changed_lines": {
+          "added": 344,
+          "removed": 465,
+          "files": 5
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_skill_contracts.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235922515513-build-skill-sheds-reference-material/logs/skill-contracts-final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235922515513-build-skill-sheds-reference-material/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d5dd-9cfd-74f2-bed3-c9d095646394",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 11469312,
+            "cached_input_tokens_cumulative": 11469312,
+            "input_tokens": 11707561,
+            "input_tokens_cumulative": 11707561,
+            "output_tokens": 53635,
+            "output_tokens_cumulative": 53635,
+            "reasoning_output_tokens": 25550,
+            "reasoning_output_tokens_cumulative": 25550
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-25T00:19:47Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 4.0,
+              "resets_at": 1790869124,
+              "observed_at": "2026-09-25T00:19:47Z"
+            }
+          ],
+          "notional_cost_usd": 24.0587,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-terra",
+            "input_per_million": 2.0,
+            "output_per_million": 12.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 16,
+            "evidence": 15,
+            "fit": 17,
+            "goal_fidelity": 17,
+            "scope_discipline": 18
+          },
+          "absent": [],
+          "total": 83
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 11469312,
+          "cumulative_input_tokens": 11707561,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 79185,
+          "generation_seconds": 1071.823,
+          "machine_seconds": 49.7,
+          "tokens_per_second": 73.88
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/build-skill-sheds-reference-material",
+          "session_id": "01a0d5dd-9cfd-74f2-bed3-c9d095646394",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T00:19:47Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T00:19:48Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-25T00:01:05Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T235922515513-build-skill-sheds-reference-material",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 291,
+          "worker_pid": 1943843
+        },
+        "promoted_revision": "65724950dd9771f4eb42ad779e1837f934bc0417",
+        "plan_impl_at_dispatch": 0.9,
+        "impl_move": {
+          "plan": "reckon-skill-overhaul",
+          "at_dispatch": 0.9,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:documentation"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_skill_contracts.py"
+          ],
+          "declaration": "restore the base revision's skills/reckon-build/SKILL.md while keeping the lowered FIXED_READ_SET_TOKEN_BUDGET; the fixed-read-set test must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235922515513-build-skill-sheds-reference-material/logs/fixed-read-set-negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235922515513-build-skill-sheds-reference-material/logs/fixed-read-set-negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "codex-terra",
+          "burn_multiple": 0.8052994241203688,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "no projected exhaustion is available for 'codex-terra'; the burn projection needs a numeric utilisation bounded by a known window, and without one no horizon comparison is made",
+          "horizon_ends_at": "2026-09-25T00:49:24.440914+00:00",
+          "horizon_seconds": 3000,
+          "metered": true,
+          "observed_at": "2026-09-24T23:59:23Z",
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 574759,
+          "state": "quiet",
+          "utilisation_pct": 4.0
+        },
+        "lane_declaration": {
+          "backend": "codex-terra",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-24T23:59:23Z",
+          "read_at": "2026-09-24T23:59:24Z",
+          "resolved_backend": "codex-terra",
+          "utilisation_pct": 4.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 92.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -366661,6 +366955,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2582
+    "_version": 2585
   }
 }
