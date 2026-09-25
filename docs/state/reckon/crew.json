@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T08:02:26",
+  "updated": "2026-09-25T08:08:06",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -394898,6 +394898,247 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T054148528788-ledger-reader-site-audit",
+        "plan": "the-ledger-is-one-file-per-run",
+        "section": "\u00a72",
+        "node": "ledger-reader-site-audit",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1726,
+                "cached_input_tokens": 886663,
+                "input_tokens": 888391,
+                "output_tokens": 1475,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 889866,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/ledger-reader-site-audit/sites.md lists, for every site under reckon/ that reads the ledger's runs list or opens a project ledger file named crew.json directly (found by grep for crew.json, ledger.load, ledger_path, [\"runs\"] and .get(\"runs\") over reckon/, each hit cited as file:line and verified at HEAD), whether it already goes through ledger.load or the index, or bypasses them and must be repointed; ends with the exact set of files a \u00a72 implementation node must write, and a count line: sites total, sites bypassing.",
+          "estimated_hours": null,
+          "goal": "An audit lists every site under reckon/ that reads the run list or opens a project's crew.json ledger, with its disposition for the per-run-file reader",
+          "id": "ledger-reader-site-audit",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T05:41:49Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 20,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 11,
+            "mean_context": 140000,
+            "observed_at": "2026-09-25T05:41:29Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T054148528788-ledger-reader-site-audit/manifest.md",
+          "negative_control": "",
+          "plan": "the-ledger-is-one-file-per-run",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/ledger-reader-site-audit"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "guided",
+        "member": "crew-gc-coverage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T05:41:56Z",
+        "completed_at": "2026-09-25T06:06:23.195Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1361,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1467,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "83ea60fad2310f8f24e73b504d45521f9b9138c1",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T054148528788-ledger-reader-site-audit/manifest.md",
+        "scope_changed": false,
+        "session_id": "71414138-3e07-4c71-971b-3f1557037ae5",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no rate-limit event in the stream yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T06:06:23.195Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "follow_on_paths": [
+          "crew.json",
+          "crew/dispatch.py:3048",
+          "hooks/native_agent_guard.py:82",
+          "hooks/worker_message_guard.py:89",
+          "reckon/budget.py",
+          "reckon/crew/paid_lanes.py",
+          "sites.md"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/ledger-reader-site-audit",
+          "session_id": "71414138-3e07-4c71-971b-3f1557037ae5",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T06:06:23.195Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 143,
+          "exited_at": "2026-09-25T06:06:27Z",
+          "last_record_type": "system",
+          "launched_at": "2026-09-25T05:43:32Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T054148528788-ledger-reader-site-audit",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 14614,
+          "worker_pid": 3421458
+        },
+        "promoted_revision": "83ea60fad2310f8f24e73b504d45521f9b9138c1",
+        "impl_move": {
+          "plan": "the-ledger-is-one-file-per-run",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:investigate"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T06:11:49.029652+00:00",
+          "horizon_seconds": 1800,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T05:41:49Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 20,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 11,
+          "mean_context": 140000,
+          "observed_at": "2026-09-25T05:41:29Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 77.0,
+        "orientation_input_tokens": 4213564.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -395210,6 +395451,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2707
+    "_version": 2708
   }
 }
