@@ -707,6 +707,101 @@ Use edit_plan mode=state. Example: {"op": "append", "target": "sections", "item"
     <code>edit_plan</code> route was not used. The coordinator owns integration, closure and
     the merged-head verification.</p>
   </section>
+
+  <section id="audit-section-contract-findings">
+    <h2>The audit reports the gap, and the fleet keeps moving</h2>
+    <p>Commit <code>c84c7323931581c6e9f74caaaeb908ecda2c04d0</code> adds two findings to
+    <code>reckon/doccheck</code>, the module behind <code>reckon audit-doc</code>. An implementable
+    section carrying no typed record is reported at <strong>error</strong> once the plan already holds
+    a typed record to compare against, and at <strong>warning</strong> while the plan still predates
+    the contract; a followup whose body enumerates two or more deliverables is reported at
+    <strong>warning</strong> as section-sized work. Only <code>error</code> moves the exit code, so a
+    repository that predates the contract audits clean while the conversion is in progress. The
+    finding's worked append example is imported from the write boundary's own refusal builder and the
+    tests assert it byte-for-byte, so the audit message and the refusal cannot drift apart.</p>
+    <h3>Both defects reproduced before repair</h3>
+    <p>A probe over one record-carrying plan and one partial record was run twice: at the dispatch base
+    <code>c473be21</code> in a pinned scratch tree that carries <code>docs/</code> (several cohort
+    tests read the live documents), and at the head. The module each arm measured is printed by the
+    probe itself.</p>
+    <table>
+      <thead><tr><th>specimen</th><th>base <code>c473be21</code></th><th>head <code>c84c7323</code></th></tr></thead>
+      <tbody>
+        <tr>
+          <td>record-carrying plan, <code>s2</code> unrecorded</td>
+          <td><code>warn/unwired-plan</code>, <code>info/empty-section</code></td>
+          <td><code>error/section-without-contract</code> naming <code>s2</code>, <code>warn/unwired-plan</code></td>
+        </tr>
+        <tr>
+          <td>partial record beside a relative <code>&lt;img&gt;</code></td>
+          <td><code>RAISED ValidationError</code>: <em>3 validation errors for PlanState
+          sections.0.capability …</em></td>
+          <td><code>error/section-record-invalid</code> and <code>error/img-relative-src</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Two things were wrong at the base, and neither was a missing message. The record-carrying plan
+    was told nothing about its unrecorded section, and its typed record was reported as an
+    <code>empty-section</code> — a record element carries metadata and no prose, so the empty-section
+    check fired on it. Separately, a partial record raised a pydantic <code>ValidationError</code> out
+    of <code>audit_html</code>: one malformed record aborted the whole audit, and the probe's relative
+    <code>&lt;img&gt;</code> is exactly the later check that never ran. At the head the record error is
+    reported and <code>img-relative-src</code> appears beside it, so the checks after the state read
+    ran. The read is now guarded, and the typed-record element is skipped by the empty-section check.
+    Probe: <code>logs/repair-probe.log</code>.</p>
+    <h3>Sizing followup work: the corpus had no field to read</h3>
+    <p>The plan asks for a warning on a followup whose body describes executable work "above the stated
+    effort threshold". No such statement exists to read: across the repository's own 238 plan and
+    evidence documents there are 365 authored followups, 127 of them open, and <strong>none</strong>
+    carries an effort field; 2 of the 127 open ones state an hour figure in prose. Described work is
+    therefore sized by its enumerated deliverables — <code>(1) … (2) …</code> — against a named
+    module constant, <code>FOLLOWUP_WORK_ITEMS_THRESHOLD = 2</code>; 9 open followups enumerate at
+    least one deliverable and 7 reach the threshold. The
+    threshold is a judgement call the plan left implicit, and it is recorded here so the coordinator can
+    redirect it: a stricter reading keyed on explicit hour figures would find almost nothing today.
+    Census: <code>logs/followup-census.log</code>.</p>
+    <h3>The cohort and the declared negative control</h3>
+    <table>
+      <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+      <tbody>
+        <tr><td>base, pinned scratch tree</td><td><code>c473be21</code></td><td>73 passed, 0 failed</td></tr>
+        <tr><td>head, worktree</td><td><code>c84c7323</code></td><td>82 passed, 0 failed</td></tr>
+        <tr><td>head with the section-contract check deleted</td><td>worktree file, restored after</td><td>4 failed, 5 passed</td></tr>
+      </tbody>
+    </table>
+    <p>The head arm adds nine cases to the base's six doccheck files; no failure appears at the head
+    that is absent from the base, so the delta is zero. Both arms logged the module they imported, so
+    neither measured the shared environment's editable install by accident. The negative control
+    deletes the check's helper block and its two call sites from <code>reckon/doccheck.py</code>; the
+    declared case
+    <code>test_a_record_carrying_plan_reports_an_unrecorded_section_as_an_error</code> fails first in
+    the summary, with <code>assert [] == ['error']</code>, and three sibling cases fail with it, while
+    the cases that assert silence — one-deliverable followups, resolved followups, plans with no
+    implementable declaration — still pass, because silence is what a deleted check produces. The file
+    was restored from a pristine copy and verified by sha256 and an empty <code>git diff</code>.
+    Logs: <code>logs/cohort-base.log</code>, <code>logs/cohort-head.log</code>,
+    <code>logs/negative-control-red.log</code>.</p>
+    <h3>The live corpus</h3>
+    <p><code>audit-doc</code> over this repository's plans reports the warnings it was asked for and
+    exits 0. This plan: <code>s2</code>–<code>s7</code> (6 warnings, 0 errors);
+    crew-effort-routing: <code>s1</code>–<code>s11</code>; north-star-orientation:
+    <code>s1</code>, <code>s2</code>, <code>s4</code>, <code>s5</code>, the shape following its own
+    declarations rather than the numbering. Every finding carries the section id and the worked
+    append example. Log: <code>logs/live-plans.log</code>.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/audit-contract-decisions.svg"
+           alt="Two arms. An implementable section with no typed record is an error once the plan already carries a typed record to compare against, and a warning while the plan still predates the contract. An open followup whose body enumerates more than one deliverable is a warning; one deliverable or none stays silent. Only errors move the audit's exit code.">
+      <figcaption>Severity follows the plan's own state, and the followup arm measures what it can
+      read: enumerated deliverables, because no followup states an effort.</figcaption>
+    </figure>
+    <h3>Artifacts and integrity</h3>
+    <p>The durable run directory is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T064946090143-audit-doc-reports-missing-section-contract/</code>.
+    This anchor and the plan's landing prose are append-only; plan declarations, status, implementation
+    fraction, version and modified date are unchanged, and the version-stamping <code>edit_plan</code>
+    route was not used. Section closure and the driving followup remain with the coordinator, as does
+    the merged-head verification.</p>
+  </section>
 </main>
 </body>
 </html>
