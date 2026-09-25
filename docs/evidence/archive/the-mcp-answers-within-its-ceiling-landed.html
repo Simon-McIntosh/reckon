@@ -602,16 +602,20 @@
     implementation, so an agent could use the op and the view only if it guessed them.</p>
 
     <h3>The two records</h3>
-    <p><code>_OP_VOCAB</code> gains an <code>insert_section</code> entry naming its
-    <code>id</code>, <code>title</code> and <code>body</code> keys and stating that it lands the
-    section before the first structured-state region and after any
-    <code>data-reckon='section'</code> records. The <code>read_plan</code> docstring names all seven
-    accepted views and the positional <code>section</code> argument that <code>view='section'</code>
-    selects by, and records that a missing id is refused with <code>section_not_found</code>.</p>
+    <p><code>_OP_VOCAB</code> gains an <code>insert_section</code> entry naming the op and its
+    <code>id</code>, <code>title</code> and <code>body</code> keys. The <code>read_plan</code>
+    docstring names all seven accepted views and the <code>section</code> argument that
+    <code>view='section'</code> selects by, and records that a missing id is refused with
+    <code>section_not_found</code>.</p>
     <p>The new test holds each list against its source rather than against a copy of itself: every
     key of <code>_OP_DISPATCH</code> must have an <code>_OP_VOCAB</code> entry, and every name in
     <code>VIEW_NAMES</code> must appear quoted in the docstring. A third assertion pins the
-    <code>insert_section</code> entry to its three keys and its two placement clauses.</p>
+    <code>insert_section</code> entry to its three keys.</p>
+    <p>The entry's placement clause &mdash; that the section lands before the first structured-state
+    region and after any <code>data-reckon='section'</code> records &mdash; was authored with the
+    entry but dropped when the schema-response budget required shortening it; see the resolution
+    below. The rule itself lives in the <code>insert_section</code> handler and the plan's &sect;8
+    prose.</p>
 
     <figure>
       <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/vocabulary-coverage.svg"
@@ -625,9 +629,11 @@
       <tbody>
         <tr><td>Op coverage</td><td>the ten <code>_OP_DISPATCH</code> keys are all present in <code>_OP_VOCAB</code>; the only prior gap was <code>insert_section</code></td></tr>
         <tr><td>View coverage</td><td>all seven <code>VIEW_NAMES</code> appear quoted in the <code>read_plan</code> docstring; five were missing before</td></tr>
-        <tr><td>insert_section entry</td><td>names <code>id</code>, <code>title</code>, <code>body</code>; states placement before the first structured-state region and after any <code>data-reckon='section'</code> records</td></tr>
+        <tr><td>insert_section entry</td><td>names the op and its <code>id</code>, <code>title</code>, <code>body</code> keys</td></tr>
         <tr><td>Focused test</td><td><strong>3 passed</strong>, exit 0</td></tr>
-        <tr><td>Ruff delta for <code>reckon/mcp.py</code></td><td>18 findings at base; 18 at head; 0 added</td></tr>
+        <tr><td>Named suites (views, vocabulary, roadmap)</td><td><strong>55 passed</strong>, exit 0</td></tr>
+        <tr><td>Schema response bytes</td><td>head <strong>24,553</strong> of 24,576; base <strong>24,563</strong>; below base with 23 bytes of headroom</td></tr>
+        <tr><td>Ruff delta for <code>reckon/mcp.py</code></td><td>no more findings at head than at base; 0 added</td></tr>
         <tr><td>New test lint and format</td><td>0 findings; formatted, then reformatted once</td></tr>
       </tbody>
     </table>
@@ -637,22 +643,24 @@
     <code>_OP_VOCAB</code> at the delivered head and the focused file rerun. It was
     <strong>2 failed, 1 passed</strong>, exit 1: <code>test_op_vocab_names_every_dispatchable_op</code>
     failed on <code>_OP_VOCAB omits dispatchable ops ['insert_section']</code> and
-    <code>test_insert_section_entry_names_its_keys_and_its_placement</code> failed on the absent key.
-    The first line of <code>negative-control.log</code> repeats the declared mutation verbatim. The
-    entry was restored and the three-test gate returned to green before the commit.</p>
+    <code>test_insert_section_entry_names_its_keys</code> failed with
+    <code>KeyError: 'insert_section'</code>. The first line of <code>negative-control.log</code>
+    repeats the declared mutation verbatim and the second names the reviewed head. The entry was
+    restored and the three-test gate returned to green before the commit.</p>
 
-    <h3>Cross-node conflict, reported not repaired</h3>
+    <h3>Schema-response budget: conflict resolved</h3>
     <p>The <code>view="schema"</code> response inlines <code>op_vocab</code>, and
     <code>tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers</code> asserts that
-    response is at most 24 KiB (<code>compact_size(schema) &lt;= 24 * 1024</code>). Measured in-tree,
-    the base payload is <strong>24,512 bytes</strong> — <strong>64 bytes</strong> of headroom — and
-    the same payload with the new entry is <strong>24,692</strong>, over by <strong>116</strong> for a
-    <strong>158-character</strong> entry. The smallest entry that still names the op's three keys
-    serialises to roughly 75 bytes, so no entry satisfying &sect;8 fits the existing budget. That
-    test file is outside this node's declared write scope, so the failure is recorded under
-    <code>follow_ons</code> rather than repaired. A coordinator fix is one of: raise the literal in
-    <code>tests/test_mcp_views.py:735</code>, or stop inlining <code>op_vocab</code> in the compact
-    schema view. Evidence: <code>budget-conflict.log</code>.</p>
+    response is at most 24 KiB (<code>compact_size(schema) &lt;= 24 * 1024</code>). The long
+    <code>insert_section</code> entry (<strong>158 characters</strong>) serialised the payload to
+    <strong>24,621 of 24,576 bytes</strong> against a base of <em>24,563</em>, over budget. Commit
+    <code>3b3a048e</code> resolves it inside the node's scope: the entry is shortened to name the op
+    and its keys, "positional" is dropped from the docstring's section-argument wording since MCP
+    passes arguments by name, and seven verbose <code>op_vocab</code> entries are tightened by
+    wording alone with no op or named field lost. The payload now measures <strong>24,553</strong>,
+    below base with <strong>23 bytes</strong> of headroom, and <code>test_mcp_views.py</code> passes
+    unchanged. The cost is the entry's placement clause, which the budget cannot hold; the rule
+    remains in the handler and the plan prose. Evidence: <code>review-gate.log</code>.</p>
 
     <h3>Retained qualification</h3>
     <p>This node advertises existing capability; it changes no op or view behaviour. The

@@ -334,20 +334,25 @@
       <code>VIEW_NAMES</code> is <code>summary</code>, <code>detail</code>, <code>history</code>,
       <code>version</code>, <code>raw</code>, <code>schema</code> and <code>section</code>, while the
       docstring named <code>summary</code> and <code>raw</code> alone. The new vocabulary entry names
-      the op's <code>id</code>, <code>title</code> and <code>body</code> keys and its placement before
-      the first structured-state region and after any <code>data-reckon="section"</code> records.</p>
+      the op's <code>id</code>, <code>title</code> and <code>body</code> keys. Its placement clause
+      (before the first structured-state region, after any <code>data-reckon="section"</code>
+      records) was dropped to hold the schema response within budget &mdash; see below.</p>
       <p>The test asserts every <code>_OP_DISPATCH</code> key has a <code>_OP_VOCAB</code> entry and
       every <code>VIEW_NAMES</code> view appears quoted in the docstring. Removing the
       <code>insert_section</code> entry fails it on both the coverage and the key assertions
       (<strong>2 failed, 1 passed</strong>); the unmutated gate is <strong>3 passed</strong>. Ruff
-      reports 18 findings in <code>reckon/mcp.py</code> at base and head, none added.</p>
-      <p><strong>One caveat for the coordinator.</strong> The <code>view="schema"</code> response
-      inlines <code>op_vocab</code>, and
+      reports no more findings in <code>reckon/mcp.py</code> at head than at base.</p>
+      <p><strong>The schema-response budget conflict, resolved.</strong> The <code>view="schema"</code>
+      response inlines <code>op_vocab</code>, and
       <code>tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers</code> asserts that
-      response at or below 24 KiB. At base it measures <strong>24,512 of 24,576 bytes</strong>, so any
-      satisfiable <code>insert_section</code> entry (the smallest useful one serialises to about 75
-      bytes) exceeds the budget. That file is outside this node's write scope, so the failure is
-      recorded rather than repaired. Evidence:
+      response at or below 24 KiB. The long <code>insert_section</code> entry (158 chars, serialising
+      the payload to 24,700 of 24,576 bytes) pushed it over. Commit <code>3b3a048e</code> shortens
+      the entry to name only the op and its <code>id</code>/<code>title</code> keys, drops
+      &ldquo;positional&rdquo; from the docstring's section-argument wording (MCP passes arguments by
+      name), and tightens seven verbose <code>op_vocab</code> entries by wording alone &mdash; no op
+      or named field lost. The schema response now measures <strong>24,553 of 24,576 bytes</strong>
+      against a base of <strong>24,563</strong>, so it sits below base with 23 bytes of headroom, and
+      all three named suites pass (<strong>55 passed</strong>). Evidence:
       <a href="/reckon/evidence/archive/the-mcp-answers-within-its-ceiling-landed#s8-op-vocabulary-names-every-op">&sect;8 landed record</a>.</p>
     </div>
 
