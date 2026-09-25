@@ -840,14 +840,17 @@ exit: 0</pre>
     scope; review found it fleet-breaking and the scope was extended to close it.</p>
 
     <p><strong>The measurement, before and after.</strong> With <code>RECKON_RUN_ID</code>
-    exported in the invoking shell, as it is in every worker's shell, over the eight
-    declared files at the feature commit <code>22ae76dc</code>: <code>72 failed / 119
-    passed</code> &mdash; 66 in <code>tests/test_edit_plan.py</code> alone, plus 5 in
+    exported in the invoking shell, as it is in every worker's shell, over the seven
+    declared files (this node's test file and six sibling plan-write and mcp modules) at
+    the feature commit <code>22ae76dc</code>: <code>72 failed / 107 passed</code> &mdash;
+    66 in <code>tests/test_edit_plan.py</code> alone, plus 5 in
     <code>tests/test_mcp_store.py</code> and 1 in <code>tests/test_mcp_tools.py</code>.
     That one file on its own reads <code>66 failed / 13 passed</code>. Every failure is
     a plan-write test resolving a run that is not the test's. With the isolation fixture
-    in place at <code>4dce31a2</code>: <code>196 passed / 0 failed</code> over the nine
-    files, the same variable still exported. The fixture is autouse in
+    in place, at the worktree head: <code>179 passed / 0 failed</code> over the same seven
+    files and <code>196 passed / 0 failed</code> over nine &mdash; the seven plus the two
+    files that reference the exported variables &mdash; with the same variable still
+    exported. The fixture is autouse in
     <code>tests/conftest.py</code> and removes <code>RECKON_RUN_ID</code>,
     <code>RECKON_MANIFEST</code> and <code>RECKON_ATTEMPT_STARTED_AT</code> &mdash; the
     three a dispatch exports, read from <code>reckon/crew/dispatch.py</code> rather than
@@ -857,13 +860,26 @@ exit: 0</pre>
     (<code>docs/figures/a-worker-cannot-write-your-home/gate-ambient-base.txt</code>,
     <code>gate-ambient-head.txt</code>,
     <code>edit-plan-ambient-before.txt</code>,
-    <code>edit-plan-ambient-after.txt</code>).</p>
+    <code>edit-plan-ambient-after.txt</code>,
+    <code>gate-head-with-ambient-run-id.txt</code>,
+    <code>gate-ambient-base-nine.txt</code>).</p>
+
+    <p><strong>Every arm's log names the tree it measured, and one was corrected for
+    not doing so.</strong> Each log carries its revision, its tree, its selection and the
+    <code>module.__file__</code> it imported, so a figure can be checked rather than
+    taken on trust. The nine-file head arm's log named <code>96728b7d</code>, a commit
+    that does not carry the isolation fixture and therefore cannot produce a green arm
+    under an exported <code>RECKON_RUN_ID</code>; the arm was re-run and the log now
+    names the head it actually measured. The earlier selection count of eight was
+    likewise wrong &mdash; the selection is seven files &mdash; and the figures drawn
+    from it are restated above.</p>
 
     <p><strong>The base arm for this repair is the feature commit, not its
     parent.</strong> Run against <code>dc0c6f34</code> the ambient variable is harmless,
-    because the refusal does not exist there: <code>191 passed</code>. The sensitivity
-    was introduced by this change, so the arm that shows it must carry the change and
-    lack only the fixture, or the comparison measures nothing.</p>
+    because the refusal does not exist there: <code>2 failed / 176 passed</code> over
+    that selection &mdash; the same two new-file failures and not one refusal. The
+    sensitivity was introduced by this change, so the arm that shows it must carry the
+    change and lack only the fixture, or the comparison measures nothing.</p>
 
     <p><strong>Coverage gap closed.</strong> The branch that refuses a run id naming no
     readable pointer had no test of its own. It now has one:
