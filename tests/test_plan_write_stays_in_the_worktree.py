@@ -145,6 +145,27 @@ def test_write_to_another_projects_plan_is_refused(run_scoped):
     assert _sha(fixture["other_plan"]) == before
 
 
+def test_a_run_with_no_readable_pointer_is_refused(run_scoped, monkeypatch):
+    """An unknown run id leaves no worktree to resolve, so the write stops."""
+    fixture = run_scoped
+    monkeypatch.setenv("RECKON_RUN_ID", "r-20260101T000000000000-no-pointer")
+    before_main = _sha(fixture["main_plan"])
+    before_worktree = _sha(fixture["worktree_plan"])
+
+    result = _edit(
+        project=PROJECT,
+        title="write with no pointer",
+        expected_version=_version(fixture["main"], PROJECT, SLUG),
+    )
+
+    assert result["ok"] is False, result
+    assert result["error"] == "run_scoped_write"
+    assert "r-20260101T000000000000-no-pointer" in result["message"]
+    assert "no recorded worktree" in result["message"]
+    assert _sha(fixture["main_plan"]) == before_main
+    assert _sha(fixture["worktree_plan"]) == before_worktree
+
+
 def test_coordinator_write_without_a_run_is_unchanged(run_scoped, monkeypatch):
     fixture = run_scoped
     monkeypatch.delenv("RECKON_RUN_ID", raising=False)
