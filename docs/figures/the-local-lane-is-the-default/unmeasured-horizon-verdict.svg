@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 340" width="840" height="340" role="img" aria-label="The horizon verdict: an absent or unreadable competence_horizon_hours becomes None and is allowed with reason no-measured-horizon; a finite figure is compared against the node estimate, allowing it when the estimate is within the horizon and refusing it otherwise, naming both figures.">
+  <style>
+    .box { fill: #f7f7f5; stroke: #555; stroke-width: 1.5; }
+    .decision { fill: #fdf6e3; stroke: #b58900; stroke-width: 1.5; }
+    .allow { fill: #eaf6ea; stroke: #2e7d32; stroke-width: 1.5; }
+    .refuse { fill: #fdecea; stroke: #c62828; stroke-width: 1.5; }
+    .lbl { font: 13px system-ui, sans-serif; fill: #222; }
+    .small { font: 12px system-ui, sans-serif; fill: #333; }
+    .edge { stroke: #555; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    .edge-red { stroke: #c62828; }
+    .edge-green { stroke: #2e7d32; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#555"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="30" font="600 14px system-ui, sans-serif" fill="#111">competence_horizon_hours, as the target configuration publishes it</text>
+
+  <rect class="box" x="20" y="60" width="230" height="60" rx="8"/>
+  <text class="lbl" x="135" y="85" text-anchor="middle">horizon absent or unreadable</text>
+  <text class="small" x="135" y="104" text-anchor="middle">_measured_horizon_hours -&gt; None</text>
+
+  <rect class="box" x="20" y="170" width="230" height="60" rx="8"/>
+  <text class="lbl" x="135" y="195" text-anchor="middle">horizon is a finite figure</text>
+  <text class="small" x="135" y="214" text-anchor="middle">a measured 0.0 counts here</text>
+
+  <rect class="allow" x="360" y="45" width="210" height="90" rx="8"/>
+  <text class="lbl" x="465" y="75" text-anchor="middle">allowed</text>
+  <text class="small" x="465" y="96" text-anchor="middle">reason</text>
+  <text class="small" x="465" y="114" text-anchor="middle">no-measured-horizon</text>
+
+  <rect class="decision" x="360" y="170" width="210" height="60" rx="8"/>
+  <text class="lbl" x="465" y="195" text-anchor="middle">estimate &lt;= horizon ?</text>
+  <text class="small" x="465" y="214" text-anchor="middle">12.0 vs 4.0</text>
+
+  <rect class="allow" x="660" y="170" width="160" height="60" rx="8"/>
+  <text class="lbl" x="740" y="195" text-anchor="middle">allowed</text>
+  <text class="small" x="740" y="214" text-anchor="middle">within horizon</text>
+
+  <rect class="refuse" x="660" y="255" width="160" height="60" rx="8"/>
+  <text class="lbl" x="740" y="280" text-anchor="middle">refused</text>
+  <text class="small" x="740" y="299" text-anchor="middle">names both figures</text>
+
+  <path class="edge edge-green" d="M 250 90 L 355 90"/>
+  <path class="edge" d="M 250 200 L 355 200"/>
+  <path class="edge edge-green" d="M 570 190 L 655 190"/>
+  <path class="edge edge-red" d="M 570 215 L 640 215 L 640 285 L 655 285"/>
+  <text class="small" x="600" y="205" fill="#2e7d32">yes</text>
+  <text class="small" x="595" y="240" fill="#c62828">no</text>
+</svg>

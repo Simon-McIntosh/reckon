@@ -1086,6 +1086,43 @@ E  reckon.crew.ScopeConflict: write scope 'pkg/hot.py' conflicts with live claim
     <code>negative-control.log</code>. Timer durability and the refresh figure remain separate
     follow-on work.</p>
   </section>
+<section id="an-unmeasured-horizon-never-refuses">
+    <h2>An unmeasured competence horizon never refuses a node <a class="anchor" href="#an-unmeasured-horizon-never-refuses">#</a></h2>
+    <figure>
+      <img src="/reckon/figures/the-local-lane-is-the-default/unmeasured-horizon-verdict.svg" alt="Two inputs to the horizon verdict: an absent or unreadable horizon becomes None and is allowed with reason no-measured-horizon, while a finite figure is compared against the node estimate and either allowed within the horizon or refused naming both figures. A measured zero is a finite figure, so it reaches the comparison.">
+      <figcaption>An unmeasured horizon never reaches the comparison; a measured one, a
+      measured zero included, always does.</figcaption>
+    </figure>
+    <p><strong>The defect.</strong> The competence verdict compared a node's neutral estimate
+    against a configuration's measured horizon. A horizon the configuration had never produced was
+    coerced to <code>0.0</code> &mdash; indistinguishable at the comparator from a horizon
+    <em>measured</em> as zero. A redispatch of a pre-fence run carrying a 12.0 worker-hour estimate
+    was recorded refusing <code>12.0 worker-hours exceeds the 0.0 worker-hour competence horizon</code>
+    (<code>reckon/crew/routing.py</code>, the coercion feeding <code>_competence_verdict</code>).</p>
+    <p><strong>What landed.</strong> <code>_measured_horizon_hours</code> returns <code>None</code>
+    when no horizon was measured (absent or unreadable) and the finite figure otherwise, so the
+    verdict's guard <code>horizon_hours is None</code> returns the allowed
+    <code>no-measured-horizon</code> result and never reaches the comparison. A measured horizon,
+    a measured zero included, still bounds the estimate and refuses with both figures named.
+    <code>crew redispatch --estimated-hours</code> replaces the estimate the run carried; the value
+    is recorded on the run's live pointer, its node block and the attempt entry.</p>
+    <table>
+      <thead><tr><th>Evidence</th><th>Observed</th></tr></thead>
+      <tbody>
+        <tr><td>Node test</td><td><code>tests/test_unmeasured_horizon_never_refuses.py</code>: 8 passed &mdash; unmeasured 12.0 allowed with reason <code>no-measured-horizon</code>; unreadable horizon allowed; measured 4.0 refused naming <code>12.0 worker-hours</code> and <code>4.0 worker-hour competence horizon</code>; measured zero refused; the plan-effort fallback supplies the estimate; the two redispatch estimate cases and the CLI passthrough</td></tr>
+        <tr><td>Gate (after)</td><td>the node file plus <code>tests/test_crew_dispatch_guard.py tests/test_crew_routing_visibility.py tests/test_every_attempt_is_supervised.py</code>: 29 passed, 0 failed</td></tr>
+        <tr><td>Gate (base)</td><td>the three named files at base <code>48916914</code>: 21 passed, 0 failed &mdash; added failures: 0</td></tr>
+        <tr><td>Negative control</td><td><code>negative-control.log</code>: restoring the coercion (missing horizon &rarr; <code>0.0</code>) makes the unmeasured case raise <code>CompetenceLimit</code> with the recorded text <code>node estimate 12.0 worker-hours exceeds the 0.0 worker-hour competence horizon after speed adjustment</code>; whole-file under the mutation: 5 failed, 3 passed</td></tr>
+        <tr><td>Parent probe</td><td><code>probe-parent.log</code>: the parent revision's node file gives 1 failed, 6 passed &mdash; the unmeasured case passed (allowed) and the measured-zero case failed (DID NOT RAISE), so the parent conflated the two states in the opposite direction and its <code>&lt;= 0</code> guard swallowed the coercion</td></tr>
+      </tbody>
+    </table>
+    <p>The test suite's package-level change is commit <code>b6db1c95</code>; the production change
+    it pins was checkpointed at <code>48916914</code>. Logs are under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T204657479280-unmeasured-horizon-never-refuses-finish/logs/</code>:
+    <code>gate.log</code>, <code>gate-base.log</code>, <code>gate-after.log</code>,
+    <code>negative-control.log</code>, <code>mutation-whole-file.log</code> and
+    <code>probe-parent.log</code>.</p>
+  </section>
 </main>
 </body>
 </html>

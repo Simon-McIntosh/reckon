@@ -238,6 +238,38 @@
     <p><strong>Done when</strong> replaying the 2026-09-24 codex readings produces a pace warning
     before the hold, and the follower line is emitted on the change of state.</p>
 
+    <div data-reckon="landing" data-node="unmeasured-horizon-never-refuses-finish">
+      <h3>Landed &mdash; an unmeasured competence horizon never refuses a node</h3>
+      <p><strong>The defect.</strong> <code>_competence_verdict</code> coerced an absent or
+      unparseable <code>competence_horizon_hours</code> to <code>0.0</code> &mdash; the same number
+      a measured zero produces &mdash; so the comparator could not tell "this configuration was
+      never measured" from "this configuration was measured and came out zero". A redispatch of a
+      pre-fence run carrying a 12.0 worker-hour estimate was recorded refusing
+      <code>12.0 worker-hours exceeds the 0.0 worker-hour competence horizon</code>.</p>
+      <p><strong>What landed.</strong> <code>_measured_horizon_hours</code> keeps an unmeasured horizon as
+      <code>None</code>, and the verdict returns the allowed
+      <code>no-measured-horizon</code> reason rather than reaching the comparator, so a
+      configuration with no measured horizon never refuses. A horizon that <em>was</em> measured
+      still bounds the node, and the refusal names both figures.</p>
+      <p><strong>Honest scope of the reproduction.</strong> At the checkpoint's parent the guard was
+      <code>horizon_hours &lt;= 0</code>, so it swallowed the <code>0.0</code> coercion for the
+      unmeasured case and the unmeasured refusal is not reachable there. The refusal text is
+      reproduced by the declared negative control, which restores only the coercion while the guard
+      no longer treats <code>0.0</code> as unmeasured &mdash; see the evidence anchor. The measured
+      difference the parent does show is the converse conflation: a horizon measured as zero was
+      treated as unmeasured and allowed an oversize node, which the checkpoint's own measured-zero
+      test fails against the parent.</p>
+      <p><code>crew redispatch</code> gains <code>--estimated-hours</code>, which replaces the
+      estimate the run carried and is written back to the run record and to the attempt, so an
+      orchestrator can correct an estimate no plan edit can express.</p>
+      <p><strong>Done when</strong> the horizon suite passes, the mutation refuses, and the gate adds
+      no failures. Met: <code>tests/test_unmeasured_horizon_never_refuses.py</code> 8 passed; the
+      declared negative control fails the unmeasured case with the recorded message; the four-file
+      gate is 29 passed against a 21-passed base, zero added.</p>
+    </div>
+
+    <h2 id="s7">&sect;7 &mdash; One follower for the whole session</h2>
+
     <h2 id="s7">&sect;7 &mdash; One follower for the whole session</h2>
     <p>The host kills every Monitor at 30 minutes, so a follower armed that way is dropped and
     re-armed all session. It is the host's limit, not reckon's, but reckon can stop depending on
