@@ -59,6 +59,7 @@ mutators, serve.py, single-checkout agents) are completely unaffected.
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 import json
 import os
 import re
@@ -504,44 +505,35 @@ def _add_north_star_diagnostic(
 #: comparable at all.
 _STATE_STAMPS = frozenset(["version", "modified"])
 
-# State-mode operations are schema-validated before they reach ``write_plan``.
-# An authored section insertion is not plan state, so it travels through that
-# boundary as a server-owned diagnostic and is consumed before HTML rendering.
-# This keeps the public operation atomic with the versioned state write without
-# teaching the state schema to persist authored prose.
-_INSERT_SECTION_REQUEST = "insert_section_request"
+# Authored HTML insertions are write effects, not plan state. ``apply_ops`` and
+# ``write_plan`` run in the same request context, while ContextVar keeps
+# concurrent requests isolated. Holding the working dict by identity also means
+# an effect can only be consumed by the exact validated object that produced it.
+_SECTION_INSERTIONS: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None] = (
+    ContextVar("reckon_section_insertions", default=None)
+)
 
 
-def _extract_section_insertions(
-    data: dict[str, Any],
-) -> tuple[dict[str, Any], list[dict[str, str]]]:
-    """Remove transient authored-section requests from validated plan state."""
-    cleaned = dict(data)
-    diagnostics = cleaned.get("validation_diagnostics")
-    if not isinstance(diagnostics, list):
-        return cleaned, []
+def _begin_write_effects(working: dict[str, Any]) -> None:
+    """Start an empty out-of-band effect collection for one op batch."""
+    _SECTION_INSERTIONS.set((working, []))
 
-    requests: list[dict[str, str]] = []
-    retained = []
-    for diagnostic in diagnostics:
-        if (
-            isinstance(diagnostic, dict)
-            and diagnostic.get("code") == _INSERT_SECTION_REQUEST
-        ):
-            requests.append(
-                {
-                    "id": str(diagnostic.get("section_id", "")),
-                    "title": str(diagnostic.get("title", "")),
-                    "body": str(diagnostic.get("body", "")),
-                }
-            )
-        else:
-            retained.append(diagnostic)
-    if retained:
-        cleaned["validation_diagnostics"] = retained
-    else:
-        cleaned.pop("validation_diagnostics", None)
-    return cleaned, requests
+
+def _queue_section_insertion(working: dict[str, Any], request: dict[str, str]) -> None:
+    """Attach one insertion to the current batch without changing plan state."""
+    pending = _SECTION_INSERTIONS.get()
+    if pending is None or pending[0] is not working:
+        raise OpError("insert_section has no active write-effect collection")
+    pending[1].append(request)
+
+
+def _consume_section_insertions(data: dict[str, Any]) -> list[dict[str, str]]:
+    """Return effects produced by this exact state object, then clear them."""
+    pending = _SECTION_INSERTIONS.get()
+    if pending is None or pending[0] is not data:
+        return []
+    _SECTION_INSERTIONS.set(None)
+    return list(pending[1])
 
 
 def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
@@ -743,7 +735,8 @@ def _write_state_locked(
             raise VersionConflict(expected_version, cur_version, cur_state)
         data = {**dict(data), "comments": merged_comments}
 
-    new_data, section_insertions = _extract_section_insertions(data)
+    section_insertions = _consume_section_insertions(data)
+    new_data = dict(data)
     state_type = canonical_type(new_data.get("type"))
     if selected_resource_type and state_type != selected_resource_type:
         raise ValueError(
@@ -2003,16 +1996,13 @@ def _apply_insert_section(
         raise OpError("insert_section op requires a non-empty string 'title'")
     if not isinstance(body, str):
         raise OpError("insert_section op requires a string 'body'")
-    diagnostics = working.setdefault("validation_diagnostics", [])
-    if not isinstance(diagnostics, list):
-        raise OpError("plan validation diagnostics are not a list")
-    diagnostics.append(
+    _queue_section_insertion(
+        working,
         {
-            "code": _INSERT_SECTION_REQUEST,
-            "section_id": section_id,
+            "id": section_id,
             "title": title.strip(),
             "body": body,
-        }
+        },
     )
 
 
@@ -2231,6 +2221,7 @@ def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
 
     previous_decisions = deepcopy(working.get("decisions") or {})
     warnings: list[str] = []
+    _begin_write_effects(working)
     for n, op in enumerate(ops):
         if not isinstance(op, dict):
             raise OpError(f"op #{n} is not an object")

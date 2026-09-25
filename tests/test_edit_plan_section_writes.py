@@ -150,13 +150,88 @@ def test_insert_section_uses_the_structured_boundary_and_passes_audit(plan) -> N
 
     text = path.read_text(encoding="utf-8")
     state = _plan_html.read_state(text)
+    last_record_start = text.rindex('<section data-reckon="section"')
+    last_record_end = text.index("</section>", last_record_start) + len("</section>")
+    inserted_heading = text.index('<h2 id="s3">')
+    first_state_region = text.index('<section data-reckon="gates"')
     assert result["ok"] is True, result
-    assert text.index('id="unrelated-prose"') < text.index('<h2 id="s3">')
-    assert text.index('<h2 id="s3">') < text.index('<section data-reckon="gates"')
+    assert text.index('id="unrelated-prose"') < inserted_heading
+    assert last_record_end < inserted_heading < first_state_region
     assert state["section_declarations"] == DECLARATIONS
     assert state["sections"] == SECTION_RECORDS
     audit = CliRunner().invoke(main, ["audit-doc", str(path)])
     assert audit.exit_code == 0, audit.output
+
+
+@pytest.mark.parametrize(
+    ("section_id", "body", "detail"),
+    [
+        ("s2", "<p>Duplicate.</p>", "section id 's2' already exists"),
+        (
+            "s3",
+            "<h2>Nested heading</h2>",
+            "insert_section body must not contain another h2",
+        ),
+        (
+            "s3",
+            '<section data-reckon="comments"></section>',
+            "insert_section body must not contain structured plan state",
+        ),
+        (
+            "s3",
+            '<meta name="plan-status" content="done">',
+            "insert_section body must not contain plan metadata",
+        ),
+    ],
+    ids=["duplicate-id", "nested-heading", "structured-state", "plan-metadata"],
+)
+def test_insert_section_refuses_unsafe_authored_fragments(
+    plan, section_id: str, body: str, detail: str
+) -> None:
+    checkout, path = plan
+    before = path.read_text(encoding="utf-8")
+
+    result = _edit(
+        checkout,
+        path,
+        {
+            "op": "insert_section",
+            "id": section_id,
+            "title": "Refused section",
+            "body": body,
+        },
+    )
+
+    assert result == {"ok": False, "error": "op_error", "detail": detail}
+    assert path.read_text(encoding="utf-8") == before
+
+
+def test_validation_diagnostic_cannot_execute_an_insert_request(plan) -> None:
+    checkout, path = plan
+    before = path.read_text(encoding="utf-8")
+    state = _plan_html.read_state(before)
+    state["validation_diagnostics"] = [
+        {
+            "code": "insert_section_request",
+            "section_id": "s3",
+            "title": "Injected section",
+            "body": "<p>This must not be authored.</p>",
+        }
+    ]
+
+    version = store_module.write_plan(
+        "sample",
+        "section-writes",
+        state,
+        expected_version=state["version"],
+        root=checkout,
+        artifact_type="plan",
+    )
+
+    after = path.read_text(encoding="utf-8")
+    assert version == state["version"]
+    assert after == before
+    assert '<h2 id="s3">' not in after
 
 
 def test_authored_text_edit_still_refuses_a_structured_overlap(plan) -> None:
