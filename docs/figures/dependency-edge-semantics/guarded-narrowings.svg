@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" role="img" aria-labelledby="title desc">
+<title id="title">One held decision, two consumers, two guards</title>
+<desc id="desc">A plan whose only decision is held by a pending decision-lockable gate yields no open decision row and one gated row, which stays reported in decision_blockers. The roadmap row's effective status and the payload's decision_readiness open count both consume only the open rows, so the plan reads active and the open count is zero. Reverting either site to the reported decision_blockers list makes the matching new case fail: effective status becomes blocked, and the open count becomes one.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#245878"/></marker></defs>
+<g font-family="sans-serif" fill="#172d3d">
+<text x="25" y="30" font-size="18" font-weight="bold">One held decision, two consumers, two guards</text>
+
+<rect x="25" y="56" width="235" height="196" rx="4" fill="none" stroke="#6b7a86" stroke-dasharray="5 4"/>
+<text x="40" y="80" font-size="15" font-weight="bold">Plan with one decision</text>
+<text x="40" y="102" font-size="13">accept-outcome, held by a</text>
+<text x="40" y="120" font-size="13">pending decision-lockable gate</text>
+<rect x="40" y="134" width="205" height="28" rx="3" fill="#eef4f8" stroke="#245878"/>
+<text x="52" y="153" font-size="13">open rows: none</text>
+<rect x="40" y="170" width="205" height="28" rx="3" fill="#f9f2df" stroke="#9b7825"/>
+<text x="52" y="189" font-size="13">gated row: accept-outcome</text>
+<text x="40" y="224" font-size="12" fill="#5a6b78">The held row stays reported in</text>
+<text x="40" y="240" font-size="12" fill="#5a6b78">decision_blockers on both surfaces.</text>
+
+<path d="M262 148 C 296 148, 298 105, 328 105" fill="none" stroke="#245878" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M262 184 C 296 184, 298 213, 328 213" fill="none" stroke="#245878" stroke-width="2" marker-end="url(#arrow)"/>
+
+<rect x="330" y="60" width="545" height="90" rx="4" fill="#eef4f8" stroke="#245878"/>
+<text x="346" y="84" font-size="15" font-weight="bold">roadmap row: effective_status</text>
+<text x="346" y="106" font-size="13">reads only the open rows, so the plan reads active</text>
+<text x="346" y="132" font-size="13" fill="#a03030">revert to decision_blockers &#8594; blocked; the first new case fails</text>
+
+<rect x="330" y="168" width="545" height="90" rx="4" fill="#eef4f8" stroke="#245878"/>
+<text x="346" y="192" font-size="15" font-weight="bold">roadmap payload: decision_readiness.open</text>
+<text x="346" y="214" font-size="13">counts only the open rows, so the tally reads zero</text>
+<text x="346" y="240" font-size="13" fill="#a03030">revert to decision_blockers_report &#8594; one; the second new case fails</text>
+</g>
+</svg>

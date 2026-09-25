@@ -328,6 +328,63 @@
       with the coordinator.</p>
     </section>
 
+    <section id="closure-split-narrowings-guarded">
+      <h2>The two narrowings the split landing left unguarded</h2>
+      <p><strong>Gap, from the independent review.</strong> The split landing narrowed two
+      consumers to the strictly open decisions and neither was guarded: the roadmap row's
+      <code>effective_status</code> blocker list (the
+      <code>effective_status(...)</code> call in the row construction in
+      <code>reckon/roadmap.py</code>) and the payload's
+      <code>decision_readiness.open</code> tally (<code>"open":
+      len(open_decisions_report)</code>). The review measured that restoring either site to
+      the reported blocker list left every text-only test that reads readiness or
+      <code>effective_status</code> green, and the existing three-plan fixture cannot tell
+      the two apart: its scope-control plan carries an open decision of its own, so the
+      payload's open count is non-zero under either spelling, and the row's own status was
+      asserted only on the served and MCP surfaces.</p>
+      <p><strong>Guards added</strong> in <code>tests/test_transition_gates_read_alike.py</code>:
+      a second project fixture holding a single plan whose only decision is held by a
+      pending decision-lockable gate, and two cases over it. The first asserts the roadmap
+      row's own <code>effective_status</code> stays <code>active</code> while the held row
+      stays reported in its <code>decision_blockers</code>; the second asserts the
+      payload's <code>decision_readiness</code> reports the same held row among the
+      reported <code>decision_blockers</code> with <code>ready: false</code>, and
+      <code>open: 0</code>. No source file changed.</p>
+      <figure>
+        <img src="/reckon/figures/dependency-edge-semantics/guarded-narrowings.svg"
+             alt="A plan whose only decision is held by a pending decision-lockable gate yields no open decision row and one gated row, which stays reported in decision_blockers. The roadmap row's effective status and the payload's decision_readiness open count both read only the open rows, so the plan reads active and the open count is zero; reverting either site to the reported blocker list makes the matching case fail with blocked and with one.">
+        <figcaption>The two consumers and the mutation each new case detects. The held row
+        is reported on both surfaces; only the readiness consumers read the open rows, and
+        each is pinned by a case that fails when its site is reverted.</figcaption>
+      </figure>
+      <p><strong>Declared negative control</strong> — <em>"restore decision_blockers in the
+      effective_status computation and decision_blockers_report in the decision tally in
+      reckon/roadmap.py, one at a time; each new case must fail under its own mutation"</em>
+      — executed in a scratch export of the head (<code>git archive</code> to
+      <code>/tmp/nc-closure-split-guards</code>, whose log header prints
+      <code>module.__file__</code> and the resolved cwd to show the scratch tree served
+      <code>reckon</code>). Unmutated: <strong>5 passed</strong>. Arm 1
+      (<code>decision_blockers</code> in the <code>effective_status</code> list):
+      <strong>1 failed, 4 passed</strong>, the failure at
+      <code>assert row["effective_status"] == "active"</code> reading
+      <code>'blocked' == 'active'</code>. Arm 2
+      (<code>decision_blockers_report</code> in the decision tally): <strong>1 failed, 4
+      passed</strong>, at <code>assert report["decision_readiness"]["open"] == 0</code>
+      reading <code>1 == 0</code>. Each arm tripped exactly its own case, the other new
+      case stayed green, and the mutated file was restored from the archive and compared
+      identical to the head before the next arm, so the arms did not stack.</p>
+      <p><strong>Gate.</strong> <code>tests/test_transition_gates_read_alike.py</code> and
+      <code>tests/test_closure_gates.py</code> at head: <strong>38 passed</strong>. This
+      gate measures this node's change only; verification of the merged result is the
+      separately dispatched test node's measure.</p>
+      <p>Durable logs live under the assigned run record
+      <code>r-20260925T033137525290-closure-split-narrowings-are-guarded</code>:
+      <code>negative-control.log</code> (the declared string, the unmutated arm, both
+      mutation arms and the restore check) and <code>gate-head.log</code>. Commit in the
+      node: <code>4484c60b</code> (the two guards). Section closure and the driving
+      followup remain with the coordinator.</p>
+    </section>
+
   </main>
 </body>
 </html>
