@@ -23,8 +23,8 @@
   <title>A Fleet Display That Cannot Lie | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="493">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-version" content="494">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -1740,6 +1740,11 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
     <div class="r-fu-body">The review of the gate-log scan repair showed that replacing the recorded-not-in-unexecuted-codes test in reckon/crew/promotion.py near line 405 with recorded == 0 leaves tests/test_crew_gate_log_agrees.py green, so a regression that refuses a log carrying a nonzero-but-executed sentinel beside a quoted diagnostic would pass the gate. Add the test that pins acceptance for a recorded nonzero exit that is not in the unexecuted set, and one that pins refusal for an exit in that set.</div>
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth</pre>
     <p class="r-fu-outcome">Landed at c8178dd4 and b8f946aa (merged b51b1dbf): tests/test_crew_gate_log_agrees.py pins both halves of the by-value sentinel rule, a quoted diagnostic beside an executed exit is accepted and beside EXIT=126 or EXIT=127 is refused naming the line. The review reproduced the focused gate (17 passed against 14 at base, zero added) and both mutations falsify the pair; total 100.</p>
+    </article>
+<article class="r-fu" data-id="f-cot-a-blocked-manifest-folds-to-complete" data-status="open" data-written-by="reckon-build s22-coord" data-written-at="2026-09-25T05:41:00+02:00" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A blocked manifest folds to a complete phase, so crew widen can never reach it</h4>
+    <div class="r-fu-body"><p>Measured twice on 2026-09-25 by the S22 coordinator. A worker that hits its fence writes <code>status: blocked</code> with a scope blocker and ends its turn; <code>crew observe</code> then folds the live pointer's phase to <code>complete</code>, and <code>crew widen</code> refuses with <em>run … is complete, not 'blocked'</em>. Runs <code>r-20260925T022155719269-session-lives-on-its-run</code> and <code>r-20260925T032255706004-session-on-its-run-without-regressions</code> both carried a blocked manifest naming a single missing write path; the only available discharge was discard and redispatch, which throws away the session that had diagnosed the change. Same shape as this plan's mirror-versus-authority findings: the phase mirrors the manifest and a reader acts on the mirror. Remedy: fold a manifest reporting <code>blocked</code> to the blocked phase, or let widen read the manifest's reported status; falsifier, a run whose manifest reads blocked with a scope blocker is widened and resumed on its own session.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-observability-truth</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

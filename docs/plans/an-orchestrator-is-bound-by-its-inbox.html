@@ -21,8 +21,8 @@
   <title>An Orchestrator Is Bound By Its Inbox | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="40">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-version" content="41">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
 <meta name="plan-impl" content="0.6">
 </head>
@@ -282,6 +282,11 @@
 <article class="r-fu" data-id="f-aobi-wire-the-review-reflex-into-the-watcher" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-build an-orchestrator-is-bound-by-its-inbox §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Call the awaiting-reviews sweep from the watcher tick, not only from recover</h4>
     <div class="r-fu-body">dispatch_awaiting_reviews in reckon/crew/recovery.py has no caller; dispatch_review_for_run is reached only from the body of recover, a command a person types. Call the sweep once per watcher tick in watch_ticker so a run entering scoring has its review in flight without anyone asking, keeping every admission check and the awaiting-lane record exactly as they are, and rate-limit it so one tick cannot dispatch the same review twice. Pin it with a test that ticks the watcher over a fixture holding one scoring run and asserts a review run appears, and a second tick that dispatches nothing more. Waits on the launch-resolution node, which holds recovery.py.</div>
+    <pre class="r-fu-prompt">/reckon-build an-orchestrator-is-bound-by-its-inbox §2</pre>
+    </article>
+<article class="r-fu" data-id="f-obi-reflex-routes-to-an-unlaunchable-lane" data-status="open" data-written-by="reckon-build s22-coord" data-written-at="2026-09-25T05:41:00+02:00" data-recommends-skill="/reckon-build an-orchestrator-is-bound-by-its-inbox §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The review reflex dispatches to the in-harness lane, where nothing launches it</h4>
+    <div class="r-fu-body"><p>Measured four times on 2026-09-24/25 across two sessions. The reflex dispatched reviews to backend <code>native</code> (launch <code>in-harness</code>, pid null) inside a CLI-driven coordinator session, where no harness task is ever attached: S22's <code>r-20260925T002645853047-review-of-row-drops-unread-cells</code> and <code>r-20260925T011624489425-review-of-crew-path-prints-where-reckon-keeps-things</code>, and S23's <code>r-20260924T235831746358</code> and <code>r-20260925T012034109800</code> (reviews of nested-launch-is-refused). Each sat as a live pointer until discarded by hand, after which the reflex re-dispatched on clive and the review ran. A reflex review must never route to a launch kind its session cannot service; falsifier, a reflex dispatch in a session with no attached harness resolves a CLI lane or records why none is available.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-orchestrator-is-bound-by-its-inbox §2</pre>
     </article>
 </section>
