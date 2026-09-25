@@ -1027,6 +1027,65 @@ docs/state/proj/crew.json; commit or discard that roster write before retrying</
       is likewise red at base and at head under the same selection, and belongs to the
       <code>test_ledger</code> node.</p>
     </section>
+
+    <section id="node-surface-test-pins-its-working-directory">
+      <h2>surface-test-pins-its-working-directory &mdash; the child interpreter pinned to the checkout root</h2>
+      <p>The public-surface test reads <code>reckon.crew</code>'s export names in a fresh interpreter, so
+      that a submodule a peer test imported earlier in the same process cannot appear as a surface name.
+      The child was spawned with <code>PYTHONPATH</code> naming this checkout but no <code>cwd</code>, and
+      a <code>python -c</code> child places its own working directory (<code>''</code>) at
+      <code>sys.path[0]</code> &mdash; ahead of every <code>PYTHONPATH</code> entry. A pytest process
+      launched from a directory holding another <code>reckon</code> checkout therefore handed the child
+      that directory, and the child imported the other tree's facade and compared it to this checkout's
+      fixture. Both child launches now pass <code>cwd=PACKAGE_ROOT</code>, the checkout root the test
+      file itself lives in, so the measured tree is a separate property of the checkout under test rather
+      than of where pytest was launched. Commit
+      <code>382d2a8b</code> <em>fix(tests): pin the surface test's child interpreter to the checkout
+      root</em>.</p>
+
+      <p><img src="/reckon/figures/the-suite-is-green-at-head/surface-test-cwd-resolution.png"
+      alt="Two panels of the sys.path search order a python -c child walks. Before the fix the first
+      entry, the child's inherited working directory, holds another checkout's reckon package and wins;
+      after the child's working directory is pinned to the checkout root, the first entry holds the tree
+      under test and the same code measures the right facade."></p>
+
+      <h3>Cause, named with file and line</h3>
+      <p><code>_fresh_surface</code> (<code>tests/test_crew_surface.py</code>, the
+      <code>subprocess.run</code> at the child launch) built <code>env["PYTHONPATH"]</code> from
+      <code>PACKAGE_ROOT</code> and called <code>subprocess.run([sys.executable, "-c", _MEASURE], env=env)</code>
+      with no <code>cwd</code>, so the child inherited the caller's directory. The sibling test
+      <code>test_concern_modules_import_in_fresh_interpreters</code> spawned children the same way and had
+      the same gap.</p>
+
+      <h3>Reproduction of the wrong-tree import</h3>
+      <p>Both trees are pinned extractions, so the measurement reproduces without depending on a peer
+      worktree:</p>
+      <pre>git -C &lt;worktree&gt; archive 2a72458c | tar -x -C /tmp/base-reckon-surface
+git -C &lt;worktree&gt; archive f217e535 | tar -x -C /tmp/other-reckon-surface
+env -C /tmp/other-reckon-surface PYTHONPATH= &lt;worktree&gt;/.venv/bin/python -m pytest -p no:cacheprovider -q \
+    /tmp/base-reckon-surface/tests/test_crew_surface.py</pre>
+      <p>The two revisions differ in exactly one facade name
+      (<code>record_gate_rerun_at_integrated_revision</code>), which is the name the base run reports as
+      an extra item in the right set. The child's own resolution is printed in each log header.</p>
+
+      <h3>Measure</h3>
+      <table>
+        <thead><tr><th>Arm</th><th>pytest launched from</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>base <code>2a72458c</code>, no <code>cwd</code></td><td>other checkout <code>f217e535</code></td>
+            <td>1 failed, 1 passed &mdash; child resolved the other checkout's <code>reckon</code></td></tr>
+          <tr><td>head <code>382d2a8b</code>, <code>cwd=PACKAGE_ROOT</code></td><td>repository root</td>
+            <td>2 passed</td></tr>
+          <tr><td>head <code>382d2a8b</code>, <code>cwd=PACKAGE_ROOT</code></td><td>other checkout <code>f217e535</code></td>
+            <td>2 passed &mdash; child resolved this checkout's <code>reckon</code></td></tr>
+        </tbody>
+      </table>
+      <p>In the base arm the sibling concern-import test still passes, so the wrong-tree import is silent
+      for it and only the snapshot compares a name set. Logs <code>logs/base-arm-other-checkout-red.log</code>,
+      <code>logs/head-arm-from-root.log</code>, <code>logs/head-arm-from-other-checkout.log</code>.
+      Only <code>cwd</code> and a docstring changed in <code>tests/test_crew_surface.py</code>; no test is
+      skipped, xfailed, deleted or weakened. <code>reckon/</code> was not touched.</p>
+    </section>
   </main>
 </body>
 </html>
