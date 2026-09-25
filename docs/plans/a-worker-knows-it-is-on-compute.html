@@ -20,14 +20,14 @@
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Reckon has no host-environment model today; nothing upstream must land first, and the one consumer (worker launch) is sequenced by the trigger in §4 rather than by a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
   <title>A Worker Knows It Is On Compute | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="17">
-<meta name="plan-commits" content="9e695b0c,bf1725d6,2700bda6,a4bbb242,f2810b50,87a3ed30,c0b25024,20822ec8,b0ffdd18">
-<meta name="plan-impl" content="0.6">
+<meta name="plan-version" content="18">
+<meta name="plan-commits" content="9e695b0c,bf1725d6,2700bda6,a4bbb242,f2810b50,87a3ed30,c0b25024,20822ec8,b0ffdd18,a690ab92,f2784a34,7326f7fe,2130295f">
+<meta name="plan-impl" content="0.8">
 </head>
 <body>
   <main class="plan-doc">
@@ -282,6 +282,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260925T012234198908-review-of-nested-launch-is-refused" data-who="reckon-build" data-when="2026-09-25T01:46:46.447Z">
     <div class="r-comment-body"><p>re-review of nested-launch-is-refused at b0ffdd18 scored 95/100 with no findings</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260925-shims-on-path" data-who="reckon-build" data-when="2026-09-25T07:52:00Z">
+    <div class="r-comment-body"><p>Run <code>r-20260925T064115204245-worker-path-carries-the-shims</code> (codex sol5.6) landed, merged at <code>4801760b</code>. This is fleet-release gate 8.</p><p>When the dispatcher is inside the allocation, <code>reckon/host_shims</code> leads the worker's launch PATH. The worker prompt then carries one host line naming the node, the job, whether <code>/tmp</code> is node-local, the no-srun/sbatch/salloc rule, and where durable logs go.</p><p>The coordinator rejected the first head, which wrote the dispatcher's entire environment, credentials included, into the supervisor spec in the run directory. The same session fixed it: the spec and in-harness directive now persist only the overlay plus PATH, and a sentinel test fails on the old head. The gate is 48 passed, and the review scored 95/100 with no findings.</p></div>
 </div>
 </section>
 </main>
