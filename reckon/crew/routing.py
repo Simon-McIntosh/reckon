@@ -1259,6 +1259,17 @@ def _session_member_id(session: str) -> str:
     return f"session-{digest}"
 
 
+def _disposable_member_id(run_id: str) -> str:
+    """Derive the per-run identity an unnamed dispatch carries.
+
+    A dispatch that names no member is disposable, so its identity is minted
+    from the run it belongs to rather than from the dispatching session: two
+    unnamed dispatches of one coordinator are two identities, so neither can
+    hold the other in flight.
+    """
+    return f"disposable-{run_id}"
+
+
 def _register_session_member(
     project: str,
     member_id: str,

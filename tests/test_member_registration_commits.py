@@ -1,18 +1,20 @@
-"""A member created at dispatch reaches the repository as its own commit.
+"""A named member's registration reaches the repository as its own commit.
 
-A dispatch that names no member provisions one under its own session, so the
-run has a roster identity. That registration used to be written and left in the
-working tree, which means the row existed only in the checkout that wrote it —
-invisible to every other checkout — and it rode whichever unrelated commit came
-next. A declared member's registration is never in that state, because the
-registration code commits what it writes wherever it writes it.
+A dispatch that names no member is disposable: it runs under an identity minted
+from its own run id and registers nothing, so no unrelated task is refused for a
+row another run in flight happens to hold. A declared member is registered by
+the registration code, which commits what it writes, so its row is readable from
+the repository rather than existing only in the checkout that wrote it — an
+uncommitted row is invisible to every other checkout and rides whichever
+unrelated commit comes next.
 
 These tests build a throwaway repository; the suite's autouse fixture points
-the configuration home at a temp tree. They assert the auto-created
-registration is committed, that the commit names only the roster file, that a
-caller which does not ask to commit still does not, that a commit which fails
-is surfaced rather than returned as a registration, and that the live fleet
-home and the shared checkout are untouched.
+the configuration home at a temp tree. They assert a registration is committed,
+that the commit names only the roster file, that a caller which does not ask to
+commit still does not, that a commit which fails is surfaced rather than
+returned as a registration, that a dispatch naming no member neither registers
+nor commits, and that the live fleet home and the shared checkout are
+untouched.
 """
 
 from __future__ import annotations
@@ -236,24 +238,35 @@ def _dispatch_repository(tmp_path: Path) -> Path:
     return repository
 
 
-def test_a_dispatch_naming_no_member_commits_its_registration(
-    tmp_path: Path,
-) -> None:
-    repository = _dispatch_repository(tmp_path)
-    base = _git(repository, "rev-parse", "HEAD")
-    node = crew.TaskNode(
-        id="node-a",
-        goal="a dispatch with no named member registers and commits one",
+def _dispatch_node(node_id: str, section: str = "session-routing") -> crew.TaskNode:
+    return crew.TaskNode(
+        id=node_id,
+        goal="dispatch a node under this test's member identity",
         plan="plan-a",
-        section="session-routing",
+        section=section,
         done_when="pytest tests/test_member_registration_commits.py passes",
         write_paths=["reckon/target.py"],
         time_budget="20m",
         spec_level="exact",
     )
 
+
+def test_a_dispatch_naming_no_member_commits_its_registration(
+    tmp_path: Path,
+) -> None:
+    """The unnamed dispatch is disposable: no roster row, no commit, own identity.
+
+    A named member is registered and committed first, so the roster the unnamed
+    dispatch leaves alone is one these assertions have already seen hold a row.
+    """
+    repository = _dispatch_repository(tmp_path)
+    ledger.register_member(
+        PROJECT, "named-member", harness="alpha", root=repository, commit=True
+    )
+    base = _git(repository, "rev-parse", "HEAD")
+
     record = crew.dispatch(
-        node=node,
+        node=_dispatch_node("node-a"),
         project=PROJECT,
         repo=repository,
         config=CONFIG,
@@ -262,15 +275,54 @@ def test_a_dispatch_naming_no_member_commits_its_registration(
         check_budget=False,
     )
 
-    assert str(record["member"]).startswith("session-")
-    assert _git(repository, "rev-list", "--count", base + "..HEAD") == "1"
-    subject = _git(repository, "log", "-1", "--format=%s")
-    assert subject == "chore(roster): register " + str(record["member"])
-    tree = _git(repository, "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD")
-    assert tree.splitlines() == [ROSTER]
-    served = [str(e["id"]) for e in ledger.members(PROJECT, repository)]
-    assert served == [str(record["member"])]
+    assert str(record["member"]) == "disposable-" + str(record["run_id"])
+    assert record["session_id"] is None
+    assert _git(repository, "rev-list", "--count", base + "..HEAD") == "0"
+    assert [str(e["id"]) for e in _roster_at_head(repository)] == ["named-member"]
+    assert [str(e["id"]) for e in ledger.members(PROJECT, repository)] == [
+        "named-member"
+    ]
     assert _git(repository, "status", "--porcelain", "--", ROSTER) == ""
+
+
+def test_a_dispatch_naming_a_member_still_registers_and_serialises(
+    tmp_path: Path,
+) -> None:
+    """A named member stays a durable route: the row exists and a second run is refused."""
+    repository = _dispatch_repository(tmp_path)
+    ledger.register_member(
+        PROJECT, "named-member", harness="alpha", root=repository, commit=True
+    )
+    base = _git(repository, "rev-parse", "HEAD")
+    node = _dispatch_node("node-b")
+
+    first = crew.dispatch(
+        node=node,
+        project=PROJECT,
+        repo=repository,
+        config=CONFIG,
+        session="coordinator-a",
+        member="named-member",
+        launcher=lambda plan, *, log_path, stderr_path, prompt_path: os.getpid(),
+        check_budget=False,
+    )
+
+    assert first["member"] == "named-member"
+    assert _git(repository, "rev-list", "--count", base + "..HEAD") == "0"
+
+    with pytest.raises(crew.MemberInFlight):
+        crew.dispatch(
+            node=node,
+            project=PROJECT,
+            repo=repository,
+            config=CONFIG,
+            session="coordinator-a",
+            member="named-member",
+            launcher=lambda *args, **kwargs: pytest.fail(
+                "the named member must remain serialised"
+            ),
+            check_budget=False,
+        )
 
 
 def test_the_live_home_and_the_shared_checkout_are_untouched(tmp_path: Path) -> None:
