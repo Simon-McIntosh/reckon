@@ -12,11 +12,23 @@ Two modes, selected by ``--hook``:
 
 - ``prompt`` — wired as SessionStart and UserPromptSubmit. Prints the checklist
   as ``additionalContext`` so the duties open the turn and survive compaction.
+  It speaks when the duties *change* and stays quiet otherwise: a checklist
+  repeated at the open of every turn is one a coordinator learns to skip. The
+  session's last-injected set of ``(kind, run_id)`` pairs is kept beside that
+  session's follower registration, and an injection happens only when a duty
+  has appeared or gone since the last one. An age that moved without the set
+  moving is not a change worth saying again.
 - ``stop`` — wired as Stop. Prints ``{"decision": "block", "reason": ...}``
   while duties remain, so the turn cannot end into forgotten work. The block
   fires at most once per list: ``stop_hook_active`` marks a turn that already
   continued on a blocking reason, and the hook then stays silent rather than
-  looping.
+  looping. Stopping is read by the harness as a verdict on the turn, so this
+  mode is unconditional on the digest and says nothing about it.
+
+A command the hook prints is one a coordinator may type, so it follows the
+configured local lane rather than whichever backend the run was carried on: the
+lane a run arrived on is the right lane to *read* about and the wrong one to
+route new work to silently.
 
 Silence is a mode of operation here, not a failure. A working directory
 outside the registered mounts, or a session that armed no follower, both mean
@@ -35,8 +47,10 @@ session after itself reads back.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import shlex
 import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -262,6 +276,106 @@ def _format_age(seconds: int) -> str:
     return f"{secs}s"
 
 
+# What the prompt mode last injected, per session, is the set of duties — not
+# their text. A line that changed only its age says the same thing as before,
+# and a mode that repeats it every turn is one a reader skips, which is the
+# failure the injection exists to prevent. The file sits beside the session's
+# follower registration, so the record of what this coordinator was told lives
+# with the record of the session itself.
+_DIGEST_SUFFIX = ".obligations"
+
+
+def digest_path(project: str, session: str) -> Path:
+    """The file holding the duty set one session was last injected with."""
+    from reckon.crew import runs
+
+    return runs.follower_lock_path(project, session).with_suffix(_DIGEST_SUFFIX)
+
+
+def duty_digest(items: Sequence[Mapping[str, Any]]) -> str:
+    """A digest over the ``(kind, run_id)`` pairs and nothing else."""
+    pairs = sorted(
+        (str(item.get("kind") or ""), str(item.get("run_id") or "")) for item in items
+    )
+    return hashlib.sha256(
+        "\n".join(f"{kind}\t{run_id}" for kind, run_id in pairs).encode()
+    ).hexdigest()
+
+
+def _read_digest(path: Path) -> str:
+    """The digest last injected, or empty when there is none to read."""
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def _store_digest(path: Path, digest: str) -> None:
+    """Record one digest atomically, never raising into the session.
+
+    A config home this session cannot write to leaves the hook speaking every
+    turn, which is the harmless direction: the digest suppresses a repeat, it
+    must never suppress the first telling.
+    """
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_name(path.name + ".tmp")
+        temporary.write_text(digest + "\n", encoding="utf-8")
+        os.replace(temporary, path)
+    except OSError:
+        return
+
+
+def local_lane(project: str) -> str:
+    """The backend this host's local lane resolves to, or empty when none is."""
+    try:
+        from reckon import flight
+
+        resolved = flight.resolve(project=project)
+    except Exception:  # noqa: BLE001 - an unreadable config leaves the command alone
+        return ""
+    return str((resolved.config or {}).get("local_backend") or "").strip()
+
+
+def follow_local_lane(command: str, *, project: str) -> str:
+    """Point a printed command's lane at the configured local default.
+
+    A composed review dispatch names the lane its run was carried on, which is
+    the lane that run's coordinator chose and so the right lane to *run* — and
+    the wrong one to hand a coordinator as the next command to type, because a
+    backend named there routes the next dispatch to a metered lane without
+    anyone deciding to. The local lane's own spelling is ``--local``, which
+    resolves through the same configuration, so the printed command follows
+    ``local_backend`` instead of naming the run's backend. A host that declares
+    no local lane has no default to follow and the command is left as composed.
+    """
+    if not command or "--backend" not in command:
+        return command
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        return command
+    if not any(part == "--backend" or part.startswith("--backend=") for part in tokens):
+        return command
+    if not local_lane(project):
+        return command
+    rewritten: list[str] = []
+    index = 0
+    while index < len(tokens):
+        part = tokens[index]
+        if part == "--backend" and index + 1 < len(tokens):
+            rewritten.append("--local")
+            index += 2
+            continue
+        if part.startswith("--backend="):
+            rewritten.append("--local")
+            index += 1
+            continue
+        rewritten.append(part)
+        index += 1
+    return " ".join(shlex.quote(part) for part in rewritten)
+
+
 # Only housekeeping is collapsed. A worktree-held item's remedy is a single
 # repository-wide command that answers for every tree it reaches, so a fleet of
 # them is one piece of work. Every actionable kind keeps a line per run: two
@@ -350,6 +464,11 @@ def resolve(payload: dict[str, Any]) -> dict[str, Any] | None:
     items = obligations.get("obligations") or ()
     if not items:
         return None
+    for item in items:
+        if isinstance(item, dict):
+            item["next_command"] = follow_local_lane(
+                str(item.get("next_command") or ""), project=project
+            )
     return obligations
 
 
@@ -407,10 +526,22 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if resolved is None:
         return 0
+    digest = ""
+    digest_file: Path | None = None
+    if mode == "prompt":
+        digest = duty_digest(resolved.get("obligations") or ())
+        digest_file = digest_path(
+            str(resolved.get("project") or ""), str(resolved.get("session") or "")
+        )
+        if _read_digest(digest_file) == digest:
+            return 0
     try:
         emit(mode, payload, resolved)
     except Exception as exc:  # noqa: BLE001 - emission failure is silence, not a session fault
         sys.stderr.write(f"coordinator_obligations: {exc}\n")
+        return 0
+    if digest_file is not None:
+        _store_digest(digest_file, digest)
     return 0
 
 
