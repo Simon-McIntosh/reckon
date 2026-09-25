@@ -201,6 +201,44 @@
       one path that ends early, refused whole rather than half-applied.</figcaption>
     </figure>
 
+    <p><strong>The audit half is live, and it carries both severities the done-when asks for,
+    2026-09-25.</strong> Commit <code>c84c7323931581c6e9f74caaaeb908ecda2c04d0</code> adds the two
+    audit findings. An implementable section carrying no typed record is reported at
+    <strong>error</strong> once the plan already holds a record to compare against, and at
+    <strong>warning</strong> while the plan still predates the contract, so converting plans one at a
+    time is visible work rather than a fleet-wide stop on the day the rule lands. The finding names the
+    section id and carries the same worked append example the write boundary refuses with, imported from
+    that refusal builder rather than copied, so the two messages cannot drift apart. A followup whose
+    body enumerates more than one deliverable is reported at <strong>warning</strong> as section-sized
+    work. Only <code>error</code> moves the audit's exit code, so a pre-contract repository audits
+    clean.</p>
+    <p><strong>Sizing followup work had no field to read, so the corpus was measured first.</strong>
+    Of the repository's 365 authored followups, none carries an effort field, and of the 127 still
+    open only 2 state an hour figure in prose, so "above the stated effort threshold" cannot be read
+    literally off the documents. Described work is sized instead by its enumerated deliverables
+    against a named constant — 7 open followups currently reach it. The alternative hour-based
+    reading would find almost nothing today and is recorded in the evidence so the coordinator can
+    redirect it cheaply.</p>
+    <p>A malformed typed record used to abort the whole audit — the state reader raises a pydantic
+    <code>ValidationError</code> and it propagated out of <code>audit_html</code>, so one partial record
+    suppressed every other finding in the file. It is now reported as
+    <code>section-record-invalid</code> and the remaining checks run; typed records are also no longer
+    mistaken for empty reckon sections. Receipts: the focused cohort reads <strong>73 passed, 0
+    failed</strong> at base <code>c473be21</code> and <strong>82 passed, 0 failed</strong> at the head
+    — zero added failures, the nine new cases being the audit's own; deleting the section-contract
+    check makes the error-severity case fail (4 of 9 red under the mutation); and
+    <code>audit-doc</code> over three live plans reports warnings naming
+    <code>s2</code>–<code>s7</code> here, <code>s1</code>–<code>s11</code> on crew-effort-routing, and
+    <code>s1</code>, <code>s2</code>, <code>s4</code>, <code>s5</code> on north-star-orientation, all at
+    exit 0. Full receipts and the failure identities:
+    <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#audit-section-contract-findings">the audit findings record</a>.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/audit-contract-decisions.svg"
+           alt="Two arms. An implementable section with no typed record is an error once the plan already carries a typed record to compare against, and a warning while the plan still predates the contract. An open followup whose body enumerates more than one deliverable is a warning; one deliverable or none stays silent. Only errors move the audit's exit code.">
+      <figcaption>Severity follows the plan's own state, and the followup arm measures what it can read:
+      enumerated deliverables, because no followup states an effort.</figcaption>
+    </figure>
+
     <h2 id="s3">§3 — impl is computed from section effort, never authored</h2>
     <p>impl becomes the sum of effort over sections whose status is done, divided by that sum plus the predicted
     effort of every remaining implementable section; deferred sections are outside the denominator, as the
