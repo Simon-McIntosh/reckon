@@ -734,6 +734,42 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
     in this window, and aggregate output is counted from completions landing inside each tick's
     trailing window, which undercounts a tick whose long requests are still in flight.</p>
   </section>
+
+  <section id="review-node-utility">
+    <h2>Review-node utility measurement</h2>
+    <p>Read 2026-09-25 from the cross-project crew review store and run streams. The research
+    record <code>/reckon/research/review-node-utility</code> and the report directory contain
+    the exact script, row output and grouped output. The pinned manifest hashes 5,169 JSON
+    files; 847 pass the five-score/reviewed-run filter, 167 byte-identical files and one
+    semantic re-store collapse, leaving 679 distinct records across five projects. Of these,
+    589 carry findings (86.7%); 58 have an observable repair (9.8%), defined by a later
+    distinct review with a different head or findings, or a post-reviewed-head commit. The
+    old rule gave 186 repair credits and the corrected rule removes 128. The strict
+    clean-review-then-later-finding proxy has zero observed cases, but verify-gate failures,
+    added suite failures and re-cuts are not fully joined in the review store, so this is not a
+    zero missed-defect claim.</p>
+    <p>The timestamped joins give median review wall 1,743 s, 100 review turns and 52 tool
+    steps, versus 3,510 s and 158 turns for the implement runs reviewed; median completion to
+    review start is 677 s. Source-change nodes show 86.1% findings and 12.9% repairs among
+    finding reviews; docs/evidence-only nodes show 86.6% and 2.4%; no test-only node is
+    classified. Deepseek-v4.1-flash contributes 301 records, 272 with findings, 31 repairs and
+    59 median tool steps. No record is labelled gpt-5.6-luna; the observed gpt-5.6-sol label is
+    retained as a separate 16-record comparator with 43 median tool steps where present.</p>
+    <p>The pinned file list and content hashes are
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/corpus-manifest.json</code>;
+    the script's complete output is
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/measurement.log</code>,
+    captured at <code>2026-09-25T12:23:05.713099+02:00</code>; their SHA-256 digests are
+    <code>75a20f1fe03f2cc186965ac7ee41625df0e5f6c4d5d9fba403dc47734be1ecb5</code> and
+    <code>53514dddac3cec75960d6346291656ed00f6c58ebd07a05e61044ac4f2ff27fd</code> respectively.
+    Both are part of the receipt for the figures above.</p>
+    <p><strong>Positive control.</strong> The paid-headroom document review stored four findings
+    at score 75, returned them to the implement node, and the cumulative landing record names
+    repair commits <code>db50a1e3</code>, <code>559e9fe7</code> and <code>d1ae179c</code>
+    before merged head <code>a953e4d7</code>; its re-review scored 87. This traces finding,
+    repair, re-review and promotion as separate receipts rather than treating a green gate as
+    proof of repair.</p>
+  </section>
 </main>
 </body>
 </html>
