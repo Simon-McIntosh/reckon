@@ -686,6 +686,54 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
       outlives the allocation is a property of the host, not of the install.</li>
     </ul>
   </section>
+
+  <section id="the-local-lane-at-width">
+    <h2>&sect;1 — The local lane holds its prefix cache but degrades in throughput above about 30 running
+    <a class="anchor" href="#the-local-lane-at-width">#</a></h2>
+
+    <p><strong>The measure.</strong> While coordinators ramped concurrent local workers, a sampler
+    read <code>~/public/imas-ambix/lane.json</code> every 30 s over a 55-minute window and
+    recorded running, the derived ceiling, headroom, waiting, KV occupancy, the prefix hit rate, the
+    router gate's in-flight count and width, and the count of process-alive local crew runs. It
+    appended every serving-telemetry row the router published, and every fifth tick scanned each
+    live crew pointer for the stall signature <code>~/.agents/AGENTS.md</code> names: a stream
+    silent for more than 900 s while its process is alive. 110 ticks were recorded, from
+    08:05Z to 08:59Z. The sample JSONL, the reducer and the figure live under the run's
+    <code>docs/research/local-lane-at-width.html</code>.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Observed</th><th>Collapse signature recorded 2026-09-23</th></tr></thead>
+      <tbody>
+        <tr><td>Peak running</td><td>36 at 08:41Z</td><td>33 and 36 running at the collapse</td></tr>
+        <tr><td>Derived ceiling</td><td>21 to 34</td><td>n/a</td></tr>
+        <tr><td>Router gate waiting</td><td>2</td><td>1 queued at the collapse</td></tr>
+        <tr><td>KV occupancy peak</td><td>0.63</td><td>0.88 at the collapse</td></tr>
+        <tr><td>Prefix hit rate</td><td>mean 0.9697, min 0.1579</td><td>falls with cold prompts</td></tr>
+        <tr><td>Mean TTFT</td><td>mean 1.72 s, max 4.7 s</td><td>3.0 s at the collapse</td></tr>
+        <tr><td>Mean TTFT, running &ge; 30</td><td>2.94 s</td><td>3.0 s at the collapse</td></tr>
+        <tr><td>Aggregate output</td><td>366.6 tok/s</td><td>98 tok/s at the collapse</td></tr>
+        <tr><td>Per-stream output, running &ge; 30</td><td>9.64 tok/s</td><td>14.5 tok/s at the collapse</td></tr>
+        <tr><td>Stalls over the window</td><td>none</td><td>none reported</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <img src="/reckon/figures/local-lane-at-width/ramp.svg" alt="Two panels against wall time. Top: running requests rising to a peak of 36, the derived ceiling stepped between 21 and 34, and a dotted width-30 reference line. Bottom: KV occupancy rising to 0.63 and mean TTFT rising to several seconds as running passes 30.">
+      <figcaption>Running, the ceiling and KV occupancy against wall time over the ramp.</figcaption>
+    </figure>
+
+    <p><strong>What this record does not claim.</strong> Peak running is set by what coordinator
+    sessions hold in flight, so the window locates the degradation's onset at about 30 running and
+    does not establish the lane's ceiling. The degradation is a throughput band, not prefix
+    eviction: KV occupancy never exceeded 0.63, against the 0.88 recorded at the earlier
+    collapse. The prefix hit rate is the lane document's own derived field; on the ticks where it
+    reads exactly 0.0 its neighbours 30 s either side read above 0.1579, but three of those
+    readings fall in a row across the peak, so both readings are reported rather than calling it a
+    publication artefact. The serving telemetry never populated
+    <code>cached_prompt_tokens</code>, so the hit rate has no independent counter
+    in this window, and aggregate output is counted from completions landing inside each tick's
+    trailing window, which undercounts a tick whose long requests are still in flight.</p>
+  </section>
 </main>
 </body>
 </html>
