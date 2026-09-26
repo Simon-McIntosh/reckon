@@ -863,6 +863,65 @@ Use edit_plan mode=state. Example: {"op": "append", "target": "sections", "item"
     <code>edit_plan</code> route was not used for the documents. Section closure, the driving
     followup and the merged-head verification remain with the coordinator.</p>
   </section>
+
+  <section id="impl-computed-from-section-records">
+    <h2>impl is computed from the section records</h2>
+    <p>Commit <code>8e67f2bc</code>, against base <code>bcca11f0</code>. A plan that carries
+    typed section records now reports <code>impl</code> as the effort of its done sections over
+    that sum plus the predicted effort of every remaining implementable section. Deferred
+    sections sit outside the denominator, and a plan with no record in scope keeps its authored
+    figure rather than reporting a fixed zero. The reproduction is the dispatch's own fixture: one
+    4&#8202;h done section and one 6&#8202;h implementable section while the stored
+    <code>plan-impl</code> meta reads <code>0.9</code>. At base the meta round-trips and the read
+    reads 0.9; at the head <code>read_state</code>, <code>parse_plan</code> and the
+    <code>parse_meta</code> regex path all read <code>0.4</code>, and adding a third, 10&#8202;h
+    implementable section moves all three to <code>0.2</code> with no write to the file at all —
+    the stored meta still reads <code>0.9</code> on disk throughout, because a read derives and
+    never stores.</p>
+    <p>A state-mode <code>{"op":"set","path":"impl"}</code> on such a plan is refused with
+    <code>op_error</code>: <em>impl is computed from the section records on this plan … It is not
+    authorable — move a section's status instead.</em> The refusal is at the set path every state
+    route funnels through, so it holds for the MCP edit surface as well as the CLI. The regex fast
+    path carries the derivation too, because the roadmap and the discovery rows read plans without
+    a parser: the fixture plan reports <code>progress_pct 40.0</code> in the roadmap's
+    <code>immediate_roadmap</code> row where the stored meta would have said 90, and the parity
+    assertion compares that figure against <code>read_plan</code>'s own rather than asserting about
+    either surface alone.</p>
+    <p>The writer needed one rule to stay honest. Regeneration writes the <code>plan-impl</code>
+    meta only when neither the document nor the state carries a record, so a contract plan is
+    never given a stored figure it would then have to keep in step, and the byte-stability contract
+    on a record-carrying plan holds. A plan outside the contract is written exactly as before,
+    which is what stops an editor's authored impl from being silently dropped on a plan that has no
+    records to hold it.</p>
+    <h3>The cohort and the declared negative control</h3>
+    <table>
+      <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+      <tbody>
+        <tr><td>base, 19 files the change reaches</td><td><code>bcca11f0</code></td><td>3 failed, 392 passed</td></tr>
+        <tr><td>head, the same 19 plus the new file</td><td><code>8e67f2bc</code></td><td>2 failed, 399 passed</td></tr>
+        <tr><td>head over the ids that pass at base</td><td><code>8e67f2bc</code></td><td><strong>400 passed, EXIT=0</strong></td></tr>
+        <tr><td>head with the derivation disabled</td><td>scratch import of the head, mutated</td><td>4 failed, 2 passed</td></tr>
+      </tbody>
+    </table>
+    <p>One failure is shared by both arms — <code>test_op_vocab_names_every_dispatchable_op</code>,
+    red at the base before this change — so the added-failure count is zero, and the exit-0 arm
+    above is the promotion gate. The red arm's failure set is exactly the computed-figure cases
+    (0.4, 0.2, the deferred denominator and the roadmap parity), and the two that survive it are
+    the no-records control, which must keep the authored 0.9, and the refusal, which does not read
+    the derivation. The mutation was applied as an import-time substitution of the derivation
+    helper, so the arm measured the same tree as the green run.</p>
+    <h3>Artifacts and integrity</h3>
+    <p>The durable run directory is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T192056949404-impl-is-computed-from-section-records/</code>,
+    with <code>logs/base-gate.log</code>, <code>logs/head-gate.log</code>,
+    <code>logs/green-gate.log</code> and <code>logs/negative-control.log</code> (whose first line
+    is the declared mutation string). This anchor and the plan's landing prose are append-only;
+    plan declarations, status, implementation fraction, version and modified date are unchanged,
+    and the version-stamping <code>edit_plan</code> route was not used. Two items of the
+    section's own done-when did <em>not</em> land and remain with the coordinator: the SPA label
+    that marks the figure as computed, and the authored-against-measured calibration column.
+    Section closure and the driving followup remain with the coordinator.</p>
+  </section>
 </main>
 </body>
 </html>
