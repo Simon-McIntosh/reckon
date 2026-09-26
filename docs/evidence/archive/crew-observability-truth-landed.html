@@ -2424,6 +2424,88 @@ detail         : ... conflicts with live claim ... held by run
     the module file it imported), and <code>measured-files.txt</code>.</p>
   </section>
 
+  <section id="integrated-launch-claim-attribution">
+    <h2 id="integrated-launch-claim-attribution-h">&sect;23 &mdash; the integrated head's gate failure is the fence's, not the claim's</h2>
+    <p>Recorded 2026-09-26 by a node that changed nothing: the board reported this section's gate
+    red at integrated main <code>5eb8440f</code> after it had been green at the delivered head
+    <code>207553ce</code>, and the question was whether the merges' interaction in
+    <code>dispatch.py</code> was the cause. It is not. The gate holds at the head it was recorded
+    at, and the two reds belong to a peer's fence change that reached main five minutes before this
+    merge.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/integrated-claim-attribution-arms.svg"
+           alt="Two lineages diverge from the node base 3be868de. On main the fence returns and the write-root creation 1de2d086 reaches main in the merge 3464b851; the two claim-path tests pass at 3be868de and fail from 3464b851 onward, including bcca11f0 before this node's merge and the integrated head 5eb8440f. On the node's own branch 207553ce passes all ten files."
+           style="max-width:760px;width:100%">
+      <figcaption>A failure that reproduces with main's <code>dispatch.py</code> alone and is
+      absent from the node's own head is not a merge interaction.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>arm</th><th>revision</th><th>file set</th><th>result</th></tr></thead>
+      <tbody>
+        <tr><td>integrated head</td><td><code>5eb8440f</code></td><td>the ten files</td><td><strong>2 failed, 83 passed</strong>, exit 1</td></tr>
+        <tr><td>delivered node head</td><td><code>207553ce</code></td><td>the ten files</td><td><strong>85 passed</strong>, exit 0</td></tr>
+        <tr><td>main before this merge (first parent)</td><td><code>bcca11f0</code></td><td>the nine files that exist there</td><td><strong>2 failed, 78 passed</strong>, exit 1</td></tr>
+        <tr><td>the fence merge</td><td><code>3464b851</code></td><td>the two failing tests</td><td><strong>2 failed</strong>, exit 1</td></tr>
+        <tr><td>this node's base</td><td><code>3be868de</code></td><td>the two passing tests</td><td><strong>2 passed</strong>, exit 0</td></tr>
+      </tbody>
+    </table>
+    <p>Two identity facts make the <code>bcca11f0</code> arm the decisive one rather than merely a
+    suggestive one: the nine pre-existing gate files are byte-identical at <code>bcca11f0</code> and
+    at <code>207553ce</code>, and <code>reckon/_backends.py</code> together with
+    <code>tests/test_crew_dispatch_guard.py</code> is byte-identical at <code>bcca11f0</code> and at
+    the integrated head &mdash; the only difference between the failing arm and the head is this
+    section's own <code>dispatch.py</code>, and the failure survives its removal. Each arm ran in
+    its own scratch tree under a temporary configuration home with its own
+    <code>--basetemp</code>, and each log's header names the revision, the tree, the resolved
+    working directory, the file list, the command and the module file the run actually imported.</p>
+    <p><strong>The two failing tests, each with its reason.</strong> Both are the same shape: the
+    accepted dispatch's declared figure topic was created on disk, and the assertion requires the
+    claim to be declared over a path that need not exist. Every assertion about the refusal itself
+    passes in both. <code>test_a_second_node_on_a_claimed_figure_topic_is_refused_naming_the_owner</code>
+    fails at <code>tests/test_crew_dispatch_guard.py:455</code>,
+    <code>assert not (figures / "capture").exists()</code> in
+    <code>5eb8440f</code>'s own blob &mdash; the accepted <code>capture-owner</code> dispatch created
+    <code>docs/figures/capture</code>. And
+    <code>test_the_refusal_holds_for_a_topic_directory_with_no_contents_on_disk</code> fails at
+    <code>:518</code> for <code>docs/figures/fresh-topic</code> after the accepted
+    <code>fresh-owner</code> dispatch, with its closing line
+    <code>assert not figures.exists(), "declaring the claim creates nothing on disk"</code> carrying
+    the identical contradiction.</p>
+    <p><strong>The change that introduced them:</strong> <code>create_write_roots()</code> in
+    <code>reckon/_backends.py</code> (definition and intent at :2222, call at :2651 inside the argv
+    builder's <code>if fence:</code> block), added by <code>1de2d086</code> &mdash; the only commit
+    <code>git log -S'def create_write_roots'</code> names &mdash; and carried to main by the merge
+    <code>3464b851</code>. The function is absent from that merge's first parent
+    <code>3ae3e75a</code> and from this section's base <code>3be868de</code>. With the fence back on
+    from earlier the same day, composing a launch's argv creates every directory the fence is about
+    to bind writable, because bubblewrap binds a writable root by source path and aborts with
+    <code>Can't find source path</code> otherwise. The plan repository is bound read-only inside the
+    fence, so a node's declared write path must be a real writable source directory before it can be
+    granted &mdash; the creation is deliberate, and an empty directory is invisible to git, so peers
+    pay nothing for it.</p>
+    <p><strong>So the tree now holds two landed tests asserting opposite facts about one code
+    path</strong>: the two above, and the peer's own
+    <code>tests/test_fence_creates_a_missing_write_parent.py:169</code>,
+    <code>assert declared.parent.is_dir(), "the missing directory was not created"</code>. Superseding
+    the older pair is the whole repair, and it is proposed here rather than made: a node
+    <code>claim-path-assertions-follow-the-write-root-contract</code> whose exclusive write path is
+    <code>tests/test_crew_dispatch_guard.py</code> restates the two assertions to the fence's contract
+    &mdash; snapshot the entries under <code>docs/figures</code> after the accepted dispatch and
+    assert the refused dispatch adds no worktree and no path, keeping the path-based claim and the
+    refusal-names-the-owner coverage &mdash; with a mutation that lets the refused dispatch reach
+    argv composition required to redden it. Moving the creation to just before the spawn was
+    rejected: the assertions would green only because the test's launcher never execs a worker, which
+    deletes coverage instead of deciding a contract.</p>
+    <p><strong>Leaves behind:</strong> the restatement, which no node owns yet, and the
+    question of whether a launch may write the operator's checkout at all, which is a plan decision
+    for this section's cost line rather than a node's. Nothing here is chargeable to the launch-claim
+    node's gate: its head is green on the identical file list. Report and arms:
+    <code>attribution.md</code> and <code>arm-*.log</code> under
+    <code>~/.config/reckon/crew/runs/r-<wbr>20260926T192822217568-integrated-launch-claim-attribution/</code>,
+    with the scratch trees under <code>/tmp/ila/</code> and the nine-file list as
+    <code>measured-files-nine.txt</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>

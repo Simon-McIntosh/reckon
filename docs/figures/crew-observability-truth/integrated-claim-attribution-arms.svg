@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" width="900" height="460" font-family="sans-serif">
+  <title>Where the integrated-head gate failure comes from: five arms over two lineages</title>
+  <desc>Two lineages diverge from 3be868de. On main, the fence returns, the write-root creation lands at 1de2d086 and reaches main in the merge 3464b851; the two claim-path tests pass at 3be868de and fail from 3464b851 onward, including at bcca11f0 before the launch-claim node's merge. On the node's own branch, 207553ce passes all ten files of the gate. The integrated head 5eb8440f fails the same two tests as main.</desc>
+
+  <rect x="0" y="0" width="900" height="460" fill="#fbfbfd"/>
+  <text x="24" y="30" font-size="17" font-weight="bold" fill="#1a1a2e">The integrated-head failure is main's, not the launch-claim node's</text>
+  <text x="24" y="52" font-size="12" fill="#555">five arms, one log each; file list held constant; every arm printed the module file it imported</text>
+
+  <line x1="120" y1="150" x2="860" y2="150" stroke="#9aa0b5" stroke-width="1.5"/>
+  <line x1="120" y1="330" x2="860" y2="330" stroke="#9aa0b5" stroke-width="1.5"/>
+  <line x1="120" y1="150" x2="120" y2="330" stroke="#9aa0b5" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="24" y="144" font-size="12" fill="#3b7d5b">main</text>
+  <text x="24" y="336" font-size="12" fill="#7a4ba8">launch-claim branch</text>
+  <text x="104" y="352" font-size="11" fill="#555" text-anchor="end">3be868de</text>
+  <text x="126" y="366" font-size="10" fill="#888">node base, common ancestor</text>
+
+  <circle cx="120" cy="150" r="5" fill="#3b7d5b"/>
+  <circle cx="120" cy="330" r="5" fill="#7a4ba8"/>
+
+  <rect x="252" y="126" width="150" height="48" rx="6" fill="#dff0e4" stroke="#3b7d5b"/>
+  <text x="327" y="145" font-size="11" fill="#1f5b3a" text-anchor="middle">fence on again · 1de2d086</text>
+  <text x="327" y="162" font-size="11" fill="#1f5b3a" text-anchor="middle">write roots created</text>
+  <text x="210" y="106" font-size="10" fill="#888" text-anchor="middle">peer lineage, merged 3464b851</text>
+
+  <rect x="470" y="126" width="150" height="48" rx="6" fill="#f6dede" stroke="#b23b3b"/>
+  <text x="545" y="145" font-size="11" fill="#7d1f1f" text-anchor="middle">bcca11f0 · main tip before</text>
+  <text x="545" y="162" font-size="11" fill="#7d1f1f" text-anchor="middle">this node's merge</text>
+
+  <rect x="700" y="126" width="160" height="48" rx="6" fill="#f6dede" stroke="#b23b3b"/>
+  <text x="780" y="145" font-size="11" fill="#7d1f1f" text-anchor="middle">5eb8440f · integrated head</text>
+  <text x="780" y="162" font-size="11" fill="#7d1f1f" text-anchor="middle">clean merge 461d57d8 on top</text>
+
+  <rect x="252" y="306" width="150" height="48" rx="6" fill="#e6ddf5" stroke="#7a4ba8"/>
+  <text x="327" y="325" font-size="11" fill="#4a2a75" text-anchor="middle">claim before preflight</text>
+  <text x="327" y="342" font-size="11" fill="#4a2a75" text-anchor="middle">a7413c1d · 7da01629</text>
+
+  <rect x="470" y="306" width="150" height="48" rx="6" fill="#dff0e4" stroke="#3b7d5b"/>
+  <text x="545" y="325" font-size="11" fill="#1f5b3a" text-anchor="middle">207553ce · node head</text>
+  <text x="545" y="342" font-size="11" fill="#1f5b3a" text-anchor="middle">ten files: 85 passed, exit 0</text>
+
+  <line x1="545" y1="306" x2="545" y2="180" stroke="#7a4ba8" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="556" y="244" font-size="10" fill="#7a4ba8">merged by 461d57d8</text>
+
+  <text x="327" y="200" font-size="0"></text>
+  <text x="327" y="204" font-size="11" fill="#b23b3b" text-anchor="middle">2 passed at 3be868de → 2 failed from 3464b851</text>
+  <text x="327" y="222" font-size="10" fill="#777" text-anchor="middle">the two claim-path assertions, unchanged by every arm</text>
+
+  <text x="545" y="204" font-size="11" fill="#b23b3b" text-anchor="middle">2 failed of 80 here</text>
+  <text x="545" y="222" font-size="10" fill="#777" text-anchor="middle">reproduced with main's dispatch.py alone</text>
+
+  <text x="780" y="204" font-size="11" fill="#b23b3b" text-anchor="middle">2 failed of 85 here</text>
+  <text x="780" y="222" font-size="10" fill="#777" text-anchor="middle">same two, same reasons</text>
+
+  <text x="24" y="404" font-size="12" fill="#333">Cause, both failures: a peer change alone — create_write_roots, added by 1de2d086, carried to main by 3464b851.</text>
+  <text x="24" y="424" font-size="12" fill="#333">Not the merge interaction, not the merge: 461d57d8 resolved nothing and the failure predates it.</text>
+  <text x="24" y="444" font-size="12" fill="#333">Charge-back: none to the launch-claim node. Its head is green on the identical file list.</text>
+</svg>
