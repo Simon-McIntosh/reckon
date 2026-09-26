@@ -173,6 +173,33 @@
     contains the other's word. The write paths are <code>reckon/crew/recovery.py</code>,
     <code>reckon/crew/ticker.py</code> and <code>tests/test_stalled_row_names_liveness.py</code>.</p>
 
+    <h3 id="s3-landed">Landed &mdash; node <code>stalled-row-names-liveness</code></h3>
+    <p><strong>Landed</strong> (<code>8be6a8af</code>). The stalled branch of
+    <code>_watch_verdict</code> in <code>reckon/crew/recovery.py</code> composes its reason clause
+    from the process verdict the classifier has already put on the same row, so the whole detail is
+    <code>alive, quiet 46m</code> or <code>process gone, quiet 15m</code> &mdash; the word the stall
+    census found a coordinator checking by hand, in the appended part of the reason the pane prints
+    beside the node rather than in a colour or a glyph. Liveness that is not confirmed reads as
+    gone, the same conservative direction the classifier's own <code>process_gone</code> hoist
+    takes, so a row never invites a resume into a process nobody could observe. The minutes are the
+    row's own quiet time, floored, so the figure never claims more silence than was measured.
+    <code>reckon/crew/ticker.py</code> needed no change: the pane renders the classifier's detail
+    through its existing reason clause, and the words reach the row unchanged.</p>
+    <p><strong>Evidence:</strong> two cases in <code>tests/test_stalled_row_names_liveness.py</code>
+    (2 passed) render one stalled row per process state through the classifier, the watcher
+    snapshot, the transition the events log persists, and <code>format_watch_transition</code> at
+    the 208-column pane. Each asserts the row names its own state and not the other's, and that the
+    named minutes equal the quiet time the classifier measured. The stalled-detail assertion in
+    <code>tests/test_stall_clock_starts_at_the_attempt.py</code> was moved to the new wording in the
+    same commit, so no file landed red. The base arm fails on exactly those two assertions and
+    nothing else, and the declared negative control was executed and logged: with the process-state
+    clause deleted from the stalled detail, the live-process case fails on its own
+    <code>alive</code> assertion. Both added files and the touched suite pass in one invocation
+    against base with zero added failures, and the staged paths' ruff findings equal their count at
+    base. Figures and measurements in
+    <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#s3">&sect;3
+    of the landed evidence record</a>.</p>
+
     <h2 id="s4">&sect;4 &mdash; A resume offer is not shown while the worker lives</h2>
     <p>A row that offers a resume, including the sweep's <code>ready to resume</code>, is emitted
     only when the run's process is gone. While it lives, the same row reads as a wait on the named

@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="A worker killed mid-turn is a row on the snapshot that sees it die, not fifteen minutes later.">
   <meta name="plan-evidence-for" content="a-stalled-row-says-whether-the-worker-lives">
   <meta name="plan-verifies" content="a-stalled-row-says-whether-the-worker-lives#s2">
-  <meta name="plan-commits" content="8b759fa0,c5b2e184">
-  <meta name="plan-artifacts" content="tests/test_watch_reports_death_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png,tests/test_death_row_reads_any_final_record.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/tail_window_reads.png">
+  <meta name="plan-commits" content="8b759fa0,c5b2e184,8be6a8af">
+  <meta name="plan-artifacts" content="tests/test_watch_reports_death_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png,tests/test_death_row_reads_any_final_record.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/tail_window_reads.png,tests/test_stalled_row_names_liveness.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/stalled_row_process_state.png">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -108,6 +108,53 @@
       restored in the reader and nothing else changed, the 65.5 KiB and 512 KiB cases fail at
       <code>assert None == 'assistant'</code> (2 failed, 3 passed); the reader was then restored
       byte-exact (sha1 compared before and after) and the file re-run green.</p>
+    </section>
+
+    <section id="s3">
+      <h2>&sect;3 &mdash; A stalled row says alive or gone</h2>
+      <p><strong>Landed</strong> (<code>8be6a8af</code>). The stalled branch of
+      <code>_watch_verdict</code> in <code>reckon/crew/recovery.py</code> composes its reason clause
+      from the process verdict the classifier has already put on the row, so every row entering
+      <code>stalled</code> names its process state in words beside the quiet time it has measured.
+      Liveness that is not confirmed reads as <code>process gone</code>, the same conservative
+      direction the classifier's own <code>process_gone</code> hoist takes, so a row never offers a
+      resume into a process nobody could observe. The minutes are the row's own quiet time, floored,
+      so the figure can never claim more silence than was measured. The pane needed no change: the
+      ticker renders the classifier's detail through the clause helper it already had, and the words
+      reach the row unchanged.</p>
+      <figure>
+        <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/stalled_row_process_state.png" alt="Top: two runs, one with a live worker and one with a gone one, cross the 900 s stall window at the same 1919 s of quiet. Bottom: the classifier's composition and the three rendered rows — alive, quiet 31m; process gone, quiet 31m; and the base revision's stream quiet for 1919s.">
+        <figcaption>Two runs cross the same window at the same quiet time and need opposite
+        remedies. The row now says which is which, in the appended part of the reason the pane
+        measured through <code>format_watch_transition</code> at 208 columns; the base revision's
+        row is shown beneath them for comparison.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Rendered row, worker process is a live child the test starts</td><td><code>alive, quiet 31m</code>; <code>process gone</code> absent</td></tr>
+          <tr><td>Rendered row, worker pid absent from the process table</td><td><code>process gone, quiet 31m</code>; <code>process gone</code> is the state word, <code>alive</code> absent</td></tr>
+          <tr><td>The same two rows at the base revision</td><td><code>stream quiet for 1919s</code> &mdash; neither process word appears</td></tr>
+          <tr><td>Quiet time on each run's own stream</td><td>1919&nbsp;s, named as 31&nbsp;m (floored), against a 900&nbsp;s window</td></tr>
+          <tr><td>Suite at head, one invocation (the two added suites plus <code>test_crew_recover.py</code>)</td><td>27 passed, exit 0</td></tr>
+          <tr><td>The same invocation at the dispatch base</td><td>2 failed, 25 passed, exit 1 &mdash; exactly the two added liveness assertions</td></tr>
+          <tr><td>Staged paths' ruff findings against the count at base</td><td>unchanged (<code>recovery.py</code> 10, stall-clock test 1); the added test 0</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Negative control, executed and logged.</strong> The declared control deletes the
+      process-state clause from the stalled detail and leaves the quiet time, and the two-process
+      case must then fail on its own assertion. Applied to the committed head, with nothing else
+      changed, the live case fails at <code>assert 'alive' in '… quiet 31m'</code> &mdash; the
+      declared failure &mdash; the gone case fails at <code>assert 'process gone' in '… quiet
+      31m'</code>, and the stalled-clock assertion fails on the same wording (3 failed, 3 passed).
+      The file was then restored byte-exact (sha256 compared before and after, and against
+      <code>git show HEAD:reckon/crew/recovery.py</code>), leaving the worktree clean.</p>
+      <p>At the base revision the two added cases failed on the words alone and every other case
+      passed, and at this head every case passes, so the added-failure delta is zero and no subset
+      re-run was needed. The live case's run id is deliberately neutral
+      (<code>r-quiet-held</code>): the row prints the run id in its node cell, so a run id spelling
+      one of the words under test would satisfy that case's own assertion from the node name &mdash;
+      a wrong-reason pass this node hit on its first base arm and repaired before landing.</p>
     </section>
 
     <section id="verification">
