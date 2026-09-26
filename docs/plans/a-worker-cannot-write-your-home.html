@@ -662,6 +662,28 @@
       The section's owed real-worker resume falsifier is still owed: this node proved the
       composed argv, not a live resumed turn, and only a separately dispatched test node can
       confirm the merged result.</p>
+
+      <div class="r-comment" data-section="s2" data-id="c-20260926T1130-harness-home-carry-opt-in" data-who="node harness-home-tests-opt-into-the-fence" data-when="2026-09-26T11:30:00+02:00">
+        <div class="r-comment-body"><p><strong>Landed: the carry cases state the fence they
+        depend on.</strong> The harness-home carry merged after <code>39fd7a28</code> made workers
+        launch unfenced and made <code>launch_plan</code> adopt a run's own harness home only when
+        fenced, so five of its tests called <code>_launch(..., fence=False)</code> and then
+        expected a run home. At base <code>4b0ccd34</code> the file reports
+        <code>5 failed, 6 passed</code>: four with <code>KeyError: 'CLAUDE_CONFIG_DIR'</code> and
+        <code>test_the_operator_home_is_never_read_or_written</code> with
+        <code>FileNotFoundError</code> on the run home that was never created. The cases that
+        expect a seeded or resumed run home now pass <code>fence=True</code>, and a new case
+        asserts the opposite rule for the unfenced launch &mdash; no harness-home variable is
+        invented and the operator's own home is kept. No product code changed; the diff touches
+        only the test file. Head <code>015ad804</code>: the file is <code>12 passed</code>, the
+        three gate neighbours add no failures (<code>94 passed, 2 skipped</code>), and the
+        declared negative control (reverting the settings-carry opt-in) fails again with
+        <code>KeyError: 'CLAUDE_CONFIG_DIR'</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-harness-home-carry-into-the-fence</code>,
+        figure
+        <code>/reckon/figures/a-worker-cannot-write-your-home/harness-home-carry-opt-in.svg</code>.</p></div>
+      </div>
+
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host

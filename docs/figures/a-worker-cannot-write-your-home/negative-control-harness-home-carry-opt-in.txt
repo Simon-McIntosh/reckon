@@ -1,0 +1,25 @@
+remove the fence opt-in from the settings-carry case; it must fail again with KeyError CLAUDE_CONFIG_DIR
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____ test_a_claude_run_home_carries_the_operator_settings_and_instructions _____
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11332/test_a_claude_run_home_carries0')
+
+    def test_a_claude_run_home_carries_the_operator_settings_and_instructions(
+        tmp_path: Path,
+    ):
+        """settings.json holds only the hooks key; CLAUDE.md holds the operator text."""
+        home = _operator_home(tmp_path)
+        run = tmp_path / "run"
+        run.mkdir()
+        # A run adopts its own harness home only when fenced, so a case asserting
+        # the carry states the fence it depends on rather than inheriting a default.
+        plan = _launch(home, run, CLAUDE_BACKEND, fence=False)
+>       harness = Path(plan.environment["CLAUDE_CONFIG_DIR"])
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'CLAUDE_CONFIG_DIR'
+
+tests/test_harness_home_carries_the_operator_config.py:177: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_harness_home_carries_the_operator_config.py::test_a_claude_run_home_carries_the_operator_settings_and_instructions
+1 failed in 0.69s
