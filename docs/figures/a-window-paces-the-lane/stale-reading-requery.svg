@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 448" width="980" height="448" font-family="ui-sans-serif, system-ui, sans-serif">
+  <rect x="0" y="0" width="980" height="448" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="600" fill="#1a1a1a">The lanes view re-queries a reading past its shelf life, spending the probe read it already made</text>
+  <text x="24" y="57" font-size="12.5" font-weight="400" fill="#5a5a5a">Each lane is resolved against the reading this composition already holds. The shelf life is the flight key budget.evidence_shelf_life_minutes,</text>
+  <text x="24" y="75" font-size="12.5" font-weight="400" fill="#5a5a5a">and the probe is the block already read once for that lane's command: a re-query that asked again would be a second invocation.</text>
+
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a94a6"/>
+    </marker>
+    <marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6d9c6d"/>
+    </marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b8706a"/>
+    </marker>
+  </defs>
+
+  <rect x="24" y="104" width="250" height="88" rx="8" fill="#fdf6e6" stroke="#d8b871"/>
+  <text x="38" y="128" font-size="12.5" font-weight="600" fill="#6b4e10">the lane's own reading</text>
+  <text x="38" y="150" font-size="11.5" fill="#6b4e10">receipt: long window 43 %,</text>
+  <text x="38" y="168" font-size="11.5" fill="#6b4e10">observed 4 h before the composition</text>
+  <text x="38" y="186" font-size="11.5" fill="#8a7648">a figure that must be aged to speak</text>
+
+  <rect x="24" y="210" width="250" height="88" rx="8" fill="#eef2fa" stroke="#9db0d4"/>
+  <text x="38" y="234" font-size="12.5" font-weight="600" fill="#1f3350">the probe, read once</text>
+  <text x="38" y="256" font-size="11.5" fill="#2f4460">read once per command, before a</text>
+  <text x="38" y="274" font-size="11.5" fill="#2f4460">is resolved: 95 % short, 37 % long</text>
+  <text x="38" y="292" font-size="11.5" fill="#5a6b8a">so a re-query spends no second read</text>
+
+  <line x1="274" y1="148" x2="306" y2="148" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#ah)"/>
+  <line x1="274" y1="254" x2="306" y2="254" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="314" y="104" width="176" height="194" rx="8" fill="#fdf0ef" stroke="#c98b84"/>
+  <text x="330" y="128" font-size="12.5" font-weight="600" fill="#6d2f28">is the reading older</text>
+  <text x="330" y="146" font-size="12.5" font-weight="600" fill="#6d2f28">than its shelf life?</text>
+  <text x="330" y="172" font-size="11.5" fill="#6d2f28">1 min declared here;</text>
+  <text x="330" y="190" font-size="11.5" fill="#6d2f28">4 h exceeds it, so</text>
+  <text x="330" y="208" font-size="11.5" fill="#6d2f28">the probe is asked</text>
+  <text x="330" y="234" font-size="11.5" fill="#8a5b55">inside it: reported as</text>
+  <text x="330" y="252" font-size="11.5" fill="#8a5b55">it stands, probe or no</text>
+  <text x="330" y="278" font-size="11.5" fill="#8a5b55">an undated reading</text>
+  <text x="330" y="294" font-size="11.5" fill="#8a5b55">has no claim to be current</text>
+
+  <line x1="490" y1="150" x2="520" y2="150" stroke="#6d9c6d" stroke-width="1.4" marker-end="url(#ahg)"/>
+  <line x1="490" y1="252" x2="520" y2="286" stroke="#b8706a" stroke-width="1.4" marker-end="url(#ahr)"/>
+
+  <rect x="528" y="104" width="428" height="104" rx="8" fill="#eef6ee" stroke="#9dc39d"/>
+  <text x="542" y="128" font-size="12.5" font-weight="600" fill="#1f4a1f">answered: the probe's figure is the lane's</text>
+  <text x="542" y="150" font-size="11.5" fill="#2f5a2f">the long window reads 37 % and not the receipt's 43 %, at</text>
+  <text x="542" y="168" font-size="11.5" fill="#2f5a2f">the probe's own stamp and an age of 0 s; requeried is true</text>
+  <text x="542" y="190" font-size="11.5" fill="#5e7d5e">asserted with one invocation: a second read, or no re-query, fails</text>
+
+  <rect x="528" y="232" width="428" height="104" rx="8" fill="#fdf0ef" stroke="#c98b84"/>
+  <text x="542" y="256" font-size="12.5" font-weight="600" fill="#6d2f28">cannot answer: the old figure, with its age</text>
+  <text x="542" y="278" font-size="11.5" fill="#6d2f28">a probe that raises, or comes back with no figure, has not answered</text>
+  <text x="542" y="296" font-size="11.5" fill="#6d2f28">the receipt is kept at 14 400 s with serving_state unknown, and</text>
+  <text x="542" y="314" font-size="11.5" fill="#6d2f28">the row says why: requery_did_not_answer</text>
+
+  <text x="24" y="344" font-size="11.5" fill="#7a8397">A lane the probe already describes is not re-queried: its window signature matches and the live block is adopted directly, with</text>
+  <text x="24" y="362" font-size="11.5" fill="#7a8397">requeried false. The re-query is for the lane the probe did not describe, and a lane whose reading is inside its shelf life is</text>
+  <text x="24" y="380" font-size="11.5" fill="#7a8397">reported as it stands even though the probe was read and answers, so the re-query is not unconditional.</text>
+  <text x="24" y="396" font-size="11.5" fill="#7a8397">The lane's own command owns the probe: a second declared pool on that same command does not silence its re-query.</text>
+  <text x="24" y="414" font-size="11.5" fill="#7a8397">The tree a composition can write to -- crew/recovery/lane-probes, named by the production writer -- is inventoried</text>
+  <text x="24" y="432" font-size="11.5" fill="#7a8397">before and after every case and must come back identical, because an isolated read does not prove an isolated write.</text>
+</svg>
