@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-27">
-<meta name="plan-version" content="91">
+<meta name="plan-version" content="92">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -461,6 +461,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-correction-row-geometry-base-history" data-who="s23-coord" data-when="2026-09-26T00:13:00Z">
     <div class="r-comment-body"><p><strong>Correction to the row geometry landing record</strong> (evidence section row-geometry-tests-landed, and the matching sentence in this plan's section 8). It says the arrow sat on column 85 at 971d4889 with every state word elided. At 971d4889 the arrow sat on column 107 and no classifier word was elided to the cell, because the state cell was still 22 wide, the widest word. Column 85 and the elision apply from 5ef9ee49 onward, where the cell was compressed to 10. The conclusion stands: at the head a long state word keeps the arrow on one column. Found by the review of reason-room-geometry-lands-whole (88).</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260927-s3-resume-aged-from-its-own-start" data-who="s23-coord" data-when="2026-09-27">
+    <div class="r-comment-body"><p><strong>Landed in §3, item 2 of f-tfcctf-classifier-reads-a-run-in-motion.</strong> A resumed run is aged from its own attempt, not from its predecessor's stream. <code>recovery._run_stream_quiet_seconds</code> takes the smaller of the newest own-stream age and the current attempt's age, so a resume no longer reads <code>stalled</code> in the seconds before <code>resume-N.jsonl</code> exists. The node <code>resume-is-aged-from-its-own-start</code> was dispatched by the S21 coordinator at the lead's request, merged at <code>5ede01d8</code> and promoted at revision <code>52f221c1</code> (fix <code>ecc6d4c9</code>; docs <code>cc187c66</code>, <code>52f221c1</code>). Its review scored 93, with 0 added failures by id. Items 1, 3, 4 and 5 of the followup are in flight on §3 as separate nodes, and item 7 went to the obligations and reflex owner. The followup stays open, and §3's impl moves when the last of them lands.</p></div>
 </div>
 </section>
 </main>
