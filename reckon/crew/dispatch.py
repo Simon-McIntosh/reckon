@@ -4822,13 +4822,33 @@ def _worker_process_environment(
     return merged
 
 
+def _fenced_harness_index(argv: Any) -> int | None:
+    """Index of a fence-composed argv's harness token, or ``None`` if unfenced.
+
+    A fenced launch is ``<fence> <binds...> -- <harness> ...``. The harness is
+    the first token behind the fence's own ``--`` separator, and the separator
+    is searched for only after the fence element, because the fence element is
+    what distinguishes a composition from a bare argv. An argv whose first
+    element is not the fence binary is not fenced, so its harness is its own
+    first element and the caller reads index 0.
+    """
+    if not isinstance(argv, (list, tuple)) or not argv:
+        return None
+    if Path(str(argv[0])).name != _backends.FENCE_BINARY:
+        return None
+    if "--" not in argv[1:]:
+        return None
+    index = argv.index("--", 1) + 1
+    return index if index < len(argv) else None
+
+
 def resolve_launch_executable(
     plan: _backends.LaunchPlan,
     *,
     environment: Mapping[str, str] | None = None,
     facts: Any | None = None,
 ) -> _backends.LaunchPlan:
-    """Return the plan with argv[0] replaced by an absolute executable path.
+    """Return the plan with the backend's own binary replaced by an absolute path.
 
     The launch inherits the PATH of whoever started it, so a watcher armed
     without the backend directory execs a bare name, dies at exec and leaves an
@@ -4837,12 +4857,22 @@ def resolve_launch_executable(
     names the binary and the PATH that was searched so the repair is a command
     rather than an investigation.
 
+    A fenced composition's first element is the fence binary, not the backend:
+    the harness is the command behind the fence's ``--`` separator. Resolving
+    the first element would resolve the fence itself, and the fence binary is
+    present on every host able to launch at all, so a missing backend would be
+    accepted and the launch would die behind the fence with nothing naming why.
+    The fence element is therefore never taken as the backend.
+
     ``environment`` is the overlay the launch will run with; absent, the launch's
     own environment is used, which is what every construction site passes.
     """
     selected_environment = plan.environment if environment is None else environment
     searched = launch_search_path(selected_environment, facts=facts)
-    binary = str(plan.argv[0]) if plan.argv else ""
+    element = _fenced_harness_index(plan.argv)
+    if element is None:
+        element = 0
+    binary = str(plan.argv[element]) if element < len(plan.argv) else ""
     resolved = shutil.which(binary, path=searched) if binary else None
     if not resolved:
         raise LaunchResolutionError(
@@ -4855,7 +4885,9 @@ def resolve_launch_executable(
     # configured with, because that name is how the command's dialect is
     # selected and how the run records what it ran.
     resolved = os.path.abspath(resolved)
-    return dataclasses.replace(plan, argv=[resolved, *plan.argv[1:]])
+    argv = list(plan.argv)
+    argv[element] = resolved
+    return dataclasses.replace(plan, argv=argv)
 
 
 def apply_backend_placement(
