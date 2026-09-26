@@ -7,10 +7,11 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="orchestrator-crew-pattern-studies-landed">
   <meta name="plan-title" content="Orchestrator Crew Pattern Studies — execution evidence">
-  <meta name="plan-summary" content="Measured crew velocity, immutable inputs, replay checks and coverage limits.">
+  <meta name="plan-summary" content="Cumulative measured evidence for the crew pattern studies: each study's measurements, reproduction checks and limits.">
   <meta name="plan-evidence-for" content="orchestrator-crew-pattern-studies">
-  <meta name="plan-verifies" content="orchestrator-crew-pattern-studies#s2">
-  <meta name="plan-commits" content="95b173b8d99858cdaddc58a4d5ecbe08557cd98e">
+  <meta name="plan-verifies" content="orchestrator-crew-pattern-studies#s2,orchestrator-crew-pattern-studies#s6">
+  <meta name="plan-commits" content="95b173b8d99858cdaddc58a4d5ecbe08557cd98e,c29fb51e7820d712a4259eceff8e531585939fca">
+  <meta name="plan-tags" content="crew,analysis,measurement">
   <meta name="plan-recorded-at" content="2026-09-26">
   <meta name="plan-verdict" content="passed">
   <title>Orchestrator Crew Pattern Studies — execution evidence | reckon</title>
@@ -107,6 +108,77 @@
       <p>Compact summary: 193,983 bytes; SHA-256 <code>474376e3647aa342a655ea441642b900d70bdf5fe1386cca5d158fd4dce8de45</code>. Full JSON SHA-256: <code>c65afa24ce0da336b9bac4903dabd3fab950d982bc1f46033650adfff9fdea7b</code>.
         Canonical input SHA-256: <code>5172e82376f8d20158bb65c413dfa1b2f762f7bee1883926d2db0d99fdbab479</code>.
         The coordinator owns merged verification, synthesis and section closure.</p>
+    </section>
+    <section id="nova-flapping">
+      <h2>Nova history: localized reversals without a demonstrated broad local-lane increase</h2>
+      <p><strong>Measured outcome.</strong> Between August 15 and the September 26, 10:00 UTC capture,
+        3,879 first-parent landings include 633 changes under <code>nova/</code> and <code>tests/</code>.
+        Source changes total +69,343/−11,044 lines; tests total +83,228/−3,374. The history contains
+        genuine reversals, but the mature churn comparison does not support a robust broad rise
+        during the local-lane period. Readiness requires the separately assigned readiness study.</p>
+      <table>
+        <thead><tr><th>Cohort</th><th>Code landings</th><th>Source deletions / mature additions</th><th>Test deletions / mature additions</th></tr></thead>
+        <tbody><tr><td>Before September 12</td><td>481</td><td>5,474/59,037 (9.27%)</td><td>1,784/63,880 (2.79%)</td></tr><tr><td>September 12 to capture</td><td>152</td><td>694/7,390 (9.39%)</td><td>276/8,916 (3.10%)</td></tr><tr><td>Before first local code landing</td><td>356</td><td>4,564/42,035 (10.86%)</td><td>1,426/47,287 (3.02%)</td></tr><tr><td>From first local code landing</td><td>277</td><td>1,604/24,392 (6.58%)</td><td>634/25,509 (2.49%)</td></tr></tbody>
+      </table>
+      <p>Both numerators and denominators require a complete seven-day follow-up. Local code first
+        lands at September 5, 08:46:49 UTC. Local contributions are 37/481 code landings before the
+        September 12 study boundary and 99/152 afterward. The final populated week's mature cohort
+        covers only September 19 before 10:00 UTC; the full observed lower bounds remain in the JSON.</p>
+      <figure>
+        <img src="/reckon/figures/orchestrator-crew-pattern-studies/nova-churn.svg"
+             alt="Weekly source and test churn, with incomplete follow-up distinguished, above the growing local share of code landings" style="width:100%;height:auto">
+        <figcaption>Churn and lane mix measure different things. Open circles restrict the last
+          week to its mature additions; crosses show incomplete follow-up over all additions.</figcaption>
+      </figure>
+      <h3>Five inspected histories</h3>
+      <table>
+        <thead><tr><th>History</th><th>What changed back</th><th>Lane and owning plan</th><th>Qualification</th></tr></thead>
+        <tbody>
+          <tr><td>Compiled slice cache</td><td>Five withdrawals restore the entire 116,212-byte solver file to its earlier bytes.</td><td>Codex Terra; <code>millisecond-converged-solve</code></td><td>All withdrawals precede the single primary merge; ancestry bounds prove their run membership.</td></tr>
+          <tr><td>Certificate digest guard</td><td>Unconditional figure digest check → missing-file length-only fallback → unconditional check.</td><td>Codex Terra / <code>gs-absolute-accuracy-gates</code>; Codex Luna then local / <code>null-identification-authority</code></td><td>The local swing repairs a guard weakened on a metered lane.</td></tr>
+          <tr><td>Playable program reuse</td><td>Two expectations change <code>True → False → True</code>.</td><td>Local → Codex → Codex; <code>playable-forward-solve</code></td><td>The inverse-control path and current tracing change with the expectations; this is the one automatic exact-return episode.</td></tr>
+          <tr><td>Read-request dispatcher</td><td>97 newly added lines are removed about 44 hours later; the fused read remains.</td><td>Local → local; <code>millisecond-converged-solve</code></td><td>Real implementation rework, without evidence here of a solver-readiness regression.</td></tr>
+          <tr><td>Transport geometry kernels</td><td>Exact and bicubic prototypes, legacy route restoration, then kernel retirement; 1,327 lines die within seven days.</td><td>Codex; <code>flux-function-forward-transport</code></td><td>Largest short-lived file total, before any local code landing; retirement is not itself a regression.</td></tr>
+        </tbody>
+      </table>
+      <p>The exact AST screen observes 958 value changes and two returned expectations in one
+        primary-branch episode. Its episode rate rises from 0/481 to 1/152 code landings across
+        September 12, with that return attributed to Codex. It misses partial control-flow reversals
+        such as the certificate guard, which the code review recovers. Six explicit reverts occur in
+        merged ancestry and zero as first-parent commits; five are in one pre-merge experiment.</p>
+      <p><strong>Coverage.</strong> 43 files and 95 functions change in three or more weeks.
+        34/633 code landings are unattributed and 3/633 have mixed lane ownership. Across all
+        landings, 2,434/3,879 are unattributed; 178 unresolved ledger citations, one binary change and
+        668 ambiguous feature/snapshot keys remain explicit. No timing or author-name guess supplies
+        missing ownership. Lane provenance alone does not establish causation.</p>
+      <h3>Reproduction and retained evidence</h3>
+      <p>Nova is pinned at <code>16287918db2f90d0088c1786ec45965cd90e6652</code>, with baseline
+        <code>e9476d94024ec5ebfb43af785c568d58aa64b3ee</code>. The census replays the final contents of
+        1,004 text files exactly, agrees with independent Git numstat using the same diff options,
+        has zero Python 3.14 parse failures, and reproduces byte for byte. Its full JSON SHA-256 is
+        <code>3ef015d8e200a07ad11044509a41368a4337f611b39dcf26c10ac5dbbe47a3a0</code>.
+        The committed compact JSON is 60,627 bytes and also reproduces exactly; its SHA-256 is
+        <code>dafc20311f457f9bea25652626497f1c092ab702978d582598cc5f5e5d07891c</code>.
+        The five-episode evidence and diffs also reproduce exactly. Synthetic controls detect every
+        feature category and reject monotonic and disappearance-only returns.</p>
+      <ul>
+        <li><a href="/reckon/research/data/crew-pattern-review/nova-flapping/findings.md">Detailed findings, five histories and commit links</a></li>
+        <li><a href="/reckon/research/data/crew-pattern-review/nova-flapping/flapping.json">Compact weekly census, lane tables and named episodes</a></li>
+        <li><a href="/reckon/research/data/crew-pattern-review/nova-flapping/census.py">Pinned census instrument</a> and <a href="/reckon/research/data/crew-pattern-review/nova-flapping/census.log">successful reproduction log</a></li>
+        <li>Full census, snapshot evidence and selected diffs are retained outside the repository at
+          <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T104924535917-nova-flapping-history/</code> as <code>flapping.json</code>,
+          <code>episode-evidence.json</code> and <code>episode-diffs.patch</code>.
+          See the <a href="/reckon/research/data/crew-pattern-review/nova-flapping/review.log">review reproduction log</a>.</li>
+      </ul>
+      <p>Validation: all three Python instruments pass focused Ruff lint and format checks. The
+        document audit reports zero errors: the evidence page is clean and the plan retains its
+        eight pre-existing missing-section-contract warnings, with no new findings. Authored links
+        and the figure resolve locally; the plan landing was read back through the worktree-aware
+        API with version 0 and the original followup still open.</p>
+      <p>The instrument and compact evidence commit is <code>c29fb51e7820d712a4259eceff8e531585939fca</code>.
+        The document records a measured result
+        for coordinator review. It does not resolve a followup, change plan lifecycle state or claim
+        that the broader study is complete.</p>
     </section>
   </main>
 </body>
