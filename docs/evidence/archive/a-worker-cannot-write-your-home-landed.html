@@ -1081,6 +1081,66 @@ exit: 0</pre>
     integration. This anchor was written by the coordinator at merge, because the review
     found the node had not written one.</p>
   </section>
+  <section id="s2-git-shim">
+    <h2>&sect;2 follow-up &mdash; the git shim decides from the repository the real git resolves
+    <a class="anchor" href="#s2-git-shim">#</a></h2>
+
+    <p><strong>The defect it closes.</strong> The pre-tool-use git guard reads a command's
+    text, and two reviews kept finding shell spellings it does not model: an alias or a
+    leading <code>GIT_DIR</code> first (closed), then <code>env GIT_DIR=&lt;other&gt;/.git git
+    reset --hard</code>, <code>cd -</code> and <code>pushd &lt;other&gt;</code> (open, each
+    moving another checkout's HEAD). Parsing a shell language cannot be made complete, so
+    this closes the class at execution time instead.</p>
+
+    <p><strong>What landed</strong> (run <code>r-20260926T062814328352-git-shim-checks-the-resolved-repo</code>,
+    commit <code>fd521f3c</code>). <code>reckon/worker_shims/git</code> is a shell shim that
+    forwards to <code>reckon/worker_git_shim.py</code>, and
+    <code>reckon.crew.dispatch.launch_search_path</code> now puts that directory first on
+    every crew worker's path, inside an allocation or out of one, with the scheduler shims
+    following it only inside an allocation. Under <code>RECKON_RUN_ID</code> the module reads
+    the subcommand; if it is mutating it asks the real git which repository that invocation
+    resolves to &mdash; under the invocation's own environment, working directory and
+    <code>-C</code> &mdash; and refuses (exit 97) unless the resolved git dir is the git dir of
+    the run's own worktree, read from the run's live pointer. Otherwise it execs the real git
+    unchanged, resolved with the shim's own directory removed from <code>PATH</code>. A
+    session with no run id is untouched.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/git-shim-resolution.svg"
+           alt="Worker PATH order, the shim's decision from run id through subcommand to the resolved repository, and the four shell spellings it refuses" width="900"/>
+      <figcaption>The path order, the decision, and the four spellings a text parser kept
+      missing &mdash; all four refused because they only change the environment or the working
+      directory the shim reads.</figcaption>
+    </figure>
+
+    <table>
+      <caption>The measure: base <code>7f97afda</code>, head <code>fd521f3c</code>. Each arm
+      ran in its own tree so the <code>reckon</code> imported is the tree under test.</caption>
+      <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr><td>new shim suite, base tree (module absent)</td><td><code>1 error</code> at collection</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-red-at-base.txt</code></td></tr>
+        <tr><td>new shim suite, head tree</td><td><code>8 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code></td></tr>
+        <tr><td>companions (<code>test_worker_path_carries_shims</code>, <code>test_worker_git_guard</code>), base</td><td><code>17 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-base.txt</code></td></tr>
+        <tr><td>the same companions at head</td><td><code>17 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code></td></tr>
+        <tr><td>lint on complete trees (<code>dispatch.py</code>)</td><td><code>7 &rarr; 7</code>, no finding added</td><td><code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim.txt</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>exec the real git
+    without checking the resolved repository</em> &mdash; applied to a scratch copy of the head
+    tree (<code>main</code> returns <code>_forward</code> right after the mutating-verb test,
+    before <code>_run_worktree</code>), the five refusal cases fail and the three
+    forward/transparency cases pass (<code>5 failed, 3 passed</code>), and the same tree with
+    the mutation reverted is <code>8 passed</code>
+    (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-git-shim.txt</code>,
+    <code>negative-control-git-shim-reverted.txt</code>).</p>
+
+    <p><strong>Scope stated.</strong> This node delivers the shim, the PATH wiring and the
+    tests. Verifying the merged result belongs to a separately dispatched test node, and the
+    pre-tool-use guard stays as the early, readable refusal. The refusal message and the
+    decision are in <code>reckon/worker_git_shim.py</code>; the shim file itself contains no
+    decision.</p>
+  </section>
 </main>
 </body>
 </html>

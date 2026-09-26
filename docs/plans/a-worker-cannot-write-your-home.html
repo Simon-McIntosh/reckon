@@ -623,6 +623,68 @@
       The section's owed real-worker resume falsifier is still owed: this node proved the
       composed argv, not a live resumed turn, and only a separately dispatched test node can
       confirm the merged result.</p>
+
+      <div class="r-comment" data-section="s2" data-id="c-20260926T0735-git-shim-resolved-repo" data-who="node git-shim-checks-the-resolved-repo" data-when="2026-09-26T07:35:00+00:00">
+        <div class="r-comment-body"><p><strong>Landed in this section.</strong> A text
+        parser cannot be made complete, so this closes the class at execution time. Two
+        reviews kept finding shell spellings the PreToolUse guard does not model &mdash; a
+        leading <code>GIT_DIR</code> assignment first (closed), then
+        <code>env GIT_DIR=&lt;other&gt;/.git git reset --hard</code>, <code>cd -</code> and
+        <code>pushd &lt;other&gt;</code> (open, each moving another checkout's HEAD).
+        <code>reckon/worker_shims/git</code> is a shell shim that forwards to
+        <code>dispatch</code>'s resolved <code>git</code> without ever finding itself, and
+        <code>reckon.crew.dispatch.launch_search_path</code> puts its directory first on
+        every crew worker's path &mdash; inside an allocation or out of one, with the
+        scheduler shims following it only inside an allocation. Under
+        <code>RECKON_RUN_ID</code> the decision module asks the real git which repository
+        one invocation resolves to, under that invocation's own environment, working
+        directory and <code>-C</code>, and refuses a mutating verb (exit 97) unless the
+        resolved git dir is the git dir of the run's own worktree, read from the run's live
+        pointer. Otherwise it execs the real git unchanged. A coordinator, carrying no run
+        id, is untouched, and with no readable live pointer it refuses rather than
+        guessing.</p>
+
+        <p><strong>The git dir decides, not the work tree.</strong> A mutating verb's HEAD,
+        refs and index live in the git dir, so <code>--work-tree &lt;run&gt; --git-dir
+        &lt;other&gt;</code> is not the run's own repository and must not be allowed on a
+        toplevel match alone. The run-worktree probe drops every <code>GIT_*</code> variable,
+        so a <code>GIT_DIR</code> already in the worker's environment cannot make the run's
+        worktree report the foreign repository and make the comparison agree.</p>
+
+        <p><strong>Measure.</strong> <code>tests/test_git_shim_checks_the_resolved_repo.py</code>
+        (8 passed at head) drives the real shim through a shell with its directory first on
+        <code>PATH</code>: an env-prefixed <code>GIT_DIR</code>, a <code>cd</code>, a
+        <code>pushd</code> and a plain <code>-C</code> against another checkout are each
+        refused and leave the other checkout's HEAD unchanged; the same verb inside the run
+        worktree succeeds and the worktree's HEAD moves; read-only verbs pass against another
+        checkout; without <code>RECKON_RUN_ID</code> the shim mutates the other checkout; a
+        run id with no pointer refuses. Red at base <code>7f97afda</code> (the module is
+        absent, so collection errors,
+        <code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-red-at-base.txt</code>),
+        green at the head (<code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code>).
+        The companions &mdash; <code>tests/test_worker_path_carries_shims.py</code> and
+        <code>tests/test_worker_git_guard.py</code> &mdash; are <code>17 passed</code> at base
+        and <code>17 passed</code> at head, so this change adds no failures;
+        <code>test_worker_path_carries_shims.py</code> is legitimately changed, because the
+        node's whole point is the outside-allocation path, and each arm runs from its own
+        tree. Lint on complete trees is <code>dispatch.py</code> 7&nbsp;&rarr;&nbsp;7 with the
+        new files clean. Declared negative control &mdash; <em>exec the real git without
+        checking the resolved repository</em> &mdash; applied to a scratch copy of the head
+        (the forward taken immediately before the worktree lookup) fails the five refusal
+        cases and passes the three forward/transparency cases (<code>5 failed, 3 passed</code>
+        at <code>docs/figures/a-worker-cannot-write-your-home/negative-control-git-shim.txt</code>),
+        and the same tree reverted is <code>8 passed</code>
+        (<code>negative-control-git-shim-reverted.txt</code>). Commit <code>fd521f3c</code>.
+        Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-git-shim</code>,
+        figure <code>/reckon/figures/a-worker-cannot-write-your-home/git-shim-resolution.svg</code>.</p>
+
+        <p><strong>Scope.</strong> This node delivers the shim, the PATH wiring and the tests.
+        Verifying the merged result belongs to a separately dispatched test node, and the
+        PreToolUse guard stays as the early, readable refusal. The shim file itself carries no
+        decision; the decision and the refusal message live in
+        <code>reckon/worker_git_shim.py</code>.</p></div>
+      </div>
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host
