@@ -292,6 +292,16 @@
     <p><strong>Done when.</strong> impl on a contract-carrying plan equals the computed ratio on read, a plan
     with a new section added shows impl fall by the predicted amount without any other write, the SPA labels the
     figure as computed, and the calibration column shows authored against measured effort per done section.</p>
+    <p><strong>Landed at 8e67f2bc (base bcca11f0).</strong> The ratio is computed on read from the
+    records on both read paths, so the parsed readers, the regression fast path, the roadmap and
+    <code>read_plan</code> report one figure; a state-mode <code>set impl</code> on a
+    contract-carrying plan is refused, naming the records as the source; deferred effort stays
+    outside the denominator and a plan with no record in scope still reads its authored value. The
+    stored <code>plan-impl</code> meta is left alone whenever records carry the figure on either
+    side of a write, which is what keeps regeneration byte-stable. Two items of this section's
+    done-when are still open — the SPA label and the calibration column — and the green gate, the
+    negative control and the append-only statement are in
+    <code>docs/evidence/archive/section-contract-and-computed-impl-landed.html</code>.</p>
 
     <h2 id="s4">§4 — attempts is a tool-owned counter</h2>
     <p><code>reckon crew dispatch</code> increments the target section's attempts when it launches a node on it
