@@ -11,6 +11,7 @@ import hashlib
 import io
 import json
 import re
+import tomllib
 from pathlib import Path
 
 import census
@@ -38,10 +39,13 @@ def outcome_states(events):
     return states
 
 
-def classify_entry(entry, tree):
+def classify_entry(entry, tree, source_paths):
     message = entry["message"]
     local_import = re.search(r"No module named ['\"]([^'\"]+)", message)
-    if local_import and any(tree.rglob(local_import.group(1).split(".")[-1] + ".py")):
+    if local_import and any(
+        Path(path).name == local_import.group(1).split(".")[-1] + ".py"
+        for path in source_paths
+    ):
         return {
             **entry,
             "classification": "code",
@@ -68,6 +72,9 @@ def classify_entry(entry, tree):
 
 
 def enrich(snapshot):
+    source_paths = census.git_out(
+        "ls-tree", "-r", "--name-only", snapshot["sha"]
+    ).splitlines()
     q = snapshot["pytest"]
     text = read_log(q)
     parsed = census.parse_pytest_log(text)
@@ -93,10 +100,11 @@ def enrich(snapshot):
             classify_entry(
                 {"nodeid": event["nodeid"], "message": message},
                 Path(snapshot["measurement_cwd"]),
+                source_paths,
             )
         )
     q["runtime_failures"] = [
-        classify_entry(entry, Path(snapshot["measurement_cwd"]))
+        classify_entry(entry, Path(snapshot["measurement_cwd"]), source_paths)
         for entry in parsed["failures"] + parsed["errors"]
         if entry["message"]
     ]
@@ -142,6 +150,15 @@ def enrich(snapshot):
         )
     ruff = json.loads(read_log(snapshot["ruff"]))
     assert len(ruff) == snapshot["ruff"]["findings"]
+    config = tomllib.loads(census.git_out("show", f"{snapshot['sha']}:pyproject.toml"))[
+        "tool"
+    ]
+    snapshot["ruff"]["config_sha256"] = hashlib.sha256(
+        json.dumps(config.get("ruff", {}), sort_keys=True).encode()
+    ).hexdigest()
+    q["collection_policy_sha256"] = hashlib.sha256(
+        census.git_out("show", f"{snapshot['sha']}:conftest.py").encode()
+    ).hexdigest()
     snapshot["ruff"]["files_with_findings"] = len({r["filename"] for r in ruff})
     snapshot["markers"]["scope"] = (
         "Python files under nova/ and tests/; TODO/FIXME in COMMENT tokens, pytest marker spellings anywhere in those files"
