@@ -33,8 +33,8 @@ from bs4 import BeautifulSoup
 
 from reckon._schema import (
     LEGACY_EFFORT_HOURS,
-    PlanState,
     SECTION_DECLARATION_ENUM,
+    PlanState,
 )
 from reckon.capability import (
     CAPABILITY_SCHEMA_VERSION,
@@ -303,7 +303,9 @@ def _section_record_elements(soup: BeautifulSoup) -> list:
 
 SECTION_STATUSES = tuple(SECTION_DECLARATION_ENUM)
 
-_SECTION_ELEMENT_RE = re.compile(r"<(section|h2)\b([^>]*?)/?>", re.IGNORECASE | re.DOTALL)
+_SECTION_ELEMENT_RE = re.compile(
+    r"<(section|h2)\b([^>]*?)/?>", re.IGNORECASE | re.DOTALL
+)
 _SECTION_ATTRIBUTE_RE = re.compile(
     r"""([A-Za-z_:][-\w:.]*)\s*=\s*(?:"([^"]*)"|'([^']*)')"""
 )

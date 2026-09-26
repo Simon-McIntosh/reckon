@@ -45,7 +45,7 @@ def _records_html(records: list[dict], stored_impl: str | None = None) -> str:
         f'<meta name="plan-impl" content="{stored_impl}">\n' if stored_impl else ""
     )
     return (
-        "<!doctype html>\n<html lang=\"en\"><head>\n"
+        '<!doctype html>\n<html lang="en"><head>\n'
         '<meta charset="utf-8">\n'
         '<meta name="docs-project" content="sample">\n'
         '<meta name="reckon-type" content="plan">\n'
@@ -115,7 +115,11 @@ def test_adding_an_implementable_section_moves_impl_with_no_other_write(tmp_path
 
 
 def test_deferred_effort_sits_outside_the_denominator():
-    records = [DONE_4H, IMPLEMENTABLE_6H, {"id": "later", "effort_hours": 90, "status": "deferred"}]
+    records = [
+        DONE_4H,
+        IMPLEMENTABLE_6H,
+        {"id": "later", "effort_hours": 90, "status": "deferred"},
+    ]
     state = read_state(_records_html(records, stored_impl="0.9"))
     assert state["impl"] == pytest.approx(0.4)
 
