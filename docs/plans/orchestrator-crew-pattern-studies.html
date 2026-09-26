@@ -165,6 +165,31 @@
       <code>findings.md</code> ranks the five largest coordinator costs per landed node with their
       figures.</p>
 
+    <aside id="coordinator-overhead-landing">
+      <h3>Coordinator overhead measurement delivered for review</h3>
+      <p>The fixed-window census identifies 2,182 promoted runs across
+        52 coordinator sessions. Usable transcripts cover 38
+        sessions and 1,789 promotions: 38,699 assistant API responses,
+        21.63 per promotion, and
+        11,389,142 logical input tokens per promotion
+        (99.04% cache-read volume). All 1,086
+        documentation-touching primary-branch merges were replayed: 426
+        conflict somewhere and 415 in plans/evidence.</p>
+      <p>Recorded refusals include 320 dispatch and
+        338 promotion refusals, with per-event recovery turns.
+        Missing or ambiguous receipts keep those counts as lower bounds. Thirteen transcript
+        files are missing and one has no in-window records; hand-committed worker diffs remain
+        explicitly unmeasured pending a provenance join. The census includes failed administrative
+        promotions, separately labelled by gate and role.</p>
+      <p>The script, compact JSON and ranked findings are under
+        <code>docs/research/data/crew-pattern-review/coordinator-overhead/</code>.
+        The recorded census reproduces byte for byte; raw inputs and detail artifacts carry
+        durable paths and hashes. See the
+        <a href="/reckon/evidence/archive/orchestrator-crew-pattern-studies-landed.html#coordinator-overhead">coordinator overhead evidence anchor</a>
+        for definitions, controls, figures and remaining coverage limits.
+        This is a worker landing record; the coordinator retains followup closure and merged-head verification.</p>
+    </aside>
+
     <h2 id="s5">§5 — Code depth, interface width and reuse in reckon and nova</h2>
     <p><strong>Deliverable.</strong> A structural assessment of the code the fleet has produced in
       reckon and nova, judged against the lead's stated preference: deep modules behind small
