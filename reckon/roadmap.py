@@ -1270,7 +1270,7 @@ def _sprint_status_buckets(
     The sprint a live crew is working wins the focus, most recent stream
     activity first; with no live crew the stored status decides, and where
     several sprints are stored ``active`` the deterministic pick documented on
-    :func:`reckon.sprint_liveness.focus_sprint_id` applies. The declared value
+    :func:`reckon.project_state.focus_sprint_id` applies. The declared value
     survives only when neither settles it. ``open`` sprints — work remains and
     this is not the one being pushed — are returned as their own bucket.
     """

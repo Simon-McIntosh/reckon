@@ -398,6 +398,26 @@
       minimum are in <code>logs/latency-after-speedup.txt</code>:
       12.375/10.791/11.050 and 11.691/6.187/6.316 in round 1, 11.571/5.749/5.672 and
       10.819/5.060/5.312 in round 2. Revisions: <code>f668addc</code> and <code>d1fcf486</code>.</p>
+
+      <h3 id="s4-focus-docstring-crossref">The docstring's cross-reference resolves</h3>
+      <p>The <code>_sprint_status_buckets</code> docstring at <code>reckon/roadmap.py:1273</code>
+      credited the deterministic focus rule to <code>reckon.sprint_liveness.focus_sprint_id</code>.
+      The symbol is defined in <code>reckon/project_state.py:1246</code> and is imported into
+      <code>roadmap.py</code> from there (<code>:43</code>);
+      <code>reckon/sprint_liveness.py</code> defines no such name. The reference now reads
+      <code>:func:`reckon.project_state.focus_sprint_id`</code>, and the docstring it names
+      (<code>focus_sprint_id</code>) does state the rule the sentence describes.</p>
+      <p><strong>Measured.</strong> The base arm is a <code>git archive</code> of
+      <code>9fafad1f</code> with <code>reckon.roadmap.__file__</code> confirmed to resolve inside the
+      scratch tree, where line 1273 reads <code>reckon.sprint_liveness.focus_sprint_id</code>; the
+      head arm runs in the worktree, where line 1273 reads
+      <code>reckon.project_state.focus_sprint_id</code> and
+      <code>from reckon.project_state import focus_sprint_id</code> exits 0.
+      <code>tests/test_roadmap.py</code>: 41 passed at base and 41 passed at head &mdash; zero added
+      failures. Logs:
+      <code>runs</code> under the run directory
+      <code>r-20260926T103242220473-roadmap-docstring-names-the-focus-home</code>
+      (<code>gate.log</code>, <code>base-tests.log</code>).</p>
     </section>
     <section id="s5">
       <h2>&sect;5 &mdash; The skill teaches liveness, not the marker</h2>
