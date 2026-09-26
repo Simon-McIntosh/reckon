@@ -1840,9 +1840,9 @@ def test_promotion_appends_no_second_comment_when_the_worker_authored_the_record
     # the landing commit carried only the ledger row.
     plan, _version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
     assert (plan["comments"].get("s2") or []) == []
-    assert set(_landing_commit_paths(repository)) == {
-        f"docs/state/{PROJECT}/runs/{run_id}.json"
-    }
+    assert set(
+        _landing_commit_paths(repository, _promotion_commit(repository, run_id))
+    ) == {f"docs/state/{PROJECT}/runs/{run_id}.json"}
     assert not pointer_path(run_id).exists()
 
 

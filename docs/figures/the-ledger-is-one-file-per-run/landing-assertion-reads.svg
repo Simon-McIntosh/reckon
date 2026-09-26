@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 430" width="960" height="430" font-family="system-ui, sans-serif">
+  <style>
+    .box { fill: #f7f8fa; stroke: #4a5568; stroke-width: 1.5; rx: 6; }
+    .land { fill: #e8f2e8; stroke: #2f6f3e; stroke-width: 2; rx: 6; }
+    .receipt { fill: #fdf1e3; stroke: #a8641c; stroke-width: 2; rx: 6; }
+    .subj { font-size: 15px; font-weight: 600; fill: #1a202c; }
+    .note { font-size: 13px; fill: #4a5568; }
+    .panel { fill: #ffffff; stroke: #cbd5e0; stroke-width: 1.5; rx: 6; }
+    .head { font-size: 14px; font-weight: 600; fill: #1a202c; }
+    .mono { font-family: ui-monospace, monospace; font-size: 12.5px; fill: #1a202c; }
+    .lbl { font-size: 12px; fill: #4a5568; }
+    .title { font-size: 17px; font-weight: 700; fill: #1a202c; }
+  </style>
+
+  <text class="title" x="24" y="28">Which commit a promotion-history assertion reads</text>
+  <text class="note" x="24" y="50">One promotion, two commits: the landing, then the release receipt on top of it. HEAD names the receipt.</text>
+
+  <rect class="box" x="24" y="72" width="150" height="52"/>
+  <text class="subj" x="38" y="96">seed commit</text>
+  <text class="lbl" x="38" y="114">fixture tree</text>
+
+  <rect class="land" x="204" y="72" width="300" height="52"/>
+  <text class="subj" x="218" y="96">promote(&lt;run_id&gt;): passed</text>
+  <text class="lbl" x="218" y="114">the landing: the run's row and the plan comment</text>
+
+  <rect class="receipt" x="534" y="72" width="380" height="52"/>
+  <text class="subj" x="548" y="96">release(&lt;run_id&gt;): record workspace outcome</text>
+  <text class="lbl" x="548" y="114">the receipt, and what HEAD names</text>
+
+  <line x1="174" y1="98" x2="204" y2="98" stroke="#4a5568" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="504" y1="98" x2="534" y2="98" stroke="#4a5568" stroke-width="2" marker-end="url(#a)"/>
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#4a5568"/>
+    </marker>
+  </defs>
+
+  <rect class="panel" x="24" y="146" width="450" height="128"/>
+  <text class="head" x="40" y="170">Before the repair: the default revision</text>
+  <text class="mono" x="40" y="194">_landing_commit_paths(repository)</text>
+  <text class="note" x="40" y="216">resolves HEAD, so it reads the receipt and not the landing.</text>
+  <text class="note" x="40" y="236">It passed only because the receipt stages the same single</text>
+  <text class="note" x="40" y="256">run file the landing does: a latent mislabel, green at base.</text>
+
+  <rect class="panel" x="510" y="146" width="426" height="128"/>
+  <text class="head" x="526" y="170">After the repair: the located landing</text>
+  <text class="mono" x="526" y="194">_landing_commit_paths(repository,</text>
+  <text class="mono" x="526" y="212">    _promotion_commit(repository, run_id))</text>
+  <text class="note" x="526" y="236">locates the promote(&lt;run_id&gt;): commit by its subject and</text>
+  <text class="note" x="526" y="256">measures that commit, which is the landing itself.</text>
+
+  <rect class="panel" x="24" y="292" width="912" height="118"/>
+  <text class="head" x="40" y="316">Under the declared mutation: the release receipt stages a second path</text>
+  <text class="mono" x="40" y="342">receipt (HEAD): docs/state/proj/runs/&lt;run_id&gt;.json + &lt;run_id&gt;.receipt.txt</text>
+  <text class="note" x="40" y="362">the default-revision form fails here, naming the receipt path HEAD carries that the landing does not</text>
+  <text class="mono" x="40" y="386">landing: docs/state/proj/runs/&lt;run_id&gt;.json</text>
+  <text class="note" x="40" y="404">the repaired assertion passes here, because the landing names its single path</text>
+</svg>

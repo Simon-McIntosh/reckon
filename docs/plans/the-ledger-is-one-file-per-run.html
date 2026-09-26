@@ -300,6 +300,31 @@
         retains both cohort arms, the header-lined logs and the declared negative control.
         Independent merged verification and followup closure remain coordinator-owned.</p>
       </aside>
+
+      <aside id="promotion-tests-measure-the-landing">
+        <h3>One history assertion measures the landing, not the receipt</h3>
+        <p><strong>2026-09-26.</strong> One case in
+        <code>tests/test_crew_promotion.py</code> still read its ledger-row assertion through
+        the default revision. A promotion leaves the landing and, on top of it, the release
+        receipt that <code>HEAD</code> names, so the default form measured the receipt and
+        passed only because the receipt stages the same single run file. The case now locates
+        the <code>promote(&lt;run_id&gt;):</code> commit by its subject and measures that
+        commit. The two remaining default-revision calls assert about the verify-gate
+        re-run's own commit, which is what <code>HEAD</code> names where they run, and are
+        unchanged; <code>reckon/crew/promotion.py</code> is untouched.</p>
+        <p><strong>Measured.</strong> The missing binding is latent, so no assertion fails at
+        base: in a scratch copy with pristine production code the case passes while its
+        synthesised repository reads the receipt at <code>HEAD</code> and the landing below
+        it, both naming the one run file. The declared mutation makes the release receipt
+        stage a second path: the repaired assertion then still passes, measuring the
+        landing's single path, while the pre-repair HEAD form fails naming the extra path the
+        receipt carries. The focused file is <strong>50 passed</strong> at
+        <code>be2d3c36</code>, and ruff on the staged path adds no finding and no format
+        deviation against the base revision.</p>
+        <p>Receipts: <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-tests-measure-the-landing">the anchored evidence</a>
+        holds the three arms, the commits read off disk, and the declared mutation's red log.
+        Independent merged verification and followup closure remain coordinator-owned.</p>
+      </aside>
     </section>
 
     <section id="s2" data-reckon="section">
