@@ -249,7 +249,7 @@ def parse_pytest_log(text: str) -> dict:
             and SUMMARY_TOKEN_RE.search(line)
         ):
             tokens = SUMMARY_TOKEN_RE.findall(line)
-            fresh = {k: 0 for k in counts if k not in ("collected", "deselected")}
+            fresh = {k: 0 for k in counts if k != "collected"}
             for number, word in tokens:
                 key = {
                     "error": "errored",
