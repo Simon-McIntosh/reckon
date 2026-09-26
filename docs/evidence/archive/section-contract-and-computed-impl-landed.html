@@ -959,6 +959,52 @@ Use edit_plan mode=state. Example: {"op": "append", "target": "sections", "item"
     <code>test_read_plan_and_roadmap_report_the_same_computed_impl</code>: it compares
     <code>read_plan</code>'s raw impl against the roadmap row's <code>progress_pct</code>, so neither
     surface is asserted about alone.</p>
+    <p><strong>Writer gate repaired at <code>d206de34</code>.</strong> Review found the writer's
+    gate asking a text heuristic — a <code>data-reckon="section"</code> mention plus one record
+    attribute name anywhere in the markup — rather than the parsed state. A state-mode
+    <code>{"op":"set","path":"impl"}</code> on a plan that merely documents the syntax inside its
+    own code examples was therefore a silent no-op: the call returned <code>{"ok": true, …}</code>
+    with the version unchanged while the file stayed byte-unchanged, and this plan's own published
+    HTML matched the heuristic — its only matches are the syntax quoted in its code examples. The
+    gate now reads the state's typed records and, for a state naming none, the parsed document's
+    own record selector, which is what the paragraph above this one meant by "carries a record"
+    throughout, now settled by the parser rather than by a substring test. A documenting plan
+    carries no record element, so its authored figure stays writable and readable; a plan holding
+    records, or being given them, keeps its <code>plan-impl</code> meta untouched on either side of
+    the write, so a derived figure is never stored back as the authored one and removing a plan's
+    records stays byte-stable beyond the record spans. The document half of that rule is
+    load-bearing: gating on the state's records alone reddened
+    <code>test_removing_records_preserves_headings_and_prose</code>, which pins the byte stability.
+    The reproduction is <code>test_a_plan_documenting_the_syntax_keeps_its_impl_writable</code> — it
+    reads the plan's authored <code>0.6</code>, sets <code>0.7</code> through the state route, and
+    reads the file back as <code>0.7</code>; at the pre-repair head <code>b3b7dc86</code> the same
+    call reports success while the case's <code>written != html</code> assertion fails on the
+    unchanged file, and the repaired head passes it.</p>
+    <table>
+      <thead><tr><th>arm, re-measured over the same 20 files</th><th>revision</th><th>result</th></tr></thead>
+      <tbody>
+        <tr><td>base</td><td><code>bcca11f0</code></td><td>10 failed, 393 passed</td></tr>
+        <tr><td>head</td><td><code>d206de34</code></td><td>1 failed, 402 passed</td></tr>
+        <tr><td>head over the ids that pass at base</td><td><code>d206de34</code></td><td><strong>393 passed, 10 deselected, EXIT=0</strong></td></tr>
+        <tr><td>head with the derivation disabled</td><td>scratch arm</td><td>4 failed, 4 passed</td></tr>
+        <tr><td>the documenting-plan case at the pre-repair head</td><td><code>b3b7dc86</code></td><td>1 failed, 7 passed</td></tr>
+      </tbody>
+    </table>
+    <p>The base arm carries ten failures rather than nine: the new case asserts
+    <code>impl_source</code>, a field that does not exist before the contract, so it belongs with
+    this node's other feature cases at the base and is deselected with them from the promotion
+    gate. The single failure the head keeps,
+    <code>test_op_vocab_names_every_dispatchable_op</code>, is red at the base too, so the
+    added-failure count stays zero. The disabled-derivation arm's four failures are the
+    computed-figure cases, and the documenting-plan case survives it: it holds no computed figure to
+    disable. The re-measured arms' logs are <code>base2-gate.log</code>, <code>head2-gate.log</code>,
+    <code>green2-gate.log</code>, <code>negative-control2.log</code> and
+    <code>red2-reproduction.log</code> beside the earlier ones, with the base arm's first line
+    naming the scratch tree that served <code>import&nbsp;reckon</code> and the negative control's
+    first line carrying the declared mutation string, so each log states its own provenance rather
+    than a bare result. The counts in the earlier table remain the record of the content they
+    measured, which carried one case fewer; read that table with the head it names,
+    <code>ec53f8f6</code>, and this one for the repaired head.</p>
   </section>
 </main>
 </body>

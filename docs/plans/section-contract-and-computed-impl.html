@@ -311,6 +311,16 @@
     <code>test_a_record_element_carrying_authored_prose_yields_no_computed_figure</code>, which
     reddens the pre-repair head, and the measured arms with the corrected counts are in
     <code>docs/evidence/archive/section-contract-and-computed-impl-landed.html</code>.</p>
+    <p><strong>Writer gate repaired at d206de34.</strong> The writer had asked a text heuristic
+    whether a plan carried records, so a state-mode <code>set impl</code> on a plan that merely
+    documents the record syntax in its own prose was silently dropped — the call reported success
+    while the file stayed byte-unchanged. The gate now reads the state's typed records and, for a
+    state naming none, the parsed document's own record selector: a documenting plan keeps its
+    authored figure writable, while a plan holding records, or being given them, keeps its
+    <code>plan-impl</code> meta untouched on either side of the write, so a derived figure is
+    never stored back as the authored one. The new case pins the documenting plan end to end and
+    reddens the pre-repair head; the measured arms are in
+    <code>docs/evidence/archive/section-contract-and-computed-impl-landed.html</code>.</p>
 
     <h2 id="s4">§4 — attempts is a tool-owned counter</h2>
     <p><code>reckon crew dispatch</code> increments the target section's attempts when it launches a node on it
