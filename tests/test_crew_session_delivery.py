@@ -459,7 +459,7 @@ def test_an_attaching_follower_reports_its_fleet_as_transitions(home) -> None:
         "the follower's own lifecycle is not fleet state and does not belong here"
     )
     rendered = [recovery.format_watch_transition(event) for event in events]
-    assert all(" 2w 0b 0u" in line for line in rendered)
+    assert all(" 2w  0b  0u" in line for line in rendered)
     for line in rendered:
         assert "[stderr]" not in line
 
