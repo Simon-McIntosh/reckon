@@ -6769,6 +6769,7 @@ def change_lane(
     *,
     config: Mapping[str, Any],
     advice: str = "",
+    estimated_hours: float | None = None,
     launch: bool = True,
     launcher=None,
 ) -> dict[str, Any]:
@@ -6778,6 +6779,10 @@ def change_lane(
     The destination is fully resolved and budget-checked before the current
     process is stopped. The existing run id, node and worktree stay in place;
     only the execution attempt changes.
+
+    ``estimated_hours`` replaces the estimate the run carried into this attempt
+    and is recorded on the run, so an orchestrator can correct an estimate the
+    original estimate cannot express without editing the source plan.
     """
     destination = str(backend_name).strip()
     explanation = str(reason).strip()
@@ -6795,6 +6800,8 @@ def change_lane(
         )
     repository = Path(str(record.get("repo") or ".")).resolve()
     node = _recorded_task_node(record)
+    if estimated_hours is not None:
+        node.estimated_hours = float(estimated_hours)
     resolution = plan_dispatch(
         node=node,
         config=config,
@@ -6953,6 +6960,8 @@ def change_lane(
     def move(current: dict[str, Any]) -> dict[str, Any]:
         if str(current.get("worktree") or "") != str(record.get("worktree") or ""):
             raise CrewError(f"run {run_id!r} changed worktree during its lane change")
+        if isinstance(current.get("node"), dict):
+            current["node"]["estimated_hours"] = node.estimated_hours
         history = [dict(item) for item in current.get("lane_changes") or ()]
         history.append(lane_change)
         lineage = {
@@ -6980,6 +6989,7 @@ def change_lane(
                 "attempt": attempt,
                 "attempt_kind": "lane-change",
                 "attempt_started_at": lane_change["changed_at"],
+                "estimated_hours": node.estimated_hours,
                 "phase": "working" if target_plan is not None else "starting",
                 "session_id": session_id if continued else None,
                 "session_harness": target_harness if continued else None,

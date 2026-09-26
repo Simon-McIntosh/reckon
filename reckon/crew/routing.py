@@ -1796,6 +1796,25 @@ def _estimated_hours(
     )
 
 
+def _measured_horizon_hours(value: Any) -> float | None:
+    """Return a measured competence horizon, or ``None`` when none was measured.
+
+    A horizon the configuration never recorded is not the number zero. Coercing
+    an absent or unreadable figure to ``0.0`` makes an unmeasured configuration
+    compare equal to a measured-zero one, so the verdict refuses a node against
+    a horizon that was never observed. Keeping ``None`` distinct lets such a
+    node through while a genuinely measured horizon — including a measured zero
+    — still bounds it.
+    """
+    if value is None:
+        return None
+    try:
+        hours = float(value)
+    except (TypeError, ValueError):
+        return None
+    return hours if math.isfinite(hours) else None
+
+
 def _competence_verdict(
     *,
     resolution: DispatchPlan,
@@ -1825,10 +1844,7 @@ def _competence_verdict(
         None,
     )
     horizon = configuration.get("competence_horizon_hours") if configuration else None
-    try:
-        horizon_hours = float(horizon)
-    except (TypeError, ValueError):
-        horizon_hours = 0.0
+    horizon_hours = _measured_horizon_hours(horizon)
 
     verdict: dict[str, Any] = {
         "allowed": True,
@@ -1872,7 +1888,7 @@ def _competence_verdict(
     if cache_status == "stale":
         verdict["reason"] = "stale-capability-cache"
         return with_context_fit()
-    if not math.isfinite(horizon_hours) or horizon_hours <= 0:
+    if horizon_hours is None:
         return with_context_fit()
     if estimated_hours is None:
         verdict["reason"] = "no-estimated-hours"

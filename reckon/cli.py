@@ -3771,12 +3771,21 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
     help="Continuation advice for a reusable session or fresh worker.",
 )
 @click.option(
+    "--estimated-hours",
+    type=click.FloatRange(min=0.0, min_open=True),
+    default=None,
+    help=(
+        "Neutral worker-hours for this attempt; replaces the estimate the run "
+        "carried and is recorded on it."
+    ),
+)
+@click.option(
     "--print-only",
     is_flag=True,
     help="Show the lane-change launch without stopping or starting a worker.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_redispatch(run_id, backend, reason, advice, print_only, pretty):
+def crew_redispatch(run_id, backend, reason, advice, estimated_hours, print_only, pretty):
     """Move one working run to another backend without replacing its identity."""
     crew_module, flight_module = _crew_modules()
     try:
@@ -3795,6 +3804,7 @@ def crew_redispatch(run_id, backend, reason, advice, print_only, pretty):
             reason,
             config=config,
             advice=advice,
+            estimated_hours=estimated_hours,
             launch=not print_only,
         )
     except crew_module.BudgetHold as exc:
