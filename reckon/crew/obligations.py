@@ -64,8 +64,37 @@ def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
     return 0
 
 
+def _reflex_review_in_flight(pointer: Mapping[str, Any]) -> bool:
+    """Whether the reflex's own recorded review dispatch still holds a live run.
+
+    The reflex records the review it launched on the run it acted for, and that
+    record is its claim: while the review run it names holds a live pointer the
+    reflex will not compose a second review, so a printed dispatch is one the
+    coordinator can only have refused as a scope conflict. The claim is dated
+    from the launch window the record carries rather than being re-judged
+    against the run's manifest: a run that re-completed after that launch has
+    not taken the claim away, because the live review the reflex owns is still
+    the thing under way and the reflex is what re-fires once it ends.
+    """
+    recorded = pointer.get(recovery.REVIEW_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return False
+    review_run_id = str(recorded.get("run_id") or "")
+    if not review_run_id:
+        return False
+    return runs.pointer_path(review_run_id).exists()
+
+
 def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
-    """Whether a live review is working on this run's current revision."""
+    """Whether a live review is working on this run's current revision.
+
+    The reflex's own claim is honoured whatever revision the run now carries.
+    A hand-launched review carries no such record, so it is recognised by the
+    head-keyed record path its reviewer was granted, which keeps a review of an
+    older revision from reading as a review of the current one.
+    """
+    if _reflex_review_in_flight(pointer):
+        return True
     review_run_id = recovery._review_in_flight(pointer)
     if not review_run_id:
         return False
@@ -113,10 +142,32 @@ def _live_item(row: Mapping[str, Any], *, kind: str, now: datetime) -> dict[str,
     }
 
 
+def _live_worktrees(project: str) -> set[Path]:
+    """Registered-tree paths a live run currently occupies.
+
+    A retained path reused by a live run is not held by the promoted run whose
+    ledger record still names it. The collector sees the path live-referenced
+    and leaves it alone, so hinting a collection for it would name work that
+    cannot be done and a run that no longer owns the tree.
+    """
+    trees: set[Path] = set()
+    for pointer in runs.list_live(project=project):
+        value = str(pointer.get("worktree") or "").strip()
+        if value:
+            trees.add(Path(value).expanduser().resolve())
+    return trees
+
+
 def _held_worktrees(
     project: str, session: str, *, now: datetime
 ) -> list[dict[str, Any]]:
-    """Return promoted runs whose retained tree remains in Git's registry."""
+    """Return promoted runs whose retained tree remains in Git's registry.
+
+    A registered path a live run now occupies is skipped: the promoted run's
+    ledger record still names it under the same node id, but the tree belongs
+    to the live run and the collector will not take it, so naming the promoted
+    run would send a coordinator at the wrong run for a tree it cannot free.
+    """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
         return []
@@ -140,6 +191,7 @@ def _held_worktrees(
         )
     )
     records = ledger.runs(project, root=repository)
+    occupied = _live_worktrees(project)
     matched: dict[Path, Mapping[str, Any]] = {}
     for record in records:
         retention = record.get("worktree_retention")
@@ -147,14 +199,14 @@ def _held_worktrees(
             value = str(retention.get("worktree") or "").strip()
             if value:
                 retained = Path(value).expanduser().resolve()
-                if retained in registered:
+                if retained in registered and retained not in occupied:
                     matched[retained] = record
         node = record.get("node")
         node_id = (
             str(node.get("id") or "") if isinstance(node, Mapping) else str(node or "")
         )
         for worktree in registered:
-            if node_id and worktree.name == node_id:
+            if node_id and worktree.name == node_id and worktree not in occupied:
                 matched[worktree] = record
 
     items: list[dict[str, Any]] = []
