@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -858,6 +858,9 @@ placement path, not as a whole-suite run.</p>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260926T103125567141-a-worker-is-charged-to-a-job-currency-audit" data-who="reckon-build" data-when="2026-09-26T12:19:10.757Z">
     <div class="r-comment-body"><p>read-only plan-currency audit of a-worker-is-charged-to-a-job: §1, §2, §4, §5 landed; §6 not started; §7 partial. Reviewed 79; two citation-wording findings, verdicts unaffected</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260926T122004598781-review-of-a-worker-is-charged-to-a-job-currency-audit" data-who="reckon-build" data-when="2026-09-26T14:38:51.850Z">
+    <div class="r-comment-body"><p>review node: stored a 79/100 record for r-20260926T103125567141 with two citation-wording findings; a review has no gate of its own</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-awcj-proving-run" data-who="coordinator" data-when="2026-09-19T21:05:00Z">
     <div class="r-comment-body"><p>The first worker ever placed ran to completion on 2026-09-19 and reported from inside its own process. It executed on compute node <code>98dci4-clu-3036</code> under job 1274056 on partition <code>all</code>, granted 4 cores and 16 GiB, having been submitted from the login node, and it finished its session in 129 seconds. The evidence that settles it is not the environment variables, which a login-node process could in principle carry, but the process ancestry the worker walked itself: its own pid is a direct child of the job's step daemon, which is execution inside the allocation rather than a process merely holding the variables. The worktree, the crew state directory and the model endpoint were all reachable from the node. The queue wait between submit and start was zero at that hour, which is the number that later argued against a job per worker on the wrong axis; section 3 now rests on the shape of the reservation rather than on its latency. Two things the run deliberately does not show, and says so: the failure shapes belong to section 2, and nothing here concerns authenticated traffic to an external lane, which is section 7's. The worker also reported its endpoint probe as a screen rather than an identity result, distinguishing what a 404 from a gateway can and cannot prove, which is the evidence discipline the plan's own read-back forced on its author a few hours earlier.</p></div>
