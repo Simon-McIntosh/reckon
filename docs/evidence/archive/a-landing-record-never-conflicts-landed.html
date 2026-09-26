@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-record-never-conflicts-landed">
+  <meta name="plan-title" content="A Landing Record Never Conflicts — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Landing Record Never Conflicts: composition of a plan's cumulative record from its file and its fragments at read time.">
+  <meta name="plan-evidence-for" content="a-landing-record-never-conflicts">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Landing Record Never Conflicts — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Landing Record Never Conflicts — landed record</h1>
+  <p>Composition of a plan's cumulative evidence record at read time: the record file's own bytes followed by its fragments in ledger promotion order.</p>
+
+  <section id="s3">
+    <h2>§3 — The record is composed at read time, and the plan comment goes through the versioned write</h2>
+    <p><code>compose_landed_record</code> in <code>reckon/evidence.py</code> reads a record's own bytes and appends each fragment under <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html</code> in the order the ledger records the fragments' promotions, resolving both the archived and live record spellings. A fragment is named for the ledger row's <code>node</code>, so a redispatch carries that node's latest fragment once. The function writes no file and does not call <code>synthesize_landed_record</code>, so a record with no fragments composes to its own bytes byte-for-byte.</p>
+    <ul>
+      <li>Commit <code>a69f554f</code>; 3 tests in <code>tests/test_evidence_record_composition.py</code>: a synthesised repository whose ledger promotion order is a permutation of its filename order, checked for both <code>docs/evidence/archive/&lt;plan&gt;-landed.html</code> and <code>docs/evidence/&lt;plan&gt;-landed.html</code>, and byte identity over every existing record with no fragments.</li>
+      <li>Negative control: ordering fragments by filename instead of by ledger promotion order makes the three-fragment ordering case fail on both spellings.</li>
+      <li>Composer only: the versioned <code>landing:</code> write and the SPA, <code>read_plan</code> and <code>audit-doc</code> readers remain for other nodes.</li>
+    </ul>
+  </section>
+
+</main>
+</body>
+</html>
