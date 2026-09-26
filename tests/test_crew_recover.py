@@ -740,3 +740,66 @@ def test_the_cadence_records_that_it_ran_even_when_it_finds_nothing(
     # And nothing went into the append-only record, which holds what happened
     # rather than that anything ran.
     assert not recovery_log_path(PROJECT).exists()
+
+
+def test_a_stopped_run_names_the_session_its_own_stream_still_holds(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A stopped pointer is a disposition question, not a lost resume path.
+
+    `phase: stopped` records that a person ended the run, and the recovery
+    classification answers that with an advice to discard it when safe. That
+    advice is read from the pointer's own session field, which lags: the stream
+    still names the session and `crew resume` still continues it, so the row
+    must carry the resolved session and offer the resume instead of inviting a
+    discard that would throw the resume path away.
+    """
+    from reckon.crew import recovery
+
+    run_id = "r-20260904T033000000000-node-a"
+    record = _refused_run(tmp_path, run_id)
+    expected = _stream_session_of(run_id)
+    assert expected, "the fixture stream must name the session under test"
+    Path(record["manifest_path"]).unlink()
+    record["phase"] = "stopped"
+
+    row = recovery.classify_pointer(record)
+
+    resolution = row.get("session_resolution") or {}
+    assert resolution.get("session_id") == expected, row.get("next_action")
+    assert resolution.get("source") == "stream"
+    assert row["classification"] == "stopped"
+    assert row["recovery"] == "resume"
+    assert row["next_action"] == f"reckon crew resume --run {run_id} --advice continue"
+    assert "discard" not in row["next_action"]
+    assert not (_real_crew_home(monkeypatch) / "live" / f"{run_id}.json").exists()
+
+
+def test_a_stopped_run_with_no_session_anywhere_still_reads_discardable(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The absence is named rather than assumed, and the advice stands.
+
+    A pointer whose session no source holds is the case the discard advice is
+    for; it must read exactly as it did before, with the row carrying the
+    absence and the three sources it consulted.
+    """
+    from reckon.crew import recovery
+
+    run_id = "r-20260904T033100000000-node-a"
+    record = _refused_run(tmp_path, run_id, session_in_stream=False)
+    Path(record["manifest_path"]).unlink()
+    record["phase"] = "stopped"
+
+    row = recovery.classify_pointer(record)
+
+    resolution = row["session_resolution"]
+    assert resolution["resolved"] is False
+    assert resolution["consulted"] == ["pointer", "stream", "ledger"]
+    assert row["classification"] == "stopped"
+    assert row["recovery"] == "inspect"
+    assert row["next_action"] == (
+        f"inspect the worktree at {record['worktree']} and discard when safe"
+    )
+    assert "resume" not in row["next_action"]
+    assert not (_real_crew_home(monkeypatch) / "live" / f"{run_id}.json").exists()
