@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from reckon import ledger
+from reckon import capability, ledger
 from reckon.crew.refusals import format_refusal
 
 # The eight properties of the task-definition contract, in the order a reader of
@@ -70,7 +70,11 @@ SUBJECTIVE_TERMS = (
 )
 
 # A conjunction starts a second deliverable only when it introduces another
-# action. Nouns may be conjoined inside one deliverable without splitting it.
+# action. Nouns may be conjoined inside one deliverable without splitting it,
+# and one verb over several objects stays one node ("compare the base and the
+# head"). A semicolon or "then" is judged by the same rule the conjunctions
+# use: it separates deliverables only when the clause it opens carries its own
+# action verb.
 _DELIVERABLE_ACTIONS = frozenset(
     {
         "add",
@@ -100,6 +104,7 @@ _DELIVERABLE_ACTIONS = frozenset(
 )
 _NOUN_OR_ACTION_CONJUNCTIONS = (" and ", " & ", " plus ")
 _DELIVERABLE_SEPARATORS = (" then ", ";")
+_DELIVERABLE_CONJUNCTIONS = (*_DELIVERABLE_SEPARATORS, *_NOUN_OR_ACTION_CONJUNCTIONS)
 
 # Text that shows a done-when names something observable rather than a feeling.
 _EVIDENCE_SIGNALS = re.compile(
@@ -108,11 +113,38 @@ _EVIDENCE_SIGNALS = re.compile(
     re.IGNORECASE,
 )
 
+# An unresolved template placeholder names nothing the worker can act on, so a
+# goal or a done-when may not carry one that survives into the brief. A quoted
+# string or a code span is the author quoting a literal, so a placeholder
+# inside one is data to reproduce rather than a gap to fill.
+_PLACEHOLDER_TOKEN = re.compile(r"<[a-z][a-z0-9-]*>")
+
+# The vague placeholder words are refused in the goal, where they stand in for
+# the work. The same words inside a done-when are the author naming a marker to
+# count ("the counts of TODO-FIXME, xfail and skip markers"), which is a
+# measure rather than an unresolved instruction. An unquoted goal that is
+# nothing but one such word is refused by the same pattern.
 _UNSPECIFIED = re.compile(
     r"\bTBD\b|\bTODO\b|\bFIXME\b|\?\?\?|\bfigure out\b|\bsomehow\b"
-    r"|\bas appropriate\b|<[a-z-]+>",
+    r"|\bas appropriate\b",
     re.IGNORECASE,
 )
+
+# Quoted strings and code spans, blanked before a placeholder search so their
+# contents are read as a literal the author quoted.
+_QUOTED_OR_CODE_SPAN = re.compile(r'"[^"]*"|`[^`]*`')
+
+
+def _placeholder_gap(*texts: str) -> str | None:
+    """Return an unresolved placeholder in unquoted, non-code text, if any."""
+    for text in texts:
+        literal_free = _QUOTED_OR_CODE_SPAN.sub(" ", text)
+        token = _PLACEHOLDER_TOKEN.search(literal_free)
+        if token:
+            return token.group(0)
+    word = _UNSPECIFIED.search(_QUOTED_OR_CODE_SPAN.sub(" ", texts[0]))
+    return word.group(0) if word else None
+
 
 # ``decide`` is only unspecified intent when the node hands the choice to the
 # WORKER. Describing machinery that decides something ("the resolver decides
@@ -145,16 +177,16 @@ _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 def _deliverable_conjunction(goal: str) -> str | None:
-    """Return the separator that introduces another deliverable, if any."""
-    lowered = f" {goal.lower()} "
-    separator = next(
-        (candidate for candidate in _DELIVERABLE_SEPARATORS if candidate in lowered),
-        None,
-    )
-    if separator:
-        return separator
+    """Return the separator that introduces another deliverable, if any.
 
-    for candidate in _NOUN_OR_ACTION_CONJUNCTIONS:
+    Every separator — a semicolon, "then", "and", "&" or "plus" — opens a
+    second deliverable only when the clause that follows it begins with its own
+    action verb. Otherwise it joins parts of the one deliverable, which is
+    where a semicolon between two objects and one verb over several objects
+    both belong.
+    """
+    lowered = f" {goal.lower()} "
+    for candidate in _DELIVERABLE_CONJUNCTIONS:
         for remainder in lowered.split(candidate)[1:]:
             first_word = re.match(r"\s*([a-z]+)", remainder)
             if first_word and first_word.group(1) in _DELIVERABLE_ACTIONS:
@@ -976,6 +1008,7 @@ def validate_node(
     *,
     locked_decisions: Iterable[str] = (),
     budget_ceiling: str = "",
+    execution_capable: bool | None = None,
 ) -> NodeValidation:
     """Judge a node against all eight properties, reporting every failure.
 
@@ -1005,13 +1038,24 @@ def validate_node(
     if not node.plan.strip():
         fail("fully-specified", "no plan is named as the semantic authority")
     combined = f"{goal} {node.done_when}"
-    unspecified = _UNSPECIFIED.search(combined) or _DECISION_DEFERRED.search(combined)
+    deferred = _DECISION_DEFERRED.search(combined)
+    unspecified = _placeholder_gap(goal, node.done_when) or (
+        deferred.group(0).strip() if deferred else None
+    )
     if unspecified:
         fail(
             "fully-specified",
-            f"{unspecified.group(0).strip()!r} leaves the worker to infer intent; "
+            f"{unspecified!r} leaves the worker to infer intent; "
             "state the input or add a decision node before this one",
         )
+    if execution_capable is not None:
+        # The measure-versus-role comparison dispatch applies, reused so a node
+        # is judged whole before any run is created.
+        fit = capability.assess_execution_fit(
+            node.done_when, role=node.role, execution_capable=execution_capable
+        )
+        if fit.conflict:
+            fail("fully-specified", fit.refusal_detail())
 
     done_when = node.done_when.strip()
     if not done_when:
