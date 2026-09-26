@@ -1613,6 +1613,137 @@ exit: 0</pre>
     &mdash; is the coordinator's separate node, as the re-enable decision records. This node flips the
     switch, states the guarantee, and pins the composed default.</p>
   </section>
+
+  <section id="s2-fenced-worker-smoke-after-reenable" data-reckon="section">
+    <h3 id="s2-fenced-worker-smoke-after-reenable-h">The fence, measured from inside a live fenced launch</h3>
+
+    <p><strong>What this is.</strong> A smoke test of the live fence, not a unit test. The re-enable
+    node (<a href="#s2-fence-on-again">the fence-on-again anchor</a>) flipped
+    <code>FENCE_WORKERS</code> to <code>True</code> and pinned the <em>composed</em> argv; this node
+    runs as a real worker launched through that path and records what its own environment and
+    filesystem allow. The package this worker runs on carries the re-enable (<code>fafeb910</code>).
+    Every probe below is a command this process actually ran; its logged output is under the run
+    directory <code>~/.config/reckon/crew/runs/r-20260926T145452839988-fenced-worker-smoke-after-reenable/logs/</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/fenced-worker-smoke-after-reenable.svg"
+           alt="The fence as measured from inside the launch: sealed read-only paths on the left, writable granted roots on the right, and the six recorded probes below.">
+      <figcaption>The layered seal and the run's granted roots, as this worker observed them, over the
+      six recorded probes.</figcaption>
+    </figure>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>Measure</th><th>Command run</th><th>Observed</th><th>Log</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><code>CLAUDE_CONFIG_DIR</code> is set, names a directory under this run's directory, and
+          its <code>settings.json</code> holds a <code>hooks</code> key naming the Stop hook and the
+          PreToolUse guards, and nothing else.</td>
+          <td><code>ls -la "$CLAUDE_CONFIG_DIR"; python3 -c "&hellip; sorted(settings.keys())"</code></td>
+          <td><code>CLAUDE_CONFIG_DIR=&lt;run&gt;/harness</code>, under the run dir. Top-level keys
+          are exactly <code>['hooks']</code>. The <code>hooks</code> object names
+          <code>Stop &rarr; reckon/hooks/worker_stop.py</code> and three PreToolUse guards
+          (<code>shell_function_recursion_guard.py</code> matcher Bash,
+          <code>native_agent_guard.py</code> matcher Agent,
+          <code>worker_git_guard.py</code> matcher Bash). The whole <code>hooks</code> key is carried
+          verbatim, so it also carries <code>SessionStart</code> and <code>UserPromptSubmit</code>
+          (the coordinator-obligations hook). <strong>PASS.</strong></td>
+          <td><code>logs/row1-claude-config-dir.txt</code></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>That directory holds <code>CLAUDE.md</code>, and its text contains the global git-safety
+          table (the phrase <q>Always banned</q> appears).</td>
+          <td><code>cat "$CLAUDE_CONFIG_DIR/CLAUDE.md"; grep -n "Always banned" ~/.agents/AGENTS.md</code></td>
+          <td>The literal file is the loader <code>@~/.agents/AGENTS.md</code> (21 bytes), so the
+          phrase is <em>not</em> in the literal bytes; it is reached by include resolution. The loader
+          target is <code>~/.agents/AGENTS.md</code> &rarr; <code>Code/dotfiles/agents/AGENTS.md</code>,
+          which holds the <code>### Banned Commands</code> table with four <q>Always banned</q> rows
+          (lines 39, 42&ndash;44). The effective text the harness loads therefore carries it.
+          <strong>PASS, with the literal-vs-resolved distinction stated rather than glossed.</strong></td>
+          <td><code>logs/row2-claude-md.txt</code></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>A <code>git commit</code> of a one-line marker file in this worktree succeeds, run
+          through the git on PATH, and the commit is reachable from this worktree's HEAD.</td>
+          <td><code>command -v git; git add tests/fence_smoke_marker.txt; git commit &hellip;; git merge-base --is-ancestor 83ab4dfa HEAD</code></td>
+          <td>git resolved to <code>/usr/bin/git</code>; it is <strong>not</strong>
+          <code>reckon/worker_shims/git</code> &mdash; there is no <code>git</code> shim on PATH (the
+          only shims are <code>host_shims/{salloc,sbatch,srun}</code>, and
+          <code>reckon/worker_shims/</code> does not exist at this revision and is a still-open
+          followup). Commit <code>83ab4dfa</code> created; reachable from HEAD
+          (<code>REACHABLE=yes</code>). <strong>PASS.</strong></td>
+          <td><code>logs/row3-git-resolution.txt</code>, <code>logs/row3-marker-commit.txt</code>,
+          <code>logs/row3-reachability.txt</code></td>
+        </tr>
+        <tr>
+          <td>4<br><em>negative control</em></td>
+          <td><strong>The declared control.</strong> A write into
+          <code>/home/ITER/mcintos/Code/reckon</code> (the main checkout) must fail; if it succeeds
+          the fence is not holding and the run reports that as its finding.</td>
+          <td><code>printf probe &gt; /home/ITER/mcintos/Code/reckon/fence_smoke_write_probe.txt</code></td>
+          <td><code>Read-only file system</code>, exit 1, no file created
+          (<code>file_exists_after=no</code>). <strong>PASS &mdash; the fence holds.</strong> The log's
+          first line repeats the declared string verbatim
+          (<code>logs/row4-write-main-checkout.txt</code>).</td>
+          <td><code>logs/row4-write-main-checkout.txt</code></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><code>git -C /home/ITER/mcintos/Code/reckon commit --allow-empty</code> fails with a
+          read-only file system error.</td>
+          <td><code>git -C /home/ITER/mcintos/Code/reckon commit --allow-empty -m probe</code></td>
+          <td>The literal command is <strong>refused earlier</strong>, by the PreToolUse worker-git
+          guard, which denies a mutating git verb aimed at another checkout (denial message logged
+          verbatim). The underlying fence refusal was therefore probed directly &mdash; the writes
+          <code>git commit</code> would need: a new file in the main checkout's <code>.git</code>
+          (<code>Read-only file system</code>, exit 1) and an append to <code>.git/index</code>
+          (<code>Read-only file system</code>, exit 1). The positive control in the same log writes
+          into the <em>worktree's own</em> git dir and <strong>lands</strong> (<code>WROTE</code>,
+          exit 0). <strong>PASS &mdash; two independent refusals, and the seal is not vacuous.</strong></td>
+          <td><code>logs/row5-git-commit-main-checkout.txt</code>,
+          <code>logs/row5b-main-git-readonly.txt</code></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>A write into <code>~/.claude</code> fails.</td>
+          <td><code>printf probe &gt; /home/ITER/mcintos/.claude/fence_smoke_probe.txt</code></td>
+          <td><code>Read-only file system</code>, exit 1, no file created. The same refusal is recorded
+          for the exact directory the original incident deleted. Both are logged. <strong>PASS.</strong></td>
+          <td><code>logs/row6-write-claude.txt</code>, <code>logs/row6b-write-memory.txt</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Rows 4&ndash;6 are expected failures and are recorded, never worked around.</strong>
+    Each refusal above is the positive result of the smoke: the fence is meant to refuse these, and
+    refusing them is the evidence it holds. The worktree-commit row (3) and the granted worktree git
+    dir in row 5's control are the matching positive: the fence grants what the run needs and seals
+    what it does not.</p>
+
+    <p><strong>What this node does not claim.</strong> This gate measures only this node's own
+    observed environment at the head it was launched from. It does not re-run the fence composition
+    tests, and it does not verify the merged result &mdash; that belongs to a separately dispatched
+    test node. It also does not prove the <code>~/.codex</code> half of the section's falsifier (a
+    codex worker with <code>auth.json</code> unchanged), which is neither this node's dialect nor its
+    scope.</p>
+
+    <p><strong>Commits and paths.</strong> The marker commit is <code>83ab4dfa</code>
+    (<code>tests/fence_smoke_marker.txt</code>); this anchor, its figure and the plan landing record
+    land in the node's closing commit. Paths: <code>tests/fence_smoke_marker.txt</code>,
+    <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html</code>,
+    <code>docs/figures/a-worker-cannot-write-your-home/fenced-worker-smoke-after-reenable.svg</code>,
+    <code>docs/plans/a-worker-cannot-write-your-home.html</code>. Logs, under the run directory:
+    <code>logs/row1-claude-config-dir.txt</code>, <code>logs/row2-claude-md.txt</code>,
+    <code>logs/row3-git-resolution.txt</code>, <code>logs/row3-marker-commit.txt</code>,
+    <code>logs/row3-reachability.txt</code>, <code>logs/row4-write-main-checkout.txt</code>,
+    <code>logs/row5-git-commit-main-checkout.txt</code>, <code>logs/row5b-main-git-readonly.txt</code>,
+    <code>logs/row6-write-claude.txt</code>, <code>logs/row6b-write-memory.txt</code>.</p>
+  </section>
 </main>
 </body>
 </html>

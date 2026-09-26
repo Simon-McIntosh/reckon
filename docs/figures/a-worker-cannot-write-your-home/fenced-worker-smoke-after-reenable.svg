@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="860" viewBox="0 0 1040 860" font-family="DejaVu Sans, Helix, sans-serif">
+<rect x="0" y="0" width="1040" height="860" fill="#ffffff"/>
+  <text x="24" y="38" font-size="22" fill="#111111" font-weight="bold">The fence, measured from inside a launch after the re-enable</text>
+  <text x="24" y="62" font-size="13" fill="#444444">Crew run r-20260926T145452839988-fenced-worker-smoke-after-reenable, launched fenced after fafeb910 (FENCE_WORKERS = True).</text>
+  <text x="24" y="82" font-size="13" fill="#444444">Left: paths the fence seals read-only, each refused a write. Right: roots it re-binds writable over that seal. Below: the six recorded probes.</text>
+  <rect x="24" y="104" width="484" height="306" fill="#fdf3f3" stroke="#b3261e" stroke-width="2" rx="8"/>
+  <text x="44" y="134" font-size="17" fill="#8c1d18" font-weight="bold">SEALED — read-only through the fence</text>
+  <rect x="44" y="150" width="444" height="46" fill="#ffffff" stroke="#e8b4b0" stroke-width="1"/>
+  <text x="56" y="170" font-size="12.5" fill="#8c1d18" font-family="DejaVu Sans Mono, monospace">/home/ITER/mcintos/Code/reckon</text>
+  <text x="56" y="187" font-size="12" fill="#555555">the main checkout — working tree and .git alike</text>
+  <rect x="44" y="204" width="444" height="46" fill="#ffffff" stroke="#e8b4b0" stroke-width="1"/>
+  <text x="56" y="224" font-size="12.5" fill="#8c1d18" font-family="DejaVu Sans Mono, monospace">/home/ITER/mcintos/.claude</text>
+  <text x="56" y="241" font-size="12" fill="#555555">operator memory, transcripts, settings</text>
+  <rect x="44" y="258" width="444" height="46" fill="#ffffff" stroke="#e8b4b0" stroke-width="1"/>
+  <text x="56" y="278" font-size="12.5" fill="#8c1d18" font-family="DejaVu Sans Mono, monospace">/home/ITER/mcintos/.agents</text>
+  <text x="56" y="295" font-size="12" fill="#555555">the global agent guidelines (read through, never written)</text>
+  <rect x="44" y="312" width="444" height="46" fill="#ffffff" stroke="#e8b4b0" stroke-width="1"/>
+  <text x="56" y="332" font-size="12.5" fill="#8c1d18" font-family="DejaVu Sans Mono, monospace">&lt;main&gt;/.git/index, &lt;main&gt;/.git/*</text>
+  <text x="56" y="349" font-size="12" fill="#555555">what git commit in the main checkout would need</text>
+  <text x="44" y="384" font-size="12" fill="#8c1d18">Write attempts: exit 1, "Read-only file system", none landed.</text>
+  <text x="44" y="400" font-size="12" fill="#8c1d18">The harness home is redirected to the run dir, so the harness never needs to know.</text>
+  <rect x="532" y="104" width="484" height="306" fill="#f4faf5" stroke="#2e7d32" stroke-width="2" rx="8"/>
+  <text x="552" y="134" font-size="17" fill="#1b5e20" font-weight="bold">GRANTED — writable, re-bound over the seal</text>
+  <rect x="552" y="150" width="444" height="46" fill="#ffffff" stroke="#a5d6a7" stroke-width="1"/>
+  <text x="564" y="170" font-size="12.5" fill="#1b5e20" font-family="DejaVu Sans Mono, monospace">…/s21-coord/fenced-worker-smoke-after-reenable</text>
+  <text x="564" y="187" font-size="12" fill="#555555">the run's own worktree</text>
+  <rect x="552" y="204" width="444" height="46" fill="#ffffff" stroke="#a5d6a7" stroke-width="1"/>
+  <text x="564" y="224" font-size="12.5" fill="#1b5e20" font-family="DejaVu Sans Mono, monospace">…/reckon/.git/worktrees/fenced-worker-smoke-after-reenable</text>
+  <text x="564" y="241" font-size="12" fill="#555555">the linked worktree's own git dir — index.lock, HEAD</text>
+  <rect x="552" y="258" width="444" height="46" fill="#ffffff" stroke="#a5d6a7" stroke-width="1"/>
+  <text x="564" y="278" font-size="12.5" fill="#1b5e20" font-family="DejaVu Sans Mono, monospace">…/reckon/.git/objects</text>
+  <text x="564" y="295" font-size="12" fill="#555555">the shared, content-addressed object store (append-only)</text>
+  <rect x="552" y="312" width="444" height="46" fill="#ffffff" stroke="#a5d6a7" stroke-width="1"/>
+  <text x="564" y="332" font-size="12.5" fill="#1b5e20" font-family="DejaVu Sans Mono, monospace">&lt;run&gt;/harness  (CLAUDE_CONFIG_DIR)</text>
+  <text x="564" y="349" font-size="12" fill="#555555">per-run harness home: settings.json (hooks), CLAUDE.md, transcripts</text>
+  <text x="552" y="384" font-size="12" fill="#1b5e20">Positive control: a probe file written into the worktree's own git dir landed (exit 0).</text>
+  <text x="552" y="400" font-size="12" fill="#1b5e20">So the refusals on the left are a real seal, not an instrument that cannot observe a write.</text>
+  <text x="24" y="452" font-size="16" fill="#111111" font-weight="bold">The six recorded probes (each command and its logged output under the run directory)</text>
+  <rect x="24" y="468" width="992" height="32" fill="#eeeeee" stroke="#cccccc" stroke-width="1"/>
+  <text x="36" y="489" font-size="12" fill="#111111" font-weight="bold">#</text>
+  <text x="66" y="489" font-size="12" fill="#111111" font-weight="bold">probe</text>
+  <text x="600" y="489" font-size="12" fill="#111111" font-weight="bold">observed</text>
+  <text x="964" y="489" font-size="12" fill="#111111" font-weight="bold" text-anchor="end">exit</text>
+  <rect x="24" y="500" width="992" height="52" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <text x="36" y="522" font-size="12" fill="#111111">1</text>
+  <text x="66" y="522" font-size="12.5" fill="#111111">CLAUDE_CONFIG_DIR set, under the run dir; harness settings.json top keys = ["hooks"]</text>
+  <text x="66" y="540" font-size="11" fill="#555555">names Stop (worker_stop.py) and PreToolUse guards (recursion, native-agent, worker-git)</text>
+  <text x="600" y="522" font-size="12" fill="#1b5e20">set, under run dir; {"hooks"} only</text>
+  <text x="964" y="522" font-size="12" fill="#1b5e20" text-anchor="end">ok</text>
+  <rect x="24" y="552" width="992" height="52" fill="#fafafa" stroke="#dddddd" stroke-width="1"/>
+  <text x="36" y="574" font-size="12" fill="#111111">2</text>
+  <text x="66" y="574" font-size="12.5" fill="#111111">harness home holds CLAUDE.md; its text carries the global git-safety table</text>
+  <text x="66" y="592" font-size="11" fill="#555555">literal file is the loader @~/.agents/AGENTS.md; the phrase is reached by include resolution</text>
+  <text x="600" y="574" font-size="12" fill="#1b5e20">"Always banned" present (resolved)</text>
+  <text x="964" y="574" font-size="12" fill="#1b5e20" text-anchor="end">ok</text>
+  <rect x="24" y="604" width="992" height="52" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <text x="36" y="626" font-size="12" fill="#111111">3</text>
+  <text x="66" y="626" font-size="12.5" fill="#111111">commit a one-line marker in the worktree through the git on PATH</text>
+  <text x="66" y="644" font-size="11" fill="#555555">git resolved to /usr/bin/git; NOT reckon/worker_shims/git (no git shim on PATH)</text>
+  <text x="600" y="626" font-size="12" fill="#1b5e20">83ab4dfa; reachable from HEAD</text>
+  <text x="964" y="626" font-size="12" fill="#1b5e20" text-anchor="end">0</text>
+  <rect x="24" y="656" width="992" height="52" fill="#f6fbf6" stroke="#a5d6a7" stroke-width="1"/>
+  <text x="36" y="678" font-size="12" fill="#111111">4</text>
+  <text x="66" y="678" font-size="12.5" fill="#111111" font-weight="bold">write into the main checkout — the declared negative control (highlighted)</text>
+  <text x="66" y="696" font-size="11" fill="#555555">printf probe > /home/ITER/mcintos/Code/reckon/fence_smoke_write_probe.txt</text>
+  <text x="600" y="678" font-size="12" fill="#1b5e20">Read-only file system; no file</text>
+  <text x="964" y="678" font-size="12" fill="#1b5e20" text-anchor="end">1</text>
+  <rect x="24" y="708" width="992" height="52" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <text x="36" y="730" font-size="12" fill="#111111">5</text>
+  <text x="66" y="730" font-size="12.5" fill="#111111">git -C /home/ITER/mcintos/Code/reckon commit --allow-empty</text>
+  <text x="66" y="748" font-size="11" fill="#555555">refused earlier by the PreToolUse worker-git guard; its .git write probed directly and sealed</text>
+  <text x="600" y="730" font-size="12" fill="#8c1d18">denied by guard; .git write read-only</text>
+  <text x="964" y="730" font-size="12" fill="#8c1d18" text-anchor="end">1</text>
+  <rect x="24" y="760" width="992" height="52" fill="#fafafa" stroke="#dddddd" stroke-width="1"/>
+  <text x="36" y="782" font-size="12" fill="#111111">6</text>
+  <text x="66" y="782" font-size="12.5" fill="#111111">write into ~/.claude (and its projects/.../memory store)</text>
+  <text x="66" y="800" font-size="11" fill="#555555">printf probe > /home/ITER/mcintos/.claude/fence_smoke_probe.txt</text>
+  <text x="600" y="782" font-size="12" fill="#1b5e20">Read-only file system; no file</text>
+  <text x="964" y="782" font-size="12" fill="#1b5e20" text-anchor="end">1</text>
+</svg>

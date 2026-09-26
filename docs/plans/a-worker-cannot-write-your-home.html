@@ -687,6 +687,60 @@
         figure
         <code>/reckon/figures/a-worker-cannot-write-your-home/plan-read-resolution.svg</code>.</p></div>
       </div>
+
+      <div class="r-comment" data-section="s2" data-id="c-20260926T1730-fenced-worker-smoke" data-who="node fenced-worker-smoke-after-reenable" data-when="2026-09-26T17:30:00+02:00">
+        <div class="r-comment-body"><p><strong>A live fenced launch, measured from inside.</strong>
+        The re-enable node flipped <code>FENCE_WORKERS</code> and pinned the <em>composed</em> argv;
+        this node runs as a real worker launched through that path and records what its own
+        environment and filesystem allow, as a smoke test of the live fence rather than a unit test.
+        Six probes, each a command this process ran, its logged output under the run directory.</p>
+
+        <p><strong>(1) Harness home.</strong> <code>CLAUDE_CONFIG_DIR</code> names
+        <code>&lt;run&gt;/harness</code> and its <code>settings.json</code> has exactly one top-level
+        key, <code>hooks</code>, naming <code>Stop &rarr; reckon/hooks/worker_stop.py</code> and three
+        PreToolUse guards (the recursion guard, <code>native_agent_guard.py</code>,
+        <code>worker_git_guard.py</code>). The whole <code>hooks</code> key is carried verbatim, so it
+        also carries <code>SessionStart</code> and <code>UserPromptSubmit</code> (the
+        coordinator-obligations hook); those are inside <code>hooks</code>, not extra top-level keys.
+        <strong>(2) Instruction file.</strong> The home holds <code>CLAUDE.md</code>; its literal bytes
+        are the loader <code>@~/.agents/AGENTS.md</code>, and the include target carries the global
+        git-safety table &mdash; <q>Always banned</q> appears at four rows of its
+        <code>Banned Commands</code> table. The phrase is reached by include resolution, not present in
+        the literal file, and that distinction is stated rather than glossed.
+        <strong>(3) Commit.</strong> A one-line marker committed in the worktree through the git on
+        PATH succeeds: git resolved to <code>/usr/bin/git</code>, and it is <em>not</em>
+        <code>reckon/worker_shims/git</code> &mdash; there is no git shim on PATH (the only shims are
+        <code>host_shims/{salloc,sbatch,srun}</code>; the git shim is the still-open
+        <code>f-awcwyh-git-shim-checks-the-resolved-repo</code>). Commit <code>83ab4dfa</code> is
+        reachable from this worktree's HEAD.</p>
+
+        <p><strong>Rows 4&ndash;6 are expected refusals, recorded and never worked around.</strong>
+        A write into the main checkout is refused read-only, exit 1, no file. The same refusal holds
+        for <code>~/.claude</code> and for the exact
+        <code>projects/&hellip;/memory</code> directory the original incident deleted.
+        <code>git -C &lt;main&gt; commit --allow-empty</code> is refused <em>earlier</em> by the
+        PreToolUse worker-git guard (a mutating verb aimed at another checkout), so the underlying
+        fence refusal was probed directly and the writes <code>git commit</code> needs &mdash; a new
+        file in <code>&lt;main&gt;/.git</code> and an append to <code>.git/index</code> &mdash; each
+        fail read-only. <strong>The declared negative control is row 4</strong>: a write to the main
+        remains refused; its log's first line repeats the declared string verbatim. The seal is not
+        vacuous &mdash; the matching positive control writes into the <em>worktree's own</em> git dir
+        and lands.</p>
+
+        <p><strong>What this node does not claim.</strong> It measures only this node's own observed
+        environment at the head it launched from. It verifies the merged result for no one &mdash; that
+        is a separately dispatched test node's job &mdash; and it does not run the codex half of the
+        handler's falsifier (a codex worker with <code>auth.json</code> unchanged), which is neither
+        this node's dialect nor its scope.</p>
+
+        <p>Paths: <code>tests/fence_smoke_marker.txt</code>,
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html</code> (anchor
+        <code>#s2-fenced-worker-smoke-after-reenable</code>),
+        <code>docs/figures/a-worker-cannot-write-your-home/fenced-worker-smoke-after-reenable.svg</code>,
+        and the ten probe logs under
+        <code>~/.config/reckon/crew/runs/r-20260926T145452839988-fenced-worker-smoke-after-reenable/logs/</code>.
+        Marker commit <code>83ab4dfa</code>; this record and its figure land in the closing commit.</p></div>
+      </div>
     </section>
 
     <p><strong>Smoke: the fence does not start a worker on this host.</strong>
