@@ -2716,6 +2716,36 @@ def _sandbox_reachability(
     ]
 
 
+def _fence_write_roots(
+    *,
+    backend: Mapping[str, Any],
+    repository: str | Path,
+    run_directory: str | Path,
+    manifest_path: str | Path | None,
+    worktree: str | Path | None,
+    declared_write_paths: Iterable[str],
+) -> tuple[Path, ...]:
+    """Return every root a fenced launch re-binds writable.
+
+    The fence seals each protected path and re-binds only the roots it is
+    handed, so a tier's own write roots are not enough on their own: an
+    ``unrestricted`` tier is unrestricted only while nothing seals the machine.
+    Under the fence the delivery stores a restricted tier gets are named here
+    too, together with every declared write path outside the worktree, so a
+    worker delivers into the same place whichever tier it runs on.
+    """
+    return _backends.fenced_write_roots(
+        backend,
+        repository=repository,
+        run_directory=run_directory,
+        reports_directory=reports_dir(),
+        review_store_directory=review_store_root(),
+        manifest_path=manifest_path,
+        declared_write_paths=declared_write_paths,
+        worktree=worktree,
+    )
+
+
 def plan_dispatch(
     *,
     node: TaskNode,
@@ -4064,6 +4094,14 @@ def dispatch(
 
         if launch_kind == "cli":
             try:
+                fence_roots = _fence_write_roots(
+                    backend=backend,
+                    repository=repo_root,
+                    run_directory=run_dir(run_id),
+                    manifest_path=node.manifest_path,
+                    worktree=worktree["path"],
+                    declared_write_paths=node.write_paths,
+                )
                 plan = resolve_launch_executable(
                     _backends.launch_plan(
                         backend_name=backend_name,
@@ -4071,7 +4109,7 @@ def dispatch(
                         prompt=prompt,
                         worktree=worktree["path"],
                         manifest_path=node.manifest_path,
-                        writable_directories=resolution.sandbox_write_roots or (),
+                        writable_directories=fence_roots,
                         final_message_path=str(final_path),
                         resume_session=reuse_session,
                         fence=FENCE_WORKERS,
@@ -6592,7 +6630,15 @@ def resume_plan(
             ),
             worktree=str(record.get("worktree") or "."),
             manifest_path=str(record.get("manifest_path") or ""),
-            writable_directories=record.get("sandbox_write_roots") or (),
+            writable_directories=_fence_write_roots(
+                backend=backend,
+                repository=str(record.get("repo") or "."),
+                run_directory=Path(str(record.get("manifest_path") or "")).parent,
+                manifest_path=record.get("manifest_path"),
+                worktree=record.get("worktree"),
+                declared_write_paths=(record.get("node") or {}).get("write_paths")
+                or (),
+            ),
             resume_session=session_id or None,
             fence=FENCE_WORKERS,
         )
@@ -6959,7 +7005,15 @@ def change_lane(
                 prompt=prompt,
                 worktree=str(record.get("worktree") or "."),
                 manifest_path=str(record.get("manifest_path") or ""),
-                writable_directories=resolution.sandbox_write_roots or (),
+                writable_directories=_fence_write_roots(
+                    backend=backend,
+                    repository=str(record.get("repo") or "."),
+                    run_directory=Path(str(record.get("manifest_path") or "")).parent,
+                    manifest_path=record.get("manifest_path"),
+                    worktree=record.get("worktree"),
+                    declared_write_paths=(record.get("node") or {}).get("write_paths")
+                    or (),
+                ),
                 final_message_path=str(final_path),
                 resume_session=session_id if continued else None,
                 fence=FENCE_WORKERS,
