@@ -85,6 +85,27 @@
     "reason": "repair of followup f-cot-a-pointer-field-lags-the-authority-it-mirrors (first half); it closes no section",
     "verdict": "waived"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "6d3ecc6ee93baad06d0a5d6072cb6b9eb420276e",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "integrated_revision": "6d3ecc6ee93baad06d0a5d6072cb6b9eb420276e",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 6d3ecc6ee93b: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recover.py tests/test_crew_recovery.py tests/test_recovery_state_typing.py",
+    "gate_command_source": "stored",
+    "integrated_revision": "6d3ecc6ee93baad06d0a5d6072cb6b9eb420276e",
+    "integrated_verdict": "failed",
+    "ran": true,
+    "reason": null,
+    "timed_out": false
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
