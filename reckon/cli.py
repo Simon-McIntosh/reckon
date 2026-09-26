@@ -4155,6 +4155,16 @@ def _ledger_module():
         "not a rebuke: some landings legitimately do not move the plan."
     ),
 )
+@click.option(
+    "--waive-live-run",
+    default="",
+    metavar="REASON",
+    help=(
+        "Promote a run whose recorded worker process is still alive and whose "
+        "manifest status is not terminal, and record why it may land anyway. "
+        "Refused when the run has no live, in-progress worker to waive."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_complete(
     run_id,
@@ -4178,6 +4188,7 @@ def crew_complete(
     waive_negative_control,
     accepted_paths,
     no_impl_change,
+    waive_live_run,
     pretty,
 ):
     """Promote one finished run into the owning repository's committed ledger.
@@ -4218,6 +4229,7 @@ def crew_complete(
             negative_control_waiver=waive_negative_control,
             accepted_paths=dict(accepted_paths),
             no_impl_change=no_impl_change,
+            live_run_waiver=waive_live_run,
         )
     except ledger_module.SuiteDeltaError as exc:
         _emit(
