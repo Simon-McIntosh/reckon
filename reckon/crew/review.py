@@ -762,8 +762,9 @@ def store_review(
     total is capped when the run added failures it did not retire by name; see
     :func:`annotate_added_failures`. ``run_dir`` resolves a manifest's relative
     log paths, and ``done_when`` is the reviewed node's own measure, read
-    alongside the manifest for retirement prose. With no ``manifest`` the count
-    is recorded as unmeasured rather than zero.
+    alongside the manifest for retirement prose. With no ``manifest`` supplied
+    the record is stored unchanged; a manifest that names no base or head log
+    records the count as unmeasured rather than zero.
     """
     project = record.get("project")
     reviewed_run_id = record.get("reviewed_run_id")
@@ -781,9 +782,10 @@ def store_review(
     if not record.get("timestamp"):
         record = dict(record)
         record["timestamp"] = datetime.now(UTC).isoformat()
-    record = annotate_added_failures(
-        record, manifest, run_dir=run_dir, done_when=done_when
-    )
+    if manifest is not None:
+        record = annotate_added_failures(
+            record, manifest, run_dir=run_dir, done_when=done_when
+        )
     if base_sha and head_sha:
         path = review_path(
             project,
