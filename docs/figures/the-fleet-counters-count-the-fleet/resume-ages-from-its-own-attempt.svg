@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="400" viewBox="0 0 760 400" role="img" aria-labelledby="t d">
+  <title id="t">A resumed run is aged from the later of its own attempt's clocks</title>
+  <desc id="d">Top panel, before. The classifier reads one clock only: the newest stream of any attempt. A resumption leaves the superseded attempt's stream on disk, last written a thousand seconds ago, so seconds after crew resume the run is called stalled even though the current attempt has only just launched. Bottom panel, after. Two clocks bound the reading and the later one decides. One is the newest stream the run has written, which is the attempt's own output where one exists. The other is the attempt's launch, taken from the attempt record when a supervisor published one and otherwise from the same pointer-or-creation clock a fresh dispatch falls back to. The smaller reading is taken, so a run resumed seconds ago reads working inside the launch window, while a resume whose own log goes quiet for a thousand seconds has a launch clock of a thousand seconds too and still reads stalled.</desc>
+  <style>
+    .hdr { font: bold 13px sans-serif; fill: #1f2430; }
+    .t { font: 12px sans-serif; fill: #1f2430; }
+    .lbl { font: 11px sans-serif; fill: #4a5568; }
+    .mono { font: 11px monospace; fill: #1f2430; }
+    .stalled { fill: #fdecec; stroke: #c0392b; stroke-width: 1.5; }
+    .working { fill: #eaf7ee; stroke: #2e8a4f; stroke-width: 1.5; }
+    .bar-stale { fill: #f6c9c9; stroke: #c0392b; stroke-width: 1.2; }
+    .bar-fresh { fill: #bfe6cc; stroke: #2e8a4f; stroke-width: 1.2; }
+    .bar-empty { fill: #f2f4f7; stroke: #8a94a6; stroke-width: 1.2; stroke-dasharray: 4 3; }
+    .axis { stroke: #8a94a6; stroke-width: 1.2; }
+    .tick { stroke: #8a94a6; stroke-width: 1; }
+    .vline { stroke: #c0392b; stroke-width: 1.3; stroke-dasharray: 4 3; }
+    .note { font: 10.5px sans-serif; fill: #6b7280; }
+    .rule { fill: #eef4ff; stroke: #3b6fd4; stroke-width: 1.4; }
+  </style>
+
+  <!-- ===================== BEFORE ===================== -->
+  <text class="hdr" x="20" y="26">BEFORE &#8212; one clock: the newest stream of any attempt</text>
+
+  <text class="lbl" x="20" y="58">predecessor</text>
+  <text class="mono" x="20" y="73">stream.jsonl</text>
+  <rect class="bar-stale" x="140" y="46" width="480" height="30" rx="4"/>
+  <text class="mono" x="150" y="65">last write 1000 s ago</text>
+  <text class="mono" x="632" y="65">age 1000 s</text>
+
+  <text class="lbl" x="20" y="106">this attempt</text>
+  <text class="mono" x="20" y="121">resume-1.jsonl</text>
+  <rect class="bar-empty" x="620" y="94" width="60" height="30" rx="4"/>
+  <text class="note" x="620" y="141">absent &#8212; the resume launched 5 s ago</text>
+
+  <line class="vline" x1="650" y1="46" x2="650" y2="150"/>
+  <rect class="stalled" x="500" y="156" width="220" height="40" rx="6"/>
+  <text class="t" x="610" y="176" text-anchor="middle">reads stalled</text>
+  <text class="mono" x="610" y="190" text-anchor="middle">alive, quiet 1000 s</text>
+  <text class="note" x="20" y="182">The attempt that already ended ages the one that just began.</text>
+
+  <line x1="20" y1="212" x2="740" y2="212" stroke="#d0d7de" stroke-width="1.2"/>
+
+  <!-- ===================== AFTER ===================== -->
+  <text class="hdr" x="20" y="238">AFTER &#8212; two clocks, and the later of them decides</text>
+
+  <text class="lbl" x="20" y="272">clock A &#8212;</text>
+  <text class="lbl" x="20" y="286">newest stream,</text>
+  <text class="lbl" x="20" y="300">any attempt</text>
+  <rect class="bar-stale" x="140" y="258" width="480" height="24" rx="4"/>
+  <text class="mono" x="150" y="275">1000 s</text>
+
+  <text class="lbl" x="20" y="326">clock B &#8212;</text>
+  <text class="lbl" x="20" y="340">attempt launch</text>
+  <rect class="bar-fresh" x="618" y="312" width="62" height="24" rx="4"/>
+  <text class="mono" x="556" y="329" text-anchor="end">5 s</text>
+
+  <rect class="rule" x="140" y="352" width="300" height="34" rx="6"/>
+  <text class="mono" x="290" y="366" text-anchor="middle">reading = min(A, B) = 5 s</text>
+  <text class="note" x="290" y="380" text-anchor="middle">inside the launch window a fresh dispatch gets</text>
+
+  <rect class="working" x="470" y="352" width="250" height="34" rx="6"/>
+  <text class="t" x="595" y="366" text-anchor="middle">reads working</text>
+  <text class="note" x="595" y="380" text-anchor="middle">a superseded attempt cannot age this one</text>
+</svg>
