@@ -311,15 +311,28 @@
         the path set those commits touched, and a citation list that measures no path raises
         before any write: the refusal names the commit it refuses, appends no ledger row, and
         keeps the live pointer so the run can be re-promoted from the commits it made.</p>
-        <p><strong>Measured.</strong> The new cases fail at base <code>355ef453</code> and pass at
-        <code>c038b3e3</code>. Citing only the run's merge is refused naming that commit
-        (<code>DID NOT RAISE CrewError</code> at base). One path changed by two cited commits is
-        recorded as <code>1 added / 0 removed</code>, the fixture's own
+        <p><strong>Measured.</strong> Two of the three cases fail at base <code>355ef453</code>
+        and pass at the final head: citing only the run's merge is refused naming that commit
+        (<code>DID NOT RAISE CrewError</code> at base), and one path changed by two cited commits
+        is recorded as <code>1 added / 0 removed</code> — the fixture's own
         <code>git diff --numstat &lt;base&gt; &lt;tip&gt; -- in_scope.txt</code>, where the
-        per-commit sum reads <code>2 added / 1 removed</code>. Abbreviated citations land as the
-        canonical ids the repository resolves rather than the prefixes the caller typed. The three
-        measured files in one invocation move from <strong>2 failed, 79 passed</strong> to
-        <strong>81 passed</strong> — 2 resolved, 0 added.</p>
+        per-commit sum reads <code>2 added / 1 removed</code>. The third case, the abbreviated
+        citation, passes at base as well: canonicalisation already resolved prefixes, and what
+        that case pins is that its expectation is derived from the repository with
+        <code>git rev-parse</code> rather than echoed from the citation list it passed in. The
+        base arm over the measured files is <strong>2 failed, 79 passed</strong>, its two failures
+        being exactly those first two cases.</p>
+        <p><strong>Review findings closed 2026-09-26.</strong> The net diff was headed at the
+        run's tip, so a run whose last cited commit was a merge was charged the content that
+        merge resolved to. A case reproduces it: the run's own commit adds two lines and the
+        trailing merge resolves the conflict to a peer's three, so the tip reading is
+        <code>3 added / 1 removed</code> against the run's own <code>2 added / 0 removed</code>.
+        The case fails at <code>afcfd48e</code> and passes at <code>1aad8e6e</code>, where the
+        diff is headed at the run's last own commit. A case for the second refusal — a citation
+        list whose commits change no path at all, here a single empty commit — asserts the
+        refusal names the commit, writes no row and keeps the pointer; dropping that check reddens
+        that case and nothing else. The measured files in one invocation are <strong>83 passed,
+        0 failed</strong> at <code>1aad8e6e</code>.</p>
         <p>Receipts: <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-net-churn">the anchored evidence</a>
         retains both arms' header-lined logs and the declared negative control. Independent merged
         verification and followup closure remain coordinator-owned.</p>
