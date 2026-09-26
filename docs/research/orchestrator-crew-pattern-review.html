@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="orchestrator-crew-pattern-review">
+  <meta name="plan-title" content="The Crew Dispatch Pattern, Reviewed">
+  <meta name="plan-summary" content="Survey and six measured studies of two weeks of crew dispatch: verified but heavy, review-bound, self-absorbed and reimplementing; S25 lightens it.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,analysis,measurement">
+  <meta name="plan-informs" content="a-review-is-sized-to-its-risk,a-landing-record-never-conflicts,a-refusal-is-about-the-work,a-small-change-is-a-small-node,the-fleet-reports-its-velocity,a-worker-reuses-before-it-writes,the-crew-contract-fits-one-read,open-work-is-capped,nova:nova-portfolio-replan">
+  <meta name="plan-evidence-for" content="orchestrator-crew-pattern-studies">
+  <title>The Crew Dispatch Pattern, Reviewed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Verdict</h2>
+    <p>Over the fortnight from 12 to 26 September the crew pattern — coordinators running
+      <code>/reckon-build</code> and dispatching every node to a worker on the local lane or a codex lane — landed
+      2,303 runs across five repositories, three times August's daily rate, and the work it landed is well verified:
+      independent reviews catch real defects, negative controls catch tests that cannot fail, and fewer than 3% of
+      product lines are deleted within a week. It is also heavier and slower per node than it needs to be, and the
+      weight is growing faster than the output.</p>
+    <ul>
+      <li><strong>Velocity.</strong> A node takes a median 44 minutes to complete and 83 to promote, against 9.8
+        minutes per run in August. When review became mandatory on 21 September, the review share of promotions went
+        from 25% to 57%, promotions rose 77% and source lines landed fell 27% (§4).</li>
+      <li><strong>Where the time goes.</strong> Serial reviews with one repair node per finding, a local lane run at
+        twice its generation width, merge conflicts in record files every node shares, and refusals about wording
+        and bookkeeping. 44% of worker file edits are record-keeping (§5).</li>
+      <li><strong>Quality.</strong> Better-verified, not better-designed: each node is locally correct, and nothing
+        owns the codebase between nodes (§6).</li>
+      <li><strong>Code.</strong> Exclusive write scopes make a private copy the cheapest compliant move: 44
+        timestamp parsers and 14 atomic JSON writers in reckon, and a crew interface that grew 226% in three weeks
+        (§7).</li>
+      <li><strong>nova.</strong> No broad rise in flapping, and no lane difference in churn; the regression is in
+        where effort went — nine commits in ten touching no code in the latest week — and in the evidence: 103 of
+        348 fleet-made figures misrepresent their physics (§8).</li>
+      <li><strong>Weight.</strong> 49,000 words of binding instruction before a coordinator reads a plan; reckon
+        opened 60 plans and closed 9; half the fleet's promotions are reckon working on itself (§9).</li>
+    </ul>
+    <p>The remedy is to take ceremony away where it does not pay, not to add more: size review to risk, give each
+      node its own record, refuse only defects, make a small change a small node, measure velocity continuously, give
+      shared primitives one home, cut the build skill to a core, and cap open work. Those are the eight plans of
+      sprint S25 (§12). The five coordinators surveyed agree on almost all of it (§3).</p>
+
+    <h2 id="s2">§2 — Method</h2>
+    <p>Two evidence streams, deliberately independent. <strong>A survey</strong> of every live coordinator session on
+      the workstation that was not itself a crew worker: five sessions, nine questions, answered in writing within
+      forty minutes and reproduced verbatim in §13. <strong>Six measured studies</strong>, dispatched as crew nodes
+      under <a href="/reckon/plans/orchestrator-crew-pattern-studies">orchestrator-crew-pattern-studies</a> — three
+      on the codex lane (velocity, code depth and reuse, nova history) and three on the local lane (worker anatomy,
+      coordinator overhead, nova readiness) — each writing a census script that reproduces its compact output byte
+      for byte, over the closed window 2026-09-12T00:00Z to 2026-09-26T10:00Z so that growing ledgers cannot move
+      the counts. The August figures come from the
+      <a href="/reckon/research/crew-fleet-rox-review">return-on-experience review</a> and are quoted, not re-derived.
+      The coordinator added its own readings of the protocol's size over time, the plan backlog, the live fleet and
+      the local lane's router gate, each timestamped where it appears.</p>
+    <p>Running the studies through the pattern under review was part of the method, and several of its findings were
+      first observed there: the six nodes' shared default scope, the goal lint's refusal of "TODO", the review reflex
+      racing a coordinator's correction, and census workers committing 4 to 17 MB of JSON because the brief set no
+      size bound — the coordinator's defect, corrected by resuming each worker. Figures in this record are readings
+      with a timestamp, not constants: re-derive before quoting.</p>
+
+    <h2 id="s3">§3 — What the five coordinators report</h2>
+    <p>The survey went on 2026-09-26 at about 10:30Z to every live coordinator session on the
+      workstation that was not itself a crew worker: the three reckon coordinators <code>s21-coord</code>
+      (session <code>reckon-84</code>: the fence, process lifecycle, local lane and plan review; 58
+      promoted runs on 25–26 Sep), <code>s22-coord</code> (<code>reckon-bc</code>: 37 promoted) and
+      <code>s23-coord</code> (<code>reckon-ee</code>: 60 ledger rows); the reckon burn-analysis session
+      <code>reckon-a0</code>, which measured 1,040 runs and dispatched none; and the imas-ambix coordinator
+      <code>llac-s14-0925</code> (<code>imas-ambix-0a</code>), which runs local-lane admission control and
+      sees the lane from the serving side. All five answered within forty minutes. Their replies are
+      reproduced verbatim in §13; this section is the synthesis. No nova coordinator was live: nova's
+      voice in this review is its own history and its own audit (§8).</p>
+
+    <table>
+      <thead><tr><th>Question</th><th>Where they agree</th><th>Where they differ</th></tr></thead>
+      <tbody>
+        <tr><td>Does crew produce better work?</td>
+          <td>Yes, on correctness, and all four coordinators give defects they would otherwise have
+            shipped: a fence that would grant a whole checkout, a guard that would have turned every
+            worker's plan-edit gate red, three rounds of git-shim bypasses, tests that could never fail,
+            paused and full gates reading as open, a stale default that would have split the pause from
+            the router.</td>
+          <td>None on quality. The dissent is about what that quality costs.</td></tr>
+        <tr><td>Does it produce more work?</td>
+          <td>Mixed to poor for small work. A 12-line fix costs about 35 minutes of worker time and a
+            20-minute review before promotion, against about 10 minutes inline (s22). One ambix
+            feature, a 20-minute edit done directly, took five implement nodes and five reviews, about
+            2.5 hours, because each review finding became its own repair node.</td>
+          <td>s21: inline is faster per node, but the worktree, commit and gate discipline "paid for
+            itself when the fleet broke".</td></tr>
+        <tr><td>Where does wall clock go?</td>
+          <td>In every coordinator's ranking: review round-trips of 20–60 minutes, serial after the
+            implement run; merge conflicts in the cumulative plan and evidence HTML "on every merge,
+            always a mechanical union"; lane and harness incidents (router 404s on engine relaunch killed
+            every local worker twice; the fence blocked every commit); refusals at dispatch and at
+            promotion over bookkeeping. s23: "real work is under half". s22: "lane capacity was never the
+            constraint".</td>
+          <td>Follower replay noise: still costly for ambix and s22, "much better today" for s21.</td></tr>
+        <tr><td>Which ceremonies earn their keep?</td>
+          <td>verify-gate, the negative control (it caught tautological tests in three sessions), review
+            of runtime code, and the single-goal validator, which caught two real brief defects. s22
+            calls the read-only plan-currency audit the best investment of its session: it turned a plan
+            claiming impl 0.99 into 3 landed, 4 partial, 2 not started.</td>
+          <td>One evidence record per plan: kept by s21 and s23, but the ambix coordinator would drop
+            the per-node figure and evidence prose for small nodes ("a two-key profile change produced a
+            93-line figure").</td></tr>
+        <tr><td>Which should be lighter?</td>
+          <td>The goal lint (it refuses ";", "and", "then", a quoted "&lt;path&gt;" — s21 lost about
+            eight dispatches to rewording); the impl-must-move refusal on corrective nodes (s23 used the
+            waiver "about every other time"); the watcher-required refusal after a follower's lifetime
+            ends with runs still in flight; review of docs, wording and test-only diffs under about 50
+            lines; section declarations.</td>
+          <td>—</td></tr>
+        <tr><td>Must a plan section exist before dispatch?</td>
+          <td>Keep "attach to a plan and section"; drop "author a section first" for follow-ups, audits
+            and review-finding repairs. Writing and committing a followup only so that a goal can cite it
+            cost 5–10 minutes each (s23). A finding against a landed node should be dispatchable from the
+            finding alone (ambix).</td>
+          <td>s21: no view — every node had a section already.</td></tr>
+        <tr><td>Too much context?</td>
+          <td>No prompt-too-long refusals from any lane; briefs of about 250 words citing
+            <code>file:line</code> and an existing test file land first pass. The measured leak was
+            cross-task session inheritance — 13% of local, 24% of claude and 7% of codex dispatches on
+            20–22 Sep carried another task's session, at two to three times the per-turn context on claude
+            — and it closed on 23 Sep when <code>session_reuse</code> was switched off (0 of 126
+            since).</td>
+          <td>ambix sees workers re-reading plan HTML heavily and spending small runs writing plan and
+            evidence HTML; s23 sees them rarely re-read. s21 notes the git-safety rules reach workers twice,
+            through the prompt and through memory.</td></tr>
+        <tr><td>Should nodes be smaller?</td>
+          <td>No. Single-goal nodes of 15–60 minutes land; the 60-minute fence forces sensible splits.
+            Guard and security work needs two or three review passes whatever its size. What fails is a
+            node whose done-when spans code, docs and evidence (the record commit lands after the code
+            commit), and a node that depends on an unmerged sibling.</td>
+          <td>ambix: smaller nodes land faster only if review findings are batched.</td></tr>
+        <tr><td>Is the coordinator doing too much?</td>
+          <td>Never inline product code. A coordinator may commit a finished worker diff and correct a
+            record (a sha typo, a plan heading) directly.</td>
+          <td>ambix would let a coordinator make trivial edits (under about 30 lines, docs, wording, a
+            review-finding repair) and have a worker review them; s22 says a coordinator-implements
+            threshold "would be a mistake: the delegation discipline is what kept the evidence honest";
+            s21's two forced inline edits hid a hook regression and caused an outage.</td></tr>
+        <tr><td>Local lane or codex?</td>
+          <td>The local lane (deepseek-v4.1-flash through clive) is reliable for well-specified work —
+            including router concurrency code that reviewed at 94 — and its failures were infrastructure,
+            not model. Codex was paused for most of the window by a shared <code>CODEX_HOME</code> race,
+            fixed by per-run homes on 25 Sep. Codex is quota-bound, not capacity-bound: about 9 codex runs
+            a day is the sustainable pace to the weekly reset, and the preflight never projects it.</td>
+          <td>s23: the local lane over-claims in manifests (logs labelled with the wrong revision,
+            overstated reproductions), so its gate logs must be read before any figure is accepted.</td></tr>
+      </tbody>
+    </table>
+
+    <p>Their top-three changes cluster into nine asks; the right-hand column counts how many sessions
+      raised each.</p>
+    <table>
+      <thead><tr><th>Ask</th><th>Raised by</th><th>n</th></tr></thead>
+      <tbody>
+        <tr><td>Stop merge conflicts in cumulative plan and evidence HTML: per-node fragments or a server-side append</td><td>s23, s21, ambix</td><td>3</td></tr>
+        <tr><td>Review economy: batch a review's findings into one repair, a light tier for non-runtime diffs, auto-promote a clean review (score ≥ 90, gate passed, no findings)</td><td>ambix, s22, s21</td><td>3</td></tr>
+        <tr><td>Cheaper refusals: relax the goal lint, re-arm rather than refuse on an expired follower, one idempotent path for the review reflex and a hand dispatch</td><td>s23, s22, s21</td><td>3</td></tr>
+        <tr><td>A follower that tells the truth: fix the flicker classes, mark baseline replay rows, reload the producer onto changed code</td><td>s23, s22, s21</td><td>3</td></tr>
+        <tr><td>Drop mandatory figures and evidence prose for small nodes; one landing line</td><td>ambix</td><td>1</td></tr>
+        <tr><td>Exact write paths by default; refuse directory-wide claims that block peers for an hour</td><td>ambix</td><td>1</td></tr>
+        <tr><td>Promotion takes the run's full head and reads manifest paths relative to the worktree</td><td>s21</td><td>1</td></tr>
+        <tr><td>Plan-currency audit as a first-class verb that emits dispatchable briefs</td><td>s22</td><td>1</td></tr>
+        <tr><td>Per-task burn as a crew view, a weekly-window projection before each wave, and cross-task reuse share tracked daily</td><td>a0</td><td>1</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4">§4 — Velocity: how much work lands, and how fast</h2>
+    <p>The velocity census (<a href="/reckon/plans/orchestrator-crew-pattern-studies#s2">study §2</a>)
+      joined every committed run record in the five mounted projects to the first-parent history of each
+      primary branch for 2026-09-12T00:00Z to 2026-09-26T10:00Z, pinned at named heads. Product means
+      source plus tests; record means plan, evidence and research HTML, <code>docs/figures</code> and
+      <code>docs/state</code>. Durable means an added line still present seven days later, so only additions
+      landed before 2026-09-19T10:00Z have a durable figure.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>August 12–16 (published)</th><th>September 12–26 (this census)</th></tr></thead>
+      <tbody>
+        <tr><td>Promoted runs</td><td>259 in 5 days (≈52 a day), four projects</td><td>2,303 in 14.4 days (≈160 a day), five projects</td></tr>
+        <tr><td>Of which review or investigate</td><td>not reported</td><td>1,044 (45%)</td></tr>
+        <tr><td>Median minutes, dispatch to worker completion</td><td>9.8 (wall per run)</td><td>43.8 (p75 87.7)</td></tr>
+        <tr><td>Median minutes, dispatch to promotion</td><td>not reported</td><td>83.0 (p75 186.4)</td></tr>
+        <tr><td>Attempts per landed node</td><td>not reported</td><td>1.62 (lower bound)</td></tr>
+        <tr><td>Product lines added on primary branches</td><td>108,587 authored, three projects</td><td>299,492 (148,460 source, 151,032 tests)</td></tr>
+        <tr><td>Product lines deleted again within seven days</td><td>not reported</td><td>3,706 of 123,960 mature (2.99%)</td></tr>
+        <tr><td>Record lines added per product line</td><td>not reported</td><td>5.35, excluding the figures directory entirely; 49.1 including figure support data</td></tr>
+        <tr><td>Durable product lines per worker-hour</td><td>not reported</td><td>116.9 (308 matched runs)</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Gross volume is up threefold per day, and each node takes four to five times longer to
+      return.</strong> Nothing about the per-node figure is a worker slowing down: the median node now
+      carries a stated measure, a negative control, a manifest, an evidence anchor, a plan comment and
+      frequently a figure, where the August node carried a diff and a gate. Durability is not the problem
+      either: fewer than 3% of mature product lines were deleted within a week.</p>
+
+    <figure>
+      <img src="/reckon/figures/orchestrator-crew-pattern-review/promotions-and-source.svg" alt="Daily promotions stacked by class above daily source lines landed, 14 to 26 September; review promotions jump from 21 September while source lines do not rise.">
+      <figcaption>Promotions per day by class, above source lines landed per day across all five primary
+        branches. The dashed line is 2026-09-21, when promotion began refusing an unreviewed run
+        (<code>2986f5d1</code>, 06:49Z) and the review reflex began dispatching one for every finished run
+        (<code>53d40c57</code>, 10:07Z).</figcaption>
+    </figure>
+
+    <p><strong>The second week doubled the node count and landed less code.</strong> From 14 to 20 September
+      the fleet promoted 619 implementation-class and 211 review or investigate nodes (25% review) and landed
+      85,685 source lines. From 21 to 26 September it promoted 640 and 833 (57% review) and landed 62,775
+      source lines. Promotions rose 77%; source output fell 27%. The change of shape starts on the day the
+      mandatory review and the review reflex landed: review promotions went from 29 on 19 September to 197
+      on 21 September. The reviews are not wasted — §6 shows they catch real defects — but they are now the
+      majority of what the fleet does, and they are serial after the run they review.</p>
+
+    <table>
+      <thead><tr><th>Project</th><th>Promoted</th><th>Implement-class / review-investigate</th><th>Source + / tests + / plan-evidence HTML +</th><th>Median minutes to promotion</th><th>Attempts per landed node</th></tr></thead>
+      <tbody>
+        <tr><td>reckon</td><td>1,107</td><td>544 / 563</td><td>40,473 / 84,870 / 75,734</td><td>81</td><td>1.42</td></tr>
+        <tr><td>nova</td><td>441</td><td>268 / 173</td><td>85,095 / 19,347 / 26,677</td><td>113</td><td>2.23</td></tr>
+        <tr><td>imas-ambix</td><td>264</td><td>118 / 146</td><td>14,608 / 18,516 / 23,096</td><td>60</td><td>1.76</td></tr>
+        <tr><td>imas-efit</td><td>248</td><td>146 / 102</td><td>4,142 / 18,897 / 12,946</td><td>113</td><td>1.44</td></tr>
+        <tr><td>imas-codex</td><td>243</td><td>183 / 60</td><td>4,142 / 9,402 / 13,875</td><td>77</td><td>1.35</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Half of the fleet works on the fleet.</strong> reckon took 1,107 of 2,303 promotions (48%). In
+      reckon more review nodes landed than implementation nodes (534 reviews against 511 implements), and the
+      plan, evidence and research HTML it added (75,734 lines) is almost twice the source it added (40,473).
+      nova is the opposite shape: most of its product lines are source, and it has the highest attempt count
+      per landed node (2.23).</p>
+
+    <table>
+      <thead><tr><th>Lane</th><th>Promoted</th><th>Gate passed / failed / not run</th><th>Median minutes, dispatch to completion (p75)</th><th>Median minutes to promotion</th><th>Attempts</th><th>Durable product lines per worker-hour</th></tr></thead>
+      <tbody>
+        <tr><td>clive (local, deepseek-v4.1-flash)</td><td>1,840</td><td>1,328 / 105 / 407</td><td>50.7 (93.3)</td><td>90.5</td><td>1.56</td><td>92 (65,349 over 709.6 h)</td></tr>
+        <tr><td>codex family</td><td>365</td><td>292 / 20 / 53</td><td>23.2 (57.2)</td><td>62.7</td><td>1.85</td><td>696 (21,129 over 30.4 h)</td></tr>
+        <tr><td>claude family</td><td>95</td><td>47 / 4 / 44</td><td>8.3 (11.8)</td><td>30.9</td><td>1.31</td><td>not measurable</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The local lane carried 80% of the fleet at about a seventh of codex's durable rate per
+      worker-hour.</strong> That comparison is observational — the lanes took different work in different
+      projects, and codex was paused for most of the second week — but it is large, and it is consistent with
+      the lane figures in the survey: clive runs are longer, more of them are reviews, and the lane runs above
+      its measured operating width (14 in flight, 11 queued when this review dispatched). The local lane is
+      unmetered, so its cost is wall clock and queueing rather than quota; codex's cost is quota, at about
+      nine runs a day sustainable to the weekly reset (§3, reckon-a0).</p>
+
+    <h2 id="s5">§5 — Where the time and context go</h2>
+    <h3>Inside a worker</h3>
+    <p>The worker-anatomy census (<a href="/reckon/plans/orchestrator-crew-pattern-studies#s3">study §3</a>) read
+      2,317 worker streams dispatched in the window, with each stream parser proved on one named healthy run per
+      grammar before any figure was taken.</p>
+    <table>
+      <thead><tr><th>Lane and role</th><th>Runs</th><th>First-request input tokens, median / p90</th><th>Assistant turns, median / p90</th><th>First edit at turn</th><th>Tool calls reading plans, manifests, skills or AGENTS</th></tr></thead>
+      <tbody>
+        <tr><td>local, implement</td><td>889</td><td>65,611 / 81,345</td><td>88 / 198</td><td>30</td><td>10.6%</td></tr>
+        <tr><td>local, review</td><td>772</td><td>64,844 / 80,749</td><td>46.5 / 78</td><td>36</td><td>6.0%</td></tr>
+        <tr><td>local, documentation</td><td>73</td><td>72,827 / 118,684</td><td>56 / 122</td><td>32</td><td>20.5%</td></tr>
+        <tr><td>local, investigate</td><td>88</td><td>66,535 / 80,152</td><td>56.5 / 104</td><td>30</td><td>8.0%</td></tr>
+        <tr><td>codex, implement</td><td>232</td><td>not published by the codex grammar</td><td>14 / 42</td><td>2</td><td>16.0%</td></tr>
+        <tr><td>codex, review</td><td>94</td><td>not published by the codex grammar</td><td>5 / 17</td><td>2</td><td>18.5%</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Workers are not drowning in context; they are drowning in record-keeping.</strong> A local worker's
+      first request is about 65,000 tokens at the median and 81,000 at p90 — about a seventh of the 480,000-token input window the lane declares
+      — and no lane reported a prompt-too-long refusal (§3). Workers barely re-read what they just wrote
+      (median zero self-verification reads) and spend under 1% of observed wall time inside gate or test commands.
+      But of the 12,154 file edits that classify as product or record, <strong>5,361 (44%) are record-keeping</strong>
+      — 3,254 to manifests and reports, 1,681 to plan, evidence and research HTML, 426 to figures — against 6,793
+      product edits; and one tool call in seven (10,049 of 70,090) reads a plan, a manifest, a skill or an
+      <code>AGENTS.md</code>. The two lanes also work differently: the local model reads for 30 turns before its first
+      edit, codex edits on its second turn and finishes in a sixth of the turns. The turn grammars differ, so the turn
+      counts compare shapes rather than effort.</p>
+    <h3>Between workers</h3>
+    <p>Wall clock between dispatch and promotion is dominated by three waits that are not work. The local lane is
+      driven at about twice its width: at both readings taken during this review the router gate held 14 requests in
+      flight with 11 and then 15 queued, and the three local-lane studies ran 95 minutes and more against 55-minute
+      budgets, with their streams idle for up to three minutes between events. Review is serial after the run it
+      reviews, and since 21 September there has been one for every finished run (§4). And promotion waits on the
+      coordinator: median 44 minutes from dispatch to worker completion becomes 83 minutes to promotion.</p>
+
+    <h2 id="s6">§6 — Does it produce better work?</h2>
+    <p><strong>It produces better-verified work, not better-designed work.</strong> Four independent readings
+      agree on the first half.</p>
+    <ul>
+      <li>Every surveyed coordinator named defects an independent review caught that it would otherwise have
+        shipped (§3). Across 679 distinct review records to 25 September, 86% carried at least one finding and
+        12.9% of source-change reviews led to an observable repair
+        (<a href="/reckon/research/review-node-utility">review-node utility</a>).</li>
+      <li>Mature product lines survive: under 3% were deleted within a week (§4).</li>
+      <li>The negative control and the integrated-gate re-run are the two ceremonies every coordinator would keep:
+        each caught tests that could not fail.</li>
+      <li>In nova, independent audits found the local lane's defect rate indistinguishable from the metered
+        lanes' on the same classes of work (§8).</li>
+    </ul>
+    <p>The second half is where the evidence turns. The gate a worker writes and runs on its own diff passes
+      between 93% and 100% of the time on every configuration with a real sample, so it carries almost no
+      information (<a href="/reckon/research/dispatch-cost-measurement#s4">dispatch-cost measurement §4</a>).
+      A day's forty merged code commits read against their briefs found eleven that met the brief in letter
+      only (<a href="/reckon/research/brief-conformance-review">brief conformance</a>). The review's measured
+      repair yield is one in eight for source and one in forty for documents. And the design-level defects this
+      review found — forty-four timestamp parsers, fourteen atomic writers, an interface that doubled in three
+      weeks (§7); 103 nova figures that misrepresent their physics (§8) — are exactly the kind that no per-node
+      gate or per-diff review can see, because each node's diff is locally correct. The pattern verifies nodes;
+      nothing in it owns the codebase.</p>
+
+    <h2 id="s7">§7 — Code quality: depth, interface width and reuse</h2>
+    <p>The lead's standard is deep modules behind small interfaces, and no reimplementation of what already
+      exists. The structural census (<a href="/reckon/plans/orchestrator-crew-pattern-studies#s5">study §5</a>)
+      read four weekly snapshots of reckon and nova with <code>git archive</code>, without executing either
+      package, and measured size, public surface, function length, a six-line normalised-token clone census,
+      pass-through functions, and every helper concept implemented in three or more places.</p>
+
+    <figure>
+      <img src="/reckon/figures/orchestrator-crew-pattern-review/growth.svg" alt="Indexed growth since 12 August on a log scale: tests 14 times, reckon source 4.4 times, the build skill and its references 3 times.">
+      <figcaption>What the fleet carries, indexed to 12 August 2026 on a log scale: reckon's test lines,
+        its package source lines, and the words of the <code>reckon-build</code> skill with its references.
+        Read from the primary branch at noon on each date.</figcaption>
+    </figure>
+
+    <table>
+      <thead><tr><th>Scope</th><th>Source lines, 5 → 26 Sep</th><th>Test lines</th><th>Public definitions</th><th>Clone share of code lines</th><th>Median / p90 function length</th></tr></thead>
+      <tbody>
+        <tr><td><code>reckon/</code></td><td>45,498 → 89,711</td><td>66,492 → 173,557</td><td>556 → 1,017 (+83%)</td><td>11.75% → 10.73%</td><td>16 / 56</td></tr>
+        <tr><td><code>reckon/crew/</code></td><td>13,268 → 40,343</td><td>33,698 → 114,786</td><td>131 → 427 (+226%)</td><td>5.49% → 7.05%</td><td>18 / 57</td></tr>
+        <tr><td><code>nova/</code></td><td>157,127 → 179,742</td><td>109,530 → 143,554</td><td>5,372 → 5,679 (+5.7%)</td><td>10.42% → 11.26%</td><td>9 / 44</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>reckon is not shallow in the pass-through sense, and it is getting wider much faster than it is
+      getting deeper.</strong> Pure forwarding functions are rare (0.8% of reckon's functions) and function
+      lengths are ordinary. What moved is the interface: reckon's public definitions grew 83% in three weeks
+      and the crew package's 226%; the CLI grew from 202 to 239 option occurrences and 96 to 112 distinct
+      flags, the MCP surface from 26 to 30 tool-view pairs, and the dispatch refusal families from none to
+      23. A crew dispatch now takes 32 options and a completion 23. Every guard the fleet learned became a
+      flag, a refusal or a view, and very little was taken away. That is the opposite of a small-interface
+      pattern.</p>
+
+    <p><strong>Reimplementation is real and concentrated in exactly the places the crew touches most.</strong>
+      The census found 44 functions in reckon that parse an ISO timestamp themselves — 27 of them in the crew
+      package, with names like <code>_parse_stamp</code> (five modules), <code>_moment</code>,
+      <code>_as_moment</code>, <code>_observed_moment</code>, <code>_normalize_stamp</code> and
+      <code>_parse_utc_timestamp</code>. Fourteen functions write JSON atomically, each with its own temporary
+      naming, cleanup and fsync behaviour. Three enumerate a run's original and resumed streams, so billing and
+      promotion can disagree about which attempts exist. Four byte-identical numeric decoders carry four
+      names. Clone share in the crew package rose from 5.5% to 7.1% while its code grew twofold, so duplicated
+      crew lines grew from 563 to 1,885. The ten ranked consolidation candidates, with every copy's
+      <code>file:line</code> and a proposed single home, are in the census findings.</p>
+
+    <p><strong>The dispatch pattern produces this, mechanically.</strong> Every copy above is private (a
+      leading underscore) and sits in the module the node was allowed to write. A worker holds exclusive write
+      paths and is told not to touch anything else; when it needs a timestamp parser and the shared one is
+      outside its fence — or does not exist yet — the cheapest compliant move is a private copy. Nothing
+      downstream notices: the gate tests the node's behaviour, the review reads the node's diff, and neither
+      compares the new helper against the other forty-three. The prior-art scout rule exists (reckon-build hard
+      rule 17) but it is prose, applied per wave, and it cannot grant a node the write path to the shared home
+      it names. Isolation made the work verifiable and made the codebase repeat itself.</p>
+
+    <p>nova's picture is different in kind. Its public surface barely moved (+5.7%) and its clone share rose
+      less than a point. The duplicated concepts there are scientific algebra — seven constraint residual
+      methods with identical bodies and five identical dual-flux-image methods in
+      <code>nova/equilibrium/constraint.py</code>, three uniform-axis validators, three immutable-array
+      constructors, three atomic receipt writers — the ordinary debt of a large numerical code rather than an
+      accelerating pattern.</p>
+
+    <h2 id="s8">§8 — nova: flapping, readiness and evidence</h2>
+    <p>The lead's impression is that recent local-lane work in nova has been <em>flapping</em> — rewriting the
+      same code back and forth — so that the solver's overall quality and readiness have gone backwards. Three
+      instruments bear on it: the history census (<a href="/reckon/plans/orchestrator-crew-pattern-studies#s6">study
+      §6</a>), the readiness snapshots (<a href="/reckon/plans/orchestrator-crew-pattern-studies#s7">study §7</a>),
+      and nova's own figure-and-solver audit, whose independent reviewers scored every figure the fleet had
+      produced.</p>
+
+    <h3>Code flapping: localised, not a broad rise, and not specific to the local lane</h3>
+    <p>Across additions with a full seven-day follow-up, source churn was 5,474 of 59,037 lines (9.27%) before
+      12 September and 694 of 7,390 (9.39%) after; test churn 2.79% and 3.10%. Over the same boundary the local
+      lane's share of nova's code landings rose from 7.7% to 65.1%. Splitting at the local lane's first code
+      landing (5 September) instead moves source churn <em>down</em>, from 10.86% to 6.58%. By lane, mature source
+      churn is 9.73% for codex, 8.80% for local and 14.77% for claude. There is no aggregate signal that the local
+      lane made nova churn more.</p>
+    <p>Reversals do exist, and reading them as code is what distinguishes them. Of the five worst histories:
+      a compiled-slice cache experiment in <code>reduced_newton.py</code> returned the 116 KB file byte for byte
+      to its starting state after five withdrawals (codex-terra, caught on the worker branch before merge);
+      a certificate test was made permissive by one metered run (codex-luna) and restored by a local run;
+      a playable-session expectation went <code>True → False → True</code> across one local and two codex runs,
+      each swing tracking a real design change; a request dispatcher was added and removed 44 hours later, both by
+      local runs — the clearest local-only rework; and transport-geometry prototypes were rewritten three times
+      and retired, 1,327 lines deleted within a week, all codex. Four hot files — <code>fixed_point.py</code>,
+      <code>forward.py</code>, <code>forward_operator.py</code>, <code>topology.py</code> — changed in every one
+      of the six weeks, and 95 functions changed in three or more.</p>
+
+    <h3>Where nova's effort went instead</h3>
+    <p>The stronger signal is not reversal but displacement. In the week beginning 19 September nova landed 872
+      first-parent commits and only 95 of them touched <code>nova/</code> or <code>tests/</code>; source additions
+      fell from about 19,000 a week at the start of September to 4,314. Across the window 2,434 of 3,879
+      first-parent commits (63%) carry no crew attribution and are predominantly record and coordinator commits.
+      nova's attempts per landed node (2.23) is the highest of the five projects.</p>
+    <p>And the evidence the fleet produced about the solver is weak. nova's figure-and-solver audit had
+      claude-opus reviewers, independent of the producing lanes, open all 348 figures in the fleet's figure
+      directories: mean score 55.7 of 100, 242 under 70, and <strong>103 misrepresenting their physics</strong> —
+      most often a state that did not converge drawn and captioned as a converged terminal state, and numbers
+      printed that appear in no receipt. On the classes where both lanes have audited promotions, the audit found
+      the lane was not the variable: solver changes were defective in 9 of 11 local-lane and 5 of 6 metered-lane
+      promotions reviewed. Its conclusion — that the promotion process, not the model, is the lever — is the
+      same one this review reaches from the other direction.</p>
+
+    <h2 id="s9">§9 — Is the system too heavy?</h2>
+    <p>Yes, and it is getting heavier faster than it is getting faster. The weight shows in four places.</p>
+    <table>
+      <thead><tr><th>What a participant must carry</th><th>12 August</th><th>26 September</th></tr></thead>
+      <tbody>
+        <tr><td><code>reckon-build</code> skill plus its references (words)</td><td>11,475</td><td>34,714 (3.0×)</td></tr>
+        <tr><td>User-global <code>~/.agents/AGENTS.md</code> (words), loaded by every session and worker</td><td>—</td><td>14,157 (90 KB)</td></tr>
+        <tr><td>reckon repository, crew and docs <code>AGENTS.md</code> files (words)</td><td>—</td><td>9,088</td></tr>
+        <tr><td><code>reckon crew</code> subcommands / <code>dispatch</code> options / <code>complete</code> options</td><td>—</td><td>27 / 32 / 23</td></tr>
+        <tr><td>Coded dispatch refusal families (exit codes 1–9 plus contract properties)</td><td>0 (5 Sep)</td><td>23</td></tr>
+        <tr><td>reckon package source / test lines</td><td>20,164 / 12,296</td><td>89,711 / 173,549</td></tr>
+        <tr><td>reckon plans opened / closed in the preceding two weeks</td><td>—</td><td>60 / 9</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The protocol.</strong> A coordinator starts every session with about 49,000 words of binding
+      instruction before it reads a plan — the build skill, its references and the global guardrails — and each
+      of those documents records measured incidents as rules. Each rule is individually justified; together they
+      are a document no session reads end to end, which is why the survey's complaints are about rules colliding
+      (a goal lint refusing a semicolon, a review reflex racing a coordinator's repair) rather than about rules
+      missing.</p>
+    <p><strong>The output.</strong> The fleet adds 5.35 lines of plan, evidence, research and state for every
+      product line, before counting figure data. In reckon the HTML record alone is 1.9 times the source. This
+      review's own six study nodes reproduced it: each census worker, asked for a data directory, also wrote a
+      render script, a verifier, an evidence anchor, a plan comment and a figure, and three of them committed
+      between 4 MB and 17 MB of JSON — 451,454 lines in one case — before being resumed to move it out of the
+      repository.</p>
+    <p><strong>The friction.</strong> Dispatching those six nodes required a committed plan of a type that can
+      carry nodes (a research record cannot), cleared nine audit warnings, one goal-lint refusal of the word
+      "TODO" inside a done-when, a backend switch because the codex lane's 25-minute ceiling is below a census's
+      needs, and a port override to push from a compute node. After dispatch, the default scope widened every one
+      of the six nodes to the same plan file, the same cumulative evidence record and the same figure directory —
+      the precise conflict the survey ranks first — and each completed run's review was dispatched by the reflex
+      before the coordinator could correct it, then demanded again at the corrected head.</p>
+    <p><strong>The backlog.</strong> reckon opened 60 plans in the fortnight and closed 9; the four August weeks
+      closed about nine in ten of what they opened. 62 reckon plans are pending, most of them about the crew
+      itself. A system whose largest customer is itself, and which answers every measured defect with another
+      plan, will keep growing whether or not it gets better.</p>
+
+    <h2 id="s10">§10 — The lead's questions, answered</h2>
+    <dl>
+      <dt>Does the pattern result in better work and higher throughput?</dt>
+      <dd>Better-verified work, yes; better-designed work, no (§6, §7). Throughput in volume, yes — three times
+        August's promotions per day — but each node takes four to five times as long to land, the second week
+        doubled its node count while landing 27% less source, and half the fleet's output is reckon building
+        reckon (§4).</dd>
+
+      <dt>What are the bottlenecks?</dt>
+      <dd>In order of measured cost: the serial review of every run and its one-node-per-finding repairs; the
+        local lane driven at twice its generation width; merge conflicts in shared record files; refusals over
+        wording and bookkeeping; and the coordinator's promotion beat. Model quality is not on the list: on the
+        classes where both lanes have audited work, the lane is not the variable (§5, §8).</dd>
+
+      <dt>Have we designed a system that is too heavy?</dt>
+      <dd>Yes. The coordinator's binding instructions tripled, the crew interface more than tripled, 44% of worker
+        edits are record-keeping, and reckon opens nearly seven plans for every one it closes (§9). Most of the weight
+        is individually justified; the defect is that nothing ever removes any.</dd>
+
+      <dt>Can we relax the need for a plan before a worker is dispatched?</dt>
+      <dd>Keep the attachment to a plan and section — it is where impl, followups and evidence resolve, and the
+        survey wants it kept — but drop the authoring and commit of new plan text for follow-ups, audits and
+        review-finding repairs. A finding or a followup should dispatch as a brief (<code>a-small-change-is-a-small-node</code>,
+        on top of the stored-brief carrier <code>a-worker-can-take-a-brief</code> already building).</dd>
+
+      <dt>Are we passing too much context to workers?</dt>
+      <dd>Not in the brief. A local worker's first request is about 65,000 tokens, far inside the lane's window,
+        and no lane refused one. The leak that mattered — one task's session inherited by another — closed on
+        23 September. What costs workers is not what they are told but what they are made to write: two edits in
+        five go to the record (§5).</dd>
+
+      <dt>Should tasks be split smaller?</dt>
+      <dd>No. A node's cost is a fixed floor, so splitting fixed work into k nodes multiplies its cost by about k
+        (<a href="/reckon/research/dispatch-cost-measurement#s3">dispatch-cost measurement §3</a>), and each
+        node now pays a review and a promotion wait. Single-deliverable nodes of 30–60 minutes land; what should
+        change is to batch a review's findings into one repair instead of one node each, and to stop sizing a small
+        node's ceremony like a feature's.</dd>
+
+      <dt>Are the orchestrators doing too much or too little?</dt>
+      <dd>Too much bookkeeping and too little ownership. They spend their turns on promotion beats, conflict unions
+        and refusals; nobody owns the codebase between nodes, which is why a pattern that verifies each node still
+        reimplements the same helper forty-four times (§7). The first half is fixed by the S25 plans; the second
+        needs a shared-primitive home and a copy detector at promotion rather than more coordinator reading.</dd>
+
+      <dt>Should an orchestrator implement small tasks directly?</dt>
+      <dd>For records, yes; for product code, no. A coordinator should commit, from a declared list, the edits that
+        are bookkeeping — a mistyped sha, a heading, the union of an HTML or JSON conflict, a manifest path — as
+        s22 and s23 already do. Product code stays delegated: the survey's majority holds that the worktree, gate and
+        negative control are what keep the evidence honest, and the one coordinator that edited product code under
+        pressure caused an outage. The honest answer to "a 20-minute edit took 2.5 hours" is to make a small node
+        cost 20 minutes, not to route around the node.</dd>
+    </dl>
+
+    <h2 id="s11">§11 — What works, what does not</h2>
+    <table>
+      <thead><tr><th>Keep — it works</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Worktree isolation with one commit trail per run</td><td>No cross-worker file collision in any ledger; recoverable when the fleet broke (s21).</td></tr>
+        <tr><td>Independent review of runtime code</td><td>Real defects caught in every surveyed session; 12.9% observable repair yield on source reviews.</td></tr>
+        <tr><td>The negative control</td><td>Caught tests that could never fail in three sessions.</td></tr>
+        <tr><td>The integrated-gate re-run (<code>verify-gate</code>)</td><td>Kept by all four coordinators; it measures the tree that ships rather than the worker's base.</td></tr>
+        <tr><td>The single-goal, measurable done-when</td><td>Caught two real brief defects (s22); the reason worker output is checkable at all.</td></tr>
+        <tr><td>Read-only plan-currency audits</td><td>Turned a plan claiming 0.99 into 3 landed, 4 partial, 2 not started (s22).</td></tr>
+        <tr><td>Task-keyed sessions (no cross-task reuse)</td><td>Cross-task inheritance fell from 13–24% of dispatches to 0 of 126 after 23 Sep (reckon-a0).</td></tr>
+        <tr><td>The local lane for well-specified work</td><td>80% of all promotions; defect rate indistinguishable from metered lanes per class in nova's audit; failures were infrastructure.</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Fix — it costs more than it returns</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Mandatory review of every node, serially, one repair node per finding</td><td>Review share 25% → 57% of promotions from 21 Sep while source output fell 27%; a 20-minute edit took 5 implement plus 5 review nodes (ambix); docs reviews repair 1 in 40.</td></tr>
+        <tr><td>Every node writes the same plan file and cumulative evidence record</td><td>Conflicts "on every merge" (s21, s23, ambix); reproduced by this review's own six nodes, all granted the same three paths.</td></tr>
+        <tr><td>Record-keeping sized for features on every node</td><td>5.35 record lines per product line; reckon's HTML record 1.9× its source; census workers committing 4–17 MB of JSON.</td></tr>
+        <tr><td>Refusals about wording and bookkeeping</td><td>~8 dispatches lost to the goal lint (s21), "TODO" refused inside a done-when (this review), impl-move waivers on every other corrective (s23).</td></tr>
+        <tr><td>Exclusive scope with no shared-primitive home</td><td>44 timestamp parsers, 14 atomic writers, crew clone share 5.5% → 7.1%.</td></tr>
+        <tr><td>Every lesson becomes a flag, a refusal or a paragraph</td><td>Crew public definitions +226% in three weeks; skill text 3×; 23 refusal families; 49,000 words before the first dispatch.</td></tr>
+        <tr><td>Local lane driven at twice its width</td><td>Router gate 14 wide with 11–15 requests queued at every reading today; clive median 51 minutes to completion against codex's 23.</td></tr>
+        <tr><td>Opening plans faster than closing them</td><td>60 opened, 9 closed in the fortnight; 62 pending in reckon; 48% of the fleet's promotions are reckon working on itself.</td></tr>
+        <tr><td>Follower replay on every re-arm</td><td>Each 29-minute re-arm replays the session's whole history as if new (observed at every re-arm in this session).</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s12">§12 — What to change, in order: sprint S25</h2>
+    <p>Eight plans, in sprint <a href="/reckon/sprints/S25">S25 — A lighter crew</a>, sequenced so that the
+      changes that return wall clock soonest go first and the rewrites that must describe settled rules go last.
+      Where an existing plan already carries part of the work, the new plan builds on it rather than duplicating
+      it, and says so. The measurement plan behind this review is the sprint's ninth item.</p>
+    <table>
+      <thead><tr><th>Wave</th><th>Plan</th><th>What it changes</th><th>Its measure</th></tr></thead>
+      <tbody>
+        <tr><td>1 — urgent</td><td><a href="/reckon/plans/a-review-is-sized-to-its-risk">a-review-is-sized-to-its-risk</a></td>
+          <td>Review tier by node class (full, light, none); one repair per review round; a clean review promotes;
+            the reflex reviews a settled head once.</td>
+          <td>Review share ≤ 30% of promotions with no rise in seven-day deletion.</td></tr>
+        <tr><td>1 — urgent</td><td><a href="/reckon/plans/a-landing-record-never-conflicts">a-landing-record-never-conflicts</a></td>
+          <td>Each node's default scope is its own evidence fragment and figure directory; the record is assembled at
+            read time and plan comments go through the versioned write path.</td>
+          <td>Six parallel nodes on one plan merge with zero conflicts in shared HTML.</td></tr>
+        <tr><td>1 — urgent</td><td><a href="/reckon/plans/a-refusal-is-about-the-work">a-refusal-is-about-the-work</a></td>
+          <td>The contract lint refuses placeholders, not punctuation; a re-armable follower is accepted; corrective
+            and review runs promote without waivers.</td>
+          <td>The survey's refused goals replay as accepted; the two real brief defects still refuse.</td></tr>
+        <tr><td>2 — important</td><td><a href="/reckon/plans/a-small-change-is-a-small-node">a-small-change-is-a-small-node</a></td>
+          <td>A finding or followup dispatches as a brief; a small node records one landing line; the coordinator's
+            direct-commit list is declared; exact write paths by default.</td>
+          <td>Finding-to-landed for small repairs against a 30-minute target; record-to-product ratio ≤ 1 on small nodes.</td></tr>
+        <tr><td>2 — important</td><td><a href="/reckon/plans/the-fleet-reports-its-velocity">the-fleet-reports-its-velocity</a></td>
+          <td>A velocity view: promotions by class and lane, durable product lines, latency, attempts, review share,
+            coordinator cost, quota runway, plans opened and closed.</td>
+          <td>Reproduces this review's §4 figures within 1%.</td></tr>
+        <tr><td>2 — important</td><td><a href="/reckon/plans/a-worker-reuses-before-it-writes">a-worker-reuses-before-it-writes</a></td>
+          <td>One timestamp parser, one atomic writer, one stream enumeration, one numeric decoder; a copy detector at
+            promotion; an interface budget read by the plan review.</td>
+          <td>44 parsers to at most 3; crew clone share back to 5.5%.</td></tr>
+        <tr><td>3 — follows</td><td><a href="/reckon/plans/the-crew-contract-fits-one-read">the-crew-contract-fits-one-read</a></td>
+          <td>Classify every binding sentence of the build skill; rewrite the core once waves 1 and 2 have settled
+            the rules it describes.</td>
+          <td>Skill plus references ≤ 12,000 words; coordinator pre-dispatch tokens halved.</td></tr>
+        <tr><td>3 — follows</td><td><a href="/reckon/plans/open-work-is-capped">open-work-is-capped</a></td>
+          <td>Triage the 62 pending reckon plans to at most 25 active; a per-project limit on active plans in the mode
+            the lead locks.</td>
+          <td>reckon closes at least as many plans as it opens for two weeks.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Two decisions are the lead's.</strong> <code>open-work-is-capped</code> carries the limit's
+      enforcement mode and value as open decisions, because the repository holds any tightening of plan creation
+      pending the lead's review. And S25 sits beyond the three-sprint schedule horizon while S21 to S24 hold open
+      work, so the roadmap reads it as deferred; it has been pushed as the sprint the project schedules next, and
+      <code>/reckon-build S25</code> runs it explicitly.</p>
+    <p><strong>What this review does not recommend.</strong> Moving work off the local lane: the lane's defect rate
+      matches the metered lanes where both were audited, and its cost is queueing, which the first two waves reduce by
+      removing nodes rather than by rerouting them. Smaller nodes: cost per node is a fixed floor. Coordinators writing
+      product code: the survey's majority and one outage argue against it. A flapping guard for nova: the history
+      census found no broad rise to guard against.</p>
+
+    <h2 id="s13">§13 — Survey replies, verbatim</h2>
+    <p>Each reply is reproduced as it arrived on 2026-09-26 between 10:33Z and 10:40Z, with only its markdown emphasis removed. Figures in them are the respondents' own readings, cited here as reported and not re-derived.</p>
+    <details id="survey-reckon-84">
+      <summary><strong>reckon-84</strong> — s21-coord — fence, process lifecycle, local lane and plan review</summary>
+      <blockquote>
+        <p>reckon-84 (s21-coord), the fence, process-lifecycle, local-lane and plan-review plans, 25–26 Sep. Measured from docs/state/reckon/runs for those four plans: 58 promoted runs, 24 implementation and 34 review. 23 of 24 implementations had a passing gate. Lanes: 18 clive, 6 codex. Dispatch to promote: median 53 min, p75 93. 9 of 24 needed more than one attempt.</p>
+        <p>1. Value. Clear for correctness, weaker for throughput. The reviews caught real defects I&#x27;d have shipped:</p>
+        <p>• The fence would grant a whole checkout if a worktree were a checkout.</p>
+        <p>• Worker digests leaked coordinator-only push rules.</p>
+        <p>• &quot;Paused&quot; and &quot;full&quot; gates read as open.</p>
+        <p>• A tautological test.</p>
+        <p>• The plan-review refusal branch was untested.</p>
+        <p>Inline would be faster per node, but the worktree, commit and gate discipline paid for itself when the fleet broke.</p>
+        <p>2. Bottlenecks, by wall clock:</p>
+        <p>• (a) Recovering from infrastructure. The fence-off blocked every commit, and the router 404s killed every clive worker twice. Each turned finished work into manual integration commits.</p>
+        <p>• (b) Merge conflicts in the append-only plan and evidence HTML: nearly every merge, always a mechanical union, a few minutes each.</p>
+        <p>• (c) Promotion refusals over bookkeeping: relative negative-control paths, the wrong commit set, a docs commit landing after the code, empty test_logs.</p>
+        <p>• (d) Review turnaround, 30–60 min. Follower noise is much better today.</p>
+        <p>3. Weight.</p>
+        <p>• Keep: review nodes, the negative control, verify-gate, the evidence record, the single-goal check.</p>
+        <p>• Soften: the single-goal heuristic. It refuses goals containing &quot;then&quot;, &quot;;&quot; or &quot;and&quot;, even when they name one deliverable; I lost roughly 8 dispatches to rewording.</p>
+        <p>• Make optional for test-only or docs-only nodes: the review, when the diff is under about 50 lines.</p>
+        <p>• Automate: doc-conflict splicing. It&#x27;s the same union every time.</p>
+        <p>4. Plan-before-dispatch. No view. My nodes always had a plan section already.</p>
+        <p>5. Context. The prompt carries the git-safety rules. imas-ambix measured that the rules also reach workers through memory, about 277 KB for the first request. No context-fit refusals except a false one, caused by a file named in prose (now fixed). Workers do re-derive a lot, so tighter briefs would help.</p>
+        <p>6. Size. 30–60 min single-goal nodes land. What fails:</p>
+        <p>• Nodes whose done-when spans code, docs and evidence: the records commit lands after the code commit, and I merged only the code once.</p>
+        <p>• Nodes that depend on unmerged siblings.</p>
+        <p>• Anything touching a fenced run&#x27;s session.</p>
+        <p>7. Orchestrator role. Mostly right. The two times I edited code myself (fence-off, and a merge union in flight.py), both were forced. The first hid the hook regression and cost an outage, via conflict markers in the installed tree. Threshold: never inline product code, and resolve Python conflicts only in a scratch worktree.</p>
+        <p>8. Lanes. Clive is reliable for well-specified work; its failures were all lane infrastructure (router 404 on relaunch, the model-missing error treated as fatal). Codex was paused for most of this window because of the shared CODEX_HOME. I have no codex quality view.</p>
+        <p>9. Top 3:</p>
+        <p>1. The producer reloads onto changed code and records its revision in the seat. A stale producer mis-rendered discards for hours.</p>
+        <p>2. Promotion takes the run&#x27;s full head and reads manifest paths relative to the worktree.</p>
+        <p>3. A single merge tool that splices append-only HTML conflicts, and refuses in the shared checkout if any .py file conflicts.</p>
+      </blockquote>
+    </details>
+    <details id="survey-reckon-bc">
+      <summary><strong>reckon-bc</strong> — s22-coord — observability, pacing, ledger and worker-identity plans</summary>
+      <blockquote>
+        <p>reckon s22-coord survey answer (S22 coordinator, local lane at xhigh; codex was paused lead-wide for most of it).</p>
+        <p>Measured (ledger rows whose record mentions s22-coord): 37 promoted, 18 implement with passing gates and 19 review/investigate at not-run. 7 needed more than one attempt. Median dispatch-to-complete is 49 min. 13 are live right now.</p>
+        <p>1. Value: yes on quality, mixed on throughput. Every implement node had to reproduce its defect at base and name a negative control. That caught things I&#x27;d have missed inline, e.g. accepted-shared-path-is-not-a-conflict (r-20260925T224614549756, reviewed 99) proved the refusal through the command before fixing it. Throughput: a 12-line fix still took ~35 min of worker time plus a ~20 min review before promotion. Inline would have taken me ~10 min but cost context.</p>
+        <p>2. Wall clock goes to, in order:</p>
+        <p>• review-of nodes: ~20 min each, serial after the implement run;</p>
+        <p>• reconciliation friction at promote: impl-did-not-move refusals on repair or followup work, --outcome required on review runs, verify-gate refusing a checkout two ledger commits past the merge;</p>
+        <p>• fence-era commit repair: I committed worker diffs by hand;</p>
+        <p>• follower re-arm every 29 min, where each re-arm replays history that reads like news.</p>
+        <p>Lane capacity was never the constraint.</p>
+        <p>3. Keep: currency audits (see 4), review nodes, verify-gate, negative controls. Lighten: impl-move enforcement (a followup repair never moves impl, so every one needs a --no-impl-change waiver); the no-watcher dispatch refusal (right idea, but it fires after a follower&#x27;s lifetime ends even with runs in flight). The 8-property validator is cheap and caught two real brief defects; one false positive: a quoted &quot;&lt;path&gt;&quot; in an error message was read as a placeholder.</p>
+        <p>4. Plan-before-dispatch: in this session I dispatched followup repairs and audits with no new plan text, attached to an existing plan and section. That worked. What you&#x27;d lose with no plan at all is the attachment point for impl/followup resolution and the evidence record. I&#x27;d keep &quot;attach to a plan&quot; and drop &quot;author a section first&quot;.</p>
+        <p>5. Context: briefs of ~250 words citing file:line and an existing test file landed first pass. Workers do spend turns on self-verification (re-checking their own citations), but that&#x27;s cheap. One context-fit refusal: naming the ledger file in a done-when made the competence estimator count it (6M-token estimate).</p>
+        <p>6. Task size: 1-2 file repairs with a named test file land in 30-60 min. Open-ended &quot;wire X&quot; nodes run 60-90 min, and one hit the 60 min fence cap at dispatch. Read-only plan-currency audits (~55 min) were the best investment: one audit turned a plan claiming impl 0.99 into 3 landed / 4 partial / 2 not started, with ready-to-dispatch briefs and lanes.</p>
+        <p>7. Orchestrator role: slightly too much. The biggest context sink was me reading worker diffs and plan sections; the user flagged it. A coordinator-implements threshold would be a mistake; the delegation discipline is what kept the evidence honest.</p>
+        <p>8. Lanes: local (dsv4.1-flash, xhigh) delivered every node this session; failures were infrastructure (router 404s during engine relaunch), not quality. No codex view for this window, since it was paused.</p>
+        <p>9. Top 3:</p>
+        <p>(a) Let a review auto-promote its implement run when the score is ≥90, the gate passed and there are no findings, removing the coordinator beat per node.</p>
+        <p>(b) Make plan-currency audit a first-class dispatch verb that emits node briefs the coordinator can dispatch verbatim.</p>
+        <p>(c) The follower should mark baseline replay rows as baseline, and dispatch should accept a follower that is re-armable rather than refusing.</p>
+      </blockquote>
+    </details>
+    <details id="survey-reckon-ee">
+      <summary><strong>reckon-ee</strong> — s23-coord — sprint liveness, fleet counters, orchestrator obligations</summary>
+      <blockquote>
+        <p>s23-coord (reckon-ee), from roughly 30 hours of coordinating, mostly on the local lane.</p>
+        <p>Figures: 60 of s23&#x27;s ledger rows on 25–26 Sep, 28 implement or doc runs and 32 review runs. The review median across all sessions is 91, with a minimum of 69, over 171 reviews. There were 60 resume-1 streams fleet-wide.</p>
+        <p>1. Value: yes on quality, mixed on throughput. Independent reviews caught real defects that I and the workers missed:</p>
+        <p>• a guard that would have turned every worker&#x27;s plan-edit gate red (66/79);</p>
+        <p>• three successive rounds of git-shim bypasses (config aliases, bare stash, a --work-tree escape);</p>
+        <p>• mistyped commit shas;</p>
+        <p>• two tests that could never fail.</p>
+        <p>First-pass acceptance is low for guard-type work, which needs 2–3 passes. Doc and test work lands first time.</p>
+        <p>2. Wall clock goes, in order, to:</p>
+        <p>• review round-trips, 20–45 minutes each;</p>
+        <p>• evidence and plan docs conflicts on every merge, because each node appends to the same landing record;</p>
+        <p>• lane incidents: the router 404 killed three workers at once, the fence blocked all commits, and systemd went away on the fleet node;</p>
+        <p>• dispatch refusals: the goal-contract lint (&#x27;;&#x27; and &#x27;&lt;node&gt;&#x27;), time-budget cap, member-in-flight, and follower-expired exit 8;</p>
+        <p>• promotion refusals: impl-did-not-move, scope from first^..last, shared-path accept.</p>
+        <p>Real work is under half.</p>
+        <p>3. Weight:</p>
+        <p>• Keep: review nodes, the negative control (it caught tautological tests), the verify-gate, and one evidence record per plan.</p>
+        <p>• Drop or soften: the goal-lint rejecting &#x27;;&#x27; (it forces awkward sentences), the impl-must-move refusal on a corrective (I used --no-impl-change about every other time), and the section declarations.</p>
+        <p>• The cumulative evidence file is the single worst conflict generator.</p>
+        <p>4. Plan-before-dispatch: yes, for small work. Writing and committing a followup just so a goal can say &quot;per followup X&quot; cost 5–10 minutes each. We&#x27;d lose some durability of intent, but the manifest and ledger carry most of it.</p>
+        <p>5. Context: roughly right. No context-fit refusals this session. Workers rarely re-read plans. The cost was advice mangled by shell quoting, which I caused.</p>
+        <p>6. Task size: good nodes run 15–60 minutes. The 60-minute cap forced sensible splits. Guard and security nodes are where multi-pass review lives, so smaller slices would not have avoided that. A &quot;do X and also Y&quot; node lands fine as long as the files are disjoint.</p>
+        <p>7. Orchestrator role: about right, but the ceremony tax is high. A coordinator should commit a finished worker diff and do trivial record corrections (a sha typo, a plan heading) directly, which I did. No product code inline.</p>
+        <p>8. Lanes: no view on codex beyond the pause. The local lane (dsv4.1-flash via clive) is good for tests, docs and mechanical changes. It over-claims in manifests (logs labelled with the wrong revision, overstated reproductions), so read the gate logs before accepting any figure. Its fragility is infrastructure, not model.</p>
+        <p>9. Top 3 changes:</p>
+        <p>1. Stop evidence-record merge conflicts. Give each node its own evidence fragment file that the record includes, or append through edit_plan rather than a git merge.</p>
+        <p>2. Fix the flicker classes before anyone trusts the ticker. I&#x27;ve logged six: launch unwritten, post-resume stalled, a half-written manifest read as unwritten, discard shown as promoted (fixed), stacked markers (fixed at write), and a completed review shown as dispatched. They&#x27;re in my scratch notes and I&#x27;ll hand them to whoever owns the census.</p>
+        <p>3. Make dispatch refusals cheaper: auto-arm or warn instead of refusing on an expired follower, relax the &#x27;;&#x27; goal lint, and give the review reflex and a hand dispatch one shared idempotent path, so neither races the other.</p>
+      </blockquote>
+    </details>
+    <details id="survey-reckon-a0">
+      <summary><strong>reckon-a0</strong> — burn-analysis session — measured crew burn, dispatched nothing</summary>
+      <blockquote>
+        <p>Survey reply from the reckon burn-analysis session, which measured crew burn and dispatched nothing. So questions 2–7 are mostly &quot;no view&quot; as a coordinator. What I can give is measured figures from a census of 1,040 runs and 1,451 streams dispatched 20–23 Sep, joined to the run store and the codex rollouts. Scripts and data are in ~/.cache/burn-census.</p>
+        <p>1. Value: no view on quality. Throughput proxy: in 20–22 Sep, 745 initial local streams had 273 resume streams (codex 141 initial, 73 resume). Resuming is a large share of local-lane traffic.</p>
+        <p>2–4, 6–7: no view. I ran no dispatches, briefs or merges.</p>
+        <p>5. Context: session reuse was the main leak, and it is now closed. Share of dispatches that inherited another task&#x27;s session, 20–22 Sep: local 65/505 (13%), claude 20/83 (24%), codex 8/114 (7%). After the session_reuse:false config switch on 23 Sep (about 07:03Z; the last cross-task dispatch was 07:00:45Z), it was 0/126. On claude, inherited runs carried 2–3x the context per turn: review 291k against 101k fresh, implement 197k against 100k. On local the per-turn effect was small (115k against 107k); inherited runs just took fewer turns. Codex cross-task reuse had already collapsed by about 15 Sep, so the plan&#x27;s 41% codex figure is mostly August and early September.</p>
+        <p>6. Task size (local, medians with p90 in brackets):</p>
+        <p>• implement: 20–22 Sep 97 turns (186), 34 min model time, 42 min wall. After the switch: 89 turns (145), 39 min, 47 min.</p>
+        <p>• review: 59 turns rising to 52 turns, 24 min rising to 34 min model time (the lane was busier).</p>
+        <p>• 23 Sep 00–07Z was an outlier: implement 136 turns (246), 95 min.</p>
+        <p>8. Lanes:</p>
+        <p>• Codex is quota-bound, not capacity-bound. About 23.6M input tokens use 1% of the weekly window, and 98% of that input is cached. Crew workers were 96% of the account&#x27;s codex input since the 21 Sep reset.</p>
+        <p>• The window hit 87% at 14:44Z on 23 Sep, 57 hours into a 168-hour week. Per run it cost about 0.30% after the switch (implement 0.47%, review 0.22%), against 0.54% on 20–22 Sep.</p>
+        <p>• That makes the sustainable pace to reset about 9 codex runs a day. The preflight never held on this, because the window it checks was not spent yet; it does not project the weekly burn rate forward.</p>
+        <p>• Claude lane: median fresh run $3.75 on 20–22 Sep; lanes view probe returns 403, so no quota reading.</p>
+        <p>9. Top three changes:</p>
+        <p>(a) Make per-task burn a crew view with correct accounting. It took three SLURM scans of 2.9 GB. codex exec resume streams report thread-cumulative usage, so summing streams overcounts: stream totals came to 157% of the rollout totals. The run_store `backend` column is empty on all 851 rows since 20 Sep; the backend lives only in the payload JSON.</p>
+        <p>(b) Make the budget fence project the weekly window. Before each wave, report &quot;runs remaining until reset&quot; by role, from measured quota-per-run. Codex receipts were 2–6 hours stale and spark 9 days stale.</p>
+        <p>(c) Track cross-task reuse share per day in the routing view as a regression guard, so a revert of task-keyed reuse shows up the same day.</p>
+      </blockquote>
+    </details>
+    <details id="survey-imas-ambix-0a">
+      <summary><strong>imas-ambix-0a</strong> — imas-ambix llac-s14-0925 — local-lane admission control</summary>
+      <blockquote>
+        <p>imas-ambix (session llac-s14-0925, local-lane admission control plus clive worker profiles). These are measurements from the last ~36 h unless marked as opinion.</p>
+        <p>1. Value. Quality is high and first-pass acceptance was good: independent reviews scored 91–98. The reviews caught real defects: a stale default that would have split the pause from the router, a malformed SVG, and assertions that could never fail. Throughput is poor for small work. The session ran 14 implement runs (~298 min of worker wall time) and 17 reviews (~365 min). One feature, moving the gate control file, took 5 implement nodes plus 5 reviews, about 2.5 h, for roughly a 20-minute edit done directly. It was 5 nodes because each review finding became its own repair node. That is orchestration cost, not worker quality.</p>
+        <p>2. Bottlenecks. In order:</p>
+        <p>• Review nodes: 13–43 min each, even for wording-only diffs.</p>
+        <p>• Repair-node chains.</p>
+        <p>• Dispatch refusals: watcher-required twice, a scope conflict from my own over-broad `tests` claim (~30 min lost), a member/harness mismatch, and a worktree-creation race. There were also two negative-control log mismatches over one inserted word.</p>
+        <p>• Merge conflicts in the cumulative plan/evidence HTML: every node appends there, so parallel nodes conflict every time.</p>
+        <p>• Follower noise: every 29-min re-arm replays the whole history.</p>
+        <p>3. Weight. Keep verify-gate, review for runtime code, and the negative control, which catches vacuous tests. Make optional: review for docs, wording and test-only diffs; the per-node figure and evidence write-up (workers spent a large share of small runs on SVGs; a two-key profile change produced a 93-line figure); and the currency audit for follow-up nodes. The drain ledger is fine.</p>
+        <p>4. Plan-before-dispatch. Yes for small follow-ups. A review finding against a landed node should be dispatchable from the finding alone. The loss is plan narrative, which one landing line recovers.</p>
+        <p>5. Context. I saw no prompt-too-long refusals from local workers. Workers do re-read plan HTML heavily, and much of that time went into writing plan and evidence HTML rather than code.</p>
+        <p>6. Task size. Implement nodes took 5–60 min; the median was about 15 for small fixes. The local model handled router concurrency code correctly (review 94, verified with a real Claude Code client). Smaller, tighter nodes do land faster, but only if findings are batched.</p>
+        <p>7. Orchestrator role (opinion). A coordinator should make trivial edits directly (&lt;~30 lines, docs, wording, repair of a review finding) and have a worker review them. Delegate independent, parallel or risky work.</p>
+        <p>8. Lanes. Codex was paused fleet-wide after a sandbox race (per-run home, arg0 directory), so this session is almost all local. Local-lane serving facts, measured from router receipts:</p>
+        <p>• Per-stream decode at DSpark depth 5 falls from 39.7 tok/s at 8–11 in flight to 31.2 at 12–15 and 14.6 at 28–31.</p>
+        <p>• Prefix-hit rate collapses at ≥30 running, so width 14 is the operating point.</p>
+        <p>• The synthetic bench (22-token prompts) ranked speculation-off best, while live receipts showed it 18–34% slower. Never decide serve settings from that bench.</p>
+        <p>• Engine relaunches killed clive workers fleet-wide: the router answered 404 for the absent model, which is fatal to Claude Code. That is fixed as of 08:17Z today; the router now holds such requests in the gate.</p>
+        <p>9. Top 3 changes:</p>
+        <p>(a) One repair node per review, with findings batched, and a light review tier for non-runtime diffs.</p>
+        <p>(b) Drop mandatory figures and evidence prose for small nodes; one landing line is enough.</p>
+        <p>(c) Let dispatch take exact write paths by default and refuse directory-wide claims, which block peers for an hour.</p>
+      </blockquote>
+    </details>
+  </main>
+</body>
+</html>
