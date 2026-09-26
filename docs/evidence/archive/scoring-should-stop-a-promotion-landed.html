@@ -1600,16 +1600,19 @@
     <p>The red log's first line repeats the declared mutation verbatim; it is
     <code>negative-control-count-by-number.log</code> in the run directory. The
     mutation was reverted byte-identical: <code>git hash-object</code> on
-    <code>reckon/crew/review.py</code> equals <code>HEAD:reckon/crew/review.py</code> at
-    <code>72978afb</code>.</p>
+    <code>reckon/crew/review.py</code> returns <code>72978afb</code>, the same blob as
+    <code>git rev-parse HEAD:reckon/crew/review.py</code>.</p>
 
-    <p><strong>Adjacent review cohort, judged by delta.</strong> Nine review test files
-    plus the focused file, base <code>2184a9f1</code> against after <code>9838365a</code>:
-    <strong>1 failed / 76 passed</strong> becomes <strong>1 failed / 80 passed</strong>,
+    <p><strong>Adjacent review cohort, judged by delta.</strong> Nine review test files,
+    base <code>2184a9f1</code> against the head carrying the test evidence:
+    <strong>1 failed / 76 passed</strong> becomes <strong>1 failed / 76 passed</strong>,
     with an <strong>identical failure set — 0 added failures</strong>. The one failure,
     <code>test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker</code>,
-    is pre-existing at the base revision. Receipts:
-    <code>review-cohort-base.log</code> and <code>review-cohort-after.log</code>.</p>
+    is pre-existing at the base revision: the same test id is the sole failing line in
+    both logs. A regression this node introduced and then removed was caught by this
+    <em>same by-id comparison</em> during development — the head failed a different id than
+    the base at equal counts, which is the case a by-number delta reads as zero.
+    Receipts: <code>review-cohort-base.log</code> and <code>review-cohort-after.log</code>.</p>
 
     <p><strong>Scope.</strong> The relationship between the two logs and the ids is a set
     difference, shown above as a table; no figure is used because the content is tabular
