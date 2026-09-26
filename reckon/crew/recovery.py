@@ -4428,6 +4428,11 @@ def classify_pointer(
     # Lifecycle and fleet attention are distinct vocabularies. Publish both
     # from this observation so consumers never reread a stream or process to
     # derive the fleet's verdict, while lifecycle callers retain their contract.
+    if _promote_record_holds(record):
+        # The run has landed; the recorded promotion is the authority on its
+        # lifecycle word too, so every reader agrees the run is finished rather
+        # than one reading the pointer as completed work awaiting promotion.
+        classified["classification"] = "promoted"
     classified["fleet_verdict"] = _watch_verdict(
         record, classified, moment=moment, stall_seconds=stale_after_seconds
     )
@@ -4780,6 +4785,36 @@ EXPLAINED_STATES = frozenset(
 )
 
 
+def _promote_record_holds(record: Mapping[str, Any]) -> bool:
+    """Whether a promoted run's ledger row exists for this live pointer.
+
+    Promotion appends the run's ledger row and then removes the live pointer,
+    so for the length of that window the pointer still exists while the work
+    has already landed. A classifier that reads only the pointer sees a
+    completed manifest whose review no longer matches the moved head and calls
+    the run unpromoted — a landing reported as unfinished work. The ledger row
+    is the fleet's evidence that the work landed, so it is read here rather
+    than inferred from the pointer's absence, which arrives a poll later.
+
+    The row is read from the run's own repository, the root promotion wrote it
+    under. A single stat answers: a promotion writes the per-run file before
+    it touches the aggregate, so the file's presence is the record's presence.
+    An unreadable or absent row answers False — the run then takes the word its
+    pointer earns, which is the safe direction because the alternative promises
+    a landing nothing recorded.
+    """
+    from reckon import ledger as ledger_module
+
+    run_id = str(record.get("run_id") or "")
+    project = str(record.get("project") or "")
+    if not run_id or not project:
+        return False
+    try:
+        return ledger_module.run_path(project, run_id, record.get("repo")).is_file()
+    except (OSError, ValueError):
+        return False
+
+
 def _watch_verdict(
     pointer: Mapping[str, Any],
     row: Mapping[str, Any],
@@ -4799,6 +4834,23 @@ def _watch_verdict(
     phase = str(row.get("effective_phase") or stored_phase)
     classification = str(row.get("classification") or "")
     alive = row.get("process_alive")
+
+    if _promote_record_holds(pointer):
+        # A recorded promotion outranks every reading of the pointer. The row
+        # is written before the pointer is removed, so for that window the
+        # pointer still describes completed-but-awaiting work; the ledger row
+        # is the fleet's evidence the work landed, and reading it here keeps
+        # the run promoted across the whole of promotion rather than only once
+        # the pointer has gone. The state has no reason clause and no owed
+        # action: the work is done, and nothing about it asks a reader for
+        # anything.
+        return {
+            "state": "promoted",
+            "detail": "",
+            "recovery_classification": "promoted",
+            "recovery": "",
+            "lifting_condition": None,
+        }
 
     # The working bucket is keyed on a process that is genuinely still alive,
     # never on the record phase alone: a run whose process died at any phase it

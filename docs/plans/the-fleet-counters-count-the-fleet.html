@@ -91,6 +91,17 @@
       <li>The census's remedy (a supervised pre-launch pointer stays <code>dispatched</code>) overlaps <code>f-adrwiw-launch-flicker</code> on <code>a-dispatch-returns-without-its-worker</code>. That remedy lands there. &sect;3 keeps only the counter and terminal-word changes.</li>
       <li>A vanished reflex review must be reported as withdrawn. Otherwise the coordinator believes a review exists and waits on it.</li>
     </ul>
+    <article id="promotion-never-reads-unpromoted-landing">
+      <h3>A promotion reads promoted from the moment its record exists</h3>
+      <p>Promotion appends the run's ledger row and only then removes the live pointer. Inside that window the landing commit has already moved the tree's head, so the stored review no longer names the head being classified and the completed run was rendered <code>unpromoted</code> &mdash; the measured <code>complete &rarr; unpromoted &rarr; promoted</code> flicker. The classifier now consults the promote record: <code>_promote_record_holds</code> in <code>reckon/crew/recovery.py</code> answers whether the run's own repository holds its ledger row, and the fleet reducer returns the <code>promoted</code> word for as long as it does.</p>
+      <p>The consultation was chosen over reordering promotion's writes. The ledger row and the plan comment are both committed before the pointer is deleted so an interruption between the two cannot lose a landing that was already recorded; moving the pointer unlink ahead of the commit would instead render the departing run <code>withdrawn</code> in the same window, which is a different wrong word for the same instant.</p>
+      <p>The three departure routes that leave a pointer behind with no recorded row still never earn the word: a refused dispatch and a vanished reflex review depart <code>withdrawn</code>, and a deliberate discard departs <code>discarded</code>. <code>tests/test_a_promotion_never_reads_unpromoted.py</code> drives a synthesized completed run through promotion, classifies it at the boundary between the ledger append and the pointer unlink, and holds one case of each departure route. The declared negative control &mdash; keep the current ordering &mdash; makes the boundary-instant test fail with <code>('completed_unpromoted', 'scoring')</code>.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-counters-count-the-fleet/promotion-window-reads-promoted.svg" alt="Promotion writes land in order: complete manifest, ledger row, landing commit, pointer unlink. The window between the ledger row and the unlink is where a pointer-only reading renders unpromoted, while a reading that consults the promote record renders promoted at every instant.">
+        <figcaption>The window a follower polls in sits between the ledger row and the pointer unlink; a reader that consults the row reads the same word across it.</figcaption>
+      </figure>
+      <p>Read the <a href="/reckon/evidence/archive/the-fleet-counters-count-the-fleet-landed.html#promotion-never-reads-unpromoted">cumulative evidence record</a>. The worker does not resolve the driving followup or change terminal plan state.</p>
+    </article>
 
     <h2 id="s4">§4 — A re-arm continues the stream it left</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
