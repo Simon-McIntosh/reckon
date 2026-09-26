@@ -2126,6 +2126,90 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
       This node changes neither the schema nor the generated artifacts.</li>
     </ul>
   </section>
+<section id="s5b-wallet-clock-pin">
+    <h2>&sect;5b &mdash; The wallet clock case pins the window each clock reads</h2>
+
+    <p><strong>The defect, reproduced before it was repaired.</strong>
+    <code>test_the_figures_read_the_readers_own_period_names</code> in
+    <code>tests/test_budget_group_declaration.py</code> built both sides of its fill and pace
+    assertions from the module's own <code>bg.FILL_CLOCK</code> and <code>bg.WEEK_CLOCK</code>, so the
+    two constants could trade windows and the case still passed: it asserted that the module agreed
+    with itself. At base <code>6b8decd9</code>, in a scratch tree whose <code>module.__file__</code>
+    reads <code>/tmp/wallet-clock-base-lzTgIL/reckon/crew/budget_group.py</code> and whose resolved
+    working directory is that same tree, the constants were swapped to
+    <code>FILL_CLOCK: seven_day WEEK_CLOCK: five_hour</code> and the case reported <strong>1 passed</strong>
+    with <code>pytest_exit=0</code>.</p>
+
+    <p><strong>What landed.</strong> The expectations now name the provider's two metered periods in the
+    test file &mdash; <code>FIVE_HOUR_PERIOD = "five_hour"</code> for the window that fills and
+    <code>WEEK_PERIOD = "seven_day"</code> for the week the allowance divides, the names the stream
+    fixture already writes into <code>unifiedWindows</code> &mdash; assert each module constant equals
+    its period, and require the two windows to carry different utilisations so a pair of equal figures
+    cannot make the pin non-discriminating. <code>reckon/crew/budget_group.py</code> is unchanged: the
+    fill reads the five-hour clock and the pace the seven-day one, which is what the module already
+    computed, so no production behaviour moves.</p>
+
+    <table>
+      <caption>The arms, each run in a scratch tree carved from the named revision with <code>git archive</code>.</caption>
+      <thead><tr><th>Arm</th><th>Revision</th><th>Constants</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>wallet case</td><td><code>6b8decd9</code></td><td>unmutated</td><td>1 passed, exit 0</td></tr>
+        <tr><td>wallet case</td><td><code>6b8decd9</code></td><td>swapped</td><td><strong>1 passed, exit 0</strong> &mdash; the defect</td></tr>
+        <tr><td>wallet case</td><td><code>c165a45a</code></td><td>unmutated</td><td>1 passed, exit 0</td></tr>
+        <tr><td>wallet case</td><td><code>c165a45a</code></td><td>swapped</td><td><strong>1 failed</strong>: <code>AssertionError: assert 'seven_day' == 'five_hour'</code> at <code>tests/test_budget_group_declaration.py:256</code></td></tr>
+        <tr><td>whole declaration file</td><td><code>6b8decd9</code></td><td>unmutated</td><td>12 passed</td></tr>
+        <tr><td>whole declaration file</td><td><code>c165a45a</code></td><td>unmutated</td><td>12 passed</td></tr>
+        <tr><td>whole declaration file</td><td><code>c165a45a</code></td><td>swapped</td><td>6 failed, 6 passed</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The six that redden under the swap are the six that read the wallet's clocks</strong>
+    &mdash; <code>test_a_wallets_figures_resolve_once_for_the_wallet</code>,
+    <code>test_a_wallet_reads_the_same_clocks_the_preflight_publishes</code>,
+    <code>test_the_figures_read_the_readers_own_period_names</code>,
+    <code>test_a_wallet_never_paces_on_another_wallets_reading</code>,
+    <code>test_a_reading_that_cannot_be_aged_does_not_supply_the_wallet</code> and
+    <code>test_a_week_clock_with_no_reset_reports_no_pace</code> &mdash; while the six declaration and
+    grouping cases pass, which is the positive control that the mutated tree itself runs. Before this
+    node, the last of those six already reddened and the case this node owns did not: the assertion now
+    moves for the reason the mutation gives it to.</p>
+
+    <p><strong>Lint by delta on the changed path.</strong>
+    <code>tests/test_budget_group_declaration.py</code> carries <strong>0 findings at base and 0
+    after</strong> (ruff 0.16.4, <code>check --no-cache --output-format=concise</code>, each run against
+    its own complete scratch tree so the file is measured inside its package), and
+    <code>ruff format --check</code> reports the file already formatted in both. The run log carries
+    ruff's own receipt, <code>All checks passed!</code> for each arm, rather than an assumed
+    clean.</p>
+
+    <h3>Logs</h3>
+
+    <ul>
+      <li><code>runs/r-20260926T095449659881-wallet-clock-case-pins-its-constants/base-wallet-case-unmutated.log</code> &mdash; the base arm without the mutation, 1 passed.</li>
+      <li><code>runs/r-20260926T095449659881-wallet-clock-case-pins-its-constants/base-wallet-case-mutated.log</code> &mdash; the base arm with the swap applied, 1 passed: the reproduction.</li>
+      <li><code>runs/r-20260926T095449659881-wallet-clock-case-pins-its-constants/pinned-wallet-case-unmutated.log</code> &mdash; the pinned case at <code>c165a45a</code>, unmutated, 1 passed.</li>
+      <li><code>runs/r-20260926T095449659881-wallet-clock-case-pins-its-constants/pinned-wallet-case-red.log</code> &mdash; the declared negative control; its first line repeats the mutation verbatim, and its header names the mutated tree's <code>module.__file__</code> and resolved working directory.</li>
+      <li><code>runs/r-20260926T095449659881-wallet-clock-case-pins-its-constants/pinned-declaration-file.log</code>, <code>pinned-declaration-file-red.log</code>, <code>base-declaration-file.log</code> &mdash; the whole file at both revisions, and the whole file under the swap.</li>
+      <li><code>runs/r-20260926T095449659881-wallet-clock-case-pins-its-constants/lint-delta.log</code> &mdash; the ruff check and format receipts for both trees.</li>
+    </ul>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>Not the merged head.</strong> Every arm measures this node's own head; a merged-head
+      verification is a separately dispatched node's measure.</li>
+      <li><strong>Not the reader.</strong> The pin ties the module's two clock constants to the periods
+      the reader publishes; a period renamed or mis-mapped inside <code>crew.window_reading</code> is
+      that module's own cases' business and is not measured here.</li>
+      <li><strong>No production change.</strong> <code>reckon/crew/budget_group.py</code> is untouched,
+      so no pacing, bar or reserve behaviour moves; the node changes which expectation the case holds
+      the module to.</li>
+      <li><strong>No figure.</strong> The relationship the arms carry is a comparison of three trees
+      across two constants, which is a table rather than a picture; the plan's own
+      <code>wallet-figures.svg</code> already draws the two clocks and the figures they supply.</li>
+    </ul>
+  </section>
 </main>
+
 </body>
 </html>...

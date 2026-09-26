@@ -655,6 +655,38 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     and not yet at a surface a reader reaches. Wiring them into the view belongs to the section that owns
     that surface, and is named under follow_ons in the node's manifest rather than papered over here.</p>
 
+<h3 id="s5b-wallet-clock-pin">Landing &mdash; the wallet clock case pins the window each clock reads</h3>
+
+    <p><strong>Landed 2026-09-26</strong> (<code>c165a45a</code>).
+    <code>test_the_figures_read_the_readers_own_period_names</code> built both sides of its fill and
+    pace assertions from the module's own <code>FILL_CLOCK</code> and <code>WEEK_CLOCK</code>, so the
+    two constants could trade windows and the case stayed green: it held the module to agreeing with
+    itself rather than pinning which window each clock reads. The expectations now name the provider's
+    two metered periods in the test file &mdash; <code>FIVE_HOUR_PERIOD = "five_hour"</code> for the
+    window that fills and <code>WEEK_PERIOD = "seven_day"</code> for the week the allowance divides,
+    the names the stream fixture already writes into <code>unifiedWindows</code> &mdash; assert each
+    constant equals its period, and require the two windows to carry different utilisations so a pair
+    of equal figures cannot make the pin non-discriminating. The module is untouched: the fill reads
+    the five-hour clock and the pace the seven-day one, which is what it already computed.</p>
+
+    <p><strong>Evidence.</strong> At base <code>6b8decd9</code>, with the two constants swapped in a
+    scratch copy of <code>reckon/crew/budget_group.py</code>, the case <strong>passed</strong> &mdash;
+    the defect reproduces, and the log records <code>FILL_CLOCK: seven_day WEEK_CLOCK: five_hour</code>
+    with <code>pytest_exit=0</code>. At <code>c165a45a</code> the same swap reddens it with
+    <code>AssertionError: assert 'seven_day' == 'five_hour'</code>, the whole declaration file reporting
+    <strong>6 failed, 6 passed</strong> &mdash; the six that read the wallet's clocks, against the six
+    grouping cases as the positive control that the mutated tree itself runs &mdash; while the
+    unmutated file reports <strong>12 passed at both revisions</strong>. Lint by delta on the changed
+    path adds no finding (0 at base, 0 after; <code>ruff format --check</code> clean in both), and each
+    scratch run's log names the tree its <code>reckon</code> import resolved to, so the red is shown to
+    come from the mutated copy rather than the checkout. Full record:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#s5b-wallet-clock-pin">the landed
+    evidence record</a>.</p>
+
+    <p><strong>Not in this node.</strong> No production path changes: the pacing view, the lanes
+    surface and the wallet's figures behave exactly as they did, and the merged-head verification is a
+    separately dispatched node's measure rather than this one's.</p>
+
     <h2 id="s7">&sect;7 &mdash; A block must be real, and most of today's were not</h2>
 
     <p><strong>A governor that holds on a figure it cannot vouch for is worse than none</strong>,
