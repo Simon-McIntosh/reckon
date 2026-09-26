@@ -4868,7 +4868,17 @@ def _watch_verdict(
                 detail = f"paused: sitting in {wait} for {quiet}s; it lifts itself"
             else:
                 state = "stalled"
-                detail = f"stream quiet for {quiet}s"
+                # The stall word covers two situations whose remedies are
+                # opposite: a live worker in a long quiet step needs nothing,
+                # a gone one needs a resume. Which one this is cannot be left
+                # to a colour or a glyph, so the row says it in words, taken
+                # from the process verdict the classifier already put on this
+                # row. Liveness not confirmed reads as gone, the same
+                # conservative reading the classifier's own process_gone hoist
+                # takes. The quiet time is the row's own, in whole minutes,
+                # floored so the token never claims more silence than measured.
+                process_state = "alive" if alive is True else "process gone"
+                detail = f"{process_state}, quiet {quiet // 60}m"
         else:
             detail = ""
     elif state not in EXPLAINED_STATES:
