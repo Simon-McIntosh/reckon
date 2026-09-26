@@ -208,6 +208,23 @@
     <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html#s4-focus">execution
     record</a>.</p>
 
+    <div class="r-note" data-reckon="landed" data-node="roadmap-docstring-names-the-focus-home" data-when="2026-09-26">
+      <p><strong>Outcome &mdash; the docstring's cross-reference resolves.</strong> The
+      <code>_sprint_status_buckets</code> docstring in <code>reckon/roadmap.py</code> credited the
+      deterministic focus rule to <code>reckon.sprint_liveness.focus_sprint_id</code>, but
+      <code>focus_sprint_id</code> is defined in <code>reckon/project_state.py</code> and imported
+      from there; <code>reckon.sprint_liveness</code> defines no such name. The reference now reads
+      <code>:func:`reckon.project_state.focus_sprint_id`</code>, and the docstring it names does
+      state the rule the sentence describes.</p>
+      <p><strong>Measured.</strong> At the base revision the docstring read
+      <code>reckon.sprint_liveness.focus_sprint_id</code>; at head it reads
+      <code>reckon.project_state.focus_sprint_id</code>,
+      <code>from reckon.project_state import focus_sprint_id</code> exits 0, and
+      <code>tests/test_roadmap.py</code> is 41 passed at both revisions &mdash; zero added failures.
+      Evidence: <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html#s4-focus">execution
+      record</a>.</p>
+    </div>
+
     <h2 id="s5">&sect;5 &mdash; The skills teach liveness, not the marker</h2>
     <p><code>reckon-sprint</code> SKILL.md's "One pushed sprint" section, and every <code>reckon-build</code> sentence that tells a coordinator to read <code>active_sprint_id</code>, are rewritten to the &sect;2 definition. The <code>push</code> op is described as a hint.</p>
     <p><strong>Done when:</strong></p>
