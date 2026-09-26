@@ -1,0 +1,294 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 3,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "6b8decd9ea4bb9a68eade43bdc15a15de03fdcee",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 21094642,
+      "input_tokens_cumulative": 21094642,
+      "output_tokens": 143937,
+      "output_tokens_cumulative": 143937,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 1242,
+    "files": 7,
+    "removed": 0
+  },
+  "commit_resolution": null,
+  "commits": [
+    "3e06538b290b0d783f3ef37f50f2cd79fe6a1715",
+    "4939876164c6782c5eb0c4e4850baf6172e2ccc0",
+    "666c64d487237b5cbabf305144c6b34894ff8f36",
+    "0098128c4f4f34cc7d1c8838116b21d8f89ca4ff",
+    "7c46f2e49d07fa9a58273b1e81037f082d431592"
+  ],
+  "completed_at": "2026-09-26T19:59:26.983Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-26T09:54:31Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/ledger.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 --timeout=300 (the base-passing population of remeasure/measured-files.txt, listed in the log header)",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T095413623438-dispatch-records-the-pace-row/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.6,
+    "at_dispatch": 0.99,
+    "plan": "a-window-paces-the-lane",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-26T10:54:14.467866+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-26T09:54:14Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 20,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 4,
+    "mean_context": 98182,
+    "observed_at": "2026-09-26T09:53:54Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-26T19:59:26.983Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-records-the-pace-row/manifest.md",
+  "member": "disposable-r-20260926T095413623438-dispatch-records-the-pace-row",
+  "negative_control": {
+    "declaration": "stop the dispatch entry point from writing the pace row; the first row-key assertion must fail",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-records-the-pace-row/remeasure/red-pre-repair.log",
+    "reason": "the declared mutation's own log exists at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T095413623438-dispatch-records-the-pace-row/red-log-declared-mutation.txt: first line verbatim, 6 failed on the first row-key assertion. The manifest's field was repointed during the review-repair turn to the pre-repair red log, which is that turn's own control",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-records-the-pace-row/remeasure/red-pre-repair.log",
+    "test_paths": [
+      "tests/test_dispatch_records_the_pace_row.py"
+    ],
+    "verdict": "waived"
+  },
+  "no_commit": null,
+  "node": "dispatch-records-the-pace-row",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2200,
+          "cached_input_tokens": 186309,
+          "input_tokens": 188511,
+          "output_tokens": 1462,
+          "reasoning_output_tokens": 61,
+          "total_tokens": 189973,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "At base a dispatch yields a record carrying no budget group, allowance, open-endedness score or bar. Done when a dispatch driven through the dispatch entry point (not a helper) produces a row carrying: the declared budget group; the utilisation judged against, with that figure's age and source; the five-hour position; elapsed and remaining windows; the derived allowance with the pace multiple in force; the node's open-endedness score; the bar; the lane chosen; and the hold, when one fired, with its evidence. A test then recomputes each allowance from a sequence of such rows alone, reading no stream. Reuse reckon/crew/pace.py and the existing budget readers for every figure; the row records their outputs and derives nothing new. The row lives where the run's existing dispatch record lives; name the location in the manifest. Measured files: tests/test_dispatch_records_the_pace_row.py (new) plus the existing test files that exercise the dispatch entry point, named in the manifest. Tests run under a temporary config home with the real config home asserted untouched. At least one added assertion must fail at the dispatch base, shown in a log. Zero added failures against base over the measured files in ONE invocation. Report ruff findings on the staged paths against the count at base.",
+    "estimated_hours": 2.0,
+    "goal": "Every dispatch records the pace row the window plan's section 9 names, so a week of dispatch decisions can be replayed without reading a stream.",
+    "id": "dispatch-records-the-pace-row",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-26T09:54:14Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 20,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 4,
+      "mean_context": 98182,
+      "observed_at": "2026-09-26T09:53:54Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/dispatch-records-the-pace-row/manifest.md",
+    "negative_control": "stop the dispatch entry point from writing the pace row; the first row-key assertion must fail",
+    "plan": "a-window-paces-the-lane",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§9",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/dispatch.py",
+      "reckon/budget.py",
+      "tests/test_dispatch_records_the_pace_row.py",
+      "docs/evidence/archive/a-window-paces-the-lane-landed.html",
+      "docs/figures/a-window-paces-the-lane",
+      "docs/plans/a-window-paces-the-lane.html"
+    ]
+  },
+  "orientation_input_tokens": 13285625.0,
+  "outcome": "",
+  "plan": "a-window-paces-the-lane",
+  "plan_impl_at_dispatch": 0.99,
+  "promoted_revision": "7c46f2e49d07fa9a58273b1e81037f082d431592",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 20,
+      "evidence": 19,
+      "fit": 20,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 98
+  },
+  "role": "implement",
+  "run_id": "r-20260926T095413623438-dispatch-records-the-pace-row",
+  "scope_acceptances": [
+    {
+      "path": "reckon/ledger.py",
+      "reason": "carrying the pace row onto the committed record goes through ledger.build_record, the one place the committed row is composed; granted in the review-repair resume"
+    }
+  ],
+  "scope_changed": false,
+  "section": "§9",
+  "session_harness": "claude",
+  "session_id": "9c399111-d64d-4ba9-bb1b-d1d3d4af1a77",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 100329022,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 4538.511,
+    "generated_tokens": 683832,
+    "generation_seconds": 4008.988,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.8,
+    "machine_seconds": 529.523,
+    "peak_input_tokens": 166853,
+    "tokens_per_second": 170.57,
+    "wall_tokens_per_second": 150.67
+  },
+  "time_budget": "60m",
+  "tool_steps": 235.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 36295,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 3,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-26T19:59:28Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-26T18:43:45Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T095413623438-dispatch-records-the-pace-row",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 145615,
+    "worker_pid": 531961
+  },
+  "worker_seconds": 36267,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
