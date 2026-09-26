@@ -213,6 +213,65 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
     assert "\n" not in line
 
 
+def test_counter_cells_stay_apart_at_every_digit_width() -> None:
+    """Two-digit counts never run into the bucket beside them.
+
+    The block renders each count as its digits followed by the bucket's letter,
+    one space between cells, so ``10w 12b`` is two tokens at any digit width and
+    the abutting ``10w12b`` is never printed as one. The single-digit form is
+    unchanged — ``1w 0b 0u 0q``, whose gaps are those same single spaces — so a
+    fleet that fits one digit a bucket reads exactly as it did before. The block
+    keeps one width whatever the counts (its spare columns fall at the block's
+    right edge), so the clause after it holds its column.
+    """
+    escapes = re.compile(r"\x1b\[[0-9;]*m")
+    counters = re.compile(r"(\d+)w\s+(\d+)b\s+(\d+)u\s+(\d+)q")
+
+    block_ends: set[int] = set()
+    cases = (
+        (10, 12, 0, 0),
+        (99, 99, 0, 0),
+        (99, 99, 99, 99),
+        (1, 0, 0, 0),
+        (3, 1, 0, 0),
+    )
+    for index, (working, blocked, unpromoted, queued) in enumerate(cases):
+        # A grid per case: the renderer remembers the last destination state of
+        # a run, so reusing one run id would suppress the rows after the first.
+        grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
+        row = escapes.sub(
+            "",
+            grid.render(
+                _event(
+                    run_id=f"r-digits-{index}",
+                    working=working,
+                    blocked=blocked,
+                    unpromoted=unpromoted,
+                    waiting=queued,
+                )
+            ),
+        )
+        match = counters.search(row)
+        assert match is not None, (working, blocked, unpromoted, queued, row)
+        assert match.groups() == (
+            str(working),
+            str(blocked),
+            str(unpromoted),
+            str(queued),
+        ), row
+        # The counters carry no abutting pair and no doubled gap inside the
+        # block: one space is the only separator the cells use.
+        assert f"{working}w{blocked}b" not in row, row
+        assert "  " not in match.group(0), row
+        block_ends.add(match.start() + ticker_module.STATS)
+
+    # The block's reserved right edge holds whatever the counts, so the free
+    # text after it begins at one column on every row: a single-digit fleet's
+    # spare columns are the trailing space inside the block, not a shift of
+    # everything after it.
+    assert len(block_ends) == 1, sorted(block_ends)
+
+
 def test_cli_follow_prints_compact_transition_lines_by_default(
     home, monkeypatch
 ) -> None:
@@ -871,11 +930,21 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
     )
     assert len({row.index("sonnet5") for row in rows}) == 1
     assert len({row.index("implement"[:4]) for row in rows}) == 1
-    for letter, spelling in (("w", "working"), ("b", "blocked"), ("u", "unpromoted")):
-        columns = {
-            re.search(r"\d{1,2}w\s?\d{1,2}b\s?\d{1,2}u", row).end(0) for row in rows
-        }
-        assert len(columns) == 1, (letter, spelling)
+    # The counter block starts at one column and holds every column the module
+    # reserves for it whatever the counts, so the free text after it keeps one
+    # column on every row kind. Each count is its digits followed by its bucket
+    # letter, so the block is left-aligned inside those columns: the digits a
+    # single-digit fleet does not fill are spent as trailing space at the
+    # block's right edge, never by letting the block's own width follow the
+    # counts and shift the field after it.
+    starts = {re.search(r"\d{1,2}w", row).start() for row in rows}
+    assert len(starts) == 1, starts
+    counter_start = starts.pop()
+    block_end = counter_start + ticker_module.STATS
+    for row in rows:
+        assert (
+            row[block_end : block_end + ticker_module.GAP] == " " * ticker_module.GAP
+        ), row
 
     # Session identity is a delivery scope, not another row column.
     assert "ship-s15-20260903" not in "\n".join(rows)

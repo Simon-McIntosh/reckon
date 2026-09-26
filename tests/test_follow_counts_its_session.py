@@ -34,10 +34,12 @@ from reckon import cli, crew
 from reckon.crew import runs
 
 # The counter block the ticker prints at the end of each transition line:
-# ``<n>w <n>b <n>u <n>q``, every bucket at a fixed two-column width with no
-# separator, so the block never changes shape. It is matched whole rather than
-# as a prefix, so a bucket added later cannot slip past the prefix of an older
-# count.
+# ``<n>w <n>b <n>u <n>q``, each count followed by its bucket's letter with
+# whitespace between the cells, so a two-digit count is its own token rather
+# than running into the bucket beside it. The pattern requires that whitespace,
+# so a block that abutted two-digit counts would not match it at all. It is
+# matched whole rather than as a prefix, so a bucket added later cannot slip
+# past the prefix of an older count.
 _COUNTERS = re.compile(r"(\d+)w\s+(\d+)b\s+(\d+)u\s+(\d+)q")
 
 _POINTER_RUN_IDS = ("r-own-work", "r-peer-work", "r-peer-block")
@@ -154,6 +156,43 @@ def test_an_unscoped_follower_over_the_same_fixture_is_unchanged(
     _stub_producer(monkeypatch)
     output = _follow()
     assert _counters(output) == (2, 1, 0, 0)
+
+
+@pytest.fixture()
+def two_digit_session(home):
+    """One session whose own figures need two digits in two buckets."""
+    for index in range(10):
+        _write_pointer(
+            home, f"r-own-work-{index}", f"own-{index}", session="mine", phase="working"
+        )
+    for index in range(12):
+        _write_pointer(
+            home,
+            f"r-own-block-{index}",
+            f"block-{index}",
+            session="mine",
+            phase="working",
+            manifest_status="blocked",
+        )
+    return home
+
+
+def test_two_digit_counts_reach_the_line_as_separate_tokens(
+    two_digit_session, monkeypatch
+) -> None:
+    """A two-digit count does not absorb the bucket beside it.
+
+    The scoped figures are recomputed from the pointers, so ten working runs and
+    twelve blocked runs print ``10w 12b 0u 0q``: the reader sees two tokens, not
+    the ``10w12b`` the abutting block rendered. The pattern requires whitespace
+    between a count and the next bucket's letter, so the abutting form leaves the
+    line with no counter block this reader can find at all.
+    """
+    _stub_producer(monkeypatch)
+    output = _follow("--session", "mine")
+    assert _counters(output) == (10, 12, 0, 0)
+    assert "10w 12b 0u 0q" in output
+    assert "10w12b" not in output
 
 
 def test_the_scoped_figures_differ_from_the_unscoped_figures(
