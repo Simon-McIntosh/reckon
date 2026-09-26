@@ -4868,7 +4868,31 @@ def _watch_verdict(
                 detail = f"paused: sitting in {wait} for {quiet}s; it lifts itself"
             else:
                 state = "stalled"
-                detail = f"stream quiet for {quiet}s"
+                # The stall word covers three situations whose remedies
+                # differ: a live worker in a long quiet step needs nothing, a
+                # dead one needs a resume, and one whose liveness nothing
+                # established needs the check a reader would otherwise run by
+                # hand. Which one this is cannot be left to a colour or a
+                # glyph, so the row says it in words. Death is claimed only
+                # where something observed it, and two things can: a pid
+                # checked on this host and found dead, which the row's own
+                # liveness_proven records, or the supervisor's exit record,
+                # which survives a pointer nobody updated and a pid no other
+                # machine can look up. A stored answer carried because the
+                # launching host is another machine is neither, and neither is
+                # no answer at all, so those read as unproven rather than as a
+                # death. The quiet time is the row's own, in whole minutes,
+                # floored so the token never claims more silence than measured.
+                if alive is True:
+                    process_state = "alive"
+                elif alive is False and (
+                    row.get("liveness_proven") is True
+                    or row.get("exit_record") is not None
+                ):
+                    process_state = "process gone"
+                else:
+                    process_state = "liveness unknown"
+                detail = f"{process_state}, quiet {quiet // 60}m"
         else:
             detail = ""
     elif state not in EXPLAINED_STATES:

@@ -11,6 +11,10 @@ of the stream's silence and the age of the attempt now running, so a fresh
 attempt cannot inherit its predecessor's silence. The declared negative control
 restores the old reading — quiet time from the stream alone — and the freshly
 resumed case must then fail, classifying stalled.
+
+The stalled detail names the process state beside the quiet time (``alive,
+quiet 31m``), so the assertions on it below read the process word and the whole
+minutes figure, taking the figure from the same quiet time this module measures.
 """
 
 from __future__ import annotations
@@ -37,6 +41,12 @@ MUTATION_ENV = "RECKON_STALL_CLOCK_NEGATIVE_CONTROL"
 
 # The window the stub runs are judged against, in seconds.
 STALL_SECONDS = 900
+
+# The age the fixtures declare for their streams and attempts. The stalled
+# case's expected minutes are computed from this declared age rather than from
+# the reading the renderer took, so a regression inside that reader cannot move
+# the row and its expectation together.
+STALE_SECONDS = 1919
 
 
 @pytest.fixture(autouse=True)
@@ -141,15 +151,22 @@ def test_a_stale_attempt_with_no_newer_record_still_stalls(tmp_path: Path) -> No
             tmp_path,
             "r-stale-attempt",
             worker_pid=worker_pid,
-            stream_age_seconds=1919,
-            attempt_age_seconds=1919,
+            stream_age_seconds=STALE_SECONDS,
+            attempt_age_seconds=STALE_SECONDS,
         )
         quiet = recovery._run_stream_quiet_seconds(pointer, now_seconds=moment)
         verdict = _verdict(pointer, moment)
 
-    assert abs(quiet - 1919) <= 1, quiet
+    assert abs(quiet - STALE_SECONDS) <= 1, quiet
     assert verdict["state"] == "stalled", verdict["detail"]
-    assert verdict["detail"].startswith("stream quiet for ")
+    # The stalled detail names the process state beside the row's own quiet
+    # time, so a reader can tell a live worker from a gone one. This run's
+    # worker is a live child, so the row says so and reports whole minutes,
+    # taken from the age this fixture declared rather than from the reading
+    # the renderer took.
+    assert verdict["detail"].startswith("alive, quiet "), verdict["detail"]
+    named = int(verdict["detail"].removeprefix("alive, quiet ").removesuffix("m"))
+    assert named == STALE_SECONDS // 60, verdict["detail"]
 
 
 def test_a_pointer_with_no_attempt_start_behaves_as_today(tmp_path: Path) -> None:
