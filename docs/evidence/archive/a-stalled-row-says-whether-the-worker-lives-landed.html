@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="A worker killed mid-turn is a row on the snapshot that sees it die, not fifteen minutes later.">
   <meta name="plan-evidence-for" content="a-stalled-row-says-whether-the-worker-lives">
   <meta name="plan-verifies" content="a-stalled-row-says-whether-the-worker-lives#s2">
-  <meta name="plan-commits" content="8b759fa0,c5b2e184,8be6a8af,2fd5f559,8236dcc3,b09db857">
-  <meta name="plan-artifacts" content="tests/test_watch_reports_death_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png,tests/test_death_row_reads_any_final_record.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/tail_window_reads.png,tests/test_stalled_row_names_liveness.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/stalled_row_process_state.png">
+  <meta name="plan-commits" content="8b759fa0,c5b2e184,8be6a8af,2fd5f559,8236dcc3,b09db857,e1e31482">
+  <meta name="plan-artifacts" content="tests/test_watch_reports_death_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png,tests/test_death_row_reads_any_final_record.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/tail_window_reads.png,tests/test_stalled_row_names_liveness.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/stalled_row_process_state.png,tests/test_resume_offer_needs_a_dead_process.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/resume_offer_waits.png">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -178,6 +178,66 @@
       (<code>r-quiet-held</code>): the row prints the run id in its node cell, so a run id spelling
       one of the words under test would satisfy that case's own assertion from the node name &mdash;
       a wrong-reason pass this node hit on its first base arm and repaired before landing.</p>
+    </section>
+
+    <section id="s4">
+      <h2>&sect;4 &mdash; A resume offer is not shown while the worker lives</h2>
+      <p><strong>Landed</strong> (<code>e1e31482</code>). The wait-met arm of
+      <code>classify_pointer</code> in <code>reckon/crew/recovery.py</code> consulted nothing before
+      it offered a resume: as soon as the declared condition reported terminal it composed
+      <code>ready to resume: &lt;condition&gt; reported '&lt;observed&gt;', a declared terminal
+      state</code>, attached the resume action and set the row's recovery classification to
+      <code>ready</code> &mdash; for a worker still writing the run as readily as for one whose end
+      was observed. A resume on the first case starts a second worker on the same run; on a reading
+      nobody took it rests on an observation that was never made. The arm now gates the offer, its
+      action and the <code>ready</code> classification on the three-way process reading the stalled
+      detail already states, taken from the same evidence through one helper
+      (<code>_process_reading</code>: <code>alive</code>, <code>process gone</code>,
+      <code>liveness unknown</code>), which the unreadable arm also composes from &mdash; so the two
+      surfaces cannot call one run alive and gone at once and no second liveness reader was added.
+      Every reading other than <code>process gone</code> renders the same event as a wait on the
+      named condition and names the reading it is holding, so the withheld lift is legible rather
+      than silent.</p>
+      <figure>
+        <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/resume_offer_waits.png" alt="Top: the wait-met arm, where a run whose declared condition has reported terminal reaches a process reading with three outcomes — alive and liveness unknown produce a waiting row that names the condition and the reading, while process gone produces ready to resume beside recovery = ready. Middle: the clause the classifier composes for each reading and the action that rides with it. Bottom: the three clauses measured through the renderer at 208 columns — the live child's row reads 'waiting on scheduler job 42 has finished: the probe reported 'present', a declared terminal state, but the process reading is 'alive', so no lift is offered until the process is observed to have ended'; the checked-absent pid's row reads 'ready to resume: scheduler job 42 has finished reported 'present', a declared terminal state'; the no-pid row reads the same wait clause with 'liveness unknown'; and beneath them the base revision's single clause, reached by all three readings: 'ready to resume: …'.">
+        <figcaption>The same met condition, three process readings, two outcomes. The reading is
+        consulted before the offer is composed, and the two readings that are not an observed end
+        render a wait &mdash; which is why the middle and bottom panels are worth reading together:
+        the clause the pane truncates at 208 columns is composed by the classifier above it, so the
+        words a coordinator reads are the words measured here. Base rows were measured by running
+        the same figure script against a scratch tree of the base revision with the node's test
+        module present, which is what makes the comparison a measurement rather than a
+        recollection.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Row for a met wait whose worker process is a live child the test starts</td><td><code>waiting on &hellip; the process reading is 'alive', so no lift is offered &hellip;</code>; <code>resume</code> absent, recovery <code>wait</code>, classification <code>waiting</code></td></tr>
+          <tr><td>Row for a met wait whose worker pid is absent from the process table (checked here)</td><td><code>ready to resume: &hellip; a declared terminal state</code>; recovery <code>ready</code>, classification <code>ready</code></td></tr>
+          <tr><td>Row for a met wait whose pointer carries no pid at all</td><td><code>&hellip; the process reading is 'liveness unknown', so no lift is offered &hellip;</code>; <code>resume</code> absent, recovery <code>wait</code></td></tr>
+          <tr><td>The same three cases at the base revision</td><td>2 failed, 27 passed, exit 1 &mdash; each of the two non-observed readings fails on <code>assert "resume" not in "ready to resume: scheduler job 42 has finished reported 'present', a declared terminal state"</code>; the observed-end case already offered the resume</td></tr>
+          <tr><td>Three measured files in one invocation at the delivered head (<code>test_resume_offer_needs_a_dead_process.py</code>, <code>test_stalled_row_names_liveness.py</code>, <code>test_crew_recover.py</code>)</td><td>29 passed, exit 0 &mdash; zero added failures against base</td></tr>
+          <tr><td>The same invocation at the base revision, with the node's test file present</td><td>2 failed, 27 passed, exit 1 &mdash; every failure an added case</td></tr>
+          <tr><td>Real config home during the cases</td><td>asserted untouched entry-by-entry by the fixture's own teardown, which fingerprints it before the environment moves</td></tr>
+          <tr><td>Staged paths' ruff findings against the count at base</td><td>unchanged, 8 either side (all pre-existing in <code>recovery.py</code>); the added test 0</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Negative control, executed and logged.</strong> The declared control removes the
+      liveness gate from the wait-met arm, and the live case's row must then contain
+      <code>resume</code> again and fail on its own assertion. Applied to a scratch tree of the
+      delivered commit with nothing else changed, the case fails at
+      <code>assert "resume" not in "ready to resume: scheduler job 42 has finished reported
+      'present', a declared terminal state"</code> &mdash; the declared failure, on the assertion the
+      node was designed around. The log's first line is the declared mutation verbatim.</p>
+      <p>The gone-process case is the side that must not be lost, and it is asserted on both its
+      reading and its outcome: the pid is a real number beyond the kernel's ceiling, checked on this
+      host, so the process table answered that nothing holds the run. That is the observation the
+      offer is licensed by, and it is why the gate is the three-way reading rather than a negation of
+      <code>process_gone</code>, which is true of an unproven reading as well as of an observed end.
+      The rows are rendered through <code>classify_pointer</code>, the watcher snapshot, the
+      transition the events log persists and <code>format_watch_transition</code> at 208 columns, so
+      each case fails if it stops reaching the arm under test rather than passing vacuously, and the
+      run ids are neutral for the same reason the liveness file's are.</p>
     </section>
 
     <section id="verification">
