@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="500" viewBox="0 0 860 500" role="img" aria-labelledby="t d">
+  <title id="t">A config error costs a follower one tick, not the stream</title>
+  <desc id="d">Each poll tick reads the configuration through the shared quota-rate reader on its way to the stream cursor. When the layer validates, the tick derives its baseline and prints its rows. When the layer does not validate — a key a merge landed that the running schema rejects — the base revision raises out of the loop and the pane ends. At head the reader returns the empty, all-unpriced reading, so the tick still derives its baseline and prints its rows, and a config error the reader does not cover is caught by the loop, printed once as a single dim deferral line, and retried on the next tick. Once the layer validates again the deferral flag clears and delivery continues, so a misconfigured file costs the pane one tick rather than the whole arming.</desc>
+  <style>
+    .box { fill: #f6f8fa; stroke: #8a94a6; stroke-width: 1.5; }
+    .dec { fill: #eef4ff; stroke: #3b6fd4; stroke-width: 1.5; }
+    .go  { fill: #eaf7ee; stroke: #2e8a4f; stroke-width: 1.5; }
+    .w   { fill: #fff6e6; stroke: #b7791f; stroke-width: 1.5; }
+    .bad { fill: #fdeaea; stroke: #b23b3b; stroke-width: 1.5; }
+    .t   { font: 13px sans-serif; fill: #1f2430; }
+    .lbl { font: 11px sans-serif; fill: #4a5568; }
+    .edge { stroke: #5a6577; stroke-width: 1.5; fill: none; marker-end: url(#a); }
+  </style>
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,9 L0,0 L9,4.5 Z" fill="#5a6577"/>
+    </marker>
+  </defs>
+
+  <rect class="box" x="290" y="14" width="280" height="46" rx="6"/>
+  <text class="t" x="430" y="34" text-anchor="middle">poll tick</text>
+  <text class="lbl" x="430" y="50" text-anchor="middle">baseline = watch_stream_cursor(project)</text>
+
+  <path class="edge" d="M430,60 L430,88"/>
+
+  <rect class="dec" x="270" y="90" width="320" height="52" rx="6"/>
+  <text class="t" x="430" y="110" text-anchor="middle">does flight.resolve() validate?</text>
+  <text class="lbl" x="430" y="126" text-anchor="middle">the shared reader asks once per tick, for every live run</text>
+
+  <path class="edge" d="M590,116 L740,116 L740,168"/>
+  <text class="lbl" x="600" y="108">yes — layer reads</text>
+
+  <rect class="go" x="600" y="170" width="250" height="46" rx="6"/>
+  <text class="t" x="725" y="190" text-anchor="middle">derive the baseline, print rows</text>
+  <text class="lbl" x="725" y="206" text-anchor="middle">rates priced; delivery continues</text>
+  <path class="edge" d="M725,216 L725,246"/>
+
+  <path class="edge" d="M430,142 L430,168"/>
+  <text class="lbl" x="438" y="160">no — the layer will not validate</text>
+
+  <rect class="dec" x="150" y="170" width="330" height="46" rx="6"/>
+  <text class="t" x="315" y="190" text-anchor="middle">is the error the reader covers?</text>
+  <text class="lbl" x="315" y="206" text-anchor="middle">the reader returns the empty, all-unpriced map</text>
+
+  <path class="edge" d="M480,193 L560,193 L560,246"/>
+  <text class="lbl" x="490" y="186">yes — degrade</text>
+
+  <rect class="go" x="470" y="248" width="290" height="52" rx="6"/>
+  <text class="t" x="615" y="268" text-anchor="middle">baseline still printed</text>
+  <text class="lbl" x="615" y="284" text-anchor="middle">the cost drops to &ldquo;unpriced&rdquo;; the row does not</text>
+
+  <path class="edge" d="M250,216 L250,286"/>
+  <text class="lbl" x="258" y="256">no — it escapes the reader</text>
+
+  <rect class="w" x="60" y="288" width="330" height="72" rx="6"/>
+  <text class="t" x="225" y="310" text-anchor="middle">print ONE dim deferral line</text>
+  <text class="lbl" x="225" y="328" text-anchor="middle">&ldquo;deferred a tick: the flight configuration could not be read …&rdquo;</text>
+  <text class="lbl" x="225" y="344" text-anchor="middle">once per contiguous deferral, never once per tick</text>
+
+  <path class="edge" d="M225,360 L225,392 L430,392 L430,412"/>
+  <path class="edge" d="M615,300 L615,392 L430,392"/>
+
+  <rect class="bad" x="60" y="414" width="330" height="62" rx="6"/>
+  <text class="t" x="225" y="436" text-anchor="middle">base: the raise leaves the loop</text>
+  <text class="lbl" x="225" y="454" text-anchor="middle">the pane ends — for a file the follower cannot repair</text>
+
+  <rect class="go" x="430" y="414" width="330" height="62" rx="6"/>
+  <text class="t" x="595" y="436" text-anchor="middle">head: retry on the next tick</text>
+  <text class="lbl" x="595" y="454" text-anchor="middle">config validates again &rarr; delivery resumes</text>
+
+  <text class="lbl" x="30" y="492">The declared mutation restores the reader&rsquo;s raise: the per-tick read then never stops raising, the pane never delivers, and both arms go red.</text>
+</svg>

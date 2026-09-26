@@ -476,6 +476,23 @@ head, a first sighting that did move keeps its left word and its arrow:
       <p>The worker does not resolve the driving followup or change terminal plan state. The node reports blocked: the five remaining counter literals sit in three files outside its write fence, and the exact edits and their green proof are held in the run directory.</p>
       <p><strong>Correction at merge.</strong> The sentence above that the node reports blocked on the grant was true when written and is superseded: the coordinator granted <code>tests/test_crew_recovery.py</code>, <code>tests/test_crew_session_delivery.py</code> and <code>tests/test_crew_watch_stream.py</code>, the literal edits landed at <code>5c6610ba</code>, and the independent re-review recomputed zero added failures by id (282 passed at base, 285 at head). The reason clause starts at 0-based column 123 at the default model cell width of ten, within the bound of 124.</p>
     </section>
+  <section id="follower-survives-a-config-change">
+      <h2>A config layer a merge breaks under a follower costs a tick, not the stream</h2>
+      <p>Landed in commit <code>1fa350f5</code>. The follower derives its per-tick baseline through <code>watch_stream_cursor</code>, and each live run's row carries a notional cost read from the resolved flight configuration. A merge that lands a key the running image's schema rejects leaves <code>flight.resolve()</code> raising <code>FlightConfigError</code> in every process holding the old file. That reader runs in the per-tick path of the follower and of the producer's ticker alike, so the error ended the pane and cost the ticker its transitions, for a file neither owns and neither can repair.</p>
+      <p><code>backend_rate_statuses</code> now returns the empty, all-unpriced reading when the layer will not validate, so a config error costs a rate figure and never the process. The follower's per-tick loop additionally catches a config error the reader does not cover, prints one dim deferral line per contiguous deferral, and retries on the next tick, clearing the flag once a read succeeds. Neither <code>recovery.py</code> nor <code>runs.py</code> is edited.</p>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>The two new tests at the base revision</td><td>2 failed</td><td><code>gates/red-base.txt</code>: the reader raises, and the follower's per-tick read ends the arming with nothing delivered.</td></tr>
+          <tr><td>The two new tests at head</td><td>2 passed</td><td><code>gates/green-head.txt</code></td></tr>
+          <tr><td>Declared negative control <code>make backend_rate_statuses re-raise a flight config error so the follower dies on it</code></td><td>2 failed as required</td><td><code>gates/red-mutation.txt</code>, whose first line repeats the declaration verbatim.</td></tr>
+          <tr><td>The nine follow, watch and quota test files that exercise the changed symbols, base against head</td><td>88 passed / 88 passed</td><td><code>gates/gate-derived-base.txt</code>, <code>gates/gate-derived-head.txt</code>: zero added failures by id.</td></tr>
+          <tr><td>The full follow, watch and quota selection at head</td><td>178 passed, 1 skipped</td><td><code>gates/gate-head-2.txt</code></td></tr>
+          <tr><td>Lint and format on the three changed paths</td><td>no added findings</td><td>Pre-existing debt in <code>reckon/cli.py</code> unchanged at base and head.</td></tr>
+        </tbody>
+      </table>
+      <p>Declared negative control <code>make backend_rate_statuses re-raise a flight config error so the follower dies on it</code> failed as required (2 failed) — <code>gates/red-mutation.txt</code>, whose first line repeats the declaration verbatim. The figure <a href="/reckon/figures/the-fleet-counters-count-the-fleet/config-error-costs-a-tick.svg">a config error costs a follower one tick, not the stream</a> draws both routes. The worker does not resolve the driving followup or change terminal plan state.</p>
+    </section>
   </main>
 </body>
 </html>
