@@ -1,0 +1,326 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "9945557624511d329211b5b573cdf77d38b02ac4",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 14275459,
+      "input_tokens_cumulative": 14275459,
+      "output_tokens": 73612,
+      "output_tokens_cumulative": 73612,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 377,
+    "files": 5,
+    "removed": 17
+  },
+  "commit_resolution": null,
+  "commits": [
+    "ecc6d4c932a6350899278a905c192f4097bf0db7",
+    "cc187c66fd6b7d7155ab639e0a631d41dbaeac51",
+    "52f221c1856cf8f2d0a43471af1b3bf93930bf2f"
+  ],
+  "completed_at": "2026-09-26T21:40:37.993Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-26T20:51:37Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest fixture)",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_recovery_state_typing.py",
+    "hold/reset",
+    "reckon/crew/ticker.py.",
+    ".git/worktrees",
+    "/tmp"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_resume_is_aged_from_its_own_start.py (4 passed; neighbour suite in logs/suite-after.log)",
+    "exit_status": 0,
+    "log_digest": "sha256:f3ff0520e279ec6c149e89699e3211b55be2a422d4179b812a22c9237834275e",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205123615258-resume-is-aged-from-its-own-start/logs/gate-green.log"
+  },
+  "impl_move": {
+    "at_complete": 0.7,
+    "at_dispatch": 0.7,
+    "plan": "the-fleet-counters-count-the-fleet",
+    "reason": "the plan owner (s23-coord) writes the-fleet-counters-count-the-fleet's impl and §3 outcomes from each promote sha, by agreement; this run is one of four §3 nodes",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-26T21:31:24.207222+00:00",
+    "horizon_seconds": 2400,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-26T20:51:24Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 7,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 2,
+    "mean_context": 600000,
+    "observed_at": "2026-09-26T20:51:17Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-26T21:40:37.993Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205123615258-resume-is-aged-from-its-own-start/manifest.md",
+  "member": "disposable-r-20260926T205123615258-resume-is-aged-from-its-own-start",
+  "negative_control": {
+    "declaration": "age from the earliest stream again; the just-resumed case must fail",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205123615258-resume-is-aged-from-its-own-start/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205123615258-resume-is-aged-from-its-own-start/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_resume_is_aged_from_its_own_start.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "resume-is-aged-from-its-own-start",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 244,
+          "cached_input_tokens": 594379,
+          "input_tokens": 594625,
+          "output_tokens": 1179,
+          "reasoning_output_tokens": 364,
+          "total_tokens": 595804,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+      "session_id": "s21-coord"
+    },
+    "done_when": "A resumed run is never classified stalled on the quiet time of a stream from an earlier attempt. The classifier in reckon/crew/recovery.py measures a live run's quiet time from the later of two things: the current attempt's own launch time, and the last write to that attempt's own log. Before the current attempt's log exists, the run reads working within the same launch-window grace a fresh dispatch gets. Measured on 2026-09-26: watcher-seat-survives-other-hosts rendered complete → stalled (\"stream quiet for 956s\") at 20:26:34 local, 20 s after `crew resume`, because resume-1.jsonl did not exist yet and the classifier aged the run from the previous stream.jsonl. It recovered at 20:26:55. tests/test_resume_is_aged_from_its_own_start.py synthesises a live run record in tmp_path (the pytest fixture), with every crew directory environment-resolved to tmp_path and a live stub pid. Its stream.jsonl was last written 1000 s ago. It has just been resumed: the attempt was launched 5 s ago, and resume-1.jsonl is absent. The test asserts the classification is not stalled. A second case has the attempt's log last written 1000 s ago, and asserts stalled, so the guard still fires on a genuinely quiet resume. Negative control: age from the earliest stream again; the first case must fail. tests/test_crew_recovery.py adds no failures against the base, with pytest basetemp outside any git repository. Gate and control logs are written under the run directory. The change is committed in this worktree.",
+    "estimated_hours": null,
+    "goal": "Make the classifier age a resumed run from its own attempt, never from an earlier attempt's stream.",
+    "id": "resume-is-aged-from-its-own-start",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-26T20:51:24Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 7,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 2,
+      "mean_context": 600000,
+      "observed_at": "2026-09-26T20:51:17Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205123615258-resume-is-aged-from-its-own-start/manifest.md",
+    "negative_control": "age from the earliest stream again; the just-resumed case must fail",
+    "plan": "the-fleet-counters-count-the-fleet",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "exact",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/recovery.py",
+      "tests/test_resume_is_aged_from_its_own_start.py",
+      "docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html",
+      "docs/figures/the-fleet-counters-count-the-fleet",
+      "docs/plans/the-fleet-counters-count-the-fleet.html"
+    ]
+  },
+  "orientation_input_tokens": 4136678.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "resume-is-aged-from-its-own-start",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-26T20:51:32.168818+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-fleet-counters-count-the-fleet",
+  "plan_impl_at_dispatch": 0.7,
+  "promoted_revision": "52f221c1856cf8f2d0a43471af1b3bf93930bf2f",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 19,
+      "evidence": 17,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 93
+  },
+  "role": "implement",
+  "run_id": "r-20260926T205123615258-resume-is-aged-from-its-own-start",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "8d1d397a-7f55-4f66-b591-1897a055fb6a",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 14443210,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2916.119,
+    "generated_tokens": 81633,
+    "generation_seconds": 2660.645,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.7,
+    "machine_seconds": 255.474,
+    "peak_input_tokens": 166451,
+    "tokens_per_second": 30.68,
+    "wall_tokens_per_second": 27.99
+  },
+  "time_budget": "40m",
+  "tool_steps": 135.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 2940,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-26T21:40:38Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-26T20:51:57Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T205123615258-resume-is-aged-from-its-own-start",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 14840,
+    "worker_pid": 1003094
+  },
+  "worker_seconds": 2862,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
