@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="960" height="420" font-family="ui-sans-serif, system-ui, sans-serif">
+  <title>The producer's image replacement, and the two things that must cross the exec</title>
+  <rect x="0" y="0" width="960" height="420" fill="#ffffff"/>
+  <text x="24" y="34" font-size="19" font-weight="700" fill="#111827">A producer reload crosses one exec, and two process resources have to survive it</text>
+
+  <text x="24" y="66" font-size="13" fill="#4b5563">Left lane: the image being replaced. Right lane: the replacement. Only one process exists throughout; the pid never changes.</text>
+
+  <rect x="24" y="88" width="392" height="252" rx="10" fill="#f9fafb" stroke="#d1d5db"/>
+  <text x="44" y="114" font-size="13" font-weight="700" fill="#111827">image A — the producer that was armed</text>
+
+  <rect x="544" y="88" width="392" height="252" rx="10" fill="#f9fafb" stroke="#d1d5db"/>
+  <text x="564" y="114" font-size="13" font-weight="700" fill="#111827">image B — the reloaded producer</text>
+
+  <rect x="44" y="130" width="352" height="40" rx="6" fill="#eef2ff" stroke="#6366f1"/>
+  <text x="58" y="155" font-size="13" fill="#1e1b4b">SIGALRM poll: every 1 s, compute the code stamp</text>
+
+  <rect x="44" y="182" width="352" height="40" rx="6" fill="#eef2ff" stroke="#6366f1"/>
+  <text x="58" y="207" font-size="13" fill="#1e1b4b">stamp != the one recorded at arming</text>
+
+  <rect x="44" y="234" width="352" height="40" rx="6" fill="#eef2ff" stroke="#6366f1"/>
+  <text x="58" y="259" font-size="13" fill="#1e1b4b">throwaway import proof of the new image</text>
+
+  <rect x="44" y="286" width="352" height="40" rx="6" fill="#fef3c7" stroke="#d97706"/>
+  <text x="58" y="311" font-size="13" fill="#78350f">proof fails: keep this image, print one line</text>
+
+  <rect x="564" y="286" width="352" height="40" rx="6" fill="#dcfce7" stroke="#16a34a"/>
+  <text x="578" y="311" font-size="13" fill="#14532d">take the seat, rewrite its record with the new stamp</text>
+
+  <path d="M396 206 H470 V340 H544" fill="none" stroke="#111827" stroke-width="2"/>
+  <text x="414" y="200" font-size="12" font-weight="700" fill="#111827">execve</text>
+  <text x="396" y="358" font-size="12" fill="#4b5563">the replacement is a new image in the same process</text>
+
+  <rect x="24" y="362" width="912" height="42" rx="8" fill="#fff1f2" stroke="#e11d48"/>
+  <text x="44" y="388" font-size="13" fill="#881337">Carried across: the seat's open advisory lock, as an inheritable descriptor — the lock is released by any close, so re-entering it in the replacement races the release.</text>
+  <text x="44" y="404" font-size="13" fill="#881337">Not carried: the interval timer. It belongs to the process, not the image, so it fires in image B before B installs its own handler — where the default disposition kills it. Disarmed at the exec.</text>
+</svg>
