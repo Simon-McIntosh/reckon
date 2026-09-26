@@ -25,8 +25,8 @@
   <title>An Orchestrator Cannot Forget Its Obligations | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="52">
+<meta name="plan-modified" content="2026-09-27">
+<meta name="plan-version" content="53">
 <meta name="plan-impl" content="0.45">
 </head>
 <body>
@@ -222,6 +222,11 @@
     <h4 class="r-fu-title">The review-recognition figure becomes a list</h4>
     <div class="r-fu-body"><p><code>docs/figures/an-orchestrator-cannot-forget-its-obligations/review-recognition-and-lane.svg</code> draws two ordered lists as sentences in boxes: the three ways a standing review is recognised, and the order in which a printed review command chooses its lane. Content that is naturally a list must be real text, not an image. Replace the figure in the evidence record with two HTML ordered lists that carry the same content, delete the SVG, and confirm that <code>reckon audit-doc</code> passes on the evidence record.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-orchestrator-cannot-forget-its-obligations f-aocfio-review-recognition-figure-as-text</pre>
+    </article>
+<article class="r-fu" data-id="f-aocfio-reflex-in-flight-reads-the-record" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-27" data-recommends-skill="/reckon-build an-orchestrator-cannot-forget-its-obligations" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The obligations reader and the reflex agree on what an in-flight review is</h4>
+    <div class="r-fu-body"><p>obligations-do-not-mislead landed at 7c55fbd8 (review 92, 0 added failures). Its review found one divergence in exactly the state the node exists to keep consistent. <code>_reflex_review_in_flight</code> in <code>reckon/crew/obligations.py</code> treats a review as in flight when <code>pointer_path(...).exists()</code>. The reflex's own recorded-dispatch rule in <code>reckon/crew/recovery.py</code> also requires <code>read_pointer()</code> to return a record. So a pointer file that exists but is unreadable withholds review-missing, while the reflex is free to dispatch another review. The worst effect is a withheld hint. Done when both call one shared predicate, and a test with an unreadable pointer file shows the obligations reader and the reflex give the same answer. The negative control keeps the exists-only check, and the test must fail.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-orchestrator-cannot-forget-its-obligations reflex-in-flight-reads-the-record</pre>
     </article>
 </section>
 
