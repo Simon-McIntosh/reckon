@@ -126,12 +126,15 @@ _INOTIFY_EVENTS = 0x00000100 | 0x00000008 | 0x00000080
 # defect rather than which process won the scheduler.
 WATCHER_LOAD_BOUND_SECONDS = 30.0
 
-# Workers launch unfenced. The fence's read-only overlay seals every checkout
-# under the operator's code root, and with it each worktree's git directory and
-# the shared object store, so a fenced worker cannot commit; and a fenced run's
-# own harness home does not yet carry the operator's hooks or instruction
-# files. Turn this on only once both are granted and carried.
-FENCE_WORKERS = False
+# Workers launch inside the fence. Every launch sits behind a read-only overlay
+# of the operator's dot directories, so a worker cannot write the coordinator's
+# home, project state or plan store; the run's own write roots are re-bound
+# writable over that overlay, including a linked worktree's git directory and
+# its repository's shared object store, so a fenced worker can still commit the
+# work it was dispatched to do; each run then adopts its own harness home,
+# seeded from the operator's settings and instruction files so the hooks and
+# guidance that govern the run are still read.
+FENCE_WORKERS = True
 
 
 # Arming spawns a detached supervisor on purpose: a coordinator's producer has
