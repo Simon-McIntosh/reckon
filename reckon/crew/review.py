@@ -438,6 +438,94 @@ def parse_review(
     return record
 
 
+# ── Failures the reviewed run's own gate logs added ─────────────────────────
+# A review can score a run highly while the run's own gate logs show tests that
+# were green at the base revision and red at the head. That is the failures the
+# run added, and a stored review that omits them reports a verdict a reader
+# cannot reconcile with the evidence the run itself produced.
+#
+# The count is a set difference over pytest node ids, not a difference of two
+# counts. A run that fixed one pre-existing failure while introducing another
+# nets to zero by number and added a failing test by id; the two readings
+# disagree exactly on the cases the count exists to catch.
+#
+# The gate logs are the files the reviewed run's manifest names under
+# ``baseline_suite.log_path`` and ``after_suite.log_path`` — the same fields the
+# promotion suite-delta check reads. A manifest naming neither, or naming a log
+# that is not on disk, leaves the count unmeasured rather than zero: a zero
+# asserts a measurement, and one that was never taken is a different claim.
+
+# The total a review of a run with unretired added failures is capped at. The
+# promotion path reads REVIEW_MAX_SCORE as the score a fully satisfied dimension
+# reaches, so a capped total a quarter of one dimension cannot be read as the
+# reviewer's own arithmetic on the five dimensions. The record carries the
+# count, the ids and the reason beside it, so the cap is never mistaken for a
+# measurement the reviewer made.
+ADDED_FAILURES_TOTAL_CAP = REVIEW_MAX_SCORE // 4
+
+_GATE_FAILURE_RE = re.compile(r"^(?:FAILED|ERROR)\s+(\S+)")
+
+# The manifest fields naming the two gate logs, head last. A base log absent
+# from either field makes the count unmeasured; the pair is read together
+# because the difference is only defined against both.
+_BASE_LOG_FIELD = ("baseline_suite", "log_path")
+_HEAD_LOG_FIELD = ("after_suite", "log_path")
+
+
+def _pytest_failure_ids(log_text: str) -> set[str]:
+    """Return the pytest node ids a gate log reports FAILED or ERROR.
+
+    A pytest summary line is one node id per line prefixed ``FAILED`` (or
+    ``ERROR`` for a collection or setup error). Node ids run to the end of the
+    line, so the whole token after the prefix is taken and surrounding
+    whitespace is stripped.
+    """
+    ids: set[str] = set()
+    for raw in log_text.splitlines():
+        match = _GATE_FAILURE_RE.match(raw.strip())
+        if match:
+            ids.add(match.group(1))
+    return ids
+
+
+def _manifest_log_path(
+    manifest: Mapping[str, Any], field: str, key: str
+) -> str | None:
+    """Return a manifest's named gate-log path for one observation, or ``None``."""
+    observation = manifest.get(field)
+    if not isinstance(observation, Mapping):
+        return None
+    log_path = str(observation.get(key) or "").strip()
+    return log_path or None
+
+
+def _log_text(
+    manifest: Mapping[str, Any], field: str, key: str, run_dir: Path | None
+) -> str | None:
+    """Read a named gate log, resolving a relative path against ``run_dir``."""
+    log_path = _manifest_log_path(manifest, field, key)
+    if not log_path:
+        return None
+    path = Path(log_path)
+    if not path.is_absolute() and run_dir is not None:
+        path = Path(run_dir) / path
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
+def _retires_id(text: str, test_id: str) -> bool:
+    """Whether retirement prose names a test id in full.
+
+    A bare node id is matched as a whole token so a shorter id is not retired
+    by a longer one that contains it.
+    """
+    if not text or not test_id:
+        return False
+    return re.search(rf"(?<![\w:/\[\].-]){re.escape(test_id)}(?![\w:/\[\].-])", text) is not None
+
+
 # ── The durable store ───────────────────────────────────────────────────────
 # Records are keyed by project, reviewed run id and reviewed head revision,
 # under the crew configuration directory but outside any run directory and
@@ -567,10 +655,95 @@ def _partial_review_path(
     return _incomplete_review_path(project, reviewed_run_id, record, base_dir)
 
 
+def added_failures_from_gate_logs(
+    base_text: str | None,
+    head_text: str | None,
+) -> tuple[int | None, list[str]]:
+    """Return the added-failure count and ids the two gate logs support.
+
+    The count is the pytest node ids reported FAILED or ERROR in the head log
+    that do not appear in the base log. ``(None, [])`` means unmeasured: one or
+    both logs are absent, and a count that was never taken must not be stored as
+    a measured zero. A count of ``0`` with no ids means both logs were read and
+    the run added no failing test.
+    """
+    if base_text is None or head_text is None:
+        return None, []
+    added = sorted(_pytest_failure_ids(head_text) - _pytest_failure_ids(base_text))
+    return len(added), added
+
+
+def _manifest_text(manifest: Mapping[str, Any] | None) -> str:
+    """Return a manifest's own text, so retirement prose in any field is read."""
+    if not manifest:
+        return ""
+    return json.dumps(manifest, sort_keys=True, default=str)
+
+
+def annotate_added_failures(
+    record: dict[str, Any],
+    manifest: Mapping[str, Any] | None,
+    *,
+    run_dir: str | Path | None = None,
+    done_when: str = "",
+) -> dict[str, Any]:
+    """Store the reviewed run's added failures on ``record`` and cap its total.
+
+    Reads the gate logs the reviewed ``manifest`` names, computes the added
+    node ids, records the count and the ids, and caps a nonzero count's stored
+    total at :data:`ADDED_FAILURES_TOTAL_CAP` — unless the reviewed node's
+    ``done_when`` or the manifest's own text retires every added id by name, in
+    which case the total is left as the reviewer scored it and the record says
+    the ids were retired.
+
+    The count is recorded as unmeasured, never as zero, when the manifest names
+    no base log or no head log; the total is left alone in that case. The
+    returned record is a copy; the caller's mapping is not mutated.
+    """
+    result = dict(record)
+    resolved_dir = Path(run_dir) if run_dir is not None else None
+    base_text = _log_text(manifest or {}, *_BASE_LOG_FIELD, resolved_dir)
+    head_text = _log_text(manifest or {}, *_HEAD_LOG_FIELD, resolved_dir)
+    count, added_ids = added_failures_from_gate_logs(base_text, head_text)
+    result["added_failure_count"] = count
+    result["added_failure_ids"] = added_ids
+    if count is None:
+        missing = "base" if base_text is None else "head"
+        result["added_failures_note"] = (
+            f"unmeasured: the reviewed manifest names no {missing} gate log, so "
+            "the added-failure count was not taken"
+        )
+        return result
+    if count == 0:
+        return result
+    retirement_text = "\n".join(
+        part for part in (str(done_when or ""), _manifest_text(manifest)) if part
+    )
+    unretired = [
+        test_id for test_id in added_ids if not _retires_id(retirement_text, test_id)
+    ]
+    if not unretired:
+        result["added_failures_note"] = (
+            "added failures retired by name in the reviewed node's done-when or "
+            "manifest; total not capped"
+        )
+        return result
+    if result.get("total") is not None:
+        result["total"] = min(int(result["total"]), ADDED_FAILURES_TOTAL_CAP)
+    result["added_failures_note"] = (
+        f"total capped at {ADDED_FAILURES_TOTAL_CAP}: the reviewed run added "
+        f"{count} failing test(s) not retired by name ({', '.join(unretired)})"
+    )
+    return result
+
+
 def store_review(
     record: dict[str, Any],
     *,
     base_dir: str | Path | None = None,
+    manifest: Mapping[str, Any] | None = None,
+    run_dir: str | Path | None = None,
+    done_when: str = "",
 ) -> Path:
     """Persist one review record and return the path it was written to.
 
@@ -582,6 +755,14 @@ def store_review(
     lacking the pair is preserved outside current-review selection under its
     reviewing-run identity, so it can neither displace a complete review nor
     overwrite another partial record of the same run. The write is atomic.
+
+    When the reviewed run's ``manifest`` is supplied, the record is annotated
+    with the added-failure count and ids its named gate logs support and its
+    total is capped when the run added failures it did not retire by name; see
+    :func:`annotate_added_failures`. ``run_dir`` resolves a manifest's relative
+    log paths, and ``done_when`` is the reviewed node's own measure, read
+    alongside the manifest for retirement prose. With no ``manifest`` the count
+    is recorded as unmeasured rather than zero.
     """
     project = record.get("project")
     reviewed_run_id = record.get("reviewed_run_id")
@@ -599,6 +780,9 @@ def store_review(
     if not record.get("timestamp"):
         record = dict(record)
         record["timestamp"] = datetime.now(UTC).isoformat()
+    record = annotate_added_failures(
+        record, manifest, run_dir=run_dir, done_when=done_when
+    )
     if base_sha and head_sha:
         path = review_path(
             project,
