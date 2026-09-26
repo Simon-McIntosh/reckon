@@ -93,6 +93,18 @@ GATE_KEY = "router_generation_gate"
 ADMISSION_KEY = "admission"
 _GATE_FIELDS = ("width", "in_flight", "waiting")
 
+# What each admission verdict means for a caller deciding whether to send work.
+# A lane publishes congested, full, open or paused, and the reason must name
+# which one this is: a paused lane whose reason read "the gate is open" would
+# licence exactly the dispatch the lane was declining. An unrecognised verdict
+# is stated as itself rather than folded into the nearest known one.
+_VERDICT_CLAUSE = {
+    "open": "the gate is open",
+    "congested": "the gate is congested and requests are queued",
+    "full": "the gate is full, at or over its width",
+    "paused": "admission is paused",
+}
+
 
 def _number(value: object) -> int | float | None:
     """Return ``value`` when it is a real number, else None.
@@ -186,10 +198,8 @@ def _admission_reading(
         verdict = "congested" if available <= 0 else "open"
     reason = published_reason
     if reason is None:
-        if verdict == "congested":
-            reason = f"admission headroom is {available:g} ({source})"
-        else:
-            reason = f"admission headroom is {available:g} ({source})"
+        clause = _VERDICT_CLAUSE.get(verdict, f"the verdict is {verdict}")
+        reason = f"admission headroom is {available:g} ({source}); {clause}"
     return available, verdict, reason
 
 
