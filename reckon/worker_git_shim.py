@@ -29,6 +29,17 @@ invocation replaces this process with the real git resolved with the shim's own
 directory removed from ``PATH``, so the shim never finds itself, and the exit
 status and signals are the real tool's.
 
+A read verb aimed at some other repository is a separate problem from a
+mutating one: it changes no ref, but some reads refresh the stat cache and
+record the refresh in that repository's index, and the answer git gives for
+it depends on the index it writes. Rather than enumerate the option spellings
+that make a verb refresh, a read that resolves to a repository which is not the
+run's worktree is run with ``GIT_INDEX_FILE`` naming a private copy of that
+repository's index, so an in-process refresh writes the copy whichever spelling
+the verb took; the copy is removed when the command ends. That case runs the
+real git as a child (the copy can only be removed once git has returned) and
+everything else still execs.
+
 A probe that cannot resolve the run's own git dir refuses, because the safe
 direction is to leave the repository alone: the guard exists to stop a write
 that would otherwise have happened, and refusing a command that turns out
@@ -40,8 +51,10 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
+import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
@@ -276,31 +289,66 @@ def _read_only_form(verb: str, tail: Sequence[str]) -> bool:
 # one is not a read: `git diff --output=<path>` writes <path>, whatever the verb
 # on the allowlist. Both spellings are caught — the joined form
 # (``--output=<path>``) and the separate form (``--output <path>``) — because
-# the option token alone is matched.
+# the option token alone is matched, and a spelling that only abbreviates one of
+# these is matched too (see ``_abbreviates``).
 #
 # The short ``-o`` is deliberately absent. On this allowlist it never names an
 # output: ``git ls-files -o`` means ``--others`` and ``git grep -o`` means
 # ``--only-matching``, both reads. The verbs where ``-o`` does name an output
 # directory (``format-patch``, ``archive``) are not on the allowlist and are
 # refused whole, so a short-form check here would refuse reads and add nothing.
-_OUTPUT_OPTIONS = frozenset({"--output", "--output-directory"})
+_OUTPUT_OPTIONS = ("--output", "--output-directory")
+
+# The shortest a long option's name may be and still be a stable refusal target
+# when it abbreviates a banned name. git resolves any unambiguous abbreviation,
+# so a check comparing whole names would forward ``--outp=<path>`` while
+# refusing ``--output=<path>``, which is the same write. Three characters is the
+# floor below which a spelling is too short to be a guess at any one option.
+_MIN_OPTION_PREFIX_LENGTH = 3
+
+
+def _long_option_name(token: str) -> str | None:
+    """The name part of a long option, or None when the token is not one.
+
+    ``--output=x`` and ``--output`` both give ``output``.
+    """
+    if not token.startswith("--"):
+        return None
+    name = token[2:].split("=", 1)[0]
+    return name or None
+
+
+def _abbreviates(name: str, banned: Sequence[str]) -> str | None:
+    """The banned option ``name`` abbreviates, or None.
+
+    An abbreviation is a prefix of the name it stands for, so the test is which
+    banned name starts with what was written. ``--output-indent`` abbreviates
+    nothing here, because no banned name starts with it.
+    """
+    if len(name) < _MIN_OPTION_PREFIX_LENGTH:
+        return None
+    for option in banned:
+        if option[2:].startswith(name):
+            return option
+    return None
 
 
 def writing_argument(tail: Sequence[str]) -> str | None:
-    """The option in ``tail`` that names an output file, or None.
+    """The option in ``tail`` that names an output file, as written, or None.
 
-    Only the option token is returned, so a refusal can name it. A separate
-    value (``--output <path>``) is left in the tail and does not have to be
-    joined to the option for the option to be found. The head is compared
-    exactly, so ``--output-indent`` and the other ``--output-*`` modifiers
-    — which write nothing — are not matched.
+    Returning the spelling rather than the canonical name lets a refusal name
+    what the caller wrote. A separate value (``--output <path>``) is left in the
+    tail and does not have to be joined to the option for the option to be
+    found. Abbreviations are matched, because git resolves any unambiguous
+    prefix and would otherwise take the write through a spelling this check had
+    never seen.
     """
     for token in tail:
-        if not token.startswith("--"):
+        name = _long_option_name(token)
+        if name is None:
             continue
-        head = token.split("=", 1)[0]
-        if head in _OUTPUT_OPTIONS:
-            return head
+        if _abbreviates(name, _OUTPUT_OPTIONS) is not None:
+            return "--" + name
     return None
 
 
@@ -309,13 +357,18 @@ def output_refusal(verb: str, option: str) -> str:
 
     A read-only verb is forwarded without inspecting its repository, and it is
     forwarded with optional locks disabled, so nothing it does normally writes.
-    An output option defeats that: the file it names is written wherever it
-    points, so the option is refused instead of the invocation.
+    An output option defeats that: the file it names is written wherever the
+    path points, so the option is refused instead of the invocation. A spelling
+    that only abbreviates a banned option is named together with the option it
+    stands for, so the refusal is legible to a caller who wrote a prefix git
+    would have resolved.
     """
+    banned = _abbreviates(option[2:], _OUTPUT_OPTIONS)
+    spelled = "" if banned == option else f" (abbreviating `{banned}`)"
     lines = [
         (
-            f"refusing `git {verb}`: `{option}` names an output file, so the "
-            "command would write wherever the path points."
+            f"refusing `git {verb}`: `{option}`{spelled} names an output file, "
+            "so the command would write wherever the path points."
         ),
         (
             "A crew worker may write only inside its own worktree. Drop the "
@@ -325,50 +378,12 @@ def output_refusal(verb: str, option: str) -> str:
     return "\n".join(lines)
 
 
-# ``diff`` forms that answer from the object store alone: a comparison against
-# the index, or two paths outside any repository. Every other ``diff`` compares
-# the work tree against the index.
-_INDEX_FREE_DIFF_FORMS = frozenset({"--cached", "--no-index", "--staged"})
-
-# ``describe`` options that make it answer a question about the work tree rather
-# than about the commit graph.
-_DESCRIBE_WORK_TREE_OPTIONS = frozenset({"--broken", "--dirty"})
-
-
-def index_writing_form(verb: str, tail: Sequence[str]) -> str | None:
-    """The token naming a read form that refreshes and rewrites the index.
-
-    ``GIT_OPTIONAL_LOCKS`` gates the lock a verb takes when it *may* record a
-    refreshed stat cache, and that is what keeps ``status`` from rewriting
-    another checkout's index. These forms are different: the answer they compute
-    *is* defined in terms of a refreshed index, so they take the index lock and
-    write it back whatever ``GIT_OPTIONAL_LOCKS`` says. ``describe --dirty``
-    asks whether the work tree differs from the index, and a ``diff`` that
-    compares the work tree asks the same question; both leave the target's index
-    rewritten when only the stat cache was stale. They are forwarded only when
-    the invocation resolves to the run's own worktree, where the index written
-    is the run's own.
-
-    ``describe --broken`` shares the work-tree detection path and is refused
-    with ``--dirty`` for that reason; measured against a repository holding a
-    broken tag it answered without moving the index, so the refusal is
-    conservative rather than observed. A ``diff`` naming ``--cached``,
-    ``--staged`` or ``--no-index`` answers from the object store and is not a
-    work tree comparison.
-    """
-    if verb == "describe":
-        for token in tail:
-            if not token.startswith("--"):
-                continue
-            head = token.split("=", 1)[0]
-            if head in _DESCRIBE_WORK_TREE_OPTIONS:
-                return head
-        return None
-    if verb == "diff":
-        if any(token in _INDEX_FREE_DIFF_FORMS for token in tail):
-            return None
-        return "the work tree comparison"
-    return None
+# A ``diff`` naming ``--cached``, ``--staged`` or ``--no-index`` answers from
+# the object store; every other ``diff`` compares the work tree against the
+# index. No list of those spellings is kept here: a read that resolves to
+# another repository is run against a private copy of its index, so which
+# spellings refresh and which do not no longer decides whether a write can land,
+# and nothing here has to keep up with git's option grammar.
 
 
 def mutating_verb(verb: str, tail: Sequence[str]) -> str | None:
@@ -571,56 +586,9 @@ def refusal_message(
             (
                 "A crew worker may run a mutating git verb only against its own "
                 "worktree, so nothing was changed. Run the verb inside the worktree "
-                "instead. Read-only verbs (status, log, diff, show, rev-parse, grep) "
-                "are forwarded with GIT_OPTIONAL_LOCKS=0, so a refresh is not "
-                "recorded against another checkout; a form whose answer needs a "
-                "refreshed index, such as `describe --dirty` or a work tree diff, is "
-                "forwarded only inside this run's worktree."
-            ),
-        ]
-    )
-
-
-def index_refusal(
-    *,
-    verb: str,
-    form: str,
-    run_id: str,
-    worktree: Path,
-    worktree_git_dir: str | None,
-    invocation_git_dir: str | None,
-    invocation_toplevel: str | None,
-) -> str:
-    """The refusal for a read form that would refresh another checkout's index.
-
-    The verb is on the read allowlist, so the verb test alone forwards it, and
-    the form carries no output option, so neither of the other two checks sees
-    it. What it carries is the index write: git refreshes the stat cache and
-    records it, and only a target that is this run's own worktree makes that
-    write one the worker is allowed to make.
-    """
-    head = (
-        f"refusing `git {verb}`: {form} refreshes the index and writes it back, "
-        "and this invocation resolves to a repository that is not this run's "
-        "worktree."
-    )
-    return "\n".join(
-        [
-            head,
-            *_resolved_target_lines(
-                run_id=run_id,
-                worktree=worktree,
-                worktree_git_dir=worktree_git_dir,
-                invocation_git_dir=invocation_git_dir,
-                invocation_toplevel=invocation_toplevel,
-            ),
-            (
-                "GIT_OPTIONAL_LOCKS=0 keeps a read from recording an optional "
-                "refresh, but the answer this form computes is defined in terms "
-                "of a refreshed index, so it takes the index lock and writes the "
-                "target's index. Run it inside this run's worktree, drop the "
-                "option, or use a form that answers from the object store "
-                "(`--cached`), so nothing was changed."
+                "instead. A read aimed at another checkout is forwarded instead, "
+                "with optional locks disabled and against a private copy of that "
+                "checkout's index, so it answers without writing there."
             ),
         ]
     )
@@ -634,9 +602,10 @@ def main(
 ) -> int:
     """Run, or refuse, one git invocation.
 
-    Returns the refusal status when the invocation is refused and otherwise
-    replaces this process with the real git. The return is for the refusal and
-    the missing-binary cases only; a forwarded invocation does not come back.
+    Returns the refusal status when the invocation is refused. Otherwise it
+    replaces this process with the real git, except for a read whose repository
+    has an index to isolate, which runs git as a child: the return is for the
+    refusal, the missing-binary and the isolated-child cases.
     """
     env = os.environ if environ is None else environ
     shim_dir = worker_shim_directory()
@@ -652,15 +621,14 @@ def main(
     prefix, verb, tail = _split_verb(argv)
     if not run_id:
         return _forward(found, argv, environ=env)
-    guarded = mutating_verb(verb, tail)
     writing = writing_argument(tail)
-    indexing = index_writing_form(verb, tail)
-    if guarded is None and writing is None and indexing is None:
-        return _forward(found, argv, environ=env)
     if writing is not None:
         print(output_refusal(verb or "git", writing), file=sys.stderr)
         return REFUSAL_STATUS
-    subject = guarded or verb or "git"
+    guarded = mutating_verb(verb, tail)
+    if guarded is None:
+        return _forward_read(found, argv, prefix, run_id=run_id, environ=env, cwd=cwd)
+    subject = guarded or "git"
     if not _safe_run_component(run_id):
         print(
             f"refusing `git {subject}`: {RUN_ID_ENV}={run_id!r} is not a single "
@@ -692,25 +660,13 @@ def main(
     ):
         return _forward(found, argv, environ=env)
     print(
-        (
-            index_refusal(
-                verb=subject,
-                form=indexing,
-                run_id=run_id,
-                worktree=worktree,
-                worktree_git_dir=worktree_git_dir,
-                invocation_git_dir=invocation_git_dir,
-                invocation_toplevel=toplevel,
-            )
-            if indexing is not None
-            else refusal_message(
-                run_id=run_id,
-                verb=subject,
-                worktree=worktree,
-                worktree_git_dir=worktree_git_dir,
-                invocation_git_dir=invocation_git_dir,
-                invocation_toplevel=toplevel,
-            )
+        refusal_message(
+            run_id=run_id,
+            verb=subject,
+            worktree=worktree,
+            worktree_git_dir=worktree_git_dir,
+            invocation_git_dir=invocation_git_dir,
+            invocation_toplevel=toplevel,
         ),
         file=sys.stderr,
     )
@@ -732,3 +688,150 @@ def _forward(git: str, argv: Sequence[str], *, environ: Mapping[str, str]) -> in
     environment["GIT_OPTIONAL_LOCKS"] = "0"
     os.execve(git, ["git", *argv], environment)  # noqa: S606
     raise AssertionError("os.execve returned; a forwarded invocation cannot continue.")
+
+
+def _probe_index(
+    git: str, prefix: Sequence[str], *, environ: Mapping[str, str], cwd: str | None
+) -> Path | None:
+    """The absolute path of the index the invocation's repository would use.
+
+    ``--path-format=absolute`` is asked for because the answer has to be usable
+    from the shim's own working directory, which is not the caller's: it is the
+    caller's ``-C`` and environment the probe carries, but the copy is made and
+    removed here. ``--path-format`` must precede ``--git-path`` for git to apply
+    it to that query.
+    """
+    try:
+        completed = subprocess.run(
+            [
+                git,
+                *prefix,
+                "rev-parse",
+                "--path-format=absolute",
+                "--git-path",
+                "index",
+            ],
+            env=dict(environ),
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    for line in completed.stdout.splitlines():
+        if line.strip():
+            return Path(line.strip())
+    return None
+
+
+def _aimed_elsewhere(
+    git: str,
+    prefix: Sequence[str],
+    *,
+    run_id: str,
+    environ: Mapping[str, str],
+    cwd: str | None,
+) -> bool:
+    """Whether the invocation resolves to a repository other than this run's.
+
+    The same resolution the mutating check uses, so the two cannot disagree
+    about where a command points. A run id that cannot be reduced to a pointer,
+    or a pointer that names no worktree, counts as elsewhere: the run's own
+    repository cannot be proved, and the caller gets the isolated copy rather
+    than a write into the target's index.
+    """
+    if not _safe_run_component(run_id):
+        return True
+    worktree = _run_worktree(run_id)
+    if worktree is None:
+        return True
+    worktree_git_dir = _run_git_dir(git, worktree, environ=environ)
+    invocation_git_dir, toplevel = _probe(git, prefix, environ=environ, cwd=cwd)
+    return refuses(
+        run_id=run_id,
+        verb="read",
+        invocation_git_dir=invocation_git_dir,
+        invocation_toplevel=toplevel,
+        worktree=worktree,
+        worktree_git_dir=worktree_git_dir,
+    )
+
+
+def _exit_status(returncode: int) -> int:
+    """The status to report for a child git that ended on ``returncode``.
+
+    A negative return code means the child was killed by that signal. Returning
+    the negative number would be a status the shim invented, so the signal is
+    re-raised on this process with its default disposition restored, which is
+    what a directly forwarded invocation would have shown its caller. A signal
+    that cannot be given a disposition (``SIGKILL``, ``SIGSTOP``) is left to the
+    caller's own handling of the negative status.
+    """
+    if returncode < 0:
+        signum = -returncode
+        try:
+            signal.signal(signum, signal.SIG_DFL)
+        except (OSError, ValueError):
+            return returncode
+        os.kill(os.getpid(), signum)
+    return returncode
+
+
+def _forward_isolated(
+    git: str, argv: Sequence[str], *, environ: Mapping[str, str], index: Path
+) -> int:
+    """Run the real git as a child, pointed at a private copy of ``index``.
+
+    A read verb changes no ref, but some read forms refresh the stat cache and
+    record the refresh in the index of the repository they resolve to, and the
+    answer they give is defined in terms of that refreshed index — so a read
+    aimed at another checkout writes there. Copying the index first and pointing
+    ``GIT_INDEX_FILE`` at the copy makes the refresh land on the copy for
+    whichever option spelling reaches the form, because the decision is no
+    longer about the spelling. The copy is removed once git has returned, which
+    is why this case runs git as a child instead of replacing this process with
+    it; a copy that cannot be made falls back to the plain forward.
+    """
+    environment = dict(environ)
+    environment["GIT_OPTIONAL_LOCKS"] = "0"
+    scratch = tempfile.mkdtemp(prefix="reckon-git-shim-")
+    copy = Path(scratch) / "index"
+    try:
+        shutil.copyfile(index, copy)
+    except OSError:
+        shutil.rmtree(scratch, ignore_errors=True)
+        return _forward(git, argv, environ=environ)
+    environment["GIT_INDEX_FILE"] = str(copy)
+    try:
+        completed = subprocess.run([git, *argv], env=environment, check=False)
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+    return _exit_status(completed.returncode)
+
+
+def _forward_read(
+    git: str,
+    argv: Sequence[str],
+    prefix: Sequence[str],
+    *,
+    run_id: str,
+    environ: Mapping[str, str],
+    cwd: str | None,
+) -> int:
+    """Forward a read verb, isolating the index when it points elsewhere.
+
+    Isolation is skipped in two cases. A repository with no index file (bare, or
+    never read from) has nothing to write, and ``GIT_INDEX_FILE`` naming a file
+    that does not exist would make git answer from an empty index — a different
+    answer, not a safer one. A read that resolves to this run's own worktree is
+    forwarded with the index in place: the worker may write its own index, and
+    pointing at a copy would make an invocation that asks git for the index path
+    answer with the copy's path instead.
+    """
+    index = _probe_index(git, prefix, environ=environ, cwd=cwd)
+    if index is None or not index.is_file():
+        return _forward(git, argv, environ=environ)
+    if not _aimed_elsewhere(git, prefix, run_id=run_id, environ=environ, cwd=cwd):
+        return _forward(git, argv, environ=environ)
+    return _forward_isolated(git, argv, environ=environ, index=index)

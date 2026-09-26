@@ -30,6 +30,7 @@ from typing import Any
 import pytest
 
 from reckon.worker_git_shim import (
+    _OUTPUT_OPTIONS,
     _READ_ACTIONS,
     _READ_ONLY_VERBS,
     MISSING_BINARY_STATUS,
@@ -39,6 +40,22 @@ from reckon.worker_git_shim import (
 SHIM = worker_shim_directory() / "git"
 RUN_ID = "r-git-shim-resolved-repo"
 REFUSAL_STATUS = 97
+
+# The shortest a written option name may be and still be read as a spelling of a
+# banned one. Three characters is the floor the shim applies; the unit test
+# comparing this to the shim's own constant is what keeps the two from drifting.
+_MIN_PREFIX_LENGTH = 3
+
+# Every prefix of every banned option, from the shortest a refusal treats as a
+# spelling of it. git resolves each of these to the option it abbreviates, so a
+# check that compared whole names would forward the short spellings of a write
+# it refuses in full. Generated rather than listed, so a banned option added to
+# the shim is covered without an edit here.
+_BANNED_OPTION_PREFIXES: list[tuple[str, str]] = [
+    (option, option[: length + 2])
+    for option in _OUTPUT_OPTIONS
+    for length in range(_MIN_PREFIX_LENGTH, len(option) - 1)
+]
 
 
 def _real_git() -> str:
@@ -498,6 +515,32 @@ def test_an_output_option_in_separate_argument_form_is_refused(
     assert not target.exists()
 
 
+@pytest.mark.parametrize(
+    ("option", "prefix"),
+    _BANNED_OPTION_PREFIXES,
+    ids=[f"{option}-{prefix}" for option, prefix in _BANNED_OPTION_PREFIXES],
+)
+def test_every_prefix_of_a_banned_option_is_refused(
+    repos: dict[str, Any], option: str, prefix: str
+) -> None:
+    """A spelling git resolves to a banned option is refused as that option.
+
+    git accepts any unambiguous abbreviation of a long option, so every prefix
+    of ``--output`` reaches the output write the full spelling is refused for.
+    The target here is another checkout, so a prefix that got through would land
+    the file there; the case is generated from the banned names, so an option
+    added to the list is covered here without an edit.
+    """
+    home, other = repos["home"], repos["other"]
+    target = other / f"ESCAPE-{prefix.lstrip('-')}.txt"
+    assert not target.exists()
+
+    result = _shell(f"git -C {other} log {prefix}={target}", cwd=home, home=home)
+
+    _assert_output_refused(result, option=prefix)
+    assert not target.exists()
+
+
 def test_the_output_option_check_ignores_options_that_write_nothing() -> None:
     """Only an option that names an output file is matched.
 
@@ -624,7 +667,9 @@ _READ_INVOCATION: dict[str, list[str]] = {
 
 # The forms that refresh the index and record the refresh. Measured against
 # another checkout with a stale stat cache, every one of them moved that
-# checkout's index when the shim forwarded it.
+# checkout's index when the shim forwarded it, and the abbreviated spellings
+# moved it too: git resolves any unambiguous long-option prefix, so a check that
+# compared whole option names never saw the spelling that reached the form.
 _INDEX_FORM_CASES: list[tuple[str, list[str]]] = [
     ("describe --dirty", ["describe", "--dirty"]),
     ("describe --dirty=<suffix>", ["describe", "--dirty=-dirty"]),
@@ -633,6 +678,9 @@ _INDEX_FORM_CASES: list[tuple[str, list[str]]] = [
     ("diff --stat", ["diff", "--stat"]),
     ("diff HEAD", ["diff", "HEAD"]),
     ("diff --quiet", ["diff", "--quiet"]),
+    ("describe --di --long", ["describe", "--di", "--long"]),
+    ("describe --dirt", ["describe", "--dirt"]),
+    ("describe --di=<suffix>", ["describe", "--di=-dirty"]),
 ]
 
 # A ``diff`` answered from the object store is a read the guard must not refuse:
@@ -732,33 +780,92 @@ def test_no_read_form_writes_another_checkouts_index_or_files(
     assert (other / _TRACKED).read_text() == before_contents
 
 
+@pytest.mark.parametrize("staleness", ["older", "newer"])
 @pytest.mark.parametrize(
     ("label", "argv"), _INDEX_FORM_CASES, ids=[case[0] for case in _INDEX_FORM_CASES]
 )
-def test_an_index_writing_read_form_against_another_repo_is_refused(
-    repos: dict[str, Any], label: str, argv: list[str]
+def test_a_refreshing_read_leaves_another_checkouts_index_identical(
+    repos: dict[str, Any], label: str, argv: list[str], staleness: str
 ) -> None:
-    """An index-refreshing read form is refused, naming it and the mechanism.
+    """A read form that refreshes the index is forwarded against a copy of it.
 
-    The verb is on the read allowlist, so nothing in the verb test or the
-    output-option test sees this form, and it carries no output option. What it
-    carries is the index write: it refreshes the stat cache and records the
-    refresh, so forwarding it against a repository that is not this run's
-    worktree edits that repository.
+    The verb is on the read allowlist and the form carries no output option, so
+    the form reaches the real git and the answer comes back. What it would write
+    is the index refresh, and for a repository that is not this run's worktree
+    the shim runs git against a private copy of that repository's index, so the
+    target's bytes do not move whichever spelling reached the form — including
+    the abbreviated spellings of an option a whole-name check never matched.
     """
     home, other = repos["home"], repos["other"]
     index = other / ".git" / "index"
     before_index = index.read_bytes()
-    stat = (other / "a.txt").stat()
-    os.utime(other / "a.txt", (stat.st_atime - 3600, stat.st_mtime - 3600))
+    before_files = _target_files(other)
+    delta = -3600 if staleness == "older" else 3600
+    tracked = other / _TRACKED
+    stat = tracked.stat()
+    os.utime(tracked, (stat.st_atime + delta, stat.st_mtime + delta))
+    assert index.read_bytes() == before_index
 
     result = _shell(f"git -C {other} {shlex.join(argv)}", cwd=home, home=home)
 
-    assert result.returncode == REFUSAL_STATUS, result.stderr
-    assert "refusing" in result.stderr
-    assert "refreshes the index" in result.stderr
-    assert RUN_ID in result.stderr
-    assert index.read_bytes() == before_index
+    assert result.returncode != MISSING_BINARY_STATUS, result.stderr
+    assert result.returncode != REFUSAL_STATUS, result.stderr
+    assert "Traceback" not in result.stderr, result.stderr
+    assert index.read_bytes() == before_index, (
+        f"`git {label}` rewrote another checkout's index\n{result.stderr}"
+    )
+    assert _target_files(other) == before_files
+
+
+def test_a_forwarded_read_still_answers_from_the_targets_own_index(
+    repos: dict[str, Any],
+) -> None:
+    """The copy carries the target's index, so the answer is the real one.
+
+    An index the read could not see would be an empty one, and an empty index
+    makes every committed file look untracked: ``status --porcelain`` would list
+    it. The forwarded read answers an empty status for a checkout whose work
+    tree matches its index, so what git read was that repository's own index,
+    copied rather than invented.
+    """
+    home, other = repos["home"], repos["other"]
+    tracked = other / _TRACKED
+    stat = tracked.stat()
+    os.utime(tracked, (stat.st_atime - 3600, stat.st_mtime - 3600))
+
+    result = _shell(f"git -C {other} status --porcelain", cwd=home, home=home)
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "", result.stdout
+
+
+def test_a_read_against_a_bare_repository_is_forwarded_without_an_index(
+    repos: dict[str, Any], tmp_path: Path
+) -> None:
+    """A repository with no index has nothing to isolate, so it is forwarded.
+
+    ``GIT_INDEX_FILE`` naming a file that does not exist would make git answer
+    from an empty index — a different answer, not a safer one — so a bare
+    repository, which has no index at all, is forwarded with nothing set and the
+    read still answers.
+    """
+    home = repos["home"]
+    bare = tmp_path / "bare.git"
+    assert (
+        _git_run(
+            ["init", "-q", "--bare", str(bare)], cwd=tmp_path, home=home
+        ).returncode
+        == 0
+    )
+    assert not (bare / "index").exists()
+
+    result = _shell(
+        f"git -C {bare} rev-parse --is-bare-repository", cwd=home, home=home
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "true", result.stdout
+    assert not (bare / "index").exists()
 
 
 def test_the_same_index_writing_form_inside_the_run_worktree_passes(
@@ -782,26 +889,35 @@ def test_the_same_index_writing_form_inside_the_run_worktree_passes(
     assert result.stdout.strip().endswith("-dirty")
 
 
-def test_the_index_form_check_reads_the_form_and_not_the_verb() -> None:
-    """Only a form whose answer needs a refreshed index is matched.
+def test_a_banned_option_is_matched_in_every_prefix_git_resolves_to_it() -> None:
+    """The option check matches a name that abbreviates a banned option.
 
-    ``--cached``, ``--staged`` and ``--no-index`` answer from the object store,
-    so a ``diff`` carrying one is a read the guard must forward. ``diff-index``
-    and ``diff-files`` are not on the read allowlist at all, so every one of
-    their forms is refused by the verb test rather than by this one.
+    git resolves any unambiguous long-option prefix, so ``--outp=<path>``
+    reaches ``--output`` and writes exactly the file the full spelling writes. A
+    check comparing whole names forwards the short spelling of the write it
+    refuses in full, so the written name is matched against the banned names it
+    is a prefix of, and the refusal names both.
+
+    ``diff-index`` and ``diff-files`` share a prefix with allowlisted verbs but
+    are not on the read allowlist at all, so every one of their forms is refused
+    by the verb test rather than by this one.
     """
-    from reckon.worker_git_shim import index_writing_form, mutating_verb
+    from reckon.worker_git_shim import (
+        _MIN_OPTION_PREFIX_LENGTH,
+        _abbreviates,
+        mutating_verb,
+        output_refusal,
+    )
 
-    assert index_writing_form("describe", ["--dirty"]) == "--dirty"
-    assert index_writing_form("describe", ["--dirty=-dirty"]) == "--dirty"
-    assert index_writing_form("describe", ["--broken"]) == "--broken"
-    assert index_writing_form("diff", []) == "the work tree comparison"
-    assert index_writing_form("diff", ["--stat", "HEAD"]) == "the work tree comparison"
-    assert index_writing_form("diff", ["--cached"]) is None
-    assert index_writing_form("diff", ["--staged", "HEAD"]) is None
-    assert index_writing_form("diff", ["--no-index", "a", "b"]) is None
-    assert index_writing_form("describe", ["--tags"]) is None
-    assert index_writing_form("log", ["--dirty"]) is None
-    assert index_writing_form("status", []) is None
+    assert _MIN_OPTION_PREFIX_LENGTH == _MIN_PREFIX_LENGTH
+    assert _abbreviates("output", _OUTPUT_OPTIONS) == "--output"
+    assert _abbreviates("outp", _OUTPUT_OPTIONS) == "--output"
+    assert _abbreviates("output-dir", _OUTPUT_OPTIONS) == "--output-directory"
+    assert _abbreviates("output-indent", _OUTPUT_OPTIONS) is None
+    assert _abbreviates("o", _OUTPUT_OPTIONS) is None
+    assert _abbreviates("", _OUTPUT_OPTIONS) is None
+    refusal = output_refusal("log", "--outp")
+    assert "`--outp`" in refusal
+    assert "(abbreviating `--output`)" in refusal
     assert mutating_verb("diff-index", []) == "diff-index"
     assert mutating_verb("diff-files", []) == "diff-files"
