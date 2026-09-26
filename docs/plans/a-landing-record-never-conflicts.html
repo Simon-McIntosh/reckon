@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-landing-record-never-conflicts">
+  <meta name="plan-title" content="A Landing Record Never Conflicts">
+  <meta name="plan-summary" content="Every node writes one shared plan file and one cumulative evidence record, so every merge conflicts; each node writes its own fragment instead.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="Changes the default write scope and the read path of the cumulative record; it consumes no other plan's evidence, and the plans that author records keep working unchanged.">
+  <meta name="plan-after" content="a-landing-beat-needs-no-hand-edit,worker-authors-its-own-record">
+  <title>A Landing Record Never Conflicts | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the record is the conflict</h2>
+    <p>Three of the five surveyed coordinators rank merge conflicts in the append-only plan and evidence HTML
+      among their largest wall-clock costs — "nearly every merge, always a mechanical union" (s21), "the single
+      worst conflict generator" (s23) — and the imas-ambix coordinator reports the same
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s3">crew pattern review §3</a>). The cause is
+      the default write scope: dispatch widens every node to its plan's HTML file, the plan's cumulative
+      evidence record and one figure directory named after the plan. The review's own six study nodes, dispatched
+      against one plan with six disjoint data directories, were each granted all three of those shared paths
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s9">§9</a>), so six parallel nodes produce six
+      conflicting appends by construction.</p>
+    <p>The worker authoring its own record is right and stays
+      (<code>worker-authors-its-own-record</code>); the <code>append_evidence</code> op already landed
+      (<code>a-landing-beat-needs-no-hand-edit</code> §2). What is wrong is that the record the worker authors is
+      a region of a file every other worker also edits.</p>
+
+    <h2 id="s2">§2 — Each node's default scope is its own fragment</h2>
+    <p><strong>Deliverable.</strong> Dispatch grants a node, by default, <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html</code>
+      for its evidence anchor and <code>docs/figures/&lt;plan&gt;/&lt;node&gt;/</code> for figures, and no longer
+      grants the shared plan HTML, the shared cumulative record or the plan-wide figure directory. The worker
+      prompt names the fragment path where it named the record. The node's plan comment moves to one
+      <code>landing:</code> line in its manifest.</p>
+    <p><strong>Done when</strong> a dry-run of six nodes against one plan reports six disjoint default scopes,
+      and a test fails if any default scope contains a path another concurrent node's default scope contains.</p>
+
+    <h2 id="s3">§3 — The record is assembled, never merged</h2>
+    <p><strong>Deliverable.</strong> Reading a plan's cumulative evidence record composes the authored record
+      with its fragments in promotion order, so the SPA, <code>read_plan</code> and <code>audit-doc</code> see one
+      document; and promotion writes each node's manifest <code>landing:</code> line to the plan as a comment
+      through the versioned <code>edit_plan</code> path rather than through a git merge.</p>
+    <p><strong>Done when</strong> this review's six study branches, replayed onto a scratch copy of the base with
+      fragment scopes, merge with zero conflicts in <code>docs/plans</code> and <code>docs/evidence</code>
+      (measured with <code>git merge-tree</code>), and the composed record renders every anchor.</p>
+
+    <h2 id="s4">§4 — Existing records keep working</h2>
+    <p><strong>Deliverable.</strong> A cumulative record with authored anchors and no fragments renders exactly as
+      today; a record with both renders the authored anchors first. No existing record is rewritten.</p>
+    <p><strong>Done when</strong> the rendered bytes of every existing <code>docs/evidence/archive/*-landed.html</code>
+      in reckon are unchanged by the composition, checked by a test over the current tree.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-alrnc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-26">
+        <h4 class="r-fu-title">Give each node its own record fragment</h4>
+        <div class="r-fu-body"><p>§2 and §3 write different modules and can run together; §4 follows §3.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-landing-record-never-conflicts</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

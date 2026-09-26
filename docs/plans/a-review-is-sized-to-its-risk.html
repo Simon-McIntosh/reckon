@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-review-is-sized-to-its-risk">
+  <meta name="plan-title" content="A Review Is Sized To Its Risk">
+  <meta name="plan-summary" content="Reviews became 57% of promotions once mandatory; size each review to its node's risk, batch findings into one repair, and let a clean review promote.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-blocks" content="a-small-change-is-a-small-node">
+  <meta name="plan-after" content="scoring-should-stop-a-promotion">
+  <title>A Review Is Sized To Its Risk | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: review became most of the work</h2>
+    <p>On 2026-09-21 promotion began refusing any run that had not been reviewed, and the same morning the
+      review reflex began dispatching a review for every finished run. Across the five mounted projects the
+      share of promotions that were review or investigate nodes went from 25% (14–20 September) to 57%
+      (21–26 September), promotions rose 77%, and source lines landed fell 27%
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s4">crew pattern review §4</a>). Every
+      surveyed coordinator ranks review round-trips — 20 to 60 minutes each, serial after the implement run —
+      first or second among wall-clock sinks, and the imas-ambix coordinator measured one 20-minute edit taking
+      five implement nodes and five reviews because each finding became its own repair node
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s3">§3</a>).</p>
+    <p>Review is worth keeping where it pays: on source changes it catches real defects and leads to an
+      observable repair about one time in eight. On documentation, evidence and measurement nodes it leads to a
+      repair about one time in forty (<a href="/reckon/research/review-node-utility#s6">review-node utility §6</a>).
+      This plan keeps the first and stops paying full price for the second.</p>
+
+    <h2 id="s2">§2 — Review tier by node class, declared in flight config</h2>
+    <p><strong>Deliverable.</strong> A <code>review.tiers</code> table in flight config, read by the review
+      reflex and by promotion, that assigns every promotable node one of three tiers from its changed paths,
+      role and diff size:</p>
+    <ul>
+      <li><strong>full</strong> — any change to runtime source outside <code>tests/</code>, and any node whose
+        plan section is declared guard, fence or security work. Today's review, unchanged.</li>
+      <li><strong>light</strong> — a source change under 50 changed lines at spec level <code>exact</code>. A
+        read-only review with a ten-minute budget that answers two questions: does the diff do what the brief
+        says, and does the negative control fail on the mutation it names.</li>
+      <li><strong>none</strong> — tests-only, documentation, evidence, figures, plan text and measurement nodes.
+        The integrated gate re-run and the negative control are the check; promotion records the tier as the
+        reason no review exists.</li>
+    </ul>
+    <p><strong>Done when</strong> the tier is recorded on every promoted ledger row, a fixture set of one run of
+      each class resolves to the declared tier in a test, and the velocity view (or the census script in
+      <code>docs/research/data/crew-pattern-review/velocity/</code>) shows review and investigate nodes at or below
+      30% of promotions over a full week, with the seven-day deletion share of product lines no higher than the
+      2.99% measured on 12–19 September.</p>
+
+    <h2 id="s3">§3 — One repair per review round</h2>
+    <p><strong>Deliverable.</strong> When a review carries findings, the reflex (and any coordinator acting on
+      it) composes exactly one repair node whose brief carries every finding of that review, as a numbered list,
+      against the same write paths. A finding the repair declines is answered in its manifest with a reason.</p>
+    <p><strong>Done when</strong> a test drives a stored review with three findings through the reflex and
+      observes one repair dispatch naming all three, and over a week of ledger rows the count of repair nodes per
+      finding-bearing review is at most one.</p>
+
+    <h2 id="s4">§4 — A clean review promotes without a coordinator beat</h2>
+    <p><strong>Deliverable.</strong> A run whose stored review scores at least 90, carries no finding, whose gate
+      passed and whose <code>verify-gate</code> re-run passes at the merged head is promoted by the review's own
+      completion, and the ledger row records that no coordinator beat was spent. Anything short of that returns
+      to the coordinator exactly as today. This builds on the refusal landed by
+      <code>scoring-should-stop-a-promotion</code>; it adds an acceptance path, not a bypass.</p>
+    <p><strong>Done when</strong> a synthesised repository promotes a clean run end to end with no coordinator
+      command after dispatch, a run whose review carries one finding is not promoted, and a run whose integrated
+      gate fails is not promoted — three named tests.</p>
+
+    <h2 id="s5">§5 — The reflex reviews a settled head, once</h2>
+    <p><strong>Deliverable.</strong> The reflex dispatches a review only for a run that is terminal and has not
+      been resumed within the last five minutes; a resume cancels a review still queued for the superseded head;
+      and a review of an earlier head carries forward when the later commits change no path the review's tier
+      covers (a relocation of a data file, a manifest correction), so a second full review is not demanded.
+      Observed in the review that motivated this plan: three census runs were reviewed at heads their
+      coordinator was already correcting, and each correction demanded a second review.</p>
+    <p><strong>Done when</strong> tests show a resumed run's queued review is withdrawn, and a head change
+      confined to paths outside the review tier's scope does not raise a review-missing obligation.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-arist-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26">
+        <h4 class="r-fu-title">Build the review tiers</h4>
+        <div class="r-fu-body"><p>Start with §2; §3 and §5 can run beside it; §4 follows §2.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

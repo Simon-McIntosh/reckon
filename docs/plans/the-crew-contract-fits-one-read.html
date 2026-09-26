@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-crew-contract-fits-one-read">
+  <meta name="plan-title" content="The Crew Contract Fits One Read">
+  <meta name="plan-summary" content="A coordinator starts with 49,000 words of binding instruction; the build skill becomes a short core, and prose restating a rule the tool enforces is deleted.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling,documentation">
+  <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-small-change-is-a-small-node">
+  <title>The Crew Contract Fits One Read | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a contract nobody reads end to end</h2>
+    <p>The <code>reckon-build</code> skill and its references grew from 11,475 words on 12 August to 34,714 on
+      26 September; with the user-global guardrails, a coordinator carries about 49,000 words of binding
+      instruction before it reads a plan
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s9">crew pattern review §9</a>). Most of those
+      rules record a measured incident and are individually right. Many are now enforced by the tool — the
+      eight-property contract, the budget, gate and closure fences, the follower requirement, the review
+      requirement — so the prose restates a refusal the coordinator will meet anyway, and the survey's complaints
+      are about rules colliding rather than rules missing
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s3">§3</a>).</p>
+
+    <h2 id="s2">§2 — Classify every rule</h2>
+    <p><strong>Deliverable.</strong> A table, as an anchor of this plan's evidence record, with one row per
+      binding sentence in <code>skills/reckon-build/SKILL.md</code> and its references: the rule, whether code
+      enforces it (with the refusal or check that does), whether it is still wanted, and its disposition — delete
+      as enforced, keep, merge, or delete as obsolete.</p>
+    <p><strong>Done when</strong> every binding sentence has a row, and each "enforced" row names a test that
+      exercises the enforcement.</p>
+
+    <h2 id="s3">§3 — Rewrite the core</h2>
+    <p><strong>Deliverable.</strong> A <code>SKILL.md</code> of at most 4,000 words that states the coordinator's
+      loop, what it owns and what it must never do, and points to references only for hand-composing a delegation
+      the tool did not prepare; the references keep only what §2 marked keep.</p>
+    <p><strong>Done when</strong> the skill and references together are at most 12,000 words, the
+      skill-contract parity tests pass, and a coordinator transcript sample shows input tokens before the first
+      dispatch reduced by at least half against the 26 September baseline.</p>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+      <h2><span class="sec">§</span> Evidence gates</h2>
+      <div class="r-gate" data-id="g-tccfor-rules-settled" data-section="s3" data-gated-sections="s3" data-status="open">
+        <h4 class="r-gate-measure">the review tiers and the narrowed refusals have landed, so the rewrite describes the rules that will be in force</h4>
+        <p class="r-gate-required-evidence">a-refusal-is-about-the-work#s2</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-tccfor-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26">
+        <h4 class="r-fu-title">Classify, then rewrite, the build skill</h4>
+        <div class="r-fu-body"><p>§2 is ready; §3 waits on the refusal and review changes it must describe.</p></div>
+        <pre class="r-fu-prompt">/reckon-build the-crew-contract-fits-one-read</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

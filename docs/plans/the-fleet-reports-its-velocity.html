@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-fleet-reports-its-velocity">
+  <meta name="plan-title" content="The Fleet Reports Its Velocity">
+  <meta name="plan-summary" content="Learning what the fleet delivers took six census nodes and three corrections; velocity, review share, rework, coordinator cost and quota runway become one read.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling,measurement">
+  <meta name="plan-blocks" content="open-work-is-capped">
+  <title>The Fleet Reports Its Velocity | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the fleet cannot see its own rate</h2>
+    <p>The review of the dispatch pattern needed six study nodes to answer how much work lands and how fast, and
+      the most important trend it found — promotions up 77% while source output fell 27% in the week review became
+      mandatory — was visible to nobody while it happened
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s4">crew pattern review §4</a>). The burn
+      analysis needed three SLURM scans of 2.9 GB to price a run, the run store's <code>backend</code> column is
+      empty on every row since 20 September, codex resume streams report thread-cumulative usage so summing them
+      overcounts by 57%, and the budget preflight never projects the weekly window forward, so it did not hold
+      when the codex window reached 87% 57 hours into its week (reckon-a0, §3). The census scripts written for the
+      review work; they belong in the product, not in a data directory.</p>
+
+    <h2 id="s2">§2 — A velocity view</h2>
+    <p><strong>Deliverable.</strong> <code>crew(view="velocity")</code> and <code>reckon crew velocity</code>,
+      computed in Python from the committed ledgers and primary-branch history, reporting per project, lane and
+      day: promotions by class; product (source, tests) and record (plan, evidence, research HTML, figures, state)
+      lines landed; the seven-day deletion share of mature product lines; dispatch-to-completion and
+      dispatch-to-promotion median and p75; attempts per landed node; and the review share of promotions. The
+      implementation starts from <code>docs/research/data/crew-pattern-review/velocity/census.py</code> and keeps
+      its denominators and censoring rules.</p>
+    <p><strong>Done when</strong> the view reproduces the review's §4 headline figures within 1% on the same
+      pinned window, and a parity test compares the view's JSON with the census's compact output.</p>
+
+    <h2 id="s3">§3 — Coordinator cost per landed node</h2>
+    <p><strong>Deliverable.</strong> The view joins each promoted run to its coordinator session through
+      <code>node_definition.coordinator</code> and reports coordinator turns and input and output tokens per landed
+      node, using the coordinator-overhead census as its reference.</p>
+    <p><strong>Done when</strong> the figure agrees with that census's per-session totals for the window.</p>
+
+    <h2 id="s4">§4 — Quota runway and session hygiene</h2>
+    <p><strong>Deliverable.</strong> Before each wave the preflight reports, per metered lane and role, runs
+      remaining until the weekly reset from measured quota per run, and holds a wave that would exhaust the window
+      before its reset; per-run burn uses per-attempt deltas rather than summed cumulative streams, and the run
+      store records the backend. The view also reports, per day, the share of dispatches that inherited another
+      task's session, so a regression of task-keyed sessions shows the same day.</p>
+    <p><strong>Done when</strong> a fixture of three resumed codex streams prices to the rollout totals rather
+      than 157% of them, and the preflight holds a synthetic wave projected past its reset.</p>
+
+    <h2 id="s5">§5 — Work in progress is visible</h2>
+    <p><strong>Deliverable.</strong> The view reports, per project and ISO week, plans opened and plans closed
+      (shipped, done, archived or superseded), and the count of pending plans.</p>
+    <p><strong>Done when</strong> it reports reckon's 60 opened and 9 closed for the fortnight ending
+      2026-09-26, matching the review's §9 count.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-tfriv-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-26">
+        <h4 class="r-fu-title">Build the velocity view</h4>
+        <div class="r-fu-body"><p>§2 first; §3, §4 and §5 extend it and can run in parallel after it.</p></div>
+        <pre class="r-fu-prompt">/reckon-build the-fleet-reports-its-velocity</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

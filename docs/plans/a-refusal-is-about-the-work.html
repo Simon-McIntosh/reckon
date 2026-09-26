@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-refusal-is-about-the-work">
+  <meta name="plan-title" content="A Refusal Is About The Work">
+  <meta name="plan-summary" content="Coordinators lose dispatches and promotions to refusals about wording and bookkeeping; a refusal fires on a defect in the work, and the rest become warnings.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="Narrows the conditions under which existing refusals fire; it consumes no other plan's evidence, and the discharge work in an-orchestrator-can-discharge-a-refusal proceeds beside it.">
+  <meta name="plan-after" content="an-orchestrator-can-discharge-a-refusal">
+  <title>A Refusal Is About The Work | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: refusals that guard nothing</h2>
+    <p>Every surveyed coordinator lists refusals among its wall-clock costs, and the ones they name guard a form
+      rather than the work: the goal lint refusing a semicolon, "and", "then" or a quoted
+      <code>&lt;path&gt;</code> in a single-deliverable goal (s21 lost about eight dispatches to rewording); the
+      watcher-required refusal firing after a follower's lifetime ends while runs are still in flight; the
+      impl-must-move refusal on corrective nodes, waived "about every other time" (s23); <code>--outcome</code>
+      demanded on review runs; and <code>verify-gate</code> refusing a checkout two ledger commits past the
+      merge (<a href="/reckon/research/orchestrator-crew-pattern-review#s3">crew pattern review §3</a>). The
+      review that motivated this plan was itself refused for the word "TODO" inside a done-when that named a
+      marker to count (<a href="/reckon/research/orchestrator-crew-pattern-review#s9">§9</a>). The validator also
+      caught two real brief defects in one session; those must keep refusing.</p>
+
+    <h2 id="s2">§2 — The contract lint refuses placeholders, not punctuation</h2>
+    <p><strong>Deliverable.</strong> The single-goal and fully-specified checks refuse an unresolved template
+      placeholder (an angle-bracket token outside quotes or code, a goal that is only a placeholder word) and a
+      goal naming two deliverables joined by an action verb; they no longer refuse a semicolon, "and" or "then"
+      inside one deliverable, or any word inside quoted text or a done-when.</p>
+    <p><strong>Done when</strong> a table-driven test replays the refused goals named in the survey and this
+      review's "TODO" done-when as accepted, and replays the two brief defects s22 reported, plus a goal that is
+      two deliverables, as refused.</p>
+
+    <h2 id="s3">§3 — A re-armable follower is a follower</h2>
+    <p><strong>Deliverable.</strong> When the session has an expired follower whose seat is intact and runs
+      still in flight, dispatch re-arms or warns and proceeds instead of exiting 8; the refusal remains for a
+      session that never armed one.</p>
+    <p><strong>Done when</strong> tests cover both cases, and the warning names the attach line.</p>
+
+    <h2 id="s4">§4 — Bookkeeping follows the run</h2>
+    <p><strong>Deliverable.</strong> A run whose lineage marks it a repair, resume or re-cut of a landed node
+      promotes without an impl-move waiver; a review run's outcome defaults from its stored review record;
+      <code>verify-gate</code> accepts a checkout whose history contains the merged revision rather than only the
+      merged revision itself.</p>
+    <p><strong>Done when</strong> each of the three has a named test, and over a week of coordinator transcripts
+      the count of <code>--no-impl-change</code> and <code>--outcome</code> uses on corrective and review runs
+      falls to zero.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-araw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-26">
+        <h4 class="r-fu-title">Narrow the refusals</h4>
+        <div class="r-fu-body"><p>§2, §3 and §4 touch different modules and can run in parallel.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-refusal-is-about-the-work</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

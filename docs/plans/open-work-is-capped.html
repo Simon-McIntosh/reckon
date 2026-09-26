@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="open-work-is-capped">
+  <meta name="plan-title" content="Open Work Is Capped">
+  <meta name="plan-summary" content="reckon opened 60 plans and closed 9 in two weeks, and half the fleet works on reckon itself; a project holds bounded open work and closes before it opens.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="standard">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-after" content="plan-lifecycle-hygiene">
+  <title>Open Work Is Capped | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the backlog grows whether or not the fleet improves</h2>
+    <p>In the four August weeks reckon closed about nine in ten of the plans it opened. In the fortnight to
+      26 September it opened 60 and closed 9, and 62 reckon plans are pending, most of them about the crew itself.
+      reckon took 48% of the fleet's 2,303 promotions in the same fortnight; its plan, evidence and research HTML
+      grew almost twice as fast as its source
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s4">crew pattern review §4</a>,
+      <a href="/reckon/research/orchestrator-crew-pattern-review#s9">§9</a>). Each measured defect becomes a new
+      plan; nothing retires one. nova shows the same shape with eight open sprints and 32 pending plans. A cap on
+      open work is the only lever that makes closing cheaper than opening.</p>
+    <p>The repository's own instructions hold the plan-creation diet pending the lead's design review
+      (<code>plan-lifecycle-hygiene</code>), so the enforcing section of this plan waits on that decision; the
+      measuring and triage sections do not.</p>
+
+    <h2 id="s2">§2 — Triage the pending reckon plans</h2>
+    <p><strong>Deliverable.</strong> A read-only triage, as an anchor of this plan's evidence record, of every
+      pending reckon plan: its measured progress against the code (a plan-currency reading, not its stored
+      <code>impl</code>), and a proposed disposition — keep, merge into a named plan, or close with a landed
+      summary — with the owning coordinator session where one is live. Nothing is closed by this section; the
+      proposals go to the lead and to the owning sessions.</p>
+    <p><strong>Done when</strong> every pending plan has a row, the proposals leave at most 25 plans active, and
+      each merge names its target.</p>
+
+    <h2 id="s3">§3 — A work-in-progress limit per project</h2>
+    <p><strong>Deliverable.</strong> A per-project limit on active plans in project configuration, enforced at
+      plan creation in the mode the lead locks below, with the refusal or warning naming the plans closest to
+      closing.</p>
+    <p><strong>Done when</strong> creating a plan beyond the limit behaves as locked, in a test, and the velocity
+      view's weekly opened-and-closed figures show reckon closing at least as many plans as it opens for two
+      consecutive weeks.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="wip-limit-mode" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">How is the per-project limit on active plans enforced at plan creation?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="warn">warn and proceed</button>
+          <button class="r-opt" data-value="refuse-with-override">refuse, with a recorded lead override</button>
+          <button class="r-opt" data-value="none">no limit; report only</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="wip-limit-value" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What is reckon's limit on active plans? The triage proposes 25.</p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+      <h2><span class="sec">§</span> Evidence gates</h2>
+      <div class="r-gate" data-id="g-owic-weekly-counts" data-section="s3" data-gated-sections="s3" data-status="open">
+        <h4 class="r-gate-measure">plans opened and closed per project and week are reported by the velocity view</h4>
+        <p class="r-gate-required-evidence">the-fleet-reports-its-velocity#s5</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-owic-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26">
+        <h4 class="r-fu-title">Triage, then cap</h4>
+        <div class="r-fu-body"><p>§2 is ready; §3 waits on the two decisions and the velocity view.</p></div>
+        <pre class="r-fu-prompt">/reckon-build open-work-is-capped</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-title" content="A Worker Reuses Before It Writes">
+  <meta name="plan-summary" content="44 timestamp parsers and 14 atomic writers: a fenced worker's cheapest move is a private copy. Give primitives one home and make copies visible at promotion.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="10.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="Consolidates helpers reckon already ships and adds a promotion-time duplicate check; it consumes no other plan's evidence and gates none.">
+  <meta name="plan-after" content="a-plan-is-reviewed-before-it-is-built">
+  <title>A Worker Reuses Before It Writes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: isolation made the codebase repeat itself</h2>
+    <p>The structural census found 44 functions in reckon that parse an ISO timestamp themselves (27 in the crew
+      package), 14 that write JSON atomically with differing temporary naming, cleanup and fsync behaviour, three
+      that enumerate a run's streams, and four byte-identical numeric decoders under four names. The crew
+      package's clone share rose from 5.5% to 7.1% while its code doubled, and its public definitions grew 226% in
+      three weeks (<a href="/reckon/research/orchestrator-crew-pattern-review#s7">crew pattern review §7</a>).
+      Every copy is private and sits in the one module its node could write. A worker holds exclusive write paths;
+      when the helper it needs lives outside them, or does not exist, a private copy is the cheapest compliant move,
+      and neither the gate nor a per-diff review compares the copy with the others. The lead's standard — deep
+      modules behind small interfaces, no reimplementation — needs a mechanism, not another paragraph.</p>
+
+    <h2 id="s2">§2 — One timestamp parser</h2>
+    <p><strong>Deliverable.</strong> <code>reckon/_timestamps.py</code> with <code>parse_utc</code>, whose
+      behaviour on a <code>Z</code> suffix, an offset, a naive value, a numeric epoch in seconds or milliseconds,
+      and malformed input is specified by tests first; then the 44 call sites migrate, in batches whose write paths
+      do not overlap, keeping each caller's elapsed-time and display policy where it is.</p>
+    <p><strong>Done when</strong> the census's timestamp group, re-run on the new head, reports at most three
+      direct <code>fromisoformat</code> users, each with a stated reason, and the full suite shows no added
+      failure against the base revision.</p>
+
+    <h2 id="s3">§3 — One atomic JSON writer, one stream enumeration, one numeric decoder</h2>
+    <p><strong>Deliverable.</strong> <code>write_json_atomically</code> beside the existing envelope writer in
+      <code>reckon/_store.py</code>, with a unique sibling temporary, cleanup on failure and an explicit fsync
+      policy, adopted by the 14 writers while each keeps its own locking; <code>metering.run_streams</code> used by
+      promotion and the ledger in place of their copies; and one bool-rejecting numeric decoder for the four
+      identical bodies.</p>
+    <p><strong>Done when</strong> the census's groups for all three concepts report one implementation each, and
+      an interrupted-write test runs against the shared writer.</p>
+
+    <h2 id="s4">§4 — A copy is visible at promotion</h2>
+    <p><strong>Deliverable.</strong> Promotion runs the census's normalised six-line clone detector over the
+      run's added functions against the rest of the package and puts any match — the new function, the existing
+      one, both <code>file:line</code> — in the review packet and on the ledger row. It warns; it does not refuse.</p>
+    <p><strong>Done when</strong> a synthesised run that adds a private copy of <code>parse_utc</code> is
+      reported with the existing function's location, and a run adding no copy reports none.</p>
+
+    <h2 id="s5">§5 — The interface has a budget</h2>
+    <p><strong>Deliverable.</strong> The velocity view reports public definitions, CLI options, MCP views and
+      refusal families per week for reckon; a plan section that adds any of them names what it retires or merges,
+      or records why the surface must grow. The plan-review rubric already favours deep modules
+      (<code>a-plan-is-reviewed-before-it-is-built</code>); this gives it a number to read.</p>
+    <p><strong>Done when</strong> the weekly surface counts are in the view and the plan-review rubric cites them.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-awrbiw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26">
+        <h4 class="r-fu-title">Consolidate the primitives</h4>
+        <div class="r-fu-body"><p>§2 and §3 are ready and write different modules; §4 follows §2; §5 follows the velocity view.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-worker-reuses-before-it-writes</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
