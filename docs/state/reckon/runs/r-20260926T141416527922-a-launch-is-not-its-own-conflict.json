@@ -82,6 +82,27 @@
     "reason": "dispatch-defect repair reported by peers; it closes no crew-observability-truth section",
     "verdict": "waived"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "7953df4ac7316880aaf156292a76608cbfb36a5a",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "integrated_revision": "7953df4ac7316880aaf156292a76608cbfb36a5a",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 7953df4ac731: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_launch_is_not_its_own_conflict.py tests/test_refused_dispatch_leaves_no_pointer.py tests/test_crew_dispatch_guard.py tests/test_crew_cross_project_claims.py tests/test_shared_landing_paths.py tests/test_shared_claims_on_declared_hot_files.py tests/test_dispatch_guard_consults_liveness.py tests/test_write_scope_agreement.py tests/test_claim_release.py tests/test_crew_runs_scope.py",
+    "gate_command_source": "stored",
+    "integrated_revision": "7953df4ac7316880aaf156292a76608cbfb36a5a",
+    "integrated_verdict": "failed",
+    "ran": true,
+    "reason": null,
+    "timed_out": false
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
