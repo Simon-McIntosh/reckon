@@ -440,14 +440,33 @@ def _run_worktree(run_id: str) -> tuple[str | None, str | None]:
     return (str(worktree) if worktree else None, str(project) if project else None)
 
 
+#: The remedy a run-scoped call to a granular mutator has. Those entry points
+#: take no ``checkout_path`` and the run's own project is exactly what the guard
+#: refuses, so the ``checkout_path``-or-own-project hint the registered entry
+#: point carries would point at two options neither of which can work here.
+_GUARDED_WRITE_HINT = (
+    "Record the change through the registered edit_plan tool, which redirects a "
+    "run-scoped write for the run's own project into the run's worktree. This "
+    "entry point takes no checkout_path and cannot write into the run's own "
+    "worktree."
+)
+
+
 def _run_scoped_refusal(
     run_id: str,
     project: str,
     slug: str,
     doc_type: str | None,
     detail: str,
+    *,
+    hint: str | None = None,
 ) -> dict[str, Any]:
-    """The structured refusal for a run-scoped write that must not proceed."""
+    """The structured refusal for a run-scoped write that must not proceed.
+
+    ``hint`` defaults to the registered entry point's remedy — pass
+    ``checkout_path``, or write only the run's own project. A caller whose entry
+    point cannot honour either must supply its own.
+    """
 
     target = _written_path(project, slug, None, doc_type)
     where = (
@@ -467,8 +486,12 @@ def _run_scoped_refusal(
         "slug": slug,
         "would_write": target,
         "hint": (
-            "Pass checkout_path explicitly to target a checkout, or write only "
-            "the plan this run's own project owns."
+            hint
+            if hint is not None
+            else (
+                "Pass checkout_path explicitly to target a checkout, or write "
+                "only the plan this run's own project owns."
+            )
         ),
     }
 
@@ -548,7 +571,12 @@ def _run_scoped_write_guard(
     worktree, run_project = _run_worktree(run_id)
     if worktree is None:
         return _run_scoped_refusal(
-            run_id, project, slug, doc_type, "the run has no recorded worktree"
+            run_id,
+            project,
+            slug,
+            doc_type,
+            "the run has no recorded worktree",
+            hint=_GUARDED_WRITE_HINT,
         )
     if run_project != project:
         return _run_scoped_refusal(
@@ -557,6 +585,7 @@ def _run_scoped_write_guard(
             slug,
             doc_type,
             f"it is scoped to project {run_project!r}, not {project!r}",
+            hint=_GUARDED_WRITE_HINT,
         )
     return _run_scoped_refusal(
         run_id,
@@ -564,6 +593,7 @@ def _run_scoped_write_guard(
         slug,
         doc_type,
         "this entry point cannot write into the run's own worktree",
+        hint=_GUARDED_WRITE_HINT,
     )
 
 

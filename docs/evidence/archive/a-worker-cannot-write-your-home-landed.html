@@ -1076,25 +1076,27 @@ exit: 0</pre>
     (<code>tests/test_plan_reads_stay_in_the_worktree.py</code> plus
     <code>test_plan_write_stays_in_the_worktree.py</code>,
     <code>test_mcp_tools.py</code>, <code>test_edit_plan.py</code>):
-    <code>6 failed, 124 passed</code>. The six failures are this node's own new
+    <code>18 failed, 124 passed</code>. The eighteen failures are this node's own new
     behaviour: the run-scoped read (<code>version</code> 0 where the worktree holds
     1) and each of the three further read entry points returning the main
     inventory; the cross-project refusal returning <code>ok: True</code>,
-    <code>new_version</code> 1; and the own-project granular write &mdash; passed
-    the <em>main</em> checkout's version, the one an unguarded write would accept
-    &mdash; also <code>ok: True</code>, <code>new_version</code> 1, against main.
-    Head, same selection: <code>130 passed</code>
-    (<code>docs/figures/a-worker-cannot-write-your-home/gate-plan-reads-base.txt</code>,
-    <code>gate-plan-reads-head.txt</code>).</p>
+    <code>new_version</code> 1; the own-project granular write &mdash; passed the
+    <em>main</em> checkout's version, the one an unguarded write would accept
+    &mdash; also <code>ok: True</code>, <code>new_version</code> 1, against main;
+    each of the eleven guarded writers on its own case; and the registered path's
+    own hint, which only exists once the guard's hint is distinguished from it.
+    Head, same selection: <code>142 passed</code>
+    (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/gate-plan-reads-base.txt</code>,
+    <code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/gate-plan-reads-head.txt</code>).</p>
 
     <p><strong>Ambient identity still isolated.</strong> The gate was re-run at
     head with <code>RECKON_RUN_ID</code> and <code>RECKON_MANIFEST</code> exported
     into the invoking shell, as a worker's shell has them. Same selection:
-    <code>130 passed</code>, so the conftest fixture that clears the dispatch
+    <code>142 passed</code>, so the conftest fixture that clears the dispatch
     identity for every test still holds with the new read scoping in place. The log
     header now names the resolved git revision of the tree each arm measured, so the
     figure is checkable rather than inferred
-    (<code>docs/figures/a-worker-cannot-write-your-home/gate-plan-reads-head-runid.txt</code>).</p>
+    (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/gate-plan-reads-head-runid.txt</code>).</p>
 
     <p><strong>Coverage added under review.</strong> A review found three of the
     four scoped read entry points undriven, and no test of the case the write scope
@@ -1108,7 +1110,38 @@ exit: 0</pre>
     fail. The unmodified-copy test starts with the worktree plan byte-identical to
     main's and asserts main is byte-identical after a run-scoped write &mdash; a copy
     that has diverged would show which file was written whichever path resolved, so
-    only the identical pair proves the <em>path</em> was scoped.</p>
+    only the identical pair proves the <em>path</em> was scoped. A second review
+    found the write-side tests complained only through <code>_set_status</code>,
+    so deleting the guard call at any of the other ten sites would have reddened
+    nothing: the refusal test is now parametrised over all eleven guarded writers
+    (<code>_patch_plan</code>, <code>_append_comment</code>,
+    <code>_lock_decision</code>, <code>_append_followup</code>,
+    <code>_resolve_followup</code>, <code>_set_status</code>,
+    <code>_set_impl</code>, <code>_update_sprint</code>,
+    <code>_add_sprint_item</code>, <code>_create_sprint</code>,
+    <code>_move_sprint_item</code>), each asserting the refusal and that the
+    whole main tree is byte-identical afterwards. One case per site is what makes
+    the wiring per-site evidence rather than a single sample.</p>
+
+    <p><strong>The guard names its own remedy.</strong> The refusal's hint
+    previously offered the registered entry point's two options &mdash; pass
+    <code>checkout_path</code>, or write only the run's own project &mdash; and
+    the guarded mutators can honour neither: they take no <code>checkout_path</code>,
+    and the run's own project is exactly what is refused. The guard now emits its
+    own hint, telling the caller to record through the registered
+    <code>edit_plan</code> tool, which redirects a run-scoped own-project write
+    into the run's worktree. The registered path's hint is unchanged, and a test
+    asserts both: the guarded refusal names <code>edit_plan</code>, and the
+    registered entry point's refusal still names <code>checkout_path</code>.</p>
+
+    <p><strong>The per-site guard is proven to discriminate.</strong> A mutation
+    arm removes the guard call under <code>_patch_plan</code> in a scratch copy of
+    the module and runs the node's test file against it:
+    <code>1 failed, 22 passed</code>, the single failure being that site's own
+    case (<code>_patch_plan</code> writes main and returns <code>ok: True</code>),
+    while every other guarded writer's case still passes. The same selection is
+    <code>23 passed</code> unmutated, so the arm is the guard call and nothing
+    else (<code>.../logs/mutation-plan-reads.txt</code>).</p>
 
     <p><strong>The granular own-project refusal is deliberate, not a version
     conflict.</strong> The review asked whether the own-project refusal was merely a
@@ -1129,9 +1162,9 @@ exit: 0</pre>
     given</em> &mdash; applied to a scratch copy of the module with
     <code>_run_scoped_read_root</code>'s body replaced by <code>return None</code>,
     the four read-resolution tests fail exactly there and the write tests pass, which
-    is what a read-side mutation should leave behind: <code>4 failed, 7 passed</code>.
+    is what a read-side mutation should leave behind: <code>4 failed, 19 passed</code>.
     The log's first line repeats the declared string verbatim
-    (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-plan-reads.txt</code>).
+    (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/negative-control-plan-reads.txt</code>).
     Without the control, the green read tests would not be evidence that the read
     resolution is what moved the read.</p>
 
@@ -1140,17 +1173,17 @@ exit: 0</pre>
     carries 231 ruff findings at base and 231 at head, and <code>reckon/mcp.py</code>
     18 and 18, so the change adds none; the new test file is clean and both touched
     files are formatted
-    (<code>docs/figures/a-worker-cannot-write-your-home/lint-plan-reads.txt</code>).</p>
+    (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/lint-plan-reads.txt</code>).</p>
 
     <p><strong>Paths changed.</strong> <code>reckon/mcp.py</code> (the read-root
-    resolver, the write guard, and its wiring into the read entry points and the
-    eleven granular mutators), <code>tests/test_plan_reads_stay_in_the_worktree.py</code>
-    (eleven tests over a synthetic main checkout, worktree, sibling project, mounts
-    file and live pointer), plus the four gate logs, the negative-control log, the
-    lint log and the figure under
-    <code>docs/figures/a-worker-cannot-write-your-home/</code>. Commit
-    <code>0871ec7b</code> implements it; <code>99d31ad1</code> adds the coverage the
-    review asked for and the regenerated logs.</p>
+    resolver, the write guard, its own remedy hint, and its wiring into the read
+    entry points and the eleven granular mutators),
+    <code>tests/test_plan_reads_stay_in_the_worktree.py</code> (23 tests over a
+    synthetic main checkout, worktree, sibling project, mounts file and live
+    pointer), plus the gate logs, the mutation and negative-control logs, the lint
+    log and the figure. Commit <code>0871ec7b</code> implements the read scope;
+    <code>99d31ad1</code> adds the read-entry-point coverage; the guard-hint
+    distinction and the eleven-writer parametrisation land in this commit.</p>
 
     <figure>
       <img src="/reckon/figures/a-worker-cannot-write-your-home/plan-read-resolution.svg"

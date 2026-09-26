@@ -569,17 +569,19 @@
         outside tests.</p>
 
         <p><strong>The defect reproduces at base.</strong> At <code>80d55621</code> over
-        the four declared files: <code>6 failed, 124 passed</code> &mdash; the read
+        the four declared files: <code>18 failed, 124 passed</code> &mdash; the read
         entry points (the plan read and the <code>roadmap</code>, <code>audit</code>
         and typed-resource reads) returning the main inventory instead of the
-        worktree's, and both granular-write refusals returning <code>ok: True</code>.
-        Head: <code>130 passed</code>
-        (<code>docs/figures/a-worker-cannot-write-your-home/gate-plan-reads-base.txt</code>,
-        <code>gate-plan-reads-head.txt</code>). Re-run at head with
+        worktree's; both granular-write refusals returning <code>ok: True</code>; each
+        of the eleven guarded writers on its own case; and the registered path's own
+        hint, which exists only once the guard's hint is distinguished from it.
+        Head: <code>142 passed</code>
+        (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/gate-plan-reads-base.txt</code>,
+        <code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/gate-plan-reads-head.txt</code>). Re-run at head with
         <code>RECKON_RUN_ID</code> and <code>RECKON_MANIFEST</code> exported in the
-        invoking shell, as a worker's shell has them: <code>130 passed</code>, so the
+        invoking shell, as a worker's shell has them: <code>142 passed</code>, so the
         conftest isolation fixture still holds with the read scoping in place
-        (<code>gate-plan-reads-head-runid.txt</code>).</p>
+        (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/gate-plan-reads-head-runid.txt</code>).</p>
 
         <p><strong>Coverage closed under review.</strong> A review found three of the
         four scoped read entry points undriven and no test of the write scope's own
@@ -591,7 +593,25 @@
         and asserts a run-scoped write lands in the worktree while main stays
         byte-identical: a diverged copy would show which file was written whichever
         path resolved, so only the identical pair proves the <em>path</em> was
-        scoped.</p>
+        scoped. A second review found the write-side tests complained only through
+        <code>_set_status</code>, so deleting the guard call at any of the other ten
+        sites would have reddened nothing: the refusal test is now parametrised over
+        all eleven guarded writers (<code>_patch_plan</code>,
+        <code>_append_comment</code>, <code>_lock_decision</code>,
+        <code>_append_followup</code>, <code>_resolve_followup</code>,
+        <code>_set_status</code>, <code>_set_impl</code>,
+        <code>_update_sprint</code>, <code>_add_sprint_item</code>,
+        <code>_create_sprint</code>, <code>_move_sprint_item</code>), each asserting
+        the refusal and that the whole main tree is byte-identical afterwards. The
+        guard also now carries its own remedy hint: the registered path's
+        <code>edit_plan</code>, which redirects a run-scoped own-project write into
+        the worktree, is the one route these entry points do not have, and the test
+        asserts the guarded refusal names it while the registered entry point's
+        refusal still names <code>checkout_path</code>. The guard is proven to
+        discriminate by a mutation arm: removing the guard call under
+        <code>_patch_plan</code> in a scratch copy gives <code>1 failed, 22
+        passed</code>, the single red case being that site's own, against
+        <code>23 passed</code> unmutated.</p>
 
         <p><strong>The granular own-project refusal is deliberate, not a version
         conflict.</strong> The review asked whether it was merely a version conflict;
@@ -608,19 +628,22 @@
         run-scoped plan from the mounted main checkout when no checkout path is
         given</em> &mdash; with <code>_run_scoped_read_root</code>'s body replaced by
         <code>return None</code> in a scratch copy, the four read-resolution tests fail
-        there and the write tests pass (<code>4 failed, 7 passed</code>); the log's first
+        there and the write tests pass (<code>4 failed, 19 passed</code>); the log's first
         line repeats the declared string verbatim
-        (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-plan-reads.txt</code>).</p>
+        (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/negative-control-plan-reads.txt</code>).</p>
 
         <p><strong>Lint and format delta.</strong> Complete trees, counting finding lines
         only: <code>reckon/</code>
         carries 231 findings at base and 231 at head, <code>reckon/mcp.py</code> 18 and 18,
         the new test file is clean, and both touched files are formatted
-        (<code>docs/figures/a-worker-cannot-write-your-home/lint-plan-reads.txt</code>).
-        Commit <code>0871ec7b</code>, with the review coverage and regenerated logs at
-        <code>99d31ad1</code>; paths <code>reckon/mcp.py</code>,
-        <code>tests/test_plan_reads_stay_in_the_worktree.py</code>, and the five logs and
-        figure under <code>docs/figures/a-worker-cannot-write-your-home/</code>. Evidence:
+        (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/lint-plan-reads.txt</code>).
+        Commit <code>0871ec7b</code> implements the read scope, with the review coverage
+        at <code>99d31ad1</code>; the guard-hint distinction and the eleven-writer
+        parametrisation land in this commit. Paths: <code>reckon/mcp.py</code>,
+        <code>tests/test_plan_reads_stay_in_the_worktree.py</code> (23 tests), the
+        figure under <code>docs/figures/a-worker-cannot-write-your-home/</code> and
+        the gate, mutation, negative-control and lint logs under the run directory
+        <code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/</code>. Evidence:
         <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-plan-reads</code>,
         figure
         <code>/reckon/figures/a-worker-cannot-write-your-home/plan-read-resolution.svg</code>.</p></div>

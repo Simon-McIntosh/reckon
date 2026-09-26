@@ -31,7 +31,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -51,6 +53,20 @@ NODE = "sample-node"
 
 def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _tree_shas(root: Path) -> dict[str, str]:
+    """Every regular file under ``root``, keyed by its path relative to root.
+
+    A guarded write targets a plan HTML for the plan mutators and an index
+    state file for the sprint writers; snapshotting the whole tree asserts the
+    right file for either without the test needing to know which.
+    """
+    return {
+        str(path.relative_to(root)): _sha(path)
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+    }
 
 
 def _write_plan(root: Path, project: str, slug: str) -> Path:
@@ -168,6 +184,54 @@ def _resource_read(slug: str, *, checkout_path: str | None = None):
         include_followups=True,
         include_questions=True,
     )
+
+
+#: Every plan-state writer in ``reckon.mcp`` that carries the run-scoped write
+#: guard, keyed by the function's name. Parametrising the refusal test over all
+#: of them is what makes the guard's wiring testable per site: deleting the guard call at
+#: any one site reddens its own case, where a single ``_set_status`` case would
+#: leave the other ten unwitnessed.
+_RUN_SCOPED_WRITERS: dict[str, Callable[[str, int], dict[str, Any]]] = {
+    "_patch_plan": lambda project, v: mcp_module._patch_plan(project, SLUG, {}, v),
+    "_append_comment": lambda project, v: mcp_module._append_comment(
+        project, SLUG, "s2", "body text", "worker", v
+    ),
+    "_lock_decision": lambda project, v: mcp_module._lock_decision(
+        project, SLUG, "choice-key", "challenge", "because", "worker", v
+    ),
+    "_append_followup": lambda project, v: mcp_module._append_followup(
+        project,
+        SLUG,
+        {
+            "id": "fu-new",
+            "written_by": "worker",
+            "written_at": "2026-01-01T00:00:00+00:00",
+            "title": "t",
+            "body": "b",
+            "prompt": "/reckon-build slug",
+        },
+        v,
+    ),
+    "_resolve_followup": lambda project, v: mcp_module._resolve_followup(
+        project, SLUG, "fu-1", "done", "worker", v
+    ),
+    "_set_status": lambda project, v: mcp_module._set_status(
+        project, SLUG, "active", v
+    ),
+    "_set_impl": lambda project, v: mcp_module._set_impl(project, SLUG, 0.5, v),
+    "_update_sprint": lambda project, v: mcp_module._update_sprint(
+        project, "sprint-1", {"theme": "t"}, v
+    ),
+    "_add_sprint_item": lambda project, v: mcp_module._add_sprint_item(
+        project, "sprint-1", "item-slug", v
+    ),
+    "_create_sprint": lambda project, v: mcp_module._create_sprint(
+        project, "sprint-1", "theme text", v
+    ),
+    "_move_sprint_item": lambda project, v: mcp_module._move_sprint_item(
+        project, SLUG, "sprint-1", "sprint-2", v
+    ),
+}
 
 
 def test_a_run_scoped_read_returns_the_worktree_version_not_main(run_scoped):
@@ -338,6 +402,50 @@ def test_a_run_scoped_granular_write_to_the_runs_own_project_is_refused(run_scop
     assert _sha(fixture["main_plan"]) == before_main
     assert _sha(fixture["worktree_plan"]) == before_worktree
     assert _version(fixture["main"], PROJECT, SLUG) == before_version
+
+    hint = result["hint"]
+    assert "edit_plan" in hint, hint
+    assert "run's worktree" in hint, hint
+
+
+@pytest.mark.parametrize("name", sorted(_RUN_SCOPED_WRITERS))
+def test_every_run_scoped_granular_writer_is_refused(run_scoped, name):
+    """Each guarded writer refuses on its own, with no checkout_path.
+
+    One case per writer, so the guard's wiring is witnessed at every call site
+    rather than at ``_set_status`` alone: deleting the guard call at one site
+    reddens that site's case and no other. The expected version is the main
+    checkout's own, the value an unguarded write would accept, and the whole
+    main tree is asserted byte-identical afterwards — the plan mutators target a
+    plan HTML and the sprint writers an index state file, so a tree snapshot
+    checks the right file for either.
+    """
+    fixture = run_scoped
+    before = _tree_shas(fixture["main"])
+
+    result = _RUN_SCOPED_WRITERS[name](
+        PROJECT, _version(fixture["main"], PROJECT, SLUG)
+    )
+
+    assert result["ok"] is False, (name, result)
+    assert result["error"] == "run_scoped_write", (name, result)
+    assert RUN_ID in result["message"], (name, result)
+    assert result["hint"] == mcp_module._GUARDED_WRITE_HINT, (name, result)
+    assert _tree_shas(fixture["main"]) == before, name
+
+
+def test_the_registered_entry_point_keeps_its_checkout_path_hint(run_scoped):
+    """The registered write path's refusal still offers checkout_path/own-project.
+
+    The guard's own hint says to record through ``edit_plan``; the registered
+    entry point's refusal is the one place ``checkout_path`` is the real remedy,
+    so its hint stays as it was and does not inherit the guard's.
+    """
+    _root, refusal = mcp_module._run_scoped_checkout(OTHER_PROJECT, SLUG, None)
+
+    assert refusal is not None, "expected the registered path to refuse"
+    assert "checkout_path" in refusal["hint"], refusal["hint"]
+    assert refusal["hint"] != mcp_module._GUARDED_WRITE_HINT
 
 
 def test_a_coordinator_granular_write_without_a_run_is_unchanged(
