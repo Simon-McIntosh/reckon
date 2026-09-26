@@ -27,39 +27,40 @@
 <body>
   <main class="plan-doc">
     <h2 id="s1">§1 — Why: the backlog grows whether or not the fleet improves</h2>
-    <p>In the four August weeks reckon closed about nine in ten of the plans it opened. In the fortnight to
-      26 September it opened 58 plans and, by the end of the window, had closed 7 of them, and 62 reckon plans are pending, most of them about the crew itself.
-      reckon took 48% of the fleet's 2,303 promotions in the same fortnight; its plan, evidence and research HTML
-      grew almost twice as fast as its source
+    <p>In the four August weeks reckon closed about nine in ten of the plans it opened. Between 12 and 26 September it
+      opened 58 plans and, by the end of that window, had closed 7 of them; 62 reckon plans are pending, most of them
+      about the crew itself. reckon took 48% of the fleet's 2,303 promotions in the same fortnight, and its plan, evidence
+      and research HTML grew almost twice as fast as its source
       (<a href="/reckon/research/orchestrator-crew-pattern-review#s4">crew pattern review §4</a>,
-      <a href="/reckon/research/orchestrator-crew-pattern-review#s9">§9</a>). Each measured defect becomes a new
-      plan; nothing retires one. nova shows the same shape with eight open sprints and 32 pending plans. A cap on
-      open work is the only lever that makes closing cheaper than opening.</p>
-    <p>The repository's own instructions hold the plan-creation diet pending the lead's design review
-      (<code>plan-lifecycle-hygiene</code>), so the enforcing section of this plan waits on that decision; the
-      measuring and triage sections do not.</p>
+      <a href="/reckon/research/orchestrator-crew-pattern-review#s9">§9</a>). Each measured defect becomes a new plan and
+      nothing retires one. nova shows the same shape, with eight open sprints and 32 pending plans. A cap on open work
+      makes opening the costly step, so that closing a plan becomes the cheaper way to make room.</p>
+    <p>In this plan a plan is <em>pending</em> when it is not closed, and <em>closed</em> when its status is shipped, done,
+      superseded or abandoned, or its archive flag is set. §2 can start now. §3 waits on the two decisions below, which the
+      lead locks; they are held because the repository keeps any tightening of plan creation pending the lead's review
+      under <code>plan-lifecycle-hygiene</code>.</p>
 
     <h2 id="s2">§2 — Triage the pending reckon plans</h2>
-    <p><strong>Deliverable.</strong> A read-only triage, as an anchor of this plan's evidence record, of every
-      pending reckon plan: its measured progress against the code (a plan-currency reading, not its stored
-      <code>impl</code>), and a proposed disposition — keep, merge into a named plan, or close with a landed
-      summary — with the owning coordinator session where one is live. Nothing is closed by this section; the
-      proposals go to the lead and to the owning sessions.</p>
-    <p><strong>Done when</strong> every pending plan has a row, the proposals leave at most 25 plans active, and
-      each merge names its target.</p>
+    <p><strong>Deliverable.</strong> A read-only triage, as an anchored section of this plan's evidence record, with one
+      row per pending reckon plan: the fraction of its declared sections whose deliverable is present in the code at head
+      (the plan-currency reading the <code>*-currency-audit</code> nodes produce, not its stored <code>impl</code>); the
+      coordinator session that last dispatched against it, from the ledger, marked live when it has a running node; and a
+      proposed disposition — keep, merge into a named plan, or close with a landed summary. Nothing is closed by this
+      section: it delivers the triage, and the lead and the owning sessions act on it.</p>
+    <p><strong>Done when</strong> the triage has a row for every pending plan, each merge names its target, and the
+      proposals, if all accepted, would leave no more pending reckon plans than the limit the lead locks in
+      <code>wip-limit-value</code> (25 as proposed). The section closes when the triage is delivered.</p>
 
-    <h2 id="s3">§3 — A work-in-progress limit per project</h2>
-    <p><strong>Deliverable.</strong> A per-project limit on active plans in project configuration, enforced at
-      plan creation in the mode the lead locks below, with the refusal or warning naming the plans closest to
-      closing.</p>
-    <p><strong>Done when</strong> creating a plan beyond the limit behaves as locked, in a test, and the velocity
-      view's weekly opened-and-closed figures show reckon closing at least as many plans as it opens for two
-      consecutive weeks.</p>
+    <h2 id="s3">§3 — A limit on pending plans per project</h2>
+    <p><strong>Deliverable.</strong> A per-project limit on pending plans in project configuration, enforced at plan
+      creation in the mode the lead locks, with the refusal or warning naming the three pending plans nearest to closing.</p>
+    <p><strong>Done when</strong> creating a plan beyond the limit behaves as locked, in a test, and the velocity view's
+      weekly opened-and-closed figures show reckon closing at least as many plans as it opens for two consecutive weeks.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
       <h2><span class="sec">§</span> Decisions</h2>
       <div class="r-dec" data-key="wip-limit-mode" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">How is the per-project limit on active plans enforced at plan creation?</p>
+        <p class="r-dec-q">How is the per-project limit on pending plans enforced at plan creation?</p>
         <p class="r-dec-opts">
           <button class="r-opt" data-value="warn">warn and proceed</button>
           <button class="r-opt" data-value="refuse-with-override">refuse, with a recorded lead override</button>
@@ -68,7 +69,7 @@
         <p class="r-dec-rat"></p>
       </div>
       <div class="r-dec" data-key="wip-limit-value" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What is reckon's limit on active plans? The triage proposes 25.</p>
+        <p class="r-dec-q">What is reckon's limit on pending plans? The triage proposes 25.</p>
         <p class="r-dec-rat"></p>
       </div>
     </section>
