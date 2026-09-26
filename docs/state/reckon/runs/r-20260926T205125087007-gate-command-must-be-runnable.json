@@ -1,0 +1,404 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "9945557624511d329211b5b573cdf77d38b02ac4",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 18779404,
+      "input_tokens_cumulative": 18779404,
+      "output_tokens": 108577,
+      "output_tokens_cumulative": 108577,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 705,
+    "files": 6,
+    "removed": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "6619d4c514350f62952acfb511a2d957b68b6c5b",
+    "04acc11830faeb2cc3647131fb222fc6cc9b65bb"
+  ],
+  "completed_at": "2026-09-26T22:11:18.376Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-26T20:51:37Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_crew_gate_log_agrees.py",
+    "tests/test_gate_evidence.py",
+    "tests/test_gate_log_is_preserved.py",
+    "tests/test_ledger.py",
+    "tests/test_promotion_keeps_the_worker_exit.py",
+    "tests/test_refused_promotion_leaves_no_trace.py",
+    "tests/test_run_store.py",
+    "tests/test_verify_gate_command_option.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_gate_command_is_runnable.py tests/test_crew_promotion.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205125087007-gate-command-must-be-runnable/head-committed.log"
+  },
+  "impl_move": {
+    "at_complete": 0.9,
+    "at_dispatch": 0.9,
+    "plan": "a-worker-is-charged-to-a-job",
+    "reason": "repair of followup f-awcj-a-gate-command-must-be-runnable; it closes no section",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-26T21:51:25.549718+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-26T20:51:25Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 8,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 2,
+    "mean_context": 600000,
+    "observed_at": "2026-09-26T20:51:17Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-26T22:11:18.376Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/gate-command-must-be-runnable/manifest.md",
+  "member": "disposable-r-20260926T205125087007-gate-command-must-be-runnable",
+  "negative_control": {
+    "declaration": "execute the stored prose command as today with the shape check absent; the placeholder command runs, exits non-zero and reports failed rather than not-run",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205125087007-gate-command-must-be-runnable/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205125087007-gate-command-must-be-runnable/negative-control.log",
+    "test_paths": [
+      "tests/test_crew_gate_command_is_runnable.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "gate-command-must-be-runnable",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 384,
+          "cached_input_tokens": 736380,
+          "input_tokens": 736768,
+          "output_tokens": 1379,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 738147,
+          "uncached_input_tokens": 4
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "Spec: proposed node N1 in the currency audit at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/a-worker-is-charged-to-a-job-currency-audit/currency.md (lines 114-125), which follows followup f-awcj-a-gate-command-must-be-runnable. Done when promoting a run whose recorded gate text carries an angle-bracket placeholder, an ellipsis or a parenthetical prose selection raises CrewError, naming the offending token class. At base it does not raise; a real case is the prose command recorded today for r-20260926T095413623438. The integration re-run of an unrunnable command reports integrated_verdict not-run with a reason, while a command that ran and exited non-zero reports failed. Drive both through the promotion and verify-gate entry points. Measured files: tests/test_crew_gate_command_is_runnable.py (new) plus tests/test_crew_promotion.py. Tests run under a temporary config home with the real config home asserted untouched. At least one added assertion fails at the dispatch base. Zero added failures against base over the measured files in ONE invocation. If they carry failures that also fail at base, also capture an exit-0 run over the ids that pass at base, with command and EXIT, as the promotion gate. Report ruff findings on the staged paths against the count at base.",
+    "estimated_hours": 1.5,
+    "goal": "A gate command that cannot be re-executed is refused on the promotion path, and the integration re-run reports a command that could not run distinctly from one that ran and failed.",
+    "id": "gate-command-must-be-runnable",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-26T20:51:25Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 8,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 2,
+      "mean_context": 600000,
+      "observed_at": "2026-09-26T20:51:17Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/gate-command-must-be-runnable/manifest.md",
+    "negative_control": "execute the stored prose command as today with the shape check absent; the placeholder command runs, exits non-zero and reports failed rather than not-run",
+    "plan": "a-worker-is-charged-to-a-job",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/promotion.py",
+      "reckon/cli.py",
+      "tests/test_crew_gate_command_is_runnable.py",
+      "docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html",
+      "docs/figures/a-worker-is-charged-to-a-job",
+      "docs/plans/a-worker-is-charged-to-a-job.html"
+    ]
+  },
+  "orientation_input_tokens": 2961836.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "gate-command-must-be-runnable",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-26T20:51:33.135230+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-worker-is-charged-to-a-job",
+  "plan_impl_at_dispatch": 0.9,
+  "promoted_revision": "04acc11830faeb2cc3647131fb222fc6cc9b65bb",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 17,
+      "fit": 19,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 94
+  },
+  "role": "implement",
+  "run_id": "r-20260926T205125087007-gate-command-must-be-runnable",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "",
+  "session_harness": "claude",
+  "session_id": "666f4b21-119d-4a0e-b81f-60bf202577a7",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 18946944,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 4756.491,
+    "generated_tokens": 115654,
+    "generation_seconds": 4118.859,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.7,
+    "machine_seconds": 637.632,
+    "peak_input_tokens": 166476,
+    "tokens_per_second": 28.08,
+    "wall_tokens_per_second": 24.31
+  },
+  "time_budget": "60m",
+  "tool_steps": 166.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 868,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-26T20:34:31Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-26T20:20:21Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260926T201952688203-resume-offer-waits-while-the-worker-lives",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 7213,
+          "worker_pid": 914376
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 1016,
+        "log_fresh": false,
+        "manifest_commits": [
+          "e1e3148253eddd180fbf0900d5588e8a7990d11a",
+          "2ff48b2c39629c7ff47205f262cce0aa3fff46ef"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "fc92dc321c31ef90764e6d71fc0045d6df6859b6463804717f1fe315ff4b26d3",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/resume-offer-waits-while-the-worker-lives/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan a-stalled-row-says-whether-the-worker-lives --section '§4' --role review --spec-level exact --node review-of-resume-offer-waits-while-the-worker-lives --goal 'attach an independent review to run r-20260926T201952688203-resume-offer-waits-while-the-worker-lives' --done-when 'the review for r-20260926T201952688203-resume-offer-waits-while-the-worker-lives stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260926T201952688203-resume-offer-waits-while-the-worker-lives.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260926T201952688203-resume-offer-waits-while-the-worker-lives.at-2ff48b2c39629c7ff47205f262cce0aa3fff46ef.json --time-budget 60m --session s22-coord --allow-unreconciled-runs --local",
+        "node": "resume-offer-waits-while-the-worker-lives",
+        "phase": "starting",
+        "plan": "a-stalled-row-says-whether-the-worker-lives",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260926T201952688203-resume-offer-waits-while-the-worker-lives",
+        "session": "s22-coord",
+        "terminal_age_seconds": 1052,
+        "terminal_at": "2026-09-26T20:33:54Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/resume-offer-waits-while-the-worker-lives"
+      }
+    ]
+  },
+  "wall_seconds": 4781,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-26T22:11:18Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-26T20:51:57Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T205125087007-gate-command-must-be-runnable",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 29712,
+    "worker_pid": 1003093
+  },
+  "worker_seconds": 4704,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
