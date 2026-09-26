@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-refusal-is-about-the-work">
   <meta name="plan-title" content="A Refusal Is About The Work">
-  <meta name="plan-summary" content="Coordinators lose dispatches and promotions to refusals about wording and bookkeeping; a refusal fires on a defect in the work, and the rest become warnings.">
+  <meta name="plan-summary" content="Five named refusals fire on wording and bookkeeping rather than defects in the work; this plan narrows those five and keeps the real defects refused.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
@@ -27,47 +27,61 @@
 </head>
 <body>
   <main class="plan-doc">
-    <h2 id="s1">§1 — Why: refusals that guard nothing</h2>
-    <p>Every surveyed coordinator lists refusals among its wall-clock costs, and the ones they name guard a form
-      rather than the work: the goal lint refusing a semicolon, "and", "then" or a quoted
-      <code>&lt;path&gt;</code> in a single-deliverable goal (s21 lost about eight dispatches to rewording); the
-      watcher-required refusal firing after a follower's lifetime ends while runs are still in flight; the
-      impl-must-move refusal on corrective nodes, waived "about every other time" (s23); <code>--outcome</code>
-      demanded on review runs; and <code>verify-gate</code> refusing a checkout two ledger commits past the
-      merge (<a href="/reckon/research/orchestrator-crew-pattern-review#s3">crew pattern review §3</a>). The
-      review that motivated this plan was itself refused for the word "TODO" inside a done-when that named a
-      marker to count (<a href="/reckon/research/orchestrator-crew-pattern-review#s9">§9</a>). The validator also
-      caught two real brief defects in one session; those must keep refusing.</p>
+    <h2 id="s1">§1 — Why: refusals that guard a form</h2>
+    <p>A third of all dispatch and promotion attempts in the fortnight to 26 September were refused — 658 refusals
+      against 1,264 successes, each costing 12 to 15 coordinator responses to recover
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s5">crew pattern review §5</a>). The surveyed
+      coordinators name five refusals that guard a form rather than the work
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s3">§3</a>): the goal lint refusing a semicolon,
+      "and", "then" or a quoted <code>&lt;path&gt;</code> inside one deliverable (s21 lost about eight dispatches);
+      the watcher-required refusal after a follower's lifetime ends while runs are in flight; the impl-must-move
+      refusal on corrective nodes, waived "about every other time" (s23); <code>--outcome</code> demanded on review
+      runs; and <code>verify-gate</code> refusing a checkout two ledger commits past the merge. The review itself was
+      refused for the done-when <em>"… and the counts of TODO-FIXME, xfail and skip markers …"</em>, which named a
+      marker to count. This plan narrows exactly these five; every other refusal is untouched here, and making each
+      refusal name its discharge stays with <code>an-orchestrator-can-discharge-a-refusal</code>, which may proceed
+      concurrently because the two plans change different conditions.</p>
 
-    <h2 id="s2">§2 — The contract lint refuses placeholders, not punctuation</h2>
-    <p><strong>Deliverable.</strong> The single-goal and fully-specified checks refuse an unresolved template
-      placeholder (an angle-bracket token outside quotes or code, a goal that is only a placeholder word) and a
-      goal naming two deliverables joined by an action verb; they no longer refuse a semicolon, "and" or "then"
-      inside one deliverable, or any word inside quoted text or a done-when.</p>
-    <p><strong>Done when</strong> a table-driven test replays the refused goals named in the survey and this
-      review's "TODO" done-when as accepted, and replays the two brief defects s22 reported, plus a goal that is
-      two deliverables, as refused.</p>
+    <h2 id="s2">§2 — The contract lint refuses placeholders and two deliverables, not punctuation</h2>
+    <p><strong>Deliverable.</strong> In the goal and the done-when, the lint refuses an unresolved template placeholder:
+      an angle-bracket token such as <code>&lt;node&gt;</code> that appears outside a quoted string and outside a code
+      span, or a goal consisting only of a placeholder word. In the goal only, it refuses two deliverables: two clauses
+      each with its own action verb and its own object ("write the census and update the plan"). It no longer refuses a
+      semicolon, "and" or "then" that joins parts of one deliverable, one verb over several objects ("compare the base
+      and the head"), or any word — "TODO" included — inside a done-when or inside quoted text; a quoted
+      <code>&lt;path&gt;</code> is accepted.</p>
+    <p><strong>Done when</strong> a table-driven test holds these pinned fixtures and passes: accepted — a
+      single-deliverable goal with a semicolon, one with "and then", a goal quoting <code>&lt;path&gt;</code>, and this
+      review's refused done-when verbatim; refused — the two brief defects s22 reported, copied from s22's dispatch
+      record into the table as strings, and one authored two-deliverable goal. The refused side has three rows.</p>
 
-    <h2 id="s3">§3 — A re-armable follower is a follower</h2>
-    <p><strong>Deliverable.</strong> When the session has an expired follower whose seat is intact and runs
-      still in flight, dispatch re-arms or warns and proceeds instead of exiting 8; the refusal remains for a
-      session that never armed one.</p>
-    <p><strong>Done when</strong> tests cover both cases, and the warning names the attach line.</p>
+    <h2 id="s3">§3 — A session that armed a follower keeps dispatching</h2>
+    <p><strong>Deliverable.</strong> When the dispatching session appears in the project watcher's released-followers
+      list (it armed a follower that has since expired) and the watcher process is live, dispatch proceeds and prints a
+      warning whose text contains the exact attach command to re-arm. The watcher-required refusal remains for a session
+      that has never registered a follower with the watcher.</p>
+    <p><strong>Done when</strong> two tests pass — the expired-follower case proceeds with the attach command in its
+      warning, and the never-registered case is refused — and a dry run shows the same outcome for each.</p>
 
     <h2 id="s4">§4 — Bookkeeping follows the run</h2>
-    <p><strong>Deliverable.</strong> A run whose lineage marks it a repair, resume or re-cut of a landed node
-      promotes without an impl-move waiver; a review run's outcome defaults from its stored review record;
-      <code>verify-gate</code> accepts a checkout whose history contains the merged revision rather than only the
-      merged revision itself.</p>
-    <p><strong>Done when</strong> each of the three has a named test, and over a week of coordinator transcripts
-      the count of <code>--no-impl-change</code> and <code>--outcome</code> uses on corrective and review runs
-      falls to zero.</p>
+    <p><strong>Deliverable.</strong> Three narrowings. A corrective run — one whose record carries
+      <code>attempt_kind</code> resume or redispatch, or whose dispatch declares <code>--repairs &lt;run-id&gt;</code>
+      naming a promoted run (a declaration this section adds) — promotes with <code>impl_move</code> recorded as exempt,
+      so no operator passes <code>--no-impl-change</code> for it. A review run's <code>--outcome</code> becomes optional,
+      defaulting to its stored review's total score and finding count. <code>verify-gate</code> accepts a checkout when
+      the merged revision is an ancestor of the checkout's HEAD and none of the run's changed paths differs between the
+      two.</p>
+    <p><strong>Done when</strong> each of the three has a named test, including a <code>verify-gate</code> run on a
+      checkout two ledger commits past the merge. After release, a week of coordinator transcripts is read for operator
+      uses of <code>--no-impl-change</code> on corrective runs and <code>--outcome</code> on review runs, against the
+      counts in the coordinator-overhead census; the target is zero, reported as a follow-up measure rather than a
+      release gate.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
       <h2><span class="sec">§</span> Followups</h2>
       <article class="r-fu" data-id="f-araw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-26">
         <h4 class="r-fu-title">Narrow the refusals</h4>
-        <div class="r-fu-body"><p>§2, §3 and §4 touch different modules and can run in parallel.</p></div>
+        <div class="r-fu-body"><p>§2 (the contract lint) and §3 (dispatch preflight) can run in parallel; §4 touches promotion and <code>verify-gate</code> and runs after §3 if their write paths overlap.</p></div>
         <pre class="r-fu-prompt">/reckon-build a-refusal-is-about-the-work</pre>
       </article>
     </section>
