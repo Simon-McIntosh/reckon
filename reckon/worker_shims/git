@@ -1,0 +1,44 @@
+#!/bin/sh
+# A thin git shim: refuse a mutating git verb aimed at a repository that is not
+# this run's own worktree.
+#
+# The decision lives in reckon/worker_git_shim.py, which asks the real git which
+# repository one invocation resolves to rather than parsing the command text.
+# This file only resolves an interpreter that can import the package and passes
+# its argv through; it launches nothing itself and rewrites nothing.
+set -eu
+
+self_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+repo_root=$(CDPATH= cd -- "$self_dir/../.." && pwd)
+
+# The package needs Python 3.12. A bare `python3` on PATH is often an older
+# system interpreter that cannot even parse the package, so prefer the repo's
+# own environment and an explicit 3.12 before falling back.
+interpreter=
+for candidate in \
+  "${RECKON_SHIM_PYTHON:-}" \
+  "$repo_root/.venv/bin/python" \
+  "$(command -v python3.12 || true)" \
+  "$(command -v python3 || true)"
+do
+  if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+    interpreter=$candidate
+    break
+  fi
+done
+
+if [ -z "$interpreter" ]; then
+  echo "git shim: no Python 3.12+ interpreter found; set RECKON_SHIM_PYTHON" >&2
+  exit 127
+fi
+
+# -P keeps the working directory off sys.path, so the package imported is the
+# one this shim belongs to rather than whatever checkout happens to be the cwd.
+PYTHONPATH="$repo_root${PYTHONPATH:+:$PYTHONPATH}" \
+  exec "$interpreter" -P -c '
+import sys
+
+from reckon.worker_git_shim import main
+
+raise SystemExit(main(sys.argv[1:]))
+' "$@"

@@ -4641,6 +4641,13 @@ def _worker_shim_directory() -> Path:
     return shim_directory()
 
 
+def _worker_git_shim_directory() -> Path:
+    """Return the git-shim directory from its owning module."""
+    from reckon.worker_git_shim import worker_shim_directory
+
+    return worker_shim_directory()
+
+
 def _worker_host_line(facts: Any, run_directory: str | Path) -> str:
     """State the compute-host contract in one worker-prompt line."""
     if not facts.in_allocation:
@@ -4665,20 +4672,27 @@ def launch_search_path(
     *,
     facts: Any | None = None,
 ) -> str:
-    """Return the effective worker PATH, adding scheduler shims on compute."""
+    """Return the effective worker PATH for one launch.
+
+    The git shim is first on every worker's path, inside an allocation or out
+    of one: it refuses a mutating verb aimed at a repository other than the
+    run's worktree, which is a hazard wherever the worker runs. The scheduler
+    shims follow it only inside an allocation, because there is no scheduler
+    out of one to refuse.
+    """
     merged = {**os.environ, **(environment or {})}
     inherited = str(merged.get("PATH") or os.defpath)
     placement = _current_host_facts() if facts is None else facts
-    if not placement.in_allocation:
-        return inherited
-    shim_directory = _worker_shim_directory()
-    resolved_shim = os.path.realpath(shim_directory)
+    directories = [str(_worker_git_shim_directory())]
+    if placement.in_allocation:
+        directories.append(str(_worker_shim_directory()))
+    resolved = {os.path.realpath(directory) for directory in directories}
     inherited_entries = [
         entry
         for entry in inherited.split(os.pathsep)
-        if entry and os.path.realpath(entry) != resolved_shim
+        if entry and os.path.realpath(entry) not in resolved
     ]
-    return os.pathsep.join([str(shim_directory), *inherited_entries])
+    return os.pathsep.join([*directories, *inherited_entries])
 
 
 def _persisted_worker_environment(
@@ -4706,8 +4720,7 @@ def _persisted_worker_environment(
         else:
             persisted.pop("ANTHROPIC_CUSTOM_HEADERS", None)
     placement = _current_host_facts() if facts is None else facts
-    if placement.in_allocation:
-        persisted["PATH"] = launch_search_path(environment, facts=placement)
+    persisted["PATH"] = launch_search_path(environment, facts=placement)
     return persisted
 
 
