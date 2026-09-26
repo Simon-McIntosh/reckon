@@ -79,10 +79,8 @@ def layer_config(tmp_path: Path, name: str, **budget: float) -> dict:
     keys travel the same validation path an operator's own configuration does.
     """
     layer = tmp_path / name
-    layer.write_text(
-        "budget:\n"
-        + "".join(f"  {key}: {value}\n" for key, value in budget.items())
-    )
+    block = "".join(f"  {key}: {value}\n" for key, value in budget.items())
+    layer.write_text(f"budget:\n{block}")
     return flight.resolve(
         project_path=layer, host_path=tmp_path / "absent-host-flight.yaml"
     ).config
