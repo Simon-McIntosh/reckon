@@ -2875,8 +2875,8 @@ def _attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
     The pointer carries ``attempt_started_at`` once a supervisor wrote it; a run
     whose pointer predates that field still names the same moment in the current
     attempt record the supervisor publishes beside it, so both are read. Absent
-    from both means the run has no attempt clock and its quiet time reads from
-    its stream alone.
+    from both means the run has no attempt clock, and its quiet time then falls
+    back to the launch window a fresh dispatch gets.
     """
     raw = record.get("attempt_started_at")
     if not raw:
@@ -2904,18 +2904,23 @@ def _attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
 def _run_stream_quiet_seconds(
     record: Mapping[str, Any], *, now_seconds: float
 ) -> int:
-    """Quiet time for a run, measured from its newest non-empty stream.
+    """Quiet time for a run, from its current attempt's own log and launch.
 
-    Falling back to the pointer-and-creation clock only when the run holds no
-    stream at all keeps the reading authoritative when one exists, without
-    turning a run that has never written anything into an instantly stalled
-    run.
+    Two clocks bound the reading, and the later of them decides. One is the
+    newest stream the run has written: a resume or a superseded attempt writes
+    a new file while the pointer keeps naming the old one, so the newest stream
+    is the attempt's own output where one exists, and a fresh resume or lane
+    change keeps the run working. The other is the attempt's launch, taken from
+    the attempt record when a supervisor published one and otherwise from the
+    same pointer-and-creation clock a fresh dispatch falls back to.
 
-    The current attempt's start is a floor: a run resumed or redispatched
-    writes a new attempt while its superseded attempt's stream stays on disk,
-    so the stream alone can report silence that belongs to the earlier attempt.
-    Quiet time is therefore capped at the age of the attempt now running, and a
-    fresh attempt cannot inherit its predecessor's silence.
+    A superseded attempt's stream must not age the run. A run resumed seconds
+    ago reads ``stalled`` when its predecessor's stream is old and the resumed
+    attempt has not written its own log yet, because the reading came from the
+    attempt that already ended. Capping the stream's silence at the launch
+    clock keeps such a run inside the window a fresh dispatch gets, and the
+    clock grows with the run, so a resume that never writes its own log still
+    stalls once that window has genuinely elapsed.
     """
     found = _record_newest_stream(record)
     if found is None:
@@ -2923,9 +2928,14 @@ def _run_stream_quiet_seconds(
     else:
         quiet = max(0, int(now_seconds - found[1]))
     attempt_started = _attempt_started_seconds(record)
-    if attempt_started is not None:
-        quiet = min(quiet, max(0, int(now_seconds - attempt_started)))
-    return quiet
+    if attempt_started is None:
+        # Nothing recorded when the attempt began, so the launch window a
+        # fresh dispatch gets is the only launch clock there is: the pointer a
+        # resume just rewrote, or the run's creation moment.
+        launch = _stream_quiet_seconds(record, now_seconds=now_seconds)
+    else:
+        launch = max(0, int(now_seconds - attempt_started))
+    return min(quiet, launch)
 
 
 def _declared_wait_age_seconds(
