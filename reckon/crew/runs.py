@@ -1288,10 +1288,25 @@ def watch_producer_identity(project: str) -> dict[str, Any]:
         return {}
     version = record.get("reckon_version")
     started_at = record.get("started_at")
+    code_stamp = record.get("code_stamp")
+    # A seat that records no stamp predates the field, so it is reported as
+    # stale rather than as current: absence is the older producer, which is the
+    # case a reader most needs to distinguish.
+    current_stamp = follower_code_stamp()
+    stale = code_stamp != current_stamp
+    detail = (
+        f"reckon {version or 'unknown'} started {started_at or 'unknown'}"
+        + (", code stale" if stale else "")
+    )
     return {
         "reckon_version": version,
         "started_at": started_at,
-        "line": f"reckon {version or 'unknown'} started {started_at or 'unknown'}",
+        "code_stamp": code_stamp,
+        # Both sides of the comparison, so a caller that has to say which code
+        # the seat is behind does not recompute one of them.
+        "current_stamp": current_stamp,
+        "stale": stale,
+        "line": detail,
     }
 
 
@@ -1590,50 +1605,123 @@ def _reconcile_watch_record(project: str, record: Mapping[str, Any]) -> bool:
 # only a moment is a passing read-only probe rather than an occupied seat.
 _CLAIM_CONTENTION_SECONDS = 0.5
 
+# The seat is an open advisory lock, and an in-place process replacement
+# (``os.execve``) closes every non-inheritable descriptor — so the lock would be released
+# and a fresh image would re-enter the arming race, where a peer's arming can take
+# the seat between the release and the re-acquire and leave the replacement to
+# report ``watcher-live`` and exit. The held handle is carried to the
+# replacement instead: ``prepare_watch_seat_reexec`` makes its descriptor
+# inheritable and names it, and ``_take_watch_seat_fd`` adopts it in the new
+# image so the seat is never released.
+_WATCH_SEAT_ENV = "RECKON_WATCH_SEAT_FD"
+_WATCH_SEAT_HANDLES: dict[str, Any] = {}
+
+
+def prepare_watch_seat_reexec(project: str) -> int | None:
+    """Make a held seat survive replacement of the process image, or None.
+
+    The descriptor is named in the environment the replacement is given, never
+    in this image's ``os.environ``, so a child the producer starts inherits no
+    handle to the seat.
+    """
+    handle = _WATCH_SEAT_HANDLES.get(project)
+    if handle is None:
+        return None
+    fd = handle.fileno()
+    os.set_inheritable(fd, True)
+    return fd
+
+
+def cancel_watch_seat_reexec(project: str) -> None:
+    """Undo descriptor inheritance when process replacement was refused."""
+    handle = _WATCH_SEAT_HANDLES.get(project)
+    if handle is not None:
+        os.set_inheritable(handle.fileno(), False)
+
+
+def _take_watch_seat_fd() -> Any:
+    """Consume the seat descriptor handed across an in-place reload, or None."""
+    raw = os.environ.pop(_WATCH_SEAT_ENV, "")
+    if not raw:
+        return None
+    try:
+        fd = int(raw)
+    except (TypeError, ValueError):
+        return None
+    try:
+        handle = os.fdopen(fd, "a+b")
+        os.set_inheritable(handle.fileno(), False)
+    except OSError:
+        return None
+    return handle
+
 
 @contextmanager
 def _project_watch_claim(project: str, stall_window: str):
     """Claim the one kernel-tracked watcher seat for a project, if free."""
     path = watch_lock_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+b") as handle:
-        deadline = time.monotonic() + _CLAIM_CONTENTION_SECONDS
-        while True:
-            try:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                break
-            except BlockingIOError:
-                if time.monotonic() >= deadline:
-                    yield False, _read_watch_record(handle)
-                    return
-                time.sleep(0.01)
+    inherited = _take_watch_seat_fd()
+    handle = inherited if inherited is not None else path.open("a+b")
+    try:
+        previous = _read_watch_record(handle)
+        if inherited is None:
+            deadline = time.monotonic() + _CLAIM_CONTENTION_SECONDS
+            while True:
+                try:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= deadline:
+                        yield False, _read_watch_record(handle)
+                        return
+                    time.sleep(0.01)
 
         # Adopt the log the arming named before the record is written, so a
         # reader who finds this seat dead finds the producer's own last words
         # beside it rather than a path that was named and never written.
         _adopt_watch_log()
+        # The start time in the record belongs to the process that wrote it, so
+        # it travels only across this producer's own image replacement. A
+        # replacement keeps the pid and the process start time, so those two
+        # plus the host name name one process; anything else sitting in the file
+        # is a predecessor whose seat was never erased, and a fresh arming over
+        # it would otherwise report the predecessor's start -- reading as a
+        # producer that has run for hours when it was armed seconds ago.
+        pid_start_time = _process_start_time(os.getpid())
+        carried = (
+            previous.get("pid"),
+            previous.get("pid_start_time"),
+            previous.get("host"),
+        ) == (os.getpid(), pid_start_time, socket.gethostname())
         record = {
             "project": project,
             "pid": os.getpid(),
-            "pid_start_time": _process_start_time(os.getpid()),
+            "pid_start_time": pid_start_time,
             # The host that issued this pid. The seat lives on the shared home
             # every fleet node mounts, so without this a reader on another host
             # probes its own process table for a pid that belongs to someone
             # else and confirms a running producer dead.
             "host": socket.gethostname(),
             "stall_window": stall_window,
-            "started_at": _utc_now(),
+            "started_at": previous.get("started_at") if carried else _utc_now(),
             "stream_path": str(watch_stream_path(project)),
             # Where this producer's stdout and stderr go, so a dead seat can be
             # dated and explained from the file rather than only observed empty.
             "log_path": str(watch_log_path(project)),
             "reckon_version": __version__,
+            # The code this producer is actually executing. The version names
+            # the install and holds still while commits land in the checkout, so
+            # a reader cannot tell a producer running stale code from a current
+            # one without this: the content-hash stamp the follower reloads on,
+            # recorded where the seat is read.
+            "code_stamp": follower_code_stamp(),
         }
         # Which unit owns this seat, so a reader can tell a watcher a service
         # will replace from one nothing will. The unit exports its own name, and
         # a watcher started by any other route leaves the key absent rather than
         # claiming a service that does not exist.
-        unit = _read_watch_record(handle).get("unit") or os.environ.get(WATCH_UNIT_ENV)
+        unit = previous.get("unit") or os.environ.get(WATCH_UNIT_ENV)
         if unit:
             record["unit"] = str(unit)
         _write_watch_record(handle, record)
@@ -1643,12 +1731,16 @@ def _project_watch_claim(project: str, stall_window: str):
             stall_window=stall_window,
         )
         _WATCH_STREAM_PRODUCERS[project] = producer
+        _WATCH_SEAT_HANDLES[project] = handle
         _publish_watch_stream(project, _list_live_records(project=project))
         try:
             yield True, record
         finally:
+            _WATCH_SEAT_HANDLES.pop(project, None)
             _WATCH_STREAM_PRODUCERS.pop(project, None)
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    finally:
+        handle.close()
 
 
 class _FollowerRegistration:
@@ -2230,6 +2322,16 @@ def project_watch_visibility(
         "seat_held": seat_held,
         "pid": pid,
         "armed_at": registration.get("started_at"),
+        # The code the armed seat is running, and whether it differs from this
+        # reader's. A reader of the live view needs the second fact and not the
+        # first: the producer runs the image it was armed with, so a fix landed
+        # since then is inert on that seat, and nothing else in this block
+        # distinguishes it from a current one. A record with no stamp predates
+        # the field, so it reads stale -- absence is the older producer. No
+        # record at all is no producer, which is not stale but absent.
+        "code_stamp": registration.get("code_stamp"),
+        "code_stale": bool(registration)
+        and registration.get("code_stamp") != follower_code_stamp(),
         "process_alive": registering_process_alive,
         "observer_alive": observer_alive,
         "watcher_live": watcher_live,
@@ -2933,6 +3035,22 @@ def _adopt_watch_log() -> Path | None:
 def watcher_ensure_line(project: str) -> str:
     """Return the command that starts or restarts a project's watcher service."""
     return f"reckon crew watch --ensure --project {shlex.quote(project)}"
+
+
+def watch_cycle_line(project: str) -> str:
+    """Return the command pair that takes a stale watcher onto current code.
+
+    The ensure command alone cannot do it: a unit already active on an unchanged
+    definition is reported rather than restarted, and a watcher armed as a plain
+    process is not a unit at all. Releasing the seat first is what makes the
+    arming take — ``unwatch`` stops the registered watcher and clears its
+    record, so the arming that follows finds no live seat to contend with and
+    starts on the code on disk now.
+    """
+    return (
+        f"reckon crew unwatch --project {shlex.quote(project)} && "
+        + watcher_ensure_line(project)
+    )
 
 
 def _watch_attach_line(project: str, *, session: str | None = None) -> str:

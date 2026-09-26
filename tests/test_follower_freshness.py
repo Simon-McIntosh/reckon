@@ -83,10 +83,17 @@ def _is_probe_row(line: str) -> bool:
 # count of *run* rows either way.
 FORMAT_MARKER = "ticker format updated"
 
+# A follower attaching to a seat whose producer runs older code prints one line
+# of its own naming the gap, so every row the pane shows is composed by code
+# this follower's is not. That line is about the producer rather than about a
+# run, so it is skipped on the same terms as the format marker: counting it
+# would drop a genuine transition from the measure.
+STALE_PRODUCER_MARKER = "runs older code"
+
 
 def _is_pane_line(line: str) -> bool:
     """Whether a printed line belongs to the pane rather than to the fleet."""
-    return _is_probe_row(line) or FORMAT_MARKER in line
+    return _is_probe_row(line) or FORMAT_MARKER in line or STALE_PRODUCER_MARKER in line
 
 
 def _drain_probe_rows(lines: queue.Queue) -> None:
