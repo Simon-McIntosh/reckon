@@ -36,7 +36,9 @@ def _log(failed: list[str]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _manifest(base_failed: list[str] | None, head_failed: list[str], root: Path) -> dict:
+def _manifest(
+    base_failed: list[str] | None, head_failed: list[str], root: Path
+) -> dict:
     """Write the two gate logs under ``root`` and name them in a manifest."""
     manifest: dict = {}
     if base_failed is not None:
@@ -62,7 +64,9 @@ def _record(total: int = 90) -> dict:
     }
 
 
-def _store(tmp_path: Path, manifest: dict, *, total: int = 90, done_when: str = "") -> dict:
+def _store(
+    tmp_path: Path, manifest: dict, *, total: int = 90, done_when: str = ""
+) -> dict:
     path = review_module.store_review(
         _record(total),
         base_dir=tmp_path / "store",
@@ -97,7 +101,9 @@ def test_ids_retired_by_name_leave_the_total_uncapped(tmp_path: Path) -> None:
 
     assert stored["added_failure_count"] == 2
     assert stored["added_failure_ids"] == sorted([C, D])
-    assert stored["total"] == 90, "retiring the added ids by name leaves the total alone"
+    assert stored["total"] == 90, (
+        "retiring the added ids by name leaves the total alone"
+    )
     assert "not capped" in stored["added_failures_note"]
 
 

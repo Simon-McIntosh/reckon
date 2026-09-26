@@ -488,9 +488,7 @@ def _pytest_failure_ids(log_text: str) -> set[str]:
     return ids
 
 
-def _manifest_log_path(
-    manifest: Mapping[str, Any], field: str, key: str
-) -> str | None:
+def _manifest_log_path(manifest: Mapping[str, Any], field: str, key: str) -> str | None:
     """Return a manifest's named gate-log path for one observation, or ``None``."""
     observation = manifest.get(field)
     if not isinstance(observation, Mapping):
@@ -523,7 +521,10 @@ def _retires_id(text: str, test_id: str) -> bool:
     """
     if not text or not test_id:
         return False
-    return re.search(rf"(?<![\w:/\[\].-]){re.escape(test_id)}(?![\w:/\[\].-])", text) is not None
+    return (
+        re.search(rf"(?<![\w:/\[\].-]){re.escape(test_id)}(?![\w:/\[\].-])", text)
+        is not None
+    )
 
 
 # ── The durable store ───────────────────────────────────────────────────────
