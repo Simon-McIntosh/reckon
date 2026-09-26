@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.5">
@@ -760,7 +760,10 @@
     <div class="r-comment-body"><p>re-review of worker-git-stays-in-its-worktree at 5a8f6ce6 scored 91: env-prefixed GIT_DIR, cd - and pushd still reach another checkout; carried by the execution-time git shim followup</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T210146231713-worker-git-stays-in-its-worktree" data-who="reckon-build" data-when="2026-09-25T22:26:15.250Z">
-    <div class="r-comment-body"><p>a PreToolUse guard denies a crew worker&#x27;s mutating git verb aimed at any repository but its own worktree, resolving -C, --git-dir/--work-tree, cd, aliases, leading assignments and nested scripts, and denying what it cannot parse; wired behind the crew-guard opt-in; installed on the lead&#x27;s approval as one PreToolUse Bash group; review 88 then 91. Residual bypasses (env-prefixed GIT_DIR, cd -, pushd) are carried by f-awcwyh-git-shim-checks-the-resolved-repo</p></div>
+    <div class="r-comment-body"><p>a PreToolUse guard denies a crew worker's mutating git verb aimed at any repository but its own worktree, resolving -C, --git-dir/--work-tree, cd, aliases, leading assignments and nested scripts, and denying what it cannot parse; wired behind the crew-guard opt-in; installed on the lead's approval as one PreToolUse Bash group; review 88 then 91. Residual bypasses (env-prefixed GIT_DIR, cd -, pushd) are carried by f-awcwyh-git-shim-checks-the-resolved-repo</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T205418461250-plan-write-stays-in-the-worktree" data-who="reckon-build" data-when="2026-09-25T22:40:32.007Z">
+    <div class="r-comment-body"><p>inside a crew run, an MCP plan write with no checkout path lands in the run&#x27;s own worktree for its own project and is refused for any other; tests/conftest.py clears the worker&#x27;s run identity for every test, taking test_edit_plan from 66 failed to 79 passed with the identity exported and a nine-file gate to 196 passed; review 91 then 90 (the manifest understated which files the ambient identity reached; the fixture covers them all)</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T122925465818-s19-internals-consumers-survey" data-who="reckon-ship" data-when="2026-09-24T12:38:14.943Z">
     <div class="r-comment-body"><p>eight consumer rows that read reckon internals directly; ranked top five: worktree_fleet re-implements pointer classification, reckon-sync fallback writes mounts.json, lane.json read by hand with no crew verb, inline pointer read in the recovery recipe, hand manifest repair</p></div>
