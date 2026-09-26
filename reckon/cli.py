@@ -4427,6 +4427,23 @@ def crew_ledger(project, view, checkout_path, pretty):
     _emit({"ok": True, "project": project, **payload}, pretty)
 
 
+@crew.command(name="split-runs")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Report what each project would migrate, writing and committing nothing.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_split_runs(dry_run, pretty):
+    """Move each mounted project's aggregate run rows into their own files."""
+    ledger_module = _ledger_module()
+    try:
+        report = ledger_module.split_runs(dry_run=dry_run)
+    except ledger_module.LedgerError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **report}, pretty)
+
+
 @crew.command(name="repair-completion")
 @click.option("--project", required=True, help="Project whose run ledger is checked.")
 @click.option(

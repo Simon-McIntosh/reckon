@@ -911,8 +911,17 @@ def member(
     return None
 
 
-def _roster_checkout(project: str, path: Path) -> tuple[Path, Path]:
-    """Resolve the checkout and repository-relative path for one roster."""
+def _state_checkout(
+    project: str, path: Path, what: str = "roster"
+) -> tuple[Path, Path]:
+    """Resolve the checkout and repository-relative path for one state file.
+
+    ``what`` names the write in the refusal, because the same resolution
+    serves the roster and the one-time run split, and an operator reading a
+    refusal must be able to tell which write could not be committed. Every
+    state file committed here resolves through this one implementation, so a
+    second writer cannot drift into a different tree.
+    """
     resolved_path = path.expanduser().resolve()
     discovery_root = resolved_path.parent
     while not discovery_root.exists() and discovery_root != discovery_root.parent:
@@ -931,14 +940,14 @@ def _roster_checkout(project: str, path: Path) -> tuple[Path, Path]:
     )
     if discovered.returncode != 0:
         raise LedgerError(
-            f"cannot commit roster for {project!r}: {resolved_path} is not in a git checkout"
+            f"cannot commit {what} for {project!r}: {resolved_path} is not in a git checkout"
         )
     checkout = Path(discovered.stdout.strip()).resolve()
     try:
         relative_path = resolved_path.relative_to(checkout)
     except ValueError as exc:
         raise LedgerError(
-            f"roster for {project!r} resolved outside its git checkout: "
+            f"{what} for {project!r} resolved outside its git checkout: "
             f"{resolved_path} is not beneath {checkout}"
         ) from exc
     return checkout, relative_path
@@ -971,7 +980,7 @@ def _roster_obstruction(
     tree exactly as an unrequested write would, and lets the next named commit
     refuse it on the same grounds.
     """
-    checkout, relative_path = _roster_checkout(project, path)
+    checkout, relative_path = _state_checkout(project, path)
     status = subprocess.run(
         [
             "git",
@@ -1039,7 +1048,7 @@ def _refuse_dirty_roster_commit(
 
 def _commit_roster_write(project: str, subject: str, path: Path) -> None:
     """Commit one requested roster write without sweeping other staged paths."""
-    checkout, relative_path = _roster_checkout(project, path)
+    checkout, relative_path = _state_checkout(project, path)
 
     staged = subprocess.run(
         ["git", "-C", str(checkout), "add", "--", str(relative_path)],
@@ -2003,6 +2012,194 @@ def append_run(
         "run": stored_record,
         "store": store_outcome,
     }
+
+
+def _split_project_runs(
+    project: str, docs: Path, *, dry_run: bool
+) -> dict[str, Any]:
+    """Classify and then migrate one project's aggregate run rows.
+
+    Every row is written by :func:`serialize_run`, so the file a split produces
+    is the same file a promotion would have produced for that row. A project
+    migrates only when each row with an existing file already matches; writing
+    the others would leave two disagreeing copies of one run, which
+    :func:`load` refuses to read at all. A differing file therefore stops the
+    whole project, since the aggregate list must survive as the copy a reader
+    can still union.
+    """
+    root = docs.parent
+    path = ledger_path(project, root)
+    entry: dict[str, Any] = {
+        "rows": 0,
+        "missing": 0,
+        "identical": 0,
+        "differing": 0,
+        "differing_files": [],
+        "written": 0,
+        "commit": None,
+        "skipped": None,
+    }
+    if not path.is_file():
+        entry["skipped"] = f"no ledger at {path}"
+        return entry
+    data, version = _store._load_json_envelope(path)
+    if "runs" not in data:
+        entry["skipped"] = "the ledger holds no runs key"
+        return entry
+    rows = data["runs"]
+    if not isinstance(rows, list):
+        raise LedgerError(
+            f"refusing to split {project!r}: runs in {path} must be a list, "
+            "and a malformed collection is not an empty history"
+        )
+    entry["rows"] = len(rows)
+    planned: list[tuple[Any, Path]] = []
+    # Only the rows of the list are considered. A run file whose id no row
+    # names is a promotion that landed while the aggregate still held older
+    # rows; it is never opened, so it is neither counted nor disturbed.
+    for row in rows:
+        if not isinstance(row, Mapping) or not row.get("run_id"):
+            raise LedgerError(
+                f"refusing to split {project!r}: {path} holds a runs entry "
+                "that is not an object with a run_id"
+            )
+        target = run_path(project, str(row["run_id"]), root)
+        planned.append((row, target))
+        if target.exists() or target.is_symlink():
+            try:
+                existing = target.read_text(encoding="utf-8")
+            except OSError as exc:
+                raise LedgerError(
+                    f"cannot read run file {target} while splitting "
+                    f"{project!r}: {exc}"
+                ) from exc
+            if existing == serialize_run(row):
+                entry["identical"] += 1
+            else:
+                entry["differing"] += 1
+                entry["differing_files"].append(str(target))
+        else:
+            entry["missing"] += 1
+    if entry["differing"]:
+        entry["stopped"] = (
+            "a run file already present for a listed row differs from the "
+            "serialiser's output for that row"
+        )
+        return entry
+    if dry_run:
+        return entry
+
+    for row, target in planned:
+        if target.exists() or target.is_symlink():
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(serialize_run(row), encoding="utf-8")
+        entry["written"] += 1
+
+    remaining = {key: value for key, value in data.items() if key != "runs"}
+    try:
+        _store._write_json_envelope(path, project, LEDGER_SLUG, remaining, version)
+    except _store.VersionConflict as exc:
+        raise LedgerError(
+            f"the ledger for {project!r} moved from version {exc.expected} to "
+            f"{exc.current} while the split was being prepared; re-read and retry"
+        ) from exc
+
+    checkout, relative_path = _state_checkout(project, path, "run split")
+    commit_paths = [relative_path]
+    for _row, target in planned:
+        try:
+            commit_paths.append(target.resolve().relative_to(checkout))
+        except ValueError as exc:
+            raise LedgerError(
+                f"run file {target} resolved outside the checkout {checkout} "
+                f"that owns {path}"
+            ) from exc
+    entry["commit"] = _commit_run_split(
+        project, checkout, commit_paths, rows=entry["rows"]
+    )
+    return entry
+
+
+def _commit_run_split(
+    project: str, checkout: Path, commit_paths: list[Path], *, rows: int
+) -> str:
+    """Commit one project's split: the trimmed ledger plus the files it wrote.
+
+    Only the named paths enter the commit, so a peer's staged work in the same
+    checkout is not swept into a migration commit it never described.
+    """
+    names = [str(path) for path in commit_paths]
+    staged = subprocess.run(
+        ["git", "-C", str(checkout), "add", "--", *names],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if staged.returncode != 0:
+        raise LedgerError(
+            f"could not stage the run split for {project!r}: "
+            f"{staged.stderr.strip() or staged.stdout.strip()}"
+        )
+    subject = f"chore(ledger): split {project} runs into per-run files"
+    body = (
+        f"Write the {rows} aggregate run row(s) of {project!r} to "
+        "runs/<run_id>.json through the one serialiser and drop the aggregate "
+        "list, so every run has a single home and a reader no longer unions "
+        "two copies of one history."
+    )
+    committed = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(checkout),
+            "commit",
+            "--only",
+            "-m",
+            subject,
+            "-m",
+            body,
+            "--",
+            *names,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if committed.returncode != 0:
+        raise LedgerError(
+            f"could not commit the run split for {project!r} in {checkout}: "
+            f"{committed.stderr.strip() or committed.stdout.strip()}"
+        )
+    return committed.stdout.strip().splitlines()[0] if committed.stdout.strip() else subject
+
+
+def split_runs(*, dry_run: bool = False) -> dict[str, Any]:
+    """Move every mounted project's aggregate run rows into their own files.
+
+    The one-time migration from the aggregate ``runs`` list to one file per
+    run, over every project in the mount registry: a project whose ledger
+    exists and holds a ``runs`` key — including an empty list — is migrated,
+    and any other is reported as skipped. Each project is written and
+    committed on its own, so one project's refusal never blocks another's.
+
+    ``dry_run`` reports what each project would do and writes nothing, which
+    is how an operator sees the differing files before a real migration
+    refuses on them.
+    """
+    from reckon import flight
+
+    try:
+        docs_by_project = flight.mounted_project_docs()
+    except flight.FlightConfigError as exc:
+        raise LedgerError(
+            f"cannot split runs without the mount registry: {exc}"
+        ) from exc
+    projects = {
+        project: _split_project_runs(project, Path(docs), dry_run=dry_run)
+        for project, docs in sorted(docs_by_project.items())
+    }
+    return {"dry_run": dry_run, "projects": projects}
 
 
 def index_lag(
