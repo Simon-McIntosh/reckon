@@ -1,0 +1,278 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "10749306946587e6ad0c9207fcd3806ec9bef636",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 10861761,
+      "input_tokens_cumulative": 10861761,
+      "output_tokens": 50047,
+      "output_tokens_cumulative": 50047,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 349,
+    "files": 5,
+    "removed": 0
+  },
+  "commit_resolution": null,
+  "commits": [
+    "c4684acfd7df2f002e4b5f88324f590b0fe8295c",
+    "5c867c254e6fe7a25514ccb77e787fdb0c8ebf29"
+  ],
+  "completed_at": "2026-09-26T16:04:57.623Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-26T15:30:13Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest fixture)",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=<worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_discard_releases_a_clean_worktree.py tests/test_crew_promotion.py tests/test_a_discard_never_reads_promoted.py (4 new passed; neighbours 54 base / 54 head)",
+    "exit_status": 0,
+    "log_digest": "sha256:4d2f7bdf257a20520420e795f07de72ac7d233a8240bb769129190380c10a8dd",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T152959325320-discard-releases-a-clean-worktree/logs/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.75,
+    "at_dispatch": 0.7,
+    "plan": "a-crew-process-ends-with-its-owner",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-26T16:10:00.103939+00:00",
+    "horizon_seconds": 2400,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-26T15:30:00Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 4,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": -1,
+    "mean_context": 107692,
+    "observed_at": "2026-09-26T15:29:56Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-26T16:04:57.623Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T152959325320-discard-releases-a-clean-worktree/manifest.md",
+  "member": "disposable-r-20260926T152959325320-discard-releases-a-clean-worktree",
+  "negative_control": {
+    "declaration": "remove the release call from discard; the empty-status worktree case must fail on the surviving worktree path",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T152959325320-discard-releases-a-clean-worktree/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T152959325320-discard-releases-a-clean-worktree/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_discard_releases_a_clean_worktree.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "discard-releases-a-clean-worktree",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 328,
+          "cached_input_tokens": 197371,
+          "input_tokens": 197701,
+          "output_tokens": 543,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 198244,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+      "session_id": "s21-coord"
+    },
+    "done_when": "reckon crew discard releases the discarded run's worktree when git status --porcelain in that worktree prints nothing and its head adds no commit beyond its base, so a later dispatch of the same node id is not refused because the worktree path already exists. The release reuses the worktree audit that crew complete already runs on release (the same classification and withheld reasons), not a second classifier. A dirty or unintegrated worktree survives the discard, and the discard result names it with the audit's withheld reason. tests/test_discard_releases_a_clean_worktree.py synthesises a repository in tmp_path (the pytest fixture) with a stopped run whose worktree has an empty git status --porcelain at its base. It asserts that after discard the worktree path is gone and git worktree list no longer names it. A second case leaves an uncommitted file in the worktree and asserts the worktree survives, with the withheld reason in the discard result. A third case gives the worktree a commit beyond its base and asserts it survives. The negative control removes the release call, and the first case must fail on the surviving path. The tests read and write nothing outside tmp_path, and point every environment-resolved crew directory at a temp path. tests/test_crew_promotion.py and tests/test_a_discard_never_reads_promoted.py add no failures against the base, with pytest basetemp outside any git repository. Gate and control logs are written under the run directory. The change is committed in this worktree.",
+    "estimated_hours": null,
+    "goal": "Make crew discard release a discarded run's base-only worktree with an empty git status through the existing release audit, so a redispatch of the same node is not refused.",
+    "id": "discard-releases-a-clean-worktree",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-26T15:30:00Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 4,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": -1,
+      "mean_context": 107692,
+      "observed_at": "2026-09-26T15:29:56Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T152959325320-discard-releases-a-clean-worktree/manifest.md",
+    "negative_control": "remove the release call from discard; the empty-status worktree case must fail on the surviving worktree path",
+    "plan": "a-crew-process-ends-with-its-owner",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "",
+    "spec_level": "exact",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/promotion.py",
+      "tests/test_discard_releases_a_clean_worktree.py",
+      "docs/plans/a-crew-process-ends-with-its-owner.html",
+      "docs/evidence/archive/a-crew-process-ends-with-its-owner-landed.html",
+      "docs/figures/a-crew-process-ends-with-its-owner"
+    ]
+  },
+  "orientation_input_tokens": 1692325.0,
+  "outcome": "",
+  "plan": "a-crew-process-ends-with-its-owner",
+  "plan_impl_at_dispatch": 0.7,
+  "promoted_revision": "5c867c254e6fe7a25514ccb77e787fdb0c8ebf29",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 17,
+      "goal_fidelity": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 92
+  },
+  "role": "implement",
+  "run_id": "r-20260926T152959325320-discard-releases-a-clean-worktree",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "",
+  "session_harness": "claude",
+  "session_id": "ea8b62e7-2ddb-48b2-b6ab-65f92762fd3d",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 10972248,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2059.425,
+    "generated_tokens": 50047,
+    "generation_seconds": 1884.88,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 33.0,
+    "machine_seconds": 174.545,
+    "peak_input_tokens": 158550,
+    "tokens_per_second": 26.55,
+    "wall_tokens_per_second": 24.3
+  },
+  "time_budget": "40m",
+  "tool_steps": 97.0,
+  "unreconciled_override": null,
+  "wall_seconds": 2084,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-26T16:04:57Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-26T15:30:36Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T152959325320-discard-releases-a-clean-worktree",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 6465,
+    "worker_pid": 4054372
+  },
+  "worker_seconds": 2048,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
