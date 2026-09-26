@@ -2495,22 +2495,14 @@ def _arm_watcher_as_process(project: str) -> Mapping[str, Any]:
     Imported lazily because the dispatch path imports this module.
 
     A process nothing supervises is a process whose death leaves no record, so
-    the arming names the file a watcher's output belongs in before it starts
-    one. The child inherits :data:`WATCH_LOG_ENV` and adopts that file as it
-    takes its seat; the entry is restored afterwards so this process cannot hand
-    the same log to anything else it starts.
+    the log a watcher keeps matters as much on this route as on the dispatch
+    path's. Both go through :func:`dispatch._ensure_watch_producer`, which
+    names the file the watcher's output belongs in on the argv it spawns, so
+    this route names nothing itself and the two cannot drift.
     """
     from reckon.crew.dispatch import _ensure_watch_producer
 
-    previous = os.environ.get(WATCH_LOG_ENV)
-    os.environ[WATCH_LOG_ENV] = str(watch_log_path(project))
-    try:
-        return _ensure_watch_producer(project)
-    finally:
-        if previous is None:
-            os.environ.pop(WATCH_LOG_ENV, None)
-        else:
-            os.environ[WATCH_LOG_ENV] = previous
+    return _ensure_watch_producer(project)
 
 
 def ensure_watcher_service(
@@ -2827,6 +2819,12 @@ class _WatchLogStream:
         self.path = Path(path)
         self.max_bytes = max_bytes
         self._handle = None
+        # The descriptors this stream owns once it is adopted. They are kept
+        # because rotation replaces the file: a descriptor pointed at the log
+        # once keeps writing the rotated-away inode, so a library's unbuffered
+        # write or the interpreter's own traceback would be lost from the log a
+        # reader opens.
+        self._descriptors: tuple[int, ...] = ()
         self._at_line_start = True
         self._open()
 
@@ -2840,6 +2838,26 @@ class _WatchLogStream:
             self.path.replace(self.path.with_name(f"{self.path.name}.1"))
         self._handle = self.path.open("a", encoding="utf-8", errors="replace")
 
+    def adopt_descriptors(self, descriptors: Iterable[int]) -> None:
+        """Send these process descriptors to this stream's file, and keep them.
+
+        Called by :func:`_adopt_watch_log` once, when the watcher takes its seat.
+        Keeping them is what makes the redirection survive rotation: the file a
+        descriptor was pointed at is renamed away when the log rotates, so a
+        descriptor pointed once and never re-pointed writes an inode nothing
+        reads.
+        """
+        self._descriptors = tuple(descriptors)
+        self._point_descriptors()
+
+    def _point_descriptors(self) -> None:
+        source = self._handle.fileno()
+        for target in self._descriptors:
+            try:
+                os.dup2(source, target)
+            except OSError:
+                continue
+
     def _rotate_if_needed(self) -> None:
         try:
             size = self._handle.tell()
@@ -2850,6 +2868,11 @@ class _WatchLogStream:
         self._handle.close()
         self.path.replace(self.path.with_name(f"{self.path.name}.1"))
         self._handle = self.path.open("a", encoding="utf-8", errors="replace")
+        # Re-point every adopted descriptor at the new file. Without this the
+        # descriptors keep the rotated-away inode, so a traceback or an
+        # unbuffered library write after the first rotation never reaches the
+        # log a reader opens.
+        self._point_descriptors()
 
     def write(self, text: Any) -> int:
         if isinstance(text, (bytes, bytearray)):
@@ -2903,11 +2926,7 @@ def _adopt_watch_log() -> Path | None:
     log = _WatchLogStream(Path(target))
     sys.stdout = log
     sys.stderr = log
-    for descriptor in (1, 2):
-        try:
-            os.dup2(log.fileno(), descriptor)
-        except OSError:
-            continue
+    log.adopt_descriptors((1, 2))
     return log.path
 
 

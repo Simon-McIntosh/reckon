@@ -111,7 +111,9 @@ from reckon.crew.runs import (
     scheduler_job_state,
     scheduler_kill_class,
     project_watch_visibility,
+    WATCH_LOG_ENV,
     watch_lock_path,
+    watch_log_path,
     watch_state,
     watch_stream_path,
 )
@@ -757,11 +759,33 @@ def _watch_executable() -> str:
     )
 
 
-def _watch_producer_argv(project: str, supervisor: str) -> list[str]:
+# The supervisor that starts one project's watcher as a background process and
+# waits on it. It exports the watcher's log path into the environment the
+# watcher inherits, taking the variable name and the path from its own argv.
+#
+# The path rides the argv rather than this process's environment because the
+# fleet-delegated route does not spawn here: it hands this argv to the
+# allocation's batch step, which starts it from the step's own environment, so
+# a path only the arming process held would reach the watcher on the route that
+# does not need it and be missing on the fleet route that does. Both routes are
+# covered once the supervisor exports it, whichever process runs the argv.
+_WATCH_PRODUCER_SUPERVISOR = (
+    "import os, subprocess, sys; "
+    "os.environ[sys.argv[1]] = sys.argv[2]; "
+    "producer = subprocess.Popen(sys.argv[3:], stdin=subprocess.DEVNULL, "
+    "stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True); "
+    "raise SystemExit(producer.wait())"
+)
+
+
+def _watch_producer_argv(project: str) -> list[str]:
+    """Build the argv that starts one project's watcher as a background process."""
     return [
         sys.executable,
         "-c",
-        supervisor,
+        _WATCH_PRODUCER_SUPERVISOR,
+        WATCH_LOG_ENV,
+        str(watch_log_path(project)),
         _watch_executable(),
         "crew",
         "watch",
@@ -795,13 +819,7 @@ def _start_watch_producer(project: str) -> Any:
     the allocation's batch step.
     """
     _refuse_arming_under_a_throwaway_home(project)
-    supervisor = (
-        "import subprocess, sys; "
-        "producer = subprocess.Popen(sys.argv[1:], stdin=subprocess.DEVNULL, "
-        "stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True); "
-        "raise SystemExit(producer.wait())"
-    )
-    argv = _watch_producer_argv(project, supervisor)
+    argv = _watch_producer_argv(project)
     fleet = _read_fleet_record()
     if (
         _fleet_spawn_enabled()
