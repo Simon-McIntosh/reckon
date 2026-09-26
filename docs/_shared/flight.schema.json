@@ -491,8 +491,16 @@
                         "null"
                     ]
                 },
+                "drain_lead_hours": {
+                    "description": "How long before a group's weekly quota reset its budget should be drained, in hours. The pace deadline is the weekly period less this lead, so the week ends spent rather than exhausted mid-window with work still queued. A longer lead closes the deadline earlier and raises the share each remaining five-hour window is asked for; zero drains exactly at the reset, and a lead at or beyond the weekly period asks the next window for whatever remains.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
                 "evidence_shelf_life_minutes": {
-                    "description": "Minutes a refusal that names no reset time keeps describing the present before it is treated as stale and stops holding the wave on its own. Has no effect on a refusal that named a reset, since a stated reset is stronger evidence than an age and already carries its own expiry. A value at or below zero disables ageing and restores an indefinite hold.",
+                    "description": "Minutes a refusal that names no reset time keeps describing the present before it is treated as stale and stops holding the wave on its own. Has no effect on a refusal that names a reset, since a stated reset is stronger evidence than an age and already carries its own expiry. A value at or below zero disables ageing and restores an indefinite hold.",
                     "type": [
                         "number",
                         "null"
@@ -505,6 +513,14 @@
                     },
                     "type": [
                         "array",
+                        "null"
+                    ]
+                },
+                "pace_multiple": {
+                    "description": "Deliberate lean above the linear share, applied on top of the same derivation for every declared budget group. A group exactly on pace returns this multiple times the nominal share of the weekly budget per five-hour window, rather than the bare nominal share, so the week converges on its deadline slightly ahead of it. A group's returned allowance records the multiple that produced it, because the multiple is retuned over a longer horizon than one week.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
                         "null"
                     ]
                 },

@@ -113,6 +113,15 @@ budget:
   # calibrates this later.
   coordinator_reserve_pct: 3
   exhausted_statuses: []
+  # The pace derivation's two tunables, applied per declared budget group: the
+  # lead time before the weekly reset the group's budget should be gone, and the
+  # lean above the linear share. Twelve hours leaves the last window open for
+  # the work still queued at the deadline rather than ending the week mid-window;
+  # 1.1 is the deliberate bias above linear that keeps a group slightly ahead of
+  # its claim on the week. Both are operator data: a host or project layer
+  # retunes the curve without a code change.
+  drain_lead_hours: 12.0
+  pace_multiple: 1.1
 
 fences:
   # A role's time_budget is its default; this is the independent hard ceiling.
