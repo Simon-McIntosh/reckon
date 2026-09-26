@@ -2842,6 +2842,31 @@ def _worker_record_liveness(record: Mapping[str, Any]) -> bool | None:
     return alive
 
 
+def _process_reading(
+    alive: bool | None,
+    *,
+    liveness_proven: bool,
+    exit_record: Mapping[str, Any] | None,
+) -> str:
+    """The three-way process state a row states in words.
+
+    One reading, because three callers quote it and they must not disagree: a
+    stalled row says which situation its stall is, and the resume offer asks
+    whether the end was observed before it is made. A life is only the first of
+    the three; death is claimed only where something observed it — a pid checked
+    on the reading host, which the row's own ``liveness_proven`` records, or the
+    supervisor's exit record, which survives a pointer nobody updated and a pid
+    no other machine can look up. A stored answer carried because the launching
+    host could not be shown to be this host is neither observation, and neither
+    is no answer at all, so those read as unproven rather than as a death.
+    """
+    if alive is True:
+        return "alive"
+    if alive is False and (liveness_proven is True or exit_record is not None):
+        return "process gone"
+    return "liveness unknown"
+
+
 def _record_newest_stream(record: Mapping[str, Any]) -> tuple[Path, float] | None:
     """A record's newest stream, through the shared reader."""
     return newest_stream(
@@ -3596,6 +3621,15 @@ def classify_pointer(
     # testing liveness for itself, so the guarantee cannot decay into per-arm
     # guards as manifest readings are added.
     process_gone = alive is not True
+    # The same three-way reading the stalled detail states, taken here from the
+    # same evidence so the two surfaces cannot call one run alive and gone at
+    # once. The offer of a resume is gated on it rather than on ``process_gone``,
+    # which is true of an unproven reading as well as of an observed end:
+    # resuming on an unproven reading is the reading's most expensive misread,
+    # because nobody observed the process the resume is predicated on.
+    process_reading = _process_reading(
+        alive, liveness_proven=liveness_proven, exit_record=ended_exit
+    )
     marker = None
     needs_help_complete_value = None
     if interruption is not None:
@@ -3745,12 +3779,33 @@ def classify_pointer(
         )
     elif wait is not None and wait["valid"]:
         classification = WAITING_STATUS
-        if wait_observation and wait_observation["state"] == "met":
+        if (
+            wait_observation
+            and wait_observation["state"] == "met"
+            and process_reading == "process gone"
+        ):
             detail = (
                 f"ready to resume: {wait['condition']} reported "
                 f"{wait_observation['observed']!r}, a declared terminal state"
             )
             action = f"reckon crew resume --run {run_id} --advice continue"
+        elif wait_observation and wait_observation["state"] == "met":
+            # The condition is met, but nothing observed the worker's process
+            # end. A live worker is still writing the run and a second worker on
+            # it would collide with the first; a worker whose liveness nothing
+            # established is not a death, so the offer would rest on a reading
+            # nobody took. Both wait on the process rather than offering the
+            # resume, and the row names which reading it is holding.
+            detail = (
+                f"waiting on {wait['condition']}: the probe reported "
+                f"{wait_observation['observed']!r}, a declared terminal state, "
+                f"but the process reading is {process_reading!r}, so no lift is "
+                "offered until the process is observed to have ended"
+            )
+            action = (
+                f"the recovery sweep lifts run {run_id} once its process is "
+                "observed to have ended"
+            )
         else:
             observation_detail = (
                 wait_observation["detail"]
@@ -4205,7 +4260,13 @@ def classify_pointer(
         classification == WAITING_STATUS
         and wait_observation is not None
         and wait_observation.get("state") == "met"
+        and process_reading == "process gone"
     ):
+        # Ready is the one classification that reads as an offer, and the
+        # recovery a reader acts on is chosen from it. A met condition whose
+        # worker's end nothing observed is therefore a wait: the run is held by
+        # a process no reading has seen end, so it classifies as waiting and
+        # the remedy stays the wait's own.
         recovery_classification = "ready"
     elif classification == WAITING_STATUS and wait and wait.get("overdue"):
         recovery_classification = "wait-aged"
@@ -4883,15 +4944,11 @@ def _watch_verdict(
                 # no answer at all, so those read as unproven rather than as a
                 # death. The quiet time is the row's own, in whole minutes,
                 # floored so the token never claims more silence than measured.
-                if alive is True:
-                    process_state = "alive"
-                elif alive is False and (
-                    row.get("liveness_proven") is True
-                    or row.get("exit_record") is not None
-                ):
-                    process_state = "process gone"
-                else:
-                    process_state = "liveness unknown"
+                process_state = _process_reading(
+                    alive,
+                    liveness_proven=row.get("liveness_proven") is True,
+                    exit_record=row.get("exit_record"),
+                )
                 detail = f"{process_state}, quiet {quiet // 60}m"
         else:
             detail = ""
