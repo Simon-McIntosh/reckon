@@ -1703,6 +1703,31 @@
       under commit <code>7da01629</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#launch-holds-its-own-claim">&#167;23 a launch holds its own claim</a>.</p>
 
+    <p class="landed-summary">The section's gate fails at an integrated head, and the failure is
+      the fence's, not this section's. The ten files passed <strong>85 tests, exit 0</strong> at
+      each revision this section landed, and at the integrated head <code>5eb8440f</code> exactly
+      two fail &mdash; both in <code>5eb8440f</code>'s own
+      <code>tests/test_crew_dispatch_guard.py</code>, both asserting that a dispatch declaring a
+      figure topic creates nothing on disk. Measured at five arms, one log each: the two pass at
+      this lineage's base <code>3be868de</code> and at the delivered head <code>207553ce</code>
+      (ten files, 85 passed), and fail at the merge's first parent <code>bcca11f0</code>
+      (<strong>2 failed, 78 passed</strong> over the nine files that exist there) &mdash; main
+      without one line of this section's work. So the cause is a peer change alone, not the merge
+      interaction and not the merge: the fence's write-root creation, added by
+      <code>1de2d086</code> and carried to main by the merge <code>3464b851</code> five minutes
+      before this merge, makes a launch create each declared write path before bwrap binds it,
+      while those two assertions require it not to exist. The merge itself resolved nothing (its
+      diff against its first parent is this section's landed work alone), and the same two red at
+      <code>3464b851</code>. The two tests now contradict the peer's own
+      <code>test_fence_creates_a_missing_write_parent.py</code>, which asserts the missing
+      directory of a declared write path <em>is</em> created; the smallest change that greens the
+      integrated head restates the two assertions to the fence's contract and is carried forward
+      as a proposed node, <code>claim-path-assertions-follow-the-write-root-contract</code>, whose
+      exclusive write path is <code>tests/test_crew_dispatch_guard.py</code>. Attribution report:
+      <code>attribution.md</code> under the run's reports directory, with the arms at
+      <a href="/reckon/figures/crew-observability-truth/integrated-claim-attribution-arms.svg">the
+      arm figure</a> and the engine-side record below.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="liveness-source" data-choice="reconcile-on-read" data-by="lead" data-when="2026-09-03T07:38:29+00:00">
