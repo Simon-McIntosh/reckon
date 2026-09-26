@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" font-family="ui-sans-serif, system-ui, sans-serif">
+  <title>The seat record's fields and who reads them, and which identity carries the start time</title>
+  <rect x="0" y="0" width="960" height="540" fill="#ffffff"/>
+  <text x="24" y="32" font-size="19" font-weight="700" fill="#111827">One record, three readers, and the identity that owns the start time</text>
+
+  <rect x="24" y="56" width="360" height="196" rx="10" fill="#f9fafb" stroke="#d1d5db"/>
+  <text x="44" y="80" font-size="13" font-weight="700" fill="#111827">seat record — watch_lock_path(project)</text>
+  <text x="44" y="104" font-size="12" fill="#374151">pid · pid_start_time · host — which process wrote it</text>
+  <text x="44" y="124" font-size="12" fill="#374151">started_at — when that process took the seat</text>
+  <text x="44" y="144" font-size="12" fill="#374151">reckon_version — names the install</text>
+  <text x="44" y="164" font-size="12" fill="#374151">code_stamp — the code this producer runs</text>
+  <text x="44" y="196" font-size="12" fill="#6b7280">The version holds still across the commits a</text>
+  <text x="44" y="212" font-size="12" fill="#6b7280">reader needs to see; only the stamp moves. So</text>
+  <text x="44" y="228" font-size="12" fill="#6b7280">a seat is current by version and stale by code,</text>
+  <text x="44" y="244" font-size="12" fill="#6b7280">and nothing told the two apart.</text>
+
+  <path d="M384 112 H452" fill="none" stroke="#9ca3af" stroke-width="2"/>
+  <path d="M384 160 H452" fill="none" stroke="#16a34a" stroke-width="2"/>
+  <path d="M384 208 H452" fill="none" stroke="#16a34a" stroke-width="2"/>
+
+  <rect x="452" y="92" width="484" height="40" rx="6" fill="#fef2f2" stroke="#dc2626"/>
+  <text x="468" y="117" font-size="12" fill="#7f1d1d">the cursor's producer key — read by nothing: its consumer takes stream_path and baseline</text>
+
+  <rect x="452" y="140" width="484" height="40" rx="6" fill="#f0fdf4" stroke="#16a34a"/>
+  <text x="468" y="165" font-size="12" fill="#14532d">the live view — code_stamp and code_stale, for any Python caller and the MCP read</text>
+
+  <rect x="452" y="188" width="484" height="40" rx="6" fill="#f0fdf4" stroke="#16a34a"/>
+  <text x="468" y="213" font-size="12" fill="#14532d">the follower's attach line — one dim line, and the command that cycles the seat</text>
+
+  <line x1="24" y1="276" x2="936" y2="276" stroke="#e5e7eb" stroke-width="1"/>
+
+  <text x="24" y="304" font-size="15" font-weight="700" fill="#111827">started_at travels only across this producer's own image replacement</text>
+
+  <rect x="24" y="322" width="392" height="190" rx="10" fill="#f9fafb" stroke="#d1d5db"/>
+  <text x="44" y="346" font-size="13" font-weight="700" fill="#111827">a dead predecessor's record, never erased</text>
+  <text x="44" y="368" font-size="12" fill="#374151">pid 999912 · pid_start_time 1.0 · host this host</text>
+  <text x="44" y="388" font-size="12" fill="#374151">started_at 2001-01-01T00:00:00+00:00</text>
+  <rect x="44" y="404" width="352" height="88" rx="6" fill="#fef2f2" stroke="#dc2626"/>
+  <text x="58" y="426" font-size="12" fill="#7f1d1d">Carried from whatever sits in the file, this</text>
+  <text x="58" y="444" font-size="12" fill="#7f1d1d">becomes the fresh producer's start time: armed</text>
+  <text x="58" y="462" font-size="12" fill="#7f1d1d">a second ago, read as though up for hours.</text>
+
+  <rect x="544" y="322" width="392" height="190" rx="10" fill="#f0fdf4" stroke="#16a34a"/>
+  <text x="564" y="346" font-size="13" font-weight="700" fill="#111827">this process, arriving at the same file</text>
+  <text x="564" y="368" font-size="12" fill="#14532d">pid · pid_start_time · host of this process,</text>
+  <text x="564" y="388" font-size="12" fill="#14532d">compared against the record's own three</text>
+  <rect x="564" y="404" width="352" height="88" rx="6" fill="#dcfce7" stroke="#16a34a"/>
+  <text x="578" y="426" font-size="12" fill="#14532d">All three equal — a replacement of this</text>
+  <text x="578" y="444" font-size="12" fill="#14532d">producer, so its start time is kept.</text>
+  <text x="578" y="462" font-size="12" fill="#14532d">Any of them different — an arming, stamps now.</text>
+</svg>
