@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="92">
+<meta name="plan-version" content="93">
 <meta name="plan-impl" content="0.75">
 </head>
 <body>
@@ -1200,6 +1200,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260924T123648020169-consumers-reach-into-reckon-internals" data-who="reckon-ship" data-when="2026-09-24T13:14:17.145Z">
     <div class="r-comment-body"><p>inventory of consumers reaching into reckon internals across five repositories: 1,537 config-home path lines, 151 crew CLI lines, 91 lane.json lines; recorded as consumers-read-reckon-through-verbs</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260926T185215633094-fleet-spawn-and-the-cancelled-step" data-who="reckon-build" data-when="2026-09-26T19:23:37.528Z">
+    <div class="r-comment-body"><p>read-only investigation; findings at ~/.config/reckon/crew/reports/reckon/fleet-spawn-and-the-cancelled-step.md: the fleet spawn route did not run in the allocation and cannot open or end a step (0 spawned.json vs 656 supervisor.json control). Corrected by its review (87): the report&#x27;s exclusion of recovery.unwatch by ordering is invalid, because the arming path calls unwatch (process-group SIGTERM, dispatch.py:884) before it registers the successor (:888), so a watch --ensure arm at ~18:45:19Z remains a live candidate for cancelling step 1276262.103; the bundle also records an operator-side watcher restart attribution the report did not assess</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260925T012000-owner-scoped-reclaim" data-who="reckon-build s21-coord" data-when="2026-09-24T23:20:00Z">
     <div class="r-comment-body">Evidence for back-pressure, and the reclaim it needs, 2026-09-24/25 on the fleet node. Registered reckon worktrees rose from 232 (19:30Z) to 287 (23:10Z). Time from dispatch to worker start rose with them: 1:57–3:40 at 20:05Z, 9:04 for one of six simultaneous launches, and 12:07 for a review launched at 22:58Z. That is the supervisor's pre-spawn snapshot walking every tree. A dry run of `crew gc --project reckon` reported 214 reclaimable (205 integrated, 35 dirty, 13 unintegrated, 24 live-referenced). gc has no session or owner scope, so `--apply` also removes other coordinators' retained worktrees, and no coordinator can run it safely. s21-coord and s23-coord each removed only their own clean, integrated, pointer-free worktrees by path, taking the repository to 270. The back-pressure this section adds needs an owner-scoped reclaim beside it: `crew gc --session S` (or by the run record's owner), which removes only that session's integrated, non-live worktrees. That lets each coordinator reclaim its share in its landing beat before dispatch refuses on retained count.</div>
