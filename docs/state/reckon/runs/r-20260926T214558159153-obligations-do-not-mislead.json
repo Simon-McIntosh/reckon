@@ -1,0 +1,325 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "d5962f4afba1534eaee61673cec4db68d53839ce",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 14865130,
+      "input_tokens_cumulative": 14865130,
+      "output_tokens": 70793,
+      "output_tokens_cumulative": 70793,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 448,
+    "files": 5,
+    "removed": 4
+  },
+  "commit_resolution": null,
+  "commits": [
+    "4a4c08361a034efd119836ee692b533c37be2ac8",
+    "1484d366705abff9ed55afb3e7000a63f51fb26d",
+    "e1f341dea0fcdebda67c4b1e67b81e57a774ca36"
+  ],
+  "completed_at": "2026-09-26T22:42:03.610Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-26T21:46:16Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest fixture)",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_mcp_crew_obligations.py::test_obligations_view_returns_the_derived_items_unchanged",
+    "reckon/hooks/coordinator_obligations.py",
+    "reckon/crew/obligations.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_obligations_do_not_mislead.py (2 passed; the three-file arm's one failure, test_mcp_crew_obligations.py::test_obligations_view_returns_the_derived_items_unchanged, fails identically at base)",
+    "exit_status": 0,
+    "log_digest": "sha256:688df48d666326c238784a43db4d8e133b3371d5886b7a5830037a7c09af5d9c",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T214558159153-obligations-do-not-mislead/logs/gate-new-cases-post-format.log"
+  },
+  "impl_move": {
+    "at_complete": 0.45,
+    "at_dispatch": 0.45,
+    "plan": "an-orchestrator-cannot-forget-its-obligations",
+    "reason": "the plan owner (s23-coord) moves an-orchestrator-cannot-forget-its-obligations' impl; this node closes two misleading hints and its remaining divergence is recorded as f-aocfio-reflex-in-flight-reads-the-record",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-26T22:25:58.817888+00:00",
+    "horizon_seconds": 2400,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-26T21:45:58Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 27,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 0,
+    "mean_context": 126667,
+    "observed_at": "2026-09-26T21:45:31Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-26T22:42:03.610Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T214558159153-obligations-do-not-mislead/manifest.md",
+  "member": "disposable-r-20260926T214558159153-obligations-do-not-mislead",
+  "negative_control": {
+    "declaration": "keep the current logic; both cases must fail",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T214558159153-obligations-do-not-mislead/logs/mutant-keep-current-logic.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T214558159153-obligations-do-not-mislead/logs/mutant-keep-current-logic.log",
+    "test_paths": [
+      "tests/test_obligations_do_not_mislead.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "obligations-do-not-mislead",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2936,
+          "cached_input_tokens": 612914,
+          "input_tokens": 615852,
+          "output_tokens": 1168,
+          "reasoning_output_tokens": 27,
+          "total_tokens": 617020,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+      "session_id": "s21-coord"
+    },
+    "done_when": "Two obligation hints computed in reckon/crew/obligations.py and rendered by reckon/hooks/coordinator_obligations.py stop misleading a coordinator. (1) review-missing is not listed while a review launched by the reflex holds a live claim for the reviewed run, and it is aged from the reflex's launch window, not from manifest completion. Measured on 2026-09-26: the hook listed review-missing with a ready-to-run dispatch command for worker-env-review-fixes and figure-as-text. The command was refused as a scope conflict because the reflex had already launched the review. (2) worktree-held names the live run that now occupies the worktree path, not a promoted run whose path was reused under the same node id. Measured the same day: the hook named promoted r-20260926T185645270593 while live r-20260926T193259670455 held the path, and gc correctly reported the tree live-referenced. tests/test_obligations_do_not_mislead.py uses tmp_path (the pytest fixture) with every crew directory environment-resolved to tmp_path. Case 1: a synthesised completed run with a live reflex review claim yields no review-missing item. Case 2: a promoted run and a live run sharing one worktree path yields a worktree-held item naming the live run id, or none. Negative control: the current logic; both cases must fail. tests/test_coordinator_obligations_hook.py, tests/test_crew_obligations.py and tests/test_mcp_crew_obligations.py add no failures against the base, with pytest basetemp outside any git repository. Gate and control logs are written under the run directory. The change is committed in this worktree.",
+    "estimated_hours": null,
+    "goal": "Keep the obligation hints from suggesting a review the reflex already launched or naming the wrong run for a held worktree.",
+    "id": "obligations-do-not-mislead",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-26T21:45:58Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 27,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 0,
+      "mean_context": 126667,
+      "observed_at": "2026-09-26T21:45:31Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T214558159153-obligations-do-not-mislead/manifest.md",
+    "negative_control": "keep the current logic; both cases must fail",
+    "plan": "an-orchestrator-cannot-forget-its-obligations",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "",
+    "spec_level": "exact",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/obligations.py",
+      "reckon/hooks/coordinator_obligations.py",
+      "tests/test_obligations_do_not_mislead.py",
+      "docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html",
+      "docs/figures/an-orchestrator-cannot-forget-its-obligations",
+      "docs/plans/an-orchestrator-cannot-forget-its-obligations.html"
+    ]
+  },
+  "orientation_input_tokens": 2217932.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "obligations-do-not-mislead",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-26T21:46:11.019972+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "an-orchestrator-cannot-forget-its-obligations",
+  "plan_impl_at_dispatch": 0.45,
+  "promoted_revision": "e1f341dea0fcdebda67c4b1e67b81e57a774ca36",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 17,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 92
+  },
+  "role": "implement",
+  "run_id": "r-20260926T214558159153-obligations-do-not-mislead",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "",
+  "session_harness": "claude",
+  "session_id": "3b78abc0-1f7f-4684-8d11-8a5263a61f3e",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 15032748,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 3323.533,
+    "generated_tokens": 78226,
+    "generation_seconds": 3045.957,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.6,
+    "machine_seconds": 277.576,
+    "peak_input_tokens": 166318,
+    "tokens_per_second": 25.68,
+    "wall_tokens_per_second": 23.54
+  },
+  "time_budget": "40m",
+  "tool_steps": 124.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 3347,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-26T22:42:04Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-26T21:46:36Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T214558159153-obligations-do-not-mislead",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 14032,
+    "worker_pid": 1250805
+  },
+  "worker_seconds": 3308,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
