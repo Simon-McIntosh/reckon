@@ -30,51 +30,60 @@
     <p>A 12-line fix costs about 35 minutes of worker time and a 20-minute review before promotion, against about
       10 minutes inline (s22); one imas-ambix feature that was a 20-minute edit took five implement nodes and five
       reviews, about 2.5 hours. Writing and committing a followup only so a goal can cite it costs 5–10 minutes
-      each (s23). The median node now takes 44 minutes to complete and 83 to promote, against 9.8 minutes per run
-      in August, and the fleet adds 5.35 record lines for every product line
-      (<a href="/reckon/research/orchestrator-crew-pattern-review#s4">crew pattern review §4</a>). The survey is
-      clear that the delegation discipline for product code stays — every coordinator would keep the worktree,
-      the gate and the negative control — so the lever is the ceremony around a small node, not whether a small
+      each (s23). The median node now takes 44 minutes from dispatch to worker completion, against August's 9.8-minute
+      median wall per run, and 83 minutes to promotion; and the fleet adds 5.35 record lines for every product line,
+      excluding the figures directory
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s4">crew pattern review §4</a>). The survey's majority
+      holds that the delegation discipline for product code stays — the worktree, the gate and the negative control — so the lever is the ceremony around a small node, not whether a small
       node exists (<a href="/reckon/research/orchestrator-crew-pattern-review#s10">§10</a>).</p>
 
     <h2 id="s2">§2 — A finding or a followup is a brief</h2>
-    <p><strong>Deliverable.</strong> A review finding, or an open followup, dispatches as a brief attached to
-      the plan and section it already belongs to, using the stored-brief carrier that
-      <code>a-worker-can-take-a-brief</code> adds: no new plan text, and no commit-before-dispatch beat. The
-      brief records the finding id so the repair links back to the review that raised it.</p>
-    <p><strong>Done when</strong> a stored review finding dispatches as a repair node with no plan write in
-      between, the promoted row carries the finding id, and the review it came from shows the finding answered.</p>
+    <p><strong>Deliverable.</strong> A finding from a stored review, or an open followup, dispatches as a brief
+      attached to the plan and section it already belongs to, using the stored-brief carrier that
+      <code>a-worker-can-take-a-brief</code> adds. The carrier copies the brief into the run directory at dispatch, so no
+      plan text is written and nothing is committed first. The brief records the finding id. On promotion the repair's
+      manifest answers each finding — repaired with its commit, or declined with a reason — and promotion writes those
+      answers onto the reviewed run's ledger row; this section adds that answer record for code reviews, which today have
+      a store but no answer field.</p>
+    <p><strong>Done when</strong> a stored review finding dispatches as a repair with no plan write and no commit in
+      between, and after promotion the reviewed run's ledger row shows the finding answered with the repair's commit.</p>
 
     <h2 id="s3">§3 — A small node records one landing line</h2>
-    <p><strong>Deliverable.</strong> A node whose diff is under 50 changed lines, or which changes no product
-      code, writes one <code>landing:</code> line in its manifest — what changed and the measure's figure — and
-      no evidence prose and no figure unless its done-when names one. Promotion carries that line into the plan.
-      The worker prompt says so, and says that data outputs above 300 KB belong in the run directory rather than
-      the repository.</p>
-    <p><strong>Done when</strong> a small-node prompt fixture contains the one-line rule and the size bound, and
-      over a week of small nodes the record-to-product line ratio is at most 1.0 (from 5.35 fleet-wide).</p>
+    <p><strong>Deliverable.</strong> A node is small when its diff has at most 50 changed lines (added plus deleted),
+      or when it changes no product code (source or tests) and has at most 300 changed lines. A small node writes one
+      <code>landing:</code> line in its manifest — what changed and its measure's figure — and writes neither evidence
+      prose nor a figure unless its done-when names that artifact; naming one does not permit the other. Promotion
+      writes the line as a comment on the plan section the node is attached to; a brief run with no plan attachment keeps
+      it on its run record. The worker prompt says so, and says that any single data file above 300,000 bytes belongs in
+      the run directory rather than the repository.</p>
+    <p><strong>Done when</strong> the small-node prompt fixture carries both rules, and over the first week after this
+      section lands, small nodes' record lines (plan, evidence and research HTML, <code>docs/state</code>; the figures
+      directory excluded, as in the 5.35 baseline) are at most equal to their product lines.</p>
 
     <h2 id="s4">§4 — What a coordinator may commit directly</h2>
-    <p><strong>Deliverable.</strong> A declared, closed list of edits a coordinator commits itself, each recorded
-      on the ledger as a coordinator commit: correcting a recorded sha, heading or path; the mechanical union of an
-      HTML or JSON conflict; a manifest path repair; plan and sprint state. Product source and tests are never
-      edited inline, and a <code>.py</code> merge conflict is resolved only in a scratch worktree. This writes down
-      what s23 and s22 already do, and holds the line s21 learned from an outage.</p>
-    <p><strong>Done when</strong> the build skill states the list in one table, and the coordinator-overhead
-      census shows hand-committed worker diffs classified by list entry.</p>
+    <p><strong>Deliverable.</strong> A closed list, stated as one table in the build skill, of edits a coordinator
+      commits itself, each recorded on the ledger as a coordinator commit: correcting a recorded sha, heading or path
+      string; the union of a conflict in plan, evidence or sprint HTML (both sides' additions kept) or in a JSON file
+      whose conflict is confined to append-only arrays or disjoint keys, with the result passing <code>audit-doc</code>
+      or a JSON parse before commit; correcting a path field inside a manifest; and plan and sprint state. Product source
+      and tests, including test fixtures, are never edited inline, and a <code>.py</code> conflict is resolved only in a
+      scratch worktree. This writes down what s23 and s22 already do, and holds the line s21 learned from an outage.</p>
+    <p><strong>Done when</strong> the build skill states the table, and the coordinator-overhead census, re-run for the
+      week after this lands, classifies each coordinator commit that carries a worker's diff by table entry, with any
+      commit outside the table listed.</p>
 
-    <h2 id="s5">§5 — Exact write paths by default</h2>
-    <p><strong>Deliverable.</strong> Dispatch warns on a directory-wide claim over a shared tree such as
-      <code>tests/</code> and proposes the exact files the brief names; a directory claim stays possible when the
-      coordinator confirms it. The imas-ambix coordinator lost about 30 minutes to its own over-broad
-      <code>tests</code> claim blocking a peer.</p>
-    <p><strong>Done when</strong> a dry-run with a <code>tests</code> claim returns the warning and the proposed
-      files, in a test.</p>
+    <h2 id="s5">§5 — A directory claim that overlaps a peer asks first</h2>
+    <p><strong>Deliverable.</strong> Dispatch warns when a declared write path is a directory that contains, or is
+      contained in, another live run's claimed path, and lists the files the brief names as the exact alternative; the
+      dispatch proceeds with the directory claim only when it carries <code>--accept-directory-claim</code>. The
+      imas-ambix coordinator lost about 30 minutes to its own <code>tests</code> claim blocking a peer.</p>
+    <p><strong>Done when</strong> a test with a live run claiming <code>tests/test_x.py</code> and a dry-run claiming
+      <code>tests</code> returns the warning and the alternative, and the same dry-run with the flag proceeds.</p>
 
     <h2 id="s6">§6 — Measure the small-change path end to end</h2>
-    <p><strong>Deliverable.</strong> One week after §2–§5 land, measure the median time from a review finding to
-      the landed repair, for repairs under 50 changed lines.</p>
-    <p><strong>Done when</strong> the figure is recorded with its sample size, against a target of 30 minutes.</p>
+    <p><strong>Deliverable.</strong> One week after §2 lands, measure for repairs of at most 50 changed lines the median
+      time from the stored review's record time to the repair's promotion.</p>
+    <p><strong>Done when</strong> the median is recorded with its sample size, against a target of 30 minutes.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
       <h2><span class="sec">§</span> Evidence gates</h2>
@@ -83,7 +92,7 @@
         <p class="r-gate-required-evidence">a-worker-can-take-a-brief#s2</p>
       </div>
       <div class="r-gate" data-id="g-ascsn-measured-after" data-section="s6" data-gated-sections="s6" data-status="open">
-        <h4 class="r-gate-measure">the review tiers are live, so a small repair is not reviewed at full depth</h4>
+        <h4 class="r-gate-measure">the review tiers are live, so a small repair is not reviewed at full depth when its time is measured</h4>
         <p class="r-gate-required-evidence">a-review-is-sized-to-its-risk#s2</p>
       </div>
     </section>
