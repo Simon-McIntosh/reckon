@@ -18,6 +18,7 @@ from reckon import _backends, ledger
 from reckon import budget as budget_module
 from reckon.crew import lane_document as lane_document_module
 from reckon.crew import rollout as rollout_module
+from reckon.crew import staleness as staleness_module
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.lifecycle import (
     TERMINAL_STATUSES,
@@ -241,12 +242,104 @@ def _rate_basis_reading(receipt: object) -> tuple[object, str | None]:
     }, None
 
 
+def _own_lane_figure(readings: object) -> float | None:
+    """The figure of the lane's shortest keyed horizon, or ``None``.
+
+    The shortest horizon is the clock that fills first, so it is the lane's
+    binding reading. A reading whose keys or figures do not resolve as a
+    window and a number yields no figure rather than a guessed one.
+    """
+    if not isinstance(readings, Mapping) or not readings:
+        return None
+    keyed: list[tuple[int, float]] = []
+    for raw_window, reading in readings.items():
+        used = _reading_value(reading, "used_percent")
+        if not isinstance(used, (int, float)) or isinstance(used, bool):
+            continue
+        try:
+            length = int(raw_window)
+        except (TypeError, ValueError):
+            continue
+        keyed.append((length, float(used)))
+    if not keyed:
+        return None
+    return min(keyed, key=lambda window: window[0])[1]
+
+
+def _lane_position(
+    readings: object,
+    observed_at: str | None,
+    *,
+    source: str,
+    composed_at: str,
+) -> staleness_module.Reading:
+    """Adapt one lane's own reading to the staleness reader's input.
+
+    A lane reading several horizons is one reading to that reader: which
+    window the figure is taken from is not what decides whether the lane may
+    report it, so the binding horizon stands for the lane and the observation
+    stamp is what the reader ages.
+    """
+    figure = _own_lane_figure(readings)
+    return staleness_module.Reading(
+        used_percent=figure,
+        observed_at=_parsed_observation(observed_at),
+        source=source,
+        serving_state=_serving_state(figure, observed_at, composed_at),
+    )
+
+
+def _declared_probe_reading(
+    probe: Mapping[str, Any] | None,
+    *,
+    lane_group: str | None,
+    command: str | None,
+    command_by_backend: Mapping[str, str | None],
+    group_by_backend: Mapping[str, str | None],
+    composed_at: str,
+) -> staleness_module.Probe:
+    """Bind the lane's own probe to the staleness reader's seam.
+
+    The answer is the reading this view already holds for the lane's command:
+    one probe read serves every lane that declares it, so a re-query consults
+    the probe the allocation read rather than asking it a second time inside
+    the composition.  A probe that did not answer, or whose reading belongs to
+    a pool this lane does not declare, is not this lane's to carry, and a
+    reading without a figure is no answer at all -- all three leave the lane
+    reporting its own reading as unresolved.
+    """
+
+    def probe_reading() -> staleness_module.Reading | None:
+        if command is None or not isinstance(probe, Mapping):
+            return None
+        if probe.get("status") != "answered":
+            return None
+        if not _probe_is_lane_owned(
+            command, lane_group, command_by_backend, group_by_backend
+        ):
+            return None
+        figure = _own_lane_figure(probe.get("quota_windows"))
+        if figure is None:
+            return None
+        observed = str(probe.get("observed_at") or "")
+        return staleness_module.Reading(
+            used_percent=figure,
+            observed_at=_parsed_observation(observed),
+            source="probe",
+            serving_state=_serving_state(figure, observed, composed_at),
+        )
+
+    return probe_reading
+
+
 def _quota_rows(
     readings: Mapping[int, object] | object,
     observed_at: str | None,
     composed_at: str,
     *,
     source: str,
+    serving_state: str | None = None,
+    serving_state_reason: str | None = None,
 ) -> tuple[list[dict[str, Any]], str | None]:
     reason = _unmeasured_reason(readings)
     if reason is not None:
@@ -272,7 +365,11 @@ def _quota_rows(
             "observed_at": observed_at or UNMEASURED,
             "age_seconds": _observation_age_seconds(observed_at, composed_at),
             "source": source,
-            "serving_state": _serving_state(used, observed_at, composed_at),
+            "serving_state": (
+                _serving_state(used, observed_at, composed_at)
+                if serving_state is None
+                else serving_state
+            ),
         }
         reasons = {
             key: value
@@ -284,7 +381,9 @@ def _quota_rows(
                 ("age_seconds", None if observed_at else "no_observation_time"),
                 (
                     "serving_state",
-                    used_reason
+                    serving_state_reason
+                    if serving_state_reason is not None
+                    else used_reason
                     if used_reason is not None
                     else "no_observation_time"
                     if _parsed_observation(observed_at) is None
@@ -623,6 +722,9 @@ def crew_lanes_view(
     composition_time = composed_at or datetime.now(UTC).isoformat().replace(
         "+00:00", "Z"
     )
+    # One moment serves the whole composition, so a shelf-life comparison and a
+    # probe stamp's age resolve against the same instant and cannot disagree.
+    composition_moment = _parsed_observation(composition_time) or datetime.now(UTC)
     latest = _latest_backend_runs(runs)
     backend_config = config.get("backends")
     configured = backend_config if isinstance(backend_config, Mapping) else {}
@@ -633,9 +735,8 @@ def crew_lanes_view(
         # the view is handed its path; an injected reader keeps its own seam.
         # The cached stamp's age resolves against the composition instant so a
         # pinned fixture and a determined fetch age stay in the same frame.
-        probe_now = _parsed_observation(composition_time) or datetime.now(UTC)
         read_probe = (
-            _cached_path_probe_reader(account_cache_path, now=probe_now)
+            _cached_path_probe_reader(account_cache_path, now=composition_moment)
             if account_cache_path is not None
             else _run_budget_probe
         )
@@ -818,11 +919,55 @@ def crew_lanes_view(
                     "probe answered, but its quota windows do not match this lane's "
                     "receipt"
                 )
+        # A reading older than its configured shelf life is not reported as a
+        # position: the lane's probe is asked for a fresh figure and the fresh
+        # figure is what the lane shows.  The probe consulted is the reading
+        # this composition already holds for the lane's command, so the answer
+        # costs no second probe invocation however many lanes draw on it.
+        requeried = False
+        requery_failed = False
+        if isinstance(selected_readings, Mapping) and selected_readings:
+            reported = staleness_module.resolve_configured_reading(
+                _lane_position(
+                    selected_readings,
+                    selected_observed_at,
+                    source=quota_source,
+                    composed_at=composition_time,
+                ),
+                probe=_declared_probe_reading(
+                    probe,
+                    command=command,
+                    lane_group=lane_group,
+                    command_by_backend=command_by_backend,
+                    group_by_backend=group_by_backend,
+                    composed_at=composition_time,
+                ),
+                config=config,
+                now=composition_moment,
+            )
+            if reported.requeried:
+                requeried = True
+                if isinstance(probe, Mapping) and (
+                    reported.serving_state != staleness_module.SERVING_STATE_UNKNOWN
+                ):
+                    selected_readings = probe["quota_windows"]
+                    selected_observed_at = str(probe["observed_at"])
+                    quota_source = "probe"
+                else:
+                    # Nothing could answer for this lane.  The old figure is
+                    # kept with the age that disqualifies it and a serving
+                    # state of unknown, so the failure reads as neither
+                    # headroom nor exhaustion.
+                    requery_failed = True
         quota_rows, quota_reason = _quota_rows(
             selected_readings,
             selected_observed_at,
             composition_time,
             source=quota_source,
+            serving_state=(
+                staleness_module.SERVING_STATE_UNKNOWN if requery_failed else None
+            ),
+            serving_state_reason="requery_did_not_answer" if requery_failed else None,
         )
         if borrowed:
             quota_reason = "shared_command_probe_not_owned"
@@ -843,6 +988,7 @@ def crew_lanes_view(
             "probe_status": probe_status,
             "probe_detail": probe_detail,
             "probe_cached": probe_cached,
+            "requeried": requeried,
             "notional_cost_usd": notional_cost,
             "rate_basis": basis,
         }
