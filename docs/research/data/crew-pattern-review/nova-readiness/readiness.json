@@ -1,0 +1,1648 @@
+{
+  "capture": {
+    "distinct_measurements": 6,
+    "nova_head": "16287918db2f90d0088c1786ec45965cd90e6652",
+    "reproduce": "Run reconcile.py against the saved per-snapshot receipts and hashed complete logs; no tests rerun.",
+    "runtime": "shared Nova Python 3.14.2 environment on fleet CPU node; JAX_PLATFORMS=cpu; numerical library thread counts=1",
+    "same_config_at_all_snapshots": false
+  },
+  "classification_rules": {
+    "environment_exceptions": [
+      "ConnectionError",
+      "ConnectionRefusedError",
+      "FileNotFoundError",
+      "ImportError",
+      "ModuleNotFoundError",
+      "NotADirectoryError",
+      "OSError",
+      "PermissionError",
+      "TimeoutError"
+    ],
+    "environment_messages": [
+      "No module named",
+      "No such file or directory",
+      "Permission denied",
+      "Read-only file system",
+      "Connection refused",
+      "Failed to establish a new connection",
+      "Temporary failure in name resolution",
+      "cannot open shared object file",
+      "IMAS environment variables"
+    ],
+    "note": "Collection errors are classified from full event tracebacks; missing imports of modules present in the snapshot are code failures. Matching external-resource messages are environment failures. Remaining runtime failures are unclassified pending inspection."
+  },
+  "first_to_last": {
+    "artifacts": [
+      {
+        "log": "state-changes-1.csv",
+        "log_bytes": 240336,
+        "log_sha256": "5d7275357fe807e10547312d9448e4eeec1541c2b447bae280774128f51977ad"
+      },
+      {
+        "log": "state-changes-2.csv",
+        "log_bytes": 238106,
+        "log_sha256": "d302f1d0a7d93619278c84dc830f4809585d5a4798fac7da2f94afd4cb976f36"
+      },
+      {
+        "log": "state-changes-3.csv",
+        "log_bytes": 144522,
+        "log_sha256": "8d0071dfd5a0f64b6e285396e638ec8d27694ddba5aedf22912b6e502b6c4da2"
+      }
+    ],
+    "common_observed_selected": 1128,
+    "first": "2026-08-22",
+    "first_selected": 5612,
+    "last": "head",
+    "last_observed_unique": 1218,
+    "last_run_complete": false,
+    "last_selected": 7273,
+    "observation_rows": 5702,
+    "qualification": "not_run means selected but collection prevented execution; not_selected means absent from a complete filtered collection, not necessarily deleted; unobserved means missing from an interrupted run. These states do not establish pass-to-fail regressions.",
+    "transitions": [
+      {
+        "count": 6,
+        "first": "not_run",
+        "last": "failed"
+      },
+      {
+        "count": 1122,
+        "first": "not_run",
+        "last": "passed"
+      },
+      {
+        "count": 4484,
+        "first": "not_run",
+        "last": "unobserved"
+      },
+      {
+        "count": 8,
+        "first": "not_selected",
+        "last": "failed"
+      },
+      {
+        "count": 82,
+        "first": "not_selected",
+        "last": "passed"
+      }
+    ]
+  },
+  "head_sha": "16287918db2f90d0088c1786ec45965cd90e6652",
+  "lane": {
+    "description": "nova's default fast lane: pytest under the tree's own configuration, whose addopts select --doctest-modules and -m 'not slow'",
+    "extraction": "git archive into /tmp",
+    "interpreter": "/home/ITER/mcintos/Code/nova/.venv/bin/python",
+    "notes": "no sync and no write to the nova checkout; each snapshot runs with its own --basetemp",
+    "per_test_timeout_s": 120,
+    "pythonpath": "the extracted tree, then this data directory",
+    "timeout_mechanism": "readiness_timeout_plugin.py loaded with -p"
+  },
+  "marker_rules": {
+    "fixme": "\\bFIXME\\b",
+    "skip_call": "pytest\\.skip\\(",
+    "skip_decorator": "pytest\\.mark\\.skip\\b",
+    "skipif_decorator": "pytest\\.mark\\.skipif\\b",
+    "todo": "\\bTODO\\b",
+    "xfail_call": "pytest\\.xfail\\(",
+    "xfail_decorator": "pytest\\.mark\\.xfail\\b"
+  },
+  "primary_branch": "main",
+  "repository": "/home/ITER/mcintos/Code/nova",
+  "snapshot_keys_coinciding_with_head": [
+    "2026-09-26"
+  ],
+  "snapshot_rule": "primary-branch commit nearest 12:00Z on each date, by committer timestamp; before/after candidates and their distances are recorded per snapshot",
+  "snapshots": [
+    {
+      "archive_entries": 2175,
+      "candidates": {
+        "after": {
+          "commit_date": "2026-08-22T12:08:59+00:00",
+          "seconds_from_noon": 539,
+          "sha": "ddef98a75c1f8113a43800cbe8c1a62047991191"
+        },
+        "before": {
+          "commit_date": "2026-08-22T11:15:08+00:00",
+          "seconds_from_noon": -2692,
+          "sha": "a91557766c4e54aa7ddfed3f175d035a5e8de804"
+        }
+      },
+      "key": "2026-08-22",
+      "label": "commit nearest 12:00Z on 2026-08-22",
+      "markers": {
+        "files_scanned": 711,
+        "fixme": 0,
+        "scope": "Python files under nova/ and tests/; TODO/FIXME in COMMENT tokens, pytest marker spellings anywhere in those files",
+        "skip_call": 41,
+        "skip_decorator": 3,
+        "skip_markers": 59,
+        "skipif_decorator": 15,
+        "todo": 21,
+        "todo_or_fixme": 21,
+        "xfail_call": 0,
+        "xfail_decorator": 3,
+        "xfail_markers": 3
+      },
+      "measurement_cwd": "/tmp/nova-readiness-resumed/trees/2026-08-22",
+      "module_under_test": "/tmp/nova-readiness-resumed/trees/2026-08-22/nova/__init__.py",
+      "pyproject_blob": "eef95fc7ec0424211b4ad936ff13416f91cfe7b3",
+      "pytest": {
+        "code": [
+          {
+            "classification": "code",
+            "message": "E   ModuleNotFoundError: No module named 'measure_exact_section_routes'",
+            "nodeid": "tests/measure_external_wall_correction.py",
+            "reason": "The missing import names a module present in this committed tree; its import path does not resolve during the default collection."
+          }
+        ],
+        "code_collection_error_count": 1,
+        "collected": 6365,
+        "collection_error_unique_modules": 1,
+        "collection_errors": [
+          {
+            "classification": "code",
+            "message": "E   ModuleNotFoundError: No module named 'measure_exact_section_routes'",
+            "nodeid": "tests/measure_external_wall_correction.py",
+            "reason": "The missing import names a module present in this committed tree; its import path does not resolve during the default collection."
+          }
+        ],
+        "collection_policy_sha256": "911c74cc137039affb5dc0cd1aa80a02286ad9af0b780b02b1a5f85d6dc7fb87",
+        "collection_skipped": 2,
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/python",
+          "-m",
+          "pytest",
+          "-p",
+          "no:cacheprovider",
+          "-p",
+          "readiness_timeout_plugin",
+          "--basetemp=/tmp/nova-readiness-resumed/pytest-tmp/2026-08-22",
+          "-vv",
+          "--tb=short"
+        ],
+        "deselected": 753,
+        "environment": [],
+        "environment_error_count": 0,
+        "errored": 1,
+        "errors": [
+          {
+            "message": "",
+            "nodeid": "tests/measure_external_wall_correction.py"
+          }
+        ],
+        "executed_unique_tests": 0,
+        "exit_status": 2,
+        "failed": 0,
+        "failures": [],
+        "log": "pytest-2026-08-22-ddef98a75c.log",
+        "log_bytes": 17676,
+        "log_sha256": "8af6872acf830ea23b310bcbacfcfa0cac40edd7bfdd33e8dd7bb8dd97af65b8",
+        "measured": false,
+        "measurement_status": "collection_failed",
+        "not_measured_reason": "Default pytest stopped at collection; zero passed/failed records are not a zero-percent pass rate.",
+        "observed_failed_nodeids": [],
+        "outcomes_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T105233192444-nova-readiness-snapshots/outcomes-2026-08-22.json",
+        "outcomes_sha256": "133b058775575489af44bf263269db9684358da9241aaf1f32fd9c54d391e334",
+        "passed": 0,
+        "runtime_failures": [],
+        "selected": 5612,
+        "skipped": 2,
+        "summary_seen": true,
+        "test_outcomes_measured": false,
+        "timeouts": [],
+        "truncated": false,
+        "unclassified": [],
+        "warnings": 27,
+        "whole_run_timeout_s": 1500,
+        "xfail_ids": [],
+        "xfailed": 0,
+        "xpassed": 0,
+        "zero_outcome_interpretation": "no executed test outcomes; collection counts and errors are observed"
+      },
+      "pytest_config_sha256": "fab1fc7cb34a7c97e169d19d4414af2bcfc77e7fc060d1b7192d748887977d49",
+      "ruff": {
+        "by_rule": {
+          "E402": 3,
+          "E501": 73,
+          "E702": 10,
+          "E741": 7,
+          "F401": 1,
+          "F821": 1
+        },
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/ruff",
+          "check",
+          "--no-cache",
+          "--output-format=json",
+          "."
+        ],
+        "config_sha256": "81055bcba5cce50e1c4e3c59d27ea2d87f94086a9278ec868748e741f52ce0b4",
+        "exit_status": 1,
+        "files_with_findings": 4,
+        "findings": 95,
+        "log": "ruff-2026-08-22-ddef98a75c.json",
+        "log_bytes": 49402,
+        "log_sha256": "ecb8471e77ee266338635f3a3f1c697bfed0e5ef1669832a3ed75f2d7276ec5a",
+        "version": "ruff 0.15.22"
+      },
+      "selected_candidate": "after",
+      "sha": "ddef98a75c1f8113a43800cbe8c1a62047991191",
+      "short": "ddef98a75c",
+      "tree_files": 1915
+    },
+    {
+      "archive_entries": 2847,
+      "candidates": {
+        "after": {
+          "commit_date": "2026-08-29T18:29:14+00:00",
+          "seconds_from_noon": 23354,
+          "sha": "c650aaf6e9fad69b730dbc261a61dc200594fb90"
+        },
+        "before": {
+          "commit_date": "2026-08-28T16:35:11+00:00",
+          "seconds_from_noon": -69889,
+          "sha": "b9585c1f63bcc72b2e4f5d5dd2f0e789f9579a7f"
+        }
+      },
+      "key": "2026-08-29",
+      "label": "commit nearest 12:00Z on 2026-08-29",
+      "markers": {
+        "files_scanned": 789,
+        "fixme": 0,
+        "scope": "Python files under nova/ and tests/; TODO/FIXME in COMMENT tokens, pytest marker spellings anywhere in those files",
+        "skip_call": 44,
+        "skip_decorator": 3,
+        "skip_markers": 62,
+        "skipif_decorator": 15,
+        "todo": 21,
+        "todo_or_fixme": 21,
+        "xfail_call": 0,
+        "xfail_decorator": 3,
+        "xfail_markers": 3
+      },
+      "measurement_cwd": "/tmp/nova-readiness-resumed/trees/2026-08-29",
+      "module_under_test": "/tmp/nova-readiness-resumed/trees/2026-08-29/nova/__init__.py",
+      "pyproject_blob": "913bd47922f05521c6512232be560710285ef33b",
+      "pytest": {
+        "code": [
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          }
+        ],
+        "code_collection_error_count": 10,
+        "collected": 6840,
+        "collection_error_unique_modules": 5,
+        "collection_errors": [
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-08-29/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          }
+        ],
+        "collection_policy_sha256": "8decbdc88b2d9d5ef4bffb060cc5802c34e12dbfcfa8aae720d96f12ebb4b10e",
+        "collection_skipped": 2,
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/python",
+          "-m",
+          "pytest",
+          "-p",
+          "no:cacheprovider",
+          "-p",
+          "readiness_timeout_plugin",
+          "--basetemp=/tmp/nova-readiness-resumed/pytest-tmp/2026-08-29",
+          "-vv",
+          "--tb=short"
+        ],
+        "deselected": 796,
+        "environment": [],
+        "environment_error_count": 0,
+        "errored": 10,
+        "errors": [
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_moment_seed.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_moment_seed.py"
+          }
+        ],
+        "executed_unique_tests": 0,
+        "exit_status": 2,
+        "failed": 0,
+        "failures": [],
+        "log": "pytest-2026-08-29-c650aaf6e9.log",
+        "log_bytes": 34420,
+        "log_sha256": "be538b6dc78ac90b6c42de5de6db839a6e4b334a28983fb10f74e85a447485e7",
+        "measured": false,
+        "measurement_status": "collection_failed",
+        "not_measured_reason": "Default pytest stopped at collection; zero passed/failed records are not a zero-percent pass rate.",
+        "observed_failed_nodeids": [],
+        "outcomes_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T105233192444-nova-readiness-snapshots/outcomes-2026-08-29.json",
+        "outcomes_sha256": "8aa126cece0e6adda1d4aec8eb0e7fcb86b4cc0f96d26824e23e93883365d94a",
+        "passed": 0,
+        "runtime_failures": [],
+        "selected": 6044,
+        "skipped": 2,
+        "summary_seen": true,
+        "test_outcomes_measured": false,
+        "timeouts": [],
+        "truncated": false,
+        "unclassified": [],
+        "warnings": 27,
+        "whole_run_timeout_s": 1500,
+        "xfail_ids": [],
+        "xfailed": 0,
+        "xpassed": 0,
+        "zero_outcome_interpretation": "no executed test outcomes; collection counts and errors are observed"
+      },
+      "pytest_config_sha256": "cabd1faaeb7e7957968b34793043046ffb1f3194a4a8d0e9dc089e65cbdff2a9",
+      "ruff": {
+        "by_rule": {
+          "E402": 3,
+          "E501": 73,
+          "E702": 10,
+          "E741": 7,
+          "F401": 1,
+          "F821": 1
+        },
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/ruff",
+          "check",
+          "--no-cache",
+          "--output-format=json",
+          "."
+        ],
+        "config_sha256": "81055bcba5cce50e1c4e3c59d27ea2d87f94086a9278ec868748e741f52ce0b4",
+        "exit_status": 1,
+        "files_with_findings": 4,
+        "findings": 95,
+        "log": "ruff-2026-08-29-c650aaf6e9.json",
+        "log_bytes": 49402,
+        "log_sha256": "35fa5cc8bd80dd177446618ab8331cd5282e0bdb3a75fcf06748617685c5beed",
+        "version": "ruff 0.15.22"
+      },
+      "selected_candidate": "after",
+      "sha": "c650aaf6e9fad69b730dbc261a61dc200594fb90",
+      "short": "c650aaf6e9",
+      "tree_files": 2521
+    },
+    {
+      "archive_entries": 3476,
+      "candidates": {
+        "after": {
+          "commit_date": "2026-09-05T12:07:25+00:00",
+          "seconds_from_noon": 445,
+          "sha": "e247cff66a06bc6a12cdfd3d9003c34fde90ecde"
+        },
+        "before": {
+          "commit_date": "2026-09-05T10:56:04+00:00",
+          "seconds_from_noon": -3836,
+          "sha": "0b3484a1a180176f85ba8c687bb6250ebe958239"
+        }
+      },
+      "key": "2026-09-05",
+      "label": "commit nearest 12:00Z on 2026-09-05",
+      "markers": {
+        "files_scanned": 849,
+        "fixme": 0,
+        "scope": "Python files under nova/ and tests/; TODO/FIXME in COMMENT tokens, pytest marker spellings anywhere in those files",
+        "skip_call": 46,
+        "skip_decorator": 3,
+        "skip_markers": 66,
+        "skipif_decorator": 17,
+        "todo": 21,
+        "todo_or_fixme": 21,
+        "xfail_call": 0,
+        "xfail_decorator": 3,
+        "xfail_markers": 3
+      },
+      "measurement_cwd": "/tmp/nova-readiness-resumed/trees/2026-09-05",
+      "module_under_test": "/tmp/nova-readiness-resumed/trees/2026-09-05/nova/__init__.py",
+      "pyproject_blob": "913bd47922f05521c6512232be560710285ef33b",
+      "pytest": {
+        "code": [
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          }
+        ],
+        "code_collection_error_count": 10,
+        "collected": 7190,
+        "collection_error_unique_modules": 5,
+        "collection_errors": [
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-05/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          }
+        ],
+        "collection_policy_sha256": "8decbdc88b2d9d5ef4bffb060cc5802c34e12dbfcfa8aae720d96f12ebb4b10e",
+        "collection_skipped": 2,
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/python",
+          "-m",
+          "pytest",
+          "-p",
+          "no:cacheprovider",
+          "-p",
+          "readiness_timeout_plugin",
+          "--basetemp=/tmp/nova-readiness-resumed/pytest-tmp/2026-09-05",
+          "-vv",
+          "--tb=short"
+        ],
+        "deselected": 805,
+        "environment": [],
+        "environment_error_count": 0,
+        "errored": 10,
+        "errors": [
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_moment_seed.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_moment_seed.py"
+          }
+        ],
+        "executed_unique_tests": 0,
+        "exit_status": 2,
+        "failed": 0,
+        "failures": [],
+        "log": "pytest-2026-09-05-e247cff66a.log",
+        "log_bytes": 34420,
+        "log_sha256": "abdbc4b49f6e67f221b35916c93c8502e8e4c0e826bf997e04e2fb452fdecbc5",
+        "measured": false,
+        "measurement_status": "collection_failed",
+        "not_measured_reason": "Default pytest stopped at collection; zero passed/failed records are not a zero-percent pass rate.",
+        "observed_failed_nodeids": [],
+        "outcomes_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T105233192444-nova-readiness-snapshots/outcomes-2026-09-05.json",
+        "outcomes_sha256": "154db5a4a2b8bc20baa335aff1120f2885c5b6b575110fe942fcb8f9fcac27a6",
+        "passed": 0,
+        "runtime_failures": [],
+        "selected": 6385,
+        "skipped": 2,
+        "summary_seen": true,
+        "test_outcomes_measured": false,
+        "timeouts": [],
+        "truncated": false,
+        "unclassified": [],
+        "warnings": 27,
+        "whole_run_timeout_s": 1500,
+        "xfail_ids": [],
+        "xfailed": 0,
+        "xpassed": 0,
+        "zero_outcome_interpretation": "no executed test outcomes; collection counts and errors are observed"
+      },
+      "pytest_config_sha256": "cabd1faaeb7e7957968b34793043046ffb1f3194a4a8d0e9dc089e65cbdff2a9",
+      "ruff": {
+        "by_rule": {
+          "E402": 3,
+          "E501": 73,
+          "E702": 10,
+          "E741": 7,
+          "F401": 1,
+          "F821": 1
+        },
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/ruff",
+          "check",
+          "--no-cache",
+          "--output-format=json",
+          "."
+        ],
+        "config_sha256": "81055bcba5cce50e1c4e3c59d27ea2d87f94086a9278ec868748e741f52ce0b4",
+        "exit_status": 1,
+        "files_with_findings": 4,
+        "findings": 95,
+        "log": "ruff-2026-09-05-e247cff66a.json",
+        "log_bytes": 49402,
+        "log_sha256": "046f7125c7822f7bd773948c7c890503c1686cf5a5f781adad1370f9032820ba",
+        "version": "ruff 0.15.22"
+      },
+      "selected_candidate": "after",
+      "sha": "e247cff66a06bc6a12cdfd3d9003c34fde90ecde",
+      "short": "e247cff66a",
+      "tree_files": 3080
+    },
+    {
+      "archive_entries": 4370,
+      "candidates": {
+        "after": {
+          "commit_date": "2026-09-14T05:47:21+00:00",
+          "seconds_from_noon": 150441,
+          "sha": "d0fa49190b4f7a6da74d6cbbe71bd29d678a113e"
+        },
+        "before": {
+          "commit_date": "2026-09-11T13:09:24+00:00",
+          "seconds_from_noon": -82236,
+          "sha": "9062b6f121e4355ffd091280c4e5df3905943130"
+        }
+      },
+      "key": "2026-09-12",
+      "label": "commit nearest 12:00Z on 2026-09-12",
+      "markers": {
+        "files_scanned": 910,
+        "fixme": 0,
+        "scope": "Python files under nova/ and tests/; TODO/FIXME in COMMENT tokens, pytest marker spellings anywhere in those files",
+        "skip_call": 59,
+        "skip_decorator": 3,
+        "skip_markers": 84,
+        "skipif_decorator": 22,
+        "todo": 21,
+        "todo_or_fixme": 21,
+        "xfail_call": 0,
+        "xfail_decorator": 4,
+        "xfail_markers": 4
+      },
+      "measurement_cwd": "/tmp/nova-readiness-resumed/trees/2026-09-12",
+      "module_under_test": "/tmp/nova-readiness-resumed/trees/2026-09-12/nova/__init__.py",
+      "pyproject_blob": "9256784e0434ab94db4a9dd33759e26d3f742faf",
+      "pytest": {
+        "code": [
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          }
+        ],
+        "code_collection_error_count": 10,
+        "collected": 7566,
+        "collection_error_unique_modules": 5,
+        "collection_errors": [
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-12/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          }
+        ],
+        "collection_policy_sha256": "8decbdc88b2d9d5ef4bffb060cc5802c34e12dbfcfa8aae720d96f12ebb4b10e",
+        "collection_skipped": 2,
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/python",
+          "-m",
+          "pytest",
+          "-p",
+          "no:cacheprovider",
+          "-p",
+          "readiness_timeout_plugin",
+          "--basetemp=/tmp/nova-readiness-resumed/pytest-tmp/2026-09-12",
+          "-vv",
+          "--tb=short"
+        ],
+        "deselected": 834,
+        "environment": [],
+        "environment_error_count": 0,
+        "errored": 10,
+        "errors": [
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_moment_seed.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_moment_seed.py"
+          }
+        ],
+        "executed_unique_tests": 0,
+        "exit_status": 2,
+        "failed": 0,
+        "failures": [],
+        "log": "pytest-2026-09-12-9062b6f121.log",
+        "log_bytes": 34420,
+        "log_sha256": "ee6928fd60e91065f802bd683301df3f18a9f5402d79f1eccabd9114a4556621",
+        "measured": false,
+        "measurement_status": "collection_failed",
+        "not_measured_reason": "Default pytest stopped at collection; zero passed/failed records are not a zero-percent pass rate.",
+        "observed_failed_nodeids": [],
+        "outcomes_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T105233192444-nova-readiness-snapshots/outcomes-2026-09-12.json",
+        "outcomes_sha256": "f9485de61ca8e9fc6d472a457c1f71b9011a1ebd3ef342d2357b85c4cf5fd55f",
+        "passed": 0,
+        "runtime_failures": [],
+        "selected": 6732,
+        "skipped": 2,
+        "summary_seen": true,
+        "test_outcomes_measured": false,
+        "timeouts": [],
+        "truncated": false,
+        "unclassified": [],
+        "warnings": 27,
+        "whole_run_timeout_s": 1500,
+        "xfail_ids": [],
+        "xfailed": 0,
+        "xpassed": 0,
+        "zero_outcome_interpretation": "no executed test outcomes; collection counts and errors are observed"
+      },
+      "pytest_config_sha256": "cabd1faaeb7e7957968b34793043046ffb1f3194a4a8d0e9dc089e65cbdff2a9",
+      "ruff": {
+        "by_rule": {
+          "E402": 3,
+          "E501": 78,
+          "E702": 10,
+          "E741": 7,
+          "F401": 1,
+          "F821": 1
+        },
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/ruff",
+          "check",
+          "--no-cache",
+          "--output-format=json",
+          "."
+        ],
+        "config_sha256": "81055bcba5cce50e1c4e3c59d27ea2d87f94086a9278ec868748e741f52ce0b4",
+        "exit_status": 1,
+        "files_with_findings": 7,
+        "findings": 100,
+        "log": "ruff-2026-09-12-9062b6f121.json",
+        "log_bytes": 51858,
+        "log_sha256": "6cf3572168ada7bbabb0dfcf612c645b11832ea47c7bfac3e32fccc2075b75f0",
+        "version": "ruff 0.15.22"
+      },
+      "selected_candidate": "before",
+      "sha": "9062b6f121e4355ffd091280c4e5df3905943130",
+      "short": "9062b6f121",
+      "tree_files": 3852
+    },
+    {
+      "archive_entries": 5350,
+      "candidates": {
+        "after": {
+          "commit_date": "2026-09-19T12:00:38+00:00",
+          "seconds_from_noon": 38,
+          "sha": "c11eea7f110bdec79d586e23ebc83f5568b3f7ab"
+        },
+        "before": {
+          "commit_date": "2026-09-19T11:58:24+00:00",
+          "seconds_from_noon": -96,
+          "sha": "6a31b665b2afa97edbabf1437ae06175d478be91"
+        }
+      },
+      "key": "2026-09-19",
+      "label": "commit nearest 12:00Z on 2026-09-19",
+      "markers": {
+        "files_scanned": 938,
+        "fixme": 0,
+        "scope": "Python files under nova/ and tests/; TODO/FIXME in COMMENT tokens, pytest marker spellings anywhere in those files",
+        "skip_call": 62,
+        "skip_decorator": 3,
+        "skip_markers": 88,
+        "skipif_decorator": 23,
+        "todo": 21,
+        "todo_or_fixme": 21,
+        "xfail_call": 0,
+        "xfail_decorator": 4,
+        "xfail_markers": 4
+      },
+      "measurement_cwd": "/tmp/nova-readiness-resumed/trees/2026-09-19",
+      "module_under_test": "/tmp/nova-readiness-resumed/trees/2026-09-19/nova/__init__.py",
+      "pyproject_blob": "9256784e0434ab94db4a9dd33759e26d3f742faf",
+      "pytest": {
+        "code": [
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          }
+        ],
+        "code_collection_error_count": 10,
+        "collected": 7806,
+        "collection_error_unique_modules": 5,
+        "collection_errors": [
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          },
+          {
+            "classification": "code",
+            "message": "E   ImportError: cannot import name '_separatrix' from 'benchmarks.diiid_forward_gs_match' (/tmp/nova-readiness-resumed/trees/2026-09-19/benchmarks/diiid_forward_gs_match.py)",
+            "nodeid": "tests/test_moment_seed.py",
+            "reason": "An importer and the module lacking its required symbol both belong to the committed snapshot."
+          }
+        ],
+        "collection_policy_sha256": "8decbdc88b2d9d5ef4bffb060cc5802c34e12dbfcfa8aae720d96f12ebb4b10e",
+        "collection_skipped": 2,
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/python",
+          "-m",
+          "pytest",
+          "-p",
+          "no:cacheprovider",
+          "-p",
+          "readiness_timeout_plugin",
+          "--basetemp=/tmp/nova-readiness-resumed/pytest-tmp/2026-09-19",
+          "-vv",
+          "--tb=short"
+        ],
+        "deselected": 854,
+        "environment": [],
+        "environment_error_count": 0,
+        "errored": 10,
+        "errors": [
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_circuit_driven_forward_validation.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_diverted_solve_overlay.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/imas/test_diiid_solenoid_inclusion_ladder.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_efit_parity_warm_neighbour.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_moment_seed.py"
+          },
+          {
+            "message": "",
+            "nodeid": "tests/test_moment_seed.py"
+          }
+        ],
+        "executed_unique_tests": 0,
+        "exit_status": 2,
+        "failed": 0,
+        "failures": [],
+        "log": "pytest-2026-09-19-c11eea7f11.log",
+        "log_bytes": 34420,
+        "log_sha256": "6f8bf54595cae04a15d7cb225dae7faa5fb95321c9508a5c70b20790724fc8d1",
+        "measured": false,
+        "measurement_status": "collection_failed",
+        "not_measured_reason": "Default pytest stopped at collection; zero passed/failed records are not a zero-percent pass rate.",
+        "observed_failed_nodeids": [],
+        "outcomes_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T105233192444-nova-readiness-snapshots/outcomes-2026-09-19.json",
+        "outcomes_sha256": "7e5a5b54a5fb27bc5af80edf088c97bb6bf3dbef86c34801bbe8fe2255aa6c81",
+        "passed": 0,
+        "runtime_failures": [],
+        "selected": 6952,
+        "skipped": 2,
+        "summary_seen": true,
+        "test_outcomes_measured": false,
+        "timeouts": [],
+        "truncated": false,
+        "unclassified": [],
+        "warnings": 27,
+        "whole_run_timeout_s": 1500,
+        "xfail_ids": [],
+        "xfailed": 0,
+        "xpassed": 0,
+        "zero_outcome_interpretation": "no executed test outcomes; collection counts and errors are observed"
+      },
+      "pytest_config_sha256": "cabd1faaeb7e7957968b34793043046ffb1f3194a4a8d0e9dc089e65cbdff2a9",
+      "ruff": {
+        "by_rule": {
+          "E401": 1,
+          "E402": 4,
+          "E501": 83,
+          "E701": 5,
+          "E702": 16,
+          "E741": 7,
+          "F401": 1,
+          "F821": 1,
+          "F841": 3
+        },
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/ruff",
+          "check",
+          "--no-cache",
+          "--output-format=json",
+          "."
+        ],
+        "config_sha256": "81055bcba5cce50e1c4e3c59d27ea2d87f94086a9278ec868748e741f52ce0b4",
+        "exit_status": 1,
+        "files_with_findings": 9,
+        "findings": 121,
+        "log": "ruff-2026-09-19-c11eea7f11.json",
+        "log_bytes": 64612,
+        "log_sha256": "49a04dbf19a7d1bec45e7f7f50d8012e445d2b0a83a3995768a7fc85119adc1a",
+        "version": "ruff 0.15.22"
+      },
+      "selected_candidate": "after",
+      "sha": "c11eea7f110bdec79d586e23ebc83f5568b3f7ab",
+      "short": "c11eea7f11",
+      "tree_files": 4699
+    },
+    {
+      "archive_entries": 7329,
+      "candidates": {
+        "before": {
+          "commit_date": "2026-09-24T15:59:59+00:00",
+          "seconds_from_noon": -158401,
+          "sha": "16287918db2f90d0088c1786ec45965cd90e6652"
+        }
+      },
+      "key": "2026-09-26",
+      "label": "commit nearest 12:00Z on 2026-09-26",
+      "markers": {
+        "files_scanned": 983,
+        "fixme": 0,
+        "scope": "Python files under nova/ and tests/; TODO/FIXME in COMMENT tokens, pytest marker spellings anywhere in those files",
+        "skip_call": 64,
+        "skip_decorator": 3,
+        "skip_markers": 93,
+        "skipif_decorator": 26,
+        "todo": 21,
+        "todo_or_fixme": 21,
+        "xfail_call": 0,
+        "xfail_decorator": 4,
+        "xfail_markers": 4
+      },
+      "measurement_cwd": "/tmp/nova-readiness-resumed/trees/2026-09-26",
+      "module_under_test": "/tmp/nova-readiness-resumed/trees/2026-09-26/nova/__init__.py",
+      "pyproject_blob": "9256784e0434ab94db4a9dd33759e26d3f742faf",
+      "pytest": {
+        "classification_qualification": "Runtime tracebacks were not emitted before interruption, so environment-caused runtime errors cannot be counted.",
+        "code": [],
+        "code_collection_error_count": 0,
+        "collected": 8152,
+        "collection_error_unique_modules": 0,
+        "collection_errors": [],
+        "collection_policy_sha256": "8decbdc88b2d9d5ef4bffb060cc5802c34e12dbfcfa8aae720d96f12ebb4b10e",
+        "collection_skipped": 2,
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/python",
+          "-m",
+          "pytest",
+          "-p",
+          "no:cacheprovider",
+          "-p",
+          "readiness_timeout_plugin",
+          "--basetemp=/tmp/nova-readiness-resumed/pytest-tmp/2026-09-26",
+          "-vv",
+          "--tb=short"
+        ],
+        "deselected": 879,
+        "environment": [],
+        "environment_error_count": null,
+        "errored": null,
+        "errors": [],
+        "executed_unique_tests": 1218,
+        "exit_status": null,
+        "failed": null,
+        "failures": [],
+        "log": "pytest-2026-09-26-16287918db.log",
+        "log_bytes": 135634,
+        "log_sha256": "6252c4f2ff3f73c76396b6b3663844940d76239d7adc80fbf24cf6e77064731b",
+        "measured": false,
+        "measurement_status": "incomplete",
+        "not_measured_reason": "No complete pytest summary: the 1500-second census process bound expired; full outcome totals are unknown and observed progress is only a lower bound.",
+        "observed_failed_nodeids": [
+          "tests/calibrate/test_gain.py::test_pulses_presenting_different_field_ratios_recover_both_parameters",
+          "tests/imas/test_diiid_current.py::test_banked_circuit_receipt_matches_runtime_calibration",
+          "tests/imas/test_diiid_vessel_hex_mesh.py::test_authoritative_limiter_is_clipped_to_the_preregistered_area",
+          "tests/test_amplification_observation.py::test_nonfinite_achieved_residual_keeps_the_state_unpromoted",
+          "tests/test_amplification_observation.py::test_qualified_contracting_trajectory_has_its_own_observation",
+          "tests/test_amplification_observation.py::test_sustained_growth_is_reported_without_blocking_terminal_promotion",
+          "tests/test_amplification_observation.py::test_unsuccessful_solver_status_keeps_the_state_unpromoted",
+          "tests/test_amplification_observation.py::test_zero_step_at_material_residual_keeps_the_state_unpromoted",
+          "tests/test_batched_labeller.py::test_masked_conditioning_keeps_the_augmented_multiplier",
+          "tests/test_batched_labeller.py::test_result_contains_fixed_shape_topology_fields",
+          "tests/test_batched_labeller.py::test_two_elements_match_compiled_route_and_padded_batch",
+          "tests/test_biotcircle.py::test_a_tiling_of_sub_sections_sums_to_the_whole_section_integral",
+          "tests/test_biotcircle.py::test_an_all_to_all_matrix_has_no_divergent_entry[cells]",
+          "tests/test_biotcircle.py::test_the_flux_and_the_vector_potential_stay_one_quantity"
+        ],
+        "observed_progress": {
+          "failed": 14,
+          "passed": 1204
+        },
+        "outcomes_log": null,
+        "outcomes_sha256": null,
+        "passed": null,
+        "runtime_failures": [],
+        "selected": 7273,
+        "skipped": null,
+        "summary_seen": false,
+        "test_outcomes_measured": false,
+        "timeouts": [],
+        "truncated": true,
+        "unclassified": [],
+        "warnings": 0,
+        "whole_run_timeout_s": 1500,
+        "xfail_ids": [],
+        "xfailed": null,
+        "xpassed": null,
+        "zero_outcome_interpretation": "outcome totals are null, because the run is incomplete; observed_progress carries lower bounds"
+      },
+      "pytest_config_sha256": "cabd1faaeb7e7957968b34793043046ffb1f3194a4a8d0e9dc089e65cbdff2a9",
+      "ruff": {
+        "by_rule": {
+          "E401": 3,
+          "E402": 61,
+          "E501": 104,
+          "E701": 5,
+          "E702": 16,
+          "E741": 7,
+          "F401": 1,
+          "F821": 1,
+          "F841": 3
+        },
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/ruff",
+          "check",
+          "--no-cache",
+          "--output-format=json",
+          "."
+        ],
+        "config_sha256": "81055bcba5cce50e1c4e3c59d27ea2d87f94086a9278ec868748e741f52ce0b4",
+        "exit_status": 1,
+        "files_with_findings": 28,
+        "findings": 201,
+        "log": "ruff-2026-09-26-16287918db.json",
+        "log_bytes": 109397,
+        "log_sha256": "0928c8966cf5bc08c7f883acb3b01fa8df65a8fa8dc040237fcb2d57479ff1eb",
+        "version": "ruff 0.15.22"
+      },
+      "selected_candidate": "before",
+      "sha": "16287918db2f90d0088c1786ec45965cd90e6652",
+      "short": "16287918db",
+      "tree_files": 6581
+    },
+    {
+      "archive_entries": 7329,
+      "candidates": {},
+      "key": "head",
+      "label": "current head of main",
+      "markers": {
+        "files_scanned": 983,
+        "fixme": 0,
+        "scope": "Python files under nova/ and tests/; TODO/FIXME in COMMENT tokens, pytest marker spellings anywhere in those files",
+        "skip_call": 64,
+        "skip_decorator": 3,
+        "skip_markers": 93,
+        "skipif_decorator": 26,
+        "todo": 21,
+        "todo_or_fixme": 21,
+        "xfail_call": 0,
+        "xfail_decorator": 4,
+        "xfail_markers": 4
+      },
+      "measurement_alias_of": "2026-09-26",
+      "measurement_cwd": "/tmp/nova-readiness-resumed/trees/2026-09-26",
+      "module_under_test": "/tmp/nova-readiness-resumed/trees/2026-09-26/nova/__init__.py",
+      "pyproject_blob": "9256784e0434ab94db4a9dd33759e26d3f742faf",
+      "pytest": {
+        "classification_qualification": "Runtime tracebacks were not emitted before interruption, so environment-caused runtime errors cannot be counted.",
+        "code": [],
+        "code_collection_error_count": 0,
+        "collected": 8152,
+        "collection_error_unique_modules": 0,
+        "collection_errors": [],
+        "collection_policy_sha256": "8decbdc88b2d9d5ef4bffb060cc5802c34e12dbfcfa8aae720d96f12ebb4b10e",
+        "collection_skipped": 2,
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/python",
+          "-m",
+          "pytest",
+          "-p",
+          "no:cacheprovider",
+          "-p",
+          "readiness_timeout_plugin",
+          "--basetemp=/tmp/nova-readiness-resumed/pytest-tmp/2026-09-26",
+          "-vv",
+          "--tb=short"
+        ],
+        "deselected": 879,
+        "environment": [],
+        "environment_error_count": null,
+        "errored": null,
+        "errors": [],
+        "executed_unique_tests": 1218,
+        "exit_status": null,
+        "failed": null,
+        "failures": [],
+        "log": "pytest-2026-09-26-16287918db.log",
+        "log_bytes": 135634,
+        "log_sha256": "6252c4f2ff3f73c76396b6b3663844940d76239d7adc80fbf24cf6e77064731b",
+        "measured": false,
+        "measurement_status": "incomplete",
+        "not_measured_reason": "No complete pytest summary: the 1500-second census process bound expired; full outcome totals are unknown and observed progress is only a lower bound.",
+        "observed_failed_nodeids": [
+          "tests/calibrate/test_gain.py::test_pulses_presenting_different_field_ratios_recover_both_parameters",
+          "tests/imas/test_diiid_current.py::test_banked_circuit_receipt_matches_runtime_calibration",
+          "tests/imas/test_diiid_vessel_hex_mesh.py::test_authoritative_limiter_is_clipped_to_the_preregistered_area",
+          "tests/test_amplification_observation.py::test_nonfinite_achieved_residual_keeps_the_state_unpromoted",
+          "tests/test_amplification_observation.py::test_qualified_contracting_trajectory_has_its_own_observation",
+          "tests/test_amplification_observation.py::test_sustained_growth_is_reported_without_blocking_terminal_promotion",
+          "tests/test_amplification_observation.py::test_unsuccessful_solver_status_keeps_the_state_unpromoted",
+          "tests/test_amplification_observation.py::test_zero_step_at_material_residual_keeps_the_state_unpromoted",
+          "tests/test_batched_labeller.py::test_masked_conditioning_keeps_the_augmented_multiplier",
+          "tests/test_batched_labeller.py::test_result_contains_fixed_shape_topology_fields",
+          "tests/test_batched_labeller.py::test_two_elements_match_compiled_route_and_padded_batch",
+          "tests/test_biotcircle.py::test_a_tiling_of_sub_sections_sums_to_the_whole_section_integral",
+          "tests/test_biotcircle.py::test_an_all_to_all_matrix_has_no_divergent_entry[cells]",
+          "tests/test_biotcircle.py::test_the_flux_and_the_vector_potential_stay_one_quantity"
+        ],
+        "observed_progress": {
+          "failed": 14,
+          "passed": 1204
+        },
+        "outcomes_log": null,
+        "outcomes_sha256": null,
+        "passed": null,
+        "runtime_failures": [],
+        "selected": 7273,
+        "skipped": null,
+        "summary_seen": false,
+        "test_outcomes_measured": false,
+        "timeouts": [],
+        "truncated": true,
+        "unclassified": [],
+        "warnings": 0,
+        "whole_run_timeout_s": 1500,
+        "xfail_ids": [],
+        "xfailed": null,
+        "xpassed": null,
+        "zero_outcome_interpretation": "outcome totals are null, because the run is incomplete; observed_progress carries lower bounds"
+      },
+      "pytest_config_sha256": "cabd1faaeb7e7957968b34793043046ffb1f3194a4a8d0e9dc089e65cbdff2a9",
+      "ruff": {
+        "by_rule": {
+          "E401": 3,
+          "E402": 61,
+          "E501": 104,
+          "E701": 5,
+          "E702": 16,
+          "E741": 7,
+          "F401": 1,
+          "F821": 1,
+          "F841": 3
+        },
+        "command": [
+          "/home/ITER/mcintos/Code/nova/.venv/bin/ruff",
+          "check",
+          "--no-cache",
+          "--output-format=json",
+          "."
+        ],
+        "config_sha256": "81055bcba5cce50e1c4e3c59d27ea2d87f94086a9278ec868748e741f52ce0b4",
+        "exit_status": 1,
+        "files_with_findings": 28,
+        "findings": 201,
+        "log": "ruff-2026-09-26-16287918db.json",
+        "log_bytes": 109397,
+        "log_sha256": "0928c8966cf5bc08c7f883acb3b01fa8df65a8fa8dc040237fcb2d57479ff1eb",
+        "version": "ruff 0.15.22"
+      },
+      "selected_candidate": "",
+      "sha": "16287918db2f90d0088c1786ec45965cd90e6652",
+      "short": "16287918db",
+      "tree_files": 6581
+    }
+  ],
+  "subject": "nova"
+}

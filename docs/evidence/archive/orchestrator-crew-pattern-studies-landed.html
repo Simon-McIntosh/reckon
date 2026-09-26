@@ -9,7 +9,7 @@
   <meta name="plan-title" content="Orchestrator Crew Pattern Studies — execution evidence">
   <meta name="plan-summary" content="Cumulative measured evidence for the crew pattern studies: each study's measurements, reproduction checks and limits.">
   <meta name="plan-evidence-for" content="orchestrator-crew-pattern-studies">
-  <meta name="plan-verifies" content="orchestrator-crew-pattern-studies#s2,orchestrator-crew-pattern-studies#s6,orchestrator-crew-pattern-studies#s5">
+  <meta name="plan-verifies" content="orchestrator-crew-pattern-studies#s2,orchestrator-crew-pattern-studies#s6,orchestrator-crew-pattern-studies#s5,orchestrator-crew-pattern-studies#s7">
   <meta name="plan-commits" content="95b173b8d99858cdaddc58a4d5ecbe08557cd98e,c29fb51e7820d712a4259eceff8e531585939fca,c602d1bed59d33b62e94ee5d4aa689f153ced664">
   <meta name="plan-tags" content="crew,analysis,measurement">
   <meta name="plan-recorded-at" content="2026-09-26">
@@ -296,6 +296,55 @@
       <p>The deliverables were committed locally for review. No production source or plan lifecycle
         state changed. The next concrete action is coordinator review of this evidence alongside the
         other studies, followed by separately scoped behavior-preserving consolidations.</p>
+    </section>
+    <section id="nova-readiness">
+      <h2>Nova readiness: collection recovery, rising lint debt, incomplete runtime coverage</h2>
+      <p><strong>Partial result.</strong> Six pinned primary-branch snapshots were extracted with
+        <code>git archive</code> and attempted with the same default fast-lane configuration,
+        at most four concurrent jobs, and the committed 120-second per-test timeout hook.
+        September 26 and the captured head share
+        <code>16287918db2f90d0088c1786ec45965cd90e6652</code> and one measurement.</p>
+      <table>
+        <thead><tr><th>Snapshot</th><th>Collected / selected</th><th>Pytest result</th><th>Ruff findings</th><th>Skip markers / Python files</th></tr></thead>
+        <tbody>
+          <tr><td>August 22</td><td>6,365 / 5,612</td><td>1 code collection error; 2 collection skips</td><td>95</td><td>59 / 711</td></tr>
+          <tr><td>August 29</td><td>6,840 / 6,044</td><td>10 code collection errors; 2 collection skips</td><td>95</td><td>62 / 789</td></tr>
+          <tr><td>September 5</td><td>7,190 / 6,385</td><td>10 code collection errors; 2 collection skips</td><td>95</td><td>66 / 849</td></tr>
+          <tr><td>September 12</td><td>7,566 / 6,732</td><td>10 code collection errors; 2 collection skips</td><td>100</td><td>84 / 910</td></tr>
+          <tr><td>September 19</td><td>7,806 / 6,952</td><td>10 code collection errors; 2 collection skips</td><td>121</td><td>88 / 938</td></tr>
+          <tr><td>September 26 / captured head</td><td>8,152 / 7,273</td><td>Interrupted at 1,500 seconds; 1,204 passed and 14 failed observations, full totals unknown</td><td>201</td><td>93 / 983</td></tr>
+        </tbody>
+      </table>
+      <p>The historical failures come from snapshot-local imports, not absent third-party packages.
+        The August 22 helper import becomes qualified as <code>tests.measure_exact_section_routes</code>
+        at the head. The other historical snapshots report ten errors across five importing modules
+        whose chains require an absent <code>_separatrix</code> export. No historical selected tests
+        executed, so the observed collection recovery does not establish a pass-rate improvement.
+        The head completed only 1,218 / 7,273 selected outcomes (16.7%). Its unfinished totals are
+        null, and its missing runtime tracebacks leave environment attribution unknown.</p>
+      <p>Ruff findings increased 95 → 201 (+111.6%) with identical Ruff configuration. TODO and
+        FIXME comment counts stayed 21 and 0; xfail spellings increased 3 → 4 and skip spellings
+        59 → 93. Marker counts cover Python files in <code>nova/</code> and <code>tests/</code>,
+        not test outcomes. The data retains every denominator, exact node identity and log hash.</p>
+      <p>Instrument delivery includes <code>4c071ca07c9fc079946a6d477bd54ae9c0e2eb08</code>;
+        executable output handling and archive extraction landed in
+        <code>7828fe2fbfda0605014eefa9b296ae9b78ae8839</code>; the five historical full logs are in
+        <code>d298121c83c8f21c0463ba9d41204b0e6958e408</code>. The inherited redirection defect
+        reproduced as <code>ValueError: stdout and stderr arguments may not be used with capture_output.</code>
+        The corrected instrument ran all snapshots. Positive controls exercised the timeout hook,
+        all reported outcome categories, marker detection, and preservation of unknown totals.</p>
+      <p>Read the <a href="/reckon/research/data/crew-pattern-review/nova-readiness/readiness.json">machine-readable readiness record</a>,
+        <a href="/reckon/research/data/crew-pattern-review/nova-readiness/findings.md">findings with named first-to-last observations</a>,
+        <a href="/reckon/research/data/crew-pattern-review/nova-readiness/census.log">census execution log</a>, and
+        <a href="/reckon/research/data/crew-pattern-review/nova-readiness/pytest-2026-09-26-16287918db.log">complete captured output of the interrupted head run</a>.
+        All six pytest logs and all six Ruff outputs are retained beside the data, each below 300,000 bytes.
+        Reconciliation reproduces the JSON from saved receipts; rerunning tests would be a new measurement.</p>
+      <p><strong>Remaining measure:</strong> a full captured-head run with the identical selected
+        population and 120-second per-test timeout under a larger explicit whole-run budget.
+        The 1,500-second process cap is an instrument limit, not an environment failure or a green
+        test result. Nova source repairs, review of the fast-lane selection, and acceptance of any
+        changed execution strategy require separately owned work. The plan and its driving followup
+        remain open.</p>
     </section>
   </main>
 </body>
