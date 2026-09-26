@@ -60,6 +60,7 @@ from reckon.crew.node import (
 from reckon.crew.prompts import compose_prompt
 from reckon.crew.refusals import format_refusal
 from reckon.crew.recovery import REVIEW_NODE_PREFIX, stream_paths_newest_first
+from reckon.crew.reserve import admit as reserve_admit
 from reckon.crew.review import review_store_root
 from reckon.crew.routing import (
     _agent_configuration,
@@ -533,6 +534,54 @@ def _refuse_over_concurrency_ceiling(
     # under --overlap the scheduler admits whatever is asked, which makes the
     # cap a real limit rather than a formality.
     _refuse_over_reservation_roster(backend, occupying, project)
+
+
+def _refuse_against_the_bookend_reserve(
+    *,
+    config: Mapping[str, Any] | None,
+    role: str | None,
+    pace_record: Mapping[str, Any],
+) -> None:
+    """Refuse a dispatch the bookend reserve withholds the window's fraction from.
+
+    The figure is the dispatch's own pace row — the one composed before this
+    refusal and carried on the run record — so the reading a caller is refused
+    against and the reading a later replay judges the decision from are one
+    reading rather than two that could disagree.
+
+    Only a lane declaring a wallet is judged. A lane carrying no wallet has no
+    window to reserve a share of, and its row reports no reading by
+    construction rather than a reading that failed; refusing there would read
+    an absent wallet as an unreadable window and would bar every unmetered
+    lane from implementation work.
+
+    An unreadable window is not an unread one: where the row carries no
+    utilisation the role's ceiling is judged against the unreadable reading,
+    so the roles the reserve withholds from are refused rather than admitted
+    against a figure nobody read, and a review or verify dispatch is admitted
+    because the reserve is never withheld from it.
+    """
+    if pace_record.get("group") is None:
+        return
+    clock = (pace_record.get("clocks") or {}).get("five_hour") or {}
+    fraction = clock.get("utilisation")
+    utilisation_pct = None if fraction is None else float(fraction) * 100.0
+    verdict = reserve_admit(
+        (config or {}).get("budget") or {},
+        role=role,
+        utilisation_pct=utilisation_pct,
+        unreadable_detail=(
+            None
+            if fraction is not None
+            else (
+                f"the {pace_record.get('lane')!r} lane's five-hour clock "
+                f"reports state {clock.get('state')!r}"
+            )
+        ),
+    )
+    if verdict["admitted"]:
+        return
+    raise CrewError(format_refusal("D10", verdict["reason"]))
 
 
 def _jsonl_events(path: Path) -> Iterable[Mapping[str, Any]]:
@@ -3935,6 +3984,27 @@ def dispatch(
     backend = resolution.backend_settings
     launch_kind = resolution.launch
     run_id = resolution.run_id
+
+    # The pace this dispatch is judged against, composed once here — before
+    # anything is created — and reused on the record below, so the bookend
+    # reserve refuses against the very reading the record carries rather than a
+    # second one taken a moment later that could differ from it.
+    from reckon import budget as budget_module
+
+    pace_record = budget_module.pace_row(
+        config,
+        project=project,
+        lane=backend_name,
+        node=node.id,
+        score=resolution.open_endedness,
+        root=ledger_root,
+        hold=None if budget_fallback is None else budget_fallback["hold"],
+    )
+    if check_budget:
+        _refuse_against_the_bookend_reserve(
+            config=config, role=node.role, pace_record=pace_record
+        )
+
     directory = run_dir(run_id)
     # The declared paths are this run's from the moment its id exists, so the
     # claim goes out here, before the refusals, reads and watcher arming below,
@@ -4221,19 +4291,8 @@ def dispatch(
         # The row reports the reading's age and its source, so a row that paced
         # a dispatch on stale evidence says so itself, and a lane declaring no
         # wallet records that no group paced it rather than a wallet nothing
-        # read.
-        from reckon import budget as budget_module
-
-        pace_record = budget_module.pace_row(
-            config,
-            project=project,
-            lane=backend_name,
-            node=node.id,
-            score=resolution.open_endedness,
-            root=ledger_root,
-            hold=None if budget_fallback is None else budget_fallback["hold"],
-        )
-
+        # read. The row is composed once, above the refusals, so the reading
+        # this record carries is the same one the bookend reserve judged.
         attempt_started_at = _utc_now()
         record: dict[str, Any] = {
             "run_id": run_id,
