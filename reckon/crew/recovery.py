@@ -2777,14 +2777,31 @@ def _observed_phase(
     gone process shows it finished. With no evidence at all the label stands:
     nothing has happened yet, and inventing an advance would be as wrong as
     inventing an end.
+
+    A delivered manifest is itself evidence the launch got past starting: a
+    worker cannot report a verdict before it has run. That holds whatever the
+    process table says, so a delivered report never falls back to the
+    launcher's pre-spawn label, which would render a finished run as
+    dispatched. A process still reported alive outranks the report — the
+    classifier reads that pairing as a deferred outcome, not a finished run —
+    so the phase is working then.
+
+    A worker record answers for every phase it was read in, not only while its
+    process lives: the supervisor writes it once the worker is spawned, so its
+    presence means the launch happened whatever the process table now says. An
+    answer of "gone" is therefore evidence of the advance too, and only a
+    record that names no pid leaves the label standing. Reading the answer as
+    proof only while it was ``True`` let the phase fall back to the pre-spawn
+    label the moment the worker exited, so a run that had already been reported
+    working was reported dispatched again.
     """
     if phase not in _PRE_SPAWN_PHASES:
         return phase
-    if manifest_status in TERMINAL_MANIFEST_STATUSES and alive is not True:
-        return "complete"
+    if manifest_status in TERMINAL_MANIFEST_STATUSES:
+        return "working" if alive is True else "complete"
     if ended_exit is not None:
         return "complete"
-    if worker_alive is True or commits_beyond_base:
+    if worker_alive is not None or commits_beyond_base:
         return "working"
     return phase
 
