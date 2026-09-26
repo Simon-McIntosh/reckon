@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -59,6 +59,26 @@
       (2026-09-12T00:00:00Z to 2026-09-26T10:00:00Z, primary heads as recorded in the census's
       <code>summary.json</code>) and matches that file's totals and per-project rows — counts within 1% relative,
       shares within 0.5 percentage points — including the week-over-week pair quoted in §1.</p>
+    <p><strong>Nodes, and what the code holds at <code>99455576</code>.</strong> The reuse map for this wave
+      (crew report <code>s25-reuse-map-review-and-velocity/reuse-map.md</code>) found no velocity code in the package: no
+      <code>reckon/velocity.py</code>, and no <code>velocity</code> branch in <code>reckon/mcp.py</code> or
+      <code>reckon/cli.py</code>. The census's path classifier (<code>census.py:79</code> <code>file_class</code>,
+      <code>:141</code> <code>path_class</code>) is also the runtime-source test that <code>a-review-is-sized-to-its-risk</code>
+      §2 needs. A second port would be the copy that <code>a-worker-reuses-before-it-writes</code> exists to prevent, so the
+      section lands as three nodes in this order:</p>
+    <ol>
+      <li><strong>Path classes.</strong> A package module, <code>reckon/path_classes.py</code>, ports <code>file_class</code>
+        and <code>path_class</code> with the census's six class names. Its test drives the census's own functions over one
+        fixture list and asserts they agree on every path; the package itself imports nothing from <code>docs/</code>.</li>
+      <li><strong>The view.</strong> <code>reckon/velocity.py</code> ports the rest of the census and imports the
+        classifier. The window computation needs the primary-branch histories of five repositories, and a test must not read
+        state outside the repository under test. So parity over the pinned window is a recorded measurement: a command run
+        against the five checkouts at the heads <code>summary.json</code> records, with its log cited. The committed tests
+        synthesise their repositories.</li>
+      <li><strong>Surfaces.</strong> <code>crew(view="velocity")</code> in <code>reckon/mcp.py</code> and <code>reckon
+        crew velocity</code> in <code>reckon/cli.py</code>, following <code>tests/test_crew_runs_view.py</code>. This node
+        waits for live claims on both files to release.</li>
+    </ol>
 
     <h2 id="s3">§3 — Coordinator cost per landed node</h2>
     <p><strong>Deliverable.</strong> For each coordinator session named by a promoted run's

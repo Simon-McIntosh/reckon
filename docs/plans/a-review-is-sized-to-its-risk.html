@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -72,6 +72,27 @@
       tier in a test; and, one week after landing, the velocity census re-run over the trailing seven days across the
       mounted projects shows review and investigate nodes at or below 30% of promotions, with the seven-day deletion
       share of product lines no higher than the 2.99% measured on 12–19 September.</p>
+    <p><strong>What the code holds at <code>99455576</code></strong> (crew report
+      <code>s25-reuse-map-review-and-velocity/reuse-map.md</code>):</p>
+    <ul>
+      <li>No <code>review</code> or <code>tiers</code> key exists yet. A flight key has to be added to
+        <code>reckon/schema/flight.yaml</code>, and the generated <code>reckon/_flight_schema.py</code> and
+        <code>docs/_shared/flight.schema.json</code> regenerated; <code>tests/test_flight.py</code> asserts the three
+        agree.</li>
+      <li>"The same classification the velocity census uses" lives only in the research script. The tier resolver
+        imports <code>reckon/path_classes.py</code>, which the first node of
+        <code>the-fleet-reports-its-velocity</code> §2 lands.</li>
+      <li>Plan capability risk is parsed (<code>reckon/_plan_html.py:164</code>) but is never joined to a run's review
+        requirement. The join is new.</li>
+      <li>No mechanism escalates a review that overruns its budget. The escalation is new.</li>
+      <li>The ledger row has no tier field.</li>
+      <li>The seam is <code>_require_review_waiver</code> in <code>reckon/crew/promotion.py</code>.</li>
+    </ul>
+    <p>The section lands as two nodes:</p>
+    <ol>
+      <li>The flight key and the resolver with its fixture test.</li>
+      <li>Promotion computes the tier, records it on the ledger row, and reads it in place of the role check.</li>
+    </ol>
 
     <h2 id="s3">§3 — One repair per review round</h2>
     <p><strong>Deliverable.</strong> When a review carries findings, the reflex (and any coordinator acting on it)
