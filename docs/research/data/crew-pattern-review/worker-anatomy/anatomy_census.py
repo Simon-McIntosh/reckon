@@ -47,7 +47,7 @@ from reckon.crew.carryover_census import _dialect, _first_turn_input
 from reckon.crew.metering import run_streams
 
 WINDOW_START = "2026-09-12T00:00:00"
-WINDOW_END = "2026-09-26T10:00:00"  # the plan's capture instant
+WINDOW_END = "2026-09-26T10:00:00"  # the window closes here; the population is pinned at this instant
 CAPTURE_INSTANT = WINDOW_END
 PROJECTS = ("reckon", "imas-ambix", "nova", "imas-efit", "imas-codex")
 CODE_ROOT = Path("/home/ITER/mcintos/Code")

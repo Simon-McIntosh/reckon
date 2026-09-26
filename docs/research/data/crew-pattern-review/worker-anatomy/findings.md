@@ -7,7 +7,7 @@ unreadable. Every figure below carries its denominator; the numbers are
 `anatomy.json` (`median`/`p90`, sample `n` per metric cell).
 
 Population: `promoted_passed` 1,579, `promoted_not_run` 487, `failed` 115,
-`complete_unpromoted` 114, `no_terminal_record` 19, `blocked` 3. The plan's
+`complete_unpromoted` 114, `no_terminal_record` 19, `blocked` 3. A
 `discarded` stratum resolves to zero: `crew discard` leaves no durable per-run
 terminal record that this census can read, so discarded runs land in
 `no_terminal_record` (or `complete_unpromoted`) rather than a stratum of their
@@ -104,10 +104,10 @@ reader can weigh each.
 
 ## Where this node's reading is thinner
 
-- "Record-keeping read" counts tool calls whose target resolves to the
-  categories named in the plan; a `cat` of a plan inside a longer shell command
-  counts once for the call, so the read share is a floor, not a ceiling.
+- "Record-keeping read" counts tool calls whose target resolves to one of the
+  four categories above; a call that reads several files counts once if any
+  target is record-keeping, so the read share is a floor, not a ceiling.
 - The edit-class shares treat `docs/research/data/` output (census JSON,
-  findings) as record-keeping, which is what the plan's "record-keeping
+  findings) as record-keeping, which is this census's "record-keeping
   against product code" asks; a reader who defines data artifacts as product
   should recompute from `pooled.edits_by_class`.
