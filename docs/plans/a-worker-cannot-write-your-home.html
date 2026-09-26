@@ -540,6 +540,45 @@
         <code>edit-plan-ambient-after.txt</code>. Evidence:
         <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-plan-write</code>.</p></div>
       </div>
+      <div class="r-comment" data-section="s2" data-id="c-20260925T2115-worktree-git-roots" data-who="node a-fenced-worker-can-commit" data-when="2026-09-25T21:15:00+00:00">
+        <div class="r-comment-body"><p><strong>A fenced worker can commit in its own
+        worktree.</strong> The fence seals every checkout under the code root, and a linked
+        worktree keeps its HEAD, index and reflog under the main checkout's
+        <code>.git/worktrees/&lt;name&gt;</code> with its objects in that repository's shared
+        store &mdash; all of it below the sealed path. So the fence set on the operator's home
+        took the worker's own deliverable: measured on the real worktree of
+        <code>watcher-seat-survives-other-hosts</code>, the tree was writable while its git
+        directory, <code>.git/objects</code> and <code>.git/refs/heads</code> were read-only.
+        <code>reckon._backends.worktree_git_write_roots</code> now resolves the worktree's own
+        git directory and the <code>objects</code> directory under the repository's common
+        directory, and <code>fence_argv</code> adds both to its write roots so the containment
+        test re-opens exactly them. Only the object store is named from the common directory,
+        never the common directory itself: objects are content-addressed and append-only, so
+        granting them cannot rewrite another tree's history, while <code>refs/heads</code>, the
+        main checkout's index and its working tree stay sealed. A path whose git directory
+        resolves to the common directory &mdash; the main checkout itself &mdash; grants
+        nothing, and a path git cannot resolve grants nothing rather than refusing a launch.</p>
+
+        <p><strong>Proved by executing the fence</strong>, not by inspecting the argv:
+        <code>tests/test_a_fenced_worker_can_commit.py</code> builds a synthetic repository with
+        a detached linked worktree under a synthetic code root and runs the composed argv under
+        a real bubblewrap fence. Inside it <code>git commit --allow-empty</code> succeeds, the
+        new commit is reachable from the worktree HEAD, and the worktree is writable, while
+        writes to the main checkout's index, its <code>refs/heads</code> and a file in its
+        working tree are each refused. The declared negative control &mdash; <em>leave the
+        worktree git dir and object store out of the write roots as today; the fenced commit
+        must fail with a read-only file system error</em> &mdash; is applied and logged: the
+        commit fails on the worktree <code>index.lock</code> with <q>Read-only file
+        system</q> while the worktree itself stays writable and all three main-checkout probes
+        are still refused, so the success rests on the new grants. Gate over the new file plus
+        the three harness-home fixture files: base <code>f01992d3</code> <code>25 passed</code>,
+        head <code>a13d1cc2</code> <code>27 passed</code>, zero added failures; lint over the
+        touched paths adds nothing. Commit <code>a13d1cc2</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-worktree-git-roots</code>,
+        figure <code>/reckon/figures/a-worker-cannot-write-your-home/git-write-roots.svg</code>.
+        This gate measures only this node's own change; verifying the merged result belongs to a
+        separately dispatched test node.</p></div>
+      </div>
     </section>
 
     <p><strong>Smoke: the fence does not start a worker on this host.</strong>
