@@ -911,6 +911,47 @@
       remain coordinator-owned, and the driving followup stays open.</p>
     </div>
 
+    <div data-reckon="landing" data-node="discard-releases-a-clean-worktree" data-when="2026-09-26">
+      <h3>Landing record &mdash; a discard releases the clean worktree its node would rerun in</h3>
+      <p>A run that died at launch and was discarded left its worktree on disk. When
+      the tree held nothing, a redispatch of the same node was refused because the
+      worktree path already existed, and the coordinator removed the tree by hand.
+      This section's previous records closed the departure<em>word</em>; this one closes
+      the <em>workspace</em> the departure leaves behind.</p>
+      <p><code>discard()</code> in <code>reckon/crew/promotion.py</code> now releases the
+      run's worktree through the same audit promotion applies on release
+      (<code>_release_run_workspace</code> &mdash; one classifier, not a second). A tree with an
+      empty <code>git status --porcelain</code> whose head the integration branch
+      contains is removed with <code>git worktree remove</code>; a dirty or unintegrated
+      tree survives and the audit's own withheld reason is named on the discard
+      result. A release failure is caught and reported, so it can never obscure the
+      pointer removal that already succeeded.</p>
+      <p><strong>Gate.</strong> New module
+      <code>tests/test_discard_releases_a_clean_worktree.py</code>: <strong>4 passed</strong>
+      &mdash; a clean integrated worktree is gone after discard and absent from
+      <code>git worktree list</code>; a dirty worktree survives with the
+      uncommitted-changes reason; a worktree carrying a commit the integration
+      branch lacks survives with the not-reachable reason; every crew path resolves
+      under the synthetic home. The scoped comparison over
+      <code>tests/test_crew_promotion.py</code> and
+      <code>tests/test_a_discard_never_reads_promoted.py</code> measures <strong>54
+      passed</strong> at base <code>10749306</code> and <strong>54 passed</strong> at the
+      committed head, so the added failure count is <strong>zero</strong>. The declared
+      negative control makes <code>_remove_discarded_worktree</code> a no-op: the
+      clean-worktree case fails on the surviving path (<strong>1 failed, 3 passed,
+      exit 1</strong>). Lint adds no findings over the two changed paths (13 at base,
+      12 at head, none in the added region) and the format delta is identical at
+      base and head (40 changed lines each). Receipts under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T152959325320-discard-releases-a-clean-worktree/logs/</code>:
+      <code>gate.log</code>, <code>base-arm.log</code>, <code>head-arm.log</code> and
+      <code>negative-control.log</code>. Full record:
+      <code>a-crew-process-ends-with-its-owner-landed.html#s10-discard-releases-a-clean-worktree</code>;
+      figure:
+      <code>docs/figures/a-crew-process-ends-with-its-owner/discard_releases_a_clean_worktree.svg</code>.
+      This is a worker landing record; review, integration, the merged gate and
+      deployment remain coordinator-owned, and the driving followup stays open.</p>
+    </div>
+
     <h2 id="s11">&sect;11 &mdash; A live producer reads only what changed since its last poll</h2>
     <p><strong>The defect.</strong> &sect;3 ends a producer that nobody uses. &sect;4 stops
     whole-tree <code>git status</code> walks. Neither covers a producer that is legitimately

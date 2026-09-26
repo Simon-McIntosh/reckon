@@ -4648,6 +4648,13 @@ def discard(run_id: str) -> dict[str, Any]:
     hand-removed pointer produces. The record is never written into a directory
     that does not already exist: the run directory is the run's own home, and a
     write that recreated it would bring a discarded run back into existence.
+
+    The run's own worktree is released through the same audit promotion applies
+    on release. A discarded run whose tree is clean and whose head adds no
+    commit the integration branch lacks holds nothing to preserve, and leaving
+    it on disk refuses a redispatch of the same node because the worktree path
+    already exists. A dirty or unintegrated tree is withheld with the audit's
+    own reason.
     """
     with _pointer_lock(run_id):
         record = read_pointer(run_id)
@@ -4668,7 +4675,33 @@ def discard(run_id: str) -> dict[str, Any]:
             "pointer_removed": not path.exists(),
             "removed": record,
             "discard_record": written,
+            **_remove_discarded_worktree(record),
         }
+
+
+def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Release a discarded run's worktree through the release audit.
+
+    Reuses ``_release_run_workspace`` — the same classification and withheld
+    reasons ``crew complete`` applies on release — so a discard and a promotion
+    cannot disagree about which trees are safe to remove. Only the worktree
+    fields are surfaced: the process half cannot matter here, because discard
+    has already refused a run whose recorded process is alive.
+    """
+    try:
+        release = _release_run_workspace(record)
+    except Exception as exc:  # noqa: BLE001 - the pointer is already gone
+        return {
+            "worktree_released": False,
+            "worktree_withheld": (
+                f"run {record.get('run_id')!r} release step raised: {exc}"
+            ),
+        }
+    return {
+        key: release[key]
+        for key in ("worktree_released", "worktree_withheld", "worktree_audit")
+        if key in release
+    }
 
 
 def _write_discard_record(
