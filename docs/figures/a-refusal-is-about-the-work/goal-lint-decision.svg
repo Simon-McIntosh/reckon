@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 660" font-family="ui-sans-serif, system-ui, sans-serif">
+  <style>
+    .box { fill: #ffffff; stroke: #334155; stroke-width: 1.5; }
+    .head { fill: #eef2ff; stroke: #4338ca; stroke-width: 1.5; }
+    .accept { fill: #ecfdf5; stroke: #047857; stroke-width: 1.5; }
+    .refuse { fill: #fef2f2; stroke: #b91c1c; stroke-width: 1.5; }
+    .t { font-size: 12.5px; fill: #0f172a; }
+    .h { font-size: 14px; font-weight: 700; fill: #0f172a; }
+    .s { font-size: 11px; fill: #475569; }
+    .edge { stroke: #334155; stroke-width: 1.4; fill: none; marker-end: url(#a); }
+    .lab { font-size: 11px; fill: #475569; }
+  </style>
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <text x="30" y="34" class="h">The narrowed goal lint — what it still refuses, and what it lets through</text>
+  <text x="30" y="54" class="s">A refusal names a defect in the brief: an unresolved placeholder, or a goal that really is two deliverables.</text>
+
+  <rect x="30" y="82" width="330" height="126" rx="8" class="head"/>
+  <text x="46" y="108" class="h">1. An unresolved placeholder?</text>
+  <text x="46" y="130" class="t">an angle-bracket token such as &lt;node&gt; sits in the</text>
+  <text x="46" y="147" class="t">goal or the done-when — but a quoted string or a</text>
+  <text x="46" y="164" class="t">code span is the author quoting a literal, so its</text>
+  <text x="46" y="181" class="t">contents are data to reproduce, not a gap to fill</text>
+  <text x="46" y="198" class="s">refused as: fully-specified</text>
+
+  <rect x="30" y="232" width="330" height="126" rx="8" class="head"/>
+  <text x="46" y="258" class="h">2. A vague word in the goal?</text>
+  <text x="46" y="280" class="t">TBD, TODO, FIXME, ???, "figure out", "somehow",</text>
+  <text x="46" y="297" class="t">or "as appropriate" standing in for the work — a</text>
+  <text x="46" y="314" class="t">goal that is nothing but one such word is refused,</text>
+  <text x="46" y="331" class="t">while a done-when may name a marker to count</text>
+  <text x="46" y="348" class="s">refused as: fully-specified</text>
+
+  <rect x="30" y="382" width="330" height="126" rx="8" class="head"/>
+  <text x="46" y="408" class="h">3. Two deliverables in one goal?</text>
+  <text x="46" y="430" class="t">a separator — ; "then" "and" "&amp;" "plus" — opens a</text>
+  <text x="46" y="447" class="t">second deliverable only when the clause after it</text>
+  <text x="46" y="464" class="t">begins with its own action verb. One verb over</text>
+  <text x="46" y="481" class="t">several objects stays one node</text>
+  <text x="46" y="498" class="s">refused as: single-goal</text>
+
+  <rect x="560" y="140" width="330" height="132" rx="8" class="accept"/>
+  <text x="578" y="168" class="h">Accepted — the work stands</text>
+  <text x="578" y="192" class="t">a semicolon or "then" joining one deliverable;</text>
+  <text x="578" y="209" class="t">one verb over several objects;</text>
+  <text x="578" y="226" class="t">a done-when quoting a &lt;path&gt; runtime message;</text>
+  <text x="578" y="243" class="t">a done-when counting TODO-FIXME, xfail, skip</text>
+  <text x="578" y="264" class="s">all eight properties still judged; only these two speak to the goal</text>
+
+  <rect x="560" y="392" width="330" height="132" rx="8" class="refuse"/>
+  <text x="578" y="420" class="h">Refused — with the property named</text>
+  <text x="578" y="444" class="t">fully-specified for a placeholder or vague goal;</text>
+  <text x="578" y="461" class="t">single-goal for two verb-object clauses;</text>
+  <text x="578" y="478" class="t">and, when the caller passes the role's fit,</text>
+  <text x="578" y="495" class="t">fully-specified for a measure the role cannot run</text>
+  <text x="578" y="516" class="s">the detail says which input to state, not just that it failed</text>
+
+  <path class="edge" d="M360 145 L560 205"/>
+  <path class="edge" d="M360 295 L560 205"/>
+  <path class="edge" d="M360 445 L560 455"/>
+  <text x="440" y="150" class="lab">no</text>
+  <text x="440" y="290" class="lab">no</text>
+  <text x="440" y="440" class="lab">yes</text>
+</svg>
