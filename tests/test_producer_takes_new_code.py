@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 import os
 import queue
+import shlex
 import shutil
 import socket
 import subprocess
@@ -33,6 +34,7 @@ import time
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew
@@ -430,35 +432,56 @@ def test_the_live_view_reports_a_seat_running_older_code(isolated_home) -> None:
     assert runs.project_watch_visibility(PROJECT)["code_stale"] is False
 
 
+def _command_parses(command: str) -> bool:
+    """Whether the CLI's own parser accepts this command as printed.
+
+    The remedy a reader is handed is a command they will run, so a word in it
+    that Click does not know turns the remedy into a second failure. The parser
+    decides it here rather than a hand-list of flags: ``--help`` is appended so
+    a valid command returns without doing anything.
+    """
+    argv = shlex.split(command)
+    assert argv and argv[0] == "reckon", f"not a reckon command: {command!r}"
+    return CliRunner().invoke(cli_module.main, [*argv[1:], "--help"]).exit_code == 0
+
+
+def _collect_events(monkeypatch, **extra) -> list[dict]:
+    """Run one attach pass of the follower and return the events it yields."""
+    stop = threading.Event()
+    return list(
+        cli_module._follow_watch_lines(
+            PROJECT,
+            poll_interval=0.0,
+            sleeper=lambda _seconds: None,
+            stop=stop,
+            on_poll=lambda _payload: stop.set(),
+            sweep=lambda _project: None,
+            **extra,
+        )
+    )
+
+
 def test_the_follower_names_a_producer_running_older_code(
     isolated_home, monkeypatch
 ) -> None:
-    """The follower says so, on attach, where an operator is already looking.
+    """The follower says so, on attach, and the remedy it prints parses.
 
     The seat's stamp is recorded where a reader opens the seat, and that is not
-    where an operator watching a project looks. One dim line on attach names
-    the gap and the command that cycles the seat; a seat running this
-    follower's own code says nothing at all.
+    where an operator watching a project looks. One event on attach names the
+    gap and the command that cycles the seat; a seat running this follower's own
+    code says nothing at all. The remedy is checked against Click's own parser,
+    because a flag the CLI does not know would make the printed remedy a second
+    failure rather than a fix.
     """
     monkeypatch.setattr(runs, "producer_live", lambda project: True)
     pid, pid_start, host = _self_identity()
 
-    def one_attach_pass(**extra) -> list[str]:
-        captured: list[str] = []
-        monkeypatch.setattr(cli_module, "_echo_follow_line", captured.append)
-        stop = threading.Event()
-        list(
-            cli_module._follow_watch_lines(
-                PROJECT,
-                poll_interval=0.0,
-                sleeper=lambda _seconds: None,
-                stop=stop,
-                on_poll=lambda _payload: stop.set(),
-                sweep=lambda _project: None,
-                **extra,
-            )
-        )
-        return captured
+    def stale_events() -> list[dict]:
+        return [
+            event
+            for event in _collect_events(monkeypatch)
+            if event.get("event") == cli_module.FOLLOWER_STALE_PRODUCER_EVENT
+        ]
 
     _plant_seat_record(
         PROJECT,
@@ -469,16 +492,25 @@ def test_the_follower_names_a_producer_running_older_code(
         code_stamp="0" * 64,
         reckon_version=runs.__version__,
     )
-    stale_lines = one_attach_pass()
-    named = [line for line in stale_lines if "runs older code" in line]
-    assert named, f"the follower did not name the stale producer: {stale_lines!r}"
-    assert "reckon crew unwatch --project proj" in named[0]
-    assert "reckon crew watch --ensure-service --project proj" in named[0]
+    named = stale_events()
+    assert named, "the follower did not name the stale producer"
+    event = named[0]
+    assert event["code_stamp"] == "0" * 64
+    assert event["current_stamp"] == runs.follower_code_stamp()
+    assert "runs older code" in event["line"]
 
-    # The line is history rather than a worker transition, so it is dimmed on
-    # the same path the follower's other remembered rows are.
-    dimmed = [line for line in one_attach_pass(color=True) if "runs older code" in line]
-    assert dimmed and cli_module.HISTORY_DIM in dimmed[0]
+    # The remedy is a release and an arming, in that order, and both parse.
+    remedy_parts = [part.strip() for part in event["remedy"].split("&&")]
+    assert len(remedy_parts) == 2, event["remedy"]
+    assert remedy_parts[0].startswith("reckon crew unwatch")
+    assert remedy_parts[1].startswith("reckon crew watch --ensure")
+    for part in remedy_parts:
+        assert _command_parses(part), f"the remedy does not parse: {part!r}"
+    # The control: the flag the line used to print is not one this CLI has, so
+    # the assertion above is not vacuous and the parser proves it.
+    assert not _command_parses("reckon crew watch --ensure-service --project proj"), (
+        "the parser accepted a flag the CLI does not define"
+    )
 
     _plant_seat_record(
         PROJECT,
@@ -489,7 +521,57 @@ def test_the_follower_names_a_producer_running_older_code(
         code_stamp=runs.follower_code_stamp(),
         reckon_version=runs.__version__,
     )
-    current_lines = one_attach_pass()
-    assert not [line for line in current_lines if "runs older code" in line], (
-        "a current seat must print nothing."
+    assert stale_events() == [], "a current seat must say nothing."
+
+
+def test_the_follow_json_surface_carries_the_stale_producer(
+    isolated_home, monkeypatch
+) -> None:
+    """JSON mode emits an object for this line, as it does for every other.
+
+    The line is composed inside the follower, which does not know the output
+    mode, so a bare text line among JSON objects makes the stream unparseable
+    for the reader that asked for JSON. It travels as an event and the caller
+    routes it, so JSON mode emits one object carrying the stamps and the remedy
+    and text mode prints the line.
+    """
+    monkeypatch.setattr(runs, "producer_live", lambda project: True)
+    pid, pid_start, host = _self_identity()
+    _plant_seat_record(
+        PROJECT,
+        pid=pid,
+        pid_start_time=pid_start,
+        host=host,
+        started_at=runs._utc_now(),
+        code_stamp="0" * 64,
+        reckon_version=runs.__version__,
     )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "follow",
+            "--project",
+            PROJECT,
+            "--json",
+            "--lifetime",
+            "1s",
+            "--no-color",
+            "--width",
+            "240",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    # Every emitted line parses as JSON: a bare text line among objects is the
+    # defect this routing removes, so parsing each line is the assertion.
+    payloads = [json.loads(line) for line in result.output.splitlines() if line.strip()]
+    stale = [
+        payload
+        for payload in payloads
+        if payload.get("event") == cli_module.FOLLOWER_STALE_PRODUCER_EVENT
+    ]
+    assert stale, result.output
+    assert stale[0]["code_stamp"] == "0" * 64
+    assert stale[0]["remedy"] == runs.watch_cycle_line(PROJECT)
+    assert "runs older code" in stale[0]["line"]

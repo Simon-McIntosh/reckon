@@ -2055,6 +2055,14 @@ FOLLOWER_END_EVENT = "follower-end"
 FOLLOWER_RESUME_EVENT = "follower-resume"
 FOLLOWER_FORMAT_EVENT = "follower-format-changed"
 
+# A follower attaching to a seat whose producer runs older code says so once.
+# The producer imports its detection module and runs for hours on the image it
+# was armed with, so a fix that landed afterwards is inert on that seat, and
+# every row it writes is composed by code the reader's own is not. Like the
+# resume and format markers, this is about the pane rather than the fleet, so
+# it travels as its own event and is never rendered as a run's row.
+FOLLOWER_STALE_PRODUCER_EVENT = "stale-producer"
+
 
 def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, str]]:
     """List the owning session's runs whose state needs the coordinator now.
@@ -2207,7 +2215,6 @@ def _follow_watch_lines(
     resume: Mapping[str, Any] | None = None,
     lifetime: float | None = None,
     registration=None,
-    color: bool = False,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -2455,16 +2462,27 @@ def _follow_watch_lines(
             # The producer imports its detection module once and runs for hours
             # on the image it was armed with, so a fix that landed afterwards is
             # inert on that seat, and every row it writes is composed by code the
-            # reader's own is not. One line, on attach, naming the gap and the
-            # remedy: the seat is cycled by releasing it and arming again.
-            line = (
-                f"producer {project} runs older code than this follower "
-                f"({_short_code_stamp(producer.get('code_stamp'))} vs "
-                f"{_short_code_stamp(producer.get('current_stamp'))}); restart it "
-                f"with: reckon crew unwatch --project {project} && "
-                f"reckon crew watch --ensure-service --project {project}"
-            )
-            _echo_follow_line(_dim_history_line(line) if color else line)
+            # reader's own is not. One event, on attach, naming the gap and the
+            # remedy: the seat is cycled by releasing it and arming again. It
+            # travels as an event rather than being printed here so a JSON reader
+            # receives an object like every other line, and the caller decides
+            # how it is rendered.
+            remedy = runs.watch_cycle_line(project)
+            yield {
+                "event": FOLLOWER_STALE_PRODUCER_EVENT,
+                "project": project,
+                "session": session or "",
+                "run_id": None,
+                "code_stamp": producer.get("code_stamp"),
+                "current_stamp": producer.get("current_stamp"),
+                "remedy": remedy,
+                "line": (
+                    f"producer {project} runs older code than this follower "
+                    f"({_short_code_stamp(producer.get('code_stamp'))} vs "
+                    f"{_short_code_stamp(producer.get('current_stamp'))}); "
+                    f"cycle it with: {remedy}"
+                ),
+            }
         # The baseline is the fleet report: one transition per live run, in the
         # ticker's own vocabulary. Nothing about the follower itself goes on this
         # stream — a reader wants worker transitions and the fleet posture, not
@@ -2983,7 +3001,6 @@ def crew_follow(
             resume=resume,
             lifetime=lifetime_seconds,
             registration=registration,
-            color=getattr(grid, "color", False),
         ):
             # An attach event carries the states the pane already showed, so the
             # grid is seeded from the same remembered map the follower filtered
@@ -3035,6 +3052,17 @@ def crew_follow(
                     burst = _follow_history_burst(restored, dim=replay_dim)
                     if burst:
                         _echo_follow_line(burst)
+                continue
+            if event.get("event") == FOLLOWER_STALE_PRODUCER_EVENT:
+                # The seat's producer runs older code than this follower. Like
+                # the format marker it is about the pane rather than the fleet,
+                # so it is never rendered as a run's row: JSON mode emits the
+                # object with the stamps and the remedy, and text mode prints
+                # the one dim line.
+                if json_output:
+                    _emit({"ok": True, **event}, pretty)
+                else:
+                    _echo_follow_line(replay_dim(str(event.get("line") or "")))
                 continue
             if json_output:
                 _emit({"ok": True, **event}, pretty)
