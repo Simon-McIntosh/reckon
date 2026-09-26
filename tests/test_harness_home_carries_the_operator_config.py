@@ -235,9 +235,7 @@ def test_a_claude_resume_places_the_operator_transcript(tmp_path: Path):
     relative = Path("projects/-home-op-reckon") / f"{CLAUDE_SESSION}.jsonl"
     expected = (operator_transcript / f"{CLAUDE_SESSION}.jsonl").read_bytes()
 
-    plan = _launch(
-        home, run, CLAUDE_BACKEND, fence=True, resume_session=CLAUDE_SESSION
-    )
+    plan = _launch(home, run, CLAUDE_BACKEND, fence=True, resume_session=CLAUDE_SESSION)
     harness = Path(plan.environment["CLAUDE_CONFIG_DIR"])
     placed = harness / relative
     assert placed.is_file()
