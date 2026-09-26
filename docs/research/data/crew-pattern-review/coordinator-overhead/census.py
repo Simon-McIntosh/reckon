@@ -942,6 +942,10 @@ def build(pin, output):
     controls = []
     for sid, items in sorted(grouped.items()):
         meta = pin["transcripts"].get(sid, {"status": "unattributed"})
+        if meta["status"] == "captured" and not any(
+            source["selected_records"] for source in meta["sources"]
+        ):
+            meta = {**meta, "status": "empty-window"}
         session = {
             "session_id": sid,
             "attribution": "recorded"
@@ -1115,6 +1119,15 @@ def build(pin, output):
         "sessions": len(sessions),
         "sessions_with_transcript": len(transcribed),
         "sessions_without_transcript": len(sessions) - len(transcribed),
+        "sessions_with_transcript_file": sum(
+            meta["status"] == "captured" for meta in pin["transcripts"].values()
+        ),
+        "sessions_missing_transcript_file": sum(
+            meta["status"] == "missing" for meta in pin["transcripts"].values()
+        ),
+        "sessions_with_empty_window_snapshot": sum(
+            s["transcript_status"] == "empty-window" for s in sessions
+        ),
         "unattributed_session_groups": sum(
             s["attribution"] == "unattributed" for s in sessions
         ),
@@ -1191,7 +1204,7 @@ def build(pin, output):
     }
     result = {
         "window": [WINDOW_START, WINDOW_END],
-        "inputs": reference(HERE / "inputs.json"),
+        "inputs": {**reference(HERE / "inputs.json"), "path": "inputs.json"},
         "method": {
             "landed_node": "Distinct run with in-window primary-branch promote commit, successful complete receipt, or promoted_revision already committed at cutoff; administrative promotions include failed and not-run outcomes, reported by gate and role.",
             "cohort": "Run dispatched in window or promoted on primary branch in window; later promotions do not enter the denominator.",
