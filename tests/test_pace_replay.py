@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -9,7 +10,18 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import pace
-from reckon.crew.pace_replay import render_report, replay_project
+
+
+def _replay_project(root: Path, project: str, **kwargs):
+    from reckon.crew.pace_replay import replay_project
+
+    return replay_project(root, project, **kwargs)
+
+
+def _render_report(report):
+    from reckon.crew.pace_replay import render_report
+
+    return render_report(report)
 
 
 def _instant(hours_from_start: float) -> str:
@@ -140,8 +152,12 @@ def committed_week(tmp_path: Path) -> Path:
     return tmp_path
 
 
+def test_report_module_is_available_at_head():
+    assert importlib.util.find_spec("reckon.crew.pace_replay") is not None
+
+
 def test_committed_week_replays_allowances_holds_and_work_split(committed_week):
-    report = replay_project(committed_week, "sample")
+    report = _replay_project(committed_week, "sample")
 
     assert report["ok"] is True, report["text"]
     assert report["row_count"] == 3, report
@@ -166,7 +182,7 @@ def test_committed_week_replays_allowances_holds_and_work_split(committed_week):
 
 
 def test_mistuned_lead_is_detected_from_rows_alone(committed_week):
-    report = replay_project(
+    report = _replay_project(
         committed_week,
         "sample",
         drain_lead_hours=24.0,
@@ -190,16 +206,16 @@ def test_a_changed_recorded_allowance_or_hold_is_reported(committed_week):
     record["pace"]["allowance"]["derived"] = 99.0
     path.write_text(json.dumps(record), encoding="utf-8")
 
-    report = replay_project(committed_week, "sample")
+    report = _replay_project(committed_week, "sample")
 
     assert report["ok"] is False, report
     assert report["allowances"]["mismatches"] == ["run-build-early"]
 
 
 def test_render_report_accepts_a_replay_result(committed_week):
-    report = replay_project(committed_week, "sample")
+    report = _replay_project(committed_week, "sample")
 
-    assert render_report(report) == report["text"]
+    assert _render_report(report) == report["text"]
     assert report["text"].splitlines()[:4] == [
         "rows: 3",
         "allowances: 3/3 reproduced (ok)",
