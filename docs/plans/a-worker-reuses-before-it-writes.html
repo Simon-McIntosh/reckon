@@ -19,8 +19,7 @@
   <meta name="plan-sprint" content="S25">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-standalone" content="Consolidates helpers reckon already ships and adds a promotion-time duplicate check; it consumes no other plan's evidence and gates none.">
-  <meta name="plan-after" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-after" content="a-plan-is-reviewed-before-it-is-built,the-fleet-reports-its-velocity">
   <title>A Worker Reuses Before It Writes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -28,53 +27,71 @@
 <body>
   <main class="plan-doc">
     <h2 id="s1">§1 — Why: isolation made the codebase repeat itself</h2>
-    <p>The structural census found 44 functions in reckon that parse an ISO timestamp themselves (27 in the crew
-      package), 14 that write JSON atomically with differing temporary naming, cleanup and fsync behaviour, three
-      that enumerate a run's streams, and four byte-identical numeric decoders under four names. The crew
-      package's clone share rose from 5.5% to 7.1% while its code doubled, and its public definitions grew 226% in
-      three weeks (<a href="/reckon/research/orchestrator-crew-pattern-review#s7">crew pattern review §7</a>).
-      Every copy is private and sits in the one module its node could write. A worker holds exclusive write paths;
-      when the helper it needs lives outside them, or does not exist, a private copy is the cheapest compliant move,
-      and neither the gate nor a per-diff review compares the copy with the others. The lead's standard — deep
-      modules behind small interfaces, no reimplementation — needs a mechanism, not another paragraph.</p>
+    <p>The structural census found 44 functions in reckon that call <code>fromisoformat</code> themselves (27 of them in
+      the crew package), 14 that write JSON atomically with differing temporary naming, cleanup and fsync behaviour,
+      three that enumerate a run's streams, and four byte-identical numeric decoders under four names. From 5 to
+      26 September the crew package's source lines tripled (13,268 to 40,343), its clone share rose from 5.5% to 7.1%,
+      and its public definitions grew 226%
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s7">crew pattern review §7</a>). Almost every copy is a
+      helper inside the one module its node could write, and most are private. A worker holds exclusive write paths;
+      when the helper it needs lives outside them, or does not exist, a local copy is the cheapest compliant move, and
+      neither the gate nor a per-diff review compares the copy with the others. The lead's standard — deep modules
+      behind small interfaces, no reimplementation — needs a mechanism, not another paragraph.</p>
 
     <h2 id="s2">§2 — One timestamp parser</h2>
-    <p><strong>Deliverable.</strong> <code>reckon/_timestamps.py</code> with <code>parse_utc</code>, whose
-      behaviour on a <code>Z</code> suffix, an offset, a naive value, a numeric epoch in seconds or milliseconds,
-      and malformed input is specified by tests first; then the 44 call sites migrate, in batches whose write paths
-      do not overlap, keeping each caller's elapsed-time and display policy where it is.</p>
-    <p><strong>Done when</strong> the census's timestamp group, re-run on the new head, reports at most three
-      direct <code>fromisoformat</code> users, each with a stated reason, and the full suite shows no added
-      failure against the base revision.</p>
+    <p><strong>Deliverable.</strong> <code>reckon/_timestamps.py</code> with <code>parse_utc</code>. Its behaviour on a
+      <code>Z</code> suffix, an offset, a naive value, a numeric epoch in seconds or milliseconds, and malformed input is
+      fixed by tests that land before any caller migrates. The 44 functions then migrate in batches whose write paths are
+      disjoint from each other and from any live run's claims, each keeping its own elapsed-time and display policy.</p>
+    <p><strong>Done when</strong> a pin at the new head is appended to the code-depth census's
+      <code>snapshots.json</code> and <code>census.py</code> re-run there reports at most three functions still calling
+      <code>fromisoformat</code> directly, each carrying a code comment that states why; and the full suite shows no
+      added failure against the head this section started from.</p>
 
     <h2 id="s3">§3 — One atomic JSON writer, one stream enumeration, one numeric decoder</h2>
     <p><strong>Deliverable.</strong> <code>write_json_atomically</code> beside the existing envelope writer in
-      <code>reckon/_store.py</code>, with a unique sibling temporary, cleanup on failure and an explicit fsync
-      policy, adopted by the 14 writers while each keeps its own locking; <code>metering.run_streams</code> used by
-      promotion and the ledger in place of their copies; and one bool-rejecting numeric decoder for the four
-      identical bodies.</p>
-    <p><strong>Done when</strong> the census's groups for all three concepts report one implementation each, and
-      an interrupted-write test runs against the shared writer.</p>
+      <code>reckon/_store.py</code>: a unique sibling temporary, removal on failure, and an <code>fsync</code> parameter
+      that defaults on and that each of the 14 callers sets to match what it does today, keeping its own locking.
+      <code>metering.run_streams</code> replaces the copies in promotion and the ledger. One numeric decoder,
+      <code>reckon/_observations.py:optional_number</code>, rejects <code>bool</code> and any value that is not an
+      <code>int</code> or <code>float</code>, and otherwise returns <code>float(value)</code>, replacing the four identical
+      bodies.</p>
+    <p><strong>Done when</strong> the census re-run as in §2 reports one implementation per concept, with any retained
+      exception listed with its reason, and a test in the suite interrupts a write through the shared writer and asserts
+      the target file is either the old or the new content.</p>
 
     <h2 id="s4">§4 — A copy is visible at promotion</h2>
-    <p><strong>Deliverable.</strong> Promotion runs the census's normalised six-line clone detector over the
-      run's added functions against the rest of the package and puts any match — the new function, the existing
-      one, both <code>file:line</code> — in the review packet and on the ledger row. It warns; it does not refuse.</p>
-    <p><strong>Done when</strong> a synthesised run that adds a private copy of <code>parse_utc</code> is
-      reported with the existing function's location, and a run adding no copy reports none.</p>
+    <p><strong>Deliverable.</strong> The census's normalised six-line clone detector, ported into a package module
+      (<code>reckon/clones.py</code>); the study's script stays as the review's artifact and nothing in the package imports
+      from <code>docs/</code>. Promotion runs it over the functions the run added or modified, against
+      <code>reckon/</code> and <code>tests/</code> at the promoted revision, and records each match — the run's function,
+      the existing one, both <code>file:line</code> — on the ledger row and, when the run was reviewed, in its stored
+      review record. It warns; it does not refuse. The velocity view counts matches per week.</p>
+    <p><strong>Done when</strong> two tests in the suite pass: a synthesised run that adds a private copy of
+      <code>parse_utc</code> is reported with <code>reckon/_timestamps.py:parse_utc</code>'s location, and a run that adds
+      a function matching nothing reports no match.</p>
 
     <h2 id="s5">§5 — The interface has a budget</h2>
-    <p><strong>Deliverable.</strong> The velocity view reports public definitions, CLI options, MCP views and
-      refusal families per week for reckon; a plan section that adds any of them names what it retires or merges,
-      or records why the surface must grow. The plan-review rubric already favours deep modules
-      (<code>a-plan-is-reviewed-before-it-is-built</code>); this gives it a number to read.</p>
-    <p><strong>Done when</strong> the weekly surface counts are in the view and the plan-review rubric cites them.</p>
+    <p><strong>Deliverable.</strong> The velocity view reports, for the <code>reckon/</code> package, the level at each
+      week's end and the weekly change of public definitions, CLI options, MCP views and coded refusal families, using the
+      census's definitions. A plan section that adds any of them names what it retires or merges, or states why the
+      surface must grow. The plan-review rubric of <code>a-plan-is-reviewed-before-it-is-built</code>, which already
+      favours deep modules, reads these counts.</p>
+    <p><strong>Done when</strong> the weekly counts are in the view and the rubric cites them.</p>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+      <h2><span class="sec">§</span> Evidence gates</h2>
+      <div class="r-gate" data-id="g-awrbiw-velocity-view" data-section="s5" data-gated-sections="s5" data-status="open">
+        <h4 class="r-gate-measure">the velocity view exists to carry the interface counts</h4>
+        <p class="r-gate-required-evidence">the-fleet-reports-its-velocity#s2</p>
+      </div>
+    </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
       <h2><span class="sec">§</span> Followups</h2>
       <article class="r-fu" data-id="f-awrbiw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26">
         <h4 class="r-fu-title">Consolidate the primitives</h4>
-        <div class="r-fu-body"><p>§2 and §3 are ready and write different modules; §4 follows §2; §5 follows the velocity view.</p></div>
+        <div class="r-fu-body"><p>§2 and §3 are ready and write different modules; §4 follows §2, because its test names the new parser; §5 waits on the velocity view.</p></div>
         <pre class="r-fu-prompt">/reckon-build a-worker-reuses-before-it-writes</pre>
       </article>
     </section>
