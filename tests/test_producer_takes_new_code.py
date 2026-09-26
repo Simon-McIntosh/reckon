@@ -25,6 +25,7 @@ import json
 import os
 import queue
 import shutil
+import socket
 import subprocess
 import sys
 import threading
@@ -52,7 +53,9 @@ DEFERRED_MARKER = "reckon crew watch deferred its reload"
 
 # What a mid-merge module looks like: bytes that no longer compile, which the
 # reload's throwaway import proof is what catches.
-CONFLICT_MARKER = "\n<<<<<<< HEAD\n_render_watch_transition = None\n=======\n>>>>>>> other\n"
+CONFLICT_MARKER = (
+    "\n<<<<<<< HEAD\n_render_watch_transition = None\n=======\n>>>>>>> other\n"
+)
 
 SEAT_WITHIN_SECONDS = 25.0
 RELOAD_WITHIN_SECONDS = 15.0
@@ -113,6 +116,52 @@ def _seat_record(project: str) -> dict:
         except json.JSONDecodeError:
             time.sleep(0.02)
     return {}
+
+
+def _plant_seat_record(
+    project: str,
+    *,
+    pid: int,
+    pid_start_time: float | None,
+    host: str,
+    started_at: str,
+    code_stamp: str | None,
+    reckon_version: str = "0.0.0",
+) -> None:
+    """Leave a seat record on disk, as an arming that never erased one would.
+
+    The record is the only carrier of the facts a reader sees about a seat, so
+    planting one is how a seat that this process is not running is observed:
+    the fields are exactly those ``_project_watch_claim`` writes.
+    """
+    path = runs.watch_lock_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "project": project,
+        "pid": pid,
+        "pid_start_time": pid_start_time,
+        "host": host,
+        "stall_window": runs.DEFAULT_WATCH_STALL_WINDOW,
+        "started_at": started_at,
+        "stream_path": str(runs.watch_stream_path(project)),
+        "log_path": str(runs.watch_log_path(project)),
+        "reckon_version": reckon_version,
+    }
+    if code_stamp is not None:
+        record["code_stamp"] = code_stamp
+    path.write_text(json.dumps(record))
+
+
+def _self_identity() -> tuple[int, float, str]:
+    """This test process, in the terms a seat record names a process."""
+    return os.getpid(), runs._process_start_time(os.getpid()), socket.gethostname()
+
+
+def _dead_pid() -> int:
+    """A pid this host has issued and which is confirmed gone."""
+    victim = subprocess.Popen([sys.executable, "-c", "pass"])
+    victim.wait(timeout=10)
+    return victim.pid
 
 
 def _await_seat(project: str, expected_stamp: str) -> dict:
@@ -241,14 +290,16 @@ def test_a_producer_reexecutes_onto_changed_code(isolated_home, tmp_path) -> Non
     """A content change to a follower module replaces the producer's image.
 
     The stamp moves, the replacement loads, and the seat record advances to the
-    new stamp — so the same run that proved the reload happened also proves the
-    new image took the seat and reported the code it is now running.
+    new stamp — so the same run that proved the seat's record carries the code
+    the replacement runs. The record's start time stays where it was: the
+    replacement is the same process, so the seat it holds is the same seat and
+    has not been armed twice.
     """
     root, package = _copy_source(tmp_path)
     before = _stamp_of(root)
     process, _lines = _launch_producer(root, isolated_home)
     try:
-        _await_seat(PROJECT, before)
+        armed = _await_seat(PROJECT, before)
 
         # A comment, and one whose every prefix is a comment, so the module
         # still parses and the change is content-only.
@@ -262,7 +313,12 @@ def test_a_producer_reexecutes_onto_changed_code(isolated_home, tmp_path) -> Non
             RELOAD_WITHIN_SECONDS,
             "the producer never re-executed onto the new image",
         )
-        _await_seat(PROJECT, after)
+        reloaded = _await_seat(PROJECT, after)
+        assert reloaded["pid"] == process.pid
+        assert reloaded["started_at"] == armed["started_at"], (
+            "a replacement is the same process holding the same seat, so the "
+            "seat's start time must not be restamped"
+        )
     finally:
         process.terminate()
         process.wait(timeout=5)
@@ -301,3 +357,139 @@ def test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing(
     finally:
         process.terminate()
         process.wait(timeout=5)
+
+
+def test_fresh_arming_over_a_dead_seat_stamps_its_own_start(
+    isolated_home, tmp_path
+) -> None:
+    """The seat's start time belongs to the process that wrote it.
+
+    A producer that dies without erasing its record leaves the record behind,
+    and the next arming opens the same file. Carrying the start time forward
+    from whatever is there makes a producer armed a second ago read as one that
+    has been up for hours, so the age a reader judges a stale producer by is a
+    predecessor's. The record's identity — pid, kernel start time, host — is
+    what tells the two apart, and only a seat's own replacement keeps all three.
+    """
+    root, _package = _copy_source(tmp_path)
+    predecessor_start = "2001-01-01T00:00:00+00:00"
+    _plant_seat_record(
+        PROJECT,
+        pid=_dead_pid(),
+        pid_start_time=1.0,
+        host=socket.gethostname(),
+        started_at=predecessor_start,
+        code_stamp="0" * 64,
+        reckon_version=runs.__version__,
+    )
+
+    expected = _stamp_of(root)
+    process, _lines = _launch_producer(root, isolated_home)
+    try:
+        record = _await_seat(PROJECT, expected)
+        assert record["started_at"] != predecessor_start, (
+            "a fresh arming must stamp its own start, not the dead predecessor's"
+        )
+        assert record["pid"] == process.pid
+    finally:
+        process.terminate()
+        process.wait(timeout=5)
+
+
+def test_the_live_view_reports_a_seat_running_older_code(isolated_home) -> None:
+    """A seat's staleness is a fact of the read model, not of one surface.
+
+    The producer runs the image it was armed with, so a fix that landed since
+    then is inert on that seat and every row it writes is composed by code the
+    reader's is not. The read model answers it for any caller; a record naming
+    no stamp is the older producer, since the field's absence predates it.
+    """
+    pid, pid_start, host = _self_identity()
+    _plant_seat_record(
+        PROJECT,
+        pid=pid,
+        pid_start_time=pid_start,
+        host=host,
+        started_at=runs._utc_now(),
+        code_stamp="0" * 64,
+        reckon_version=runs.__version__,
+    )
+    visibility = runs.project_watch_visibility(PROJECT)
+    assert visibility["code_stale"] is True
+    assert visibility["code_stamp"] == "0" * 64
+
+    _plant_seat_record(
+        PROJECT,
+        pid=pid,
+        pid_start_time=pid_start,
+        host=host,
+        started_at=runs._utc_now(),
+        code_stamp=runs.follower_code_stamp(),
+        reckon_version=runs.__version__,
+    )
+    assert runs.project_watch_visibility(PROJECT)["code_stale"] is False
+
+
+def test_the_follower_names_a_producer_running_older_code(
+    isolated_home, monkeypatch
+) -> None:
+    """The follower says so, on attach, where an operator is already looking.
+
+    The seat's stamp is recorded where a reader opens the seat, and that is not
+    where an operator watching a project looks. One dim line on attach names
+    the gap and the command that cycles the seat; a seat running this
+    follower's own code says nothing at all.
+    """
+    monkeypatch.setattr(runs, "producer_live", lambda project: True)
+    pid, pid_start, host = _self_identity()
+
+    def one_attach_pass(**extra) -> list[str]:
+        captured: list[str] = []
+        monkeypatch.setattr(cli_module, "_echo_follow_line", captured.append)
+        stop = threading.Event()
+        list(
+            cli_module._follow_watch_lines(
+                PROJECT,
+                poll_interval=0.0,
+                sleeper=lambda _seconds: None,
+                stop=stop,
+                on_poll=lambda _payload: stop.set(),
+                sweep=lambda _project: None,
+                **extra,
+            )
+        )
+        return captured
+
+    _plant_seat_record(
+        PROJECT,
+        pid=pid,
+        pid_start_time=pid_start,
+        host=host,
+        started_at=runs._utc_now(),
+        code_stamp="0" * 64,
+        reckon_version=runs.__version__,
+    )
+    stale_lines = one_attach_pass()
+    named = [line for line in stale_lines if "runs older code" in line]
+    assert named, f"the follower did not name the stale producer: {stale_lines!r}"
+    assert "reckon crew unwatch --project proj" in named[0]
+    assert "reckon crew watch --ensure-service --project proj" in named[0]
+
+    # The line is history rather than a worker transition, so it is dimmed on
+    # the same path the follower's other remembered rows are.
+    dimmed = [line for line in one_attach_pass(color=True) if "runs older code" in line]
+    assert dimmed and cli_module.HISTORY_DIM in dimmed[0]
+
+    _plant_seat_record(
+        PROJECT,
+        pid=pid,
+        pid_start_time=pid_start,
+        host=host,
+        started_at=runs._utc_now(),
+        code_stamp=runs.follower_code_stamp(),
+        reckon_version=runs.__version__,
+    )
+    current_lines = one_attach_pass()
+    assert not [line for line in current_lines if "runs older code" in line], (
+        "a current seat must print nothing."
+    )

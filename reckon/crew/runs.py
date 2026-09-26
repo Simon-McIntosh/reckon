@@ -1292,7 +1292,8 @@ def watch_producer_identity(project: str) -> dict[str, Any]:
     # A seat that records no stamp predates the field, so it is reported as
     # stale rather than as current: absence is the older producer, which is the
     # case a reader most needs to distinguish.
-    stale = code_stamp != follower_code_stamp()
+    current_stamp = follower_code_stamp()
+    stale = code_stamp != current_stamp
     detail = (
         f"reckon {version or 'unknown'} started {started_at or 'unknown'}"
         + (", code stale" if stale else "")
@@ -1301,6 +1302,9 @@ def watch_producer_identity(project: str) -> dict[str, Any]:
         "reckon_version": version,
         "started_at": started_at,
         "code_stamp": code_stamp,
+        # Both sides of the comparison, so a caller that has to say which code
+        # the seat is behind does not recompute one of them.
+        "current_stamp": current_stamp,
         "stale": stale,
         "line": detail,
     }
@@ -1677,17 +1681,30 @@ def _project_watch_claim(project: str, stall_window: str):
         # reader who finds this seat dead finds the producer's own last words
         # beside it rather than a path that was named and never written.
         _adopt_watch_log()
+        # The start time in the record belongs to the process that wrote it, so
+        # it travels only across this producer's own image replacement. A
+        # replacement keeps the pid and the process start time, so those two
+        # plus the host name name one process; anything else sitting in the file
+        # is a predecessor whose seat was never erased, and a fresh arming over
+        # it would otherwise report the predecessor's start -- reading as a
+        # producer that has run for hours when it was armed seconds ago.
+        pid_start_time = _process_start_time(os.getpid())
+        carried = (
+            previous.get("pid"),
+            previous.get("pid_start_time"),
+            previous.get("host"),
+        ) == (os.getpid(), pid_start_time, socket.gethostname())
         record = {
             "project": project,
             "pid": os.getpid(),
-            "pid_start_time": _process_start_time(os.getpid()),
+            "pid_start_time": pid_start_time,
             # The host that issued this pid. The seat lives on the shared home
             # every fleet node mounts, so without this a reader on another host
             # probes its own process table for a pid that belongs to someone
             # else and confirms a running producer dead.
             "host": socket.gethostname(),
             "stall_window": stall_window,
-            "started_at": previous.get("started_at") or _utc_now(),
+            "started_at": previous.get("started_at") if carried else _utc_now(),
             "stream_path": str(watch_stream_path(project)),
             # Where this producer's stdout and stderr go, so a dead seat can be
             # dated and explained from the file rather than only observed empty.
@@ -2305,6 +2322,16 @@ def project_watch_visibility(
         "seat_held": seat_held,
         "pid": pid,
         "armed_at": registration.get("started_at"),
+        # The code the armed seat is running, and whether it differs from this
+        # reader's. A reader of the live view needs the second fact and not the
+        # first: the producer runs the image it was armed with, so a fix landed
+        # since then is inert on that seat, and nothing else in this block
+        # distinguishes it from a current one. A record with no stamp predates
+        # the field, so it reads stale -- absence is the older producer. No
+        # record at all is no producer, which is not stale but absent.
+        "code_stamp": registration.get("code_stamp"),
+        "code_stale": bool(registration)
+        and registration.get("code_stamp") != follower_code_stamp(),
         "process_alive": registering_process_alive,
         "observer_alive": observer_alive,
         "watcher_live": watcher_live,

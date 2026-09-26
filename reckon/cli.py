@@ -2207,6 +2207,7 @@ def _follow_watch_lines(
     resume: Mapping[str, Any] | None = None,
     lifetime: float | None = None,
     registration=None,
+    color: bool = False,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -2449,6 +2450,21 @@ def _follow_watch_lines(
             continue
 
         cursor = runs.watch_stream_cursor(project)
+        producer = cursor["producer"]
+        if first_attach and producer.get("stale"):
+            # The producer imports its detection module once and runs for hours
+            # on the image it was armed with, so a fix that landed afterwards is
+            # inert on that seat, and every row it writes is composed by code the
+            # reader's own is not. One line, on attach, naming the gap and the
+            # remedy: the seat is cycled by releasing it and arming again.
+            line = (
+                f"producer {project} runs older code than this follower "
+                f"({_short_code_stamp(producer.get('code_stamp'))} vs "
+                f"{_short_code_stamp(producer.get('current_stamp'))}); restart it "
+                f"with: reckon crew unwatch --project {project} && "
+                f"reckon crew watch --ensure-service --project {project}"
+            )
+            _echo_follow_line(_dim_history_line(line) if color else line)
         # The baseline is the fleet report: one transition per live run, in the
         # ticker's own vocabulary. Nothing about the follower itself goes on this
         # stream — a reader wants worker transitions and the fleet posture, not
@@ -2604,6 +2620,18 @@ def _echo_follow_line(line: str, *, stream=None) -> None:
 # so the two cannot drift.
 HISTORY_DIM = "\x1b[2m"
 HISTORY_RESET = "\x1b[0m"
+
+
+def _short_code_stamp(stamp: Any) -> str:
+    """Name a code stamp in the width a one-line report can carry.
+
+    The full digest is 64 characters and two of them in one sentence push the
+    remedy off the pane's width. Eight is what `git log --oneline` uses for the
+    same reason, and the two sides of a comparison are read against each other
+    rather than resolved by a reader.
+    """
+    text = str(stamp or "")
+    return text[:8] if text else "none"
 
 
 def _dim_history_line(text: str) -> str:
@@ -2955,6 +2983,7 @@ def crew_follow(
             resume=resume,
             lifetime=lifetime_seconds,
             registration=registration,
+            color=getattr(grid, "color", False),
         ):
             # An attach event carries the states the pane already showed, so the
             # grid is seeded from the same remembered map the follower filtered
