@@ -393,6 +393,73 @@ def _render_document(
     )
 
 
+def _record_evidence_dir(record_path: Path) -> Path:
+    """Return the ``docs/evidence`` directory a record path lives under.
+
+    A record is spelled either at the archived path
+    ``docs/evidence/archive/<plan>-landed.html`` or at the live path
+    ``docs/evidence/<plan>-landed.html``. Fragments live beside both spellings
+    rather than beneath either, so the directory is resolved from the record's
+    position instead of assumed.
+    """
+
+    parent = record_path.parent
+    return parent.parent if parent.name == "archive" else parent
+
+
+def compose_landed_record(
+    record_path: Path,
+    plan_slug: str,
+    *,
+    project: str,
+    root: Path | None = None,
+) -> bytes:
+    """Compose a plan's cumulative evidence record from its file and fragments.
+
+    The composed form is the record file's own bytes followed by each fragment
+    under ``docs/evidence/fragments/<plan>/`` in the order the ledger records
+    the fragments' promotions. A fragment is named for the ledger row's
+    ``node``, so a redispatch of the same node replaces its predecessor's
+    fragment and the composed record carries that node's latest fragment once,
+    at its earliest promotion.
+
+    The reader writes no file and never re-renders the document. A record with
+    no fragment directory, or a ledger naming no fragment that exists, composes
+    to the record's own bytes — so a record written before fragments existed is
+    returned byte-identical rather than rewritten.
+
+    ``root`` names the checkout whose ledger holds the promotions; without it
+    the checkout containing the record is used, which is where the fragments
+    are read from as well.
+    """
+
+    record_path = Path(record_path)
+    evidence_dir = _record_evidence_dir(record_path)
+    fragment_dir = evidence_dir / "fragments" / plan_slug
+    composed = bytearray(record_path.read_bytes())
+    if not fragment_dir.is_dir():
+        return bytes(composed)
+
+    ledger_root = root if root is not None else evidence_dir.parent.parent
+    try:
+        rows = ledger.runs(project, root=ledger_root, plan=plan_slug)
+    except ledger.LedgerError as exc:
+        raise EvidenceSynthesisError(
+            f"cannot read the ledger for project {project!r}: {exc}"
+        ) from exc
+
+    seen: set[str] = set()
+    for row in rows:
+        node = str(row.get("node") or "").strip()
+        if not node or node in seen:
+            continue
+        seen.add(node)
+        fragment = fragment_dir / f"{node}.html"
+        if fragment.is_file():
+            composed.extend(fragment.read_bytes())
+    return bytes(composed)
+
+
 def synthesize_landed_record(
     docs_dir: Path,
     project: str,
