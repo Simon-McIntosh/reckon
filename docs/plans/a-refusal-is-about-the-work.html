@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -57,6 +57,25 @@
       single-deliverable goal with a semicolon, one with "and then", a goal quoting <code>&lt;path&gt;</code>, and this
       review's refused done-when verbatim; refused — the two brief defects s22 reported, copied from s22's dispatch
       record into the table as strings, and one authored two-deliverable goal. The refused side has three rows.</p>
+    <p><strong>Evidence inputs</strong> (s22-coord's dispatch record, relayed 2026-09-26). Neither of s22's two defects
+      was a goal-text split. Both are other <code>validate_node</code> properties, so their rows carry the role or budget
+      the refusal depended on and must still refuse after the lint is narrowed:</p>
+    <ul>
+      <li>Node <code>window-plan-currency-audit</code>, <code>--role investigate</code>. Its done-when ended with the
+        sentence "Read only: change no file outside the reports directory, and run no test suite beyond targeted pytest
+        selections needed to confirm a landed verdict." It was refused with "fully-specified: done-when matched execution
+        measure 'pytest selections', but role 'investigate' declares execution_capable false; correct the role or pass
+        an explicit execution override". It was redispatched as <code>r-20260926T085450107836</code>.</li>
+      <li>Node <code>dispatch-records-the-pace-row</code>, <code>--time-budget 90m</code>. It was refused with
+        "bounded: budget 90m exceeds the resolved fence 60m; split the work rather than overrun it". It was redispatched
+        at 60m as <code>r-20260926T095413623438</code>.</li>
+    </ul>
+    <p>The accepted side's "goal quoting <code>&lt;path&gt;</code>" row may use s22's one observed false positive, node
+      <code>accepted-shared-path-is-not-a-conflict</code>. Its done-when quoted the runtime message
+      "cannot accept &lt;path&gt;: live run &lt;peer&gt; claims &lt;claim&gt;" and was refused as "fully-specified:
+      '&lt;path&gt;' leaves the worker to infer intent". The review's own refused done-when survives only as the
+      fragment quoted in §1 ("… and the counts of TODO-FIXME, xfail and skip markers …"), and the run store's refusals
+      table holds no fuller copy. The row uses that fragment verbatim inside an otherwise complete done-when.</p>
 
     <h2 id="s3">§3 — A session that armed a follower keeps dispatching</h2>
     <p><strong>Deliverable.</strong> When the dispatching session appears in the project watcher's released-followers
