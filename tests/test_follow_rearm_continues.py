@@ -649,6 +649,78 @@ def test_both_history_caps_apply_and_either_governs() -> None:
     assert [row["text"] for row in both] == ["t9", "t10"]
 
 
+def test_a_zero_row_cap_keeps_no_rows() -> None:
+    """A cap of zero rows admits nothing; the count must not invert.
+
+    ``fresh[-0:]`` is the whole list, so a zero — a configuration asking for no
+    stored rows — used to return every row instead of none, the opposite of what
+    it asked for. Zero is the boundary the slice gets wrong, so it is checked
+    beside the caps that are merely smaller.
+    """
+    now = 1_800_000_000.0
+    rows = [
+        {"kind": "row", "at": now - 600 + 60 * index, "text": f"t{index}"}
+        for index in range(6)
+    ]
+    assert (
+        follow_checkpoint.cap_history(rows, now=now, max_rows=0, max_seconds=10**9)
+        == []
+    )
+    assert (
+        follow_checkpoint.cap_history(rows, now=now, max_rows=0, max_seconds=180) == []
+    )
+
+
+def test_consecutive_format_markers_collapse_to_one(home) -> None:
+    """Two markers with no row between them are one marker.
+
+    A follower records a format marker each time it reloads onto new code, so
+    two reloads with no row delivered in between left two markers adjacent. A
+    replay then drew the switch twice, saying the drawing style changed where it
+    changed once. The collapse is adjacency-only: a marker after an intervening
+    row is a second genuine switch and is kept.
+    """
+    moment = 1_800_000_000.0
+    follow_checkpoint.append_history(
+        PROJECT,
+        SESSION,
+        text=follow_checkpoint.FORMAT_CHANGED_TEXT,
+        at=moment,
+        kind=follow_checkpoint.FORMAT_CHANGED_KIND,
+    )
+    follow_checkpoint.append_history(
+        PROJECT,
+        SESSION,
+        text=follow_checkpoint.FORMAT_CHANGED_TEXT,
+        at=moment + 1,
+        kind=follow_checkpoint.FORMAT_CHANGED_KIND,
+    )
+    rows = follow_checkpoint.read_history(PROJECT, SESSION)
+    markers = [
+        row for row in rows if row["kind"] == follow_checkpoint.FORMAT_CHANGED_KIND
+    ]
+    assert len(markers) == 1, f"adjacent markers are one; got {rows!r}"
+    burst = cli._follow_history_burst(rows, dim=str)
+    assert burst.count(follow_checkpoint.FORMAT_CHANGED_TEXT) == 1, burst
+
+    # A row between them makes the second marker a real second switch.
+    follow_checkpoint.append_history(
+        PROJECT, SESSION, text="a drawn row", at=moment + 2
+    )
+    follow_checkpoint.append_history(
+        PROJECT,
+        SESSION,
+        text=follow_checkpoint.FORMAT_CHANGED_TEXT,
+        at=moment + 3,
+        kind=follow_checkpoint.FORMAT_CHANGED_KIND,
+    )
+    rows = follow_checkpoint.read_history(PROJECT, SESSION)
+    markers = [
+        row for row in rows if row["kind"] == follow_checkpoint.FORMAT_CHANGED_KIND
+    ]
+    assert len(markers) == 2, f"a marker after a row is a second switch; got {rows!r}"
+
+
 def test_the_history_caps_come_from_flight_config(monkeypatch) -> None:
     """A configured pane overrides both caps; an unreadable config falls back."""
 

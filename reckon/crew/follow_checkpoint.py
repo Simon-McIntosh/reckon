@@ -330,7 +330,12 @@ def cap_history(
     """
     cutoff = float(now) - float(max_seconds)
     fresh = [row for row in rows if row["at"] >= cutoff]
-    if max_rows >= 0 and len(fresh) > max_rows:
+    if max_rows == 0:
+        # A cap of zero admits nothing. It cannot ride the slice below, where
+        # ``fresh[-0:]`` is the whole list and a configuration asking for no
+        # rows would return every one of them.
+        return []
+    if max_rows > 0 and len(fresh) > max_rows:
         return fresh[-max_rows:]
     return fresh
 
@@ -374,11 +379,26 @@ def append_history(
     target = history_path(project, session)
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return
+    existing = read_history(project, session)
+    if (
+        kind == FORMAT_CHANGED_KIND
+        and existing
+        and existing[-1]["kind"] == FORMAT_CHANGED_KIND
+    ):
+        # Two reloads with no row between them are one format switch, so a
+        # marker already at the tail stands for this one. Appending regardless
+        # would leave two adjacent markers and a replay would draw the switch
+        # twice; a marker after an intervening row is a second genuine switch
+        # and is kept.
+        return
+    try:
         with target.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(row, sort_keys=True) + "\n")
     except OSError:
         return
-    rows = read_history(project, session)
+    rows = [*existing, row]
     if len(rows) <= max(2 * max_rows, max_rows):
         return
     capped = cap_history(rows, now=moment, max_rows=max_rows, max_seconds=max_seconds)
