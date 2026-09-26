@@ -1,0 +1,367 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "4b0ccd340ed992d28e0fb7accc22f91bba39db6b",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 2728586,
+      "input_tokens_cumulative": 2728586,
+      "output_tokens": 18174,
+      "output_tokens_cumulative": 18174,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 99,
+    "files": 3,
+    "removed": 0
+  },
+  "commit_resolution": null,
+  "commits": [
+    "35da2422755587c4f7f329f229c31fce8760ca8f",
+    "70a3ef80fd66147417cb7db9779bb32d7feb0e7e"
+  ],
+  "completed_at": "2026-09-26T09:27:43.560Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-26T09:14:03Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_plan_review_gate.py tests/test_crew_dispatch_guard.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091353695982-launch-path-reports-plan-review-missing/logs/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.6,
+    "at_dispatch": 0.6,
+    "plan": "a-plan-is-reviewed-before-it-is-built",
+    "reason": "a test follow-on to the landed dispatch gate",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-26T09:43:54.364942+00:00",
+    "horizon_seconds": 1800,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-26T09:13:54Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 7,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 4,
+    "mean_context": 101818,
+    "observed_at": "2026-09-26T09:13:47Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-26T09:27:43.560Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091353695982-launch-path-reports-plan-review-missing/manifest.md",
+  "member": "crew-both-reasons",
+  "negative_control": {
+    "declaration": "change the launch-path mapping in reckon/cli.py to emit plan-unavailable; the new case must fail",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091353695982-launch-path-reports-plan-review-missing/logs/negctl-mutated.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091353695982-launch-path-reports-plan-review-missing/logs/negctl-mutated.log",
+    "test_paths": [
+      "tests/test_plan_review_gate.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "launch-path-reports-plan-review-missing",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1649,
+          "cached_input_tokens": 777212,
+          "input_tokens": 778863,
+          "output_tokens": 2375,
+          "reasoning_output_tokens": 312,
+          "total_tokens": 781238,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+      "session_id": "s21-coord"
+    },
+    "done_when": "tests/test_plan_review_gate.py passes with a new case that runs crew dispatch without --dry-run, with plan_review_gate set to enforce, for an implement node on an unreviewed plan, and asserts the emitted error is plan-review-missing; the declared negative control is executed and logged; tests/test_plan_review_gate.py and tests/test_crew_dispatch_guard.py add no failures against base 4b0ccd34; the change is committed in this worktree",
+    "estimated_hours": null,
+    "goal": "Add a test to tests/test_plan_review_gate.py asserting that the launch path of crew dispatch reports error plan-review-missing for an implement node on a plan with no stored review when the flight key plan_review_gate is enforce, matching the dry-run case already asserted. The re-review of run r-20260925T131953539635-plan-review-dispatch-gate (92) found that the launch path's mapping near reckon/cli.py line 1348 has no test, while the dry-run mapping near line 1276 does, so the divergence the prior review caught could return on the launch side and still pass.",
+    "id": "launch-path-reports-plan-review-missing",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-26T09:13:54Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 7,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 4,
+      "mean_context": 101818,
+      "observed_at": "2026-09-26T09:13:47Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091353695982-launch-path-reports-plan-review-missing/manifest.md",
+    "negative_control": "change the launch-path mapping in reckon/cli.py to emit plan-unavailable; the new case must fail",
+    "plan": "a-plan-is-reviewed-before-it-is-built",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "exact",
+    "time_budget": "30m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_plan_review_gate.py",
+      "docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html",
+      "docs/figures/a-plan-is-reviewed-before-it-is-built",
+      "docs/plans/a-plan-is-reviewed-before-it-is-built.html"
+    ]
+  },
+  "orientation_input_tokens": 464898.0,
+  "outcome": "",
+  "plan": "a-plan-is-reviewed-before-it-is-built",
+  "plan_impl_at_dispatch": 0.6,
+  "promoted_revision": "70a3ef80fd66147417cb7db9779bb32d7feb0e7e",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 20,
+      "evidence": 18,
+      "fit": 18,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 96
+  },
+  "role": "implement",
+  "run_id": "r-20260926T091353695982-launch-path-reports-plan-review-missing",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "e73f1b0a-d3ab-4778-a912-d1d01287eb7e",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 2728586,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 797.547,
+    "generated_tokens": 18174,
+    "generation_seconds": 745.454,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 22.6,
+    "machine_seconds": 52.093,
+    "peak_input_tokens": 108610,
+    "tokens_per_second": 24.38,
+    "wall_tokens_per_second": 22.79
+  },
+  "time_budget": "30m",
+  "tool_steps": 34.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "blocked",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports blocked: crew resume of a fenced run composes the fence binary as its harness and bubblewrap refuses it; so a resume produces no turn. Reproduce with `crew resume --run <fenced run> --print-only`: the argv's inner command (after the -- separator) is /usr/bin/bwrap; not the backend's harness. The run itself completed; only its resume path is dead.",
+        "effective_phase": "working",
+        "elapsed_seconds": 0,
+        "exit_record": {
+          "attempt": 3,
+          "ended_during": "working",
+          "exit_code": 1,
+          "exited_at": "2026-09-25T16:46:34Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T16:46:33Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 40106,
+          "worker_pid": 1757639
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "crew resume of a fenced run composes the fence binary as its harness and bubblewrap refuses it; so a resume produces no turn. Reproduce with `crew resume --run <fenced run> --print-only`: the argv's inner command (after the -- separator) is /usr/bin/bwrap; not the backend's harness. The run itself completed; only its resume path is dead.",
+          "lifting_condition": null,
+          "recovery": "decide",
+          "recovery_classification": "blocked",
+          "state": "blocked"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 59241,
+        "log_fresh": false,
+        "manifest_commits": [
+          "18a89e6f80b66f63185c27b6f531ee2d46e6d907"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "9481241fbcf4259e3d9c1d96f5459e30805e6fe87b1ff9b9bf4b400e4d440d70",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "blocked",
+        "manifest_status": "blocked",
+        "marker": "!",
+        "needs_help_complete": false,
+        "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md; resolve the blocker before resuming the run",
+        "node": "fenced-workers-smoke",
+        "phase": "working",
+        "plan": "a-worker-cannot-write-your-home",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "decide",
+        "recovery_classification": "blocked",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+        "session": "s21-coord",
+        "session_resolution": {
+          "consulted": [
+            "pointer",
+            "stream",
+            "ledger"
+          ],
+          "resolved": true,
+          "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+          "session_id": "eb46c4e0-0ac6-4891-b9b6-6fd5fb4773e4",
+          "source": "pointer"
+        },
+        "terminal_age_seconds": 70367,
+        "terminal_at": "2026-09-25T13:41:08Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fenced-workers-smoke"
+      }
+    ]
+  },
+  "wall_seconds": 820,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-26T09:27:43Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-26T09:14:23Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T091353695982-launch-path-reports-plan-review-missing",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 7918,
+    "worker_pid": 3123091
+  },
+  "worker_seconds": 793,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
