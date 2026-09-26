@@ -671,6 +671,78 @@ worker's own commit, which `reckon crew recover` reports as the run's next actio
       only failures are the new cases. Merged verification and followup closure remain
       coordinator work.</p>
     </section>
+
+<section id="promotion-tests-measure-the-landing">
+      <h2>One promotion-history assertion still measured the receipt</h2>
+      <p><strong>2026-09-26.</strong> A promotion leaves two commits: the landing, whose
+      subject names the run and its gate verdict, and on top of it the release receipt that
+      records the workspace outcome. The assertion in
+      <code>tests/test_crew_promotion.py</code> that a worker-authored landing record leaves
+      the landing carrying only the ledger row read the helper with its default revision,
+      <code>HEAD</code>, so it measured the receipt. It passed only because the receipt
+      stages that same single run file. This is a latent mislabel: no assertion fails at
+      base, because both commits name the same one-path set, which is why the declared
+      mutation rather than a base failure is the falsifier.</p>
+      <figure>
+        <img src="/reckon/figures/the-ledger-is-one-file-per-run/landing-assertion-reads.svg"
+             alt="A commit lane of seed, then the promote landing commit, then the release receipt that HEAD names. Two panels below contrast the default-revision read, which resolves HEAD and so measures the receipt, with the repaired read, which locates the promote commit by its subject and measures the landing. A lower panel states the declared mutation: the receipt stages a second path, the default-revision form fails naming it, and the repaired form passes because the landing names its single path.">
+        <figcaption>
+          One promotion, two commits. The assertion that means the landing now locates the
+          <code>promote(&lt;run_id&gt;):</code> commit instead of resolving <code>HEAD</code>,
+          which names the release receipt above it.
+        </figcaption>
+      </figure>
+      <p><strong>Repair.</strong> The assertion locates the landing through
+      <code>_promotion_commit</code> and measures that commit
+      (<code>tests/test_crew_promotion.py:1844</code> of the committed blob). The two
+      remaining default-revision calls (<code>:2059</code>, <code>:2104</code>) are not this
+      case: they assert about the verify-gate re-run's own commit, which is what
+      <code>HEAD</code> names where they run, so they are unchanged. Only the test file
+      changes; <code>reckon/crew/promotion.py</code> is untouched.</p>
+      <p><strong>The mislabel, read off disk.</strong> The focused case was run in a scratch
+      copy (<code>git archive</code> of the measured revision) with the synthesised
+      repository kept through <code>--basetemp</code>, so the commits below are the ones the
+      production code wrote, not a reconstruction. Pristine production code, repaired
+      assertion: 1 passed, and the run's repository reads</p>
+      <pre>3684dfa4 release(r-20260915T050001000001-worker-authored): record workspace outcome
+        docs/state/proj/runs/r-20260915T050001000001-worker-authored.json
+63e303b6 promote(r-20260915T050001000001-worker-authored): passed
+        docs/state/proj/runs/r-20260915T050001000001-worker-authored.json</pre>
+      <p>HEAD is the receipt and the landing is the promote commit; both name the same single
+      path, so the default-revision form passed while measuring a commit that is not the
+      landing.</p>
+      <p><strong>The declared mutation.</strong> In a scratch copy only, the release receipt
+      writes and stages a second path
+      (<code>docs/state/proj/runs/&lt;run_id&gt;.receipt.txt</code>) in its commit. Under it,
+      and in the same scratch tree:</p>
+      <table>
+        <tr><th>arm</th><th>assertion</th><th>result</th></tr>
+        <tr><td>repaired, receipt stages a second path</td><td><code>_landing_commit_paths(repository, _promotion_commit(repository, run_id))</code></td><td>1 passed; the receipt (<code>c22263a9</code>) names two paths, the landing (<code>3bff0b05</code>) names one</td></tr>
+        <tr><td>pre-repair HEAD form, same receipt</td><td><code>_landing_commit_paths(repository)</code></td><td>1 failed: <code>Extra items in the left set: 'docs/state/proj/runs/r-20260915T050001000001-worker-authored.receipt.txt'</code></td></tr>
+      </table>
+      <p>So the repair kills the mutant the recorded residual describes, and the failing log's
+      first line is the declaration verbatim.</p>
+      <p><strong>Focused gate.</strong> <code>tests/test_crew_promotion.py</code> at
+      <code>be2d3c36</code>: <strong>50 passed</strong>, exit 0, run with the root
+      environment's interpreter, the tree under test on <code>PYTHONPATH</code> and as the
+      working directory, so the imported <code>reckon</code> is that tree. Ruff on the staged
+      path against a complete archive tree of the base revision: 3 findings both arms (0
+      added) and <code>ruff format --check</code> clean on both, against 3 findings and a
+      clean format at <code>355ef453</code>.</p>
+      <p><strong>Receipts</strong> under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T122131857968-landing-tests-measure-the-landing/</code>:
+      <code>arm-base.log</code>, <code>arm-mutated-repaired.log</code>,
+      <code>arm-mutated-headform.log</code> (the declared mutation's red log),
+      <code>gate-focused-tests/test_crew_promotion.log</code>,
+      <code>ruff-delta.log</code>, the applied mutation in
+      <code>negative-control-mutation.patch</code>, and the driver
+      <code>scratch-arms.py</code>. Each arm log's header names its revision, tree, command,
+      the module under test as imported and the resolved working directory; the negative
+      control's header is preceded by the declaration verbatim.</p>
+      <p><strong>Boundary.</strong> This node measures its own change in a scratch copy; the
+      mutation never touches the worktree, and merged verification, independent review and
+      followup closure remain coordinator work.</p>
+    </section>
   </main>
 </body>
 </html>
