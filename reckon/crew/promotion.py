@@ -10,7 +10,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
@@ -4555,8 +4555,26 @@ def _complete_locked(
         }
 
 
+# The marker a deliberate discard leaves in the run directory. A pointer that
+# vanishes and a pointer removed on purpose look identical from the fleet's
+# side, so without it a reader cannot tell finished work from abandoned work.
+DISCARD_RECORD_NAME = "discard.json"
+
+
+def discard_record_path(run_id: str) -> Path:
+    """Path of the marker a discard leaves in one run's directory."""
+    return run_dir(run_id) / DISCARD_RECORD_NAME
+
+
 def discard(run_id: str) -> dict[str, Any]:
-    """Remove a stopped or abandoned pointer without promoting it."""
+    """Remove a stopped or abandoned pointer without promoting it.
+
+    The departure is recorded in the run directory before the pointer goes, so
+    a reader sees a discard rather than the same absence a reaped or
+    hand-removed pointer produces. The record is never written into a directory
+    that does not already exist: the run directory is the run's own home, and a
+    write that recreated it would bring a discarded run back into existence.
+    """
     with _pointer_lock(run_id):
         record = read_pointer(run_id)
         pid = record.get("pid")
@@ -4565,13 +4583,43 @@ def discard(run_id: str) -> dict[str, Any]:
                 f"cannot discard live run {run_id!r}: recorded pid {pid} is alive"
             )
         path = pointer_path(run_id)
+        # Before the pointer goes: a reader that sees the absence must find the
+        # record behind it, and a record written afterwards leaves a window in
+        # which the departure is indistinguishable from a vanished pointer.
+        written = _write_discard_record(run_id, record)
         path.unlink()
         return {
             "run_id": run_id,
             "pointer_path": str(path),
             "pointer_removed": not path.exists(),
             "removed": record,
+            "discard_record": written,
         }
+
+
+def _write_discard_record(
+    run_id: str, record: Mapping[str, Any]
+) -> str | None:
+    """Record a deliberate discard in the run directory, or report its absence.
+
+    Returns the record's path when the run directory was there to hold it, and
+    ``None`` when the directory had already gone — a run whose home is gone has
+    nothing left to mark, and creating the directory here would resurrect it.
+    """
+    path = discard_record_path(run_id)
+    if not path.parent.is_dir():
+        return None
+    _write_json(
+        path,
+        {
+            "run_id": run_id,
+            "discarded_at": datetime.now(UTC).isoformat(),
+            "phase": record.get("phase"),
+            "node": record.get("node"),
+            "pointer_path": str(pointer_path(run_id)),
+        },
+    )
+    return str(path)
 
 
 def sweep_promoted_revisions(

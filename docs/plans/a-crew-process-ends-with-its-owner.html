@@ -835,6 +835,47 @@
       This gate measures only this node's own change; verifying the merged result belongs to a
       separately dispatched test node, and the driving followup stays open.</p>
     </div>
+    <div data-reckon="landing" data-node="crew-discard-reads-discarded" data-when="2026-09-26">
+      <h3>Landing record &mdash; a discard reads discarded, distinct from a vanished pointer</h3>
+      <p>Commit <code>88bd5e41</code> writes a discard marker into the run directory before
+      the live pointer is removed, and has the departure fold emit <code>discarded</code> for
+      a run the ledger does not record when that marker is present. The follow-on this
+      section's previous record left open was the recording half: a discard and a vanished
+      pointer both produced <code>withdrawn</code>, so a reader could not tell a coordinator's
+      own act from an unexplained disappearance.</p>
+      <p><code>discard()</code> in <code>reckon/crew/promotion.py</code> now writes
+      <code>discard.json</code>, carrying the discard time, before it unlinks the pointer, so
+      a reader that sees the absence finds the record behind it. A run directory that has
+      already gone is left alone and the write reports <code>None</code>: the run's home is
+      not recreated, following the supervisor's rule that a write must not bring a discarded
+      run back into existence. The departure rule in <code>reckon/crew/recovery.py</code>
+      resolves the marker behind a lazy reader, consulted only for a departure, so an ordinary
+      observation opens no run directory. Promotion keeps first claim &mdash; a run the ledger
+      records still reads <code>promoted</code>, whatever else the run directory holds &mdash;
+      and a departure with neither trail still reads <code>withdrawn</code>. The ticker paints
+      the new word in both themes and the departure is dropped from the running set like its
+      two siblings.</p>
+      <p><strong>Gate.</strong> New module
+      <code>tests/test_crew_discard_reads_discarded.py</code>: <strong>6 passed</strong>,
+      covering the discard marker and its absence from the public interface. The scoped
+      comparison over <code>tests/test_a_discard_never_reads_promoted.py</code>,
+      <code>tests/test_crew_recovery.py</code> and
+      <code>tests/test_crew_watch_stream.py</code> measures <strong>99 passed</strong> at base
+      <code>9fafad1f</code> and <strong>105 passed</strong> at the committed head, so the added
+      failure count is <strong>zero</strong>. The declared negative control makes
+      <code>_write_discard_record</code> return without writing: the discard case fails
+      <code>assert 'withdrawn' == 'discarded'</code> (<strong>1 failed, 5 passed, exit
+      1</strong>), the departure falling back to the bare withdrawal the marker exists to
+      replace. Lint adds no findings over the four changed paths (21 at base, 21 at head).
+      Receipts under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103152965782-crew-discard-reads-discarded/logs/</code>:
+      <code>gate.log</code>, <code>base-arm.log</code> and <code>negative-control.log</code>.
+      Full record: <code>a-crew-process-ends-with-its-owner-landed.html#s10-discard-reads-discarded</code>;
+      figure:
+      <code>docs/figures/a-crew-process-ends-with-its-owner/discard_reads_discarded.svg</code>.
+      This is a worker landing record; review, integration, the merged gate and deployment
+      remain coordinator-owned, and the driving followup stays open.</p>
+    </div>
 
     <h2 id="s11">&sect;11 &mdash; A live producer reads only what changed since its last poll</h2>
     <p><strong>The defect.</strong> &sect;3 ends a producer that nobody uses. &sect;4 stops

@@ -722,6 +722,55 @@
       must load the integrated code before this result describes its live output; no shared
       service was restarted and the followup was not closed here.</p>
     </section>
+  <section id="s10-discard-reads-discarded">
+      <h2>A discard reads discarded, distinct from a vanished pointer</h2>
+      <p>Measured on fleet compute node <code>98dci4-clu-2058</code> under allocation
+      <code>1277272</code>, at base <code>9fafad1fde793b9a0d5bc7ac60114f445359d202</code>.
+      A run leaves the fleet in three shapes a live pointer cannot tell apart: a promotion
+      that wrote its ledger row, a discard a coordinator asked for, and a pointer reaped or
+      removed by hand. The departure fold resolved only the first, so a deliberate discard
+      read as the same <code>withdrawn</code> a vanished pointer earns, and a reader could not
+      tell finished work from an act of its own. The plan section left exactly this as a
+      follow-on.</p>
+      <figure>
+        <img src="/reckon/figures/a-crew-process-ends-with-its-owner/discard_reads_discarded.svg"
+             alt="The departure fold resolves promoted from the ledger, then discarded from the run-directory marker, then withdrawn."/>
+        <figcaption>Departure resolution order: ledger row, then run-directory marker, then
+        the bare withdrawal.</figcaption>
+      </figure>
+      <p><strong>What changed.</strong> <code>discard()</code> in
+      <code>reckon/crew/promotion.py</code> writes <code>discard.json</code> into the run
+      directory, carrying the discard time, before it unlinks the live pointer, so a reader
+      that sees the absence finds the record behind it. The write returns <code>None</code>
+      and touches nothing when the run directory has already gone, so a discard can never
+      resurrect a run whose home was removed. The departure rule in
+      <code>reckon/crew/recovery.py</code> resolves a run the ledger does not record against
+      that marker and emits <code>discarded</code>; a recorded promotion still reads
+      <code>promoted</code> whatever else the run directory holds, and a departure with
+      neither trail still reads <code>withdrawn</code>. The marker is read only for a
+      departure, so an ordinary observation opens no run directory. The ticker paints the new
+      word in both themes, and the departure is removed from the running set like the other
+      two departure words.</p>
+      <table>
+        <thead><tr><th>Check</th><th>Measured result</th></tr></thead>
+        <tbody>
+          <tr><td>New module</td><td><code>tests/test_crew_discard_reads_discarded.py</code>: 6 passed. A discarded run departs <code>discarded</code> and its run directory holds the marker; a recorded promotion reads <code>promoted</code>; a recorded promotion outweighs a discard marker; a pointer with neither trail reads <code>withdrawn</code>; a discard whose run directory is gone writes no marker and is not resurrected; every crew path resolves under the synthetic home.</td></tr>
+          <tr><td>Scoped gate</td><td>Base arm (three comparison files, revision 9fafad1f exported with <code>git archive</code>): <strong>99 passed</strong>, exit 0. Head (same three files plus the new module): <strong>105 passed</strong>, exit 0. Added failures: <strong>0</strong>.</td></tr>
+          <tr><td>Declared negative control</td><td>Make <code>_write_discard_record</code> return without writing: the discard case fails <code>assert 'withdrawn' == 'discarded'</code> (<strong>1 failed, 5 passed, exit 1</strong>), because the departure falls back to the bare withdrawal the marker exists to replace.</td></tr>
+          <tr><td>Lint delta</td><td><code>ruff check --no-cache --output-format=concise</code> over the four changed paths: base 21 findings, head 21 findings. Added findings: <strong>0</strong>. <code>ruff format --check</code> leaves the same two pre-existing files reformatted.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Receipts.</strong> Logs live under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103152965782-crew-discard-reads-discarded/logs/</code>:
+      <code>gate.log</code>, <code>base-arm.log</code> and <code>negative-control.log</code>.
+      The gate and base headers name the revision, the tree, the command, the resolved
+      <code>module.__file__</code> and the working directory; the red log's first line
+      repeats the declared mutation verbatim.</p>
+      <p><strong>Remaining.</strong> <code>discarded</code> is deliberately outside the
+      fleet's counting states, like <code>withdrawn</code>: a run that has left the fleet is
+      not one of the three buckets or the waiting family. Review, integration, the merged
+      gate and deployment are coordinator work, and the driving followup stays open.</p>
+    </section>
   </main>
 </body>
 </html>
