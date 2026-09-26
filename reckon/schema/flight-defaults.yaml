@@ -41,6 +41,18 @@ harness_home_files:
     - path: config.toml
     - path: rules
 
+# Files carried into a run's harness home from the operator's HOME DIRECTORY
+# rather than from the harness config directory above. ``~/.claude.json`` sits
+# in the home directory, not inside ``~/.claude``, and its top-level
+# ``mcpServers`` holds the operator's user-scope MCP server declarations; a
+# fenced worker whose run harness home lacks it starts with no ``mcp__`` tools.
+# The harness writes this file itself, so a run home that already holds one
+# keeps its own keys and only the declared keys are merged in.
+harness_home_adjacent_files:
+  claude:
+    - path: .claude.json
+      keys: [mcpServers]
+
 roles:
   # Committed ledger p75: 457s across 79 usable implement runs, rounded up.
   implement:

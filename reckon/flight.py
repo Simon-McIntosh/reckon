@@ -129,6 +129,17 @@ def shipped_defaults_path() -> Path:
 # copy handed to the schema validator has it removed (see :func:`_schema_view`).
 HARNESS_HOME_FILES = "harness_home_files"
 
+# Operator-home files a dialect's harness reads that live beside the harness
+# config directory rather than inside it. The carry above resolves its paths
+# relative to the harness config directory and mirrors the relative path into
+# the run home, so it cannot name a file in the home root without both reading
+# and writing the home root. ``~/.claude.json`` is that shape: it holds the
+# operator's user-scope MCP server declarations and sits in the home directory,
+# and a fenced worker whose run home lacks it loses every ``mcp__`` tool. One
+# seeder copies both tables — the config-dir files and these — so the carry
+# stays single-mechanism.
+HARNESS_HOME_ADJACENT_FILES = "harness_home_adjacent_files"
+
 
 def shipped_harness_home_files() -> dict[str, list[dict[str, Any]]]:
     """Return the per-dialect declaration the shipped defaults carry.
@@ -168,17 +179,54 @@ def harness_home_files(
     return [dict(entry) for entry in shipped_harness_home_files().get(dialect_name, [])]
 
 
+def shipped_harness_home_adjacent_files() -> dict[str, list[dict[str, Any]]]:
+    """Return the per-dialect declarations carried from the operator home root.
+
+    Read from the shipped layer alone, exactly as
+    :func:`shipped_harness_home_files` reads the config-dir table: a dialect
+    absent here carries nothing from the home root, and a dialect absent from
+    both seeds only its own directory.
+    """
+    data = read_layer_file(shipped_defaults_path()) or {}
+    declared = data.get(HARNESS_HOME_ADJACENT_FILES)
+    if not isinstance(declared, Mapping):
+        return {}
+    return {
+        str(dialect): [dict(entry) for entry in entries]
+        for dialect, entries in declared.items()
+        if isinstance(entries, Iterable) and not isinstance(entries, (str, bytes))
+    }
+
+
+def harness_home_adjacent_files(dialect_name: str) -> list[dict[str, Any]]:
+    """Return the operator-home-root files a dialect's harness reads.
+
+    The source of each entry is the operator's home directory rather than the
+    dialect's harness config directory; the destination is the same relative
+    path under the run's harness home. The table is dialect-shipped and not
+    per-backend: the file it names is harness state the harness itself writes,
+    so a backend has nothing to override.
+    """
+    return [
+        dict(entry)
+        for entry in shipped_harness_home_adjacent_files().get(dialect_name, [])
+    ]
+
+
 def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     """Return ``data`` with reckon-owned keys removed for schema validation.
 
     The LinkML schema constrains the provider-neutral surface only, so the
-    reckon-owned ``harness_home_files`` declaration is removed from the copy the
-    model validates while the merge keeps it, so :func:`harness_home_files` can
-    read a backend's override from the resolved config.
+    reckon-owned ``harness_home_files`` declarations — the config-dir table and
+    the home-root table — are removed from the copy the model validates while
+    the merge keeps them, so :func:`harness_home_files` can read a backend's
+    override from the resolved config and :func:`harness_home_adjacent_files`
+    can read the home-root table.
     :func:`_validate_harness_home_files` checks its shape separately.
     """
     cleaned = dict(data)
     cleaned.pop(HARNESS_HOME_FILES, None)
+    cleaned.pop(HARNESS_HOME_ADJACENT_FILES, None)
     backends = cleaned.get("backends")
     if isinstance(backends, Mapping):
         cleaned["backends"] = {
@@ -227,16 +275,17 @@ def _validate_harness_home_files(data: Mapping[str, Any], source: str | Path) ->
     an entry that is not a mapping, a missing or non-string path, or a ``keys``
     that is not a list of strings would otherwise seed nothing and look like a
     harness that reads no operator file. The shipped, top-level declaration is a
-    dialect map; a backend's own is the entry list itself.
+    dialect map; a backend's own is the entry list itself. The home-root table is
+    a dialect map too, and is dialect-only.
     """
-    top = data.get(HARNESS_HOME_FILES)
-    if top is not None:
+    for key in (HARNESS_HOME_FILES, HARNESS_HOME_ADJACENT_FILES):
+        top = data.get(key)
+        if top is None:
+            continue
         if not isinstance(top, Mapping):
-            raise FlightConfigError(source, HARNESS_HOME_FILES, "must be a dialect map")
+            raise FlightConfigError(source, key, "must be a dialect map")
         for dialect, entries in top.items():
-            _validate_harness_home_entries(
-                entries, f"{HARNESS_HOME_FILES}.{dialect}", source
-            )
+            _validate_harness_home_entries(entries, f"{key}.{dialect}", source)
     for backend_name, backend in (data.get("backends") or {}).items():
         if isinstance(backend, Mapping) and HARNESS_HOME_FILES in backend:
             _validate_harness_home_entries(
