@@ -5114,6 +5114,38 @@ def _departure_recorded_run_ids(
     return {str(run) for run in reader()}
 
 
+def _departure_word(run_id: str, recorded: set[str] | None) -> str:
+    """The word a departing run's absence carries.
+
+    Promotion has first claim, because a recorded ledger row is the fleet's
+    evidence that work landed and a run directory cannot argue with it. Where
+    no row records the run, a marker the run's directory holds from a
+    deliberate discard names the departure for what it was; without one the
+    word stays the bare withdrawal a reaped or hand-removed pointer earns.
+    """
+    if recorded is not None and run_id in recorded:
+        return "promoted"
+    if _discard_recorded(run_id):
+        return "discarded"
+    return "withdrawn"
+
+
+def _discard_recorded(run_id: str) -> bool:
+    """Whether the run directory holds a marker a deliberate discard left.
+
+    The run's own home is read only for a departure and only for a run the
+    ledger does not record, so an ordinary observation touches no run
+    directory. An unreadable or absent marker answers False: a departure the
+    fleet cannot corroborate takes the word that promises nothing.
+    """
+    from reckon.crew.promotion import discard_record_path
+
+    try:
+        return discard_record_path(run_id).is_file()
+    except OSError:
+        return False
+
+
 def fleet_transitions(
     known: Mapping[str, Mapping[str, Any]],
     current: Mapping[str, Mapping[str, Any]],
@@ -5143,16 +5175,19 @@ def fleet_transitions(
     changes: list[tuple[Mapping[str, Any], str | None, str]] = []
 
     departures = [item for item in known if item not in current]
-    # A run leaves the fleet for two reasons that look identical from a pointer:
-    # a promotion that wrote its ledger row, and a pointer that vanished with
-    # nothing recorded behind it — a discard, a reaped pointer, a file removed
-    # by hand. A reader acts on the ledger for its word: a departure is promoted
-    # only when the project ledger records a promotion of that run id, and
-    # otherwise withdrawn. A promotion is never inferred from a missing row's
-    # absence, so a discard cannot read as work that landed. The ledger is read
-    # at most once per observation and only when something departed; a reader
-    # the caller cannot supply is resolved from the departing run's own project,
-    # and a departure with no project at all still withdraws — the safe
+    # A run leaves the fleet for reasons a pointer cannot tell apart on its own:
+    # a promotion that wrote its ledger row, a deliberate discard that left its
+    # marker in the run directory, and a pointer that vanished with nothing
+    # recorded behind it — a reaped pointer, a file removed by hand. A reader
+    # acts on the word, and each of the three asks for a different response, so
+    # the fold resolves all three. A promotion is read from the ledger alone and
+    # claims the run whenever a row records it; failing that, a discard marker
+    # in the run directory names the departure discarded; failing both, the word
+    # is withdrawn. A promotion is never inferred from a missing row's absence,
+    # so an unrecorded departure cannot read as work that landed. The ledger is
+    # read at most once per observation and only when something departed; a
+    # reader the caller cannot supply is resolved from the departing run's own
+    # project, and a departure with no project at all still withdraws — the safe
     # direction, because the alternative promises a landing nobody recorded.
     if departures:
         recorded = _departure_recorded_run_ids(known, departures, ledger_run_ids)
@@ -5163,10 +5198,9 @@ def fleet_transitions(
         # state it left. Carrying one forward reports a block on the line
         # announcing that the block is over.
         departed = {**known[run_id], "detail": "", "needs_help_complete": None}
-        word = (
-            "promoted" if recorded is not None and run_id in recorded else "withdrawn"
-        )
-        changes.append((departed, str(known[run_id]["state"]), word))
+        changes.append((departed, str(known[run_id]["state"]), _departure_word(
+            run_id, recorded
+        )))
     for run_id in (item for item in current if item not in known):
         changes.append(
             (
@@ -5202,7 +5236,7 @@ def fleet_transitions(
     events: list[tuple[dict[str, Any], str | None, str, dict[str, int]]] = []
     for snapshot, previous, state in changes:
         run_id = str(snapshot.get("run_id") or "")
-        if state in {"promoted", "withdrawn"}:
+        if state in {"promoted", "withdrawn", "discarded"}:
             running.pop(run_id, None)
         elif not snapshot.get("manifest_rewritten"):
             running[run_id] = dict(snapshot)
