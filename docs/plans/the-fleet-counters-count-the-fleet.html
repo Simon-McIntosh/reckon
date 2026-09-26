@@ -80,6 +80,12 @@
       <li>a synthetic fleet whose run count changes without a row being emitted shows the new count on the next line;</li>
       <li>a refused dispatch never renders <code>promoted</code>.</li>
     </ul>
+    <article id="resume-is-aged-from-its-own-start-landing">
+      <h3>Resumption aging landing</h3>
+      <p>The classifier now measures a live run's quiet time from the later of two clocks: the newest stream the run has written, and the moment the current attempt began. It takes the smaller reading, so a run resumed seconds ago sits inside the launch window a fresh dispatch gets instead of inheriting the superseded attempt's silence. The reading falls back to the pointer-and-creation clock a fresh dispatch uses only when no attempt record carries a start.</p>
+      <p>Measured 2026-09-26: <code>watcher-seat-survives-other-hosts</code> rendered <code>complete &rarr; stalled</code> with <code>stream quiet for 956s</code> 20 s after <code>crew resume</code>, because <code>resume-1.jsonl</code> did not exist yet and the classifier aged the run from the previous <code>stream.jsonl</code>; it recovered 21 s later. Landed in <code>ecc6d4c932a6350899278a905c192f4097bf0db7</code>, whose changed paths are <code>reckon/crew/recovery.py</code> and the new <code>tests/test_resume_is_aged_from_its_own_start.py</code>. Read the <a href="/reckon/evidence/archive/the-fleet-counters-count-the-fleet-landed.html#resume-is-aged-from-its-own-start">cumulative evidence record</a>. The worker does not resolve the driving followup or change terminal plan state.</p>
+    </article>
+
     <p><strong>What the census did not sample.</strong> The census read the producer's event file. The S23 coordinator's own follower (<code>--session s23-coord</code>) also showed the row and the counter disagreeing within a single rendered line:</p>
     <ul>
       <li>At 23:05:38 local, <code>the-suite-carries-its-own-bounds</code> rendered <code>unpromoted</code> beside <code>3w&middot;0b&middot;0u</code>. The counter reached <code>1u</code> only on the next line, at 23:07:23.</li>
