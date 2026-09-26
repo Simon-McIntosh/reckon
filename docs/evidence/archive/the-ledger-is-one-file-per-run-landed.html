@@ -671,6 +671,46 @@ worker's own commit, which `reckon crew recover` reports as the run's next actio
       only failures are the new cases. Merged verification and followup closure remain
       coordinator work.</p>
     </section>
+    <section id="promotion-net-churn">
+      <h2>A promotion is charged its own net churn, and a citation that measures no path is refused</h2>
+      <p>Node <code>promotion-charged-its-own-net-churn</code>, base
+      <code>355ef453f0b80758f8f15ca14f49250461aeeb0a</code>, commit
+      <code>c038b3e336280f7fc6e651939822a0d9349d7b43</code> in the worktree
+      <code>.reckon-worktrees/reckon-c8f839407e49/s22-coord/promotion-charged-its-own-net-churn</code>.
+      Logs under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T122110808769-promotion-charged-its-own-net-churn/</code>:
+      <code>base-arm.log</code>, <code>head-arm.log</code>, <code>negative-control.log</code>. Each
+      log's header names its revision, tree, the module under test as imported, and the resolved
+      working directory.</p>
+      <p><strong>(1) A merges-only citation is refused.</strong> A run whose citation list holds
+      only the merge it made previously promoted with <code>{"added": 0, "removed": 0,
+      "files": 0}</code>; now <code>crew complete</code> raises naming the merge, the ledger gains
+      no row and the live pointer survives. Base arm: <code>Failed: DID NOT RAISE CrewError</code>.
+      Head arm: the case passes.</p>
+      <p><strong>(2) Two citations on one path record the run's net churn.</strong> The first cited
+      commit adds two lines to <code>in_scope.txt</code> and the second removes one, so the
+      per-commit sum is <code>2 added / 1 removed</code> while the fixture's own
+      <code>git diff --numstat &lt;base&gt; &lt;tip&gt; -- in_scope.txt</code> is <code>1 added / 0
+      removed / 1 file</code>. The row must equal the second, and the case asserts the two readings
+      differ so it cannot pass by measuring nothing. Base arm: <code>{'added': 2, 'removed': 1} !=
+      {'added': 1, 'removed': 0, 'files': 1}</code>. Head arm: pass.</p>
+      <p><strong>(3) Abbreviated citations land canonical.</strong> Ten-character prefixes are
+      resolved through the existing commit resolver before any measurement, and the expectation is
+      re-derived from the fixture with <code>git rev-parse</code> rather than echoed from the input;
+      the case also asserts the stored ids are not the abbreviation list it passed.</p>
+      <p><strong>Negative control.</strong> The declared control restores the per-commit summation
+      (the net case fails on its counts, <code>2 added / 1 removed</code> against the fixture's
+      <code>1 added / 0 removed</code>) and, separately, restores the merge skip with both refusals
+      dropped (the merges-only case fails <code>DID NOT RAISE CrewError</code>). Each mutant ran its
+      target case alone, the other case is absent from that run's output, and the file was restored
+      byte-identically to <code>sha256 f7ad871558fad549ff892efb5dd520825bd753ebd7af4f7d0ebb33b6840809b5</code>
+      after each, asserted in the log.</p>
+      <p><strong>Ruff.</strong> On a complete <code>git archive</code> tree of the base, the two
+      changed paths carry 10 findings; at the head they carry the same 10 (all pre-existing, in
+      <code>reckon/crew/promotion.py</code>, none added by this change). A partial tree extraction
+      misreports this file set, which is why the base count is taken from a full archive.</p>
+    </section>
+
   </main>
 </body>
 </html>

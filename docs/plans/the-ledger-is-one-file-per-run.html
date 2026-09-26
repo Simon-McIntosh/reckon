@@ -300,6 +300,31 @@
         retains both cohort arms, the header-lined logs and the declared negative control.
         Independent merged verification and followup closure remain coordinator-owned.</p>
       </aside>
+      <aside id="promotion-net-churn-landing">
+        <h3>A promotion is charged its own net churn, and a citation that measures no path is refused</h3>
+        <p><strong>2026-09-26.</strong> The run-only scope measure read the right paths but summed
+        each cited commit's own numstat, so a path rewritten across two cited commits contributed
+        both revisions and the row described the run's keystrokes rather than its effect. A
+        citation list the merge skip leaves empty — a merge cited alone — was worse: it was
+        recorded as <code>0 added / 0 removed / 0 files</code>, which reads as a measured run that
+        changed nothing. The counts are now one net diff over the run's own commits, restricted to
+        the path set those commits touched, and a citation list that measures no path raises
+        before any write: the refusal names the commit it refuses, appends no ledger row, and
+        keeps the live pointer so the run can be re-promoted from the commits it made.</p>
+        <p><strong>Measured.</strong> The new cases fail at base <code>355ef453</code> and pass at
+        <code>c038b3e3</code>. Citing only the run's merge is refused naming that commit
+        (<code>DID NOT RAISE CrewError</code> at base). One path changed by two cited commits is
+        recorded as <code>1 added / 0 removed</code>, the fixture's own
+        <code>git diff --numstat &lt;base&gt; &lt;tip&gt; -- in_scope.txt</code>, where the
+        per-commit sum reads <code>2 added / 1 removed</code>. Abbreviated citations land as the
+        canonical ids the repository resolves rather than the prefixes the caller typed. The three
+        measured files in one invocation move from <strong>2 failed, 79 passed</strong> to
+        <strong>81 passed</strong> — 2 resolved, 0 added.</p>
+        <p>Receipts: <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-net-churn">the anchored evidence</a>
+        retains both arms' header-lined logs and the declared negative control. Independent merged
+        verification and followup closure remain coordinator-owned.</p>
+      </aside>
+
     </section>
 
     <section id="s2" data-reckon="section">
