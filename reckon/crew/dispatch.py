@@ -71,6 +71,7 @@ from reckon.crew.routing import (
     _workspace_roots,
     mounted_repository_projects,
     reap_idle_session_members,
+    require_plan_reviewed,
     require_plan_section_visible,
     resolve_budget_fallback,
     resolve_dispatch_authority,
@@ -2712,6 +2713,7 @@ def plan_dispatch(
     default_backend_override: str | None = None,
     declared_backend: str | None = None,
     member: str = "",
+    allow_unreviewed_plan: bool = False,
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
@@ -2923,6 +2925,16 @@ def plan_dispatch(
             base=base,
             authority=resolved_authority,
         )
+        review_warning = require_plan_reviewed(
+            node=node,
+            project=project,
+            repo=repo,
+            authority=resolved_authority,
+            allow_unreviewed=allow_unreviewed_plan,
+            enforce=flight.plan_review_gate_enforces(config),
+        )
+        if review_warning is not None:
+            warnings.append(review_warning)
         resolved_authority["plan"] = {
             **resolved_authority["plan"],
             "base_sha": plan_commit,
@@ -3427,6 +3439,7 @@ def dispatch(
     budget_state: Mapping[str, Any] | None = None,
     execution_override: bool = False,
     unreconciled_override: bool = False,
+    unreviewed_plan_override: bool = False,
     watch_required: bool = False,
     watch_override: bool = False,
     lineage_override: Mapping[str, Any] | None = None,
@@ -3509,6 +3522,7 @@ def dispatch(
         backend_override=backend_override,
         default_backend_override=default_backend_override,
         member=member,
+        allow_unreviewed_plan=unreviewed_plan_override,
     )
     if not resolution.validation.ok:
         raise CrewError(
@@ -3563,11 +3577,20 @@ def dispatch(
     waiver = (
         {
             "requested": True,
+            # The waived backlog is copied as a field rather than referenced, so
+            # the record states exactly which runs the exception covered rather
+            # than pointing at the ledger's state in a later moment.
             "grace": unreconciled_grace,
             "waived_runs": unreconciled,
         }
         if unreconciled_override
         else None
+    )
+    # A waived plan review is narrower than the unreconciled waiver: it excuses
+    # only the missing review of the plan this node builds, and is recorded with
+    # the plan it waived so the exception names what was let through.
+    plan_review_waiver = (
+        {"requested": True, "plan": node.plan} if unreviewed_plan_override else None
     )
 
     budget_warnings: list[str] = []
@@ -3623,6 +3646,7 @@ def dispatch(
                     if resolution.lane_declaration is not None
                     else ""
                 ),
+                allow_unreviewed_plan=unreviewed_plan_override,
             )
             resolution.requested_backend = requested_backend
             if not resolution.validation.ok:
@@ -3997,6 +4021,7 @@ def dispatch(
             ],
             "lineage": lineage,
             "unreconciled_override": waiver,
+            "unreviewed_plan_override": plan_review_waiver,
             "watch_override": watcher_waiver,
             "watch": {
                 "arming_line": _watch_arming_line(project),

@@ -181,6 +181,137 @@ FAILED tests/test_plan_review_prompt.py::test_prompt_names_every_item_and_every_
     claimed by no concurrent node; the change is additive only, so a later reconciliation is a
     deletion of the added symbols rather than a merge. Commit <code>eb2fc40f</code>.</p>
   </section>
+
+  <section id="plan-review-dispatch-gate">
+    <h2>&sect;2 &mdash; The dispatch gate</h2>
+    <p><strong>Node:</strong> <code>plan-review-dispatch-gate</code>. <strong>State:</strong>
+    implemented and committed, with the compatibility fixtures brought to the new contract in the
+    same node, and the gate shipping <strong>report-only</strong> until a flight layer names
+    <code>plan_review_gate: enforce</code>.</p>
+    <figure>
+      <img src="/reckon/figures/a-plan-is-reviewed-before-it-is-built/dispatch-gate.svg"
+        alt="The gate's decision path: exempt role or recorded waiver admits immediately; otherwise the plan is fingerprinted and its review read by fingerprint, admitting when every finding is answered and refusing when no review matches or a finding is unanswered.">
+      <figcaption>The gate refuses on the review being absent or unread &mdash; never on the plan
+      saying something a reviewer disliked: an answered decline admits a node exactly as an
+      acceptance does. In the shipped mode the two refusal edges instead record the same sentence as
+      a warning and admit; naming <code>enforce</code> restores the edges drawn here.</figcaption>
+    </figure>
+    <p><strong>What landed.</strong> <code>require_plan_reviewed</code> sits beside
+    <code>require_plan_section_visible</code> in <code>reckon/crew/routing.py</code> and is called
+    from <code>plan_dispatch</code> immediately after the visibility check, so a plan that cannot be
+    read is refused for that reason before its review is considered. The join is by
+    <code>plan_review.plan_fingerprint</code>, so an impl or version bump neither demands a review
+    nor orphans one, while an authored edit demands a fresh one. <code>PlanReviewMissingError</code>
+    sits beside <code>PlanVisibilityError</code> in <code>reckon/crew/node.py</code> and renders
+    through one new family in <code>DISPATCH_REFUSAL_REMEDIES</code>, whose remedy names the composed
+    plan-review dispatch. Investigation, test and review roles are exempt through the same predicate
+    the promotion boundary uses to stop reviews of reviews, so the plan-review run itself, whose node
+    names the plan, can be dispatched. <code>--allow-unreviewed-plan</code> records
+    <code>unreviewed_plan_override</code> on the run pointer beside the unreconciled-runs waiver, in
+    both the dry-run and real dispatch paths, and reaches the operator as exit 4 with
+    <code>{"error": "plan-review-missing"}</code>.</p>
+    <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q
+    tests/test_plan_review_gate.py</code> &rarr; <code>8 passed in 2.64s, exit 0</code>. Log:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/gate-final.log</code>.
+    The cases: an unreviewed implementation dispatch is refused naming the plan and its remedy; an
+    answered advisory finding admits it; <code>review</code>, <code>investigate</code> and
+    <code>test</code> roles are exempt; a node whose identity is the review of the fixture uses the
+    same exemption; a metadata-only plan edit leaves the stored review current; and the waiver is
+    recorded on the run pointer.</p>
+    <h3>Negative control</h3>
+    <p><strong>Declared mutation:</strong> <em>require_plan_reviewed returns reviewed
+    unconditionally; the refusal case must fail</em>. Applied as an early return at the top of the
+    function, the refusal case fails and for that reason:</p>
+    <pre>E  Failed: DID NOT RAISE PlanReviewMissingError
+1 failed in 1.08s</pre>
+    <p>The mutation was then reverted and the module re-read to prove the gate refuses again. The red
+    log's first line is the declared string verbatim:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/negative-control.log</code>.</p>
+    <h3>The compatibility fixtures brought to the new contract</h3>
+    <p>The compatibility gate &mdash; the dispatch-guard, routing-visibility and refusal-visibility
+    suites &mdash; first went from <strong>49 passed</strong> at base to <strong>20 failed and 29
+    passed</strong>. Every failure was the intended refusal reaching a fixture that predates it, and
+    each classified as one of two causes. Eighteen were implementation nodes dispatched against
+    minimal plan fixtures carrying no stored review, so the gate refused them; those fixtures and this
+    gate's own refusal case are shape-identical (same project mount, same plan slug, implementation
+    role, no review record), so no predicate can refuse the one the specification requires be refused
+    and admit the others. Two were the refusal census, which enumerated the family set as
+    <code>range(1, 23)</code> and asserted the source calls the shared formatter only for families in
+    that set.</p>
+    <p>The repair gives each fixture plan an answered review of its current content, stored at the
+    crew review store root the gate reads through and joined by
+    <code>plan_review.plan_fingerprint</code>, so the fixture still tests what it tested before rather
+    than being waived past the gate; the refusal census grows to the new family id in the same pass.
+    The gate itself is unchanged &mdash; the fixtures now satisfy it instead of avoiding it. The
+    compatible gate is re-run against base <code>ea867750</code>: <strong>50 passed, exit 0</strong>,
+    against the base arm's <strong>49 passed, exit 0</strong>, so <strong>zero added failures</strong>.
+    (The one-test rise is the new family id joining the parametrised census case.) Both arms are
+    logged:</p>
+    <ul>
+      <li>base: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/baseline-suite.log</code>
+      (<code>revision=ea867750&hellip;</code>, 49 passed, EXIT=0)</li>
+      <li>after: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/compat-after.log</code>
+      (50 passed, EXIT=0)</li>
+    </ul>
+    <p>Lint and format add no finding on the three files against the base archive tree: the dispatch
+    guard carries one pre-existing <code>I001</code> and one pre-existing formatting hunk at base and
+    after, and the other two files are clean either side. Commits <code>557fb583</code> (the gate) and
+    <code>e95c1d6d</code> (the fixtures).</p>
+    <h3>The gate ships report-only, and the dry run names the review</h3>
+    <p>A review of this node and a lead decision left three changes, all landed in
+    <code>4cf5d6f35dc70910aa9737b07cc0addbc2d30268</code>.</p>
+    <ol>
+      <li><strong>The unanswered finding is refused by name.</strong> The branch existed in
+      <code>require_plan_reviewed</code> with no case exercising it. A stored review carrying one
+      finding whose id no response answers is now refused, and the refusal names that finding.</li>
+      <li><strong>Both paths answer the same error key.</strong> A <code>--dry-run</code> against an
+      unreviewed plan answered <code>plan-unavailable</code>, which sent an operator diagnosing with
+      it to the mounts for what was a missing review, while the launching path answered
+      <code>plan-review-missing</code>. Both now answer <code>plan-review-missing</code>, on the dry
+      run and on the launch.</li>
+      <li><strong>Report-only is the shipped mode.</strong> Almost no plan carries a stored review yet
+      and the node that writes one is not built, so an enforced gate would stop nearly every build and
+      be turned off rather than answered. In the default mode a missing or unanswered review is
+      recorded on the dispatch result as a warning and the dispatch proceeds; naming
+      <code>plan_review_gate: enforce</code> in a flight layer restores the refusal unchanged.</li>
+    </ol>
+    <p><strong>The mode is a flight key checked in <code>reckon/flight.py</code>, not in the generated
+    model.</strong> The shipped defaults layer is schema-checked like every other layer and
+    <code>FlightConfig</code> sets <code>extra = "forbid"</code>, so naming the key in
+    <code>reckon/schema/flight-defaults.yaml</code> alone raises <code>FlightConfigError</code> in
+    <code>validate_layer</code> on every flight resolution &mdash; measured, not assumed. The key is
+    therefore held out of the schema check and validated beside it, which leaves
+    <code>reckon/_flight_schema.py</code> the artifact its LinkML source produces rather than a
+    hand-edited file. The key is separate from the evidence gates' own <code>gates.enforce</code>
+    because the two default to opposite polarities: an evidence gate ships <code>strict</code> and is
+    relaxed, this one ships <code>report</code> and is strengthened.</p>
+    <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q
+    tests/test_plan_review_gate.py</code> &rarr; <code>17 passed in 3.06s, exit 0</code>
+    (<code>repair/spec-head.log</code>): the eight cases above plus a finding left unanswered refused
+    by name, report-only recording the missing review and the unanswered finding while admitting both,
+    the dry-run key asserted in both modes, and the shipped default, a layer-set mode and a mode
+    outside the declared set each asserted through <code>flight.resolve</code> rather than through a
+    hand-built mapping. The compatibility gate is re-run at the repaired head against the stated base
+    <code>ea867750</code>: <strong>50 passed, exit 0</strong> against <strong>49 passed, exit
+    0</strong> &mdash; <strong>zero added failures</strong> (<code>repair/compat-head.log</code>,
+    <code>repair/compat-base.log</code>). A wider arm over the flight, provenance, dry-run and
+    dispatch-guard suites is <strong>122 passed, 2 skipped, exit 0</strong>
+    (<code>repair/flight-arm.log</code>), so the layer check adds no regression.</p>
+    <p><strong>Negative control.</strong> Declared mutation: <em>the branch that refuses a review
+    whose finding no response answers is deleted, so such a review is admitted; the case asserting
+    that the refusal names the open finding must then fail.</em> The mutation removed eight lines from
+    <code>require_plan_reviewed</code> in a scratch tree exported from the same revision, and the
+    driver asserted it applied. Base arm (the tree as committed): <strong>1 passed</strong>. Head arm
+    (branch deleted): <strong>1 failed</strong>, and for that reason &mdash;</p>
+    <pre>E  Failed: DID NOT RAISE PlanReviewMissingError</pre>
+    <p>Both arms name their own revision, tree and command on the line above their result; the scratch
+    trees are removed by the driver and the worktree under test was never mutated:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/negative-control.log</code>.</p>
+    <p>Lint adds no finding against the base archive tree on the five changed files: only
+    <code>tests/test_plan_review_gate.py</code> moved, from clean to clean; the other four carry the
+    same finding counts at base and at the head, and <code>reckon/crew/dispatch.py</code> carries the
+    same pre-existing formatting hunk either side.</p>
+  </section>
 </section>
 </main>
 </body>

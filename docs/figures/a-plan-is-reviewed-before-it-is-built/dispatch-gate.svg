@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 400" width="990" height="400" role="img" aria-label="The plan-review dispatch gate: an exempt role or a recorded waiver returns immediately; otherwise the plan content is fingerprinted, its review is read from the crew review store, and the dispatch is refused when no review matches the fingerprint or when any finding is unanswered.">
+<style>.box{fill:#fff;stroke:#37506b;stroke-width:1.6}.dec{fill:#fff;stroke:#37506b;stroke-width:1.6}.ok{fill:#eef6ee;stroke:#3d7a3d;stroke-width:1.6}.no{fill:#fbeeee;stroke:#a03a3a;stroke-width:1.6}.lbl{font:600 14px system-ui,sans-serif;fill:#1d2b3a}.sub{font:12px system-ui,sans-serif;fill:#49617c}.cap{font:12px system-ui,sans-serif;fill:#5b6b7d}.arw{stroke:#37506b;stroke-width:1.6;fill:none;marker-end:url(#a)}.arw-n{stroke:#a03a3a;stroke-width:1.6;fill:none;marker-end:url(#an)}.arw-y{stroke:#3d7a3d;stroke-width:1.6;fill:none;marker-end:url(#ay)}.el{font:12px system-ui,sans-serif;fill:#49617c}</style>
+<defs>
+<marker id="a" viewBox="0 0 10 10" class="arw" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#37506b"/></marker>
+<marker id="an" viewBox="0 0 10 10" class="arw" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a03a3a"/></marker>
+<marker id="ay" viewBox="0 0 10 10" class="arw" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#3d7a3d"/></marker>
+</defs>
+<rect x="8" y="16" width="974" height="370" rx="12" fill="none" stroke="#c9d4e0"/>
+<text class="cap" x="24" y="42">require_plan_reviewed: a plan is reviewed before it is built, and the findings stay advisory.</text>
+
+<rect class="box" x="24" y="72" width="212" height="66" rx="8"/>
+<text class="lbl" x="130" y="100" text-anchor="middle">implementation dispatch</text>
+<text class="sub" x="130" y="121" text-anchor="middle">plan_dispatch, after the visibility check</text>
+
+<path class="arw" d="M236 105 H276"/>
+<rect class="box" x="276" y="72" width="212" height="66" rx="8"/>
+<text class="lbl" x="382" y="100" text-anchor="middle">role exempt, or waived?</text>
+<text class="el" x="382" y="121" text-anchor="middle">investigate, review, test, or --allow-unreviewed-plan</text>
+
+<path class="arw-y" d="M488 105 H528"/>
+<rect class="ok" x="528" y="72" width="180" height="66" rx="8"/>
+<text class="lbl" x="618" y="100" text-anchor="middle">admitted</text>
+<text class="sub" x="618" y="121" text-anchor="middle">the waiver is recorded on the pointer</text>
+
+<path class="arw" d="M382 138 V186"/>
+<rect class="box" x="272" y="186" width="220" height="62" rx="8"/>
+<text class="lbl" x="382" y="211" text-anchor="middle">plan_fingerprint(content)</text>
+<text class="sub" x="382" y="232" text-anchor="middle">metadata scalars dropped, so an impl bump is not an edit</text>
+
+<path class="arw" d="M382 248 V292"/>
+<rect class="box" x="272" y="292" width="220" height="62" rx="8"/>
+<text class="lbl" x="382" y="317" text-anchor="middle">read_plan_review by fingerprint</text>
+<text class="sub" x="382" y="338" text-anchor="middle">crew review store, keyed by project and plan</text>
+
+<path class="arw-n" d="M272 323 H150"/>
+<text class="el" x="160" y="315">no review, or a finding unanswered</text>
+<rect class="no" x="24" y="292" width="126" height="62" rx="8"/>
+<text class="lbl" x="87" y="317" text-anchor="middle">refused</text>
+<text class="sub" x="87" y="338" text-anchor="middle">names the plan and the remedy</text>
+
+<path class="arw-y" d="M492 323 H534"/>
+<rect class="ok" x="534" y="292" width="180" height="62" rx="8"/>
+<text class="lbl" x="624" y="317" text-anchor="middle">admitted</text>
+<text class="sub" x="624" y="338" text-anchor="middle">every finding acted on or declined</text>
+</svg>
