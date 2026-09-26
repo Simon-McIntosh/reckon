@@ -2126,6 +2126,130 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
       This node changes neither the schema nor the generated artifacts.</li>
     </ul>
   </section>
+  <section id="s9-pace-row">
+      <h2>&sect;9 &mdash; Every dispatch records the pace row it was judged against</h2>
+
+      <p><strong>Landed 2026-09-26 (commits <code>3e06538b</code> and
+      <code>4939876164</code>).</strong> Every dispatch now writes one <code>pace</code> row onto the run
+      record it already keeps: the lane, the node, the lane's declared budget group, the group's state
+      and the member that spoke for it, both clocks with their utilisation, observation age and reset
+      instant, the derived allowance with the pace multiple that produced it, the node's
+      open-endedness score, the bar's judgement of that score at that fill, the policy block, the hold
+      where one fired with the evidence behind it, and the instant the row was written.
+      <strong>Every figure is the output of the module that owns it and nothing is derived twice</strong>
+      &mdash; <code>budget.recorded_windows</code> supplies the readings,
+      <code>budget.group_pace</code> delegates the clocks, the allowance and the bar to
+      <code>crew.pace</code> and <code>crew.bar</code>, and <code>budget.pace_row</code>
+      (<code>reckon/budget.py:2050</code>) composes the row, so a row cannot disagree with the pace the
+      dispatch itself was judged against.</p>
+
+      <p>The full lives where the run's existing dispatch record lives: the <code>pace</code> key of the
+      run's own record, written by the dispatch entry point beside the argv, the node and the lane
+      (<code>reckon/crew/dispatch.py:4120</code>), and promoted wholesale with that record into the
+      project's <code>docs/state/&lt;project&gt;/crew.json</code>. A week of those rows is what &sect;9's
+      replay reads: the allowance curve and every hold decision are recomputed from the rows alone, no
+      stream opened.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-window-paces-the-lane/score-band-decides-the-lane.svg" alt="Three panels. Panel one is the open-endedness score from 0.00 to 1.00 with the prescribed band drawn from 0.00 to 0.25: a fully prescribed node scores 0.00 and is send-local at every fill, the same node scores 0.325 once the three shared landing paths are counted among its artifacts and leaves the band, and a node four properties short scores 0.925. Panel two plots the bar against the five-hour window fill, with the band top at 0.25 drawn across: at the 22 percent fill this gate measures the bar is 0.124, the 0.00 node sits under it and the 0.325 node above. Panel three is the three readers the row is composed from -- recorded_windows for the readings, group_pace into crew.pace and crew.bar for the allowance and the bar, pace_row for the lane, score, policy and hold.">
+        <figcaption>The score is read on the scope the node declares. Judged after the dispatch's own
+        shared landing paths are appended, the plan's figure topic counts as a second artifact and a
+        fully prescribed node leaves the band its local outcome is defined by; the bar then decides, and
+        sends it to a metered lane.</figcaption>
+      </figure>
+
+      <h3>The defect this gate found: a score judged after the scope was widened</h3>
+
+      <p>A dispatch appends three shared landing paths to every node on a plan &mdash; the plan's evidence
+      record, the plan file, and the plan's figure topic directory.
+      <code>_grant_landing_write_paths</code> (<code>reckon/crew/dispatch.py:1118</code>) adds them in
+      place, and the prescription verdict's own filter recognises two of the three, so the figure
+      <em>directory</em> reads as a second artifact the node never named. Judged after the grant, a node
+      meeting every prescribed property scored <strong>0.325</strong> instead of 0.0 &mdash; above
+      <code>bar.PRESCRIBED_MAX</code>, the top of the band the bar's local outcome is defined by. The
+      node then leaves the region where prescription decides and is judged by the window instead, which
+      at the fill this gate measures is <code>send-metered</code> where the same node before the grant is
+      <code>send-local</code>. The band would have described nothing rather than the work.</p>
+
+      <p>The repair composes the score from the node's declared scope, before the grant
+      (<code>dispatch.py:2915</code>), carries it on the resolved plan
+      (<code>DispatchPlan.open_endedness</code>, <code>dispatch.py:1825</code>, passed at
+      <code>3056</code>), and hands it to <code>budget.pace_row</code> as the score the bar is drawn
+      against (<code>dispatch.py:4012</code>&ndash;<code>4017</code>).
+      <code>open_endedness_score</code> (<code>dispatch.py:3443</code>) is unchanged: only the scope it
+      is read on moved.</p>
+
+  <h3>Gate</h3>
+
+      <table>
+        <caption>One invocation per arm, over every test file that exercises the dispatch entry point,
+        with the gate file itself measured in both arms.</caption>
+        <thead>
+          <tr><th>Measurement</th><th>Base <code>6b8decd9</code></th><th>This head <code>49398761</code></th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>tests/test_dispatch_records_the_pace_row.py</code></td>
+          <td>6 failed (the file is the gate)</td><td><strong>6 passed</strong></td></tr>
+          <tr><td>the 79 measured files, one invocation</td>
+          <td>31 failed, 1007 passed, 2 skipped</td><td><strong>24 failed, 1014 passed, 2 skipped</strong></td></tr>
+          <tr><td>failures present only at this head</td><td>n/a</td><td><strong>none</strong></td></tr>
+          <tr><td>the 24 failures at this head</td><td colspan="2">every one is also a failure at the base
+          revision, so this node adds none. The base arm's extra seven are the gate file's six cases and
+          <code>tests/test_member_registration_commits.py::test_the_live_home_and_the_shared_checkout_are_untouched</code>,
+          which fails there on its own <code>git status --porcelain</code> call because the base arm is an
+          archive tree carrying no <code>.git</code> directory &mdash; a fact of how that arm is built, not
+          of the revision. It reproduces on a single-file re-run in the base tree and is green in the head
+          arm, which is a real worktree.</td></tr>
+          <tr><td><code>ruff check</code>, the staged paths</td><td>7 findings</td>
+          <td>7 findings, identical messages; the new file contributes none</td></tr>
+          <tr><td><code>ruff format --check</code>, the staged paths</td><td>6 hunks</td><td>6 hunks</td></tr>
+        </tbody>
+      </table>
+
+      <p>Each arm prints the <code>reckon.crew.dispatch</code> module it imported and its working directory
+      before the run, so the only difference between them is the revision under test. The gate file is
+      copied into the base arm: its red there is the control, not the regression the delta is looking for.
+      The arms are built differently &mdash; the base is an archive tree of the base revision, the head is
+      the worktree itself &mdash; and that asymmetry can only make the base arm report <em>more</em>
+      failures, so the delta above is the conservative reading: a failure added at the head could not be
+      hidden by it. Both logs, the driver's own output and the base-only case's single-file re-run are
+      kept beside the run's record.</p>
+
+      <h3>Negative control</h3>
+
+      <p><strong>The declared mutation, verbatim &mdash; the first line of the red log:</strong></p>
+
+      <blockquote><p>stop the dispatch entry point from writing the pace row; the first row-key assertion must fail</p></blockquote>
+
+      <p>It was applied to an archive of this head: the composer that calls <code>budget.pace_row</code>
+      and the <code>"pace": pace_record</code> key were both removed, the mutation asserting it applied
+      before writing (one occurrence of each, zero left after). The unmutated archive runs the file
+      green first, so the mutation is the only difference. The mutated tree reports
+      <strong>6 failed</strong>, and in every case the first failure is the declared row-key assertion
+      &mdash; <code>AssertionError: the dispatch record carries no pace row</code>, the record's own key
+      list printed beside it &mdash; which is the assertion the mutation was declared against.</p>
+
+      <h3>What this record does not claim</h3>
+
+      <ul>
+        <li><strong>Nothing consumes the row yet.</strong> The row is written and replayed by the gate;
+        a surface that renders a week of rows is a separate node's work.</li>
+        <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+        change at its own head; a wave-level verification at a merged head is a separately dispatched
+        node's job.</li>
+        <li><strong>The other measured files' base failures are not attributed here.</strong> They are
+        pre-existing at the base revision and unchanged at this head; the delta is what this node
+        claims, not the absolute counts.</li>
+        <li><strong>One filter gap is recorded rather than repaired.</strong> The prescription verdict
+        recognises two of the three shared landing paths a dispatch appends, so the plan's figure topic
+        directory still counts toward a node's artifact count for any other reader of that verdict. This
+        node's repair reads the score before the grant, so no score is affected; the asymmetry is
+        carried as a follow-on on the plan.</li>
+        <li><strong>This anchor is a pure addition to a cumulative file.</strong> The record's header
+        index is not refreshed by it; the commits and artifacts above are named here, and the header
+        belongs to whoever next revises the record as a whole.</li>
+      </ul>
+    </section>
 </main>
 </body>
 </html>...

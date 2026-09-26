@@ -867,6 +867,53 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     against what was recorded at the time; and a deliberately mistuned lead time is shown to be
     detectable from the log alone, since a log that cannot expose a bad setting cannot tune one.</p>
 
+    <h4 id="s9-pace-row-landed">Landing &mdash; every dispatch writes the row its own pace decision replays from</h4>
+
+    <p><strong>Landed 2026-09-26 (commits <code>3e06538b</code> and <code>4939876164</code>).</strong>
+    A dispatch now writes one <code>pace</code> row beside the record it already keeps: the lane, the
+    node, the lane's declared budget group, the group's state and the member that spoke for it, both
+    clocks with their utilisation, observation age and reset instant, the derived allowance with the
+    pace multiple that produced it, the node's open-endedness score, the bar's judgement of that score
+    at that fill, the policy block, the hold where one fired together with the evidence behind it, and
+    the instant the row was written. Nothing in the row is derived twice:
+    <code>budget.recorded_windows</code> supplies the readings, <code>budget.group_pace</code> delegates
+    the clocks, the allowance and the bar to <code>crew.pace</code> and <code>crew.bar</code>, and
+    <code>budget.pace_row</code> (<code>reckon/budget.py:2050</code>) composes the row, which the
+    dispatch entry point writes at <code>reckon/crew/dispatch.py:4120</code>. The full lives with the
+    run's existing dispatch record &mdash; the run's own record, promoted wholesale into
+    <code>docs/state/&lt;project&gt;/crew.json</code>.</p>
+
+    <p><strong>One defect was found and repaired before the row could be trusted.</strong> A dispatch
+    appends three shared landing paths to every node on a plan; judged after that grant, the plan's own
+    figure topic counted as a second artifact the node never named, and a node meeting every prescribed
+    property scored <strong>0.325</strong> instead of 0.0 &mdash; above the band in which prescription,
+    not the bar, decides the lane. The score is now read on the scope the node declares, before the
+    grant (<code>dispatch.py:2915</code>), carried on the resolved plan, and handed to
+    <code>budget.pace_row</code> as the score the bar is drawn against
+    (<code>dispatch.py:4012</code>&ndash;<code>4017</code>).</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/score-band-decides-the-lane.svg" alt="Three panels. Panel one is the open-endedness score from 0.00 to 1.00 with the prescribed band drawn from 0.00 to 0.25: a fully prescribed node scores 0.00 and is send-local at every fill, the same node scores 0.325 once the three shared landing paths are counted among its artifacts and leaves the band, and a node four properties short scores 0.925. Panel two plots the bar against the five-hour window fill, with the band top at 0.25 drawn across: at the 22 percent fill this gate measures the bar is 0.124, the 0.00 node sits under it and the 0.325 node above. Panel three is the three readers the row is composed from -- recorded_windows for the readings, group_pace into crew.pace and crew.bar for the allowance and the bar, and pace_row for the lane, the score, the policy and the hold.">
+      <figcaption>The score is read on the scope the node declares, so a prescribed node stays inside the
+      band where prescription decides. Judged after the grant, it left the band and the bar sent it to a
+      metered lane.</figcaption>
+    </figure>
+
+    <p><strong>Evidence.</strong> One invocation per arm over all 79 test files that exercise the
+    dispatch entry point: the base revision fails 31 and this head 24, with <strong>no failure present
+    only at this head</strong>; the gate file <code>tests/test_dispatch_records_the_pace_row.py</code>
+    fails all six of its cases at the base and passes all six here. The declared control &mdash; the
+    pace row's composition removed from the dispatch entry point &mdash; reddens that file on the
+    first row-key assertion in all six cases. Full record:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#s9-pace-row">the landed evidence
+    record</a>.</p>
+
+    <p><strong>Still open from this section's done-when.</strong> The replay clause is answered by the
+    sequence case, which recomputes each row's allowance from the row alone with no stream opened. The
+    second clause is not: nothing yet shows a <em>deliberately mistuned lead time</em> detectable from
+    the log alone, and a log that cannot expose a bad setting cannot tune one. That demonstration
+    belongs to a follow-up node rather than to this landing.</p>
+
     <h2 id="s6">&sect;6 &mdash; The pace is visible before a wave opens</h2>
 
     <p>A governor nobody can see is a governor nobody trusts. <code>crew preflight</code> prints
