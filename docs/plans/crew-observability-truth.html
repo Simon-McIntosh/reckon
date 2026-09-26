@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="506">
+<meta name="plan-version" content="507">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -1720,10 +1720,12 @@
       diff against its first parent is this section's landed work alone), and the same two red at
       <code>3464b851</code>. The two tests now contradict the peer's own
       <code>test_fence_creates_a_missing_write_parent.py</code>, which asserts the missing
-      directory of a declared write path <em>is</em> created; the smallest change that greens the
-      integrated head restates the two assertions to the fence's contract and is carried forward
-      as a proposed node, <code>claim-path-assertions-follow-the-write-root-contract</code>, whose
-      exclusive write path is <code>tests/test_crew_dispatch_guard.py</code>. Attribution report:
+      directory of a declared write path <em>is</em> created. The attribution proposed restating the
+      two assertions to the fence's contract; that proposal is not taken. The directories were
+      being created in the main checkout because 3464b851 resolved relative write paths against it,
+      so the two assertions are a real guard that a dispatch creates nothing in the main checkout,
+      and 971c8575 made them pass by resolving those paths into the worktree. They stay as written.
+      Attribution report:
       <code>attribution.md</code> under the run's reports directory, with the arms at
       <a href="/reckon/figures/crew-observability-truth/integrated-claim-attribution-arms.svg">the
       arm figure</a> and the engine-side record below.</p>
