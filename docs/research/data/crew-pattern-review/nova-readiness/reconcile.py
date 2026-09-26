@@ -129,6 +129,14 @@ def enrich(snapshot):
         else None
     )
     q["executed_unique_tests"] = len({e["nodeid"] for e in events.get("tests", [])})
+    skipped_match = re.search(r" / (\d+) skipped", text)
+    q["collection_skipped"] = (
+        sum(e["outcome"] == "skipped" for e in events.get("collection", []))
+        if not events.get("partial")
+        else int(skipped_match.group(1))
+        if skipped_match
+        else None
+    )
     q["collection_errors"] = []
     for event in events.get("collection", []):
         if event["outcome"] != "failed":
@@ -153,9 +161,17 @@ def enrich(snapshot):
     q["environment"] = [e for e in classified if e["classification"] == "environment"]
     q["code"] = [e for e in classified if e["classification"] == "code"]
     q["unclassified"] = [e for e in classified if e["classification"] == "unclassified"]
+    q["observed_failed_nodeids"] = sorted(
+        {e["nodeid"] for e in events.get("tests", []) if e["outcome"] == "failed"}
+    )
     q["environment_error_count"] = sum(
         e["classification"] == "environment" for e in q["collection_errors"]
     )
+    if events.get("partial"):
+        q["environment_error_count"] = None
+        q["classification_qualification"] = (
+            "Runtime tracebacks were not emitted before interruption, so environment-caused runtime errors cannot be counted."
+        )
     q["code_collection_error_count"] = sum(
         e["classification"] == "code" for e in q["collection_errors"]
     )
@@ -231,9 +247,12 @@ def write_changes(first, last, first_events, last_events):
         writer.writerows(items)
         return output.getvalue()
 
+    current_bytes = 0
     for row in rows:
+        row_bytes = len(emit([row]).encode())
         current.append(row)
-        if len(emit(current).encode()) >= 280_000:
+        current_bytes += row_bytes
+        if current_bytes >= 280_000:
             last_row = current.pop()
             shards.append(
                 census.save_artifact(
@@ -241,6 +260,7 @@ def write_changes(first, last, first_events, last_events):
                 )
             )
             current = [last_row]
+            current_bytes = row_bytes
     if current:
         shards.append(
             census.save_artifact(f"state-changes-{len(shards) + 1}.csv", emit(current))
@@ -252,8 +272,8 @@ def write_changes(first, last, first_events, last_events):
         "last_selected": last["pytest"]["selected"],
         "last_observed_unique": len(after),
         "last_run_complete": not last_events.get("partial", False),
-        "common_selected": len(before.keys() & after.keys()),
-        "changed": len(rows),
+        "common_observed_selected": len(before.keys() & after.keys()),
+        "observation_rows": len(rows),
         "transitions": [
             {"first": old, "last": new, "count": number}
             for (old, new), number in sorted(counts.items())
