@@ -312,6 +312,48 @@ FAILED tests/test_plan_review_prompt.py::test_prompt_names_every_item_and_every_
     same finding counts at base and at the head, and <code>reckon/crew/dispatch.py</code> carries the
     same pre-existing formatting hunk either side.</p>
   </section>
+
+  <section id="launch-path-reports-plan-review-missing">
+    <h2>&sect;2 &mdash; The launching path reports the missing review under its own key</h2>
+    <p><strong>Node:</strong> <code>launch-path-reports-plan-review-missing</code>. <strong>State:</strong>
+    implemented and committed.</p>
+    <p><strong>What landed.</strong> The re-review of the dispatch gate found that only the dry-run
+    mapping of <code>PlanReviewMissingError</code> to <code>tests/test_plan_review_gate.py</code> was
+    exercised. The launching branch is a separate <code>except</code> clause in <code>reckon/cli.py</code>
+    (the launch path emits <code>plan-review-missing</code> at reckon/cli.py line 1397, the dry-run at
+    line 1325, as of 95e186ad), so a change to only one of the two would leave the other answering a different error key
+    and still pass the suite. One case now drives <code>crew dispatch</code> <em>without</em>
+    <code>--dry-run</code>, with <code>plan_review_gate: enforce</code>, for an implement node on the
+    fixture plan that carries no stored review, and asserts the emitted error is
+    <code>plan-review-missing</code> with <code>fixture</code> in its detail. No worker is spawned:
+    the gate refuses inside <code>plan_dispatch</code>, before a worktree, pointer or ledger row
+    exists, so the case is as cheap as the dry-run one beside it.</p>
+    <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q
+    tests/test_plan_review_gate.py</code> &rarr; <code>18 passed in 2.57s, exit 0</code>, against the
+    base arm at <code>4b0ccd34</code> <code>17 passed, exit 0</code> &mdash; the one-test rise is the
+    new case and no failure is added (<code>logs/gate.log</code>, <code>logs/spec-base.log</code>).
+    The compatibility gate <code>tests/test_crew_dispatch_guard.py</code> is unchanged and re-run
+    either side: <code>14 passed, exit 0</code> at the head against <code>14 passed, exit 0</code> at
+    base &mdash; <strong>zero added failures</strong> (<code>logs/guard-head.log</code>,
+    <code>logs/guard-base.log</code>).</p>
+    <p><strong>Negative control.</strong> Declared mutation: <em>change the launch-path mapping in
+    <code>reckon/cli.py</code> to emit <code>plan-unavailable</code>; the new case must fail</em>. The
+    mutation was applied in a scratch tree exported from the same revision, and the driver asserted it
+    applied. Base arm (the tree as committed): <strong>1 passed</strong>. Head arm (launch mapping
+    switched to <code>plan-unavailable</code>): <strong>1 failed</strong>, and for that reason &mdash;</p>
+    <pre>E       AssertionError: assert 'plan-unavailable' == 'plan-review-missing'
+E         + plan-unavailable
+tests/test_plan_review_gate.py:451: AssertionError
+1 failed in 0.24s</pre>
+    <p>Both arms name their own revision, tree, <code>module.__file__</code> and command on the header
+    lines above their result, and each resolved <code>import reckon</code> to its own scratch tree. The
+    red log's first line repeats the declared string verbatim:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091353695982-launch-path-reports-plan-review-missing/logs/negctl-mutated.log</code>
+    (base arm: <code>logs/negctl-base.log</code>).</p>
+    <p><strong>Scope.</strong> The only source file changed is <code>tests/test_plan_review_gate.py</code>,
+    from clean to clean under <code>ruff check</code> and <code>ruff format --check</code> either side
+    of the base archive tree. Committed at <code>35da2422</code>.</p>
+  </section>
 </section>
 </main>
 </body>
