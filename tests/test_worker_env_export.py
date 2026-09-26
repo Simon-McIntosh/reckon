@@ -190,3 +190,57 @@ def test_codex_dispatch_carries_identity_without_anthropic_headers(
         manifest=str(record["manifest_path"]),
     )
     assert "ANTHROPIC_CUSTOM_HEADERS" not in launched
+
+
+def test_an_in_harness_lane_change_carries_the_attempt_environment(
+    home, repo, monkeypatch
+) -> None:
+    """A run re-pointed in-harness keeps the attempt identity the launch attaches.
+
+    An in-harness attempt is delegated rather than spawned, so the run directive
+    is the only carrier of the environment the harness exports to the task. The
+    lane change that moves a live cli run to an in-harness backend must attach
+    the same three keys the launch path does, or the re-pointed run reads as the
+    attempt it replaced.
+    """
+    record, _launched = _launch(
+        home=home,
+        repo=repo,
+        command="codex",
+        node_id="lane-change-worker",
+        coordinator_session="coordinator-session",
+        monkeypatch=monkeypatch,
+    )
+    run_id = record["run_id"]
+    monkeypatch.setattr(dispatch_module, "process_alive", lambda pid: pid == 900_001)
+    monkeypatch.setattr(dispatch_module, "_signal_process_group", lambda *args: None)
+
+    moved = dispatch_module.change_lane(
+        run_id,
+        "native",
+        "the process lane cannot serve another turn",
+        config=_config("codex"),
+        launch=False,
+    )
+    _assert_attempt_environment(
+        moved["directive"]["environment"],
+        run_id=run_id,
+        manifest=str(record["manifest_path"]),
+    )
+
+    dispatch_module.change_lane(
+        run_id,
+        "native",
+        "the process lane cannot serve another turn",
+        config=_config("codex"),
+        launcher=lambda *args, **kwargs: None,
+    )
+    after = crew.read_pointer(run_id)
+    assert after["launch"] == "in-harness"
+    environment = after["directive"]["environment"]
+    _assert_attempt_environment(
+        environment,
+        run_id=run_id,
+        manifest=str(record["manifest_path"]),
+    )
+    assert environment["RECKON_ATTEMPT_STARTED_AT"] == after["attempt_started_at"]

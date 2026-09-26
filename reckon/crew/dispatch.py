@@ -4834,7 +4834,7 @@ def resolve_launch_executable(
     names the binary and the PATH that was searched so the repair is a command
     rather than an investigation.
 
-    ``environment`` is the overlay the launch will run with; absent, the launch
+    ``environment`` is the overlay the launch will run with; absent, the launch's
     own environment is used, which is what every construction site passes.
     """
     selected_environment = plan.environment if environment is None else environment
@@ -6935,6 +6935,18 @@ def change_lane(
             )
         ),
     }
+    # An in-harness attempt is delegated, so its directive is the only place the
+    # attempt identity can be carried: the harness exports this environment to
+    # the task it spawns. Composed here so the preview and the persisted record
+    # name the same environment the launch path attaches.
+    directive_environment = _worker_runtime_environment(
+        None,
+        run_id=run_id,
+        manifest_path=str(record.get("manifest_path") or ""),
+        attempt_started_at=lane_change["changed_at"],
+        coordinator_session=str(record.get("session") or ""),
+        claude_headers=False,
+    )
     target_plan: _backends.LaunchPlan | None = None
     if target_launch == "cli":
         target_plan = resolve_launch_executable(
@@ -6970,6 +6982,7 @@ def change_lane(
     else:
         preview["directive"] = {
             "attach_with": f"reckon crew attach --run {run_id} --task <task-id>",
+            "environment": directive_environment,
             "prompt_path": str(prompt_path),
             "worktree": str(record.get("worktree") or ""),
         }
@@ -7082,6 +7095,7 @@ def change_lane(
                             "scope": list(node.write_paths),
                             "time": node.time_budget,
                         },
+                        "environment": directive_environment,
                         "prompt_path": str(prompt_path),
                         "sandbox": {
                             "tier": backend.get("sandbox"),
