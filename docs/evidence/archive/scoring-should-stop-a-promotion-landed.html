@@ -1553,19 +1553,41 @@
   </section>
 
   <section id="review-counts-added-failures-by-id">
-    <h2>A stored review counts the failures its reviewed run added, by id</h2>
-    <p><code>reckon/crew/review.py</code> now derives, for a review it stores, the
+    <h2>A review a promotion reads counts the failures its reviewed run added, by id</h2>
+    <p><code>reckon/crew/review.py</code> derives, for every review it returns, the
     pytest node ids reported <code>FAILED</code> or <code>ERROR</code> in the reviewed
     run's head gate log that the base gate log does not report. The logs are the files
-    the reviewed manifest names under <code>baseline_suite.log_path</code> and
-    <code>after_suite.log_path</code> — the same fields the promotion suite-delta check
-    reads. The count and the ids land on the review record as
-    <code>added_failure_count</code> and <code>added_failure_ids</code>, and a nonzero
-    count caps the stored <code>total</code> at <code>ADDED_FAILURES_TOTAL_CAP</code>
-    (<code>REVIEW_MAX_SCORE // 4</code>), with the record stating the reason. A run
-    whose done-when or manifest retires every added id by name is left uncapped, and a
-    manifest naming no base or no head log records the count as unmeasured — never as
-    zero — and does not cap.</p>
+    the reviewed run's own manifest names under <code>baseline_suite</code> and
+    <code>after_suite</code> — the same fields the promotion suite-delta check reads —
+    and the manifest is read from <code>run_dir(run_id)/manifest.md</code>. The count and
+    the ids land on the returned record as <code>added_failure_count</code> and
+    <code>added_failure_ids</code>, and a nonzero count caps the record's
+    <code>total</code> at <code>ADDED_FAILURES_TOTAL_CAP</code>
+    (<code>REVIEW_MAX_SCORE // 4</code>), with the record stating the reason. A run whose
+    manifest prose retires every added id by name is left uncapped, and a manifest naming
+    no base or no head log records the count as unmeasured — never as zero — and does not
+    cap.</p>
+
+    <p><strong>The derivation is on the read path, and that is the correction this
+    evidence records.</strong> The first cut attached it to <code>store_review</code>,
+    which nothing in production calls: a review worker writes its review JSON by hand
+    inside its fence, and promotion reads reviews through
+    <code>select_review_for_head</code> &rarr; <code>read_review</code>. A write-time
+    derivation therefore annotated no delivered review and changed no promotion's total.
+    <code>read_review</code> now reconstructs the count every time it returns a record,
+    and the file on disk is never rewritten, so a hand-written review and one written
+    through <code>store_review</code> are read alike. The manifest parameters on
+    <code>store_review</code> were removed rather than kept as a second derivation. The
+    tests exercise the production selector end to end for the same reason: they write a
+    record by hand and read it back through <code>select_review_for_head</code>, with the
+    reviewed run's manifest and gate logs under a temporary <code>RECKON_HOME</code>.</p>
+
+    <p><strong>Retirement is read from prose, not observation.</strong> The two suite
+    fields are excluded from the retirement scan: their <code>failure_ids</code> lists
+    name every added id, so a scan that kept them would find each id already named and
+    cap no total at all. Measured during development as exactly that — the first read-path
+    run returned <code>total: 90</code> against a cap of 5, and the fix is to scan the
+    manifest with those two fields removed.</p>
 
     <p><strong>The count is a set difference, not a difference of counts.</strong> A run
     that fixed one pre-existing failure while introducing another nets to zero by
@@ -1583,9 +1605,9 @@
     </table>
 
     <p><strong>Focused gate.</strong> <code>tests/test_review_counts_added_failures.py</code>
-    reports <strong>4 passed, exit 0</strong> at revision <code>9838365a</code>. The gate
-    log's first line names the revision, tree and command; it is
-    <code>gate-added-failures.log</code> in the run directory.</p>
+    reports <strong>5 passed, exit 0</strong> at revision <code>f94c8b9b</code>, the
+    revision its log carries. The gate log's first line names the revision, tree and
+    command; it is <code>gate-added-failures.log</code> in the run directory.</p>
 
     <p><strong>Declared negative control.</strong> In a scratch copy,
     <code>added_failures_from_gate_logs</code> computes the count as the head log's
@@ -1593,18 +1615,20 @@
     <table>
       <thead><tr><th>State</th><th>Focused test result</th><th>What it establishes</th></tr></thead>
       <tbody>
-        <tr><td>Fixed tree, no mutation</td><td>4 passed; exit 0</td><td>The count is the id set difference.</td></tr>
-        <tr><td>Counted by number</td><td>1 failed; exit 1</td><td>3 − 2 is 1, not 2; the disjoint-ids case fails.</td></tr>
+        <tr><td>Fixed tree, no mutation</td><td>5 passed; exit 0</td><td>The count is the id set difference.</td></tr>
+        <tr><td>Counted by number</td><td>2 failed; exit 1</td><td>3 − 2 is 1, not 2; the disjoint-ids case fails.</td></tr>
       </tbody>
     </table>
     <p>The red log's first line repeats the declared mutation verbatim; it is
-    <code>negative-control-count-by-number.log</code> in the run directory. The
-    mutation was reverted byte-identical: <code>git hash-object</code> on
-    <code>reckon/crew/review.py</code> returns <code>72978afb</code>, the same blob as
+    <code>negative-control-count-by-number.log</code> in the run directory. The mutation
+    also reddens the retired-ids case, which checks the same id set; the required
+    direction is that the disjoint-ids case fails. It was reverted byte-identical:
+    <code>git hash-object</code> on <code>reckon/crew/review.py</code> returns
+    <code>74f90f91</code>, the same blob as
     <code>git rev-parse HEAD:reckon/crew/review.py</code>.</p>
 
     <p><strong>Adjacent review cohort, judged by delta.</strong> Nine review test files,
-    base <code>2184a9f1</code> against the head carrying the test evidence:
+    base <code>2184a9f1</code> against after <code>f94c8b9b</code>:
     <strong>1 failed / 76 passed</strong> becomes <strong>1 failed / 76 passed</strong>,
     with an <strong>identical failure set — 0 added failures</strong>. The one failure,
     <code>test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker</code>,
