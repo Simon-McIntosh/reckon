@@ -821,6 +821,97 @@ worker's own commit, which `reckon crew recover` reports as the run's next actio
       <p><strong>Boundary.</strong> Integration, the mounted-project promotion gate and followup
       closure remain coordinator work.</p>
     </section>
+
+    <section id="promotion-net-churn">
+      <h2>A promotion is charged its own net churn, and a citation that measures no path is refused</h2>
+      <p>Node <code>promotion-charged-its-own-net-churn</code>, base
+      <code>355ef453f0b80758f8f15ca14f49250461aeeb0a</code>, commits
+      <code>c038b3e336280f7fc6e651939822a0d9349d7b43</code> (the net churn and the merges-only
+      refusal), <code>afcfd48ec9e64994c9e6054175352f4b84a9acbe</code> (the landed record) and
+      <code>1aad8e6e64ba13b27cf68f19f7c1bb98a98533f6</code> (the tip-heading and no-path coverage
+      fixes), <code>5f1d5dd4a26fadf43b374615b946772d7ba6f870</code> (record corrections),
+      <code>bdb60d2bd66a1215a46e0c7fd133c181229d6eea</code> (formatting-only pass over the two
+      source files) and <code>359b947bff09f0c9863bf88b76a2d79e80301ece</code> (the boundary-guard
+      exemption for declared shared paths), in the worktree
+      <code>.reckon-worktrees/reckon-c8f839407e49/s22-coord/promotion-charged-its-own-net-churn</code>.
+      Logs: <code>base-arm.log</code> and <code>head-arm.log</code> under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T122110808769-promotion-charged-its-own-net-churn/</code>;
+      <code>head-arm-2.log</code>, <code>head-arm-final.log</code>,
+      <code>head-arm-bdb60d2b.log</code> (the one-invocation reading before the boundary-guard case),
+      <code>probe-trailing-merge-at-afcfd48e.log</code> and the
+      regenerated <code>negative-control.log</code> under
+      <code>/home/ITER/mcintos/.cache/reckon-promotion-net-churn/</code>, because that run
+      directory was mounted read-only at 17:37 on 2026-09-26 and could not be written. Each log's
+      header names its revision, tree, the module under test as imported, and the resolved working
+      directory.</p>
+      <p><strong>(1) A merges-only citation is refused.</strong> A run whose citation list holds
+      only the merge it made previously promoted with <code>{"added": 0, "removed": 0,
+      "files": 0}</code>; now <code>crew complete</code> raises naming the merge, the ledger gains
+      no row and the live pointer survives. Base arm: <code>Failed: DID NOT RAISE CrewError</code>.
+      Head arm: the case passes.</p>
+      <p><strong>(2) Two citations on one path record the run's net churn.</strong> The first cited
+      commit adds two lines to <code>in_scope.txt</code> and the second removes one, so the
+      per-commit sum is <code>2 added / 1 removed</code> while the fixture's own
+      <code>git diff --numstat &lt;base&gt; &lt;tip&gt; -- in_scope.txt</code> is <code>1 added / 0
+      removed / 1 file</code>. The row must equal the second, and the case asserts the two readings
+      differ so it cannot pass by measuring nothing. Base arm: <code>{'added': 2, 'removed': 1} !=
+      {'added': 1, 'removed': 0, 'files': 1}</code>. Head arm: pass.</p>
+      <p><strong>(3) Abbreviated citations land canonical.</strong> Ten-character prefixes are
+      resolved through the existing commit resolver before any measurement, and the expectation is
+      re-derived from the fixture with <code>git rev-parse</code> rather than echoed from the input;
+      the case also asserts the case's stored ids are not the abbreviation list it passed.
+      <strong>This third case passes at base</strong> <code>355ef453</code> as well: canonicalisation
+      already resolved prefixes there, and what the case pins is the derived expectation, not a
+      behaviour the change introduced. The base arm's two failures are the merges-only case and the
+      net-churn case, in a run of 2 failed, 79 passed.</p>
+      <p><strong>(4) A trailing merge is not charged.</strong> The net diff ran to the run's tip,
+      so a run whose last cited commit was a merge was charged whatever the merge resolved to. The
+      case has the run's own commit add two lines and a trailing merge resolve the conflict to a
+      peer's three: the tip reading is <code>3 added / 1 removed</code> where the run's own churn is
+      <code>2 added / 0 removed</code>. It fails at <code>afcfd48e</code>
+      (<code>{'added': 3, 'removed': 1} != {'added': 2, 'removed': 0, 'files': 1}</code>,
+      <code>probe-trailing-merge-at-afcfd48e.log</code>) and passes at <code>1aad8e6e</code>, where
+      the diff is headed at the run's last own commit.</p>
+      <p><strong>(5) A citation list that changes no path is refused.</strong> The second refusal
+      is now exercised by a case: one empty commit cited alone. The case asserts the refusal names
+      that commit, that the ledger gains no row and that the live pointer survives. Deleting the
+      check reddens that case and nothing else, recorded in the negative control below.</p>
+      <p><strong>(6) A declared shared path is not a boundary edit.</strong> The boundary guard
+      compares each dispatch-visible tree's persisted snapshot against a fresh one and charges
+      every newly-changed path under the run's declared roots — including the paths the project
+      publishes as shareable, so a promotion measured on 2026-09-26 was refused because a peer
+      worktree held <code>reckon/cli.py</code> uncommitted, a path dispatch deliberately admits as
+      a concurrent claim. The guard now resolves the shared-write list through the same helper the
+      accepted-path check reads, exempts exactly the files it names, and keeps the charged set per
+      path, so one shared claim cannot mask an unshared one beside it. Three cases: a peer dirty on
+      the declared shared path lets the promotion proceed, with the row recorded and the pointer
+      consumed; a peer dirty on the declared unshared path still refuses, naming the path and the
+      peer worktree, writing no row and keeping the pointer; a peer dirty on both charges only the
+      unshared path. The first and third fail at the pre-fix head <code>26ee556b</code> —
+      <strong>2 failed, 1 passed</strong>, EXIT=1, <code>guard-shared-at-26ee556b.log</code> — and
+      all three pass at the fixed head — <strong>3 passed, EXIT=0</strong>,
+      <code>guard-shared-post-fix.log</code>. The one-invocation gate over the measured files at
+      the committed code head is <strong>86 passed, 0 failed</strong> in 66.46s, EXIT=0,
+      <code>head-arm-359b947b.log</code>; all three logs sit beside the others under
+      <code>/home/ITER/mcintos/.cache/reckon-promotion-net-churn/</code>.</p>
+      <p><strong>Negative control.</strong> Three mutants, each run against its target case alone
+      and restored byte-identically afterwards (asserted in the log, healthy sha256
+      <code>4ae52f3c1578cd74528c4564e98e0bc7bd8ba0de1a4407f37abd9a8241d50ed4</code> at
+      <code>bdb60d2b</code>; the log from before the formatting pass, kept as
+      <code>negative-control-before-format-fix.log</code>, names the earlier healthy sha).
+      (a) Restoring the per-commit summation makes the net-churn case fail
+      on its counts, <code>2 added / 1 removed</code> against the fixture's <code>1 added /
+      0 removed</code>. (b) Restoring the merge skip with both refusals dropped makes the
+      merges-only case fail <code>DID NOT RAISE CrewError</code>. (c) Dropping only the
+      empty-path-set refusal makes the no-path case fail the same way, which is the coverage the
+      review found missing. The other case is absent from each mutant's output, so the target is
+      the case that trips.</p>
+      <p><strong>Ruff.</strong> On a complete <code>git archive</code> tree of the base, the two
+      changed paths carry 10 findings; at the head they carry the same 10 (all pre-existing, in
+      <code>reckon/crew/promotion.py</code>, none added by this change). A partial tree extraction
+      misreports this file set, which is why the base count is taken from a full archive.</p>
+    </section>
+
   </main>
 </body>
 </html>

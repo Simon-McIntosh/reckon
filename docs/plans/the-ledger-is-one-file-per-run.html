@@ -325,6 +325,49 @@
         holds the three arms, the commits read off disk, and the declared mutation's red log.
         Independent merged verification and followup closure remain coordinator-owned.</p>
       </aside>
+
+      <aside id="promotion-net-churn-landing">
+        <h3>A promotion is charged its own net churn, and a citation that measures no path is refused</h3>
+        <p><strong>2026-09-26.</strong> The run-only scope measure read the right paths but summed
+        each cited commit's own numstat, so a path rewritten across two cited commits contributed
+        both revisions and the row described the run's keystrokes rather than its effect. A
+        citation list the merge skip leaves empty — a merge cited alone — was worse: it was
+        recorded as <code>0 added / 0 removed / 0 files</code>, which reads as a measured run that
+        changed nothing. The counts are now one net diff over the run's own commits, restricted to
+        the path set those commits touched, and a citation list that measures no path raises
+        before any write: the refusal names the commit it refuses, appends no ledger row, and
+        keeps the live pointer so the run can be re-promoted from the commits it made.</p>
+        <p><strong>Measured.</strong> Two of the three cases fail at base <code>355ef453</code>
+        and pass at the final head: citing only the run's merge is refused naming that commit
+        (<code>DID NOT RAISE CrewError</code> at base), and one path changed by two cited commits
+        is recorded as <code>1 added / 0 removed</code> — the fixture's own
+        <code>git diff --numstat &lt;base&gt; &lt;tip&gt; -- in_scope.txt</code>, where the
+        per-commit sum reads <code>2 added / 1 removed</code>. The third case, the abbreviated
+        citation, passes at base as well: canonicalisation already resolved prefixes, and what
+        that case pins is that its expectation is derived from the repository with
+        <code>git rev-parse</code> rather than echoed from the citation list it passed in. The
+        base arm over the measured files is <strong>2 failed, 79 passed</strong>, its two failures
+        being exactly those first two cases.</p>
+        <p><strong>Review findings closed 2026-09-26.</strong> The net diff was headed at the
+        run's tip, so a run whose last cited commit was a merge was charged the content that
+        merge resolved to. A case reproduces it: the run's own commit adds two lines and the
+        trailing merge resolves the conflict to a peer's three, so the tip reading is
+        <code>3 added / 1 removed</code> against the run's own <code>2 added / 0 removed</code>.
+        The case fails at <code>afcfd48e</code> and passes at <code>1aad8e6e</code>, where the
+        diff is headed at the run's last own commit. A case for the second refusal — a citation
+        list whose commits change no path at all, here a single empty commit — asserts the
+        refusal names the commit, writes no row and keeps the pointer; dropping that check reddens
+        that case and nothing else. The measured files in one invocation are <strong>83 passed,
+        0 failed</strong> at <code>1aad8e6e</code>, and again at <code>bdb60d2b</code> after a
+        formatting-only pass over the two source files. A case added the same day for the boundary
+        guard brings that reading to <strong>86 passed, 0 failed</strong> at <code>359b947b</code>:
+        an uncommitted peer edit on a declared path the project publishes as shareable no longer
+        refuses the promotion, while a declared path off that list still does, naming it.</p>
+        <p>Receipts: <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-net-churn">the anchored evidence</a>
+        retains both arms' header-lined logs and the declared negative control. Independent merged
+        verification and followup closure remain coordinator-owned.</p>
+      </aside>
+
     </section>
 
     <section id="s2" data-reckon="section">
