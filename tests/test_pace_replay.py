@@ -152,6 +152,13 @@ def committed_week(tmp_path: Path) -> Path:
     return tmp_path
 
 
+def _write_run(root: Path, record: dict) -> None:
+    run_dir = root / "docs" / "state" / "sample" / "runs"
+    (run_dir / f"{record['run_id']}.json").write_text(
+        json.dumps(record), encoding="utf-8"
+    )
+
+
 def test_report_module_is_available_at_head():
     assert importlib.util.find_spec("reckon.crew.pace_replay") is not None
 
@@ -165,20 +172,22 @@ def test_committed_week_replays_allowances_holds_and_work_split(committed_week):
         "checked": 3,
         "matched": 3,
         "mismatches": [],
+        "unmeasured": 0,
         "all_match": True,
     }
     assert report["holds"] == {
         "checked": 3,
         "matched": 3,
         "mismatches": [],
+        "unverifiable": 0,
         "all_match": True,
     }
     assert report["split_by_class"] == {
-        "implement": {"local": 1, "metered": 1, "total": 2},
-        "review": {"local": 0, "metered": 1, "total": 1},
+        "implement": {"local": 1, "metered": 1, "unknown": 0, "total": 2},
+        "review": {"local": 0, "metered": 1, "unknown": 0, "total": 1},
     }
-    assert "implement: local=1 metered=1 total=2" in report["text"]
-    assert "review: local=0 metered=1 total=1" in report["text"]
+    assert "implement: local=1 metered=1 unknown=0 total=2" in report["text"]
+    assert "review: local=0 metered=1 unknown=0 total=1" in report["text"]
 
 
 def test_mistuned_lead_is_detected_from_rows_alone(committed_week):
@@ -222,3 +231,78 @@ def test_render_report_accepts_a_replay_result(committed_week):
         "holds: 3/3 reproduced (ok)",
         "split by class:",
     ]
+
+
+def test_an_unobserved_week_clock_is_unmeasured_not_reproduced(committed_week):
+    record = _row(
+        node="unmeasured",
+        role="implement",
+        backend="codex",
+        local=False,
+        utilisation=0.2,
+        elapsed=48.0,
+    )
+    record["pace"]["clocks"]["seven_day"] = {
+        "period": "seven_day",
+        "state": "unknown",
+        "utilisation": None,
+        "observed_at": None,
+        "resets_at": None,
+        "age_seconds": None,
+    }
+    record["pace"]["allowance"] = None
+    _write_run(committed_week, record)
+
+    report = _replay_project(committed_week, "sample")
+
+    assert report["allowances"]["unmeasured"] == 1
+    assert report["allowances"]["matched"] == 3
+    assert report["allowances"]["all_match"] is False
+    assert report["ok"] is False
+    assert "1 unmeasured" in report["text"]
+
+
+def test_a_hold_without_threshold_evidence_is_unverifiable(committed_week):
+    record = _row(
+        node="bare-hold",
+        role="review",
+        backend="codex",
+        local=False,
+        utilisation=0.95,
+        elapsed=96.0,
+        hold={"backend": "codex", "held": True},
+    )
+    _write_run(committed_week, record)
+
+    report = _replay_project(committed_week, "sample")
+
+    assert report["holds"]["unverifiable"] == 1
+    assert report["holds"]["matched"] == 3
+    assert report["holds"]["all_match"] is False
+    assert report["ok"] is False
+    assert "1 unverifiable" in report["text"]
+
+
+def test_a_row_without_lane_identity_is_in_the_unknown_split(committed_week):
+    record = _row(
+        node="unknown-lane",
+        role="implement",
+        backend="codex",
+        local=False,
+        utilisation=0.3,
+        elapsed=72.0,
+    )
+    record.pop("backend")
+    record.pop("local")
+    record["pace"].pop("lane")
+    record["pace"].pop("member")
+    _write_run(committed_week, record)
+
+    report = _replay_project(committed_week, "sample")
+
+    assert report["split_by_class"]["implement"] == {
+        "local": 1,
+        "metered": 1,
+        "unknown": 1,
+        "total": 3,
+    }

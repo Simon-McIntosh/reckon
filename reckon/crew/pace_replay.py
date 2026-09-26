@@ -28,6 +28,9 @@ __all__ = [
     "replay_project",
 ]
 
+_UNMEASURED = object()
+_UNVERIFIABLE = object()
+
 
 def load_committed_rows(
     root: str | Path,
@@ -88,20 +91,26 @@ def replay(
     """
     checks: list[dict[str, Any]] = []
     split: dict[str, dict[str, int]] = defaultdict(
-        lambda: {"local": 0, "metered": 0, "total": 0}
+        lambda: {"local": 0, "metered": 0, "unknown": 0, "total": 0}
     )
     records = [dict(row) for row in rows]
     for record in records:
         pace_row = _pace_row(record)
-        expected_allowance = _recomputed_allowance(
+        allowance_value = _recomputed_allowance(
             pace_row,
             drain_lead_hours=drain_lead_hours,
         )
+        allowance_unmeasured = allowance_value is _UNMEASURED
+        expected_allowance = None if allowance_unmeasured else allowance_value
         recorded_allowance = pace_row.get("allowance")
-        allowance_match = _same_value(expected_allowance, recorded_allowance)
-        expected_hold = _hold_decision(pace_row)
+        allowance_match = not allowance_unmeasured and _same_value(
+            expected_allowance, recorded_allowance
+        )
+        hold_value = _hold_decision(pace_row)
+        hold_unverifiable = hold_value is _UNVERIFIABLE
+        expected_hold = None if hold_unverifiable else hold_value
         recorded_hold = _recorded_hold_decision(pace_row)
-        hold_match = expected_hold == recorded_hold
+        hold_match = not hold_unverifiable and expected_hold == recorded_hold
         run_id = str(record.get("run_id") or pace_row.get("node") or "")
         checks.append(
             {
@@ -109,9 +118,11 @@ def replay(
                 "allowance": recorded_allowance,
                 "recomputed_allowance": expected_allowance,
                 "allowance_match": allowance_match,
+                "allowance_unmeasured": allowance_unmeasured,
                 "hold": pace_row.get("hold"),
                 "recomputed_hold": expected_hold,
                 "hold_match": hold_match,
+                "hold_unverifiable": hold_unverifiable,
             }
         )
         work_class = _work_class(record, pace_row)
@@ -120,24 +131,40 @@ def replay(
         split[work_class]["total"] += 1
 
     allowance_mismatches = [
-        check["run_id"] for check in checks if not check["allowance_match"]
+        check["run_id"]
+        for check in checks
+        if not check["allowance_match"] and not check["allowance_unmeasured"]
     ]
-    hold_mismatches = [check["run_id"] for check in checks if not check["hold_match"]]
+    allowance_unmeasured = [
+        check["run_id"] for check in checks if check["allowance_unmeasured"]
+    ]
+    hold_mismatches = [
+        check["run_id"]
+        for check in checks
+        if not check["hold_match"] and not check["hold_unverifiable"]
+    ]
+    hold_unverifiable = [
+        check["run_id"] for check in checks if check["hold_unverifiable"]
+    ]
     mistuned = _mistuned_summary(checks, drain_lead_hours)
     result: dict[str, Any] = {
         "rows": checks,
         "row_count": len(checks),
         "allowances": {
             "checked": len(checks),
-            "matched": len(checks) - len(allowance_mismatches),
+            "matched": len(checks)
+            - len(allowance_mismatches)
+            - len(allowance_unmeasured),
             "mismatches": allowance_mismatches,
-            "all_match": not allowance_mismatches,
+            "unmeasured": len(allowance_unmeasured),
+            "all_match": not allowance_mismatches and not allowance_unmeasured,
         },
         "holds": {
             "checked": len(checks),
-            "matched": len(checks) - len(hold_mismatches),
+            "matched": len(checks) - len(hold_mismatches) - len(hold_unverifiable),
             "mismatches": hold_mismatches,
-            "all_match": not hold_mismatches,
+            "unverifiable": len(hold_unverifiable),
+            "all_match": not hold_mismatches and not hold_unverifiable,
         },
         "split_by_class": dict(sorted(split.items())),
         "mistuned": mistuned,
@@ -160,19 +187,22 @@ def render_report(report: Mapping[str, Any]) -> str:
         (
             "allowances: "
             f"{allowances['matched']}/{allowances['checked']} reproduced "
-            f"({'ok' if allowances['all_match'] else 'mismatch'})"
+            f"({'ok' if allowances['all_match'] else 'mismatch'}"
+            f"{'; ' + str(allowances['unmeasured']) + ' unmeasured' if allowances['unmeasured'] else ''})"
         ),
         (
             "holds: "
             f"{holds['matched']}/{holds['checked']} reproduced "
-            f"({'ok' if holds['all_match'] else 'mismatch'})"
+            f"({'ok' if holds['all_match'] else 'mismatch'}"
+            f"{'; ' + str(holds['unverifiable']) + ' unverifiable' if holds['unverifiable'] else ''})"
         ),
         "split by class:",
     ]
     for work_class, counts in report["split_by_class"].items():
         lines.append(
             f"  {work_class}: local={counts['local']} "
-            f"metered={counts['metered']} total={counts['total']}"
+            f"metered={counts['metered']} unknown={counts['unknown']} "
+            f"total={counts['total']}"
         )
     mistuned = report["mistuned"]
     if mistuned["requested"]:
@@ -200,7 +230,7 @@ def _recomputed_allowance(
     row: Mapping[str, Any],
     *,
     drain_lead_hours: float | None,
-) -> dict[str, Any] | None:
+) -> dict[str, Any] | object:
     """Recompute an allowance from the row's clocks through ``pace.py``."""
     clocks = row.get("clocks")
     if not isinstance(clocks, Mapping):
@@ -209,7 +239,7 @@ def _recomputed_allowance(
     if not isinstance(week, Mapping):
         raise TypeError("a pace row must carry a seven-day clock")
     if week.get("state") != "observed":
-        return None
+        return _UNMEASURED
     recorded_at = _instant(row.get("recorded_at"))
     reset_at = _instant(week.get("resets_at"))
     elapsed_hours = max(
@@ -236,7 +266,7 @@ def _recomputed_allowance(
     return pace_module.allowance_for_group(reading, pace=pace).as_dict()
 
 
-def _hold_decision(row: Mapping[str, Any]) -> dict[str, Any]:
+def _hold_decision(row: Mapping[str, Any]) -> dict[str, Any] | object:
     """Reconstruct the hold verdict from the evidence carried by the row."""
     hold = row.get("hold")
     if hold is None:
@@ -246,10 +276,11 @@ def _hold_decision(row: Mapping[str, Any]) -> dict[str, Any]:
     state = hold.get("state")
     threshold = hold.get("effective_ceiling_pct")
     utilisation = state.get("utilisation_pct") if isinstance(state, Mapping) else None
-    if _number(threshold) is not None and _number(utilisation) is not None:
-        held = float(utilisation) >= float(threshold)
-    else:
-        held = bool(hold.get("held"))
+    threshold_value = _number(threshold)
+    utilisation_value = _number(utilisation)
+    if threshold_value is None or utilisation_value is None:
+        return _UNVERIFIABLE
+    held = utilisation_value >= threshold_value
     return {"held": held, "backend": hold.get("backend")}
 
 
@@ -272,6 +303,7 @@ def _mistuned_summary(
         str(check["run_id"])
         for check in checks
         if candidate is not None
+        and not check["allowance_unmeasured"]
         and not _same_value(check["allowance"], check["recomputed_allowance"])
     ]
     return {
@@ -306,6 +338,8 @@ def _lane_kind(record: Mapping[str, Any], row: Mapping[str, Any]) -> str:
     if record.get("local") is True or row.get("local") is True:
         return "local"
     backend = str(record.get("backend") or row.get("lane") or "").strip()
+    if not backend:
+        return "unknown"
     return "local" if ledger.is_unmetered_backend(backend) else "metered"
 
 
