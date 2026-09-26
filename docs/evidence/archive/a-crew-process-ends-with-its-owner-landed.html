@@ -411,6 +411,70 @@
         <p><strong>Remaining.</strong> This gate measures only this node's own change; the
         merged-head verification belongs to a separately dispatched test node.</p>
       </section>
+      <section id="s10-a-departure-reads-only-a-recorded-promotion">
+        <h3>A departure is promoted only from a recorded ledger row</h3>
+        <p><strong>Outcome.</strong> A run's departure word is now resolved against the
+        project ledger rather than against the mere absence of a reader. At 22:31:52 on
+        2026-09-25 the ticker rendered a run as <code>blocked &rarr; promoted</code> after
+        another session removed its pointer with <code>crew discard</code>, though nothing
+        had been promoted. The departure fold in <code>reckon/crew/recovery.py</code>
+        (<code>fleet_transitions</code>) read a run id against a ledger set only when its
+        caller supplied a reader; the fleet-stream producer supplies none, and the fold's
+        fall-through word was <code>promoted</code>. A discard satisfies that test exactly
+        as a promotion does.</p>
+        <figure>
+          <img src="/reckon/figures/a-crew-process-ends-with-its-owner/departure_reads_a_recorded_promotion.svg"
+               alt="A departing run reaches a decision: is its run id among the project ledger's recorded run ids? Yes yields promoted. No yields withdrawn. When no ledger reader can be resolved at all, the record is unknown and the departure still reads withdrawn, so a promotion no reader established is never asserted.">
+          <figcaption>The departure word follows the ledger. An unresolvable record withdraws
+          rather than promoting, so a pointer that left with nothing recorded behind it never
+          reads as work that landed.</figcaption>
+        </figure>
+        <p><strong>Reproduction before repair.</strong> At base <code>132a7d4b</code>, a
+        blocked run's pointer removed with <code>crew discard</code>, folded through the
+        producer's own call shape &mdash; <code>fleet_transitions(known, {})</code> with no
+        ledger reader &mdash; returned the to-state <code>promoted</code>. The red log's
+        first line repeats the declared control verbatim:
+        <em>map every pointer removal to promoted as today; the discard case must fail
+        reading promoted</em>.</p>
+        <p><strong>Change.</strong> <code>fleet_transitions</code> resolves its ledger set
+        through a new helper: a reader handed in by the caller is used as given; with none
+        supplied, the reader is built from the departing run's own project, carried on the
+        snapshot; and where neither exists the project is unknown, so the run does not
+        promote. <code>_watch_snapshot</code> now carries that <code>project</code> field,
+        which is what lets the reader-less producer fold correctly without any change to
+        <code>reckon/crew/runs.py</code>.</p>
+        <table>
+          <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Reported defect</td><td>A blocked run discarded by another session reads <code>blocked &rarr; promoted</code> at base.</td></tr>
+            <tr><td>Discard case</td><td>The same departure now reads <code>withdrawn</code>; the to-state is not <code>promoted</code>.</td></tr>
+            <tr><td>Recorded promotion</td><td>A departure whose project ledger holds the run id still reads <code>promoted</code>.</td></tr>
+            <tr><td>Silent removal</td><td>A pointer removed with no ledger row reads <code>withdrawn</code>.</td></tr>
+            <tr><td>Unknown record</td><td>A departure with no resolvable project withdraws rather than promoting.</td></tr>
+            <tr><td>Focused gate</td><td><strong>4 passed</strong> in the new module at the committed head.</td></tr>
+            <tr><td>Scoped regression delta</td><td>Base <code>132a7d4b</code>: 3 failed / 107 passed. Committed implementation: 3 failed / 107 passed. Identical failure ids; added failures: <strong>0</strong>. The four new cases are measured separately in the focused module. The three pre-existing failures are in a suite outside this node's write fence.</td></tr>
+            <tr><td>Declared negative control</td><td>Restore the base rule &mdash; every pointer removal maps to <code>promoted</code> when no reader is passed &mdash; and the discard case fails reading <code>promoted</code>, exit 1. The log's first line repeats the declared mutation verbatim.</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Receipts.</strong> All logs live under
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T203344236280-a-discard-never-reads-promoted/logs/</code>:
+        <code>head-gate.log</code> (the new module at the committed head, naming the imported
+        module and the resolved working directory), <code>head-delta.log</code> and
+        <code>base-delta.log</code> (the regression delta), and
+        <code>negative-control.log</code>. Implementation commit <code>ddf4509f</code>,
+        measured on fleet compute node <code>98dci4-clu-2058</code> under allocation
+        <code>1277272</code>. Only <code>reckon/crew/recovery.py</code>,
+        <code>tests/test_a_discard_never_reads_promoted.py</code> and this record and its
+        figure change.</p>
+        <p><strong>Remaining.</strong> A distinct <code>discarded</code> word for a run whose
+        directory records a discard needs a discard marker to record and a ticker state to
+        render; neither exists in a file inside this node's fence, so the departure reads
+        <code>withdrawn</code> and the distinction is recorded as a follow-on. Three
+        pre-existing failures expecting <code>promoted</code> for a reader-less removal live
+        in <code>tests/test_crew_watch_lifetime.py</code>, outside this fence, and are
+        reported rather than repaired. This gate measures only this node's own change; the
+        merged-head verification belongs to a separately dispatched test node.</p>
+      </section>
     </section>
     <section id="producer-classifier-verdict">
       <h2>Producer and classifier share one fleet verdict</h2>

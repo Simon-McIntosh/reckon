@@ -4907,6 +4907,12 @@ def _watch_snapshot(
     return {
         "run_id": str(row.get("run_id") or ""),
         "node": str(row.get("node") or row.get("run_id") or "unknown"),
+        # The project the run belongs to, carried on the snapshot so the
+        # departure fold can resolve the ledger that decides its word when its
+        # caller supplies no reader. A snapshot written before this field existed
+        # carries none, which leaves a departure's record unknown and therefore
+        # withdrawn rather than promised as promoted.
+        "project": str(pointer.get("project") or ""),
         # The dispatching session, so a reader can tell its own fleet from a
         # peer's on a stream that is necessarily project-wide.
         "session": str(pointer.get("session") or ""),
@@ -5077,6 +5083,37 @@ def _ledger_run_id_reader(project: str) -> Callable[[], Iterable[str]]:
     return read
 
 
+def _departure_recorded_run_ids(
+    known: Mapping[str, Mapping[str, Any]],
+    departures: Sequence[str],
+    ledger_run_ids: Callable[[], Iterable[str]] | None,
+) -> set[str] | None:
+    """The recorded run ids a departure fold resolves its words against.
+
+    A reader the caller supplies is used as given. When none is supplied, one is
+    resolved from the departing run's own project, because a caller holding no
+    reader — the published fleet stream builds its transitions without one — has
+    no way to tell a promotion from a pointer that vanished, and a word chosen
+    without that fact promises a landing nobody recorded. Resolving it here
+    rather than at the call site keeps the word's authority: whatever supplied
+    the reader, promotion still requires a recorded row.
+
+    A departure whose snapshot names no project leaves the record unknown rather
+    than empty, and unknown is answered by the withdrawal word, never by a
+    promotion: the alternative asserts a fact no reader established.
+    """
+    reader = ledger_run_ids
+    if reader is None:
+        for run_id in departures:
+            project = str(known[run_id].get("project") or "")
+            if project:
+                reader = _ledger_run_id_reader(project)
+                break
+    if reader is None:
+        return None
+    return {str(run) for run in reader()}
+
+
 def fleet_transitions(
     known: Mapping[str, Mapping[str, Any]],
     current: Mapping[str, Mapping[str, Any]],
@@ -5108,17 +5145,17 @@ def fleet_transitions(
     departures = [item for item in known if item not in current]
     # A run leaves the fleet for two reasons that look identical from a pointer:
     # a promotion that wrote its ledger row, and a pointer that vanished with
-    # nothing recorded behind it. A reader acts on the word — one is finished,
-    # the other needs recovering — so the ledger decides it. The ledger is read
-    # at most once per observation and only when something departed; a caller
-    # that supplies no ledger cannot distinguish the two, so the reading is
-    # qualified as promoted rather than asserted as withdrawn. The predicate is
-    # consulted lazily for the same reason: reading a project's ledger on every
-    # poll to answer a question that no departure asks is pure cost.
-    if departures and ledger_run_ids is not None:
-        recorded = {str(run) for run in ledger_run_ids()}
-    elif departures:
-        recorded = None
+    # nothing recorded behind it — a discard, a reaped pointer, a file removed
+    # by hand. A reader acts on the ledger for its word: a departure is promoted
+    # only when the project ledger records a promotion of that run id, and
+    # otherwise withdrawn. A promotion is never inferred from a missing row's
+    # absence, so a discard cannot read as work that landed. The ledger is read
+    # at most once per observation and only when something departed; a reader
+    # the caller cannot supply is resolved from the departing run's own project,
+    # and a departure with no project at all still withdraws — the safe
+    # direction, because the alternative promises a landing nobody recorded.
+    if departures:
+        recorded = _departure_recorded_run_ids(known, departures, ledger_run_ids)
     else:
         recorded = set()
     for run_id in departures:
@@ -5127,9 +5164,7 @@ def fleet_transitions(
         # announcing that the block is over.
         departed = {**known[run_id], "detail": "", "needs_help_complete": None}
         word = (
-            "promoted"
-            if recorded is None or run_id in recorded
-            else "withdrawn"
+            "promoted" if recorded is not None and run_id in recorded else "withdrawn"
         )
         changes.append((departed, str(known[run_id]["state"]), word))
     for run_id in (item for item in current if item not in known):
