@@ -914,6 +914,127 @@
       checkout's interior means here and is exactly the shape that re-opens git metadata; a plain
       directory inside a checkout is not a checkout and composes. The alternative, refusing on path
       containment regardless of <code>.git</code>, would fail cases this node may not edit.</p>
+    <div class="r-comment" data-section="s2" data-id="c-20260926T1620-missing-write-parent" data-who="node fence-creates-a-missing-write-parent" data-when="2026-09-26T16:20:00+02:00">
+        <div class="r-comment-body"><p><strong>A declared write path is created before the fence
+        binds it.</strong> bubblewrap binds a writable root by <em>source</em> path, so a declared
+        write path whose directory has not been created yet aborted the launch with
+        <code>bwrap: Can't find source path &hellip;: No such file or directory</code> and exit 1
+        before the worker started &mdash; an abandoned run rather than a missing directory. Each
+        declared write path is now created, with every missing parent, before the fence argv is
+        composed (<code>create_declared_write_paths</code> in <code>reckon/_backends.py</code>;
+        superseded by the rework recorded in the next comment, commit <code>1de2d086</code>). The
+        bind itself is unchanged: only a root inside a sealed path is bound, and each is bound by
+        name, so the grant is no wider than declared and no existing ancestor is bound in its
+        place. A declared path whose parent is a regular file cannot be created at all; that launch
+        is refused by name (<code>BackendError</code>, which dispatch turns into a D22 refusal)
+        rather than composed against an ancestor the run does not own.</p>
+
+        <p><strong>Reproduced before repair.</strong> With a declared root under a sealed directory
+        that did not exist: <code>bwrap: Can't find source path
+        &hellip;/.claude/projects/missing/reports: No such file or directory</code>, exit 1.</p>
+
+        <p><strong>Measure.</strong> <code>tests/test_fence_creates_a_missing_write_parent.py</code>
+        synthesises a run whose declared write path is a child the sealed reports root does not hold
+        (<code>&hellip;/reports/missing/report.md</code>). It asserts the declared path is created,
+        that the composed argv's writable bind is exactly the declared path, that the reports root
+        keeps its read-only overlay and is never bound writable, and that running the composed argv
+        exits 0. A second case pins that an already-existing declared path is bound by name rather
+        than by its directory. A third asserts that a declared path whose parent is a regular file
+        refuses with the path named. The write path sits inside a sealed path because a root outside
+        every seal is already writable through the composition's <code>--dev-bind / /</code> and is
+        never bound at all.</p>
+
+        <p><strong>Declared negative control, executed and logged.</strong> <em>remove the directory
+        creation; the composed launch for a write path under a missing directory must fail the
+        existence assertion</em> &mdash; applied at head, the existence assertion fails
+        (<code>assert False</code> on <code>declared.is_dir()</code>) and the composed argv run
+        directly reports <code>bwrap: Can't find source path &hellip;: No such file or directory</code>,
+        exit 1. The source is restored byte for byte (sha256 compared).</p>
+
+        <p><strong>Gate.</strong> This node's own test: <code>3 passed</code> at head
+        <code>d05240eb</code>. Neighbours
+        (<code>tests/test_each_run_owns_its_harness_home.py</code>,
+        <code>tests/test_fence_is_on_again.py</code>, <code>tests/test_backend_environment.py</code>,
+        <code>tests/test_a_fenced_worker_can_commit.py</code>): base <code>c21cf915</code>
+        <code>20 passed</code> against head <code>d05240eb</code> <code>20 passed</code>, so this
+        change adds no failure. Commit <code>d05240eb</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-missing-write-parent</code>;
+        the bind layering this record describes is the existing figure
+        <code>/reckon/figures/a-worker-cannot-write-your-home/fence-layering.svg</code>. Gate and
+        control logs live under the run directory rather than in <code>docs/figures</code>. This gate
+        measures only this node's own change; verifying the merged result belongs to a separately
+        dispatched test node.</p></div>
+      </div>
+
+    <div class="r-comment" data-section="s2" data-id="c-20260926T1720-missing-write-parent-rework" data-who="node fence-creates-a-missing-write-parent" data-when="2026-09-26T17:20:00+02:00">
+        <div class="r-comment-body"><p><strong>Correction: a fenced run is not unrestricted, and a
+        declared file is a file.</strong> Three defects in the change above, found by review against
+        a measured run. (1) <em>Declared write paths never reached the fence.</em>
+        <code>sandbox_write_roots</code> returns <code>--</code>unrestricted for the
+        <code>worktree-full</code> tier, which is true only while nothing seals the machine; under
+        the fence a <code>worktree-full</code> run got write binds for its worktree and no other, so
+        a declared delivery path outside the worktree stayed read-only. Measured on
+        <code>r-20260926T145459466287-cwp-fenced-first-request</code>: the node declared
+        <code>~/.config/reckon/crew/reports/cwp-fenced-first-request.md</code>, the parent existed,
+        and <code>/proc/self/mountinfo</code> showed <code>~/.config/reckon</code> mounted
+        read-only with only the run directory writable. (2) <em>The manifest's parent was the second
+        failure, not a declared path.</em> <code>fence_argv</code> binds
+        <code>Path(manifest_path).parent</code>, and on
+        <code>r-20260926T151648830270</code> that directory did not exist, so bubblewrap aborted
+        with <code>Can't find source path</code>. (3) <em>A declared file became a directory:</em>
+        the created path was always made as a directory, so a declaration for
+        <code>report.md</code> left a directory of that name where the artifact was meant to land.</p>
+
+        <p><strong>What landed.</strong> <code>fenced_write_roots</code> now names every root a
+        fenced launch re-binds, whatever the tier: the same delivery roots a restricted tier gets
+        (run directory, reports, reviews, tempdir, manifest parent — taken from the single
+        <code>delivery_write_roots</code> set, not a second list), the repository for a
+        <code>workspace-write</code> run, and every declared write path outside the worktree, which
+        resolves against the repository when it is not absolute. A declared path naming a file
+        (a suffix, or an existing file) is granted through its parent directory, so the file stays a
+        file; a declared path whose nearest existing ancestor is a regular file is refused by name
+        (<code>BackendError</code> &rarr; D22 refusal). Every root the <em>caller</em> hands the
+        fence is created before the argv is composed (<code>create_write_roots</code>, which
+        replaces the old helper); the roots the composition adds itself are not created, so a plan
+        composed for display still invents nothing. <code>sandbox_write_roots</code> keeps its
+        <code>None</code> reading for reachability, so no node's existing scope check changes.</p>
+
+        <p><strong>Measure.</strong> <code>tests/test_fence_creates_a_missing_write_parent.py</code>
+        composes through the production path — <code>launch_plan</code> with a
+        <code>worktree-full</code> backend and the declared paths folded into the fence roots the
+        way a dispatcher folds them, never <code>fence_argv</code> with its roots filled in by hand.
+        Five cases: (a) a declared file outside the repository, under a sealed path no tier grants,
+        is covered by a writable bind and is not created as a directory; (b) a declared file whose
+        directory is missing gets that directory created and the file is not made a directory;
+        (c) a manifest named under a missing directory composes, the directory exists afterwards,
+        and running the composed argv exits 0; (d) a fenced <code>worktree-full</code> run binds the
+        same reports and reviews roots a restricted-tier run's argv binds; and the refusal case is
+        kept.</p>
+
+        <p><strong>Two negative controls, executed and logged.</strong> (1) <em>remove the directory
+        creation; the composed launch for a write path under a missing directory must fail the
+        existence assertion</em> &mdash; case (c) fails (<code>AssertionError: the manifest's
+        directory was not created</code>). (2) <em>drop the declared paths from the fence roots; the
+        composed launch for an out-of-repo declared file must fail the bind assertion</em> &mdash;
+        case (a) fails (<code>AssertionError: the declared out-of-repo file has no writable bind
+        covering it</code>). The source is restored byte for byte after each (sha256 compared:
+        <code>715ff20f&hellip;</code>). Both logs live under the run directory.</p>
+
+        <p><strong>Gate.</strong> This node's own test <code>5 passed</code>; neighbours
+        (<code>test_each_run_owns_its_harness_home</code>, <code>test_fence_is_on_again</code>,
+        <code>test_backend_environment</code>, <code>test_a_fenced_worker_can_commit</code>) base
+        <code>c21cf915</code> <code>20 passed</code> against head <code>1de2d086</code>
+        <code>20 passed</code>, zero added failures. The first version of the root creation broke
+        <code>test_a_manifest_directory_that_is_not_a_live_run_gets_no_harness_home</code>, which is
+        what moved the creation onto the caller's handed roots; that test's invariant — a preview
+        creates nothing — is the reason the composition does not create the roots it adds itself.
+        Lint delta is negative (18 findings at base, 15 at head; no additions); the two changed
+        files are format-clean. Commit <code>1de2d086</code>. Evidence anchor below. The figure
+        <code>/reckon/figures/a-worker-cannot-write-your-home/fence-layering.svg</code> still shows
+        the readable form of the layering; the new distinction — which roots are granted — is a list
+        of paths and is recorded here as one, not drawn.</p></div>
+      </div>
+
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host

@@ -73,16 +73,14 @@ WORKSPACE_WRITE = "workspace-write"
 WORKTREE_FULL = "worktree-full"
 
 
-def sandbox_write_roots(
-    backend: Mapping[str, Any],
+def delivery_write_roots(
     *,
-    repository: str | Path,
     run_directory: str | Path,
     reports_directory: str | Path,
     manifest_path: str | Path | None = None,
     review_store_directory: str | Path | None = None,
-) -> tuple[Path, ...] | None:
-    """Return writable roots for a resolved sandbox, or None if unrestricted.
+) -> set[Path]:
+    """Return the durable roots a node delivers into, independent of tier.
 
     The delivery stores a caller passes are granted to every restricted tier,
     because a role that may not touch the repository it grades still has to
@@ -91,10 +89,14 @@ def sandbox_write_roots(
     root: granting one durable store and withholding a sibling leaves a node
     whose declared delivery path is refused as unreachable, which no amount of
     correct work on the worker's side can overcome.
+
+    The set is split out from :func:`sandbox_write_roots` because a *fenced*
+    run needs the same roots whatever its tier: a `worktree-full` node is
+    unrestricted only while nothing seals the machine, and under a fence the
+    seal is absolute, so the roots it delivers into have to be named exactly as
+    a restricted tier's are. Two lists last until the first divergence; one
+    function is why this one exists.
     """
-    tier = str(backend.get("sandbox") or READ_ONLY)
-    if tier == WORKTREE_FULL:
-        return None
     roots = {
         Path(run_directory).expanduser().resolve(),
         Path(reports_directory).expanduser().resolve(),
@@ -106,8 +108,128 @@ def sandbox_write_roots(
         manifest = Path(manifest_path).expanduser()
         if manifest.is_absolute():
             roots.add(manifest.resolve().parent)
+    return roots
+
+
+def sandbox_write_roots(
+    backend: Mapping[str, Any],
+    *,
+    repository: str | Path,
+    run_directory: str | Path,
+    reports_directory: str | Path,
+    manifest_path: str | Path | None = None,
+    review_store_directory: str | Path | None = None,
+) -> tuple[Path, ...] | None:
+    """Return writable roots for a resolved sandbox, or None if unrestricted.
+
+    ``None`` is the *unfenced* reading of an unrestricted tier. A fenced run
+    cannot use it — the fence seals every protected path and re-binds only the
+    roots it is given — so the composition asks :func:`fenced_write_roots`
+    instead, which starts from the same delivery set and never returns None.
+    """
+    tier = str(backend.get("sandbox") or READ_ONLY)
+    if tier == WORKTREE_FULL:
+        return None
+    roots = delivery_write_roots(
+        run_directory=run_directory,
+        reports_directory=reports_directory,
+        manifest_path=manifest_path,
+        review_store_directory=review_store_directory,
+    )
     if tier == WORKSPACE_WRITE:
         roots.add(Path(repository).expanduser().resolve())
+    return tuple(sorted(roots, key=lambda path: path.as_posix()))
+
+
+def _declared_write_grant(
+    path: str | Path,
+    *,
+    repository: str | Path,
+    worktree: str | Path | None,
+) -> Path | None:
+    """Return the directory a declared write path needs bound writable, or None.
+
+    A declared path that names a file is granted through its parent directory:
+    the fence binds directories, so a file declaration is realised by binding
+    the directory the file will be created in. Declaring the file itself as a
+    directory would create a directory named ``report.md``, which is not the
+    artifact the node declared and cannot be written as one.
+
+    A path that already sits inside the worktree is skipped: the worktree is
+    bound writable already, so a second grant for a path beneath it says
+    nothing new and only lengthens the argv.
+
+    A path whose nearest existing ancestor is a regular file cannot be realised
+    at all. That is refused by name rather than composed against a wider
+    ancestor, because the launch would otherwise fail inside bubblewrap with
+    the missing-source condition this composition exists to remove.
+    """
+    raw = Path(path).expanduser()
+    resolved = (
+        raw if raw.is_absolute() else Path(repository).expanduser() / raw
+    ).resolve()
+    if worktree is not None and resolved.is_relative_to(resolved_destination(worktree)):
+        return None
+    named_as_file = resolved.is_file() or bool(resolved.suffix)
+    if not named_as_file:
+        return resolved
+    parent = resolved.parent
+    if parent.is_dir():
+        return parent
+    ancestor = parent
+    while not ancestor.exists() and ancestor != ancestor.parent:
+        ancestor = ancestor.parent
+    if ancestor.is_file():
+        raise BackendError(
+            f"cannot create the declared write path {resolved}: {ancestor} is "
+            "not a directory, so the path cannot be created and cannot be "
+            "bound writable"
+        )
+    return parent
+
+
+def fenced_write_roots(
+    backend: Mapping[str, Any],
+    *,
+    repository: str | Path,
+    run_directory: str | Path,
+    reports_directory: str | Path,
+    declared_write_paths: Iterable[str | Path] = (),
+    manifest_path: str | Path | None = None,
+    review_store_directory: str | Path | None = None,
+    worktree: str | Path | None = None,
+) -> tuple[Path, ...]:
+    """Return every root a fenced launch must re-bind writable.
+
+    A fence seals each protected path read-only and re-opens only the roots
+    named to it, so the tier's own write roots are not sufficient on their own:
+    ``sandbox_write_roots`` for a ``worktree-full`` node returns ``None`` —
+    "unrestricted" — which is true only while nothing seals the machine. Under
+    the fence that node could write its worktree and nothing else, so a declared
+    delivery path outside the worktree stayed read-only and the worker could not
+    produce the artifact its node exists for.
+
+    What is granted here is therefore: the same delivery roots every restricted
+    tier gets, the repository for a ``workspace-write`` run, and every declared
+    write path that lies outside the worktree — whatever the tier. A declared
+    path is resolved against the repository when it is not absolute, and a path
+    naming a file is granted through its parent directory.
+    """
+    roots = delivery_write_roots(
+        run_directory=run_directory,
+        reports_directory=reports_directory,
+        manifest_path=manifest_path,
+        review_store_directory=review_store_directory,
+    )
+    if str(backend.get("sandbox") or READ_ONLY) == WORKSPACE_WRITE:
+        roots.add(Path(repository).expanduser().resolve())
+    for declared in declared_write_paths:
+        grant = _declared_write_grant(
+            declared, repository=repository, worktree=worktree
+        )
+        if grant is None:
+            continue
+        roots.add(grant)
     return tuple(sorted(roots, key=lambda path: path.as_posix()))
 
 
@@ -1981,6 +2103,30 @@ def seed_write_lock_namespace(home: str | Path | None = None) -> Path | None:
     return locks
 
 
+def create_write_roots(roots: Iterable[str | Path]) -> None:
+    """Create every directory a fence is about to bind writable.
+
+    bubblewrap binds a writable root by *source* path, so a root whose
+    directory does not exist aborts the launch with ``Can't find source path``
+    before the worker starts at all — and every root is at risk, not only a
+    node's declared write paths: a manifest whose run directory has not been
+    created yet is bound for the same reason and fails the same way.
+
+    Every entry is a directory by construction: a declared path that names a
+    file was already resolved to the directory that file will be created in, so
+    declaring ``report.md`` can never create a directory by that name. An
+    existing root is left exactly as it is.
+    """
+    for raw in roots:
+        path = resolved_destination(raw)
+        if path.exists():
+            continue
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise BackendError(f"cannot create the write root {path}: {exc}") from exc
+
+
 def codex_auth_source(home: str | Path | None = None) -> Path | None:
     """Return the operator's codex login to bind read-only, or None.
 
@@ -2229,6 +2375,14 @@ def fence_argv(
     ``read_only_binds`` are source/destination pairs mounted last: a writable
     grant re-binds a whole subtree, so a file mounted underneath one is exposed
     correctly only when it is mounted after that grant.
+
+    Every root the caller hands is created before the argv is composed, because
+    bubblewrap binds a writable root by *source* path and refuses that root the
+    same way when it cannot find it. A root this function adds itself — the
+    worktree and its git directories — is not created here: a composition is
+    also run for a plan that has not been dispatched yet, and a preview must
+    invent nothing. Each handed root is a directory by construction, so
+    declaring a file can never create a directory of that name.
     """
     protected = protected_paths(home)
     roots: list[Path] = [Path(path) for path in writable_directories]
@@ -2368,10 +2522,16 @@ def launch_plan(
         # The run's write roots are the caller's grants plus the lock directory
         # every plan write serialises through: a worker with a read-only lock
         # directory can write no plan at all, its own worktree copy included.
+        # Each of them is created here, before the fence binds it: a declared
+        # write path and the run directory a manifest lands in may both be named
+        # before they exist, and bubblewrap refuses a writable root it cannot
+        # find. A preview hands none of them, so nothing is created for a run
+        # that was never dispatched.
         write_roots = list(writable_directories)
         lock_directory = seed_write_lock_namespace(fence_home)
         if lock_directory is not None:
             write_roots.append(lock_directory)
+        create_write_roots(write_roots)
         argv = fence_argv(
             argv,
             writable_directories=write_roots,
