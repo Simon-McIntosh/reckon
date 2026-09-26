@@ -4180,8 +4180,13 @@ def classify_pointer(
         if resume_remedy is not None:
             # The run is over as a process but its session still holds every
             # turn, so the remedy is to continue it rather than discard or
-            # redispatch the work it had already done.
-            action = resume_remedy["command"]
+            # redispatch the work it had already done. An arm whose own advice
+            # is already a resume keeps it: the run holding only a
+            # recovery-derived manifest must still be told to replace that
+            # artifact, which is part of resuming rather than an alternative to
+            # it, and the surviving session is named beside that advice.
+            if not action.startswith("reckon crew resume"):
+                action = resume_remedy["command"]
             detail = (
                 f"{detail}; session {resume_remedy['session_id']!r} survives in "
                 f"the {resume_remedy['source']} record"
