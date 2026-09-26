@@ -251,7 +251,7 @@ def _dispatch_node(node_id: str, section: str = "session-routing") -> crew.TaskN
     )
 
 
-def test_a_dispatch_naming_no_member_commits_its_registration(
+def test_a_dispatch_naming_no_member_is_disposable_and_commits_nothing(
     tmp_path: Path,
 ) -> None:
     """The unnamed dispatch is disposable: no roster row, no commit, own identity.
