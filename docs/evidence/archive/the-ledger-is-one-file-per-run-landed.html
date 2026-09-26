@@ -671,6 +671,84 @@ worker's own commit, which `reckon crew recover` reports as the run's next actio
       only failures are the new cases. Merged verification and followup closure remain
       coordinator work.</p>
     </section>
+
+<section id="split-runs">
+      <h2>The aggregate's rows split into one file per run</h2>
+      <p><strong>2026-09-26.</strong> An aggregate <code>crew.json</code> carries every run row
+      inside it, so the list is rewritten whole on each append and only one writer can be right
+      about it. The one-time migration lands as <code>ledger.split_runs</code> with a
+      <code>crew split-runs</code> verb, its <code>--dry-run</code> reporting the same
+      classification without writing. Per mounted project, every row is written to
+      <code>runs/&lt;run_id&gt;.json</code> through <code>serialize_run</code>, the
+      <code>runs</code> key is removed from the aggregate through the same envelope writer the
+      other writers use (<code>members</code> and <code>holds</code> left in place for §4), and
+      the run files and the aggregate are committed together by one commit carrying everything.</p>
+
+      <figure>
+        <img src="/reckon/figures/the-ledger-is-one-file-per-run/split-flow.svg"
+             alt="The split's decision path per project: classify the aggregate's rows as missing, identical or differing; a differing file stops the project with no write and no commit; otherwise each row is written to its own file through the one serialiser, the runs key is dropped and one commit is made. A run file whose id no listed row names is a promotion that landed beside the list and is never opened.">
+        <figcaption>The per-project order, and the two populations the aggregate's own list does
+        not contain: a window promotion beside it, and a project with no runs key at all.</figcaption>
+      </figure>
+
+      <p><strong>A differing file is the whole project's stop.</strong> The difference is the only
+      copy of a divergence between the aggregate and a run file, and overwriting it would resolve
+      that in favour of the aggregate. So the check runs over every listed row before any write,
+      and a project that fails it is left byte-identical with its <code>runs</code> key intact and
+      no commit; sibling projects migrate in the same invocation, and the report names each
+      differing file by absolute path. <strong>The aggregate's list is the whole population
+      considered:</strong> a run file whose id no listed row names is a promotion that landed
+      between the new writer and the split, so it is never opened, neither counted nor
+      disturbed — the classified counts stay exactly the list's size.</p>
+
+      <p><strong>Cohort.</strong> Two files, <code>tests/test_split_existing_runs.py</code>
+      (new, eight cases) and <code>tests/test_ledger.py</code>, in one invocation per arm, run
+      with the root environment's interpreter, the tree under test on <code>PYTHONPATH</code>
+      and as the working directory, so the imported <code>reckon</code> is the tree named in each
+      log's header. Every case runs under a throwaway configuration home and mount registry over
+      synthesised projects in a throwaway git repository; the workstation's own registry and the
+      state files it names are fingerprinted before and after every case, so a migration that
+      resolved to a real project would surface as a changed file, and the fingerprint's own
+      non-vacuity is asserted rather than assumed: read at function scope it resolves the suite's
+      throwaway home and watches nothing, so it is read once at session scope, before any
+      override.</p>
+      <table>
+        <tr><th>arm</th><th>revision</th><th>result</th><th>failures</th></tr>
+        <tr><td>base</td><code>355ef453</code>, scratch tree via <code>git archive</code>, the new test copied in</td><td>17 failed, 87 passed, 96.31 s</td><td>the nine pre-existing <code>test_ledger.py</code> failures plus all eight new cases, each <code>No such command 'split-runs'</code></td></tr>
+        <tr><td>head</td><td><code>4c77e4e7</code>, the tree under test</td><td>9 failed, 95 passed, 105.73 s</td><td>the nine pre-existing <code>test_ledger.py</code> failures; zero added</td></tr>
+      </table>
+      <p><strong>Zero added failures.</strong> The base arm's failure set minus the head arm's is
+      exactly the eight new cases and nothing else, so the nine that remain are pre-existing and
+      unrelated to this change — the member guard, the promotion base-citation refusal, the crew
+      view's vocabulary and the completion/pointer cases. They are recorded, not hidden: they are
+      red at both revisions. <strong>Boundary.</strong> The split was never run against a real
+      mounted project: every arm reaches state through a throwaway registry, and the
+      workstation's own state trees are asserted unchanged.</p>
+
+      <p><strong>The declared negative control.</strong> Its first line is the declaration
+      verbatim: the serialiser replaced by a plain <code>json.dumps(row)</code> in the split's
+      file write. Assertion 1 then fails on the file's bytes
+      (<code>'{"run_id": "...' == '{\n  "agent"...'</code>), so the byte-equality is the
+      assertion that catches a file written by anything but the one serialiser. The mutation was
+      applied in a scratch archive of the shipped tree, and the mutation record is kept beside
+      the log.</p>
+
+      <p><strong>Lint and format delta.</strong> Measured on the changed paths against the base
+      revision: <code>reckon/ledger.py</code> 13 findings at both revisions,
+      <code>reckon/cli.py</code> 2 at both, and the new test file clean, so the change adds no
+      finding. The formatter would rewrite the <code>ledger.py</code> and <code>cli.py</code>
+      lines it already rewrites at the base revision — pre-existing backlog, left alone rather
+      than swept into this change — while the new test file is formatted.</p>
+
+      <p><strong>Receipts</strong> under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T122050511393-split-existing-runs-into-files/logs/</code>:
+      <code>gate-base.log</code>, <code>gate-head.log</code>, <code>negative-control.log</code>
+      and <code>negative-control-mutation.txt</code>. Each gate log's header names its revision,
+      tree and command, and the imported module's resolved path.</p>
+
+      <p><strong>Boundary.</strong> Integration, the mounted-project promotion gate and followup
+      closure remain coordinator work.</p>
+    </section>
   </main>
 </body>
 </html>
