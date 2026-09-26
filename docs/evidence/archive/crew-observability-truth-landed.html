@@ -2138,8 +2138,9 @@ E implement role       : (clean)</pre>
     stream and the promoted ledger row, the same resolver the blocked and interrupted arms use
     &mdash; instead of the pointer's lagging field. A surviving session rewrites the next action to
     <code>reckon crew resume --run &lt;id&gt; --advice continue</code>, names the source it survived
-    in, and upgrades the verb to <code>resume</code>; the interrupted arm keeps the rewrite it
-    already had. A run with no session in any of the three authorities keeps its discard advice, its
+    in, and upgrades the verb to <code>resume</code> &mdash; except where the arm's own advice
+    already composes a resume, which it keeps; the interrupted arm keeps the rewrite it already
+    had. A run with no session in any of the three authorities keeps its discard advice, its
     redispatch advice and its verb exactly as they were, and the row now carries the
     <code>session_resolution</code> it decided from, so the absence is reported rather than assumed.
     A blocked run keeps its decision verb: a block is a question to answer, not a resume path to
@@ -2193,13 +2194,33 @@ E implement role       : (clean)</pre>
     the identical set of findings at base and at the commit, and the formatting diff is identical
     modulo line numbers.</p>
 
+    <p><strong>Reviewed, and one arm's own advice repaired:</strong> an independent review of this
+    run scored it 86 with one promotion-blocking finding: on an abandoned run whose terminal pointer
+    holds only a recovery-derived manifest, the resume reading overwrote that arm's own
+    advice &mdash; replace the derived artifact with a worker-written manifest &mdash; with the
+    generic <code>--advice continue</code>. The reading is right and the advice is not an
+    alternative to it, because the manifest still has to be written, so the repair keeps any action
+    that already composes a resume and only then names the surviving session; the verb still reads
+    <code>resume</code>. The case
+    <code>test_an_abandoned_run_keeps_the_derived_manifest_advice_and_resumes</code> builds exactly
+    that shape &mdash; terminal phase, process recorded dead, derived manifest, session in the
+    stream &mdash; and was red at the head before the repair, where the next action was the generic
+    continue. Landed under commit <code>53648e78</code>; the gate over the same four-file cohort
+    reads <strong>12 failed, 216 passed</strong> against the same twelve failure ids, so zero added,
+    and the negative control re-executed over the repaired head reddens both resolve-from-stream
+    assertions &mdash; the stopped case on its session, the abandoned case on its verb &mdash; while
+    the no-session-anywhere sibling keeps its refusal.</p>
+
     <p><strong>Leaves behind:</strong> whether the merged result holds, which belongs to a
     separately dispatched verification node; the plan's status and its driving followup, which the
     coordinator closes rather than this node. Evidence on disk, under
     <code>~/.config/reckon/crew/reports/reckon/s22-coord/session-resolution-is-the-resumability-authority/</code>:
     <code>logs/repro-four-shapes-at-base.log</code> (the four shapes, quoted above),
     <code>logs/added-tests-at-base.log</code> and <code>logs/negative-control.log</code> (the red
-    arms), <code>logs/gate-base.log</code> and <code>logs/gate-head.log</code> (both gate arms).</p>
+    arms), <code>logs/gate-base.log</code> and <code>logs/gate-head.log</code> (the gate arms before
+    the review), <code>logs/derived-advice-at-head-before-fix.log</code> (the case red at the
+    pre-repair head), <code>logs/gate-head-after-review.log</code> (the gate re-run) and
+    <code>logs/negative-control-after-review.log</code> (the control over the repaired head).</p>
   </section>
 
 </main>
