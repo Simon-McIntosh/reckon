@@ -3,21 +3,42 @@
 The measure these tests exist to demonstrate is a pair, not a single refusal. A
 reserve that does nothing admits both an implementation dispatch and a review at
 the same window state, so asserting the refusal alone proves nothing — the
-refusal is only evidence of a reserve when the same state admits the review it
-is holding the fraction for. Every window-state assertion here therefore lands
-both halves.
+duplicate-admission is the state a working reserve has to separate.
 
 The reserve must bind at the start of the window and not only near its ceiling.
 A rule that withheld the fraction once the window filled would pass every
 assertion taken at a nearly-full window, so the pair is asserted at an empty
-window first and repeated at a nearly-full one.
+window first and repeated at a nearly-full window.
+
+An unreadable window is not an empty one. A reading nobody could read must not
+be folded to the one figure that admits everything, so the unreadable state
+refuses the roles the reserve withholds from and admits the bookends, and the
+refusal says the window was unreadable. The pair is asserted at the dispatch
+entry point as well as in the arithmetic, because a reserve the dispatch path
+never calls refuses nothing however correct its verdict is.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from reckon import crew
 from reckon.crew import reserve
+from tests.test_dispatch_records_the_pace_row import (
+    _dispatch,
+    _Host,
+    _prescribed_node,
+    _spent_lane,
+)
+from tests.test_dispatch_records_the_pace_row import (
+    host as _host_fixture,
+)
+
+# pytest injects a fixture by the name a case's parameter asks for, so the
+# harness's fixture is bound under that name rather than the alias it arrives by.
+host = _host_fixture
 
 # A window with the shipped ceiling and a configured reserve, as a resolved
 # budget block would carry them.
@@ -121,3 +142,118 @@ def test_an_unset_key_still_withholds_the_declared_floor() -> None:
     review = reserve.admit(bare, role="review", utilisation_pct=0.0, claim_pct=85.0)
     assert implementation["admitted"] is False
     assert review["admitted"] is True
+
+
+def test_an_unreadable_window_refuses_implementation_and_admits_review() -> None:
+    """The pair with no reading at all: absent is not empty.
+
+    A utilisation nobody could read must not be folded to zero, so the pair
+    holds in one state with the refusal saying the window was unreadable —
+    which is also what tells this refusal apart from a full window's.
+    """
+    implementation = reserve.admit(
+        WINDOW, role="implement", utilisation_pct=None, claim_pct=0.0
+    )
+    review = reserve.admit(WINDOW, role="review", utilisation_pct=None, claim_pct=0.0)
+
+    assert implementation["admitted"] is False
+    assert review["admitted"] is True
+    assert "unreadable" in implementation["reason"]
+    assert "could not be read" in implementation["reason"]
+    assert "implement" in implementation["reason"]
+    assert "20" in implementation["reason"]
+    assert implementation["utilisation_pct"] is None
+    assert implementation["projected_pct"] is None
+
+
+@pytest.mark.parametrize("role", ["review", "verify"])
+def test_a_bookend_is_admitted_when_the_window_is_unreadable(role: str) -> None:
+    """The reserve is never withheld from a bookend, readable or not.
+
+    Refusing here would bar the reviews the reserve exists to protect.
+    """
+    verdict = reserve.admit(WINDOW, role=role, utilisation_pct=None, claim_pct=100.0)
+    assert verdict["admitted"] is True
+    assert "could not be read" in verdict["reason"]
+
+
+# The dispatch boundary: a correct verdict refuses nothing if the dispatch path
+# never reaches it. The pair is asserted through the dispatch entry point, on
+# the harness that drives one — a temporary crew home, a real worktree, and the
+# assertion that nothing landed outside it.
+
+
+def _node(config_home: Path, name: str, role: str) -> crew.TaskNode:
+    """The harness's prescribed node, carrying the role under test."""
+    node = _prescribed_node(config_home, name)
+    node.role = role
+    return node
+
+
+def test_dispatch_at_the_reserve_boundary_refuses_implementation_not_review(
+    host: _Host,
+) -> None:
+    """The pair at the window state the reserve owns, through the entry point.
+
+    The window is filled past the reserve boundary and left below the budget
+    gate's own ceiling, which is the band where the two refusals separate: the
+    implementation dispatch is refused against the fraction the window keeps
+    for review and verify, and a review dispatch meeting the same reading is
+    admitted. The admitted half is what shows the refusal is the reserve's
+    rather than the window's fill.
+    """
+    _spent_lane(host, "lane-at-the-reserve-boundary", backend="alpha", utilisation=85.0)
+
+    with pytest.raises(crew.CrewError) as refusal:
+        _dispatch(
+            host,
+            "boundary-implement",
+            _node(host.config_home, "boundary-implement", "implement"),
+        )
+
+    message = str(refusal.value)
+    assert "the window keeps 20% for review and verify roles" in message, message
+    assert "implementation" in message, message
+
+    record = _dispatch(
+        host,
+        "boundary-review",
+        _node(host.config_home, "boundary-review", "review"),
+    )
+
+    assert record["role"] == "review"
+    assert record["pace"]["group"] == "sol", record["pace"]
+    assert record["pace"]["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.85)
+
+
+def test_dispatch_at_an_unreadable_window_refuses_implementation(
+    host: _Host,
+) -> None:
+    """No member has reported on this lane's window, so no reading exists.
+
+    The implementation node is refused with the unreadable reading named, and
+    the review node meets the same window state and is admitted — the second
+    half is what shows the refusal was the reserve rather than every dispatch
+    being refused while the window is unknown.
+    """
+    with pytest.raises(crew.CrewError) as refusal:
+        _dispatch(
+            host,
+            "unreadable-implement",
+            _node(host.config_home, "unreadable-implement", "implement"),
+        )
+
+    message = str(refusal.value)
+    assert "could not be read" in message, message
+    assert "implement" in message, message
+    assert "20" in message, message
+
+    record = _dispatch(
+        host,
+        "unreadable-review",
+        _node(host.config_home, "unreadable-review", "review"),
+    )
+
+    assert record["role"] == "review"
+    assert record["pace"]["clocks"]["five_hour"]["utilisation"] is None, record["pace"]
+    assert [pointer["run_id"] for pointer in crew.list_live()] == [record["run_id"]]
