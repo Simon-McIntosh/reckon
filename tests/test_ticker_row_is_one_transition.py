@@ -144,7 +144,7 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
         measured = {
             "model": row.index(model_text),
             "node": row.index("n"),
-            "counters": row.index(" 1w"),
+            "counters": row.index(" 1w  0b"),
         }
         # A first sighting has no remembered state, so its left half and arrow
         # are blank and only a later transition carries the arrow. The gutter
@@ -388,30 +388,32 @@ def test_no_configured_model_alias_is_truncated(tmp_path, monkeypatch) -> None:
         assert "\N{HORIZONTAL ELLIPSIS}" not in row, (alias, row)
 
 
-def test_the_reason_starts_at_or_before_column_120_at_the_default_width() -> None:
-    """The clause's own column, measured off a rendered row, is at most 120.
+def test_the_reason_starts_at_or_before_column_124_at_the_default_width() -> None:
+    """The clause's own column, measured off a rendered row, is at most 124.
 
     The column is read from the row the renderer produced rather than from the
     expression that built the grid: a renderer that moved a cell must fail here
     rather than agree with the arithmetic that placed it. Columns are counted
-    from zero, the same base the row's index uses. A clause exactly sixty
+    from zero, the same base the row's index uses. A clause exactly fifty-seven
     characters long is the budget's own statement — the fixed cells must leave
-    sixty columns for the reason at the 180-column default, and eighty-eight on
-    the 208-column pane — so it is asserted whole and unelided, and the room
-    beside it is measured rather than assumed.
+    fifty-seven columns for the reason at the 180-column default, and eighty-five
+    on the 208-column pane — so it is asserted whole and unelided, and the room
+    beside it is measured rather than assumed. The block's three separator
+    columns are inside that budget: the counts keep one space between them at
+    every digit width, and the clause starts three columns later for it.
     """
     width = ticker_module.DEFAULT_WIDTH
     assert width == 180
-    clause = "zeppelin the gate lifted and the pane has room to say it all"
-    assert len(clause) == 60
+    clause = "zeppelin the gate lifted and the pane keeps all its rooms"
+    assert len(clause) == 57
     grid = ticker_module.Ticker(width=width, color=False, model_aliases=())
 
     row = plain(grid.render(_event(run_id="r-room", to_state="blocked", detail=clause)))
     assert len(row) == width, row
     reason_start = row.index("zeppelin")
-    assert reason_start <= 120, (reason_start, row)
+    assert reason_start <= 124, (reason_start, row)
     assert clause in row, row
-    assert width - reason_start >= 60, (reason_start, row)
+    assert width - reason_start >= 57, (reason_start, row)
     assert "\N{HORIZONTAL ELLIPSIS}" not in row, row
 
     # The pane this workstation measures is wider, and the clause's own column
@@ -422,7 +424,7 @@ def test_the_reason_starts_at_or_before_column_120_at_the_default_width() -> Non
     )
     wide_start = wide_row.index("zeppelin")
     assert wide_start == reason_start, (wide_start, reason_start, wide_row)
-    assert 208 - wide_start >= 88, (wide_start, wide_row)
+    assert 208 - wide_start >= 85, (wide_start, wide_row)
 
 
 def test_a_reason_whose_first_word_does_not_fit_still_prints_characters() -> None:

@@ -332,19 +332,29 @@ STAT_LETTER = {
     "queued": "q",
 }
 
-# Two digits and the bucket label per counter, cells laid side by side. Two
-# digits cover any fleet the dispatcher opens; a wider count pushes its own
-# label rather than silently misaligning the column beside it. The label is one
-# character for three buckets and the spelled word for the waiting one, so the
-# block is sized from the labels themselves rather than assumed at one character
-# each. A cell is right-aligned to its two digits, so a single-digit count
-# carries a leading space and abutting cells still show one space between a
-# count and the next bucket's label. The two-digit alignment keeps the block a
-# constant width as counts change, so the right edge of the row never moves. The
-# middle dots the cells were once joined by are gone: each cell's leading space
-# is the gap, and the three columns the dots spent now fund the reason clause.
+# Each counter is its count right-aligned to a fixed digit width followed by the
+# bucket's letter, and one space separates each cell from the next. Right
+# alignment holds every letter on its own column, so the block reads down a pane
+# whatever the counts are: `1w` stacks under `12w` rather than shunting the
+# letter beside it. The fixed digit width also means the cells measure the same
+# whether a fleet is single-digit or two-digit, and the spare columns a smaller
+# count leaves sit at the left of its own cell rather than at the block's right
+# edge — so the block's width does not follow the counts and the clause after it
+# keeps its column. The separating space is what stops two counts touching:
+# `10w 12b` is two tokens and `10w12b` is not a shape this block prints. A count
+# above the fixed width carries its extra digits and widens its own cell, and so
+# its row's block, rather than eliding the figure a reader came for.
+# The label is one character for three buckets and the spelled word for the
+# waiting one, so the block is sized from the labels themselves rather than
+# assumed at one character each. Its width is the four widest cells plus the
+# three separators between them; those three columns are the price of keeping
+# the counts apart, and the reason's room pays them.
+STAT_DIGITS = 2
 _MAX_CELLS = (*_CELLS, _WAIT_CELL)
-STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS)
+STATS = (
+    sum(STAT_DIGITS + len(STAT_LETTER[label]) for label in _MAX_CELLS)
+    + (len(_MAX_CELLS) - 1)
+)
 
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
@@ -353,15 +363,18 @@ STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS)
 # longer configured alias raises this floor by the same amount it widens the
 # cell), the effort cell at seven, the node cell at twenty-eight, each
 # transition half at ten, the four fleet counters and the elapsed cell in full.
-# Against the 180-column DEFAULT_WIDTH budget this leaves 60 columns for the
-# reason — 88 on the 208-column pane this workstation measures — measured at the
+# Against the 180-column DEFAULT_WIDTH budget this leaves 57 columns for the
+# reason — 85 on the 208-column pane this workstation measures — measured at the
 # default model cell width of ten, and each column a longer configured alias
-# adds to that cell comes straight off both figures. The four cells that fund
-# that 60 are the four this row narrowed: the node cell from thirty-six to
+# adds to that cell comes straight off both figures. The narrowing that funded
+# the reason is the four cells this row cut: the node cell from thirty-six to
 # twenty-eight, the role cell from thirteen to nine, the transition halves from
-# twenty-two to ten each, and the counter block's three separator columns. The
-# clause starts at column 120 on every row at the default width; the arrow still
-# holds one fixed column and every boundary keeps its two-space gutter.
+# twenty-two to ten each, and the counter block's separators, which are single
+# spaces the block keeps rather than abutting cells — the three columns they
+# spend are the price of keeping two counts apart, and the reason's room
+# pays them. The clause starts at column 123 on every row at the default width;
+# the arrow still holds one fixed column and every boundary keeps its two-space
+# gutter.
 MIN_WIDTH = (
     CLOCK
     + GAP
@@ -1226,10 +1239,20 @@ class Ticker:
     def _stats(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
         """The fleet after this transition, as a grid whose digits line up.
 
-        Each counter is its number followed by the initial of the bucket it
-        counts, so the letter is decodable from the bucket's own name rather
-        than from a legend the stream does not carry. A zero is dimmed rather than dropped: blanking it would leave
-        trailing whitespace and take the right edge ragged, and a reader
+        Each counter is its count right-aligned to :data:`STAT_DIGITS` digits
+        followed by the initial of the bucket it counts, so the letter is
+        decodable from the bucket's own name rather than from a legend the
+        stream does not carry, and the letter of every bucket holds one screen
+        column whatever the counts are. One space separates each cell from the
+        next, so two counts never touch: ``10w 12b`` is two tokens. Right
+        alignment is what lets both hold at once — a single-digit count pads
+        inside its own cell rather than shifting the letter beside it or
+        widening the block, so the block measures the same for any counts up to
+        the fixed width and the clause after it never moves. A count above the
+        fixed width carries its extra digits and widens its own cell, and so its
+        row's block, rather than eliding the figure a reader came for. A zero is
+        dimmed rather than dropped: blanking it would leave trailing whitespace
+        and take the right edge ragged, and a reader
         waiting for a drain needs to see the count reach zero, not see it
         disappear.
 
@@ -1240,14 +1263,28 @@ class Ticker:
         surface a reader goes to for it rather than to a row.
         """
         cells: list[tuple[str, Any]] = []
-        # Every bucket the fleet can show renders on every row, at its own fixed
-        # width, so the block never changes shape when a run is queued and the
-        # columns after it never move. A zero is dimmed rather than dropped: a
-        # reader watching a drain needs to see the count reach zero rather than
-        # see the cell disappear and the row's right edge go ragged.
+        # Every bucket the fleet can show renders on every row, so the block
+        # never changes shape when a run is queued and the columns after it
+        # never move. A zero is dimmed rather than dropped: a reader watching a
+        # drain needs to see the count reach zero rather than see the cell
+        # disappear and the row's right edge go ragged. The count is right
+        # aligned to a fixed digit width and one space separates each cell from
+        # the next, so a single-digit fleet's spare columns sit inside its own
+        # cell rather than at the block's right edge: the letters keep their
+        # columns across one- and two-digit counts, two counts stay apart, and
+        # the block measures the same for any counts up to the fixed width, so
+        # the clause after it keeps its column. A count above the fixed width
+        # carries its extra digits instead of eliding the figure.
         for label in _MAX_CELLS:
+            if cells:
+                cells.append((" ", None))
             count = int(event.get(_COUNT_FIELD.get(label, label)) or 0)
-            cells.append((f"{count:>2}{STAT_LETTER[label]}", None if count else "dim"))
+            cells.append(
+                (
+                    f"{count:>{STAT_DIGITS}}{STAT_LETTER[label]}",
+                    None if count else "dim",
+                )
+            )
         # The bound sits beside the counters the transition carries, because
         # the counters say how much work is in flight and the bound says what
         # limits it. A record written before the reading existed carries none,
