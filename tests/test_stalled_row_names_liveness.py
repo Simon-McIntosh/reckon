@@ -1,17 +1,25 @@
-"""A stalled row says whether the worker's process is alive.
+"""A stalled row says which of three process states the worker is in.
 
-Two situations land on the one word ``stalled`` and their remedies are
-opposite: a live worker in a long quiet step needs nothing, while a gone one
-needs a resume. Measured 2026-09-22, four coordinators had to check the process
-and the stream by hand to tell them apart, and a resume offered to a live
-worker invites an intervention that destroys the work it was meant to rescue.
+Three situations land on the one word ``stalled`` and their remedies differ: a
+live worker in a long quiet step needs nothing, a worker a check on this host
+found dead needs a resume, and a worker whose liveness was never established
+needs the check a reader would otherwise run by hand. Measured 2026-09-22, four
+coordinators had to check the process and the stream by hand to tell them apart,
+and a check run by hand is the cost this row exists to remove.
 
-Both rows here are driven through the classifier and the published watch line:
+Every row here is driven through the classifier and the published watch line:
 ``_watch_snapshot`` reduces the pointer, ``_watch_transition`` builds the event
 the events log persists, and ``format_watch_transition`` renders it through the
 ticker's own reason clause. The clause is asserted on the rendered row rather
 than on a string composed in this file, because the pane is where a coordinator
 reads it.
+
+The minutes a row names are asserted against the fixture's own stream
+timestamp, never against the reading the renderer took. Comparing the row with
+``_run_stream_quiet_*`` would put both sides of the comparison on one clock, so
+a regression inside that reader would move them together and leave this file
+green; read from the fixture instead, the two disagree the moment the reader
+drifts.
 
 The declared mutation deletes the process-state clause from the stalled detail
 and leaves the quiet time alone; the live-process case must then fail on its
@@ -53,12 +61,14 @@ PANE_WIDTH = 208
 # so there is no last record to read and the stall check is what sees it.
 TRUNCATED_TAIL = '{"type":"assistant","message":{"content":[{"text":"half a rec'
 
-# The run ids the two cases carry. The rendered row prints the run id in its
-# node cell, so an id spelling one of the words under test would satisfy that
-# case's own assertion from the node name rather than from the clause — the
-# check would pass at a head that says nothing about the process at all.
+# The run ids the cases carry. The rendered row prints the run id in its node
+# cell, so an id spelling one of the words under test would satisfy that case's
+# own assertion from the node name rather than from the clause, and the check
+# would pass at a head that says nothing about the process at all.
 LIVE_RUN_ID = "r-quiet-held"
 GONE_RUN_ID = "r-quiet-vacant"
+UNRECORDED_RUN_ID = "r-quiet-unlogged"
+FOREIGN_RUN_ID = "r-quiet-earlier"
 
 IN_PROGRESS_MANIFEST = "node: {run_id}\nstatus: in-progress\n"
 
@@ -81,27 +91,37 @@ def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
     The fixture is the receipt for its own isolation: a pointer or a run
     directory written to the real home would both escape the test and collide
-    with a live fleet, and the fingerprint is read before the environment moves
-    so a write anywhere the harness reads is visible afterwards.
+    with a live fleet, so the fingerprint is taken before the environment moves
+    and the same home is re-read after the case ends.
     """
     real_home = Path(os.path.expanduser("~")) / ".config" / "reckon"
     before = _home_fingerprint(real_home)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
-    # The isolation is asserted rather than assumed: a fixture that failed to
-    # redirect the home would let every write below land in the real one.
     assert runs.crew_home().is_relative_to(tmp_path)
     yield
     assert _home_fingerprint(real_home) == before
+
+
+def _fixture_quiet_seconds(pointer: dict, moment: float) -> int:
+    """The quiet time the fixture itself wrote, from the stream's own mtime.
+
+    Deliberately not the reader the renderer calls: an expectation taken from
+    that reader moves with it, so a regression inside it would leave the row
+    and its expectation drifting together and this assertion green.
+    """
+    return int(moment - os.stat(pointer["log_path"]).st_mtime)
 
 
 def _stub_pointer(
     tmp_path: Path,
     run_id: str,
     *,
-    pid: int,
+    pid: int | None,
     stream_text: str = TRUNCATED_TAIL,
+    launcher_host: str | None = None,
+    stored_alive: bool | None = None,
 ) -> tuple[dict, float]:
-    """One quiet, non-terminal run, told apart by its process alone.
+    """One quiet, non-terminal run, told apart by what its process says.
 
     The manifest is the worker's own non-terminal last word beside the stall,
     which is what keeps the classifier's reading of a dead process out of the
@@ -116,6 +136,10 @@ def _stub_pointer(
         manifest_body=IN_PROGRESS_MANIFEST.format(run_id=run_id),
         write_stream=False,
     )
+    if launcher_host is not None:
+        pointer["launcher_host"] = launcher_host
+    if stored_alive is not None:
+        pointer["process_alive"] = stored_alive
     moment = time.time()
     stream = Path(pointer["log_path"])
     stream.write_text(stream_text, encoding="utf-8")
@@ -165,7 +189,7 @@ def test_a_stalled_row_names_a_live_process(tmp_path: Path) -> None:
     with liveness._live_child() as pid:
         pointer, moment = _stub_pointer(tmp_path, LIVE_RUN_ID, pid=pid)
         row, snapshot, line = _render_stalled_row(pointer, moment)
-        quiet = recovery._run_stream_quiet_seconds(pointer, now_seconds=moment)
+        quiet = _fixture_quiet_seconds(pointer, moment)
 
     assert quiet > STALL_SECONDS, quiet
     assert row["process_alive"] is True
@@ -177,22 +201,74 @@ def test_a_stalled_row_names_a_live_process(tmp_path: Path) -> None:
 
 
 def test_a_stalled_row_names_a_gone_process(tmp_path: Path) -> None:
-    """The other side of the same word: the worker's process is gone.
+    """The other side of the same word: a check here found the process gone.
 
-    Nothing is alive to resume into, so the row has to say that plainly — the
-    reading a coordinator acts on, and the one the stall census found in 97 of
-    118 stalls.
+    The pid is a real number far above the kernel's ceiling, so the process
+    table was asked on this host and answered that nothing holds it — the
+    observation that licenses the row to say a process is gone.
     """
     pointer, moment = _stub_pointer(tmp_path, GONE_RUN_ID, pid=liveness._absent_pid())
     row, snapshot, line = _render_stalled_row(pointer, moment)
-    quiet = recovery._run_stream_quiet_seconds(pointer, now_seconds=moment)
+    quiet = _fixture_quiet_seconds(pointer, moment)
 
     assert quiet > STALL_SECONDS, quiet
     assert row["process_alive"] is False
     assert snapshot["process_alive"] is False
+    assert row["liveness_proven"] is True
     assert "process gone" in line, line
     assert "alive" not in line, line
     assert row["fleet_verdict"]["detail"].startswith("process gone, quiet "), row[
         "detail"
     ]
+    assert _named_minutes(line) == quiet // 60, line
+
+
+def test_a_stalled_row_admits_an_unrecorded_process(tmp_path: Path) -> None:
+    """No pid was recorded, so nothing observed the process either way.
+
+    The row's whole purpose is to be acted on without the hand-check it
+    replaces, and calling this case dead is that check's most expensive
+    misreading: it reports an observation no one took, and a coordinator acts
+    on it by resuming the run.
+    """
+    pointer, moment = _stub_pointer(tmp_path, UNRECORDED_RUN_ID, pid=None)
+    row, snapshot, line = _render_stalled_row(pointer, moment)
+    quiet = _fixture_quiet_seconds(pointer, moment)
+
+    assert quiet > STALL_SECONDS, quiet
+    assert row["process_alive"] is None
+    assert snapshot["process_alive"] is None
+    assert row["liveness_proven"] is False
+    assert "liveness unknown" in line, line
+    assert "process gone" not in line, line
+    assert row["fleet_verdict"]["detail"].startswith("liveness unknown, quiet "), row[
+        "detail"
+    ]
+    assert _named_minutes(line) == quiet // 60, line
+
+
+def test_a_stalled_row_admits_a_process_it_cannot_check(tmp_path: Path) -> None:
+    """Another machine launched it, so this host cannot ask about the pid.
+
+    The stored answer came from a pointer written elsewhere and no reading was
+    taken here, which makes it no reading at all for this row's purpose; a
+    stale value a reader cannot see the provenance of would otherwise decide
+    the remedy.
+    """
+    pointer, moment = _stub_pointer(
+        tmp_path,
+        FOREIGN_RUN_ID,
+        pid=liveness._absent_pid(),
+        launcher_host="a-different-login-node",
+        stored_alive=False,
+    )
+    row, snapshot, line = _render_stalled_row(pointer, moment)
+    quiet = _fixture_quiet_seconds(pointer, moment)
+
+    assert quiet > STALL_SECONDS, quiet
+    assert row["process_alive"] is False
+    assert snapshot["process_alive"] is False
+    assert row["liveness_proven"] is False
+    assert "liveness unknown" in line, line
+    assert "process gone" not in line, line
     assert _named_minutes(line) == quiet // 60, line

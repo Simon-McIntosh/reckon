@@ -4868,16 +4868,25 @@ def _watch_verdict(
                 detail = f"paused: sitting in {wait} for {quiet}s; it lifts itself"
             else:
                 state = "stalled"
-                # The stall word covers two situations whose remedies are
-                # opposite: a live worker in a long quiet step needs nothing,
-                # a gone one needs a resume. Which one this is cannot be left
-                # to a colour or a glyph, so the row says it in words, taken
-                # from the process verdict the classifier already put on this
-                # row. Liveness not confirmed reads as gone, the same
-                # conservative reading the classifier's own process_gone hoist
-                # takes. The quiet time is the row's own, in whole minutes,
-                # floored so the token never claims more silence than measured.
-                process_state = "alive" if alive is True else "process gone"
+                # The stall word covers three situations whose remedies
+                # differ: a live worker in a long quiet step needs nothing, a
+                # dead one needs a resume, and one whose liveness this host
+                # could not establish needs the check a reader would otherwise
+                # run by hand. Which one this is cannot be left to a colour or
+                # a glyph, so the row says it in words. Only a reading taken
+                # here may call the process gone — a stored answer carried
+                # because the launching host is another machine is not an
+                # observed death, and neither is no answer at all — so the
+                # row's own liveness_proven, not the stored value alone,
+                # decides between a death and an unproven reading. The quiet
+                # time is the row's own, in whole minutes, floored so the
+                # token never claims more silence than measured.
+                if alive is True:
+                    process_state = "alive"
+                elif alive is False and row.get("liveness_proven") is True:
+                    process_state = "process gone"
+                else:
+                    process_state = "liveness unknown"
                 detail = f"{process_state}, quiet {quiet // 60}m"
         else:
             detail = ""
