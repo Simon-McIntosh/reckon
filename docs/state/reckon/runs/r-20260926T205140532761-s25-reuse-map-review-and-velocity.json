@@ -1,0 +1,295 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "read-only",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "9945557624511d329211b5b573cdf77d38b02ac4",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 9147284,
+      "input_tokens_cumulative": 9147284,
+      "output_tokens": 55542,
+      "output_tokens_cumulative": 55542,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": null,
+  "commit_resolution": null,
+  "commits": [],
+  "completed_at": "2026-09-26T21:26:51.653Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-26T20:51:54Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": false,
+    "matched_measure": null,
+    "override": false,
+    "role": "investigate",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "docs/state/nova/flight.yaml"
+  ],
+  "gate": "not-run",
+  "gate_check": null,
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": null,
+    "plan": "the-fleet-reports-its-velocity",
+    "reason": "role-not-enforced:investigate",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-26T21:31:41.006968+00:00",
+    "horizon_seconds": 2400,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-26T20:51:41Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 24,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 2,
+    "mean_context": 600000,
+    "observed_at": "2026-09-26T20:51:17Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-26T21:26:51.653Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205140532761-s25-reuse-map-review-and-velocity/manifest.md",
+  "member": "disposable-r-20260926T205140532761-s25-reuse-map-review-and-velocity",
+  "negative_control": {
+    "reason": "node-writes-no-test-path",
+    "verdict": "exempt"
+  },
+  "no_commit": "read-only investigate node; its deliverable is the reuse map in the crew reports store, outside the repository",
+  "node": "s25-reuse-map-review-and-velocity",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 277,
+          "cached_input_tokens": 214036,
+          "input_tokens": 214315,
+          "output_tokens": 588,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 214903,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "The file /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-and-velocity/reuse-map.md holds exactly one row for each of these sections: a-review-is-sized-to-its-risk §2, a-review-is-sized-to-its-risk §6, the-fleet-reports-its-velocity §2. Each row lists (a) the existing modules, symbols and tests the section extends or consumes, each cited as file:line at the dispatch base with a one-line fitness verdict; (b) the exact repository file paths the change must write, tests included; (c) every plan assertion about current code that is false at the base, quoted beside what the code does; (d) which of the (b) paths any other listed section also needs. The manifest names the base sha and the row count.",
+    "estimated_hours": null,
+    "goal": "Map the reuse candidates for the review-tier and velocity sections of the S25 first wave",
+    "id": "s25-reuse-map-review-and-velocity",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-26T20:51:41Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 24,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 2,
+      "mean_context": 600000,
+      "observed_at": "2026-09-26T20:51:17Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T205140532761-s25-reuse-map-review-and-velocity/manifest.md",
+    "negative_control": "",
+    "plan": "the-fleet-reports-its-velocity",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "investigate",
+    "section": "§2",
+    "spec_level": "guided",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-and-velocity/reuse-map.md"
+    ]
+  },
+  "orientation_input_tokens": 3588461.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "s25-reuse-map-review-and-velocity",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-26T20:51:49.445341+00:00",
+    "score": 0.83125,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-fleet-reports-its-velocity",
+  "promoted_revision": "9945557624511d329211b5b573cdf77d38b02ac4",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 17,
+      "evidence": 17,
+      "fit": 19,
+      "goal_fidelity": 17,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 90
+  },
+  "role": "investigate",
+  "run_id": "r-20260926T205140532761-s25-reuse-map-review-and-velocity",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "81f0b477-b441-4ef7-87e5-6393f441b761",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 9315173,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2073.753,
+    "generated_tokens": 61606,
+    "generation_seconds": 2030.663,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.7,
+    "machine_seconds": 43.09,
+    "peak_input_tokens": 166589,
+    "tokens_per_second": 30.34,
+    "wall_tokens_per_second": 29.71
+  },
+  "time_budget": "40m",
+  "tool_steps": 114.0,
+  "unreconciled_override": null,
+  "wall_seconds": 2097,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-26T21:26:52Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-26T20:52:14Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T205140532761-s25-reuse-map-review-and-velocity",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 10755,
+    "worker_pid": 1004888
+  },
+  "worker_seconds": 2033,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
