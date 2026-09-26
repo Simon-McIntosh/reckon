@@ -441,8 +441,17 @@ def parse_review(
 # ── Failures the reviewed run's own gate logs added ─────────────────────────
 # A review can score a run highly while the run's own gate logs show tests that
 # were green at the base revision and red at the head. That is the failures the
-# run added, and a stored review that omits them reports a verdict a reader
-# cannot reconcile with the evidence the run itself produced.
+# run added, and a review that omits them reports a verdict a reader cannot
+# reconcile with the evidence the run itself produced.
+#
+# The derivation lives on the read path, not the write path. A review worker
+# writes its review JSON by hand inside its own sandbox; nothing in production
+# calls store_review. Deriving at write time would therefore leave every
+# delivered review unannotated, which is the same as deriving nothing. So
+# read_review reconstructs the count from the reviewed run's own manifest —
+# run_dir(run_id)/manifest.md — every time it returns a record, and the file on
+# disk is never rewritten. A hand-written review and one built through
+# store_review are treated alike, because both are read through this one path.
 #
 # The count is a set difference over pytest node ids, not a difference of two
 # counts. A run that fixed one pre-existing failure while introducing another
@@ -450,10 +459,10 @@ def parse_review(
 # disagree exactly on the cases the count exists to catch.
 #
 # The gate logs are the files the reviewed run's manifest names under
-# ``baseline_suite.log_path`` and ``after_suite.log_path`` — the same fields the
-# promotion suite-delta check reads. A manifest naming neither, or naming a log
-# that is not on disk, leaves the count unmeasured rather than zero: a zero
-# asserts a measurement, and one that was never taken is a different claim.
+# ``baseline_suite`` and ``after_suite`` — the same fields the promotion
+# suite-delta check reads. A manifest naming no base log or no head log leaves
+# the count unmeasured rather than zero: a zero asserts a measurement, and one
+# that was never taken is a different claim.
 
 # The total a review of a run with unretired added failures is capped at. The
 # promotion path reads REVIEW_MAX_SCORE as the score a fully satisfied dimension
@@ -465,11 +474,29 @@ ADDED_FAILURES_TOTAL_CAP = REVIEW_MAX_SCORE // 4
 
 _GATE_FAILURE_RE = re.compile(r"^(?:FAILED|ERROR)\s+(\S+)")
 
-# The manifest fields naming the two gate logs, head last. A base log absent
-# from either field makes the count unmeasured; the pair is read together
-# because the difference is only defined against both.
-_BASE_LOG_FIELD = ("baseline_suite", "log_path")
-_HEAD_LOG_FIELD = ("after_suite", "log_path")
+# A manifest line that opens a top-level field. The value is everything after
+# the first colon, which for the two suite fields is a JSON object on one line.
+_MANIFEST_FIELD_RE = re.compile(
+    r"^(?P<key>[A-Za-z_][A-Za-z0-9_-]*)\s*:\s*(?P<value>.*)$"
+)
+
+# The manifest fields naming the two gate logs. The head field is read alone
+# when the base field is absent, because the pair is what a difference needs and
+# a missing base is a state to report rather than a reason to skip the read.
+_BASE_LOG_FIELD = "baseline_suite"
+_HEAD_LOG_FIELD = "after_suite"
+
+# Within a suite field, the key naming the log file. The path is read from the
+# field's JSON object, or from a ``log_path`` line written beneath the field.
+_LOG_PATH_KEY = "log_path"
+
+_MANIFEST_FILE_NAME = "manifest.md"
+
+# The manifest fields that carry the observation rather than prose about it.
+# They are dropped before retirement is read: the suite fields list the very
+# ids being counted, so scanning them would find every added id named and never
+# cap a total. Retirement is what a worker wrote about the ids.
+_MEASURED_FIELDS = (_BASE_LOG_FIELD, _HEAD_LOG_FIELD)
 
 
 def _pytest_failure_ids(log_text: str) -> set[str]:
@@ -488,29 +515,106 @@ def _pytest_failure_ids(log_text: str) -> set[str]:
     return ids
 
 
-def _manifest_log_path(manifest: Mapping[str, Any], field: str, key: str) -> str | None:
-    """Return a manifest's named gate-log path for one observation, or ``None``."""
-    observation = manifest.get(field)
-    if not isinstance(observation, Mapping):
+def _manifest_field_lines(manifest_text: str, field: str) -> list[str]:
+    """Return a manifest field's value text and any block written beneath it.
+
+    The field's own line contributes the text after the colon; a field written
+    with an empty value contributes the indented lines that follow, which is how
+    a worker writes a nested ``log_path``. Both shapes a real manifest uses are
+    therefore read without a full parse, and this reader stays local on purpose:
+    the read path must not fail a review because the reviewed run's manifest
+    carries a field this module does not know.
+    """
+    lines = manifest_text.splitlines()
+    for index, raw in enumerate(lines):
+        match = _MANIFEST_FIELD_RE.match(raw.strip())
+        if not match or match.group("key") != field:
+            continue
+        collected = [match.group("value").strip()]
+        indent = len(raw) - len(raw.lstrip(" \t"))
+        for following in lines[index + 1 :]:
+            if not following.strip():
+                continue
+            if len(following) - len(following.lstrip(" \t")) <= indent:
+                break
+            collected.append(following.strip())
+        return [part for part in collected if part]
+    return []
+
+
+def _gate_log_path(manifest_text: str, field: str) -> str | None:
+    """Return the gate-log path a manifest names for ``field``, or ``None``.
+
+    The value is read in the two shapes a manifest produces for a suite
+    observation: a JSON object carrying ``log_path``, which is what the
+    dispatch contract's manifest writes, and a bare path on the field line or
+    on the first line indented beneath it.
+    """
+    parts = _manifest_field_lines(manifest_text, field)
+    if not parts:
         return None
-    log_path = str(observation.get(key) or "").strip()
-    return log_path or None
+    first = parts[0]
+    if first.startswith("{"):
+        try:
+            loaded = json.loads(first)
+        except json.JSONDecodeError:
+            loaded = None
+        if isinstance(loaded, Mapping):
+            named = str(loaded.get(_LOG_PATH_KEY) or "").strip()
+            if named:
+                return named
+    if first and not first.startswith(("{", "[")):
+        return first.strip("'\"")
+    for part in parts[1:]:
+        match = _MANIFEST_FIELD_RE.match(part)
+        if match and match.group("key") == _LOG_PATH_KEY:
+            named = match.group("value").strip().strip("'\"")
+            if named:
+                return named
+    return None
 
 
-def _log_text(
-    manifest: Mapping[str, Any], field: str, key: str, run_dir: Path | None
-) -> str | None:
-    """Read a named gate log, resolving a relative path against ``run_dir``."""
-    log_path = _manifest_log_path(manifest, field, key)
+def _read_gate_log(log_path: str | None, run_directory: Path | None) -> str | None:
+    """Read a named gate log, resolving a relative path against ``run_directory``."""
     if not log_path:
         return None
     path = Path(log_path)
-    if not path.is_absolute() and run_dir is not None:
-        path = Path(run_dir) / path
+    if not path.is_absolute() and run_directory is not None:
+        path = Path(run_directory) / path
     try:
         return path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return None
+
+
+def _manifest_prose(manifest_text: str) -> str:
+    """Return a manifest's text with the two suite observations removed.
+
+    Retirement is read from the manifest's prose, and the suite fields are not
+    prose: their ``failure_ids`` lists name every added id, so a scan that kept
+    them would find each id already named and no total would ever be capped.
+    The field line and the block indented beneath it are dropped together,
+    because a suite observation may carry its log path on a nested line.
+    """
+    kept: list[str] = []
+    lines = manifest_text.splitlines()
+    index = 0
+    while index < len(lines):
+        raw = lines[index]
+        match = _MANIFEST_FIELD_RE.match(raw.strip())
+        if match is None or match.group("key") not in _MEASURED_FIELDS:
+            kept.append(raw)
+            index += 1
+            continue
+        indent = len(raw) - len(raw.lstrip(" \t"))
+        index += 1
+        while index < len(lines):
+            following = lines[index]
+            deeper = len(following) - len(following.lstrip(" \t"))
+            if following.strip() and deeper <= indent:
+                break
+            index += 1
+    return "\n".join(kept)
 
 
 def _retires_id(text: str, test_id: str) -> bool:
@@ -674,37 +778,27 @@ def added_failures_from_gate_logs(
     return len(added), added
 
 
-def _manifest_text(manifest: Mapping[str, Any] | None) -> str:
-    """Return a manifest's own text, so retirement prose in any field is read."""
-    if not manifest:
-        return ""
-    return json.dumps(manifest, sort_keys=True, default=str)
-
-
 def annotate_added_failures(
     record: dict[str, Any],
-    manifest: Mapping[str, Any] | None,
     *,
-    run_dir: str | Path | None = None,
-    done_when: str = "",
+    base_text: str | None,
+    head_text: str | None,
+    retirement_text: str = "",
 ) -> dict[str, Any]:
     """Store the reviewed run's added failures on ``record`` and cap its total.
 
-    Reads the gate logs the reviewed ``manifest`` names, computes the added
-    node ids, records the count and the ids, and caps a nonzero count's stored
-    total at :data:`ADDED_FAILURES_TOTAL_CAP` — unless the reviewed node's
-    ``done_when`` or the manifest's own text retires every added id by name, in
-    which case the total is left as the reviewer scored it and the record says
-    the ids were retired.
+    Given the two gate logs' text and the retirement prose to read, records the
+    added node ids and their count, then caps a nonzero count's stored total at
+    :data:`ADDED_FAILURES_TOTAL_CAP` — unless ``retirement_text`` names every
+    added id in full, the reviewed node's ``done_when`` or its manifest having
+    retired those tests, in which case the total is left as the reviewer scored
+    it and the record says the ids were retired.
 
-    The count is recorded as unmeasured, never as zero, when the manifest names
-    no base log or no head log; the total is left alone in that case. The
-    returned record is a copy; the caller's mapping is not mutated.
+    The count is recorded as unmeasured, never as zero, when either log is
+    absent; the total is left alone in that case. The returned record is a copy;
+    the caller's mapping is not mutated.
     """
     result = dict(record)
-    resolved_dir = Path(run_dir) if run_dir is not None else None
-    base_text = _log_text(manifest or {}, *_BASE_LOG_FIELD, resolved_dir)
-    head_text = _log_text(manifest or {}, *_HEAD_LOG_FIELD, resolved_dir)
     count, added_ids = added_failures_from_gate_logs(base_text, head_text)
     result["added_failure_count"] = count
     result["added_failure_ids"] = added_ids
@@ -717,9 +811,6 @@ def annotate_added_failures(
         return result
     if count == 0:
         return result
-    retirement_text = "\n".join(
-        part for part in (str(done_when or ""), _manifest_text(manifest)) if part
-    )
     unretired = [
         test_id for test_id in added_ids if not _retires_id(retirement_text, test_id)
     ]
@@ -738,13 +829,62 @@ def annotate_added_failures(
     return result
 
 
+def _run_directory(reviewed_run_id: str) -> Path | None:
+    """Return the reviewed run's own directory, or ``None`` when it has none.
+
+    The import is local because the run registry reads this module's store root
+    to enumerate delivery locations, so a module-level edge between the two
+    would be a cycle.
+    """
+    try:
+        from reckon.crew.runs import run_dir
+
+        directory = run_dir(reviewed_run_id)
+    except (OSError, ValueError):
+        return None
+    return directory if directory.is_dir() else None
+
+
+def annotate_review_of_run(
+    record: dict[str, Any], reviewed_run_id: str
+) -> dict[str, Any]:
+    """Annotate ``record`` with the failures the reviewed run's own evidence added.
+
+    Reads ``run_dir(reviewed_run_id)/manifest.md`` and the two gate logs it
+    names, then applies :func:`annotate_added_failures`. A reviewed run with no
+    manifest on disk yields the record unchanged: there is no evidence to derive
+    from, and a review read before its run delivered a manifest must not gain a
+    count that was never taken. A manifest that is present but names no base log
+    or no head log yields an explicit unmeasured count, which is a state the
+    record can carry.
+    """
+    run_directory = _run_directory(reviewed_run_id)
+    if run_directory is None:
+        return record
+    try:
+        manifest_text = (run_directory / _MANIFEST_FILE_NAME).read_text(
+            encoding="utf-8", errors="replace"
+        )
+    except OSError:
+        return record
+    base_text = _read_gate_log(
+        _gate_log_path(manifest_text, _BASE_LOG_FIELD), run_directory
+    )
+    head_text = _read_gate_log(
+        _gate_log_path(manifest_text, _HEAD_LOG_FIELD), run_directory
+    )
+    return annotate_added_failures(
+        record,
+        base_text=base_text,
+        head_text=head_text,
+        retirement_text=_manifest_prose(manifest_text),
+    )
+
+
 def store_review(
     record: dict[str, Any],
     *,
     base_dir: str | Path | None = None,
-    manifest: Mapping[str, Any] | None = None,
-    run_dir: str | Path | None = None,
-    done_when: str = "",
 ) -> Path:
     """Persist one review record and return the path it was written to.
 
@@ -757,14 +897,11 @@ def store_review(
     reviewing-run identity, so it can neither displace a complete review nor
     overwrite another partial record of the same run. The write is atomic.
 
-    When the reviewed run's ``manifest`` is supplied, the record is annotated
-    with the added-failure count and ids its named gate logs support and its
-    total is capped when the run added failures it did not retire by name; see
-    :func:`annotate_added_failures`. ``run_dir`` resolves a manifest's relative
-    log paths, and ``done_when`` is the reviewed node's own measure, read
-    alongside the manifest for retirement prose. With no ``manifest`` supplied
-    the record is stored unchanged; a manifest that names no base or head log
-    records the count as unmeasured rather than zero.
+    The added-failure derivation is not applied here. Records are annotated
+    when they are read, from the reviewed run's own manifest, so a record may be
+    written by a caller with no access to that manifest — a review worker
+    writing its JSON by hand is the production case — and still be annotated
+    for every reader. See :func:`annotate_review_of_run`.
     """
     project = record.get("project")
     reviewed_run_id = record.get("reviewed_run_id")
@@ -782,10 +919,6 @@ def store_review(
     if not record.get("timestamp"):
         record = dict(record)
         record["timestamp"] = datetime.now(UTC).isoformat()
-    if manifest is not None:
-        record = annotate_added_failures(
-            record, manifest, run_dir=run_dir, done_when=done_when
-        )
     if base_sha and head_sha:
         path = review_path(
             project,
@@ -818,6 +951,13 @@ def read_review(
     older short-sha preservation copies readable. Without a named head, the
     newest record is returned for compatibility with callers that have not yet
     learned to state the revision they need.
+
+    The returned record is annotated with the failures the reviewed run's own
+    gate logs added, and its total is capped when those failures were not
+    retired by name; see :func:`annotate_review_of_run`. The stored file is not
+    rewritten — the annotation is a read-time view — so a review written by hand
+    and one written through :func:`store_review` are read alike, and a reader
+    that never calls this function sees the record exactly as it was stored.
     """
     directory = review_store_root(base_dir) / project
     candidates = [review_path(project, reviewed_run_id, base_dir)]
@@ -839,9 +979,10 @@ def read_review(
                 continue
             actual = stored_head.lower()
             if actual.startswith(named) or named.startswith(actual):
-                return record
+                return annotate_review_of_run(record, reviewed_run_id)
         return None
-    return max(records, key=lambda item: item[0].stat().st_mtime_ns)[1]
+    newest = max(records, key=lambda item: item[0].stat().st_mtime_ns)[1]
+    return annotate_review_of_run(newest, reviewed_run_id)
 
 
 def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
