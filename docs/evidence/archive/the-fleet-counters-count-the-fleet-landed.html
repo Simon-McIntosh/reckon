@@ -368,6 +368,29 @@ head, a first sighting that did move keeps its left word and its arrow:
       <p>The history header's row count — the sixth item the followup listed — is moot here: the re-arm banners that the header framed were removed earlier, so there is no count left to correct.</p>
       <p>The worker does not resolve the driving followup or change terminal plan state.</p>
     </section>
+  <section id="follower-rewrites-a-deleted-checkpoint">
+      <h2>An idle follower rewrites a deleted checkpoint, and an existing marker pair replays as one</h2>
+      <p>Two gaps in one arming's durable checkpoint and its pane memory, landed in <code>33adbdc9</code>. Both are about what a reader still finds after something removed or doubled what a previous arming left on disk.</p>
+      <p><strong>A deleted checkpoint stayed deleted while idle.</strong> <code>_record_checkpoint</code> gated its write on place equality alone — the stream path, the byte offset, the stream's device and inode, and the reported map — compared against the place this arming last wrote. A checkpoint removed under a sitting arming therefore stayed absent until the stream next moved, and a reload in that window found no record and lost the pane's memory. The gate now also asks whether the checkpoint file is present (<code>follow_checkpoint.exists</code>) and writes when it is gone, so the next poll restores it; an idle arming over a present file is unchanged and still writes nothing.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-counters-count-the-fleet/deleted-checkpoint-gate.svg" alt="A decision flow: the per-tick hook forms a place and compares it to the place last written; a moved place writes, and an equal place is followed by a second question — does the checkpoint file still exist — which writes when the file is gone and writes nothing when it stands.">
+        <figcaption>Both routes reach the write: a moved place, or a place that did not move but whose file is gone. The second question is what the original gate never asked.</figcaption>
+      </figure>
+      <p><strong>An existing pair of adjacent format markers replayed as two.</strong> <code>append_history</code> refused a <em>new</em> format marker that landed on an existing tail marker, so two reloads with no intervening row wrote two markers on disk and a replay drew the switch twice. A log written before that guard — or by another writer — can already hold the pair, and the append does not touch what is already there. <code>read_history</code> now applies <code>collapse_format_markers</code> on the read, dropping a marker that directly follows another while keeping a marker that follows a row, so every reader — the replay included — sees one marker where the log holds a pair. The repair is idempotent, so reading does not change the log's bytes and a later append still sees the collapsed tail.</p>
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>The two new checks at head, in <code>tests/test_follower_keeps_memory.py</code> and <code>tests/test_follow_rearm_continues.py</code></td><td>22 passed, 0 failed</td><td><code>gate.log</code>, at <code>33adbdc9</code>, naming the module under test and the resolved cwd on its header lines; absolute project interpreter <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code>, <code>-p no:cacheprovider</code>.</td></tr>
+          <tr><td>The same two files at the base revision <code>9fafad1f</code>, in a scratch tree (<code>git archive</code>) with this node's test files overlaid</td><td>2 failed, 20 passed</td><td><code>base-arm.log</code>; the two failures are exactly the two new checks. Deleted checkpoint: the file stayed absent at the poll after the deletion. Marker pair: <code>read_history</code> returned two <code>format-changed</code> rows where one was required. The log header names <code>module.__file__</code> and the measurement cwd.</td></tr>
+          <tr><td>Added failures against base for the follow and re-arm test files</td><td>0 added (base 2 failed / 20 passed, head 0 failed / 22 passed)</td><td>The base's two failures are the two new checks, red before the change and green after; every other check in the pair passes both sides.</td></tr>
+          <tr><td>Declared mutation <code>gate the checkpoint write on place equality alone, ignoring whether the file exists</code></td><td>failed as required (1 failed)</td><td><code>negative-control.log</code>, whose first line repeats the declaration verbatim. In the mutated tree (<code>git archive</code> of head with the gate reduced to <code>if place == written_place:</code>) the deleted-checkpoint check goes red because the file is never rewritten; in the head tree it passes.</td></tr>
+          <tr><td>Lint and format on the four changed Python paths</td><td>0 added findings; the two test files formatted</td><td>Base and head both carry the same two pre-existing <code>cli.py</code> findings (SIM103 at 1707, SIM105 at 4825), measured by delta; the two product files are findings-free. The two pre-existing format drifts in <code>cli.py</code> (unrelated lines) are left untouched.</td></tr>
+        </tbody>
+      </table>
+      <p>The producer-reload half of the driving followup — a watch producer that takes changed follower-side modules, or records the revision it runs — is not part of this node and remains open.</p>
+      <p>The worker does not resolve the driving followup or change terminal plan state.</p>
+    </section>
   </main>
 </body>
 </html>
