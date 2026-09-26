@@ -1376,7 +1376,7 @@ exit: 0</pre>
     formatted at base and at head; the change adds none. One format finding the change did
     introduce &mdash; widening the resume case to <code>fence=True</code> shortened its
     <code>_launch</code> call enough that ruff wanted it on one line &mdash; was repaired in
-    <code>e6151ba0</code> rather than left in the tree.
+    <code>e6151ba0</code> rather than left in the tree.</p>
 
     <p><strong>Commits.</strong> <code>1854ee37</code> (the test change), <code>e6151ba0</code>
     (the format fix), <code>015ad804</code> (this record). Evidence:
@@ -1385,6 +1385,79 @@ exit: 0</pre>
     <code>gate-harness-home-carry-opt-in-neighbours.txt</code>,
     <code>negative-control-harness-home-carry-opt-in.txt</code>, figure
     <code>/reckon/figures/a-worker-cannot-write-your-home/harness-home-carry-opt-in.svg</code>.</p>
+  </section>
+
+  <section id="s2-fence-on-again" data-reckon="section">
+    <h2>&sect;2 follow-up &mdash; the fence is the worker default again</h2>
+
+    <p><strong>What landed.</strong> <code>FENCE_WORKERS</code> is <code>True</code> at
+    <code>d7ba7433</code>, and the comment above the flag was rewritten to state what the fence
+    <em>guarantees</em> rather than why it was switched off: an operator's dot directories, project
+    state and the plan store are overlaid read-only, so a worker cannot write the coordinator's home;
+    the run's own write roots are re-bound writable over that overlay, including a linked worktree's
+    git directory and its repository's shared object store, so a fenced worker can still commit what
+    it was dispatched to do; and each run then adopts its own harness home, seeded from the operator's
+    settings and instruction files, so the hooks and guidance that govern the run are still read.</p>
+
+    <p><strong>Which tests changed, and which did not.</strong> No test asserted the <em>unfenced
+    worker default</em> through the dispatch path. The six tests an earlier repair touched
+    (<a href="#s2-fence-opt-in">the fence opt-in anchor</a>) state <code>fence=False</code> explicitly,
+    or set <code>FENCE_WORKERS</code> themselves, so they are unchanged and still pass &mdash; the
+    opt-in anchor's own convention is that a test of the fence states the fence it tests. The new
+    default is pinned instead by <code>tests/test_fence_is_on_again.py</code>, which composes a real
+    launch through <code>crew.dispatch</code> for a clive backend against a synthetic operator home.</p>
+
+    <p><strong>The measure.</strong> A launch composed through the dispatch path for a clive backend
+    is fenced and carries the operator's hooks. Three properties are asserted on the plan the
+    launcher receives:</p>
+    <ul>
+      <li><code>plan.argv[0]</code> resolves to the fence binary (<code>Path(argv[0]).name ==
+      FENCE_BINARY</code>, because the fence is resolved through PATH rather than named by an absolute
+      path);</li>
+      <li>the operator's <code>.claude</code> directory is present as a <code>--ro-bind</code> pair, so
+      the fence seals it read-only;</li>
+      <li><code>CLAUDE_CONFIG_DIR</code> names <code>&lt;run dir&gt;/harness</code>, where the run
+      directory is read from the composed plan's own <code>manifest_path</code> rather than recomputed,
+      and that home holds the operator's <code>hooks</code> object verbatim and the operator's
+      <code>CLAUDE.md</code>. The settings copy is filtered to <code>hooks</code> alone: the fixture's
+      settings also carry an <code>env</code> secret and a <code>permissions</code> allow-list, and the
+      seeded file must contain neither, so the assertion is <code>set(seeded) == {"hooks"}</code>.</li>
+    </ul>
+
+    <p>The operator home in the measure is a synthetic tree patched in for <code>Path.home</code>, so
+    the test reads and writes nothing under the real home the fleet uses.</p>
+
+    <p><strong>Gate, base against head.</strong> Seven files: this archive's six &sect;2 test files
+    plus the new one. <code>39 passed</code> at base <code>b11cf190</code> with the flag forced False
+    (<code>gate-fence-is-on-again-base.txt</code>) against <code>41 passed</code> at head
+    <code>d7ba7433</code> (<code>gate-fence-is-on-again-head.txt</code>) &mdash; the two new tests, and
+    zero added failures. The six pre-existing files are byte-identical at base and head
+    (<code>git diff --quiet b11cf190 -- &lt;file&gt;</code> for each), so the base arm and the head arm
+    share the same module for everything but the new file.</p>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>leave FENCE_WORKERS False;
+    the dispatch-path fenced case must fail with an unfenced argv.</em> Run at head
+    (<code>negative-control-fence-is-on-again.txt</code>, first line the mutation verbatim):
+    <code>FENCE_WORKERS False</code>, <code>argv[0]</code> is the clive harness
+    (<code>/work/projects/imas_gpu/agents/clive</code>), no fence element, <code>CLAUDE_CONFIG_DIR</code>
+    empty &mdash; <code>the dispatch-path fenced case FAILED as declared</code>. Without the control the
+    fence would not be the reason the fenced case passes.</p>
+
+    <p><strong>Lint and format delta.</strong> The new test file is lint-clean and format-clean. The
+    product file's remaining ruff findings and its whole-file format diff are pre-existing and unrelated
+    to the flag line, so <code>dispatch.py</code> was not reformatted: the change adds no finding and
+    no unrelated rewrite.</p>
+
+    <p><strong>Commits.</strong> <code>d7ba7433</code> carries the flag, its rewritten comment, and
+    the new test; this record and its figure land in the node's closing commit. Evidence, under the run directory and
+    mirrored here: <code>gate-fence-is-on-again-base.txt</code>,
+    <code>gate-fence-is-on-again-head.txt</code>, <code>negative-control-fence-is-on-again.txt</code>,
+    figure <code>/reckon/figures/a-worker-cannot-write-your-home/fence-on-again.svg</code>.</p>
+
+    <p><strong>Not this node.</strong> The live fenced smoke test at the merged head &mdash; a real
+    clive worker that commits in its worktree, fires the Stop hook and cannot write another checkout
+    &mdash; is the coordinator's separate node, as the re-enable decision records. This node flips the
+    switch, states the guarantee, and pins the composed default.</p>
   </section>
 </main>
 </body>
