@@ -23,8 +23,8 @@
   <title>A Fleet Display That Cannot Lie | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="500">
+<meta name="plan-modified" content="2026-09-26">
+<meta name="plan-version" content="501">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -1841,10 +1841,11 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth</pre>
     <p class="r-fu-outcome">done — crew widen reads the run's own manifest status (bd10fb72, 21f5c334, merged at ec6dd7ef; review 96). Falsifier met live: append-run-writes-one-run-file (phase complete, manifest blocked) was widened with its session id preserved and resumed on that session, where the old code refused the same run at 10:17.</p>
     </article>
-<article class="r-fu" data-id="f-cot-widen-predicate-matches-its-docstring" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T10:14:00Z" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cot-widen-predicate-matches-its-docstring" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-25T10:14:00Z" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="2026-09-26T10:24:07+00:00" data-resolved-by="s22-coord">
     <h4 class="r-fu-title">Widen&#x27;s predicate and its stated invariant disagree on a still-working run</h4>
     <div class="r-fu-body"><p>Review of widen-reaches-a-blocked-run (96): the comment near <code>reckon/cli.py:2908</code> and the docstring near :2967 say only a stopped run that stated a block may be widened, but the predicate widens whenever the fresh manifest reports blocked, even with the phase still reading working. No case covers that combination. Make one match the other, preferably by requiring the worker process to be gone, and add the case.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth — widen refuses a blocked manifest while its worker is still running</pre>
+    <p class="r-fu-outcome">Landed at merge 64a9b7d1: widen refuses a run whose worker process is alive, and the predicate, comment and docstring state one rule. Reviewed 98; the gate re-ran green at the integrated head.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
