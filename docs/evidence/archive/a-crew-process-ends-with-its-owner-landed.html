@@ -618,6 +618,110 @@
       repository root writable for exactly this index. The edits stand on disk in the
       worktree for the coordinator to commit; no local commit was possible.</p>
     </section>
+  <section id="s10-watch-suite-green-on-main">
+      <h2>Three follower-counter tests return to green; the other eight were already green</h2>
+      <p>Measured on fleet compute node <code>98dci4-clu-2058</code> under allocation
+      <code>1277272</code>, at base <code>0391d7fa7f09bfcbc5e4e68e3a91854cbca27c84</code>.
+      The eleven named ids were reported red in the sibling follower run's
+      <code>gate-follow-watch-head.log</code>, which was taken at that branch's head
+      <code>e21cb520</code> &mdash; a tree whose base <code>80d55621</code> predates the
+      main-line test repair. Reproducing the eleven ids at <code>0391d7fa</code> measures
+      <strong>3 failed / 17 passed</strong>: the eight ids in the watch-lifetime,
+      observed-session, death and unit-inventory files already pass, because
+      <code>63f40039</code> ("update watch tests to the promoted-departure rule") is an
+      ancestor of the base and carries their fix. Only the three
+      <code>test_follow_counts_its_session.py</code> ids were red.</p>
+      <figure>
+        <img src="/reckon/figures/a-crew-process-ends-with-its-owner/watch_tests_red_by_commit.svg"
+             alt="Two timelines. The eight watch-lifetime, observed-session, death and unit-inventory ids are red at the branch base 80d55621, green once 63f40039 lands the test repair on main, and green at the measured head 0391d7fa. The three scoped-follower ids are green at 9853fb35 with a dot-separated counter triple, stay green through 4cec02e2 which renders every bucket on every row, then turn red at 5ef9ee49 which drops the separator, and return to green once this node matches the block.">
+        <figcaption>The two groups reddened for unrelated reasons. The eight are red only
+        relative to a branch that predated the main-line repair; the three are red because the
+        ticker's counter block changed shape.</figcaption>
+      </figure>
+      <p><strong>Adjudication, id by id.</strong> The eight ids are green at this node's base
+      and no file was touched for them. The three failing ids are red because the
+      <em>test</em> encoded a superseded renderer format, so the test changed and no
+      executable code changed: <code>5ef9ee49</code> dropped the <code>·</code> separator
+      between the fleet counters and the block became the fixed two-column
+      <code>&lt;n&gt;w &lt;n&gt;b &lt;n&gt;u &lt;n&gt;q</code> the ticker now always prints.
+      <code>reckon/crew/recovery.py</code> is byte-identical to base in this change.</p>
+      <table>
+        <thead><tr><th>Test id</th><th>Red at</th><th>Turned red by</th><th>Changed</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_cold_watch_holds_an_already_stale_terminal_pointer</code></td>
+          <td>branch base 80d55621</td><td><code>63f40039</code> (fix, on main)</td><td>none here</td>
+          <td>Green at the measured base; the branch that reported it red predates the
+          main-line fixture repair. No change needed.</td></tr>
+          <tr><td><code>test_dispatch_is_admitted_during_the_stale_terminal_window</code></td>
+          <td>branch base 80d55621</td><td><code>63f40039</code></td><td>none here</td>
+          <td>Green at the measured base, same repair.</td></tr>
+          <tr><td><code>test_empty_fleet_still_waits_for_its_first_pointer</code></td>
+          <td>branch base 80d55621</td><td><code>63f40039</code></td><td>none here</td>
+          <td>Green at the measured base, same repair.</td></tr>
+          <tr><td><code>test_an_empty_observed_set_render_is_byte_identical_to_today</code></td>
+          <td>branch base 80d55621</td><td><code>63f40039</code></td><td>none here</td>
+          <td>Green at the measured base, same repair.</td></tr>
+          <tr><td><code>test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_not</code></td>
+          <td>branch base 80d55621</td><td><code>63f40039</code></td><td>none here</td>
+          <td>Green at the measured base, same repair.</td></tr>
+          <tr><td><code>test_an_observed_session_named_identically_to_the_owning_session_adds_no_duplicate</code></td>
+          <td>branch base 80d55621</td><td><code>63f40039</code></td><td>none here</td>
+          <td>Green at the measured base, same repair.</td></tr>
+          <tr><td><code>test_a_stream_that_ended_in_a_result_record_is_not_a_death</code></td>
+          <td>branch base 80d55621</td><td><code>63f40039</code></td><td>none here</td>
+          <td>Green at the measured base; the typed-classification repair is already in.</td></tr>
+          <tr><td><code>test_every_unit_template_in_the_tree_is_covered_here</code></td>
+          <td>branch base 80d55621</td><td><code>63f40039</code></td><td>none here</td>
+          <td>Green at the measured base; the oneshot inventory is already complete.</td></tr>
+          <tr><td><code>test_a_scoped_follower_counts_only_its_own_session</code></td>
+          <td>base 0391d7fa</td><td><code>5ef9ee49</code></td><td>test</td>
+          <td>The case read the trailing counters through a <code>·</code>-separated triple.
+          <code>5ef9ee49</code> removed the separator and made the block the fixed two-column
+          <code>&lt;n&gt;w &lt;n&gt;b &lt;n&gt;u &lt;n&gt;q</code>. The regex now matches the
+          whole block, so a bucket added later cannot slip past the prefix of an older
+          count.</td></tr>
+          <tr><td><code>test_an_unscoped_follower_over_the_same_fixture_is_unchanged</code></td>
+          <td>base 0391d7fa</td><td><code>5ef9ee49</code></td><td>test</td>
+          <td>Same superseded format; the assertion is now the four-counter tuple
+          <code>(2, 1, 0, 0)</code>.</td></tr>
+          <tr><td><code>test_the_scoped_figures_differ_from_the_unscoped_figures</code></td>
+          <td>base 0391d7fa</td><td><code>5ef9ee49</code></td><td>test</td>
+          <td>Same superseded format; the scoped reading is <code>(1, 0, 0, 0)</code> and the
+          unscoped <code>(2, 1, 0, 0)</code>.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Gate.</strong> The eleven named ids pass at the worktree head
+      (<code>head-eleven.log</code>: <strong>20 passed</strong>). The focused module passes
+      (<code>counts-focused.log</code>: <strong>4 passed</strong>). The comparison files
+      <code>tests/test_crew_recovery.py</code>,
+      <code>tests/test_crew_watch_stream.py</code>,
+      <code>tests/test_a_discard_never_reads_promoted.py</code> and
+      <code>tests/test_producer_shares_the_classifier_verdict.py</code> pass together
+      (<code>companion-four.log</code>: <strong>111 passed</strong>); the head equals the base
+      for every file and code path they exercise, so this is also the base arm and adds
+      <strong>0</strong> failures. The base reproduction is <code>base-eleven.log</code>
+      (<strong>3 failed / 17 passed</strong>, revision and command on its header lines).</p>
+      <p><strong>Declared negative control.</strong> Forcing every departure in
+      <code>fleet_transitions</code> to <code>withdrawn</code> restores the pretence that a
+      promoted departure reads withdrawn:
+      <code>test_cold_watch_holds_an_already_stale_terminal_pointer</code> then fails
+      (<strong>1 failed, exit 1</strong>, <code>negative-control.log</code>), and the mutation
+      is reverted before finishing (<code>reckon/crew/recovery.py</code> verified
+      byte-identical to base afterwards). The red log's first line repeats the declared
+      mutation verbatim.</p>
+      <p><strong>Receipts.</strong> All logs live under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T090019682272-follow-watch-suite-green-on-main/logs/</code>:
+      <code>base-eleven.log</code>, <code>head-eleven.log</code>,
+      <code>counts-focused.log</code>, <code>companion-four.log</code> and
+      <code>negative-control.log</code>. Change commit named in the plan landing record; only
+      <code>tests/test_follow_counts_its_session.py</code>, this record and its figure change.
+      Measured on fleet compute node <code>98dci4-clu-2058</code> under allocation
+      <code>1277272</code>.</p>
+      <p><strong>Remaining.</strong> This gate measures only this node's own change; verifying
+      the merged result belongs to a separately dispatched test node. A long-lived producer
+      must load the integrated code before this result describes its live output; no shared
+      service was restarted and the followup was not closed here.</p>
+    </section>
   </main>
 </body>
 </html>
