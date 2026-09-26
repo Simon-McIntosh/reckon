@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="470" viewBox="0 0 900 470" font-family="DejaVu Sans, Helvetica, sans-serif">
+  <rect width="900" height="470" fill="#fbfbfd"/>
+  <text x="30" y="34" font-size="19" font-weight="bold" fill="#1b1b1f">The home-root carry: which keys cross into a fenced run home</text>
+  <text x="30" y="56" font-size="13" fill="#555">harness_home_adjacent_files names a file beside the harness config dir, with a top-level JSON key filter</text>
+
+  <!-- operator home -->
+  <rect x="30" y="80" width="330" height="360" rx="8" fill="#ffffff" stroke="#c9cdd6"/>
+  <text x="50" y="108" font-size="15" font-weight="bold" fill="#1b1b1f">Operator home  (~)</text>
+
+  <rect x="50" y="126" width="290" height="210" rx="6" fill="#f3f4f8" stroke="#c9cdd6"/>
+  <text x="64" y="148" font-size="13" font-weight="bold" fill="#1b1b1f">~/.claude.json — mode 0600</text>
+  <text x="64" y="174" font-size="12.5" fill="#22432b">mcpServers:</text>
+  <text x="80" y="192" font-size="12.5" fill="#22432b">  reckon   { command: reckon-mcp }</text>
+  <text x="80" y="210" font-size="12.5" fill="#22432b">  imas-dd  { command: imas-dd }</text>
+  <text x="64" y="236" font-size="12.5" fill="#7a4a4a">projects:      { … }   ← not carried</text>
+  <text x="64" y="256" font-size="12.5" fill="#7a4a4a">oauthAccount:  { … }   ← not carried</text>
+  <text x="64" y="276" font-size="12.5" fill="#7a4a4a">numStartups:   42      ← not carried</text>
+
+  <text x="50" y="360" font-size="12.5" fill="#333">~/.claude/settings.json → hooks</text>
+  <text x="50" y="380" font-size="12.5" fill="#333">~/.claude/CLAUDE.md</text>
+  <text x="50" y="406" font-size="12" fill="#6b7280">(these two are the harness_home_files carry,</text>
+  <text x="50" y="424" font-size="12" fill="#6b7280">relative to the config dir; unchanged here)</text>
+
+  <!-- arrow / boundary -->
+  <line x1="360" y1="230" x2="470" y2="230" stroke="#5aa06a" stroke-width="2.5"/>
+  <polygon points="470,230 458,224 458,236" fill="#5aa06a"/>
+  <text x="366" y="214" font-size="12.5" font-weight="bold" fill="#22432b">keys: [mcpServers]</text>
+  <text x="366" y="252" font-size="12" fill="#22432b">the filter crosses</text>
+  <text x="366" y="268" font-size="12" fill="#22432b">only this one key</text>
+
+  <line x1="415" y1="80" x2="415" y2="440" stroke="#c9cdd6" stroke-dasharray="5 5"/>
+  <text x="415" y="470" font-size="11" fill="#999" text-anchor="middle">fence boundary</text>
+
+  <!-- run harness home -->
+  <rect x="470" y="80" width="400" height="360" rx="8" fill="#ffffff" stroke="#c9cdd6"/>
+  <text x="490" y="108" font-size="15" font-weight="bold" fill="#1b1b1f">Run harness home  (&lt;run&gt;/harness)</text>
+  <text x="490" y="130" font-size="12.5" fill="#555">CLAUDE_CONFIG_DIR — what the claude harness reads</text>
+
+  <rect x="490" y="146" width="360" height="150" rx="6" fill="#eef7ee" stroke="#5aa06a"/>
+  <text x="504" y="168" font-size="13" font-weight="bold" fill="#1b1b1f">.claude.json — mode 0600</text>
+  <text x="504" y="194" font-size="12.5" fill="#22432b">mcpServers:</text>
+  <text x="520" y="212" font-size="12.5" fill="#22432b">  reckon   { command: reckon-mcp }</text>
+  <text x="520" y="230" font-size="12.5" fill="#22432b">  imas-dd  { command: imas-dd }</text>
+  <text x="504" y="258" font-size="12" fill="#6b7280">set(keys) == { mcpServers }</text>
+  <text x="504" y="276" font-size="12" fill="#6b7280">no projects, no oauthAccount</text>
+
+  <text x="490" y="322" font-size="12.5" fill="#333">A run home that already holds its own</text>
+  <text x="490" y="340" font-size="12.5" fill="#333">.claude.json keeps its keys; mcpServers</text>
+  <text x="490" y="358" font-size="12.5" fill="#333">is merged in, and the file keeps its mode.</text>
+
+  <text x="490" y="398" font-size="12" fill="#6b7280">The harness writes this file at startup, so</text>
+  <text x="490" y="416" font-size="12" fill="#6b7280">the seed lands before launch: merge, never</text>
+  <text x="490" y="434" font-size="12" fill="#6b7280">replace. Seeded by seed_harness_home, the</text>
+  <text x="490" y="452" font-size="12" fill="#6b7280">one copy mechanism both carries share.</text>
+</svg>

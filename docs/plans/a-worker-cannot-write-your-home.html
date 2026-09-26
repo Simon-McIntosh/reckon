@@ -914,6 +914,47 @@
       checkout's interior means here and is exactly the shape that re-opens git metadata; a plain
       directory inside a checkout is not a checkout and composes. The alternative, refusing on path
       containment regardless of <code>.git</code>, would fail cases this node may not edit.</p>
+    <p><strong>The harness home also carries the operator's user-scope MCP servers.</strong>
+      The carry above seeds the run home from <code>~/.claude</code>, but the operator's
+      user-scope MCP server declarations live in the top-level <code>mcpServers</code> key of
+      <code>~/.claude.json</code>, which sits in the <em>home directory</em> rather than inside
+      <code>~/.claude</code>, so no config-dir carry ever read it and a fenced worker started
+      with no <code>mcp__</code> tools. A second top-level table,
+      <code>harness_home_adjacent_files</code>, now names a file beside the harness config dir
+      with the same <code>{path, keys}</code> shape, and the claude dialect declares
+      <code>.claude.json</code> filtered to <code>[mcpServers]</code>. It is consumed by the same
+      <code>seed_harness_home</code> path &mdash; one copy mechanism, not two. Because the claude
+      harness writes that file itself at startup, seeding merges rather than replaces: a run home
+      that already holds a <code>.claude.json</code> keeps its own keys and gains
+      <code>mcpServers</code>, and where both the existing and the new value for a declared key
+      are objects they are unioned. The run copy keeps the source's writable mode, so the
+      operator file's private <code>0600</code> travels with it. The home-root carry is a distinct
+      table rather than a new entry in <code>harness_home_files</code> because that table's claude
+      list is pinned exactly by a neighbour file's assertions.</p>
+    <p><strong>Coverage.</strong> The new file's cases run against a synthetic operator home and
+      run directory in <code>tmp_path</code>, never the real <code>~/.claude</code> or
+      <code>~/.claude.json</code>. They assert the shipped table names <code>.claude.json</code>
+      filtered to <code>mcpServers</code> while the config-dir list is untouched; that a claude
+      run's <code>.claude.json</code> holds <code>mcpServers</code> equal to the source, carries
+      neither <code>projects</code> nor <code>oauthAccount</code> nor <code>numStartups</code>
+      (<code>set(keys) == {"mcpServers"}</code>), and is mode <code>0600</code>; that a
+      <code>clive</code> launch composed through the production <code>launch_plan</code> path
+      (dialect <code>claude</code>, argv[0] the fence binary) seeds it; that an existing run-home
+      file keeps its keys and gains the operator servers unioned in; that a run home with no
+      operator file beside it seeds nothing; and that the operator home itself is byte-unchanged.
+      Gate over the new file and the three neighbour files: base <code>4b6042ae</code> with the
+      product change reverted <code>4 failed, 23 passed</code> (the four feature cases red, so the
+      defect reproduces), head <code>27 passed</code>, zero added failures. The declared negative
+      control &mdash; <em>drop the ~/.claude.json declaration from the flight defaults; the
+      mcpServers assertion must fail</em> &mdash; is applied and logged: with the home-root table
+      emptied the four cases fail again and the run home holds no <code>.claude.json</code>
+      (<code>drop the ~/.claude.json declaration from the flight defaults; the mcpServers assertion must fail</code>). Lint over the touched paths adds no finding (base 13, head 13,
+      the pre-existing set with line numbers shifted) and format is clean. Revision
+      <code>14006c1e</code>. Evidence:
+      <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-harness-home-adjacent-carry</code>,
+      figure <code>/reckon/figures/a-worker-cannot-write-your-home/harness-home-adjacent-carry.svg</code>.
+      This gate measures only this node's own change; verifying the merged result belongs to a
+      separately dispatched test node.</p>
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host
