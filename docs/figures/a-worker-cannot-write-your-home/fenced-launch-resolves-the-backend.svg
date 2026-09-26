@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 420" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="13">
+  <style>
+    .title { font-size: 16px; font-weight: 700; fill: #1b1f24; }
+    .sub   { font-size: 12px; fill: #57606a; }
+    .cell  { fill: #f6f8fa; stroke: #d0d7de; }
+    .cellf { fill: #fff1e5; stroke: #d4740b; }
+    .cellb { fill: #ddf4e4; stroke: #1a7f37; }
+    .cellx { fill: #ffebe9; stroke: #cf222e; }
+    .tok   { font-size: 12px; fill: #1b1f24; }
+    .lbl   { font-size: 12px; fill: #57606a; }
+    .arrow { stroke: #cf222e; stroke-width: 2; fill: none; marker-end: url(#r); }
+    .arrow2{ stroke: #1a7f37; stroke-width: 2; fill: none; marker-end: url(#g); }
+  </style>
+  <defs>
+    <marker id="r" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#cf222e"/>
+    </marker>
+    <marker id="g" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <text x="24" y="34" class="title">Launch resolution: which argv element is the backend</text>
+  <text x="24" y="54" class="sub">The fence composes &lt;fence&gt; &lt;binds…&gt; -- &lt;harness&gt; … ; resolution must read the harness, not the fence</text>
+
+  <!-- Row 1: before -->
+  <text x="24" y="100" class="lbl">before — read index 0</text>
+  <g transform="translate(24,112)">
+    <rect x="0" y="0" width="120" height="34" rx="4" fill="#ffebe9" stroke="#cf222e"/>
+    <text x="12" y="22" class="tok">bwrap  [0]</text>
+    <rect x="128" y="0" width="150" height="34" rx="4" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="140" y="22" class="tok">--dev-bind / /</text>
+    <rect x="286" y="0" width="130" height="34" rx="4" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="298" y="22" class="tok">… binds …</text>
+    <rect x="424" y="0" width="46" height="34" rx="4" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="438" y="22" class="tok">--</text>
+    <rect x="478" y="0" width="150" height="34" rx="4" fill="#ddf4e4" stroke="#1a7f37"/>
+    <text x="490" y="22" class="tok">codex  [target]</text>
+    <rect x="636" y="0" width="120" height="34" rx="4" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="648" y="22" class="tok">exec …</text>
+  </g>
+  <path class="arrow" d="M60,158 C60,186 120,190 168,176"/>
+  <path class="arrow" d="M96,158 C96,196 150,202 210,186"/>
+  <text x="24" y="205" class="lbl" fill="#cf222e">resolved the fence (always present) → an absent backend was accepted, and the present one never rewritten</text>
+
+  <!-- Row 2: after -->
+  <text x="24" y="256" class="lbl">after — read the token behind the fence's own --</text>
+  <g transform="translate(24,268)">
+    <rect x="0" y="0" width="120" height="34" rx="4" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="12" y="22" class="tok">bwrap  [0]</text>
+    <rect x="128" y="0" width="150" height="34" rx="4" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="140" y="22" class="tok">--dev-bind / /</text>
+    <rect x="286" y="0" width="130" height="34" rx="4" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="298" y="22" class="tok">… binds …</text>
+    <rect x="424" y="478" width="46" height="34" rx="4" fill="#f6f8fa" stroke="#d0d7de" transform="translate(-424,0)"/>
+    <rect x="424" y="0" width="46" height="34" rx="4" fill="#fff1e5" stroke="#d4740b"/>
+    <text x="438" y="22" class="tok">--</text>
+    <rect x="478" y="0" width="150" height="34" rx="4" fill="#ddf4e4" stroke="#1a7f37"/>
+    <text x="490" y="22" class="tok">/…/codex  [abs]</text>
+    <rect x="636" y="0" width="120" height="34" rx="4" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="648" y="22" class="tok">exec …</text>
+  </g>
+  <path class="arrow2" d="M441,306 C441,330 500,330 500,314"/>
+  <text x="24" y="352" class="lbl" fill="#1a7f37">the element behind the separator is resolved to its absolute path; argv[0] is never taken as the backend</text>
+  <text x="24" y="376" class="lbl">absent backend → refused by name before anything is written  ·  unfenced plan → argv[0] resolved exactly as before</text>
+</svg>
