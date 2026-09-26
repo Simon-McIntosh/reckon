@@ -258,21 +258,23 @@ def test_an_ancient_receipt_yields_to_the_probe_for_every_lane_on_that_account()
         for window in shared.values()
     )
 
-    # The lane's rows are the probe's rows now, so its probe fields agree with
-    # its source and its re-query: a row showing the probe's fresh figure while
-    # still reporting the probe unmatched would contradict itself, and the
-    # status must not describe the lane's replaced receipt either.
-    assert (
-        lanes["separate"]["probe_status"],
-        lanes["separate"]["quota_source"],
-        lanes["separate"]["requeried"],
-    ) == ("answered", "probe", True)
     # The re-queried lane reports the figure from the one read the probe gave
     # this composition: the pair is asserted together, because a re-query that
     # asked the probe again would show it here as a second invocation, and a
     # re-query that never happened would show the lane's own old receipt.
     assert (invocations, lanes["separate"]["quota_source"]) == (1, "probe")
     assert lanes["separate"]["requeried"] is True
+    # The lane's rows are the probe's rows now, so its probe fields agree with
+    # its source and its re-query: a row showing the probe's fresh figure while
+    # still reporting the probe unmatched would contradict itself, and the
+    # status must not describe the lane's replaced receipt either.  This assert
+    # stays below the pair so the single-read claim remains the first one to
+    # fire when the re-query is removed.
+    assert (
+        lanes["separate"]["probe_status"],
+        lanes["separate"]["quota_source"],
+        lanes["separate"]["requeried"],
+    ) == ("answered", "probe", True)
     assert {window["source"] for window in separate.values()} == {"probe"}
     assert {window["observed_at"] for window in separate.values()} == {
         _stamp(composed_at)
