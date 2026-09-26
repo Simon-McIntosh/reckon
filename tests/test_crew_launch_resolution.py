@@ -161,6 +161,18 @@ def _dispatch(
     return seen
 
 
+def _harness_executable(plan) -> str:
+    """The element of a launch plan the worker will actually run.
+
+    A fenced plan leads with the fence binary and carries the harness behind
+    that fence's own ``--`` separator; an unfenced plan's harness is its first
+    element. The position is read through the module's own helper, so this reads
+    the same element the resolution rewrites.
+    """
+    argv = list(plan.argv)
+    return str(argv[dispatch_module.harness_command_index(argv)])
+
+
 def test_a_dispatch_plan_carries_an_absolute_executable(
     project: tuple[Path, Path],
     tmp_path: Path,
@@ -175,7 +187,7 @@ def test_a_dispatch_plan_carries_an_absolute_executable(
 
     seen = _dispatch(repo, _config(_backend_environment(str(bin_dir))), monkeypatch)
 
-    executable = seen["plan"].argv[0]
+    executable = _harness_executable(seen["plan"])
     assert Path(executable).is_absolute()
     assert Path(executable) == fake.resolve()
     assert Path(executable).name == "codex"
@@ -204,7 +216,7 @@ def test_a_launcher_reached_through_a_symlink_keeps_its_own_name(
 
     seen = _dispatch(repo, _config(_backend_environment(str(bin_dir))), monkeypatch)
 
-    executable = Path(seen["plan"].argv[0])
+    executable = Path(_harness_executable(seen["plan"]))
     assert executable.is_absolute()
     assert executable == bin_dir / "codex"
     assert executable.name == "codex"

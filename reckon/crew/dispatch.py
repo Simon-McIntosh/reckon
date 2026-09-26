@@ -4064,6 +4064,11 @@ def dispatch(
 
         if launch_kind == "cli":
             try:
+                # Refused before composition, which seeds the run's harness
+                # home: an absent backend must leave no run behind.
+                preflight_launch_command(
+                    backend_name, backend, fence=FENCE_WORKERS, facts=dispatch_host
+                )
                 plan = resolve_launch_executable(
                     _backends.launch_plan(
                         backend_name=backend_name,
@@ -4078,9 +4083,14 @@ def dispatch(
                     ),
                     facts=dispatch_host,
                 )
-                # Read before the placement wraps the plan: the harness is
-                # argv[0] here, and after the wrap argv[0] is the scheduler.
-                harness_command = str(plan.argv[0]) if plan.argv else None
+                # Read before the placement wraps the plan: the harness sits at
+                # the position the plan composes it at, and after the wrap that
+                # element is the scheduler's rather than the harness's.
+                harness_command = (
+                    str(plan.argv[harness_command_index(plan.argv)])
+                    if plan.argv
+                    else None
+                )
                 record["session_harness"] = plan.dialect if reuse_session else None
                 plan = apply_backend_placement(plan, backend, project)
             except (_backends.BackendError, flight.FlightConfigError, OSError) as exc:
@@ -4822,24 +4832,74 @@ def _worker_process_environment(
     return merged
 
 
-def _fenced_harness_index(argv: Any) -> int | None:
-    """Index of a fence-composed argv's harness token, or ``None`` if unfenced.
+def harness_command_index(argv: Any) -> int:
+    """Position of a launch argv's harness command.
 
-    A fenced launch is ``<fence> <binds...> -- <harness> ...``. The harness is
-    the first token behind the fence's own ``--`` separator, and the separator
-    is searched for only after the fence element, because the fence element is
-    what distinguishes a composition from a bare argv. An argv whose first
-    element is not the fence binary is not fenced, so its harness is its own
-    first element and the caller reads index 0.
+    A fenced launch is ``<fence> <binds...> -- <harness> ...``, so the harness is
+    the first token behind the fence's own ``--`` separator, searched for only
+    after the fence element because the fence element is what distinguishes a
+    composition from a bare argv. An argv whose first element is not the fence
+    binary is not fenced, and its harness is its own first element at index 0.
+
+    Read by the composed-plan rewrite and by the pre-flight resolution, so the
+    two cannot disagree about which token is the backend.
     """
     if not isinstance(argv, (list, tuple)) or not argv:
-        return None
+        return 0
     if Path(str(argv[0])).name != _backends.FENCE_BINARY:
-        return None
+        return 0
     if "--" not in argv[1:]:
-        return None
-    index = argv.index("--", 1) + 1
-    return index if index < len(argv) else None
+        return 0
+    return argv.index("--", 1) + 1
+
+
+def _unresolved_backend_command(binary: str, searched: str) -> str:
+    """The one refusal an unresolvable backend command produces."""
+    return (
+        f"backend command {binary!r} cannot be resolved on the PATH this "
+        f"launch would search: {searched} — install it or add its directory "
+        "to PATH, then retry; nothing has been launched"
+    )
+
+
+def preflight_launch_command(
+    backend_name: str,
+    backend: Mapping[str, Any],
+    *,
+    fence: bool,
+    facts: Any | None = None,
+) -> str:
+    """Resolve a backend's harness command before its plan is composed.
+
+    Composing the plan seeds the run's own harness home, so a refusal that
+    waited for the composed argv would leave a half-written run behind on a
+    resume and a run directory behind on a dispatch. The harness's position is
+    read through the same helper the composed-plan rewrite uses, so the
+    pre-flight and that rewrite cannot disagree about which token is the
+    backend. Returns the absolute command, or raises
+    :class:`LaunchResolutionError`.
+
+    A backend naming no command returns empty rather than refusing here, so the
+    missing-command refusal stays where it belongs — at composition, which
+    knows the launch kind.
+    """
+    from reckon.flight import expand_backend_environment
+
+    command = str(backend.get("command") or "")
+    if not command:
+        return ""
+    # The shape the composed launch will name: the harness alone when unfenced,
+    # and behind the harness offset by the fence and its separator when fenced.
+    # The binds the fence inserts between are irrelevant to the position, which
+    # the helper reads from the fence element and the first separator after it.
+    shape = [command] if not fence else [_backends.FENCE_BINARY, "--", command]
+    binary = shape[harness_command_index(shape)]
+    environment = expand_backend_environment(backend_name, backend)
+    searched = launch_search_path(environment, facts=facts)
+    resolved = shutil.which(binary, path=searched) if binary else None
+    if not resolved:
+        raise LaunchResolutionError(_unresolved_backend_command(binary, searched))
+    return os.path.abspath(resolved)
 
 
 def resolve_launch_executable(
@@ -4869,17 +4929,11 @@ def resolve_launch_executable(
     """
     selected_environment = plan.environment if environment is None else environment
     searched = launch_search_path(selected_environment, facts=facts)
-    element = _fenced_harness_index(plan.argv)
-    if element is None:
-        element = 0
+    element = harness_command_index(plan.argv)
     binary = str(plan.argv[element]) if element < len(plan.argv) else ""
     resolved = shutil.which(binary, path=searched) if binary else None
     if not resolved:
-        raise LaunchResolutionError(
-            f"backend command {binary!r} cannot be resolved on the PATH this "
-            f"launch would search: {searched} — install it or add its directory "
-            "to PATH, then retry; nothing has been launched"
-        )
+        raise LaunchResolutionError(_unresolved_backend_command(binary, searched))
     # Absolute, not canonical: a launcher installed as ``bin/codex`` symlinked
     # to ``codex.js`` must still be exec'd under the name the launch was
     # configured with, because that name is how the command's dialect is
@@ -6612,6 +6666,9 @@ def resume_plan(
     # The plan is built — and its executable resolved — before anything is
     # written, so an unresolvable backend refuses a resume exactly as it
     # refuses a dispatch: no pointer field, no advice file, no stream.
+    preflight_launch_command(
+        str(record.get("backend") or ""), backend, fence=FENCE_WORKERS
+    )
     attempt_started_at = _utc_now()
     plan = resolve_launch_executable(
         _backends.launch_plan(
@@ -6984,6 +7041,7 @@ def change_lane(
     )
     target_plan: _backends.LaunchPlan | None = None
     if target_launch == "cli":
+        preflight_launch_command(resolution.backend, backend, fence=FENCE_WORKERS)
         target_plan = resolve_launch_executable(
             _backends.launch_plan(
                 backend_name=resolution.backend,
