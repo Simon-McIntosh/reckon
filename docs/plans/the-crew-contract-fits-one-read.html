@@ -28,36 +28,51 @@
   <main class="plan-doc">
     <h2 id="s1">§1 — Why: a contract nobody reads end to end</h2>
     <p>The <code>reckon-build</code> skill and its references grew from 11,475 words on 12 August to 34,714 on
-      26 September; with the user-global guardrails, a coordinator carries about 49,000 words of binding
+      26 September, counting every file in the skill directory; with the user-global guardrails, a coordinator carries about 49,000 words of binding
       instruction before it reads a plan
       (<a href="/reckon/research/orchestrator-crew-pattern-review#s9">crew pattern review §9</a>). Most of those
       rules record a measured incident and are individually right. Many are now enforced by the tool — the
-      eight-property contract, the budget, gate and closure fences, the follower requirement, the review
+      eight-property contract, the budget fence, the gate fence, the closure fence, the follower requirement, the review
       requirement — so the prose restates a refusal the coordinator will meet anyway, and the survey's complaints
       are about rules colliding rather than rules missing
       (<a href="/reckon/research/orchestrator-crew-pattern-review#s3">§3</a>).</p>
 
     <h2 id="s2">§2 — Classify every rule</h2>
-    <p><strong>Deliverable.</strong> A table, as an anchor of this plan's evidence record, with one row per
-      binding sentence in <code>skills/reckon-build/SKILL.md</code> and its references: the rule, whether code
-      enforces it (with the refusal or check that does), whether it is still wanted, and its disposition — delete
-      as enforced, keep, merge, or delete as obsolete.</p>
-    <p><strong>Done when</strong> every binding sentence has a row, and each "enforced" row names a test that
-      exercises the enforcement.</p>
+    <p><strong>Deliverable.</strong> A table, written as its own anchored section inside this plan's cumulative
+      evidence record, with one row per <em>binding sentence</em> in
+      <code>skills/reckon-build/SKILL.md</code> and the eight files under <code>skills/reckon-build/references/</code>
+      (the harness files under <code>references/orchestrator-harness/</code> included). A binding sentence is one
+      that states a rule a coordinator or worker must follow — it contains or implies <em>must</em>, <em>never</em>,
+      <em>always</em>, <em>refuse</em> or an imperative — not every sentence of those files. Each row carries the rule,
+      whether code enforces it (naming the refusal or check that does), whether it is still wanted, and one of four
+      dispositions: <em>delete as enforced</em>, <em>keep</em>, <em>merge into</em> a named surviving row, or
+      <em>delete as obsolete</em>. The worker proposes the "still wanted" column; the lead confirms it before §3
+      starts.</p>
+    <p><strong>Done when</strong> every binding sentence has a row; each row marked enforced names a test that drives
+      the guarded action far enough to make the refusal or check fire, and the test has been run with its log cited;
+      and the row count is stated alongside the files' total sentence count, so the scope of "binding" is visible.</p>
 
     <h2 id="s3">§3 — Rewrite the core</h2>
-    <p><strong>Deliverable.</strong> A <code>SKILL.md</code> of at most 4,000 words that states the coordinator's
-      loop, what it owns and what it must never do, and points to references only for hand-composing a delegation
-      the tool did not prepare; the references keep only what §2 marked keep.</p>
-    <p><strong>Done when</strong> the skill and references together are at most 12,000 words, the
-      skill-contract parity tests pass, and a coordinator transcript sample shows input tokens before the first
-      dispatch reduced by at least half against the 26 September baseline.</p>
+    <p><strong>Deliverable.</strong> <code>skills/reckon-build/SKILL.md</code> rewritten to at most 4,000 words,
+      stating the coordinator's loop, what it owns and what it must never do. The references keep the rows §2 marked
+      <em>keep</em> and the rows merged into them, and serve only a coordinator composing a delegation by hand because
+      <code>reckon crew dispatch</code> was not used for it. Before any rewrite, the 26 September token baseline below
+      is measured and recorded in the evidence record, so it cannot move.</p>
+    <p><strong>Done when</strong> the skill and its references together are at most 12,000 words; the existing
+      skill-contract parity tests (<code>tests/test_skill_contract_parity.py</code>) pass; and, over at least five
+      coordinator transcripts on each side, the input tokens a coordinator spends loading the skill and its
+      references before its first dispatch are at most half of the baseline. The user-global guardrails and plan
+      reading are outside this plan and are not part of the measure.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
       <h2><span class="sec">§</span> Evidence gates</h2>
       <div class="r-gate" data-id="g-tccfor-rules-settled" data-section="s3" data-gated-sections="s3" data-status="open">
-        <h4 class="r-gate-measure">the review tiers and the narrowed refusals have landed, so the rewrite describes the rules that will be in force</h4>
+        <h4 class="r-gate-measure">the narrowed refusals are merged to main, so the rewrite describes the refusals that will be in force</h4>
         <p class="r-gate-required-evidence">a-refusal-is-about-the-work#s2</p>
+      </div>
+      <div class="r-gate" data-id="g-tccfor-review-tiers-settled" data-section="s3" data-gated-sections="s3" data-status="open">
+        <h4 class="r-gate-measure">the review tiers are merged to main, so the rewrite describes the review rules that will be in force</h4>
+        <p class="r-gate-required-evidence">a-review-is-sized-to-its-risk#s2</p>
       </div>
     </section>
 
@@ -65,7 +80,7 @@
       <h2><span class="sec">§</span> Followups</h2>
       <article class="r-fu" data-id="f-tccfor-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26">
         <h4 class="r-fu-title">Classify, then rewrite, the build skill</h4>
-        <div class="r-fu-body"><p>§2 is ready; §3 waits on the refusal and review changes it must describe.</p></div>
+        <div class="r-fu-body"><p>§2 can start now; §3 starts once both gates close and the lead has confirmed §2's "still wanted" column.</p></div>
         <pre class="r-fu-prompt">/reckon-build the-crew-contract-fits-one-read</pre>
       </article>
     </section>
