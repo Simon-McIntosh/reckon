@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import contextlib
 import ctypes
 import dataclasses
 import errno
@@ -23,7 +24,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any, Callable, Iterable, Iterator, Mapping
 
 from reckon import _backends, _store, capability, flight, ledger
 from reckon.crew import lane_document as _lane_document
@@ -420,13 +421,23 @@ def _actionable_budget_hold(
     return BudgetHold(hold)
 
 
-def _live_runs_on_backend(backend_name: str) -> list[dict[str, Any]]:
-    """Return non-terminal live pointers claiming a backend, newest run id last."""
+def _live_runs_on_backend(
+    backend_name: str, *, exclude_run_ids: Iterable[str] = ()
+) -> list[dict[str, Any]]:
+    """Return non-terminal live pointers claiming a backend, newest run id last.
+
+    ``exclude_run_ids`` drops runs by identity. A dispatch that has already
+    published its own claim counts the lane's other occupants, never itself:
+    its reservation carries no worker yet, so counting it would refuse a
+    dispatch that fits under the ceiling by exactly one.
+    """
+    excluded = set(exclude_run_ids)
     return [
         pointer
         for pointer in list_live()
         if str(pointer.get("backend") or "") == backend_name
         and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
+        and str(pointer.get("run_id") or "") not in excluded
     ]
 
 
@@ -468,7 +479,11 @@ def _refuse_over_reservation_roster(
 
 
 def _refuse_over_concurrency_ceiling(
-    backend_name: str, backend: Mapping[str, Any], project: str | None = None
+    backend_name: str,
+    backend: Mapping[str, Any],
+    project: str | None = None,
+    *,
+    exclude_run_ids: Iterable[str] = (),
 ) -> None:
     """Refuse a dispatch that would exceed whichever bound is actually binding.
 
@@ -493,7 +508,7 @@ def _refuse_over_concurrency_ceiling(
     admits: an unknown ceiling, an unstated reservation and an unreadable
     cgroup can none of them justify refusing work.
     """
-    occupying = _live_runs_on_backend(backend_name)
+    occupying = _live_runs_on_backend(backend_name, exclude_run_ids=exclude_run_ids)
     bounds = summary.concurrency_bounds(
         backend, occupancy=len(occupying), login_slice=summary.read_login_slice()
     )
@@ -1120,6 +1135,36 @@ def _publish_launch_claim(
     _write_json(pointer_path(run_id), record)
 
 
+def _release_launch_claim(run_id: str) -> None:
+    """Give up a claim this dispatch published and is not going to use.
+
+    The pointer goes first and the run directory follows: a dispatch refusal is
+    made to leave nothing of its run behind, and a reader that found the run
+    directory without the pointer would take a claim that no longer exists.
+    Neither removal is an argument about whose claim it is — the path is this
+    run's own — so a call for a run that published nothing removes nothing.
+    """
+    pointer_path(run_id).unlink(missing_ok=True)
+    shutil.rmtree(run_dir(run_id), ignore_errors=True)
+
+
+@contextlib.contextmanager
+def _claim_released_on_refusal(run_id: str, published: bool) -> Iterator[None]:
+    """Return the claim this dispatch published if the guarded work refuses.
+
+    The claim is published before the work that can refuse it — the ceiling,
+    roster, scope and watcher checks, any of which can take seconds — so a
+    refusal reached under this guard gives the claim back rather than leaving a
+    live claim behind for a launch that never happened.
+    """
+    try:
+        yield
+    except Exception:
+        if published:
+            _release_launch_claim(run_id)
+        raise
+
+
 def _can_write_worktree(
     backend: Mapping[str, Any],
     *,
@@ -1514,10 +1559,20 @@ def _adjacent_live_peers(
     project: str,
     repo: Path,
     explicitly_named: set[str],
+    exclude_run_ids: Iterable[str] = (),
 ) -> list[dict[str, Any]]:
-    """Find live node pairs that receive a durable peer channel."""
+    """Find live node pairs that receive a durable peer channel.
+
+    ``exclude_run_ids`` drops runs by identity, and a dispatch that has already
+    published its own claim must pass its run id: its claim declares the same
+    write paths this node does, so adjacency on those paths would make the run
+    its own peer and wire a channel to the worker it has not spawned yet.
+    """
+    excluded = set(exclude_run_ids)
     adjacent: list[dict[str, Any]] = []
     for pointer in list_live(project=project):
+        if str(pointer.get("run_id") or "") in excluded:
+            continue
         if Path(str(pointer.get("repo") or "")).resolve() != repo:
             continue
         if str(pointer.get("phase") or "") in _TERMINAL_RUN_PHASES:
@@ -3766,175 +3821,21 @@ def dispatch(
     launch_kind = resolution.launch
     run_id = resolution.run_id
     directory = run_dir(run_id)
-    # A backend at its declared concurrency ceiling refuses a new dispatch
-    # before anything is created or spawned. A fallback backend resolved above
-    # gets the same ceiling as a directly chosen one, so a held lane never
-    # reroutes onto an already-saturated lane.
-    _refuse_over_concurrency_ceiling(backend_name, backend, project)
-    explicitly_named_peers = set() if shadow_lineage else set(node.peer_scopes)
-    peers = {} if shadow_lineage else _merge_peer_scopes(peer_claims, node.peer_scopes)
-    peers = _peer_scopes_without_shared_landing_paths(
-        peers,
-        node=node,
-        project=project,
-        repo=repo_root,
-        authority=authority,
-    )
-    node.peer_scopes = peers
-
-    reap_idle_session_members(
-        project,
-        root=ledger_root,
-        idle_window=str(fences.get("member_idle_window") or DEFAULT_MEMBER_IDLE_WINDOW),
-    )
-    named_member = bool(member)
-    # An unnamed dispatch is disposable: it carries a per-run identity instead
-    # of the dispatching session's shared one, and it gets no roster row. So
-    # two unnamed dispatches of one coordinator — every reflex review among
-    # them — are never serialised against each other, and one run in flight
-    # cannot refuse an unrelated task with `member-in-flight`. A named member
-    # remains a deliberate route to a durable worker, so it keeps the roster
-    # lookup, the D14 check and the refusal.
+    # The declared paths are this run's from the moment its id exists, so the
+    # claim goes out here, before the refusals, reads and watcher arming below,
+    # any of which can take seconds. A dispatch that published only once the
+    # launch was composed held its paths invisibly for that whole span, so a
+    # second dispatch arriving inside it read no claim and launched a duplicate
+    # worker over the first. The guard opened under this block gives the claim
+    # back if any refusal below is reached. See _publish_launch_claim.
     effective_member = member or _disposable_member_id(run_id)
-    roster_member = (
-        ledger.member(project, effective_member, root=ledger_root)
-        if named_member
-        else None
-    )
-    if named_member:
-        if roster_member is None:
-            raise CrewError(
-                format_refusal(
-                    "D14",
-                    f"project {project!r} has no crew member {member!r}; register it "
-                    "with `reckon crew member add` before dispatching to it",
-                )
-            )
-    live_pointers = list_live(project=project)
-    if roster_member is not None:
-        for pointer in live_pointers:
-            if pointer.get("member") == effective_member:
-                refuse_member_in_flight(effective_member, pointer)
-    disregarded_claims: list[str] = []
-    if shadow_lineage:
-        adjacent_peers = []
-    else:
-        # A declared path is claimed whole, not piecemeal: a figure topic
-        # directory is claimed as a tree, so any live claim that contains or is
-        # contained by a candidate is refused with the owner named — never a
-        # shared workspace, because a figure is replaced wholesale and a merged
-        # half is never correct. The walk is path-based only, so a topic with
-        # no files on disk yet binds exactly like one that does.
-        _raise_repository_scope_conflict(
-            node,
-            project=project,
-            repo=repo_root,
-            authority=authority,
-            claims=live_claims,
-            disregarded=disregarded_claims,
-        )
-        adjacent_peers = _adjacent_live_peers(
-            node,
-            project=project,
-            repo=repo_root,
-            explicitly_named=explicitly_named_peers,
-        )
     agent = _stamp_agent_display(
         _agent_configuration(backend_name, launch_kind, backend), backend
     )
     if resolution.local:
         agent["local"] = True
-    committed_runs = ledger.runs(project, root=ledger_root)
-    session_resolution = (
-        _task_session_resolution(
-            node,
-            project,
-            committed_runs=committed_runs,
-            live_pointers=live_pointers,
-            harness=_backends.dialect_for(backend).name if launch_kind == "cli" else "",
-        )
-        if backend.get("session_reuse")
-        else {"session_id": None, "withheld": None}
-    )
-    reuse_session = session_resolution["session_id"]
-    prior_node_runs = [
-        item
-        for item in committed_runs
-        if str(item.get("node") or "") == node.id
-        and not (
-            isinstance(item.get("lineage"), Mapping)
-            and item["lineage"].get("kind") == "shadow"
-        )
-    ]
-    lineage = shadow_lineage
-    attempt = 1
-    if shadow_lineage:
-        primary = next(
-            (
-                item
-                for item in committed_runs
-                if str(item.get("run_id") or "")
-                == str(shadow_lineage.get("primary_run_id") or "")
-            ),
-            None,
-        )
-        if primary is None:
-            raise CrewError(
-                format_refusal("D20", "shadow lineage names no committed primary run")
-            )
-        attempt = int(primary.get("attempt") or 1)
-    elif prior_node_runs:
-        previous = prior_node_runs[-1]
-        previous_lineage = previous.get("lineage") or {}
-        previous_attempt = previous.get("attempt") or previous_lineage.get("attempt")
-        try:
-            attempt = int(previous_attempt) + 1
-        except (TypeError, ValueError):
-            attempt = len(prior_node_runs) + 1
-        lineage = {
-            "kind": "redispatch",
-            "attempt": attempt,
-            "root_run_id": previous_lineage.get("root_run_id")
-            or str(prior_node_runs[0].get("run_id") or ""),
-            "previous_run_id": str(previous.get("run_id") or ""),
-        }
-
-    dispatch_watch = watch_state(project, session=session)
-    if watch_required and not watch_override and watch_arming_suppressed():
-        # Opting in is the caller's act. An environment that forbids arming
-        # turns the requirement into the recorded waiver below rather than
-        # into a producer nobody will reap.
-        watch_override = True
-    if watch_required and not watch_override:
-        dispatch_watch = _ensure_watch_producer(project, session=session)
-        # The watcher requirement is answered by the process, read from the
-        # watcher's own state — never by a session's follower, which is how a
-        # project with no watcher process at all kept admitting dispatches. A
-        # refusal here teaches the command that starts a durable watcher, which
-        # is idempotent, so it is safe to run against one already up.
-        if not dispatch_watch["watcher_live"]:
-            raise WatcherRequired(project, dispatch_watch)
-        # A producer exists now. Whether this session hears what it writes is a
-        # separate fact, and the only one that decides if the finished run gets
-        # noticed, so it is checked before a worktree exists.
-        if launch_kind == "cli" and not dispatch_watch["session_attached"]:
-            raise WatcherRequired(project, dispatch_watch, session=session)
-    watcher_waiver = (
-        {
-            "requested": True,
-            "arming_line": dispatch_watch["arming_line"],
-            "attach_line": dispatch_watch["attach_line"],
-            "watcher_live": bool(dispatch_watch["watcher_live"]),
-            "session_attached": bool(dispatch_watch["session_attached"]),
-        }
-        if watch_override
-        else None
-    )
-    gates = config.get("gates") or {}
-    suite_command = str(gates.get("suite_command") or "").strip() or None
-    wave_id = _resolved_wave_id(project, session, wave)
-
-    if not shadow_lineage:
+    claim_published = not shadow_lineage
+    if claim_published:
         _publish_launch_claim(
             run_id,
             node=node,
@@ -3946,8 +3847,189 @@ def dispatch(
             backend=backend_name,
             launch=launch_kind,
             agent=agent,
-            session_id=reuse_session,
+            session_id=None,
         )
+    with _claim_released_on_refusal(run_id, claim_published):
+        # A backend at its declared concurrency ceiling refuses a new dispatch
+        # before anything is created or spawned. A fallback backend resolved
+        # above gets the same ceiling as a directly chosen one, so a held lane
+        # never reroutes onto an already-saturated lane.
+        _refuse_over_concurrency_ceiling(
+            backend_name, backend, project, exclude_run_ids=(run_id,)
+        )
+        explicitly_named_peers = set() if shadow_lineage else set(node.peer_scopes)
+        peers = (
+            {} if shadow_lineage else _merge_peer_scopes(peer_claims, node.peer_scopes)
+        )
+        peers = _peer_scopes_without_shared_landing_paths(
+            peers,
+            node=node,
+            project=project,
+            repo=repo_root,
+            authority=authority,
+        )
+        node.peer_scopes = peers
+
+        reap_idle_session_members(
+            project,
+            root=ledger_root,
+            idle_window=str(
+                fences.get("member_idle_window") or DEFAULT_MEMBER_IDLE_WINDOW
+            ),
+        )
+        named_member = bool(member)
+        # An unnamed dispatch is disposable: it carries a per-run identity instead
+        # of the dispatching session's shared one, and it gets no roster row. So
+        # two unnamed dispatches of one coordinator — every reflex review among
+        # them — are never serialised against each other, and one run in flight
+        # cannot refuse an unrelated task with `member-in-flight`. A named member
+        # remains a deliberate route to a durable worker, so it keeps the roster
+        # lookup, the D14 check and the refusal. The identity is minted with the
+        # claim above, so the roster below is only ever asked about a named one.
+        roster_member = (
+            ledger.member(project, effective_member, root=ledger_root)
+            if named_member
+            else None
+        )
+        if named_member:
+            if roster_member is None:
+                raise CrewError(
+                    format_refusal(
+                        "D14",
+                        f"project {project!r} has no crew member {member!r}; register it "
+                        "with `reckon crew member add` before dispatching to it",
+                    )
+                )
+        live_pointers = [
+            pointer
+            for pointer in list_live(project=project)
+            if str(pointer.get("run_id") or "") != run_id
+        ]
+        if roster_member is not None:
+            for pointer in live_pointers:
+                if pointer.get("member") == effective_member:
+                    refuse_member_in_flight(effective_member, pointer)
+        disregarded_claims: list[str] = []
+        if shadow_lineage:
+            adjacent_peers = []
+        else:
+            # A declared path is claimed whole, not piecemeal: a figure topic
+            # directory is claimed as a tree, so any live claim that contains or is
+            # contained by a candidate is refused with the owner named — never a
+            # shared workspace, because a figure is replaced wholesale and a merged
+            # half is never correct. The walk is path-based only, so a topic with
+            # no files on disk yet binds exactly like one that does.
+            _raise_repository_scope_conflict(
+                node,
+                project=project,
+                repo=repo_root,
+                authority=authority,
+                claims=live_claims,
+                disregarded=disregarded_claims,
+            )
+            adjacent_peers = _adjacent_live_peers(
+                node,
+                project=project,
+                repo=repo_root,
+                explicitly_named=explicitly_named_peers,
+                exclude_run_ids=(run_id,),
+            )
+        committed_runs = ledger.runs(project, root=ledger_root)
+        session_resolution = (
+            _task_session_resolution(
+                node,
+                project,
+                committed_runs=committed_runs,
+                live_pointers=live_pointers,
+                harness=_backends.dialect_for(backend).name
+                if launch_kind == "cli"
+                else "",
+            )
+            if backend.get("session_reuse")
+            else {"session_id": None, "withheld": None}
+        )
+        reuse_session = session_resolution["session_id"]
+        prior_node_runs = [
+            item
+            for item in committed_runs
+            if str(item.get("node") or "") == node.id
+            and not (
+                isinstance(item.get("lineage"), Mapping)
+                and item["lineage"].get("kind") == "shadow"
+            )
+        ]
+        lineage = shadow_lineage
+        attempt = 1
+        if shadow_lineage:
+            primary = next(
+                (
+                    item
+                    for item in committed_runs
+                    if str(item.get("run_id") or "")
+                    == str(shadow_lineage.get("primary_run_id") or "")
+                ),
+                None,
+            )
+            if primary is None:
+                raise CrewError(
+                    format_refusal(
+                        "D20", "shadow lineage names no committed primary run"
+                    )
+                )
+            attempt = int(primary.get("attempt") or 1)
+        elif prior_node_runs:
+            previous = prior_node_runs[-1]
+            previous_lineage = previous.get("lineage") or {}
+            previous_attempt = previous.get("attempt") or previous_lineage.get(
+                "attempt"
+            )
+            try:
+                attempt = int(previous_attempt) + 1
+            except (TypeError, ValueError):
+                attempt = len(prior_node_runs) + 1
+            lineage = {
+                "kind": "redispatch",
+                "attempt": attempt,
+                "root_run_id": previous_lineage.get("root_run_id")
+                or str(prior_node_runs[0].get("run_id") or ""),
+                "previous_run_id": str(previous.get("run_id") or ""),
+            }
+
+        dispatch_watch = watch_state(project, session=session)
+        if watch_required and not watch_override and watch_arming_suppressed():
+            # Opting in is the caller's act. An environment that forbids arming
+            # turns the requirement into the recorded waiver below rather than
+            # into a producer nobody will reap.
+            watch_override = True
+        if watch_required and not watch_override:
+            dispatch_watch = _ensure_watch_producer(project, session=session)
+            # The watcher requirement is answered by the process, read from the
+            # watcher's own state — never by a session's follower, which is how a
+            # project with no watcher process at all kept admitting dispatches. A
+            # refusal here teaches the command that starts a durable watcher, which
+            # is idempotent, so it is safe to run against one already up.
+            if not dispatch_watch["watcher_live"]:
+                raise WatcherRequired(project, dispatch_watch)
+            # A producer exists now. Whether this session hears what it writes is a
+            # separate fact, and the only one that decides if the finished run gets
+            # noticed, so it is checked before a worktree exists.
+            if launch_kind == "cli" and not dispatch_watch["session_attached"]:
+                raise WatcherRequired(project, dispatch_watch, session=session)
+        watcher_waiver = (
+            {
+                "requested": True,
+                "arming_line": dispatch_watch["arming_line"],
+                "attach_line": dispatch_watch["attach_line"],
+                "watcher_live": bool(dispatch_watch["watcher_live"]),
+                "session_attached": bool(dispatch_watch["session_attached"]),
+            }
+            if watch_override
+            else None
+        )
+        gates = config.get("gates") or {}
+        suite_command = str(gates.get("suite_command") or "").strip() or None
+        wave_id = _resolved_wave_id(project, session, wave)
+
     worktree: dict[str, Any] | None = None
     spawned_pid: int | None = None
     spawned_start_time: str | None = None
@@ -4342,8 +4424,7 @@ def dispatch(
         # takes for a run whose process died without a manifest. Unlinking first
         # clears the claim, and the run directory follows, so a refusal is
         # indistinguishable from a dispatch that never ran.
-        pointer_path(run_id).unlink(missing_ok=True)
-        shutil.rmtree(directory, ignore_errors=True)
+        _release_launch_claim(run_id)
         # A refusal can land before the worktree exists — the creation itself is
         # the first thing inside this guard — and there is then nothing of this
         # run's to remove. The pre-existing worktree of an earlier run is left

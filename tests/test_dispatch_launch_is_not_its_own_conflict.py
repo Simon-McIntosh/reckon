@@ -282,6 +282,58 @@ def test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight(
     assert calls["count"] == 1
 
 
+def test_a_second_dispatch_meets_the_claim_made_before_the_preflight(
+    home: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The claim is taken before the slow part, not after it.
+
+    A dispatch is held at its first preflight step: its run id is minted and
+    held for the seconds the preflight, the worktree and the launch compose
+    take. A second dispatch of the same declared path is issued from inside
+    that hold, which is the window a duplicate worker was launched over — the
+    first dispatch's claim is published already, so the second meets it and is
+    refused. Asserted after the hold returns: the second dispatch never reached
+    its own worktree, and the first kept its single live pointer.
+    """
+    config_home, repo = home
+    original = dispatch_module._refuse_over_concurrency_ceiling
+    calls = {"worktrees": 0, "held": False}
+    observed: dict[str, Any] = {}
+
+    def seam(backend_name: str, backend: dict, project: str | None = None, **rest):
+        if not calls["held"]:
+            calls["held"] = True
+            observed["held"] = live_pointers_naming(NODE_ID)
+            try:
+                observed["second"] = _dispatch(
+                    config_home, repo, session="session-second"
+                )
+            except crew.ScopeConflict as exc:
+                observed["refusal"] = exc
+        return original(backend_name, backend, project, **rest)
+
+    def prepare_worktree(_repo: Path, _session: str, _node: str, base: str) -> dict:
+        calls["worktrees"] += 1
+        path = tmp_path / "worktrees" / f"hold-{calls['worktrees']}"
+        path.mkdir(parents=True, exist_ok=True)
+        return {"path": str(path), "base": base, "base_sha": base}
+
+    monkeypatch.setattr(dispatch_module, "_refuse_over_concurrency_ceiling", seam)
+    monkeypatch.setattr(dispatch_module, "_create_worktree", prepare_worktree)
+
+    first = _dispatch(config_home, repo)
+    first_run_id = str(first["run_id"])
+
+    assert observed["held"] == [first_run_id]
+    assert "second" not in observed
+    refusal = observed.get("refusal")
+    assert isinstance(refusal, crew.ScopeConflict)
+    assert refusal.run_id == first_run_id
+    assert "src/claimed.py" in str(refusal)
+    assert live_pointers_naming(NODE_ID) == [first_run_id]
+    assert calls["worktrees"] == 1
+
+
 def test_a_claim_appearing_during_the_launch_is_met_at_the_pointer_write(
     home: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
