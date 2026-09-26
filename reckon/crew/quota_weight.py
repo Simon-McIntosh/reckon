@@ -135,9 +135,22 @@ def backend_rate_statuses(
     dated pair plus its age, or explicitly unpriced — a model with no declared
     rate never inherits a neighbour's, and a pair without an ``as_of`` is not a
     price at all.
+
+    A configuration layer that will not validate yields the empty map — every
+    backend unpriced — rather than raising. This reader is called from the
+    per-tick path of long-lived followers and watchers, so a layer a merge left
+    momentarily malformed, or one adding a key the running schema predates, must
+    cost a rate figure and never the process. The figure is a notional cost
+    beside a transition, not the transition itself; a reader that dies on it
+    takes the stream down with it and tells nobody why. The misconfiguration
+    still surfaces where a reader can act on it: ``reckon flight`` names the
+    file, the key and the violated constraint.
     """
     effective_anchor = anchor or datetime.now(UTC).date()
-    backends = flight.resolve().config.get("backends") or {}
+    try:
+        backends = flight.resolve().config.get("backends") or {}
+    except flight.FlightConfigError:
+        return {}
     if not isinstance(backends, Mapping):
         return {}
     return _backend_rate_statuses(backends, effective_anchor)

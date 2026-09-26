@@ -2245,6 +2245,7 @@ def _follow_watch_lines(
     the follower a reader must act on.
     """
     from reckon.crew import follow_checkpoint, runs
+    from reckon.flight import FlightConfigError
 
     selected_runs = tuple(run_ids)
     observed_sessions = frozenset(observed)
@@ -2445,6 +2446,26 @@ def _follow_watch_lines(
     # needed to know; re-announcing it would replay the history on every poll.
     first_attach = True
 
+    # A config layer a merge left momentarily malformed must cost this arming a
+    # tick, never the stream. The reader is called every tick; without this it
+    # would raise out of the loop and end the pane, so a transient config error
+    # would take down a follower that has nothing to do with the file that broke
+    # it. The line is printed once per contiguous deferral rather than once per
+    # tick: a misconfigured layer is not news a reader needs refreshed every
+    # poll, and repeating it would bury the fleet rows with the same sentence.
+    deferred_config = False
+
+    def _defer_config_tick(exc: Exception) -> None:
+        nonlocal deferred_config
+        if deferred_config:
+            return
+        deferred_config = True
+        line = _dim_history_line(
+            "reckon crew follow deferred a tick: the flight configuration could "
+            f"not be read ({exc}); keeping this image and retrying on the next tick"
+        )
+        _echo_follow_line(line)
+
     while not _stopped() and not lifetime_elapsed and not consumer_gone:
         if not runs.producer_live(project):
             # The sweep runs here rather than at the top of the loop: a pane
@@ -2456,7 +2477,13 @@ def _follow_watch_lines(
             sleeper(poll_interval)
             continue
 
-        cursor = runs.watch_stream_cursor(project)
+        try:
+            cursor = runs.watch_stream_cursor(project)
+        except FlightConfigError as exc:
+            _defer_config_tick(exc)
+            sleeper(poll_interval)
+            continue
+        deferred_config = False
         producer = cursor["producer"]
         if first_attach and producer.get("stale"):
             # The producer imports its detection module once and runs for hours
