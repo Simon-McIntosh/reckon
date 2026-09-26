@@ -13,7 +13,7 @@ synthetic home: a real repository with a real linked worktree, and probes that
 attempt the commit inside the fence and the three writes that must stay refused
 — the main checkout's index, its ``refs/heads`` and a file in its working tree.
 
-Two properties, and the second is what makes the first mean anything:
+Three properties, and the second and third are what make the first mean anything:
 
 * inside the fence ``git commit --allow-empty`` succeeds and the new commit is
   reachable from the worktree HEAD, while every probe into the main checkout is
@@ -21,10 +21,16 @@ Two properties, and the second is what makes the first mean anything:
 * the declared negative control — leave the worktree git dir and object store
   out of the write roots, as before the change — refuses the commit with a
   read-only file system error, so the success above rests on the new grants and
-  not on a fence that happened to allow the write anyway.
+  not on a fence that happened to allow the write anyway;
+* a worktree that is itself a protected checkout is refused rather than fenced,
+  so the fence never re-binds a checkout writable after overlaying it read-only.
 
 Running this file directly reproduces the red log: its first line is the
 declared mutation, verbatim, and what follows is the observed refusal.
+Running it with ``refusal`` reproduces the second, independent red log: the
+protected-checkout refusal removed, and the composition then carrying the
+checkout's own writable bind, through which a write into its ``.git/index``
+lands.
 """
 
 from __future__ import annotations
@@ -33,6 +39,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
+from itertools import pairwise
 from pathlib import Path
 
 import pytest
@@ -42,6 +51,12 @@ from reckon import _backends
 DECLARED_MUTATION = (
     "leave the worktree git dir and object store out of the write roots as "
     "today; the fenced commit must fail with a read-only file system error"
+)
+
+REFUSAL_DECLARED_MUTATION = (
+    "remove the refusal so a protected-checkout worktree composes as at "
+    "7f68e6cc; the equal-path case must fail with the fence composed and "
+    ".git/index writable"
 )
 
 requires_bwrap = pytest.mark.skipif(
@@ -111,7 +126,17 @@ def _git_directory(worktree: Path) -> Path:
 
 
 def _common_objects(worktree: Path) -> Path:
+    """Return the shared object store, resolved against the worktree.
+
+    ``--git-common-dir`` is absolute for a linked worktree but a bare ``.git``
+    for a main checkout, so a relative answer is joined to the worktree before
+    resolving — the same rule the helper under test applies. Resolving it
+    against the process working directory instead would name the running
+    checkout's object store, which is a different repository.
+    """
     common = Path(_git(worktree, "rev-parse", "--git-common-dir").stdout.strip())
+    if not common.is_absolute():
+        common = worktree / common
     return (common / "objects").resolve()
 
 
@@ -134,6 +159,25 @@ def _make_repo(home: Path) -> tuple[Path, Path]:
     worktree.parent.mkdir(parents=True, exist_ok=True)
     _git(repo, "worktree", "add", "--detach", str(worktree), "HEAD")
     return repo, worktree
+
+
+def _make_main_checkout(home: Path) -> Path:
+    """Build a main checkout under a synthetic code root, with no linked worktree.
+
+    Its git directory *is* the repository's common directory, which is the shape
+    the write-roots helper must refuse: refs, index and objects of a main
+    checkout are exactly what the fence seals, so none of them may be re-opened
+    as a grant.
+    """
+    repo = home / "Code" / "zzmain"
+    repo.mkdir(parents=True)
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "fence-test@example.invalid")
+    _git(repo, "config", "user.name", "Fence Test")
+    (repo / "tracked.txt").write_text("base\n")
+    _git(repo, "add", "tracked.txt")
+    _git(repo, "commit", "-q", "-m", "base")
+    return repo
 
 
 def _argv(worktree: Path, repo: Path, home: Path) -> list[str]:
@@ -161,6 +205,68 @@ def _argv_without_git_roots(worktree: Path, repo: Path, home: Path) -> list[str]
 
 def _run(argv: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(argv, capture_output=True, text=True, check=False)
+
+
+def _writable_binds(argv: list[str]) -> list[str]:
+    """Return the destinations the fence re-binds writable, in argv order.
+
+    ``--dev-bind`` carries a destination token too, so the match is on the exact
+    ``--bind`` flag rather than a prefix.
+    """
+    return [destination for flag, destination in pairwise(argv) if flag == "--bind"]
+
+
+def _make_nested_worktree(home: Path) -> tuple[Path, Path]:
+    """Build a main checkout and a linked worktree carried inside it.
+
+    The tree is a real git working tree whose ``.git`` entry points into the
+    checkout that holds it, so a fence that grants the tree grants a checkout's
+    interior and its git metadata at once. Dispatch never produces this shape —
+    a dispatched worktree lives under the separate worktrees root — and the
+    fence must refuse it.
+    """
+    repo = _make_main_checkout(home)
+    worktree = repo / ".worktrees" / "wt"
+    worktree.parent.mkdir(parents=True, exist_ok=True)
+    _git(repo, "worktree", "add", "--detach", str(worktree), "HEAD")
+    return repo, worktree
+
+
+@contextmanager
+def _refusal_removed() -> Iterator[None]:
+    """Remove the protected-checkout refusal for the body, restoring it after.
+
+    The declared mutation, applied at the one place the refusal enters the
+    composition: the fence then composes for a protected checkout again, as it
+    did before the refusal existed. Restoring the original in a ``finally``
+    keeps the removal confined to this call.
+    """
+    original = _backends._fenced_worktree_refusal
+    _backends._fenced_worktree_refusal = lambda *_args, **_kwargs: None
+    try:
+        yield
+    finally:
+        _backends._fenced_worktree_refusal = original
+
+
+def _refusal_negative_control_report(home: Path) -> list[str]:
+    repo = _make_main_checkout(home)
+    probe = (
+        'if touch "$R/.git/index" 2>/dev/null; then echo index=WROTE; '
+        "else echo index=refused; fi; "
+        'if touch "$R/.git/objects/probe" 2>/dev/null; then echo objects=WROTE; '
+        "else echo objects=refused; fi"
+    )
+    with _refusal_removed():
+        argv = _backends.fence_argv(["true"], worktree=repo, home=home)
+        run_argv = _backends.fence_argv(
+            ["sh", "-c", probe.replace("$R", str(repo))], worktree=repo, home=home
+        )
+    proc = _run(run_argv)
+    lines = [f"checkout-among-writable-binds={str(repo.resolve()) in argv}"]
+    lines += proc.stdout.splitlines()
+    lines += proc.stderr.splitlines()
+    return lines
 
 
 @requires_bwrap
@@ -231,6 +337,87 @@ def test_the_negative_control_refuses_the_commit_without_the_git_roots(
     assert _rev(worktree) == before, out
 
 
+def test_a_protected_checkout_worktree_is_refused(tmp_path: Path) -> None:
+    """A worktree that is itself a protected checkout is refused, not fenced.
+
+    A main checkout is a protected class the fence overlays read-only while
+    also, as the run's own write root, a path it would re-bind writable. The
+    later bind re-opens the whole checkout, its ``.git/index`` and objects
+    included, so the fence hands back the metadata it exists to seal. The
+    refusal is what keeps them closed: a fence pointed at a protected checkout
+    is refused before any bind is composed, so no composed argv ever re-opens
+    one.
+    """
+    home = tmp_path / "home"
+    repo = _make_main_checkout(home)
+
+    # The refusal's precondition: the checkout is recognised as a protected
+    # checkout, and the worktree resolves to that same path.
+    assert repo.resolve() in _backends.protected_checkouts(home)
+    with pytest.raises(_backends.BackendError) as raised:
+        _backends.fence_argv(["true"], worktree=repo, home=home)
+    message = str(raised.value)
+    # The refusal names the worktree and the checkout it coincides with; here
+    # they are the same path.
+    assert str(repo.resolve()) in message, message
+    # And the helper itself grants nothing for a main checkout, so a fence that
+    # composed here would leave the checkout sealed only by the helper and not
+    # by this refusal — the two guards are independent.
+    assert _backends.worktree_git_write_roots(repo) == []
+
+
+def test_a_worktree_inside_a_protected_checkout_is_refused(tmp_path: Path) -> None:
+    """A git working tree carried inside a protected checkout is refused too.
+
+    The tree's own ``.git`` points into the checkout that holds it, so a fence
+    that re-bound the tree would hand the worker a checkout's interior together
+    with a git directory inside it. The refusal names the worktree and the
+    protected checkout it lies inside.
+    """
+    home = tmp_path / "home"
+    repo, worktree = _make_nested_worktree(home)
+
+    assert (worktree / ".git").exists()
+    assert worktree.resolve().is_relative_to(repo.resolve())
+    with pytest.raises(_backends.BackendError) as raised:
+        _backends.fence_argv(["true"], worktree=worktree, home=home)
+    message = str(raised.value)
+    assert str(worktree.resolve()) in message, message
+    assert str(repo.resolve()) in message, message
+
+
+@requires_bwrap
+def test_the_refusal_negative_control_writes_the_checkout_index(
+    tmp_path: Path,
+) -> None:
+    """The declared mutation, applied: the fence composes and ``.git/index`` is writable.
+
+    With the refusal removed, composing a fence for a main checkout yields an
+    argv that re-binds the checkout writable after its read-only overlay, and a
+    write into its ``.git/index`` lands. The equal-path case fails on exactly
+    that composition, so its pass rests on the refusal and not on a composition
+    that happened to refuse for another reason.
+    """
+    home = tmp_path / "home"
+    repo = _make_main_checkout(home)
+    probe = (
+        'if touch "$R/.git/index" 2>/dev/null; then echo index=WROTE; '
+        "else echo index=refused; fi"
+    )
+
+    with _refusal_removed():
+        argv = _backends.fence_argv(["true"], worktree=repo, home=home)
+        run_argv = _backends.fence_argv(
+            ["sh", "-c", probe.replace("$R", str(repo))], worktree=repo, home=home
+        )
+
+    # The mutation applied: the composition succeeded and re-binds the checkout.
+    assert str(repo.resolve()) in _writable_binds(argv), argv
+    proc = _run(run_argv)
+    out = proc.stdout + proc.stderr
+    assert "index=WROTE" in out, out
+
+
 def _negative_control_report(home: Path) -> list[str]:
     repo, worktree = _make_repo(home)
     before = _rev(worktree)
@@ -243,10 +430,17 @@ def _negative_control_report(home: Path) -> list[str]:
     return lines
 
 
-if __name__ == "__main__":  # pragma: no cover - reproduces the red log
-    print(DECLARED_MUTATION)
+if __name__ == "__main__":  # pragma: no cover - reproduces the red logs
+    # ``refusal`` reproduces the red log of the protected-checkout refusal; the
+    # default reproduces the linked-worktree commit control above.
+    refusal = len(sys.argv) > 1 and sys.argv[1] == "refusal"
+    print(REFUSAL_DECLARED_MUTATION if refusal else DECLARED_MUTATION)
     with tempfile.TemporaryDirectory() as directory:
-        for line in _negative_control_report(Path(directory) / "home"):
+        home = Path(directory) / "home"
+        report = (
+            _refusal_negative_control_report if refusal else _negative_control_report
+        )
+        for line in report(home):
             print(line)
     if shutil.which(_backends.FENCE_BINARY) is None:
         print("bubblewrap is not installed", file=sys.stderr)

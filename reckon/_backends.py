@@ -2051,6 +2051,44 @@ def protected_paths(home: str | Path | None = None) -> list[Path]:
     return list(dict.fromkeys(path for path in named if path.exists()))
 
 
+def protected_checkouts(home: str | Path | None = None) -> list[Path]:
+    """Return the protected paths that are themselves git checkouts.
+
+    A main checkout under ``Code`` carries a ``.git`` entry; the other protected
+    paths — the dot directories and stores — do not. Only these are the trees a
+    fence must never grant writable, because a re-bind of one re-opens the very
+    git metadata the fence exists to keep closed.
+    """
+    return [path for path in protected_paths(home) if (path / ".git").exists()]
+
+
+def _fenced_worktree_refusal(worktree: Path, checkouts: Sequence[Path]) -> Path | None:
+    """Return the protected checkout ``worktree`` must not be composed against.
+
+    A fence overlays each protected checkout read-only and then re-binds the
+    run's write roots writable where they fall inside one. A worktree that *is*
+    a protected checkout, or that is a git working tree lying inside one, is
+    re-opened by that grant together with its own git metadata, so the fence
+    would hand the worker a checkout it is meant to seal. Dispatch places a
+    worktree under the separate worktrees root, outside every checkout, so this
+    only arises if the fence is pointed at a checkout — and then it refuses
+    rather than compose a fence that grants one.
+
+    A directory that merely sits inside a protected checkout without being a
+    git working tree is not a checkout and is left to compose: it is the shape
+    a run's own tree takes when the tree stands under a checkout, and the
+    re-bind of it is the ordinary grant into a protected tree.
+    """
+    target = resolved_destination(worktree)
+    for checkout in checkouts:
+        checkout_target = resolved_destination(checkout)
+        if target == checkout_target:
+            return checkout_target
+        if target.is_relative_to(checkout_target) and (target / ".git").exists():
+            return checkout_target
+    return None
+
+
 def _within_any(path: Path, roots: Sequence[Path]) -> bool:
     return any(path == root or path.is_relative_to(root) for root in roots)
 
@@ -2202,6 +2240,15 @@ def fence_argv(
 
     binds = protected_read_only_binds(protected)
     sealed = [destination for _source, destination in binds]
+    if worktree is not None:
+        checkout = _fenced_worktree_refusal(Path(worktree), protected_checkouts(home))
+        if checkout is not None:
+            raise BackendError(
+                f"refusing to fence worktree {resolved_destination(worktree)}: it "
+                f"is the protected checkout {checkout}, or a git working tree "
+                "inside it, so the fence's writable re-bind would re-open the "
+                "checkout it is meant to seal"
+            )
     fenced = [FENCE_BINARY, "--dev-bind", "/", "/"]
     for source, destination in binds:
         fenced += ["--ro-bind", str(source), str(destination)]

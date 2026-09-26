@@ -684,6 +684,74 @@
         <code>/reckon/figures/a-worker-cannot-write-your-home/harness-home-carry-opt-in.svg</code>.</p></div>
       </div>
 
+    <p><strong>The main-checkout guard is pinned.</strong> The review of
+      <code>a-fenced-worker-can-commit</code> found that both of that node's cases compose a linked
+      worktree, where the worktree's git directory differs from the common directory, so the
+      write-roots helper's early return is never reached by anything the suite executes. Reproduced
+      with the early return deleted at <code>ca46d6ab</code>: both cases still pass. The new case
+      composes a fence for a synthetic main checkout under a synthetic code root and asserts that
+      neither its git directory nor its <code>objects</code> directory is among the argv's writable
+      binds; the declared negative control deletes the early return and the case fails with the git
+      directory among those binds. Gate over the fence file and the two harness-home fixture files:
+      base <code>ca46d6ab</code> <code>16 passed</code>, head <code>74e6c86d</code>
+      <code>18 passed</code>, zero added failures; lint and format clean on the touched path. Commit
+      <code>74e6c86d</code>. Evidence:
+      <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-main-checkout-git-roots</code>,
+      figure <code>/reckon/figures/a-worker-cannot-write-your-home/main-checkout-git-roots.svg</code>.
+      This gate measures only this node's own change; verifying the merged result belongs to a
+      separately dispatched test node.</p>
+    <p><strong>Measured limit of that guard, for the re-enable decision.</strong> Removing the
+      git directory from the writable roots stops it being <em>named</em> a grant; it does not, on
+      its own, leave a main checkout's <code>.git</code> read-only when the worktree is itself a
+      main checkout, because <code>fence_argv</code> still re-binds that whole checkout writable
+      and the bind covers its <code>.git</code>. Composed for a synthetic main checkout, the
+      executed fence permits writes to <code>.git/index</code> and <code>.git/objects</code>. The
+      dispatch path does not reach it — a run's worktree is a linked worktree under
+      <code>Code/.reckon-worktrees</code>, which the protected set excludes — so the limit is
+      latent and closing it is separate work, not a precondition of the fence re-enable.</p>
+    <p><strong>The latent limit is closed: a fence pointed at a protected checkout is
+      refused.</strong> <code>fence_argv</code> now calls <code>_fenced_worktree_refusal</code>
+      before composing any bind and raises <code>BackendError</code> when the worktree is a
+      protected checkout, or a git working tree lying inside one; the message names the worktree and
+      the checkout it coincides with. A protected checkout is a protected path carrying its own
+      <code>.git</code> entry, which <code>protected_checkouts</code> selects from the protected
+      set &mdash; a main checkout under the code root has one, the dot directories and stores do
+      not. Because the refusal runs before the argv is built, no composed fence re-opens a checkout,
+      which is the guarantee the earlier paragraph recorded as stated but unmet. Dispatch places
+      every worktree under <code>Code/.reckon-worktrees</code>, outside the protected set, so no
+      dispatched run reaches the refusal; a linked worktree outside every protected checkout
+      composes exactly as before. Measured at base <code>7f68e6cc</code> by executing a fence
+      composed for a synthetic main checkout: writes to its <code>.git/index</code> and
+      <code>.git/objects</code> both land, because the argv re-binds the checkout after overlaying
+      it read-only. At head <code>93299282</code>, <code>tests/test_a_fenced_worker_can_commit.py</code>
+      adds three cases against synthetic checkouts under a synthetic code root and never a real
+      one: an equal-path worktree raises with the path named, a git working tree nested inside a
+      protected checkout raises naming both, and a linked worktree outside every checkout still
+      composes and its fenced commit still succeeds. The declared negative control &mdash;
+      <em>remove the refusal so a protected-checkout worktree composes as at 7f68e6cc; the
+      equal-path case must fail with the fence composed and .git/index writable</em> &mdash; is
+      applied and logged: the composition carries the checkout among its writable binds and both
+      probes read <code>WROTE</code>
+      (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-protected-checkout.txt</code>).
+      Gate over the fence file and the two harness-home fixture files: base <code>7f68e6cc</code>
+      <code>18 passed</code>, head <code>93299282</code> <code>19 passed</code>, zero added
+      failures; lint over the two touched paths adds no finding and format is clean
+      (<code>docs/figures/a-worker-cannot-write-your-home/gate-protected-checkout-base.txt</code>,
+      <code>gate-protected-checkout-head.txt</code>). Commit <code>93299282</code>. Evidence:
+      <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-protected-checkout-refusal</code>,
+      figure <code>/reckon/figures/a-worker-cannot-write-your-home/protected-checkout-refusal.svg</code>.
+      This gate measures only this node's own change; verifying the merged result belongs to a
+      separately dispatched test node.</p>
+    <p><strong>Interpretation surfaced, not silently resolved.</strong> The brief's second named
+      case reads that a worktree <em>nested inside</em> a protected checkout also refuses. Two
+      fixtures outside this node's write scope place a plain stand-in directory inside a protected
+      checkout (<code>tests/test_each_run_owns_its_harness_home.py</code> and
+      <code>tests/test_launch_plan_fences_the_home.py</code>), and a literal reading of that clause
+      breaks seven of their cases. The predicate taken is that nested refusal fires on a git working
+      tree &mdash; the worktree carrying its own <code>.git</code> &mdash; which is what a
+      checkout's interior means here and is exactly the shape that re-opens git metadata; a plain
+      directory inside a checkout is not a checkout and composes. The alternative, refusing on path
+      containment regardless of <code>.git</code>, would fail cases this node may not edit.</p>
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host
