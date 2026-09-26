@@ -9,8 +9,8 @@
   <meta name="plan-title" content="Orchestrator Crew Pattern Studies — execution evidence">
   <meta name="plan-summary" content="Cumulative measured evidence for the crew pattern studies: each study's measurements, reproduction checks and limits.">
   <meta name="plan-evidence-for" content="orchestrator-crew-pattern-studies">
-  <meta name="plan-verifies" content="orchestrator-crew-pattern-studies#s2,orchestrator-crew-pattern-studies#s6">
-  <meta name="plan-commits" content="95b173b8d99858cdaddc58a4d5ecbe08557cd98e,c29fb51e7820d712a4259eceff8e531585939fca">
+  <meta name="plan-verifies" content="orchestrator-crew-pattern-studies#s2,orchestrator-crew-pattern-studies#s6,orchestrator-crew-pattern-studies#s5">
+  <meta name="plan-commits" content="95b173b8d99858cdaddc58a4d5ecbe08557cd98e,c29fb51e7820d712a4259eceff8e531585939fca,c602d1bed59d33b62e94ee5d4aa689f153ced664">
   <meta name="plan-tags" content="crew,analysis,measurement">
   <meta name="plan-recorded-at" content="2026-09-26">
   <meta name="plan-verdict" content="passed">
@@ -179,6 +179,123 @@
         The document records a measured result
         for coordinator review. It does not resolve a followup, change plan lifecycle state or claim
         that the broader study is complete.</p>
+    </section>
+    <section id="code-depth">
+      <h2>Code depth, interface width and reuse</h2>
+      <p>Eight repository snapshots produce twelve scope rows: four each for <code>reckon/</code>,
+        its <code>reckon/crew/</code> subset and <code>nova/</code>. The source tree is read through
+        <code>git archive</code> at pinned commits and never imported. The complete second measurement
+        matches the first byte for byte. This proves reproducibility of the disclosed structural
+        instruments; it does not prove semantic equivalence, software quality or a worker-lane effect.</p>
+      <table>
+        <thead><tr><th>Scope</th><th>Physical source lines</th><th>Public definitions</th><th>Clone share</th><th>Cloned code lines</th></tr></thead>
+        <tbody>
+<tr><td><code>reckon/</code></td><td>45,498 → 89,711</td><td>556 → 1,017</td><td>11.753% → 10.725%</td><td>4,246 → 6,843</td></tr>
+<tr><td><code>reckon/crew/</code></td><td>13,268 → 40,343</td><td>131 → 427</td><td>5.491% → 7.054%</td><td>563 → 1,885</td></tr>
+<tr><td><code>nova/</code></td><td>157,127 → 179,742</td><td>5,372 → 5,679</td><td>10.419% → 11.263%</td><td>11,521 → 14,402</td></tr>
+        </tbody>
+      </table>
+      <figure>
+        <img src="/reckon/figures/orchestrator-crew-pattern-studies/code-depth-trends.svg"
+          alt="Across four weekly targets, reckon total clone share declines, crew clone share rises, and nova clone share rises slightly; crew public definitions grow fastest."
+          style="width:100%;height:auto">
+        <figcaption>Clone share uses token-bearing code lines; interface growth uses public definitions,
+          indexed to each scope's first snapshot. Crew is a subset of reckon. Target labels are weekly;
+          actual commit offsets are recorded below.</figcaption>
+      </figure>
+      <p>Reckon's overall clone percentage falls while its duplicated-line count grows by 2,597.
+        Its public definitions grow 82.9%; the crew subset grows 226.0%; nova grows 5.7%.
+        Reckon's CLI grows from 50 to 56 commands and from 202 to 239 option occurrences.
+        MCP tool/view pairs grow from 26 to 30. Coded refusal families grow from zero to 23;
+        the first snapshot still has uncoded refusal sites, so zero is not an absence of guards.</p>
+      <p>Pure forwarding bodies are uncommon under the strict one-call definition: 21/2,621 reckon
+        functions, 8/1,171 crew functions, and 108/7,245 nova functions in the final snapshot.
+        Source size, public definition count, function length and clone share are distinct measures.
+        Protocols, data classes and standalone hook bootstraps require judgment before consolidation.</p>
+      <h3>Highest-value consolidation candidates</h3>
+      <p>The ranking prioritizes persistence, accounting and numerical contracts. Every copy and the
+        behavior to preserve are in the <a href="/reckon/research/data/crew-pattern-review/code-depth/findings.md">findings</a>
+        and <a href="/reckon/research/data/crew-pattern-review/code-depth/consolidation.json">ranked candidate data</a>.
+        New homes in this table are proposals, not existing modules or completed refactors.</p>
+      <table>
+        <thead><tr><th>Rank</th><th>Concept</th><th>Copies</th><th>Representative copy</th><th>Proposed single home</th></tr></thead>
+        <tbody>
+<tr><td>1</td><td>One UTC timestamp parser for reckon</td><td>44</td><td><code>reckon/_backends.py:603</code></td><td><code>reckon/_timestamps.py:parse_utc (new primitive module)</code></td></tr>
+<tr><td>2</td><td>One atomic JSON persistence primitive for reckon</td><td>14</td><td><code>reckon/_store.py:323</code></td><td><code>reckon/_store.py:write_json_atomically (new primitive beside existing envelope writer)</code></td></tr>
+<tr><td>3</td><td>One ordered enumeration of original and resumed streams</td><td>3</td><td><code>reckon/crew/metering.py:280</code></td><td><code>reckon/crew/metering.py:run_streams (existing implementation)</code></td></tr>
+<tr><td>4</td><td>Share the algebra common to equilibrium constraints</td><td>12</td><td><code>nova/equilibrium/constraint.py:970</code></td><td><code>nova/equilibrium/constraint.py (shared residual and dual-image implementation)</code></td></tr>
+<tr><td>5</td><td>Share axis validation mechanics with explicit precision policy</td><td>3</td><td><code>nova/equilibrium/map_extraction.py:109</code></td><td><code>nova/utilities/axes.py:uniform_axis (new common validator)</code></td></tr>
+<tr><td>6</td><td>One owned immutable-array constructor</td><td>3</td><td><code>nova/imas/mast_efit_referee.py:39</code></td><td><code>nova/utilities/arrays.py:readonly_copy (new common array primitive)</code></td></tr>
+<tr><td>7</td><td>One bool-rejecting numeric observation decoder</td><td>4</td><td><code>reckon/_backends.py:1608</code></td><td><code>reckon/_observations.py:optional_number (new observation primitive)</code></td></tr>
+<tr><td>8</td><td>One atomic JSON writer for nova&#x27;s durable receipts</td><td>3</td><td><code>nova/calibrate/sweep.py:372</code></td><td><code>nova/io/json.py:write_atomic (new shared writer)</code></td></tr>
+<tr><td>9</td><td>Extend the already shared contract validation with trimmed text</td><td>3</td><td><code>nova/imas/machine_drive.py:79</code></td><td><code>nova/imas/machine_evidence.py:require_trimmed_string (alongside require_string)</code></td></tr>
+<tr><td>10</td><td>One digest operation over canonical contract bytes</td><td>3</td><td><code>nova/imas/machine_drive.py:323</code></td><td><code>nova/imas/machine_evidence.py:canonical_digest (beside canonical_json)</code></td></tr>
+        </tbody>
+      </table>
+      <p>One important non-equivalence: the three nova axis validators use stored-dtype epsilon,
+        coordinate-scaled absolute tolerance and strict relative spacing respectively. Share the
+        mechanics with explicit policies; making their tolerances identical would change semantics.
+        Similarly, existing pointer writers stamp launcher identity and envelope writers wrap payloads;
+        a shared atomic-write primitive must preserve those caller-owned operations.</p>
+      <h3>Pinned inputs</h3>
+      <p>The nearest committer timestamp is selected on pinned primary-branch first-parent history,
+        bounded at the capture cutoff <code>2026-09-26T10:00:00Z</code>. The September 26 noon target
+        is therefore truncated at capture. Reckon's September 12 target selects September 14;
+        nova's September 26 target selects September 24. These are snapshot comparisons, not exactly
+        seven-day throughput intervals.</p>
+      <table>
+        <thead><tr><th>Repository</th><th>Noon target</th><th>Commit</th><th>Commit time</th><th>Offset hours</th></tr></thead>
+        <tbody>
+<tr><td>reckon</td><td>2026-09-05</td><td><code>7b46b7b56f52d92a324888b1207af7833b425c58</code></td><td>2026-09-05T15:27:16+02:00</td><td>+1.45</td></tr>
+<tr><td>reckon</td><td>2026-09-12</td><td><code>2080a7313945676fc08091cfcb6a8716b2f40c9a</code></td><td>2026-09-14T07:59:34+02:00</td><td>+41.99</td></tr>
+<tr><td>reckon</td><td>2026-09-19</td><td><code>23635a769a9cd9b13799de53c0b66c2b762abe88</code></td><td>2026-09-19T14:09:33+02:00</td><td>+0.16</td></tr>
+<tr><td>reckon</td><td>2026-09-26</td><td><code>056c08e0d7c96a5b4edaee5dbcfe169c0c5ceaf9</code></td><td>2026-09-26T11:59:44+02:00</td><td>-2.00</td></tr>
+<tr><td>nova</td><td>2026-09-05</td><td><code>e247cff66a06bc6a12cdfd3d9003c34fde90ecde</code></td><td>2026-09-05T14:07:25+02:00</td><td>+0.12</td></tr>
+<tr><td>nova</td><td>2026-09-12</td><td><code>9062b6f121e4355ffd091280c4e5df3905943130</code></td><td>2026-09-11T15:09:24+02:00</td><td>-22.84</td></tr>
+<tr><td>nova</td><td>2026-09-19</td><td><code>c11eea7f110bdec79d586e23ebc83f5568b3f7ab</code></td><td>2026-09-19T14:00:38+02:00</td><td>+0.01</td></tr>
+<tr><td>nova</td><td>2026-09-26</td><td><code>16287918db2f90d0088c1786ec45965cd90e6652</code></td><td>2026-09-24T17:59:59+02:00</td><td>-44.00</td></tr>
+        </tbody>
+      </table>
+      <h3>Validation and artifacts</h3>
+      <p>The 82,789-byte <a href="/reckon/research/data/crew-pattern-review/code-depth/code-depth.json">compact JSON census</a>
+        retains every reported figure: snapshot identities, source/test sizes, public surface, function-length
+        summaries, clone-share and interface counts, wide-module rows, and all ranked candidates with their copies.
+        Its SHA-256 is <code>f0b705a30fb23ca0da36241adf001d3a15611e6db2e069e0eb8aeac77ed60a3a</code>.</p>
+      <p>Histograms, raw clone windows and complete function/module/helper inventories stay in the full census
+        outside the repository: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T104810100005-code-depth-reuse-census/code-depth-full.json</code>.
+        That artifact is 14,979,441 bytes, SHA-256
+        <code>e6b4bbd61d2f4f03d8b2b5618026e5edde4fe62a8de3d35c3bc8b494b227169e</code>; its path, size and digest are also recorded in the compact file.
+        The storage correction leaves all measurements, rankings and plotted data unchanged.</p>
+      <ul>
+        <li><a href="/reckon/research/data/crew-pattern-review/code-depth/census.py">Census script</a>
+          and <a href="/reckon/research/data/crew-pattern-review/code-depth/snapshots.json">snapshot pins</a>.</li>
+        <li><a href="/reckon/research/data/crew-pattern-review/code-depth/census.log">Complete census log</a>
+          and <a href="/reckon/research/data/crew-pattern-review/code-depth/reproduction.log">byte-identity receipt</a>,
+          both exit status zero at instrument revision <code>c602d1bed59d33b62e94ee5d4aa689f153ced664</code>.</li>
+        <li><a href="/reckon/research/data/crew-pattern-review/code-depth/render.py">Report and figure renderer</a>
+          and <a href="/reckon/research/data/crew-pattern-review/code-depth/findings.md">definitions, weekly trends and all ten ranked recommendations</a>.</li>
+      </ul>
+      <p><a href="/reckon/research/data/crew-pattern-review/code-depth/validation.log">Artifact validation</a>
+        independently re-derives all eight snapshot choices, reconciles all twelve scope rows,
+        resolves all 92 locations in the ten ranked candidates, and verifies the figure reference.
+        The plan has eight existing typed-section-contract warnings, with zero added warnings or
+        errors; the evidence document is clean. The four analysis scripts pass lint and formatting checks.
+        <a href="/reckon/research/data/crew-pattern-review/code-depth/validate.py">The validation script</a>
+        also proves that removing the single landing block restores the entire base plan byte for byte.</p>
+      <p>Positive controls detect a known twelve-line duplicate and reject a single copy, discriminate
+        forwarding from transformation, recognize each interface counter, and distinguish filesystem
+        replacement from dataclass replacement. The last distinction removed a false atomic-writer
+        candidate during instrument review. The measurement negative-control declaration is
+        <code>none: measurement node, verified by re-running the recorded census script and diffing its JSON</code>.</p>
+      <p>The clone detector normalizes layout and literal values while preserving identifiers, requiring
+        two non-overlapping six-line occurrences and unioning their covered code lines. Four helper
+        detectors retain all groups of at least three definitions within their disclosed rules;
+        primitive clients and same-name functions are candidates, not certified reimplementations.
+        The census cannot establish semantic equivalences outside those rules, dynamic exports,
+        call-site reuse, correctness, test quality or causal attribution to a lane.</p>
+      <p>The deliverables were committed locally for review. No production source or plan lifecycle
+        state changed. The next concrete action is coordinator review of this evidence alongside the
+        other studies, followed by separately scoped behavior-preserving consolidations.</p>
     </section>
   </main>
 </body>

@@ -1,0 +1,2280 @@
+{
+  "full_output": {
+    "bytes": 14979441,
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T104810100005-code-depth-reuse-census/code-depth-full.json",
+    "sha256": "e6b4bbd61d2f4f03d8b2b5618026e5edde4fe62a8de3d35c3bc8b494b227169e"
+  },
+  "inputs": {
+    "capture_cutoff": "2026-09-26T10:00:00+00:00",
+    "repositories": [
+      {
+        "history_tip": "457bbec7e691465101ea7c56716fe23eb8477dfe",
+        "primary_branch": "main",
+        "repository": "reckon",
+        "snapshots": [
+          {
+            "commit": "7b46b7b56f52d92a324888b1207af7833b425c58",
+            "committed_at": "2026-09-05T15:27:16+02:00",
+            "offset_seconds": 5236,
+            "target": "2026-09-05T12:00:00+00:00"
+          },
+          {
+            "commit": "2080a7313945676fc08091cfcb6a8716b2f40c9a",
+            "committed_at": "2026-09-14T07:59:34+02:00",
+            "offset_seconds": 151174,
+            "target": "2026-09-12T12:00:00+00:00"
+          },
+          {
+            "commit": "23635a769a9cd9b13799de53c0b66c2b762abe88",
+            "committed_at": "2026-09-19T14:09:33+02:00",
+            "offset_seconds": 573,
+            "target": "2026-09-19T12:00:00+00:00"
+          },
+          {
+            "commit": "056c08e0d7c96a5b4edaee5dbcfe169c0c5ceaf9",
+            "committed_at": "2026-09-26T11:59:44+02:00",
+            "offset_seconds": -7216,
+            "target": "2026-09-26T12:00:00+00:00"
+          }
+        ]
+      },
+      {
+        "history_tip": "16287918db2f90d0088c1786ec45965cd90e6652",
+        "primary_branch": "main",
+        "repository": "nova",
+        "snapshots": [
+          {
+            "commit": "e247cff66a06bc6a12cdfd3d9003c34fde90ecde",
+            "committed_at": "2026-09-05T14:07:25+02:00",
+            "offset_seconds": 445,
+            "target": "2026-09-05T12:00:00+00:00"
+          },
+          {
+            "commit": "9062b6f121e4355ffd091280c4e5df3905943130",
+            "committed_at": "2026-09-11T15:09:24+02:00",
+            "offset_seconds": -82236,
+            "target": "2026-09-12T12:00:00+00:00"
+          },
+          {
+            "commit": "c11eea7f110bdec79d586e23ebc83f5568b3f7ab",
+            "committed_at": "2026-09-19T14:00:38+02:00",
+            "offset_seconds": 38,
+            "target": "2026-09-19T12:00:00+00:00"
+          },
+          {
+            "commit": "16287918db2f90d0088c1786ec45965cd90e6652",
+            "committed_at": "2026-09-24T17:59:59+02:00",
+            "offset_seconds": -158401,
+            "target": "2026-09-26T12:00:00+00:00"
+          }
+        ]
+      }
+    ],
+    "selection": "Nearest committer timestamp on pinned primary first-parent history, at or before capture cutoff; ties prefer earlier timestamp then SHA."
+  },
+  "instrument_sha256": "a025017a0005ac26f78df3eff48468dabcf0f3c2e7ca0700ad4431b734921369",
+  "methodology": {
+    "cli": "Static command and group decorators counted separately; option decorators on them count occurrences, aliases together as one option, version_option included, implicit Click help excluded. Callback registration generated dynamically is unmeasured.",
+    "clones": "Hash every six consecutive token-bearing code-line window, ignoring comments/docstrings/layout; preserve identifier/operator spelling and map string/number literals to token kinds. Require two non-overlapping occurrences; count union of covered physical token start lines, including both copies, once. Every duplicate window is retained. Crew clones are recalculated within crew only.",
+    "crew_tests": "Whole test files containing AST import/from import of reckon.crew or a literal patch/import path starting reckon.crew. Tests can cover other concerns too; this is an inclusive test association, not disjoint attribution.",
+    "function_length": "Inclusive def-to-end physical span for every function, method and nested function; decorators excluded, docstrings included. Percentiles use linear interpolation.",
+    "mcp": "Read-plan VIEW_NAMES, audit acceptance (shared names minus explicit refusal branches), Literal view annotations with wrapper aliases collapsed, and crew view comparisons. Count tool/name pairs; also give distinct spelling count. This includes accepted audit fallback names even if documentation omits them.",
+    "pass_through": "After removing docstring, exactly one call expression/return (optionally awaited), forwarding every declared argument once with no value transformations; self/cls receiver excluded. Imports, adaptation, constants and extra statements disqualify.",
+    "population": "Tracked Python modules under package directory and tests/; package-contained scripts included; no top-level scripts, notebooks, HTML, generated assets or other languages. Source archives are extracted with git archive; no target package imports or execution.",
+    "public_surface": "Non-underscore module-level functions/classes plus non-underscore methods/classes whose enclosing classes are public. Nested functions are excluded. Imports, reexports, dynamic facade exports and attributes are not counted.",
+    "refusals": "Distinct literal family codes passed to format_refusal across measured source; list every call site. Earlier unstructured refusals do not count as coded families; dispatch raise sites are retained separately. Not a count of all refusal mechanisms.",
+    "reimplementation": "Exhaustive within four disclosed candidate detectors: direct primitive signatures listed by primitive_concepts; same unprefixed module-level function name with multiple body statements; identical AST bodies with at least 12 nodes; literal-normalized token bodies with at least six code lines. Require at least three distinct function definitions, excluding pure forwarders and nested functions. Candidate equality is not semantic equivalence; primitive clients often require no consolidation. Unrecognised semantic equivalences remain unmeasured.",
+    "source_lines": "Physical splitlines count, including blanks/comments/docstrings. Code lines are token-bearing physical start lines excluding comments/docstrings/layout; multiline tokens count at their start line."
+  },
+  "positive_controls": {
+    "duplicate_fixture": {
+      "expected_clone_lines": 12,
+      "observed_clone_lines": 12
+    },
+    "file_replacement_and_dataclass_replacement_discriminated": true,
+    "forwarder_and_transformer_discriminated": true,
+    "single_copy_fixture": {
+      "expected_clone_lines": 0,
+      "observed_clone_lines": 0
+    },
+    "surface_fixture": {
+      "commands": 1,
+      "mcp_views": 2,
+      "options": 1,
+      "refusal_codes": 1
+    },
+    "timestamp_primitive_found": true
+  },
+  "ranked_candidates": [
+    {
+      "commit": "056c08e0d7c96a5b4edaee5dbcfe169c0c5ceaf9",
+      "copies": [
+        {
+          "end_line": 627,
+          "function": "_parse_cached_fetch_stamp",
+          "line": 603,
+          "path": "reckon/_backends.py"
+        },
+        {
+          "end_line": 2478,
+          "function": "_event_timestamp",
+          "line": 2469,
+          "path": "reckon/_backends.py"
+        },
+        {
+          "end_line": 267,
+          "function": "_parse_stamp",
+          "line": 261,
+          "path": "reckon/budget.py"
+        },
+        {
+          "end_line": 2603,
+          "function": "_follow_row_stamp",
+          "line": 2587,
+          "path": "reckon/cli.py"
+        },
+        {
+          "end_line": 380,
+          "function": "_observed_moment",
+          "line": 359,
+          "path": "reckon/crew/budget_group.py"
+        },
+        {
+          "end_line": 418,
+          "function": "_actionable_budget_hold",
+          "line": 366,
+          "path": "reckon/crew/dispatch.py"
+        },
+        {
+          "end_line": 2212,
+          "function": "_lane_advisory_instant",
+          "line": 2204,
+          "path": "reckon/crew/dispatch.py"
+        },
+        {
+          "end_line": 2418,
+          "function": "_lane_reading_carry",
+          "line": 2317,
+          "path": "reckon/crew/dispatch.py"
+        },
+        {
+          "end_line": 195,
+          "function": "_as_moment",
+          "line": 185,
+          "path": "reckon/crew/hold.py"
+        },
+        {
+          "end_line": 148,
+          "function": "_parse_stamp",
+          "line": 139,
+          "path": "reckon/crew/lane_document.py"
+        },
+        {
+          "end_line": 210,
+          "function": "_moment",
+          "line": 200,
+          "path": "reckon/crew/lane_evidence.py"
+        },
+        {
+          "end_line": 474,
+          "function": "_event_timestamp",
+          "line": 468,
+          "path": "reckon/crew/metering.py"
+        },
+        {
+          "end_line": 503,
+          "function": "_stamped_elapsed",
+          "line": 477,
+          "path": "reckon/crew/metering.py"
+        },
+        {
+          "end_line": 47,
+          "function": "_seconds_since",
+          "line": 36,
+          "path": "reckon/crew/obligations.py"
+        },
+        {
+          "end_line": 243,
+          "function": "_parse_stamp",
+          "line": 231,
+          "path": "reckon/crew/paid_lanes.py"
+        },
+        {
+          "end_line": 1669,
+          "function": "_elapsed_seconds",
+          "line": 1658,
+          "path": "reckon/crew/promotion.py"
+        },
+        {
+          "end_line": 1680,
+          "function": "_assume_utc_if_naive",
+          "line": 1672,
+          "path": "reckon/crew/promotion.py"
+        },
+        {
+          "end_line": 2320,
+          "function": "_terminal_stream_data",
+          "line": 2240,
+          "path": "reckon/crew/promotion.py"
+        },
+        {
+          "end_line": 605,
+          "function": "_normalize_stamp",
+          "line": 586,
+          "path": "reckon/crew/query.py"
+        },
+        {
+          "end_line": 80,
+          "function": "_as_date",
+          "line": 63,
+          "path": "reckon/crew/quota_weight.py"
+        },
+        {
+          "end_line": 1456,
+          "function": "_budget_timing",
+          "line": 1378,
+          "path": "reckon/crew/recovery.py"
+        },
+        {
+          "end_line": 2889,
+          "function": "_attempt_started_seconds",
+          "line": 2860,
+          "path": "reckon/crew/recovery.py"
+        },
+        {
+          "end_line": 3114,
+          "function": "_manifest_wait",
+          "line": 2943,
+          "path": "reckon/crew/recovery.py"
+        },
+        {
+          "end_line": 3176,
+          "function": "_run_chain_manifest_freshness",
+          "line": 3148,
+          "path": "reckon/crew/recovery.py"
+        },
+        {
+          "end_line": 125,
+          "function": "_parse_stamp",
+          "line": 119,
+          "path": "reckon/crew/resumption.py"
+        },
+        {
+          "end_line": 236,
+          "function": "_parse_timestamp",
+          "line": 229,
+          "path": "reckon/crew/rollout.py"
+        },
+        {
+          "end_line": 1455,
+          "function": "_parse_utc_timestamp",
+          "line": 1445,
+          "path": "reckon/crew/routing.py"
+        },
+        {
+          "end_line": 2829,
+          "function": "_stream_quiet_seconds",
+          "line": 2810,
+          "path": "reckon/crew/runs.py"
+        },
+        {
+          "end_line": 530,
+          "function": "_row_moment",
+          "line": 515,
+          "path": "reckon/crew/summary.py"
+        },
+        {
+          "end_line": 499,
+          "function": "local_clock",
+          "line": 483,
+          "path": "reckon/crew/ticker.py"
+        },
+        {
+          "end_line": 263,
+          "function": "_parse_stamp",
+          "line": 249,
+          "path": "reckon/crew/window_reading.py"
+        },
+        {
+          "end_line": 216,
+          "function": "modified_age_days",
+          "line": 203,
+          "path": "reckon/doccheck.py"
+        },
+        {
+          "end_line": 1218,
+          "function": "_observation_age",
+          "line": 1198,
+          "path": "reckon/flight.py"
+        },
+        {
+          "end_line": 126,
+          "function": "_manifest_predates_attempt",
+          "line": 115,
+          "path": "reckon/hooks/worker_stop.py"
+        },
+        {
+          "end_line": 2196,
+          "function": "_event_completion",
+          "line": 2174,
+          "path": "reckon/ledger.py"
+        },
+        {
+          "end_line": 2226,
+          "function": "_worker_seconds",
+          "line": 2214,
+          "path": "reckon/ledger.py"
+        },
+        {
+          "end_line": 2334,
+          "function": "_parse_timestamp",
+          "line": 2328,
+          "path": "reckon/ledger.py"
+        },
+        {
+          "end_line": 106,
+          "function": "_parsed_observation",
+          "line": 95,
+          "path": "reckon/mcp_views.py"
+        },
+        {
+          "end_line": 1111,
+          "function": "compose_review",
+          "line": 970,
+          "path": "reckon/mcp_views.py"
+        },
+        {
+          "end_line": 530,
+          "function": "_review_date",
+          "line": 521,
+          "path": "reckon/project_state.py"
+        },
+        {
+          "end_line": 716,
+          "function": "_validate_review",
+          "line": 545,
+          "path": "reckon/project_state.py"
+        },
+        {
+          "end_line": 45,
+          "function": "_stamp_millis",
+          "line": 35,
+          "path": "reckon/schedule.py"
+        },
+        {
+          "end_line": 537,
+          "function": "_elapsed_since",
+          "line": 527,
+          "path": "reckon/serve.py"
+        },
+        {
+          "end_line": 87,
+          "function": "_observed_seconds",
+          "line": 79,
+          "path": "reckon/sprint_liveness.py"
+        }
+      ],
+      "guard": "Specify malformed-input behavior, naive timestamps, Z suffixes, offsets and numeric epoch handling before migration. Some of these 44 are consumers with inline parsing, not interchangeable whole functions.",
+      "home": "reckon/_timestamps.py:parse_utc (new primitive module)",
+      "rank": 1,
+      "reason": "44 functions call fromisoformat directly. Parsing affects quota windows, freshness and resume eligibility, so policy drift is more costly than these functions' size. Extract parsing only; elapsed-time and display policy remain with their callers.",
+      "repository": "reckon",
+      "title": "One UTC timestamp parser for reckon"
+    },
+    {
+      "commit": "056c08e0d7c96a5b4edaee5dbcfe169c0c5ceaf9",
+      "copies": [
+        {
+          "end_line": 371,
+          "function": "_write_json_envelope",
+          "line": 323,
+          "path": "reckon/_store.py"
+        },
+        {
+          "end_line": 1108,
+          "function": "rebuild_capabilities",
+          "line": 1089,
+          "path": "reckon/capabilities.py"
+        },
+        {
+          "end_line": 5140,
+          "function": "_supervisor_write",
+          "line": 5107,
+          "path": "reckon/crew/dispatch.py"
+        },
+        {
+          "end_line": 198,
+          "function": "_write_json",
+          "line": 180,
+          "path": "reckon/crew/fleet_supervisor.py"
+        },
+        {
+          "end_line": 520,
+          "function": "write_document_atomically",
+          "line": 491,
+          "path": "reckon/crew/paid_lanes.py"
+        },
+        {
+          "end_line": 134,
+          "function": "publish_reservation",
+          "line": 118,
+          "path": "reckon/crew/placement.py"
+        },
+        {
+          "end_line": 384,
+          "function": "store_plan_review",
+          "line": 346,
+          "path": "reckon/crew/plan_review.py"
+        },
+        {
+          "end_line": 185,
+          "function": "_write_lane_probe_cache",
+          "line": 175,
+          "path": "reckon/crew/resumption.py"
+        },
+        {
+          "end_line": 617,
+          "function": "store_review",
+          "line": 570,
+          "path": "reckon/crew/review.py"
+        },
+        {
+          "end_line": 388,
+          "function": "_write_json",
+          "line": 366,
+          "path": "reckon/crew/runs.py"
+        },
+        {
+          "end_line": 1105,
+          "function": "migrate_typed_layout",
+          "line": 959,
+          "path": "reckon/resources.py"
+        },
+        {
+          "end_line": 929,
+          "function": "_store_git_creation_cache",
+          "line": 894,
+          "path": "reckon/serve.py"
+        },
+        {
+          "end_line": 1149,
+          "function": "_store_git_last_modified_cache",
+          "line": 1116,
+          "path": "reckon/serve.py"
+        },
+        {
+          "end_line": 3081,
+          "function": "Handler._handle_post",
+          "line": 2950,
+          "path": "reckon/serve.py"
+        }
+      ],
+      "guard": "Keep envelope construction, pointer launcher-host stamping and response validation outside the writer; preserve each caller's locking and durability requirements. The layout migration also moves non-JSON files and is not replaced wholesale.",
+      "home": "reckon/_store.py:write_json_atomically (new primitive beside existing envelope writer)",
+      "rank": 2,
+      "reason": "14 functions independently serialize JSON and replace a file. The existing writers differ in temporary naming, cleanup and fsync. One primitive would concentrate interrupted-write behavior and concurrency verification.",
+      "repository": "reckon",
+      "title": "One atomic JSON persistence primitive for reckon"
+    },
+    {
+      "commit": "056c08e0d7c96a5b4edaee5dbcfe169c0c5ceaf9",
+      "copies": [
+        {
+          "end_line": 297,
+          "function": "run_streams",
+          "line": 280,
+          "path": "reckon/crew/metering.py"
+        },
+        {
+          "end_line": 1700,
+          "function": "_run_streams",
+          "line": 1694,
+          "path": "reckon/crew/promotion.py"
+        },
+        {
+          "end_line": 2171,
+          "function": "_run_streams",
+          "line": 2165,
+          "path": "reckon/ledger.py"
+        }
+      ],
+      "guard": "Adapt the ledger's run-id/root input at its boundary; retain numeric resume ordering and missing-file behavior. Do not replace schema-specific stream interpretation with one undocumented parser.",
+      "home": "reckon/crew/metering.py:run_streams (existing implementation)",
+      "rank": 3,
+      "reason": "Three implementations select the original stream and numerically ordered resume files. Reuse prevents billing and promotion from disagreeing about which attempts exist; the metering implementation already handles an empty path.",
+      "repository": "reckon",
+      "title": "One ordered enumeration of original and resumed streams"
+    },
+    {
+      "commit": "16287918db2f90d0088c1786ec45965cd90e6652",
+      "copies": [
+        {
+          "end_line": 980,
+          "function": "CurrentCentroidConstraint.residual",
+          "line": 970,
+          "path": "nova/equilibrium/constraint.py"
+        },
+        {
+          "end_line": 1061,
+          "function": "FluxLevelConstraint.residual",
+          "line": 1051,
+          "path": "nova/equilibrium/constraint.py"
+        },
+        {
+          "end_line": 1354,
+          "function": "IsofluxConstraint.residual",
+          "line": 1344,
+          "path": "nova/equilibrium/constraint.py"
+        },
+        {
+          "end_line": 1402,
+          "function": "XPointConstraint.residual",
+          "line": 1392,
+          "path": "nova/equilibrium/constraint.py"
+        },
+        {
+          "end_line": 1478,
+          "function": "FieldComponentConstraint.residual",
+          "line": 1468,
+          "path": "nova/equilibrium/constraint.py"
+        },
+        {
+          "end_line": 1540,
+          "function": "WallGapConstraint.residual",
+          "line": 1530,
+          "path": "nova/equilibrium/constraint.py"
+        },
+        {
+          "end_line": 1656,
+          "function": "ExternalShafranovConstraint.residual",
+          "line": 1645,
+          "path": "nova/equilibrium/constraint.py"
+        },
+        {
+          "end_line": 1069,
+          "function": "FluxLevelConstraint.dual_flux_image",
+          "line": 1063,
+          "path": "nova/equilibrium/constraint.py"
+        },
+        {
+          "end_line": 1362,
+          "function": "IsofluxConstraint.dual_flux_image",
+          "line": 1356,
+          "path": "nova/equilibrium/constraint.py"
+        },
+        {
+          "end_line": 1410,
+          "function": "XPointConstraint.dual_flux_image",
+          "line": 1404,
+          "path": "nova/equilibrium/constraint.py"
+        },
+        {
+          "end_line": 1486,
+          "function": "FieldComponentConstraint.dual_flux_image",
+          "line": 1480,
+          "path": "nova/equilibrium/constraint.py"
+        },
+        {
+          "end_line": 1548,
+          "function": "WallGapConstraint.dual_flux_image",
+          "line": 1542,
+          "path": "nova/equilibrium/constraint.py"
+        }
+      ],
+      "guard": "Keep each constraint's observed quantity, payload and registration distinct. Preserve JAX tracing and array axis behavior; a common protocol alone does not share implementation.",
+      "home": "nova/equilibrium/constraint.py (shared residual and dual-image implementation)",
+      "rank": 4,
+      "reason": "Seven residual methods have identical AST bodies, and five dual-flux-image methods form a second identical group. Their observed-minus-target scaling and Jacobian-axis conventions are algebra that should have one tested implementation.",
+      "repository": "nova",
+      "title": "Share the algebra common to equilibrium constraints"
+    },
+    {
+      "commit": "16287918db2f90d0088c1786ec45965cd90e6652",
+      "copies": [
+        {
+          "end_line": 118,
+          "function": "_uniform_axis",
+          "line": 109,
+          "path": "nova/equilibrium/map_extraction.py"
+        },
+        {
+          "end_line": 47,
+          "function": "_uniform_axis",
+          "line": 38,
+          "path": "nova/media/sources/diiid_efit.py"
+        },
+        {
+          "end_line": 64,
+          "function": "_uniform_axis",
+          "line": 44,
+          "path": "nova/media/sources/mast_efit.py"
+        }
+      ],
+      "guard": "Do not force identical tolerances: MAST uses stored dtype epsilon, DIII-D uses an absolute coordinate-scaled tolerance, and map extraction uses relative spacing tolerance. Preserve minimum sizes, return shapes and dtype behavior.",
+      "home": "nova/utilities/axes.py:uniform_axis (new common validator)",
+      "rank": 5,
+      "reason": "Three functions independently validate increasing uniform axes. The media readers reconstruct endpoint-preserving axes, while map extraction requires at least three points and strict spacing. Shared mechanics can make those policy choices visible.",
+      "repository": "nova",
+      "title": "Share axis validation mechanics with explicit precision policy"
+    },
+    {
+      "commit": "16287918db2f90d0088c1786ec45965cd90e6652",
+      "copies": [
+        {
+          "end_line": 44,
+          "function": "_readonly",
+          "line": 39,
+          "path": "nova/imas/mast_efit_referee.py"
+        },
+        {
+          "end_line": 253,
+          "function": "_readonly",
+          "line": 249,
+          "path": "nova/transport/coupled_window.py"
+        },
+        {
+          "end_line": 50,
+          "function": "_readonly",
+          "line": 47,
+          "path": "nova/transport/window_batch.py"
+        }
+      ],
+      "guard": "Retain dtype=None versus dtype=float defaults at the call sites and prove that changing the original input cannot change the returned array. The wider primitive census has additional inlined clients, not all equivalent constructors.",
+      "home": "nova/utilities/arrays.py:readonly_copy (new common array primitive)",
+      "rank": 6,
+      "reason": "Three helpers independently copy an array and clear its write flag. Sharing the ownership boundary makes accidental aliasing testable in one place.",
+      "repository": "nova",
+      "title": "One owned immutable-array constructor"
+    },
+    {
+      "commit": "056c08e0d7c96a5b4edaee5dbcfe169c0c5ceaf9",
+      "copies": [
+        {
+          "end_line": 1612,
+          "function": "_number",
+          "line": 1608,
+          "path": "reckon/_backends.py"
+        },
+        {
+          "end_line": 218,
+          "function": "_measured",
+          "line": 215,
+          "path": "reckon/crew/carryover_census.py"
+        },
+        {
+          "end_line": 182,
+          "function": "_as_number",
+          "line": 178,
+          "path": "reckon/crew/hold.py"
+        },
+        {
+          "end_line": 270,
+          "function": "_numeric",
+          "line": 266,
+          "path": "reckon/crew/window_reading.py"
+        }
+      ],
+      "guard": "Do not silently add finiteness or string coercion; neighboring numeric decoders have different semantics. Both None and non-finite numeric values need explicit expectations.",
+      "home": "reckon/_observations.py:optional_number (new observation primitive)",
+      "rank": 7,
+      "reason": "Four differently named functions have exactly the same body: reject bool and non-int/float values, otherwise return float(value). This is a low-coupling consolidation with a clear contract.",
+      "repository": "reckon",
+      "title": "One bool-rejecting numeric observation decoder"
+    },
+    {
+      "commit": "16287918db2f90d0088c1786ec45965cd90e6652",
+      "copies": [
+        {
+          "end_line": 379,
+          "function": "write_chunk",
+          "line": 372,
+          "path": "nova/calibrate/sweep.py"
+        },
+        {
+          "end_line": 200,
+          "function": "_write_fingerprint_checkpoint",
+          "line": 175,
+          "path": "nova/catalog/mast_geometry.py"
+        },
+        {
+          "end_line": 584,
+          "function": "_bank_report",
+          "line": 575,
+          "path": "nova/imas/mast_parity_gate.py"
+        }
+      ],
+      "guard": "Preserve strict JSON sanitization, indentation and digest-sensitive serialization. These are file receipts, not IMAS data access. A dataclass replace call was explicitly excluded by the instrument control.",
+      "home": "nova/io/json.py:write_atomic (new shared writer)",
+      "rank": 8,
+      "reason": "Three writers independently stage and replace chunk, fingerprint and scorecard files. Shared mechanics can give each a unique sibling temporary and consistent cleanup while retaining its payload.",
+      "repository": "nova",
+      "title": "One atomic JSON writer for nova's durable receipts"
+    },
+    {
+      "commit": "16287918db2f90d0088c1786ec45965cd90e6652",
+      "copies": [
+        {
+          "end_line": 83,
+          "function": "_trimmed",
+          "line": 79,
+          "path": "nova/imas/machine_drive.py"
+        },
+        {
+          "end_line": 118,
+          "function": "_trimmed",
+          "line": 114,
+          "path": "nova/imas/machine_evidence.py"
+        },
+        {
+          "end_line": 83,
+          "function": "_trimmed",
+          "line": 79,
+          "path": "nova/io/sourcemap.py"
+        }
+      ],
+      "guard": "Accept the caller's exception type and context so SourceMapError, DriveError and EvidenceError retain their current meaning.",
+      "home": "nova/imas/machine_evidence.py:require_trimmed_string (alongside require_string)",
+      "rank": 9,
+      "reason": "Three helpers repeat non-empty, whitespace-trimmed text checks after calling the same require_string primitive. The existing cross-module dependency provides a natural home without a new abstraction family.",
+      "repository": "nova",
+      "title": "Extend the already shared contract validation with trimmed text"
+    },
+    {
+      "commit": "16287918db2f90d0088c1786ec45965cd90e6652",
+      "copies": [
+        {
+          "end_line": 326,
+          "function": "DriveMap.digest",
+          "line": 323,
+          "path": "nova/imas/machine_drive.py"
+        },
+        {
+          "end_line": 494,
+          "function": "EvidenceLedger.digest",
+          "line": 491,
+          "path": "nova/imas/machine_evidence.py"
+        },
+        {
+          "end_line": 502,
+          "function": "SourceSignalMap.digest",
+          "line": 499,
+          "path": "nova/io/sourcemap.py"
+        }
+      ],
+      "guard": "Pass the existing canonical bytes unchanged and retain the 16-character length. Do not substitute catalog serialization just because it also hashes JSON; byte identity is the contract.",
+      "home": "nova/imas/machine_evidence.py:canonical_digest (beside canonical_json)",
+      "rank": 10,
+      "reason": "Three content-addressed contracts hash canonical_bytes with SHA-256 and truncate to 16 hex characters. The shared canonical JSON layer is the appropriate home for the byte-level digest convention.",
+      "repository": "nova",
+      "title": "One digest operation over canonical contract bytes"
+    }
+  ],
+  "ranking_source_sha256": "0270269e13318d355b8743b73ef77dd8c14fe1f7ad36499a8bca93a9820a3fbb",
+  "snapshots": [
+    {
+      "commit": "7b46b7b56f52d92a324888b1207af7833b425c58",
+      "committed_at": "2026-09-05T15:27:16+02:00",
+      "offset_seconds": 5236,
+      "repository": "reckon",
+      "scopes": {
+        "reckon/": {
+          "clones": {
+            "clone_share": 0.11752983,
+            "cloned_source_code_lines": 4246,
+            "duplicate_window_fingerprints": 615,
+            "source_code_lines": 36127,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 1274,
+            "max": 861,
+            "median": 16.0,
+            "min": 2,
+            "p75": 32.0,
+            "p90": 63.0,
+            "p95": 98.7
+          },
+          "interfaces": {
+            "cli_command_count": 50,
+            "cli_group_count": 7,
+            "cli_option_count": 202,
+            "cli_option_unique_flag_count": 96,
+            "dispatch_raise_site_count": 60,
+            "dispatch_refusal_code_count": 0,
+            "dispatch_refusal_codes": [],
+            "mcp_unique_view_name_count": 17,
+            "mcp_view_count": 26
+          },
+          "module_count": 48,
+          "module_surfaces": [
+            {
+              "code_lines": 243,
+              "path": "reckon/_flight_schema.py",
+              "physical_lines": 396,
+              "public_classes": 21,
+              "public_methods": 5,
+              "public_surface": 26,
+              "public_surface_per_100_code_lines": 10.6996,
+              "public_top_level_functions": 0,
+              "sha256": "852080d916f725befcb6772a1459b57b3c0b39444c42c43f8499938c5dc45f1b"
+            },
+            {
+              "code_lines": 124,
+              "path": "reckon/service.py",
+              "physical_lines": 221,
+              "public_classes": 1,
+              "public_methods": 0,
+              "public_surface": 13,
+              "public_surface_per_100_code_lines": 10.4839,
+              "public_top_level_functions": 12,
+              "sha256": "58ca7f1d3eb05b5177589696285db6fd3f02a3fe91337ec77d8978080782d685"
+            },
+            {
+              "code_lines": 92,
+              "path": "reckon/_mcp_tools.py",
+              "physical_lines": 112,
+              "public_classes": 8,
+              "public_methods": 0,
+              "public_surface": 8,
+              "public_surface_per_100_code_lines": 8.6957,
+              "public_top_level_functions": 0,
+              "sha256": "8b5d4699a0d2c65da56ae45c215d0ba9ca3d7e71293cf95f2c8e76539e8c84c8"
+            },
+            {
+              "code_lines": 236,
+              "path": "reckon/capability.py",
+              "physical_lines": 295,
+              "public_classes": 2,
+              "public_methods": 5,
+              "public_surface": 14,
+              "public_surface_per_100_code_lines": 5.9322,
+              "public_top_level_functions": 7,
+              "sha256": "66278893929f2870596f81b81a041212d9dcd2802624a7c72ff154440bf7bcb9"
+            },
+            {
+              "code_lines": 121,
+              "path": "reckon/archive.py",
+              "physical_lines": 161,
+              "public_classes": 4,
+              "public_methods": 0,
+              "public_surface": 7,
+              "public_surface_per_100_code_lines": 5.7851,
+              "public_top_level_functions": 3,
+              "sha256": "348a5de02166afc99fa2a6ed5dd9f2362cedd5688b865a03f1be408f8841b8fb"
+            }
+          ],
+          "pass_through_function_count": 9,
+          "primitive_counts": {
+            "Advisory file locking": 14,
+            "Atomic JSON file replacement": 8,
+            "Content digest construction": 23,
+            "Finite numeric input validation": 1,
+            "Git subprocess invocation": 21,
+            "HTML file discovery and reading": 11,
+            "ISO timestamp parsing": 20,
+            "JSON document decoding": 38,
+            "JSON document encoding": 24,
+            "JSON record stream decoding": 7,
+            "PID existence probing": 1
+          },
+          "public_class_count": 117,
+          "public_function_count": 439,
+          "public_surface": 556,
+          "reimplementation_group_count": 13,
+          "source_code_lines": 36127,
+          "source_lines": 45498,
+          "test_code_lines": 51545,
+          "test_lines": 66492,
+          "test_module_count": 184
+        },
+        "reckon/crew/": {
+          "clones": {
+            "clone_share": 0.0549054,
+            "cloned_source_code_lines": 563,
+            "duplicate_window_fingerprints": 69,
+            "source_code_lines": 10254,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 378,
+            "max": 544,
+            "median": 18.0,
+            "min": 2,
+            "p75": 35.0,
+            "p90": 65.0,
+            "p95": 91.0
+          },
+          "interfaces": {
+            "cli_command_count": 0,
+            "cli_group_count": 0,
+            "cli_option_count": 0,
+            "cli_option_unique_flag_count": 0,
+            "dispatch_raise_site_count": 60,
+            "dispatch_refusal_code_count": 0,
+            "dispatch_refusal_codes": [],
+            "mcp_unique_view_name_count": 0,
+            "mcp_view_count": 0
+          },
+          "module_count": 13,
+          "module_surfaces": [
+            {
+              "code_lines": 495,
+              "path": "reckon/crew/node.py",
+              "physical_lines": 756,
+              "public_classes": 11,
+              "public_methods": 3,
+              "public_surface": 22,
+              "public_surface_per_100_code_lines": 4.4444,
+              "public_top_level_functions": 8,
+              "sha256": "4fec2cdf6a5ca55f8bd90f31c46b0a6a5a36228df81e4f0599ff9f61ca13952f"
+            },
+            {
+              "code_lines": 306,
+              "path": "reckon/crew/ticker.py",
+              "physical_lines": 626,
+              "public_classes": 1,
+              "public_methods": 2,
+              "public_surface": 10,
+              "public_surface_per_100_code_lines": 3.268,
+              "public_top_level_functions": 7,
+              "sha256": "8ae31b3a0789f50b4b417df445abad6936cc2dc60d54c86de6cf82bce67caab5"
+            },
+            {
+              "code_lines": 1413,
+              "path": "reckon/crew/runs.py",
+              "physical_lines": 1983,
+              "public_classes": 0,
+              "public_methods": 0,
+              "public_surface": 36,
+              "public_surface_per_100_code_lines": 2.5478,
+              "public_top_level_functions": 36,
+              "sha256": "9053f5d3e9028ad81147e0ccf761e5310bc48ba9b54ec258262a9ea2af43ca9f"
+            },
+            {
+              "code_lines": 306,
+              "path": "reckon/crew/reports.py",
+              "physical_lines": 421,
+              "public_classes": 2,
+              "public_methods": 0,
+              "public_surface": 6,
+              "public_surface_per_100_code_lines": 1.9608,
+              "public_top_level_functions": 4,
+              "sha256": "3257a99ea15f76dfd6f0c75e1a78f79f480e0aae228062b5cccd05da97049d10"
+            },
+            {
+              "code_lines": 1201,
+              "path": "reckon/crew/routing.py",
+              "physical_lines": 1465,
+              "public_classes": 0,
+              "public_methods": 0,
+              "public_surface": 13,
+              "public_surface_per_100_code_lines": 1.0824,
+              "public_top_level_functions": 13,
+              "sha256": "4ff915c5b07528f8d2d32a945b1f83f796093e7b631cb3e598cbb4a82b555d61"
+            }
+          ],
+          "pass_through_function_count": 3,
+          "primitive_counts": {
+            "Advisory file locking": 12,
+            "Atomic JSON file replacement": 2,
+            "Content digest construction": 6,
+            "Git subprocess invocation": 15,
+            "ISO timestamp parsing": 10,
+            "JSON document decoding": 8,
+            "JSON document encoding": 6,
+            "JSON record stream decoding": 2,
+            "PID existence probing": 1
+          },
+          "public_class_count": 18,
+          "public_function_count": 113,
+          "public_surface": 131,
+          "reimplementation_group_count": 6,
+          "source_code_lines": 10254,
+          "source_lines": 13268,
+          "test_code_lines": 26071,
+          "test_lines": 33698,
+          "test_module_count": 70
+        }
+      },
+      "target": "2026-09-05T12:00:00+00:00"
+    },
+    {
+      "commit": "2080a7313945676fc08091cfcb6a8716b2f40c9a",
+      "committed_at": "2026-09-14T07:59:34+02:00",
+      "offset_seconds": 151174,
+      "repository": "reckon",
+      "scopes": {
+        "reckon/": {
+          "clones": {
+            "clone_share": 0.1159201,
+            "cloned_source_code_lines": 4904,
+            "duplicate_window_fingerprints": 685,
+            "source_code_lines": 42305,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 1543,
+            "max": 861,
+            "median": 16.0,
+            "min": 2,
+            "p75": 32.0,
+            "p90": 61.0,
+            "p95": 94.9
+          },
+          "interfaces": {
+            "cli_command_count": 50,
+            "cli_group_count": 7,
+            "cli_option_count": 209,
+            "cli_option_unique_flag_count": 98,
+            "dispatch_raise_site_count": 67,
+            "dispatch_refusal_code_count": 22,
+            "dispatch_refusal_codes": [
+              "D01",
+              "D02",
+              "D03",
+              "D04",
+              "D05",
+              "D06",
+              "D07",
+              "D08",
+              "D09",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16",
+              "D17",
+              "D18",
+              "D19",
+              "D20",
+              "D21",
+              "D22"
+            ],
+            "mcp_unique_view_name_count": 18,
+            "mcp_view_count": 27
+          },
+          "module_count": 56,
+          "module_surfaces": [
+            {
+              "code_lines": 124,
+              "path": "reckon/service.py",
+              "physical_lines": 221,
+              "public_classes": 1,
+              "public_methods": 0,
+              "public_surface": 13,
+              "public_surface_per_100_code_lines": 10.4839,
+              "public_top_level_functions": 12,
+              "sha256": "58ca7f1d3eb05b5177589696285db6fd3f02a3fe91337ec77d8978080782d685"
+            },
+            {
+              "code_lines": 251,
+              "path": "reckon/_flight_schema.py",
+              "physical_lines": 404,
+              "public_classes": 21,
+              "public_methods": 5,
+              "public_surface": 26,
+              "public_surface_per_100_code_lines": 10.3586,
+              "public_top_level_functions": 0,
+              "sha256": "090bc59651408f5bef094b99ccc4106272498197efdb7688f22bd8aec4f4a796"
+            },
+            {
+              "code_lines": 93,
+              "path": "reckon/_mcp_tools.py",
+              "physical_lines": 113,
+              "public_classes": 8,
+              "public_methods": 0,
+              "public_surface": 8,
+              "public_surface_per_100_code_lines": 8.6022,
+              "public_top_level_functions": 0,
+              "sha256": "a2fc190f31295d68d0cc24e1c6d7e386d3712f3a4af9e4f67a8ff8d24b652ef4"
+            },
+            {
+              "code_lines": 236,
+              "path": "reckon/capability.py",
+              "physical_lines": 295,
+              "public_classes": 2,
+              "public_methods": 5,
+              "public_surface": 14,
+              "public_surface_per_100_code_lines": 5.9322,
+              "public_top_level_functions": 7,
+              "sha256": "66278893929f2870596f81b81a041212d9dcd2802624a7c72ff154440bf7bcb9"
+            },
+            {
+              "code_lines": 121,
+              "path": "reckon/archive.py",
+              "physical_lines": 161,
+              "public_classes": 4,
+              "public_methods": 0,
+              "public_surface": 7,
+              "public_surface_per_100_code_lines": 5.7851,
+              "public_top_level_functions": 3,
+              "sha256": "348a5de02166afc99fa2a6ed5dd9f2362cedd5688b865a03f1be408f8841b8fb"
+            }
+          ],
+          "pass_through_function_count": 14,
+          "primitive_counts": {
+            "Advisory file locking": 15,
+            "Atomic JSON file replacement": 9,
+            "Content digest construction": 24,
+            "Finite numeric input validation": 1,
+            "Git subprocess invocation": 24,
+            "HTML file discovery and reading": 11,
+            "ISO timestamp parsing": 26,
+            "JSON document decoding": 46,
+            "JSON document encoding": 25,
+            "JSON record stream decoding": 13,
+            "PID existence probing": 1
+          },
+          "public_class_count": 132,
+          "public_function_count": 497,
+          "public_surface": 629,
+          "reimplementation_group_count": 14,
+          "source_code_lines": 42305,
+          "source_lines": 54908,
+          "test_code_lines": 70636,
+          "test_lines": 92707,
+          "test_module_count": 263
+        },
+        "reckon/crew/": {
+          "clones": {
+            "clone_share": 0.06573163,
+            "cloned_source_code_lines": 942,
+            "duplicate_window_fingerprints": 111,
+            "source_code_lines": 14331,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 547,
+            "max": 706,
+            "median": 18.0,
+            "min": 2,
+            "p75": 33.0,
+            "p90": 64.4,
+            "p95": 86.7
+          },
+          "interfaces": {
+            "cli_command_count": 0,
+            "cli_group_count": 0,
+            "cli_option_count": 0,
+            "cli_option_unique_flag_count": 0,
+            "dispatch_raise_site_count": 67,
+            "dispatch_refusal_code_count": 17,
+            "dispatch_refusal_codes": [
+              "D05",
+              "D07",
+              "D08",
+              "D09",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16",
+              "D17",
+              "D18",
+              "D19",
+              "D20",
+              "D21",
+              "D22"
+            ],
+            "mcp_unique_view_name_count": 0,
+            "mcp_view_count": 0
+          },
+          "module_count": 20,
+          "module_surfaces": [
+            {
+              "code_lines": 128,
+              "path": "reckon/crew/review.py",
+              "physical_lines": 255,
+              "public_classes": 1,
+              "public_methods": 0,
+              "public_surface": 7,
+              "public_surface_per_100_code_lines": 5.4688,
+              "public_top_level_functions": 6,
+              "sha256": "f0672d4a2ea5ab24d5dbfc78b7f47c315cec125e6759385319fa55f28986c578"
+            },
+            {
+              "code_lines": 178,
+              "path": "reckon/crew/quota_weight.py",
+              "physical_lines": 281,
+              "public_classes": 5,
+              "public_methods": 1,
+              "public_surface": 8,
+              "public_surface_per_100_code_lines": 4.4944,
+              "public_top_level_functions": 2,
+              "sha256": "135cb746e494be770e46833c6e61473e6ffb11261a3e758cf5ee37471833886f"
+            },
+            {
+              "code_lines": 554,
+              "path": "reckon/crew/node.py",
+              "physical_lines": 852,
+              "public_classes": 11,
+              "public_methods": 3,
+              "public_surface": 23,
+              "public_surface_per_100_code_lines": 4.1516,
+              "public_top_level_functions": 9,
+              "sha256": "4d8d51e4c3f9f02ee57ba7a9dbad76998446ed90143e19f445227cb941c2de72"
+            },
+            {
+              "code_lines": 365,
+              "path": "reckon/crew/rollout.py",
+              "physical_lines": 533,
+              "public_classes": 4,
+              "public_methods": 7,
+              "public_surface": 12,
+              "public_surface_per_100_code_lines": 3.2877,
+              "public_top_level_functions": 1,
+              "sha256": "7736aab774c30d3e13ad5d0ed90b0298669199dd7e0438b197e686b201c78293"
+            },
+            {
+              "code_lines": 399,
+              "path": "reckon/crew/ticker.py",
+              "physical_lines": 770,
+              "public_classes": 1,
+              "public_methods": 2,
+              "public_surface": 10,
+              "public_surface_per_100_code_lines": 2.5063,
+              "public_top_level_functions": 7,
+              "sha256": "dc9e0325107b7fc8a9fc53666e77e8ce5135e8b5927daff97d874706fdcfe78a"
+            }
+          ],
+          "pass_through_function_count": 5,
+          "primitive_counts": {
+            "Advisory file locking": 13,
+            "Atomic JSON file replacement": 3,
+            "Content digest construction": 7,
+            "Git subprocess invocation": 18,
+            "ISO timestamp parsing": 15,
+            "JSON document decoding": 15,
+            "JSON document encoding": 7,
+            "JSON record stream decoding": 7,
+            "PID existence probing": 1
+          },
+          "public_class_count": 31,
+          "public_function_count": 146,
+          "public_surface": 177,
+          "reimplementation_group_count": 8,
+          "source_code_lines": 14331,
+          "source_lines": 19454,
+          "test_code_lines": 41514,
+          "test_lines": 54564,
+          "test_module_count": 126
+        }
+      },
+      "target": "2026-09-12T12:00:00+00:00"
+    },
+    {
+      "commit": "23635a769a9cd9b13799de53c0b66c2b762abe88",
+      "committed_at": "2026-09-19T14:09:33+02:00",
+      "offset_seconds": 573,
+      "repository": "reckon",
+      "scopes": {
+        "reckon/": {
+          "clones": {
+            "clone_share": 0.11352385,
+            "cloned_source_code_lines": 5343,
+            "duplicate_window_fingerprints": 770,
+            "source_code_lines": 47065,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 1748,
+            "max": 916,
+            "median": 16.5,
+            "min": 2,
+            "p75": 32.0,
+            "p90": 62.0,
+            "p95": 94.65
+          },
+          "interfaces": {
+            "cli_command_count": 51,
+            "cli_group_count": 7,
+            "cli_option_count": 216,
+            "cli_option_unique_flag_count": 101,
+            "dispatch_raise_site_count": 68,
+            "dispatch_refusal_code_count": 22,
+            "dispatch_refusal_codes": [
+              "D01",
+              "D02",
+              "D03",
+              "D04",
+              "D05",
+              "D06",
+              "D07",
+              "D08",
+              "D09",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16",
+              "D17",
+              "D18",
+              "D19",
+              "D20",
+              "D21",
+              "D22"
+            ],
+            "mcp_unique_view_name_count": 18,
+            "mcp_view_count": 27
+          },
+          "module_count": 59,
+          "module_surfaces": [
+            {
+              "code_lines": 124,
+              "path": "reckon/service.py",
+              "physical_lines": 221,
+              "public_classes": 1,
+              "public_methods": 0,
+              "public_surface": 13,
+              "public_surface_per_100_code_lines": 10.4839,
+              "public_top_level_functions": 12,
+              "sha256": "58ca7f1d3eb05b5177589696285db6fd3f02a3fe91337ec77d8978080782d685"
+            },
+            {
+              "code_lines": 256,
+              "path": "reckon/_flight_schema.py",
+              "physical_lines": 409,
+              "public_classes": 21,
+              "public_methods": 5,
+              "public_surface": 26,
+              "public_surface_per_100_code_lines": 10.1562,
+              "public_top_level_functions": 0,
+              "sha256": "973aca3572e40fb5758eea464afb54ad56435ed9171c5780cc81a3f29ee05b42"
+            },
+            {
+              "code_lines": 93,
+              "path": "reckon/_mcp_tools.py",
+              "physical_lines": 113,
+              "public_classes": 8,
+              "public_methods": 0,
+              "public_surface": 8,
+              "public_surface_per_100_code_lines": 8.6022,
+              "public_top_level_functions": 0,
+              "sha256": "a2fc190f31295d68d0cc24e1c6d7e386d3712f3a4af9e4f67a8ff8d24b652ef4"
+            },
+            {
+              "code_lines": 236,
+              "path": "reckon/capability.py",
+              "physical_lines": 295,
+              "public_classes": 2,
+              "public_methods": 5,
+              "public_surface": 14,
+              "public_surface_per_100_code_lines": 5.9322,
+              "public_top_level_functions": 7,
+              "sha256": "66278893929f2870596f81b81a041212d9dcd2802624a7c72ff154440bf7bcb9"
+            },
+            {
+              "code_lines": 121,
+              "path": "reckon/archive.py",
+              "physical_lines": 161,
+              "public_classes": 4,
+              "public_methods": 0,
+              "public_surface": 7,
+              "public_surface_per_100_code_lines": 5.7851,
+              "public_top_level_functions": 3,
+              "sha256": "348a5de02166afc99fa2a6ed5dd9f2362cedd5688b865a03f1be408f8841b8fb"
+            }
+          ],
+          "pass_through_function_count": 16,
+          "primitive_counts": {
+            "Advisory file locking": 16,
+            "Atomic JSON file replacement": 9,
+            "Content digest construction": 24,
+            "Finite numeric input validation": 1,
+            "Git subprocess invocation": 28,
+            "HTML file discovery and reading": 12,
+            "ISO timestamp parsing": 33,
+            "JSON document decoding": 54,
+            "JSON document encoding": 26,
+            "JSON record stream decoding": 14,
+            "PID existence probing": 1
+          },
+          "public_class_count": 135,
+          "public_function_count": 543,
+          "public_surface": 678,
+          "reimplementation_group_count": 18,
+          "source_code_lines": 47065,
+          "source_lines": 62390,
+          "test_code_lines": 84780,
+          "test_lines": 112691,
+          "test_module_count": 313
+        },
+        "reckon/crew/": {
+          "clones": {
+            "clone_share": 0.06141514,
+            "cloned_source_code_lines": 1019,
+            "duplicate_window_fingerprints": 119,
+            "source_code_lines": 16592,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 654,
+            "max": 805,
+            "median": 18.0,
+            "min": 2,
+            "p75": 33.0,
+            "p90": 65.0,
+            "p95": 89.05
+          },
+          "interfaces": {
+            "cli_command_count": 0,
+            "cli_group_count": 0,
+            "cli_option_count": 0,
+            "cli_option_unique_flag_count": 0,
+            "dispatch_raise_site_count": 68,
+            "dispatch_refusal_code_count": 17,
+            "dispatch_refusal_codes": [
+              "D05",
+              "D07",
+              "D08",
+              "D09",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16",
+              "D17",
+              "D18",
+              "D19",
+              "D20",
+              "D21",
+              "D22"
+            ],
+            "mcp_unique_view_name_count": 0,
+            "mcp_view_count": 0
+          },
+          "module_count": 21,
+          "module_surfaces": [
+            {
+              "code_lines": 146,
+              "path": "reckon/crew/review.py",
+              "physical_lines": 285,
+              "public_classes": 1,
+              "public_methods": 0,
+              "public_surface": 8,
+              "public_surface_per_100_code_lines": 5.4795,
+              "public_top_level_functions": 7,
+              "sha256": "bf0ab628883f123b24e2d3d8a40400866a3e634fb894ddad7e9a3826cfde1777"
+            },
+            {
+              "code_lines": 178,
+              "path": "reckon/crew/quota_weight.py",
+              "physical_lines": 281,
+              "public_classes": 5,
+              "public_methods": 1,
+              "public_surface": 8,
+              "public_surface_per_100_code_lines": 4.4944,
+              "public_top_level_functions": 2,
+              "sha256": "135cb746e494be770e46833c6e61473e6ffb11261a3e758cf5ee37471833886f"
+            },
+            {
+              "code_lines": 554,
+              "path": "reckon/crew/node.py",
+              "physical_lines": 852,
+              "public_classes": 11,
+              "public_methods": 3,
+              "public_surface": 23,
+              "public_surface_per_100_code_lines": 4.1516,
+              "public_top_level_functions": 9,
+              "sha256": "4d8d51e4c3f9f02ee57ba7a9dbad76998446ed90143e19f445227cb941c2de72"
+            },
+            {
+              "code_lines": 156,
+              "path": "reckon/crew/claims.py",
+              "physical_lines": 267,
+              "public_classes": 2,
+              "public_methods": 1,
+              "public_surface": 6,
+              "public_surface_per_100_code_lines": 3.8462,
+              "public_top_level_functions": 3,
+              "sha256": "3924845df3a85a2d25e7287e688049d3a7803fec3c64b4465d62a0a9c3801ed9"
+            },
+            {
+              "code_lines": 365,
+              "path": "reckon/crew/rollout.py",
+              "physical_lines": 533,
+              "public_classes": 4,
+              "public_methods": 7,
+              "public_surface": 12,
+              "public_surface_per_100_code_lines": 3.2877,
+              "public_top_level_functions": 1,
+              "sha256": "7736aab774c30d3e13ad5d0ed90b0298669199dd7e0438b197e686b201c78293"
+            }
+          ],
+          "pass_through_function_count": 5,
+          "primitive_counts": {
+            "Advisory file locking": 14,
+            "Atomic JSON file replacement": 3,
+            "Content digest construction": 7,
+            "Git subprocess invocation": 19,
+            "ISO timestamp parsing": 19,
+            "JSON document decoding": 17,
+            "JSON document encoding": 7,
+            "JSON record stream decoding": 8,
+            "PID existence probing": 1
+          },
+          "public_class_count": 33,
+          "public_function_count": 166,
+          "public_surface": 199,
+          "reimplementation_group_count": 8,
+          "source_code_lines": 16592,
+          "source_lines": 23329,
+          "test_code_lines": 50822,
+          "test_lines": 67709,
+          "test_module_count": 154
+        }
+      },
+      "target": "2026-09-19T12:00:00+00:00"
+    },
+    {
+      "commit": "056c08e0d7c96a5b4edaee5dbcfe169c0c5ceaf9",
+      "committed_at": "2026-09-26T11:59:44+02:00",
+      "offset_seconds": -7216,
+      "repository": "reckon",
+      "scopes": {
+        "reckon/": {
+          "clones": {
+            "clone_share": 0.10724697,
+            "cloned_source_code_lines": 6843,
+            "duplicate_window_fingerprints": 939,
+            "source_code_lines": 63806,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 2621,
+            "max": 1032,
+            "median": 16.0,
+            "min": 2,
+            "p75": 31.0,
+            "p90": 56.0,
+            "p95": 87.0
+          },
+          "interfaces": {
+            "cli_command_count": 56,
+            "cli_group_count": 7,
+            "cli_option_count": 239,
+            "cli_option_unique_flag_count": 112,
+            "dispatch_raise_site_count": 82,
+            "dispatch_refusal_code_count": 23,
+            "dispatch_refusal_codes": [
+              "D01",
+              "D02",
+              "D03",
+              "D04",
+              "D05",
+              "D06",
+              "D07",
+              "D08",
+              "D09",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16",
+              "D17",
+              "D18",
+              "D19",
+              "D20",
+              "D21",
+              "D22",
+              "D23"
+            ],
+            "mcp_unique_view_name_count": 20,
+            "mcp_view_count": 30
+          },
+          "module_count": 88,
+          "module_surfaces": [
+            {
+              "code_lines": 125,
+              "path": "reckon/service.py",
+              "physical_lines": 233,
+              "public_classes": 2,
+              "public_methods": 0,
+              "public_surface": 14,
+              "public_surface_per_100_code_lines": 11.2,
+              "public_top_level_functions": 12,
+              "sha256": "6e9811b9424490a9246b67704b62366f893d3a47fe39b3fca04ef9cd39ef27ec"
+            },
+            {
+              "code_lines": 294,
+              "path": "reckon/_flight_schema.py",
+              "physical_lines": 472,
+              "public_classes": 25,
+              "public_methods": 6,
+              "public_surface": 31,
+              "public_surface_per_100_code_lines": 10.5442,
+              "public_top_level_functions": 0,
+              "sha256": "4b8af743711c8b2726e7bd1a99b9231b0c12cfb3921366ec25a8b77cb3c60376"
+            },
+            {
+              "code_lines": 119,
+              "path": "reckon/crew/pace.py",
+              "physical_lines": 213,
+              "public_classes": 3,
+              "public_methods": 1,
+              "public_surface": 11,
+              "public_surface_per_100_code_lines": 9.2437,
+              "public_top_level_functions": 7,
+              "sha256": "45316565d12a311b648a49ed2f440dea90fb3e50883b969c1ec9a8181b8c67d3"
+            },
+            {
+              "code_lines": 143,
+              "path": "reckon/_mcp_tools.py",
+              "physical_lines": 178,
+              "public_classes": 9,
+              "public_methods": 1,
+              "public_surface": 10,
+              "public_surface_per_100_code_lines": 6.993,
+              "public_top_level_functions": 0,
+              "sha256": "0dfd9186c4e06032eba89fc637baa79e9b585a9504ebab4ffef111f8a661f1af"
+            },
+            {
+              "code_lines": 77,
+              "path": "reckon/crew/reserve.py",
+              "physical_lines": 147,
+              "public_classes": 0,
+              "public_methods": 0,
+              "public_surface": 5,
+              "public_surface_per_100_code_lines": 6.4935,
+              "public_top_level_functions": 5,
+              "sha256": "63e38e00c45a26c4d4699b14306a3911463a46b183dce642002bf102f473eec3"
+            }
+          ],
+          "pass_through_function_count": 21,
+          "primitive_counts": {
+            "Advisory file locking": 17,
+            "Atomic JSON file replacement": 14,
+            "Content digest construction": 31,
+            "Finite numeric input validation": 1,
+            "Git subprocess invocation": 38,
+            "HTML file discovery and reading": 10,
+            "ISO timestamp parsing": 44,
+            "JSON document decoding": 94,
+            "JSON document encoding": 38,
+            "JSON record stream decoding": 25,
+            "PID existence probing": 1
+          },
+          "public_class_count": 174,
+          "public_function_count": 843,
+          "public_surface": 1017,
+          "reimplementation_group_count": 26,
+          "source_code_lines": 63806,
+          "source_lines": 89711,
+          "test_code_lines": 126605,
+          "test_lines": 173557,
+          "test_module_count": 510
+        },
+        "reckon/crew/": {
+          "clones": {
+            "clone_share": 0.07054377,
+            "cloned_source_code_lines": 1885,
+            "duplicate_window_fingerprints": 228,
+            "source_code_lines": 26721,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 1171,
+            "max": 1032,
+            "median": 18.0,
+            "min": 2,
+            "p75": 32.0,
+            "p90": 57.0,
+            "p95": 83.0
+          },
+          "interfaces": {
+            "cli_command_count": 0,
+            "cli_group_count": 0,
+            "cli_option_count": 0,
+            "cli_option_unique_flag_count": 0,
+            "dispatch_raise_site_count": 82,
+            "dispatch_refusal_code_count": 18,
+            "dispatch_refusal_codes": [
+              "D05",
+              "D07",
+              "D08",
+              "D09",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16",
+              "D17",
+              "D18",
+              "D19",
+              "D20",
+              "D21",
+              "D22",
+              "D23"
+            ],
+            "mcp_unique_view_name_count": 0,
+            "mcp_view_count": 0
+          },
+          "module_count": 40,
+          "module_surfaces": [
+            {
+              "code_lines": 119,
+              "path": "reckon/crew/pace.py",
+              "physical_lines": 213,
+              "public_classes": 3,
+              "public_methods": 1,
+              "public_surface": 11,
+              "public_surface_per_100_code_lines": 9.2437,
+              "public_top_level_functions": 7,
+              "sha256": "45316565d12a311b648a49ed2f440dea90fb3e50883b969c1ec9a8181b8c67d3"
+            },
+            {
+              "code_lines": 77,
+              "path": "reckon/crew/reserve.py",
+              "physical_lines": 147,
+              "public_classes": 0,
+              "public_methods": 0,
+              "public_surface": 5,
+              "public_surface_per_100_code_lines": 6.4935,
+              "public_top_level_functions": 5,
+              "sha256": "63e38e00c45a26c4d4699b14306a3911463a46b183dce642002bf102f473eec3"
+            },
+            {
+              "code_lines": 82,
+              "path": "reckon/crew/staleness.py",
+              "physical_lines": 160,
+              "public_classes": 2,
+              "public_methods": 0,
+              "public_surface": 5,
+              "public_surface_per_100_code_lines": 6.0976,
+              "public_top_level_functions": 3,
+              "sha256": "9b762f86a3f2cad4c5673d0d928b925f57edbe09bc10b80e2cebbbd0c4c7d2f3"
+            },
+            {
+              "code_lines": 404,
+              "path": "reckon/crew/worker_digest.py",
+              "physical_lines": 580,
+              "public_classes": 7,
+              "public_methods": 0,
+              "public_surface": 24,
+              "public_surface_per_100_code_lines": 5.9406,
+              "public_top_level_functions": 17,
+              "sha256": "b3d079128316aa229e7c4886b33c763314a326a6d12fb988117eed7361b02996"
+            },
+            {
+              "code_lines": 209,
+              "path": "reckon/crew/placement.py",
+              "physical_lines": 408,
+              "public_classes": 0,
+              "public_methods": 0,
+              "public_surface": 12,
+              "public_surface_per_100_code_lines": 5.7416,
+              "public_top_level_functions": 12,
+              "sha256": "c627279a52010947093cf956656b5782a209f763ba9479132d8af046286abc39"
+            }
+          ],
+          "pass_through_function_count": 8,
+          "primitive_counts": {
+            "Advisory file locking": 15,
+            "Atomic JSON file replacement": 8,
+            "Content digest construction": 13,
+            "Git subprocess invocation": 25,
+            "ISO timestamp parsing": 27,
+            "JSON document decoding": 50,
+            "JSON document encoding": 14,
+            "JSON record stream decoding": 19,
+            "PID existence probing": 1
+          },
+          "public_class_count": 61,
+          "public_function_count": 366,
+          "public_surface": 427,
+          "reimplementation_group_count": 11,
+          "source_code_lines": 26721,
+          "source_lines": 40343,
+          "test_code_lines": 83238,
+          "test_lines": 114786,
+          "test_module_count": 302
+        }
+      },
+      "target": "2026-09-26T12:00:00+00:00"
+    },
+    {
+      "commit": "e247cff66a06bc6a12cdfd3d9003c34fde90ecde",
+      "committed_at": "2026-09-05T14:07:25+02:00",
+      "offset_seconds": 445,
+      "repository": "nova",
+      "scopes": {
+        "nova/": {
+          "clones": {
+            "clone_share": 0.10419173,
+            "cloned_source_code_lines": 11521,
+            "duplicate_window_fingerprints": 1757,
+            "source_code_lines": 110575,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 6539,
+            "max": 845,
+            "median": 8.0,
+            "min": 1,
+            "p75": 19.0,
+            "p90": 41.0,
+            "p95": 63.0
+          },
+          "interfaces": {
+            "cli_command_count": 3,
+            "cli_group_count": 2,
+            "cli_option_count": 14,
+            "cli_option_unique_flag_count": 13,
+            "dispatch_raise_site_count": 0,
+            "dispatch_refusal_code_count": 0,
+            "dispatch_refusal_codes": [],
+            "mcp_unique_view_name_count": 0,
+            "mcp_view_count": 0
+          },
+          "module_count": 428,
+          "module_surfaces": [
+            {
+              "code_lines": 16,
+              "path": "nova/io/streaming.py",
+              "physical_lines": 61,
+              "public_classes": 1,
+              "public_methods": 5,
+              "public_surface": 6,
+              "public_surface_per_100_code_lines": 37.5,
+              "public_top_level_functions": 0,
+              "sha256": "f0058f1debd79c9d9424325e245e2aa32e87695a2a8dea7e8869f53c4d9904a8"
+            },
+            {
+              "code_lines": 33,
+              "path": "nova/frame/dataarray.py",
+              "physical_lines": 68,
+              "public_classes": 1,
+              "public_methods": 8,
+              "public_surface": 9,
+              "public_surface_per_100_code_lines": 27.2727,
+              "public_top_level_functions": 0,
+              "sha256": "7f5b437a6e40cafc1e609ebf58e6114a7c6cf6028828cbc25ba8dfaf65eb4dfa"
+            },
+            {
+              "code_lines": 21,
+              "path": "nova/frame/error.py",
+              "physical_lines": 42,
+              "public_classes": 5,
+              "public_methods": 0,
+              "public_surface": 5,
+              "public_surface_per_100_code_lines": 23.8095,
+              "public_top_level_functions": 0,
+              "sha256": "e97bd9964132ae0dd44e3eca50989e24faf03e9dfa1d6398fb9d890d75e7d28f"
+            },
+            {
+              "code_lines": 65,
+              "path": "nova/frame/plasmaloc.py",
+              "physical_lines": 102,
+              "public_classes": 1,
+              "public_methods": 14,
+              "public_surface": 15,
+              "public_surface_per_100_code_lines": 23.0769,
+              "public_top_level_functions": 0,
+              "sha256": "74da57afc19671746ea9e1d11b1da0fbb0fe506853a65e1c21d891080941f975"
+            },
+            {
+              "code_lines": 96,
+              "path": "nova/thermalhydralic/sultan/sample.py",
+              "physical_lines": 148,
+              "public_classes": 1,
+              "public_methods": 21,
+              "public_surface": 22,
+              "public_surface_per_100_code_lines": 22.9167,
+              "public_top_level_functions": 0,
+              "sha256": "87983867f300ea537f71263bc505eb2fa1d3bc9fb224895042b69c0899fde115"
+            }
+          ],
+          "pass_through_function_count": 100,
+          "primitive_counts": {
+            "Array finite differences": 108,
+            "Atomic JSON file replacement": 3,
+            "Content digest construction": 18,
+            "Finite numeric input validation": 127,
+            "JSON document decoding": 45,
+            "JSON document encoding": 26,
+            "One-dimensional interpolation": 71,
+            "Read-only array construction": 9,
+            "Tensor grid construction": 34,
+            "Trapezoidal integration": 4
+          },
+          "public_class_count": 990,
+          "public_function_count": 4382,
+          "public_surface": 5372,
+          "reimplementation_group_count": 30,
+          "source_code_lines": 110575,
+          "source_lines": 157127,
+          "test_code_lines": 80442,
+          "test_lines": 109530,
+          "test_module_count": 421
+        }
+      },
+      "target": "2026-09-05T12:00:00+00:00"
+    },
+    {
+      "commit": "9062b6f121e4355ffd091280c4e5df3905943130",
+      "committed_at": "2026-09-11T15:09:24+02:00",
+      "offset_seconds": -82236,
+      "repository": "nova",
+      "scopes": {
+        "nova/": {
+          "clones": {
+            "clone_share": 0.11114307,
+            "cloned_source_code_lines": 13523,
+            "duplicate_window_fingerprints": 2109,
+            "source_code_lines": 121672,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 6950,
+            "max": 845,
+            "median": 9.0,
+            "min": 1,
+            "p75": 20.0,
+            "p90": 43.0,
+            "p95": 65.0
+          },
+          "interfaces": {
+            "cli_command_count": 3,
+            "cli_group_count": 2,
+            "cli_option_count": 14,
+            "cli_option_unique_flag_count": 13,
+            "dispatch_raise_site_count": 0,
+            "dispatch_refusal_code_count": 0,
+            "dispatch_refusal_codes": [],
+            "mcp_unique_view_name_count": 0,
+            "mcp_view_count": 0
+          },
+          "module_count": 447,
+          "module_surfaces": [
+            {
+              "code_lines": 16,
+              "path": "nova/io/streaming.py",
+              "physical_lines": 61,
+              "public_classes": 1,
+              "public_methods": 5,
+              "public_surface": 6,
+              "public_surface_per_100_code_lines": 37.5,
+              "public_top_level_functions": 0,
+              "sha256": "f0058f1debd79c9d9424325e245e2aa32e87695a2a8dea7e8869f53c4d9904a8"
+            },
+            {
+              "code_lines": 33,
+              "path": "nova/frame/dataarray.py",
+              "physical_lines": 68,
+              "public_classes": 1,
+              "public_methods": 8,
+              "public_surface": 9,
+              "public_surface_per_100_code_lines": 27.2727,
+              "public_top_level_functions": 0,
+              "sha256": "7f5b437a6e40cafc1e609ebf58e6114a7c6cf6028828cbc25ba8dfaf65eb4dfa"
+            },
+            {
+              "code_lines": 21,
+              "path": "nova/frame/error.py",
+              "physical_lines": 42,
+              "public_classes": 5,
+              "public_methods": 0,
+              "public_surface": 5,
+              "public_surface_per_100_code_lines": 23.8095,
+              "public_top_level_functions": 0,
+              "sha256": "e97bd9964132ae0dd44e3eca50989e24faf03e9dfa1d6398fb9d890d75e7d28f"
+            },
+            {
+              "code_lines": 65,
+              "path": "nova/frame/plasmaloc.py",
+              "physical_lines": 102,
+              "public_classes": 1,
+              "public_methods": 14,
+              "public_surface": 15,
+              "public_surface_per_100_code_lines": 23.0769,
+              "public_top_level_functions": 0,
+              "sha256": "74da57afc19671746ea9e1d11b1da0fbb0fe506853a65e1c21d891080941f975"
+            },
+            {
+              "code_lines": 96,
+              "path": "nova/thermalhydralic/sultan/sample.py",
+              "physical_lines": 148,
+              "public_classes": 1,
+              "public_methods": 21,
+              "public_surface": 22,
+              "public_surface_per_100_code_lines": 22.9167,
+              "public_top_level_functions": 0,
+              "sha256": "87983867f300ea537f71263bc505eb2fa1d3bc9fb224895042b69c0899fde115"
+            }
+          ],
+          "pass_through_function_count": 104,
+          "primitive_counts": {
+            "Array finite differences": 117,
+            "Atomic JSON file replacement": 3,
+            "Content digest construction": 23,
+            "Finite numeric input validation": 150,
+            "JSON document decoding": 45,
+            "JSON document encoding": 26,
+            "One-dimensional interpolation": 74,
+            "Read-only array construction": 11,
+            "Tensor grid construction": 34,
+            "Trapezoidal integration": 4
+          },
+          "public_class_count": 1034,
+          "public_function_count": 4546,
+          "public_surface": 5580,
+          "reimplementation_group_count": 33,
+          "source_code_lines": 121672,
+          "source_lines": 171484,
+          "test_code_lines": 92117,
+          "test_lines": 124950,
+          "test_module_count": 463
+        }
+      },
+      "target": "2026-09-12T12:00:00+00:00"
+    },
+    {
+      "commit": "c11eea7f110bdec79d586e23ebc83f5568b3f7ab",
+      "committed_at": "2026-09-19T14:00:38+02:00",
+      "offset_seconds": 38,
+      "repository": "nova",
+      "scopes": {
+        "nova/": {
+          "clones": {
+            "clone_share": 0.11383136,
+            "cloned_source_code_lines": 14395,
+            "duplicate_window_fingerprints": 2249,
+            "source_code_lines": 126459,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 7149,
+            "max": 845,
+            "median": 9.0,
+            "min": 1,
+            "p75": 20.0,
+            "p90": 44.0,
+            "p95": 66.0
+          },
+          "interfaces": {
+            "cli_command_count": 3,
+            "cli_group_count": 2,
+            "cli_option_count": 14,
+            "cli_option_unique_flag_count": 13,
+            "dispatch_raise_site_count": 0,
+            "dispatch_refusal_code_count": 0,
+            "dispatch_refusal_codes": [],
+            "mcp_unique_view_name_count": 0,
+            "mcp_view_count": 0
+          },
+          "module_count": 450,
+          "module_surfaces": [
+            {
+              "code_lines": 16,
+              "path": "nova/io/streaming.py",
+              "physical_lines": 61,
+              "public_classes": 1,
+              "public_methods": 5,
+              "public_surface": 6,
+              "public_surface_per_100_code_lines": 37.5,
+              "public_top_level_functions": 0,
+              "sha256": "f0058f1debd79c9d9424325e245e2aa32e87695a2a8dea7e8869f53c4d9904a8"
+            },
+            {
+              "code_lines": 33,
+              "path": "nova/frame/dataarray.py",
+              "physical_lines": 68,
+              "public_classes": 1,
+              "public_methods": 8,
+              "public_surface": 9,
+              "public_surface_per_100_code_lines": 27.2727,
+              "public_top_level_functions": 0,
+              "sha256": "7f5b437a6e40cafc1e609ebf58e6114a7c6cf6028828cbc25ba8dfaf65eb4dfa"
+            },
+            {
+              "code_lines": 21,
+              "path": "nova/frame/error.py",
+              "physical_lines": 42,
+              "public_classes": 5,
+              "public_methods": 0,
+              "public_surface": 5,
+              "public_surface_per_100_code_lines": 23.8095,
+              "public_top_level_functions": 0,
+              "sha256": "e97bd9964132ae0dd44e3eca50989e24faf03e9dfa1d6398fb9d890d75e7d28f"
+            },
+            {
+              "code_lines": 65,
+              "path": "nova/frame/plasmaloc.py",
+              "physical_lines": 102,
+              "public_classes": 1,
+              "public_methods": 14,
+              "public_surface": 15,
+              "public_surface_per_100_code_lines": 23.0769,
+              "public_top_level_functions": 0,
+              "sha256": "74da57afc19671746ea9e1d11b1da0fbb0fe506853a65e1c21d891080941f975"
+            },
+            {
+              "code_lines": 96,
+              "path": "nova/thermalhydralic/sultan/sample.py",
+              "physical_lines": 148,
+              "public_classes": 1,
+              "public_methods": 21,
+              "public_surface": 22,
+              "public_surface_per_100_code_lines": 22.9167,
+              "public_top_level_functions": 0,
+              "sha256": "87983867f300ea537f71263bc505eb2fa1d3bc9fb224895042b69c0899fde115"
+            }
+          ],
+          "pass_through_function_count": 105,
+          "primitive_counts": {
+            "Array finite differences": 119,
+            "Atomic JSON file replacement": 3,
+            "Content digest construction": 25,
+            "Finite numeric input validation": 157,
+            "JSON document decoding": 45,
+            "JSON document encoding": 26,
+            "One-dimensional interpolation": 74,
+            "Read-only array construction": 11,
+            "Tensor grid construction": 34,
+            "Trapezoidal integration": 4
+          },
+          "public_class_count": 1053,
+          "public_function_count": 4614,
+          "public_surface": 5667,
+          "reimplementation_group_count": 33,
+          "source_code_lines": 126459,
+          "source_lines": 177929,
+          "test_code_lines": 98853,
+          "test_lines": 133796,
+          "test_module_count": 488
+        }
+      },
+      "target": "2026-09-19T12:00:00+00:00"
+    },
+    {
+      "commit": "16287918db2f90d0088c1786ec45965cd90e6652",
+      "committed_at": "2026-09-24T17:59:59+02:00",
+      "offset_seconds": -158401,
+      "repository": "nova",
+      "scopes": {
+        "nova/": {
+          "clones": {
+            "clone_share": 0.11263442,
+            "cloned_source_code_lines": 14402,
+            "duplicate_window_fingerprints": 2244,
+            "source_code_lines": 127865,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 7245,
+            "max": 823,
+            "median": 9.0,
+            "min": 1,
+            "p75": 20.0,
+            "p90": 44.0,
+            "p95": 66.0
+          },
+          "interfaces": {
+            "cli_command_count": 3,
+            "cli_group_count": 2,
+            "cli_option_count": 14,
+            "cli_option_unique_flag_count": 13,
+            "dispatch_raise_site_count": 0,
+            "dispatch_refusal_code_count": 0,
+            "dispatch_refusal_codes": [],
+            "mcp_unique_view_name_count": 0,
+            "mcp_view_count": 0
+          },
+          "module_count": 450,
+          "module_surfaces": [
+            {
+              "code_lines": 16,
+              "path": "nova/io/streaming.py",
+              "physical_lines": 61,
+              "public_classes": 1,
+              "public_methods": 5,
+              "public_surface": 6,
+              "public_surface_per_100_code_lines": 37.5,
+              "public_top_level_functions": 0,
+              "sha256": "f0058f1debd79c9d9424325e245e2aa32e87695a2a8dea7e8869f53c4d9904a8"
+            },
+            {
+              "code_lines": 33,
+              "path": "nova/frame/dataarray.py",
+              "physical_lines": 68,
+              "public_classes": 1,
+              "public_methods": 8,
+              "public_surface": 9,
+              "public_surface_per_100_code_lines": 27.2727,
+              "public_top_level_functions": 0,
+              "sha256": "7f5b437a6e40cafc1e609ebf58e6114a7c6cf6028828cbc25ba8dfaf65eb4dfa"
+            },
+            {
+              "code_lines": 21,
+              "path": "nova/frame/error.py",
+              "physical_lines": 42,
+              "public_classes": 5,
+              "public_methods": 0,
+              "public_surface": 5,
+              "public_surface_per_100_code_lines": 23.8095,
+              "public_top_level_functions": 0,
+              "sha256": "e97bd9964132ae0dd44e3eca50989e24faf03e9dfa1d6398fb9d890d75e7d28f"
+            },
+            {
+              "code_lines": 65,
+              "path": "nova/frame/plasmaloc.py",
+              "physical_lines": 102,
+              "public_classes": 1,
+              "public_methods": 14,
+              "public_surface": 15,
+              "public_surface_per_100_code_lines": 23.0769,
+              "public_top_level_functions": 0,
+              "sha256": "74da57afc19671746ea9e1d11b1da0fbb0fe506853a65e1c21d891080941f975"
+            },
+            {
+              "code_lines": 96,
+              "path": "nova/thermalhydralic/sultan/sample.py",
+              "physical_lines": 148,
+              "public_classes": 1,
+              "public_methods": 21,
+              "public_surface": 22,
+              "public_surface_per_100_code_lines": 22.9167,
+              "public_top_level_functions": 0,
+              "sha256": "87983867f300ea537f71263bc505eb2fa1d3bc9fb224895042b69c0899fde115"
+            }
+          ],
+          "pass_through_function_count": 108,
+          "primitive_counts": {
+            "Array finite differences": 119,
+            "Atomic JSON file replacement": 3,
+            "Content digest construction": 25,
+            "Finite numeric input validation": 159,
+            "JSON document decoding": 45,
+            "JSON document encoding": 26,
+            "One-dimensional interpolation": 74,
+            "Read-only array construction": 11,
+            "Tensor grid construction": 34,
+            "Trapezoidal integration": 4
+          },
+          "public_class_count": 1054,
+          "public_function_count": 4625,
+          "public_surface": 5679,
+          "reimplementation_group_count": 33,
+          "source_code_lines": 127865,
+          "source_lines": 179742,
+          "test_code_lines": 105974,
+          "test_lines": 143554,
+          "test_module_count": 533
+        }
+      },
+      "target": "2026-09-26T12:00:00+00:00"
+    }
+  ]
+}
