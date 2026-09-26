@@ -619,6 +619,58 @@ slots:
       a node. An undeclared level applies no overlay.
     range: SpecificationRouting
 
+  by_capability_class:
+    description: >-
+      Routing overlays selected by the capability class a node resolves at. A
+      node whose plan section has been attempted at or above the configured
+      threshold resolves at the raised class, and that class selects the lane;
+      a node attempted fewer times resolves at the class its section declares.
+      A node raised onto a class whose overlay declares nothing keeps the
+      routing its role and backend already resolve to.
+    range: CapabilityClassRouting
+
+  routine:
+    description: Routing for a node resolving at the routine capability class.
+    range: RoutingOverlay
+
+  general:
+    description: Routing for a node resolving at the general capability class.
+    range: RoutingOverlay
+
+  orchestrator:
+    description: >-
+      Routing for a node resolving at the orchestrator capability class,
+      including a node raised there by its section's attempt count.
+    range: RoutingOverlay
+
+  capability_raise:
+    description: >-
+      Rule that raises the capability a node resolves at once its plan section
+      has been attempted at or above a threshold, so a section that keeps
+      costing attempts stops landing on the raise's own lane without anyone
+      deciding it by hand. The raise moves a node upward only: a node already
+      at or above the raised level resolves unchanged.
+    range: CapabilityRaise
+
+  attempts_threshold:
+    description: >-
+      Section attempt count at which the raise applies. A section attempted
+      fewer times resolves unchanged.
+    range: integer
+    minimum_value: 1
+
+  raised_class:
+    description: >-
+      Capability class a raised node resolves at, named in the capability
+      vocabulary the section contract already declares.
+    range: string
+
+  raised_reasoning:
+    description: Reasoning level a raised node requires.
+
+  raised_verification:
+    description: Verification level a raised node requires.
+
   exact:
     description: Routing for a node whose implementation is fully prescribed.
     range: RoutingOverlay
@@ -709,6 +761,7 @@ classes:
       - gates
       - budget
       - fences
+      - capability_raise
       - worktree
       - summary
       - ticker
@@ -804,6 +857,7 @@ classes:
       - token_budget
       - write_paths
       - by_spec_level
+      - by_capability_class
 
   SpecificationRouting:
     description: Routing overlays keyed by the closed specification-level vocabulary.
@@ -811,6 +865,23 @@ classes:
       - exact
       - guided
       - open
+
+  CapabilityClassRouting:
+    description: Routing overlays keyed by the closed capability-class vocabulary.
+    slots:
+      - routine
+      - general
+      - orchestrator
+
+  CapabilityRaise:
+    description: >-
+      The threshold at which a section's attempt count raises a node's
+      effective capability, and the levels it is raised to.
+    slots:
+      - attempts_threshold
+      - raised_class
+      - raised_reasoning
+      - raised_verification
 
   RoutingOverlay:
     description: Settings that replace the selected role and backend routing for one level.

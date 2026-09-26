@@ -197,6 +197,7 @@ class FlightConfig(ConfiguredBaseModel):
     gates: Optional[GateConfig] = Field(default=None)
     budget: Optional[BudgetConfig] = Field(default=None)
     fences: Optional[FenceConfig] = Field(default=None)
+    capability_raise: Optional[CapabilityRaise] = Field(default=None, description="""Rule that raises the capability a node resolves at once its plan section has been attempted at or above a threshold, so a section that keeps costing attempts stops landing on the raise's own lane without anyone deciding it by hand. The raise moves a node upward only: a node already at or above the raised level resolves unchanged.""")
     worktree: Optional[WorktreeConfig] = Field(default=None)
     summary: Optional[SummaryConfig] = Field(default=None)
     ticker: Optional[TickerConfig] = Field(default=None, description="""The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back.""")
@@ -308,6 +309,7 @@ class RoleConfig(ConfiguredBaseModel):
     token_budget: Optional[int] = Field(default=None, description="""Worker allowance denominated in generated output tokens — the quantity the same task needs regardless of what else the lane is doing, so a slow lane inside its token budget is not an overrun however long it took. Written as a bare integer of output tokens. Cannot bound a hang, so the wall-clock `time_budget` ceiling stays under its own name.""", ge=1)
     write_paths: Optional[list[str]] = Field(default=None, description="""Default write scope granted to a node of this role when it declares no write_paths of its own. Entries are relative and are resolved against the dispatching run's own durable report-and-log directory — the same directory `manifest_path` already defaults into — never against the repository being worked on. A shipped or host layer therefore names no host-specific location, and a role whose entries all stay under that directory grants no reach into repository source.""")
     by_spec_level: Optional[SpecificationRouting] = Field(default=None, description="""Routing overlays selected by the specification completeness declared for a node. An undeclared level applies no overlay.""")
+    by_capability_class: Optional[CapabilityClassRouting] = Field(default=None, description="""Routing overlays selected by the capability class a node resolves at. A node whose plan section has been attempted at or above the configured threshold resolves at the raised class, and that class selects the lane; a node resolving below the raised class keeps its role's own routing.""")
 
     @field_validator('time_budget')
     def pattern_time_budget(cls, v):
@@ -330,6 +332,25 @@ class SpecificationRouting(ConfiguredBaseModel):
     exact: Optional[RoutingOverlay] = Field(default=None, description="""Routing for a node whose implementation is fully prescribed.""")
     guided: Optional[RoutingOverlay] = Field(default=None, description="""Routing for a node whose design is fixed but implementation is derived.""")
     open: Optional[RoutingOverlay] = Field(default=None, description="""Routing for a node whose design and implementation remain to the worker.""")
+
+
+class CapabilityClassRouting(ConfiguredBaseModel):
+    """
+    Routing overlays keyed by the closed capability-class vocabulary.
+    """
+    routine: Optional[RoutingOverlay] = Field(default=None, description="""Routing for a node resolving at the routine capability class.""")
+    general: Optional[RoutingOverlay] = Field(default=None, description="""Routing for a node resolving at the general capability class.""")
+    orchestrator: Optional[RoutingOverlay] = Field(default=None, description="""Routing for a node resolving at the orchestrator capability class, including a node raised there by its section's attempt count.""")
+
+
+class CapabilityRaise(ConfiguredBaseModel):
+    """
+    The threshold at which a section's attempt count raises a node's effective capability, and the levels it is raised to.
+    """
+    attempts_threshold: Optional[int] = Field(default=None, description="""Section attempt count at which the raise applies. A section attempted fewer times resolves unchanged.""", ge=1)
+    raised_class: Optional[str] = Field(default=None, description="""Capability class a raised node resolves at, named in the capability vocabulary the section contract already declares.""")
+    raised_reasoning: Optional[str] = Field(default=None, description="""Reasoning level a raised node requires.""")
+    raised_verification: Optional[str] = Field(default=None, description="""Verification level a raised node requires.""")
 
 
 class RoutingOverlay(ConfiguredBaseModel):
@@ -465,6 +486,8 @@ EnvironmentVariable.model_rebuild()
 EffortSpelling.model_rebuild()
 RoleConfig.model_rebuild()
 SpecificationRouting.model_rebuild()
+CapabilityClassRouting.model_rebuild()
+CapabilityRaise.model_rebuild()
 RoutingOverlay.model_rebuild()
 GateConfig.model_rebuild()
 BudgetConfig.model_rebuild()

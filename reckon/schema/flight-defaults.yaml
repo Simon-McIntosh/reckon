@@ -147,6 +147,16 @@ fences:
   # promotion rather than fire in the middle of it.
   unreconciled_run_grace: 15m
 
+# A section that has cost three attempts has outgrown the lane its declared
+# capability picked, so the node resolves at the raised class instead and the
+# dispatch summary says which count caused it. Upward only, so a section whose
+# declared capability already sits at or above this level is unchanged.
+capability_raise:
+  attempts_threshold: 3
+  raised_class: orchestrator
+  raised_reasoning: deep
+  raised_verification: strict
+
 worktree:
   cleanup: conservative
 
