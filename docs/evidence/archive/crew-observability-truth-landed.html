@@ -2254,6 +2254,44 @@ detail         : ... conflicts with live claim ... held by run
     against is at
     <code>~/Code/reckon/...scratchpad/rv-landing-tests-measure-the-landing.json</code> in the
     session that recorded it.</p>
+  <h3>The race a peer measured: eighteen seconds between the id and the pointer</h3>
+    <p>A hand dispatch on 2026-09-26 minted run id <code>r-20260926T142811418533</code> at
+    <strong>14:28:11Z</strong> and wrote its live pointer only at <strong>14:28:29Z</strong>, its
+    worker launching at 14:28:51Z. At <strong>14:28:18Z</strong>, inside that window, a second
+    dispatch (<code>r-20260926T142818622946</code>) was accepted onto the identical two review-store
+    write paths, because <code>runs.list_live</code> returned nothing for the first run. The same
+    empty read made the review reflex's in-flight check miss it, so neither surface saw the claim
+    the first dispatch already held.</p>
+    <p><strong>The change:</strong> the claim is written at the run id's own moment &mdash; before the
+    concurrency, roster, scope and watcher checks, and before the worktree, prompt and peer wiring
+    that made the window eighteen seconds wide. Every read taken afterwards excludes this call's own
+    run id: the occupancy count behind the lane ceiling, the adjacent-peer walk, and the scope
+    re-check at the pointer write. A refusal anywhere under the guard releases the claim, so a
+    refused dispatch still leaves no live pointer, no run directory and no worktree.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/claim-window-measured.svg"
+           alt="Top: at base the id is minted at 14:28:11 and the live pointer is written at 14:28:29, so a second dispatch at 14:28:18 reads no claim and is accepted. Middle: at the change the claim is written at the run id, so the second dispatch meets it and is refused. Bottom: a re-check that did not skip this call's own run id would refuse the call itself."
+           style="max-width:760px;width:100%">
+      <figcaption>The window a peer measured on 2026-09-26, and where the claim now sits in it.
+      </figcaption>
+    </figure>
+    <p><strong>Measure, second revision:</strong> the same ten files in one invocation per arm. The
+    paragraph above measures the first revision; this one carries the third added assertion. Base arm
+    at <code>3be868de</code>: <strong>3 failed, 82 passed</strong>, exit 1, the three failures all
+    added assertions in the new file. Head arm in the run's worktree: <strong>85 passed</strong>,
+    exit 0, zero added failures. The assertion new to this revision holds a dispatch at its first
+    preflight step &mdash; id minted and claim written, worktree not yet cut &mdash; and issues a
+    second dispatch on the same declared path from inside that hold: the second is refused, naming
+    the first run, and the launch that held the claim finishes with exactly one live pointer. The
+    lone-dispatch acceptance case above is unchanged and green.</p>
+    <p><strong>Negative control, re-run at this revision:</strong> the declared mutation &mdash;
+    <code>exclude_run_ids</code> forced empty on every claims read &mdash; reddens the acceptance test
+    with the dispatch refused by the claim of its own run id, its first line the declaration
+    verbatim. Because this node's run directory is read-only since the earlier record, the addition's
+    evidence is written under <code>~/.cache/reckon-launch-claim/</code>:
+    <code>negative-control-addition.log</code> with <code>probe.py</code> and its plugin,
+    <code>gate-head-suite.log</code> and <code>gate-base-suite.log</code> (both arms, each printing
+    the module file it imported), and <code>measured-files.txt</code>.</p>
   </section>
 
 </main>

@@ -1688,6 +1688,21 @@
       commit <code>a7413c1d</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#launch-holds-its-own-claim">&#167;23 a launch holds its own claim</a>.</p>
 
+    <p class="landed-summary">The claim is taken before the slow part, not after it. A peer's hand
+      dispatch minted run id <code>r-20260926T142811418533</code> at 14:28:11Z but wrote its live
+      pointer at 14:28:29Z, and a second dispatch at 14:28:18Z read nothing for the first and was
+      accepted onto the identical two review-store write paths; the same empty read made the review
+      reflex miss it. The claim is now written at the run id's own moment, before the preflight and
+      the worktree, prompt and peer wiring that made the window eighteen seconds wide.
+      Every read taken afterwards excludes this call's own run id, and a refusal under the guard
+      gives the claim back, so a refused dispatch still leaves no pointer, run directory or
+      worktree. At this revision the gate over the same ten files moves <strong>82 passed, 3
+      failed</strong> at base <code>3be868de</code> to <strong>85 passed</strong> at the change,
+      exit 0, zero added failures; the added red holds a dispatch at its first preflight step and
+      issues a second on the same path from inside that hold, refused naming the first. Landed
+      under commit <code>7da01629</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#launch-holds-its-own-claim">&#167;23 a launch holds its own claim</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="liveness-source" data-choice="reconcile-on-read" data-by="lead" data-when="2026-09-03T07:38:29+00:00">

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 430" width="900" height="430" role="img" aria-labelledby="t d">
+  <title id="t">The measured window between a run id and its live pointer</title>
+  <desc id="d">A hand dispatch measured on 2026-09-26 minted its run id at 14:28:11Z and wrote its live pointer at 14:28:29Z. A second dispatch at 14:28:18Z read no pointer, took the identical review-store paths and was accepted; the same empty read made the review reflex miss the first run. At the change the claim is written at the run id, so the second dispatch meets it and is refused naming the first.</desc>
+
+  <style>
+    .bg { fill: #ffffff; }
+    .lane { fill: #f5f6f8; stroke: #c9ccd4; }
+    .invisible { fill: #fdecec; stroke: #d98a8a; stroke-dasharray: 5 4; }
+    .claimed { fill: #eef6f0; stroke: #2f6b41; }
+    .axis { stroke: #8b8f99; stroke-width: 1.5; }
+    .mark { stroke: #444851; stroke-width: 2; fill: none; }
+    .t { font-family: sans-serif; font-size: 14px; fill: #23252b; }
+    .small { font-family: sans-serif; font-size: 11.5px; fill: #4a4e57; }
+    .head { font-family: sans-serif; font-size: 15px; font-weight: bold; fill: #23252b; }
+    .bad { font-family: sans-serif; font-size: 12.5px; fill: #a13b3b; }
+    .good { font-family: sans-serif; font-size: 12.5px; fill: #2f6b41; }
+    .dot-bad { fill: #a13b3b; }
+    .dot-good { fill: #2f6b41; }
+  </style>
+
+  <rect class="bg" x="0" y="0" width="900" height="430"/>
+  <text class="head" x="40" y="34">The window a peer measured on 2026-09-26: eighteen seconds, and a second dispatch inside it</text>
+  <text class="small" x="40" y="54">Two hand dispatches of one review record: r-...142811418533 minted first, r-...142818622946 accepted on the identical two review-store paths.</text>
+<text class="t" x="40" y="80">At base — the id exists at 14:28:11; nothing on disk says so until 14:28:29</text>
+  <rect class="lane" x="40" y="92" width="820" height="44" rx="6"/>
+  <rect class="invisible" x="60" y="92" width="360" height="44" rx="6"/>
+  <line class="axis" x1="60" y1="94" x2="60" y2="134"/>
+  <line class="axis" x1="860" y1="94" x2="860" y2="134"/>
+  <circle class="dot-bad" cx="200" cy="114" r="6"/>
+  <circle class="mark" cx="420" cy="114" r="6"/>
+  <text class="small" x="60" y="154">14:28:11 id minted — no claim written, so no reader sees these paths</text>
+  <text class="small" x="860" y="154" text-anchor="end">14:28:29 live pointer written</text>
+  <text class="bad" x="200" y="170">14:28:18 second dispatch reads no claim and is accepted</text>
+  <text class="small" x="860" y="170" text-anchor="end">14:28:51 first worker launched</text>
+<text class="t" x="40" y="204">At the change — the claim is written at the run id, before the preflight and the worktree</text>
+  <rect class="lane" x="40" y="216" height="44" width="820" rx="6"/>
+  <rect class="claimed" x="60" y="216" width="800" height="44" rx="6"/>
+  <line class="axis" x1="60" y1="218" x2="60" y2="258"/>
+  <line class="axis" x1="860" y1="218" x2="860" y2="258"/>
+  <circle class="dot-good" cx="200" cy="238" r="6"/>
+  <text class="small" x="60" y="278">14:28:11 the claim is written at the run id: a live pointer with no pid and no worktree</text>
+  <text class="small" x="860" y="278" text-anchor="end">14:28:51 first worker launched</text>
+  <text class="good" x="200" y="294">14:28:18 second dispatch meets the claim and is refused, naming it</text>
+<text class="t" x="40" y="328">The exclusion falsified — a re-check that does not skip this call's own run id refuses the call itself</text>
+  <rect class="lane" x="40" y="340" width="820" height="44" rx="6"/>
+  <circle class="dot-good" cx="60" cy="362" r="6"/>
+  <circle class="dot-bad" cx="420" cy="362" r="6"/>
+  <text class="small" x="60" y="398">its own claim, read back at the pointer write, would be a conflict if this call did not skip its own run id</text>
+  <text class="good" x="60" y="414">the assertion for this race fails at base (82 passed, 3 failed) and passes at the change (85 passed)</text>
+</svg>
