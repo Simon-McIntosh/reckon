@@ -204,8 +204,8 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
     assert "working → blocked" in line
     assert ticker_module.BASELINE_MARKER not in line
     # The counts are a fixed grid whose digits share a column, each number
-    # followed by its state's single letter.
-    assert " 3w 1b 0u" in line
+    # followed by its state's single letter, one space between the cells.
+    assert " 3w  1b  0u" in line
     # Free text is bounded to one clause and stays on the line; a second row
     # would cost a quarter of a pane that shows about eight.
     assert "first clause" in line
@@ -214,20 +214,24 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
 
 
 def test_counter_cells_stay_apart_at_every_digit_width() -> None:
-    """Two-digit counts never run into the bucket beside them.
+    """Two counts never run into each other, whatever their digit width.
 
-    The block renders each count as its digits followed by the bucket's letter,
-    one space between cells, so ``10w 12b`` is two tokens at any digit width and
-    the abutting ``10w12b`` is never printed as one. The single-digit form is
-    unchanged — ``1w 0b 0u 0q``, whose gaps are those same single spaces — so a
-    fleet that fits one digit a bucket reads exactly as it did before. The block
-    keeps one width whatever the counts (its spare columns fall at the block's
-    right edge), so the clause after it holds its column.
+    Every counter is its count right-aligned to a fixed digit width and followed
+    by the bucket's letter, with one space between cells, so ``10w 12b`` is two
+    tokens at any digit width and the abutting ``10w12b`` is never printed as
+    one. The right alignment is what lets that hold together with the block's
+    own width: a single-digit count pads inside its own cell rather than
+    shifting the letters beside it, so every letter keeps its column and the
+    text after the block starts on one column whatever the counts. Both ends are
+    read off the rendered row rather than from the module's width constant,
+    because the property is the row's — a renderer that stops reserving the
+    width inside its cells shortens the block and has to fail here.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
     counters = re.compile(r"(\d+)w\s+(\d+)b\s+(\d+)u\s+(\d+)q")
 
     block_ends: set[int] = set()
+    clause_starts: set[int] = set()
     cases = (
         (10, 12, 0, 0),
         (99, 99, 0, 0),
@@ -259,17 +263,30 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
             str(unpromoted),
             str(queued),
         ), row
-        # The counters carry no abutting pair and no doubled gap inside the
-        # block: one space is the only separator the cells use.
-        assert f"{working}w{blocked}b" not in row, row
-        assert "  " not in match.group(0), row
-        block_ends.add(match.start() + ticker_module.STATS)
+        # Each count is its own whitespace-separated token, and no bucket's
+        # letter is followed straight away by the next count's digits.
+        assert len(match.group(0).split()) == 4, row
+        for left, right, letter in (
+            (working, blocked, "w"),
+            (blocked, unpromoted, "b"),
+            (unpromoted, queued, "u"),
+        ):
+            assert f"{left}{letter}{right}" not in row, row
+        # Both ends of the block come off the rendered row itself. The block's
+        # right edge is where the four counts stop and the row's own free text
+        # is where it appears, so a renderer that stops reserving the block's
+        # width moves one of them and fails here rather than agreeing with a
+        # constant both sides read.
+        block_ends.add(match.end())
+        clause_starts.add(row.index(_event()["reason"]))
 
     # The block's reserved right edge holds whatever the counts, so the free
-    # text after it begins at one column on every row: a single-digit fleet's
-    # spare columns are the trailing space inside the block, not a shift of
-    # everything after it.
+    # text after it begins at one column on every row: a smaller count's spare
+    # columns are the space inside its own cell, not a shift of everything after
+    # it.
     assert len(block_ends) == 1, sorted(block_ends)
+    assert len(clause_starts) == 1, sorted(clause_starts)
+    assert clause_starts.pop() > block_ends.pop()
 
 
 def test_cli_follow_prints_compact_transition_lines_by_default(
@@ -317,7 +334,7 @@ def test_follow_renders_at_the_resolved_terminal_width(home, monkeypatch) -> Non
     assert len(line) == 207
     # The counters hold their own column inside the resolved-width grid, ahead
     # of the reason a clipping pane is allowed to cut.
-    assert " 3w 1b 0u" in line
+    assert " 3w  1b  0u" in line
 
 
 def test_follow_explicit_width_beats_the_measurement(home, monkeypatch) -> None:
@@ -877,7 +894,7 @@ def test_a_row_wider_than_the_pane_loses_reason_characters_and_no_counter(
         "207",
     )
 
-    for row, counts in zip(rows, (" 3w 1b 0u", "12w 9b 7u"), strict=True):
+    for row, counts in zip(rows, (" 3w  1b  0u", "12w  9b  7u"), strict=True):
         assert len(row) == 207
         clipped = row[:pane]
         # The whole counter block survives the clip, at every count width.
@@ -932,15 +949,30 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
     assert len({row.index("implement"[:4]) for row in rows}) == 1
     # The counter block starts at one column and holds every column the module
     # reserves for it whatever the counts, so the free text after it keeps one
-    # column on every row kind. Each count is its digits followed by its bucket
-    # letter, so the block is left-aligned inside those columns: the digits a
-    # single-digit fleet does not fill are spent as trailing space at the
-    # block's right edge, never by letting the block's own width follow the
-    # counts and shift the field after it.
-    starts = {re.search(r"\d{1,2}w", row).start() for row in rows}
+    # column on every row kind. Each count is right-aligned to a fixed digit
+    # width inside its own cell, so the block fills those columns whatever the
+    # fleet is doing: the digits a single-digit count does not use are spent at
+    # the left of its own cell, never by letting the block's own width follow
+    # the counts and shift the field after it.
+    starts = set()
+    ends = set()
+    for row in rows:
+        # Each cell is its fixed digit width plus its letter and one space
+        # separates the cells, so the pattern pins the whole block and cannot
+        # start one column early on a two-digit count by absorbing the space
+        # that separates the cells from each other.
+        found = re.search(
+            r"(?<=\s)([ \d]{2}w) ([ \d]{2}b) ([ \d]{2}u) ([ \d]{2}q)", row
+        )
+        assert found, row
+        # Both edges come off the row: the first cell's own pad is where the
+        # block's reserved columns begin whatever the counts, and the queued
+        # cell's letter is where they end.
+        starts.add(found.start(1))
+        ends.add(found.end(4))
     assert len(starts) == 1, starts
-    counter_start = starts.pop()
-    block_end = counter_start + ticker_module.STATS
+    assert len(ends) == 1, ends
+    block_end = ends.pop()
     for row in rows:
         assert (
             row[block_end : block_end + ticker_module.GAP] == " " * ticker_module.GAP

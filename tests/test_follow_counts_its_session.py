@@ -183,7 +183,7 @@ def test_two_digit_counts_reach_the_line_as_separate_tokens(
     """A two-digit count does not absorb the bucket beside it.
 
     The scoped figures are recomputed from the pointers, so ten working runs and
-    twelve blocked runs print ``10w 12b 0u 0q``: the reader sees two tokens, not
+    twelve blocked runs print ``10w 12b  0u  0q``: the reader sees four tokens, not
     the ``10w12b`` the abutting block rendered. The pattern requires whitespace
     between a count and the next bucket's letter, so the abutting form leaves the
     line with no counter block this reader can find at all.
@@ -191,7 +191,7 @@ def test_two_digit_counts_reach_the_line_as_separate_tokens(
     _stub_producer(monkeypatch)
     output = _follow("--session", "mine")
     assert _counters(output) == (10, 12, 0, 0)
-    assert "10w 12b 0u 0q" in output
+    assert "10w 12b  0u  0q" in output
     assert "10w12b" not in output
 
 

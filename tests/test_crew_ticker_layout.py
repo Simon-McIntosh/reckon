@@ -131,27 +131,28 @@ def test_stat_digits_align_across_one_and_two_digit_counts(grid):
 def test_the_fleet_counters_render_as_digits_followed_by_one_letter(grid):
     """Each counter is its number followed by the state's single letter.
 
-    `2 working · 4 blocked · 1 unpromoted` becomes `2w 4b 1u`: the word is
+    `2 working · 4 blocked · 1 unpromoted` becomes `2w  4b  1u`: the word is
     gone from the count column, and a zero still shows rather than vanishing.
-    Each cell is two right-aligned digits followed by its letter, so the cells
-    abut with the second digit's leading space as the gap and no separator of
-    its own takes width from the reason.
+    Each cell is two right-aligned digits followed by its letter, and one space
+    separates each cell from the next, so two counts never touch and the block
+    still measures the same whatever the counts.
     """
     line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
-    assert " 2w 4b 1u" in line
+    assert " 2w  4b  1u" in line
 
 
 def test_the_counter_block_carries_one_space_between_cells(grid):
-    """Each count ends at its letter and the next cell's own pad is the gap.
+    """Each count ends at its letter and one space separates it from the next.
 
-    The block once wrapped a middle dot in two spaces; the reclaimed columns
-    are what the reason clause is bought with. Asserted on a rendered row: a
-    second space between two cells would read as the padding the change set
-    out to remove, and a surviving dot would redraw the retired separator.
+    The block once wrapped a middle dot in two spaces; a single space is what
+    separates the cells now, and the three columns it spends are what the reason
+    clause gives up for it. Asserted on a rendered row: a surviving dot would
+    redraw the retired separator, and the counts read as separate tokens rather
+    than running together.
     """
     line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
-    assert "w 4b" in line
-    assert "b 1u" in line
+    assert "w  4b" in line
+    assert "b  1u" in line
     assert "·" not in line
 
 
@@ -343,9 +344,9 @@ def test_a_reason_is_truncated_to_the_room_the_grid_leaves(grid):
     assert "\n" not in line
     assert "…" in line
     assert line.count("…") == 1
-    # The compressed fixed cells leave sixty columns at the default width, so
-    # the clause reaches deep into the sentence before the cut.
-    assert "the canonical installed writer named by the plan does not…" in line
+    # The compressed fixed cells leave fifty-four columns at the default width,
+    # so the clause reaches deep into the sentence before the cut.
+    assert "the canonical installed writer named by the plan does…" in line
 
 
 def test_a_reason_that_fits_is_printed_whole(grid):
@@ -1208,7 +1209,7 @@ def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
     # The counters sit ahead of the reason, at the same column a one-digit row
     # puts them, so a pane clipping its own right edge takes free text and
     # never a count.
-    assert "12w 9b 7u" in line
+    assert "12w  9b  7u" in line
     narrow = plain(grid.render(_event(working=1, blocked=2, unpromoted=3)))
     assert letter_columns(line) == letter_columns(narrow)
     assert counters(line).end() < len(line)

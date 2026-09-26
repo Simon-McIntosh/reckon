@@ -144,7 +144,7 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
         measured = {
             "model": row.index(model_text),
             "node": row.index("n"),
-            "counters": row.index("1w 0b"),
+            "counters": row.index(" 1w  0b"),
         }
         # A first sighting has no remembered state, so its left half and arrow
         # are blank and only a later transition carries the arrow. The gutter

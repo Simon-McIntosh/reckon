@@ -330,23 +330,29 @@ STAT_LETTER = {
     "queued": "q",
 }
 
-# Two digits and the bucket label per counter, each cell separated from the next
-# by one space. Two digits cover any fleet the dispatcher opens; a wider count
-# pushes its own label rather than silently misaligning the column beside it.
+# Each counter is its count right-aligned to a fixed digit width followed by the
+# bucket's letter, and one space separates each cell from the next. Right
+# alignment holds every letter on its own column, so the block reads down a pane
+# whatever the counts are: `1w` stacks under `12w` rather than shunting the
+# letter beside it. The fixed digit width also means the cells measure the same
+# whether a fleet is single-digit or two-digit, and the spare columns a smaller
+# count leaves sit at the left of its own cell rather than at the block's right
+# edge — so the block's width does not follow the counts and the clause after it
+# keeps its column. The separating space is what stops two counts touching:
+# `10w 12b` is two tokens and `10w12b` is not a shape this block prints. A count
+# above the fixed width carries its extra digits and widens its own cell, and so
+# its row's block, rather than eliding the figure a reader came for.
 # The label is one character for three buckets and the spelled word for the
 # waiting one, so the block is sized from the labels themselves rather than
-# assumed at one character each. The counts sit at the left of their cells with
-# no two-digit padding, so a two-digit count never runs into the bucket beside
-# it: `10w 12b` is two tokens, and `10w12b` is not a shape this block prints. A
-# single-digit fleet therefore renders `1w 0b 0u 0q` with the same single-space
-# gaps, and the columns its digits do not fill are spent as trailing space at the
-# block's right edge rather than letting the block's own width follow the counts
-# — the right edge of the row never moves and the clause after it never shifts.
-# The block's width is the four widest cells plus the three separators between
-# them; the three separator columns are the geometry this block grew to keep the
-# counts apart, and the clause after it starts three columns later for it.
+# assumed at one character each. Its width is the four widest cells plus the
+# three separators between them; those three columns are the price of keeping
+# the counts apart, and the reason's room pays them.
+STAT_DIGITS = 2
 _MAX_CELLS = (*_CELLS, _WAIT_CELL)
-STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (len(_MAX_CELLS) - 1)
+STATS = (
+    sum(STAT_DIGITS + len(STAT_LETTER[label]) for label in _MAX_CELLS)
+    + (len(_MAX_CELLS) - 1)
+)
 
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
@@ -363,7 +369,7 @@ STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (len(_MAX_CEL
 # twenty-eight, the role cell from thirteen to nine, the transition halves from
 # twenty-two to ten each, and the counter block's separators, which are single
 # spaces the block keeps rather than abutting cells — the three columns they
-# spend are the price of keeping two-digit counts apart, and the reason's room
+# spend are the price of keeping two counts apart, and the reason's room
 # pays them. The clause starts at column 123 on every row at the default width;
 # the arrow still holds one fixed column and every boundary keeps its two-space
 # gutter.
@@ -1231,10 +1237,20 @@ class Ticker:
     def _stats(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
         """The fleet after this transition, as a grid whose digits line up.
 
-        Each counter is its number followed by the initial of the bucket it
-        counts, so the letter is decodable from the bucket's own name rather
-        than from a legend the stream does not carry. A zero is dimmed rather than dropped: blanking it would leave
-        trailing whitespace and take the right edge ragged, and a reader
+        Each counter is its count right-aligned to :data:`STAT_DIGITS` digits
+        followed by the initial of the bucket it counts, so the letter is
+        decodable from the bucket's own name rather than from a legend the
+        stream does not carry, and the letter of every bucket holds one screen
+        column whatever the counts are. One space separates each cell from the
+        next, so two counts never touch: ``10w 12b`` is two tokens. Right
+        alignment is what lets both hold at once — a single-digit count pads
+        inside its own cell rather than shifting the letter beside it or
+        widening the block, so the block measures the same for any counts up to
+        the fixed width and the clause after it never moves. A count above the
+        fixed width carries its extra digits and widens its own cell, and so its
+        row's block, rather than eliding the figure a reader came for. A zero is
+        dimmed rather than dropped: blanking it would leave trailing whitespace
+        and take the right edge ragged, and a reader
         waiting for a drain needs to see the count reach zero, not see it
         disappear.
 
@@ -1249,20 +1265,24 @@ class Ticker:
         # never changes shape when a run is queued and the columns after it
         # never move. A zero is dimmed rather than dropped: a reader watching a
         # drain needs to see the count reach zero rather than see the cell
-        # disappear and the row's right edge go ragged. One space separates each
-        # cell from the next, so two-digit counts stay apart: `10w 12b` is two
-        # tokens however many digits a count carries. A single-digit fleet leaves
-        # the widest cell's spare columns as trailing space at the block's right
-        # edge, so the block's own width does not follow the counts and the clause
-        # after it keeps its column.
+        # disappear and the row's right edge go ragged. The count is right
+        # aligned to a fixed digit width and one space separates each cell from
+        # the next, so a single-digit fleet's spare columns sit inside its own
+        # cell rather than at the block's right edge: the letters keep their
+        # columns across one- and two-digit counts, two counts stay apart, and
+        # the block measures the same for any counts up to the fixed width, so
+        # the clause after it keeps its column. A count above the fixed width
+        # carries its extra digits instead of eliding the figure.
         for label in _MAX_CELLS:
             if cells:
                 cells.append((" ", None))
             count = int(event.get(_COUNT_FIELD.get(label, label)) or 0)
-            cells.append((f"{count}{STAT_LETTER[label]}", None if count else "dim"))
-        rendered = sum(len(text) for text, _ in cells)
-        if rendered < STATS:
-            cells.append((" " * (STATS - rendered), None))
+            cells.append(
+                (
+                    f"{count:>{STAT_DIGITS}}{STAT_LETTER[label]}",
+                    None if count else "dim",
+                )
+            )
         # The bound sits beside the counters the transition carries, because
         # the counters say how much work is in flight and the bound says what
         # limits it. A record written before the reading existed carries none,

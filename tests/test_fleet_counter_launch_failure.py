@@ -23,14 +23,14 @@ WIDTH = 180
 # The four-cell block a reading holding one launch-failed run, one ordinary
 # blocked run, one working run and one queued run renders, pinned as a literal
 # because the requirement is that this block keeps exactly the width it renders
-# today: a fifth cell or a wider label fails on the literal. The cells abut with
-# each two-digit cell's own leading space as the gap; the middle-dot separators
-# the block once carried were reclaimed to fund the reason clause.
-BLOCK = " 1w 2b 0u 1q"
-BLOCK_WIDTH = 12
+# today: a fifth cell or a wider label fails on the literal. Each cell is two
+# right-aligned digits and its letter, one space between cells; a count above
+# two digits widens its own cell, which is why the counts here stay single.
+BLOCK = " 1w  2b  0u  1q"
+BLOCK_WIDTH = 15
 
 # The same block for a reading with no launch-failed run in it.
-CONTROL_BLOCK = " 1w 1b 0u 1q"
+CONTROL_BLOCK = " 1w  1b  0u  1q"
 
 # A verbatim classifier cause for a backend that was not on the path, and an
 # ordinary blocked worker's own reason: the launch cause names the launcher as
@@ -208,7 +208,7 @@ def test_a_launch_failure_without_a_recorded_cause_still_names_the_fault() -> No
     )
 
     row = rows["r-launch"]
-    assert " 0w 1b 0u" in row
+    assert " 0w  1b  0u" in row
     assert "launch" in row.lower()
     assert FAULT_CLAUSE_PREFIX in row
 
