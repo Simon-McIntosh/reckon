@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560"
+     font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="13">
+  <rect width="960" height="560" fill="#f7f8fa"/>
+  <text x="24" y="34" font-size="18" font-weight="700" fill="#1b1f24">Two fence defects: where a relative path resolves, and when the home is seeded</text>
+
+  <!-- Panel A -->
+  <rect x="24" y="56" width="440" height="470" rx="8" fill="#ffffff" stroke="#d7dbe0"/>
+  <text x="44" y="84" font-size="15" font-weight="700" fill="#1b1f24">A — resolving the node's declared write paths</text>
+  <text x="44" y="106" fill="#57606a">node declares: reckon/crew/x.py, tests/test_x.py, docs/plans/p.html</text>
+
+  <!-- before -->
+  <rect x="44" y="124" width="400" height="176" rx="6" fill="#fdecec" stroke="#e5484d"/>
+  <text x="60" y="148" font-weight="700" fill="#a8071a">before — joined to the repository</text>
+  <text x="60" y="172" fill="#3b4048">base = repository  (the main checkout)</text>
+  <rect x="60" y="184" width="360" height="40" rx="4" fill="#ffffff" stroke="#c9ced6"/>
+  <text x="72" y="209" fill="#3b4048" font-family="ui-monospace, monospace" font-size="12">&lt;checkout&gt;/reckon/crew &#8594; --bind</text>
+  <text x="72" y="248" fill="#3b4048">resolves outside the worktree, so each declaration</text>
+  <text x="72" y="266" fill="#3b4048">is granted and the main checkout is re-opened</text>
+  <text x="72" y="288" fill="#a8071a" font-weight="600">= the checkout the fence exists to seal</text>
+
+  <!-- after -->
+  <rect x="44" y="316" width="400" height="196" rx="6" fill="#e9f7ef" stroke="#2f9e63"/>
+  <text x="60" y="340" font-weight="700" fill="#1a7f4b">after — joined to the worktree</text>
+  <text x="60" y="364" fill="#3b4048">base = worktree  (the worker's own checkout)</text>
+  <rect x="60" y="376" width="360" height="40" rx="4" fill="#ffffff" stroke="#c9ced6"/>
+  <text x="72" y="401" fill="#3b4048" font-family="ui-monospace, monospace" font-size="12">&lt;worktree&gt;/reckon/crew &#8594; skipped</text>
+  <text x="72" y="440" fill="#3b4048">lies inside a tree already bound writable, so no</text>
+  <text x="72" y="458" fill="#3b4048">second grant is emitted for it</text>
+  <text x="72" y="480" fill="#1a7f4b" font-weight="600">only an absolute path can name a location outside</text>
+  <text x="72" y="498" fill="#3b4048">the worktree, and only that needs a bind</text>
+
+  <!-- Panel B -->
+  <rect x="484" y="56" width="452" height="470" rx="8" fill="#ffffff" stroke="#d7dbe0"/>
+  <text x="504" y="84" font-size="15" font-weight="700" fill="#1b1f24">B — ordering: the run's roots and the harness home</text>
+  <text x="504" y="106" fill="#57606a">a manifest declared in a directory that does not exist yet</text>
+
+  <!-- before -->
+  <rect x="504" y="124" width="412" height="176" rx="6" fill="#fdecec" stroke="#e5484d"/>
+  <text x="520" y="148" font-weight="700" fill="#a8071a">before — seed, then create</text>
+  <g font-family="ui-monospace, monospace" font-size="12" fill="#3b4048">
+    <text x="520" y="176">1. resolve home: run_dir.is_dir() ?  &#8594; False</text>
+    <text x="520" y="198">2. no home seeded, no CODEX_HOME / CLAUDE_CONFIG_DIR</text>
+    <text x="520" y="220">3. create_write_roots(write_roots)  &#8594; run dir made</text>
+  </g>
+  <text x="520" y="248" fill="#3b4048">the harness keeps the sealed operator home and the</text>
+  <text x="520" y="266" fill="#3b4048">launch dies before the worker starts</text>
+  <text x="520" y="288" fill="#a8071a" font-weight="600">exit 1: Read-only file system</text>
+
+  <!-- after -->
+  <rect x="504" y="316" width="412" height="196" rx="6" fill="#e9f7ef" stroke="#2f9e63"/>
+  <text x="520" y="340" font-weight="700" fill="#1a7f4b">after — create, then seed</text>
+  <g font-family="ui-monospace, monospace" font-size="12" fill="#3b4048">
+    <text x="520" y="368">1. create_write_roots(write_roots)  &#8594; run dir made</text>
+    <text x="520" y="390">2. resolve home: run_dir.is_dir() ?  &#8594; True</text>
+    <text x="520" y="412">3. seed home, set CODEX_HOME / CLAUDE_CONFIG_DIR</text>
+  </g>
+  <text x="520" y="440" fill="#3b4048">the run owns its home; a preview hands no roots so an</text>
+  <text x="520" y="458" fill="#3b4048">unfenced composition still invents no directory</text>
+  <text x="520" y="480" fill="#1a7f4b" font-weight="600">home exists and the variable names it</text>
+  <text x="520" y="500" fill="#57606a" font-size="12">(the positive control: the no-checkout-bind assertion sees the</text>
+  <text x="520" y="516" fill="#57606a" font-size="12">worktree's .git/worktrees entry bound, so an empty list is meaningful)</text>
+</svg>

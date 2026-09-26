@@ -1360,6 +1360,53 @@
         decision; the decision and the refusal message live in
         <code>reckon/worker_git_shim.py</code>.</p></div>
       </div>
+
+    <div class="r-comment" data-section="s2" data-id="c-20260926T1930-fence-never-binds-the-main-checkout" data-who="node fence-never-binds-the-main-checkout" data-when="2026-09-26T19:30:00+00:00">
+      <div class="r-comment-body"><p><strong>Two defects in the fenced launch composition.</strong>
+      (1) <em>A relative declared write path re-opened the main checkout.</em>
+      <code>_declared_write_grant</code> resolved a declared path that was not absolute against the
+      <code>repository</code> argument &mdash; the main checkout &mdash; so a node declaring
+      repo-relative paths had each granted and bound writable outside its worktree, re-opening the
+      checkout the fence exists to seal. A relative declaration now resolves against the
+      <em>worktree</em> when one is given: it lies inside a tree already bound writable, so it is
+      skipped, and only an absolute declaration can name a location outside the worktree. Measured
+      at base <code>461d57d8</code>, the composed argv bound <code>&lt;checkout&gt;/reckon/crew</code>,
+      <code>&lt;checkout&gt;/tests</code> and <code>&lt;checkout&gt;/docs/plans</code>.</p>
+
+      <p>(2) <em>The run's write roots were created after the harness home was seeded.</em> A manifest
+      declared in a directory that did not exist yet had no home seeded and no config-home variable
+      set, because the run directory was still missing when the home was resolved; a fenced codex
+      launch then fell back to the sealed operator <code>~/.codex</code> and exited
+      <code>"read-only file system"</code>. The roots are now created before the home is resolved.
+      An unfenced composition still creates nothing, so a preview invents no directory.</p>
+
+      <p><strong>Measure.</strong> <code>tests/test_fence_never_binds_the_main_checkout.py</code>
+      composes through <code>launch_plan</code> with the roots <code>fenced_write_roots</code>
+      returns, against a synthesised repository and a real detached worktree under <code>tmp_path</code>.
+      Three cases: no writable bind lands under the main checkout except the worktree's own
+      <code>.git/worktrees/&lt;name&gt;</code> entry and the shared <code>.git/objects</code> (with a
+      positive control that those two are seen bound); and a fenced claude and a fenced codex launch
+      whose manifest lies in a missing directory each get their run directory created, their
+      config-home variable set, and their home on disk.</p>
+
+      <p><strong>Declared negative control, executed and logged.</strong> <em>resolve a relative
+      declared path against the repository; the no-main-checkout-bind assertion must fail</em> &mdash;
+      the case fails and names the three re-opened roots. A second control removes the early root
+      creation and the missing-home case then fails (<code>the manifest's directory was not
+      created</code>). The source is restored byte for byte after each.</p>
+
+      <p><strong>Gate.</strong> New file plus the five named neighbours
+      (<code>test_fence_creates_a_missing_write_parent</code>, <code>test_fence_is_on_again</code>,
+      <code>test_each_run_owns_its_harness_home</code>, <code>test_harness_home_carries_mcp_servers</code>,
+      <code>test_crew_launch_resolution</code>): base <code>461d57d8</code> <code>3 failed, 29 passed</code>
+      (the three new cases red, both defects reproduce) against head <code>32 passed</code>, zero added
+      failures. Ruff adds no finding. Commit <code>af310d81</code>. Evidence:
+      <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-fence-declared-path-and-home-order</code>,
+      figure <code>/reckon/figures/a-worker-cannot-write-your-home/fence-declared-path-and-home-order.svg</code>.
+      This gate measures only this node's own change; verifying the merged result belongs to a
+      separately dispatched test node.</p></div>
+    </div>
+
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host
