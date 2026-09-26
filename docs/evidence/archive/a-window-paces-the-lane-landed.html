@@ -2198,16 +2198,33 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     re-queried unconditionally, or that adopted every answering probe, would pass the other cases.</p>
 
     <p><strong>The real configuration home is watched, not assumed.</strong> Every case runs under a
-    temporary home with <code>RECKON_HOME</code> asserted to resolve there, and the two trees a composition
-    can write to &mdash; <code>crew/lane-probes</code> and <code>crew/lanes</code> &mdash; are inventoried
-    before and after each case and required byte-identical, because an isolated read does not prove an
-    isolated write. The inventory reads sizes and modification times rather than paths alone, so a
-    rewritten file inside a watched tree is caught as well as a new one. The rest of the configuration home
-    is deliberately out of scope: a fleet dispatch creates and removes run directories and live pointers
-    every few seconds, so an inventory reaching <code>crew/runs</code> or <code>crew/live</code> reports a
-    peer's dispatch as this test's write. The review measured that failure directly &mdash; run and
-    live-pointer mtimes moving inside the twenty seconds after a guard attached &mdash; and the scope was
-    narrowed to the trees this test can reach rather than the guard being relaxed to compare less.</p>
+    temporary home with <code>RECKON_HOME</code> asserted to resolve there, and the tree a composition can
+    write to &mdash; the lane-probe cache's, <code>crew/recovery/lane-probes</code> &mdash; is inventoried
+    before and after each case and required identical, because an isolated read does not prove an isolated
+    write. The inventory reads sizes and modification times rather than paths alone, so a rewritten file
+    inside a watched tree is caught as well as a new one. The tree is composed at import by calling the
+    production builder <code>resumption.lane_probe_cache_path</code> and taking the tree above the project
+    directory it returns, so the guard follows the writer rather than restating where the cache lives; a
+    revision that named instead the literals <code>crew/lane-probes</code> and <code>crew/lanes</code>
+    guarded nothing, because neither literal is written by any production path here &mdash; the lane
+    document is an absolute declared path read outside the configuration home &mdash; and their inventory
+    held nothing on this workstation while the derived tree holds eleven entries. The rest of the
+    configuration home is deliberately out of scope: a fleet dispatch creates and removes run directories
+    and live pointers every few seconds, so an inventory reaching <code>crew/runs</code> or
+    <code>crew/live</code> reports a peer's dispatch as this test's write. The review measured that failure
+    directly &mdash; run and live-pointer mtimes moving inside the twenty seconds after a guard attached
+    &mdash; and the scope was narrowed to the tree this test can reach rather than the guard being relaxed
+    to compare less.</p>
+
+    <p><strong>The guard is shown able to fire.</strong> In a scratch copy of the tree with a stand-in
+    configuration home, one write driven through the production entry point
+    <code>probe_lane_availability</code> into the cache the guard watches reddens the guard at teardown
+    (<code>1 passed, 1 error</code>, exit 1), naming the home it was told is the real one; the same write
+    against the two literals the earlier revision named leaves the guard silent (exit 0), both of those
+    trees absent. The case is appended identically to both arms and carries its own import, so both run the
+    same write rather than one erroring on a missing name. The write lands in the stand-in home, and the
+    workstation's own cache tree holds eleven entries before and eleven after, which the log records. Log:
+    <code>logs/guard-catches-real-cache-write.log</code>.</p>
 
     <h3>Gate</h3>
 
@@ -2228,7 +2245,9 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
         <tr><td>the review's cases against the first head</td><td><code>82a19cb5</code> (module
         <code>fc8adfdfc0c4</code>)</td><td><strong>2 failed, 42 passed</strong>, exit 1</td>
         <td>the two reachable findings, reproduced before repair</td></tr>
-        <tr><td>this head</td><td><code>7b4080d1</code> (module <code>7b5b256d4a2b</code>)</td>
+        <tr><td>review-repair head</td><td><code>7b4080d1</code> (module <code>7b5b256d4a2b</code>)</td>
+        <td><strong>44 passed</strong>, exit 0</td><td><strong>0</strong></td></tr>
+        <tr><td>guard-repair head</td><td><code>04a88cbb</code> (module <code>7b5b256d4a2b</code>)</td>
         <td><strong>44 passed</strong>, exit 0</td><td><strong>0</strong></td></tr>
       </tbody>
     </table>

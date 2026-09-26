@@ -636,7 +636,7 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     own.</p>
 
     <figure>
-      <img src="/reckon/figures/a-window-paces-the-lane/stale-reading-requery.svg" alt="One lane's four-hour-old receipt and the probe block already read once for its command feed a gate asking whether the reading is older than its shelf life; the two outcomes are a green card where the probe answered and the lane reports the probe's 37 % at age 0 s with requeried true, asserted with one invocation, and a red card where the probe cannot answer and the receipt is kept at 14 400 s with serving_state unknown and the reason requery_did_not_answer. A note below records that a lane the probe already describes is not re-queried, that a reading inside its shelf life is reported as it stands, that a second declared pool on the lane's own command does not silence its re-query, and that the two trees a composition can write to are inventoried before and after every case.">
+      <img src="/reckon/figures/a-window-paces-the-lane/stale-reading-requery.svg" alt="One lane's four-hour-old receipt and the probe block already read once for its command feed a gate asking whether the reading is older than its shelf life; the two outcomes are a green card where the probe answered and the lane reports the probe's 37 % at age 0 s with requeried true, asserted with one invocation, and a red card where the probe cannot answer and the receipt is kept at 14 400 s with serving_state unknown and the reason requery_did_not_answer. A note below records that a lane the probe already describes is not re-queried, that a reading inside its shelf life is reported as it stands, that a second declared pool on the lane's own command does not silence its re-query, and that the tree a composition can write to, the lane-probe cache's, named by the production writer rather than restated, is inventoried before and after every case.">
       <figcaption>A lane's figure is decided by the age of the reading it holds: inside the shelf life
       the receipt stands, past it the probe the composition already read supplies the number, and a probe
       that cannot answer leaves the old figure with the age that disqualifies it.</figcaption>
@@ -656,18 +656,27 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     to show the probe's figure with its status agreeing with its source. The failed-re-query case drives a
     raising probe and one returning nothing, and the old figure survives at its 14&nbsp;400-second age with
     every window <code>unknown</code>. The inside-shelf-life case shows the probe was read once and its
-    figure still not adopted. Every case runs under a temporary configuration home, with the two trees a
-    composition can write to (<code>crew/lane-probes</code>, <code>crew/lanes</code>) inventoried before
-    and after and required identical, because an isolated read does not prove an isolated write; the run
-    and live-pointer directories a fleet dispatch rewrites every few seconds are deliberately outside that
-    inventory, so a peer's dispatch cannot redden this guard. Independent review scored this node 79 of
+    figure still not adopted. Every case runs under a temporary configuration home, with the tree a composition can write to &mdash;
+    the lane-probe cache's, <code>crew/recovery/lane-probes</code>, composed at import from the production
+    writer's own path builder <code>resumption.lane_probe_cache_path</code> rather than stated as a literal
+    &mdash; inventoried before and after and required identical, because an isolated read does not prove an
+    isolated write; the run and live-pointer directories a fleet dispatch rewrites every few seconds are
+    deliberately outside that inventory, so a peer's dispatch cannot redden this guard. The guard is shown
+    able to fire rather than assumed to be: in a scratch copy under a stand-in configuration home, one
+    write driven through the production entry point <code>probe_lane_availability</code> into that cache
+    reddens it at teardown (<code>1 passed, 1 error</code>, exit 1), while the same write against literals
+    naming trees no writer composes leaves it silent (exit 0) &mdash; both trees an earlier revision named
+    were such literals, their inventory holding nothing where the derived tree holds eleven entries. Independent review scored this node 79 of
     100 with four findings, and the two the review called reachable were reproduced red at
     <code>82a19cb5</code> before repair: the review's own cases against the pristine dispatch head give
     <strong>2 failed, 42 passed</strong>, the status agreement reading
     <code>('unmatched', 'probe', True) != ('answered', 'probe', True)</code> and the shared-command lane
     keeping its receipt. All four are repaired in <code>526a90cc</code>, with the once-claim ordered ahead
     of the agreement assert in <code>7b4080d1</code> so the declared mutation reddens the assertion it
-    names first. The declared mutation &mdash; <em>remove the staleness resolver call from crew_lanes_view;
+    names first. A re-review scored this node 86 of 100 holding one further finding &mdash; that the guard, as
+    repaired, watched trees no production path writes &mdash; repaired in <code>04a88cbb</code> by composing
+    the guarded tree from the writer's own path builder rather than restating it, with the firing above as
+    that repair's demonstration. The declared mutation &mdash; <em>remove the staleness resolver call from crew_lanes_view;
     the probe-called-once assertion must fail</em> &mdash; reddens the once-claim on
     <code>assert (1, 'receipt') == (1, 'probe')</code>, with 4 failed and 40 passed at this head, and the
     other cases are the control that the tree itself runs. Lint by delta against the base copy of the
