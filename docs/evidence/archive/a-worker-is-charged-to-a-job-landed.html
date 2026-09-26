@@ -669,6 +669,91 @@
     set, because only the coordinator observes the other nodes, and verifying the merged result belongs to a
     separately dispatched test node.</p>
   </section>
+
+  <section id="gate-command-must-be-runnable">
+    <h2>A gate command that cannot be re-executed is refused, and the re-run says it could not run</h2>
+
+    <p><strong>What is landed.</strong> Commit <code>6619d4c5</code> in
+    <code>reckon/crew/promotion.py</code>, with the recording option's own help text in
+    <code>reckon/cli.py</code>. The integration re-run executes a promoted run's recorded gate command
+    verbatim through <code>sh -c</code> at the merged head, so the text a promotion records has to be a
+    command. Three shapes are read as describing the check rather than running it, and a promotion carrying
+    one is refused with a <code>CrewError</code> naming the class and the token — before anything is
+    written, so the run stays live, its pointer survives and the record can be corrected and promoted again
+    rather than lost. The refusal is reached from <code>crew complete</code> and from the CLI entry point,
+    and it fires on the stored <code>gate_check</code> or on a supplied <code>--command</code> alike, because
+    that option replaces the stored text rather than exempting it.</p>
+
+    <p><strong>Each shape is spelled so a command that runs as written does not match it.</strong> An
+    angle-bracket placeholder needs non-space text inside the brackets
+    (<code>&lt;nine focused files&gt;</code>); an ellipsis counts only as a standalone token
+    (<code>tests/a.py tests/b.py ...</code>); a parenthetical is prose only when it holds at least two words
+    and no shell metacharacter, so <code>pytest -k '(a or b)'</code>, a subshell
+    <code>(cd sub &amp;&amp; pytest)</code> and a redirection <code>pytest tests/ -q &lt; /dev/null</code> are
+    untouched. The real case is the command recorded for run <code>r-20260926T095413623438</code>, kept
+    verbatim in the case file:
+    <code>… --timeout=300 (the base-passing population of remeasure/measured-files.txt, listed in the log
+    header)</code>. A case promotes an ordinary command and asserts it is recorded, which is the positive
+    control the refusal is balanced against.</p>
+
+    <p><strong>The re-run reports what it could not run distinctly from what ran and failed.</strong> A
+    stored command carrying one of the three shapes reports <code>integrated_verdict == "not-run"</code> with
+    the class and the token in the reason, and the finding a coordinator reads carries the same null exit
+    status rather than a non-zero one; a command that runs and exits non-zero still reports
+    <code>"failed"</code> with its exit status beside it. The refusal happens before the shell is reached,
+    so a description carrying a side effect leaves none: a case appends
+    <code>echo attempted &gt; prose.marker</code> after a placeholder and asserts the marker does not
+    exist.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-is-charged-to-a-job/gate-command-runnable-or-not.svg"
+           alt="Two panels: on the promotion path a recorded gate text is scanned for three prose shapes — an angle-bracket placeholder, an ellipsis and a parenthetical prose selection — each refused with a CrewError naming the class and the token before anything is written, while a command is recorded verbatim for the re-run; on the integration re-run the recorded command is executed at the merged head and reports not-run with a reason when it cannot run, passed when it exits 0 and failed when it exits non-zero."
+           style="max-width:100%;height:auto">
+      <figcaption>What a recorded gate text is scanned for at promotion, and the three verdicts the
+      integration re-run can reach — a command that could not run is never reported as one that ran and
+      failed.</figcaption>
+    </figure>
+
+    <p><strong>The defect, reproduced at the base before the change.</strong> Scratch tree at base
+    <code>99455576</code> with only this node's new case file copied in: <strong>9 failed, 52 passed, exit
+    1</strong>, against <strong>61 passed, exit 0</strong> at the landed head <code>6619d4c5</code>, the same
+    two files in one invocation either side. The failures fall in two groups and each is the absence of the
+    repair rather than a wrong answer from it. Four are <code>DID NOT RAISE CrewError</code>: the three
+    recorded prose commands promote at base, and so does the same text driven through
+    <code>crew complete</code>. Four are <code>assert 'failed' == 'not-run'</code>, which is the invented
+    failure itself — at base the stored description is executed through <code>sh -c</code>, pytest names a
+    path that does not exist, and the non-zero exit is recorded as a gate failure attached to a node that was
+    clean. The ninth is the CLI entry point exiting 0 where the refusal should have been. The ledger's own
+    record on the real run was the same shape: a non-zero exit recorded as a failure of the merge.</p>
+
+    <p><strong>Delta.</strong> The new file's 11 cases are the whole delta: nine fail at base, two (the
+    positive control and the ran-and-exited-non-zero arm) pass at both revisions, and the 50 ids of
+    <code>tests/test_crew_promotion.py</code> are green at both, so no id fails newly at the landed head.
+    Ruff over the paths this commit touches: 12 findings at the base revision, 12 at the
+    landed head (2 in <code>reckon/cli.py</code>, 10 in <code>reckon/crew/promotion.py</code>), the new file
+    clean — zero added, and no whole-tree fixer was run, so the pre-existing format hunks in those files are
+    where they already were.</p>
+
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: remove the shape branch from the
+    re-run path only, leaving the promotion refusal in place — the log's header records both the mutation and
+    the surviving refusal, so the red is attributable to the half the mutation removes rather than to a
+    nearby line. It reddens exactly one case,
+    <code>test_the_re_run_reports_a_prose_command_as_not_run</code>, with the diff
+    <code>- not-run / + failed</code>: with the check gone, the stored description is executed, exits
+    non-zero, and is recorded as a failure the merged revision did not cause. The red log's first line
+    repeats the mutation verbatim, and the log is named in the node's manifest under
+    <code>negative_control_log</code>.</p>
+
+    <p><strong>What is not here.</strong> The three shapes catch the forms measured, not unrunnability in
+    general: a command whose file list is real but wrong still runs, and its non-zero exit is still a genuine
+    finding about the merge — that boundary is deliberate, and the re-run's <code>failed</code> verdict keeps
+    its meaning for it. The measured files are the two the node names rather than a whole-suite run, so the
+    wider set of files that supply a <code>gate_check</code> (the gate-log and gate-evidence modules, the
+    ledger and run-store cases, the verify-gate option's own file) was not re-run here; the new checks read
+    only the three shapes and refuse nothing else, and the positive control exercises the same entry point
+    with a runnable command. No plan state is touched by this node: the driving followup stays open and no
+    terminal status is set, because only the coordinator observes the other nodes.</p>
+  </section>
 </main>
 </body>
 </html>
