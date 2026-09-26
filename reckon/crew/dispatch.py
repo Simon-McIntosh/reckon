@@ -1822,6 +1822,7 @@ class DispatchPlan:
     lane_declaration: dict[str, Any] | None = None
     lane_reading: dict[str, Any] | None = None
     lane_advisory: dict[str, Any] | None = None
+    open_endedness: float | None = None
 
     def as_dict(self) -> dict[str, Any]:
         agent = _stamp_agent_display(
@@ -2905,6 +2906,13 @@ def plan_dispatch(
                 },
             ],
         )
+    # Judged on the scope the node itself declares, before the shared landing
+    # paths are appended to it below. The three of those are dispatch's own
+    # bookkeeping -- every node on a plan carries them -- so counting them as
+    # the node's artifacts would score every node on a plan above the
+    # prescribed band the bar's local outcome is defined by, and the band would
+    # describe nothing rather than the work.
+    open_endedness = open_endedness_score(node)
     resolved_authority: dict[str, Any] | None = None
     sandbox_write_roots: tuple[Path, ...] | None = None
     if verdict.ok and repo is not None:
@@ -3045,6 +3053,7 @@ def plan_dispatch(
         lane_declaration=lane_declaration,
         lane_reading=lane_reading,
         lane_advisory=lane_advisory,
+        open_endedness=open_endedness,
     )
     if verdict.ok and repo is not None:
         resolution.competence = _competence_verdict(
@@ -3466,7 +3475,9 @@ def open_endedness_score(node: TaskNode) -> float:
     failures = [str(name) for name in prescribed.get("failures") or ()]
     properties = prescription_module.PRESCRIBED_PROPERTIES
     declared = (
-        SPEC_LEVEL_OPENNESS.get(str(node.spec_level or "").strip().lower(), UNKNOWN_OPENNESS)
+        SPEC_LEVEL_OPENNESS.get(
+            str(node.spec_level or "").strip().lower(), UNKNOWN_OPENNESS
+        )
         + ROLE_OPENNESS.get(str(node.role or "").strip().lower(), UNKNOWN_OPENNESS)
     ) / 2.0
     if not failures:
@@ -4003,7 +4014,7 @@ def dispatch(
             project=project,
             lane=backend_name,
             node=node.id,
-            score=open_endedness_score(node),
+            score=resolution.open_endedness,
             root=ledger_root,
             hold=None if budget_fallback is None else budget_fallback["hold"],
         )
