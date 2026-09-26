@@ -1813,6 +1813,56 @@ exit: 0</pre>
     <code>docs/plans/a-worker-cannot-write-your-home.html</code>. Logs, under the run directory:
     <code>logs/gate-head.txt</code>, <code>logs/negative-control.txt</code>.</p>
   </section>
+
+  <section id="s2-fenced-launch-resolves-the-backend-preflight" data-reckon="section">
+    <h3 id="s2-fenced-launch-resolves-the-backend-preflight-h">The blocked state resolved: the backend is refused before its plan is composed</h3>
+
+    <p><strong>The ruling.</strong> The anchor above stopped on a contradiction in its own done-when, and
+    the coordinator settled it three ways. The fence leads the argv by design, so the two stale reads
+    in <code>tests/test_crew_launch_resolution.py</code> were corrected, not the fence. The resume
+    refusal is a real requirement, not a test artefact: a resume whose backend binary is absent must
+    refuse before anything is written, and that includes the harness home composition seeds. And the
+    pre-flight and the rewrite must read the harness's position through one helper, so a test reading
+    it and the code rewriting it cannot disagree. The node's write scope was widened to include
+    <code>tests/test_crew_launch_resolution.py</code>.</p>
+
+    <p><strong>What landed</strong> in <code>7af45521</code>, atop the blocked state's
+    <code>d3898433</code>. <code>preflight_launch_command</code> resolves the backend's harness
+    command against the launch PATH <em>before</em> <code>launch_plan</code> is called, on dispatch,
+    resume and lane change alike, and refuses there naming the command.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/fenced-launch-resolves-the-backend.svg"
+           alt="The composed launch argv before and after: reading element 0 resolves the fence; reading the token behind the fence's separator resolves the backend and rewrites it absolute.">
+      <figcaption>The pre-flight reads the same element the rewrite does: the harness, behind the
+      fence's own separator when fenced, and the first element when not.</figcaption>
+    </figure>
+
+    <p><strong>One helper, both callers, and the tests.</strong> <code>harness_command_index</code>
+    returns the harness's position for either shape, and is used by the pre-flight, by the
+    composed-plan rewrite, and by the two corrected tests. The four other tests in
+    <code>tests/test_crew_launch_resolution.py</code> are unedited. The two corrections changed only
+    the element those tests read: from <code>plan.argv[0]</code> to the element the composition names
+    as the harness. <code>record["command"]</code> now records that element too, so a fenced run no
+    longer records the fence binary as the command it ran.</p>
+
+    <p><strong>Measured.</strong> At head <code>7af45521</code> the six cases in
+    <code>tests/test_crew_launch_resolution.py</code>, the three in
+    <code>tests/test_fenced_launch_resolves_the_backend.py</code>, and the neighbour files
+    (<code>tests/test_fence_is_on_again.py</code>,
+    <code>tests/test_each_run_owns_its_harness_home.py</code>,
+    <code>tests/test_fenced_resume_reaches_its_harness.py</code>) are <strong>22 passed</strong>, with
+    the two edited tests' other assertions unchanged. Lint delta on the two edited files
+    11&nbsp;&rarr;&nbsp;9 (zero added).</p>
+
+    <p><strong>The declared control, re-run.</strong> <em>resolve argv[0] again; the fenced
+    absent-backend case must fail by accepting the plan.</em> With the shared position helper
+    mutated to read element 0, the absent-backend case fails <code>DID NOT RAISE CrewError</code> and
+    the present-backend case fails naming <code>bwrap</code> as the missing backend. The declared
+    string is the log's first line verbatim (<code>logs/negative-control.txt</code>); the mutation now
+    targets the shared helper, which is what both callers read, so it reintroduces the defect at both.
+    The gate log is <code>logs/gate-head2.txt</code>.</p>
+  </section>
 </main>
 </body>
 </html>
