@@ -2129,8 +2129,9 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
   <section id="s9-pace-row">
       <h2>&sect;9 &mdash; Every dispatch records the pace row it was judged against</h2>
 
-      <p><strong>Landed 2026-09-26 (commits <code>3e06538b</code> and
-      <code>4939876164</code>).</strong> Every dispatch now writes one <code>pace</code> row onto the run
+      <p><strong>Landed 2026-09-26 (commits <code>3e06538b</code>,
+      <code>4939876164</code> and <code>0098128c</code>, the last carrying the row across
+      promotion).</strong> Every dispatch now writes one <code>pace</code> row onto the run
       record it already keeps: the lane, the node, the lane's declared budget group, the group's state
       and the member that spoke for it, both clocks with their utilisation, observation age and reset
       instant, the derived allowance with the pace multiple that produced it, the node's
@@ -2143,12 +2144,13 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
       (<code>reckon/budget.py:2050</code>) composes the row, so a row cannot disagree with the pace the
       dispatch itself was judged against.</p>
 
-      <p>The full lives where the run's existing dispatch record lives: the <code>pace</code> key of the
+      <p>The full row lives where the run's existing dispatch record lives: the <code>pace</code> key of the
       run's own record, written by the dispatch entry point beside the argv, the node and the lane
-      (<code>reckon/crew/dispatch.py:4120</code>), and promoted wholesale with that record into the
-      project's <code>docs/state/&lt;project&gt;/crew.json</code>. A week of those rows is what &sect;9's
-      replay reads: the allowance curve and every hold decision are recomputed from the rows alone, no
-      stream opened.</p>
+      (<code>reckon/crew/dispatch.py:4120</code>). The live pointer that carried it is deleted at
+      promotion, so the row is carried onto the committed record by <code>ledger.build_record</code>,
+      which reads it back from the run's pointer by run id while the pointer is still open. That
+      committed row is what &sect;9's replay reads: a week of those rows replays the allowance curve and
+      every hold decision from the rows alone, no stream opened.</p>
 
       <figure>
         <img src="/reckon/figures/a-window-paces-the-lane/score-band-decides-the-lane.svg" alt="Three panels. Panel one is the open-endedness score from 0.00 to 1.00 with the prescribed band drawn from 0.00 to 0.25: a fully prescribed node scores 0.00 and is send-local at every fill, the same node scores 0.325 once the three shared landing paths are counted among its artifacts and leaves the band, and a node four properties short scores 0.925. Panel two plots the bar against the five-hour window fill, with the band top at 0.25 drawn across: at the 22 percent fill this gate measures the bar is 0.124, the 0.00 node sits under it and the 0.325 node above. Panel three is the three readers the row is composed from -- recorded_windows for the readings, group_pace into crew.pace and crew.bar for the allowance and the bar, pace_row for the lane, score, policy and hold.">

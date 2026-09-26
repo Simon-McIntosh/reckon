@@ -869,7 +869,8 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 
     <h4 id="s9-pace-row-landed">Landing &mdash; every dispatch writes the row its own pace decision replays from</h4>
 
-    <p><strong>Landed 2026-09-26 (commits <code>3e06538b</code> and <code>4939876164</code>).</strong>
+    <p><strong>Landed 2026-09-26 (commits <code>3e06538b</code>, <code>4939876164</code> and
+    <code>0098128c</code>, the last carrying the row across promotion).</strong>
     A dispatch now writes one <code>pace</code> row beside the record it already keeps: the lane, the
     node, the lane's declared budget group, the group's state and the member that spoke for it, both
     clocks with their utilisation, observation age and reset instant, the derived allowance with the
@@ -879,9 +880,11 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <code>budget.recorded_windows</code> supplies the readings, <code>budget.group_pace</code> delegates
     the clocks, the allowance and the bar to <code>crew.pace</code> and <code>crew.bar</code>, and
     <code>budget.pace_row</code> (<code>reckon/budget.py:2050</code>) composes the row, which the
-    dispatch entry point writes at <code>reckon/crew/dispatch.py:4120</code>. The full lives with the
-    run's existing dispatch record &mdash; the run's own record, promoted wholesale into
-    <code>docs/state/&lt;project&gt;/crew.json</code>.</p>
+    dispatch entry point writes at <code>reckon/crew/dispatch.py:4120</code>. The full row lives with the
+    run's existing dispatch record: the dispatch writes it onto the run's live pointer, and promotion
+    carries it onto the committed row &mdash; <code>ledger.build_record</code> reads the pointer back by
+    run id while it is still open, before deleting it &mdash; so a week of dispatch decisions replays
+    from <code>docs/state/&lt;project&gt;/crew.json</code> alone.</p>
 
     <p><strong>One defect was found and repaired before the row could be trusted.</strong> A dispatch
     appends three shared landing paths to every node on a plan; judged after that grant, the plan's own
