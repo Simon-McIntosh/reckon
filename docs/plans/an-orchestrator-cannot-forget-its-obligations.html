@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-27">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-impl" content="0.45">
 </head>
 <body>
@@ -383,6 +383,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260926T224342921228-review-of-obligations-do-not-mislead" data-who="reckon-build" data-when="2026-09-26T23:15:40.910Z">
     <div class="r-comment-body"><p>review stored at head e1f341de, total 92, added failures 0</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260927-obligations-do-not-mislead" data-who="s23-coord" data-when="2026-09-27">
+    <div class="r-comment-body"><p><strong>Landed: obligation hints match the fleet.</strong> Two obligation items misled a coordinator on 2026-09-26. <code>review-missing</code> offered a ready-to-run dispatch within a minute of a run going unpromoted, while the review reflex was already launching one, so the hand dispatch was refused as a scope conflict. <code>worktree-held</code> pointed at a worktree path that a live review had reused. Now <code>review-missing</code> is withheld while a reflex review holds a live claim for the reviewed run, and is aged from the reflex's launch window. <code>worktree-held</code> names the live run occupying the path. The node <code>obligations-do-not-mislead</code> was dispatched by the S21 coordinator, merged at <code>7c55fbd8</code> and promoted at <code>e1f341de</code> (commits <code>4a4c0836</code>, <code>1484d366</code>, <code>e1f341de</code>). Its review scored 92, with 0 added failures by id. The one remaining finding is followup <code>f-aocfio-reflex-in-flight-reads-the-record</code>: the in-flight check tests that the pointer exists, where the reflex also requires it to parse. A repair within the landed derivation, so impl is unchanged.</p></div>
 </div>
 </section>
   </main>
