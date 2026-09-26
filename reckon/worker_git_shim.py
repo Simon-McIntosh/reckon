@@ -325,6 +325,52 @@ def output_refusal(verb: str, option: str) -> str:
     return "\n".join(lines)
 
 
+# ``diff`` forms that answer from the object store alone: a comparison against
+# the index, or two paths outside any repository. Every other ``diff`` compares
+# the work tree against the index.
+_INDEX_FREE_DIFF_FORMS = frozenset({"--cached", "--no-index", "--staged"})
+
+# ``describe`` options that make it answer a question about the work tree rather
+# than about the commit graph.
+_DESCRIBE_WORK_TREE_OPTIONS = frozenset({"--broken", "--dirty"})
+
+
+def index_writing_form(verb: str, tail: Sequence[str]) -> str | None:
+    """The token naming a read form that refreshes and rewrites the index.
+
+    ``GIT_OPTIONAL_LOCKS`` gates the lock a verb takes when it *may* record a
+    refreshed stat cache, and that is what keeps ``status`` from rewriting
+    another checkout's index. These forms are different: the answer they compute
+    *is* defined in terms of a refreshed index, so they take the index lock and
+    write it back whatever ``GIT_OPTIONAL_LOCKS`` says. ``describe --dirty``
+    asks whether the work tree differs from the index, and a ``diff`` that
+    compares the work tree asks the same question; both leave the target's index
+    rewritten when only the stat cache was stale. They are forwarded only when
+    the invocation resolves to the run's own worktree, where the index written
+    is the run's own.
+
+    ``describe --broken`` shares the work-tree detection path and is refused
+    with ``--dirty`` for that reason; measured against a repository holding a
+    broken tag it answered without moving the index, so the refusal is
+    conservative rather than observed. A ``diff`` naming ``--cached``,
+    ``--staged`` or ``--no-index`` answers from the object store and is not a
+    work tree comparison.
+    """
+    if verb == "describe":
+        for token in tail:
+            if not token.startswith("--"):
+                continue
+            head = token.split("=", 1)[0]
+            if head in _DESCRIBE_WORK_TREE_OPTIONS:
+                return head
+        return None
+    if verb == "diff":
+        if any(token in _INDEX_FREE_DIFF_FORMS for token in tail):
+            return None
+        return "the work tree comparison"
+    return None
+
+
 def mutating_verb(verb: str, tail: Sequence[str]) -> str | None:
     """The verb to treat as mutating, or None when it is read-only.
 
@@ -474,6 +520,30 @@ def refuses(
     return not _within(invocation_toplevel, worktree)
 
 
+def _resolved_target_lines(
+    *,
+    run_id: str,
+    worktree: Path,
+    worktree_git_dir: str | None,
+    invocation_git_dir: str | None,
+    invocation_toplevel: str | None,
+) -> list[str]:
+    """The run and resolved-target lines both refusals print.
+
+    Both halves of the resolved target are named, because either one alone can
+    be the mismatch: a foreign git dir, or the run's own git dir with a work
+    tree pointing somewhere else.
+    """
+    return [
+        f"  run:      {run_id}",
+        f"  worktree: {worktree} (git dir {worktree_git_dir or 'unresolved'})",
+        (
+            f"  target:   git dir {invocation_git_dir or 'unresolved'}, "
+            f"work tree {invocation_toplevel or 'unresolved'}"
+        ),
+    ]
+
+
 def refusal_message(
     *,
     run_id: str,
@@ -483,34 +553,77 @@ def refusal_message(
     invocation_git_dir: str | None,
     invocation_toplevel: str | None,
 ) -> str:
-    """The refusal, naming the run, its worktree and the resolved target.
-
-    Both halves of the resolved target are named, because either one alone can
-    be the mismatch: a foreign git dir, or the run's own git dir with a work
-    tree pointing somewhere else.
-    """
+    """The refusal, naming the run, its worktree and the resolved target."""
     head = (
         f"refusing `git {verb}`: it runs against a repository that is not this "
         "run's worktree."
     )
-    lines = [
-        head,
-        f"  run:      {run_id}",
-        f"  worktree: {worktree} (git dir {worktree_git_dir or 'unresolved'})",
-        (
-            f"  target:   git dir {invocation_git_dir or 'unresolved'}, "
-            f"work tree {invocation_toplevel or 'unresolved'}"
-        ),
-        (
-            "A crew worker may run a mutating git verb only against its own "
-            "worktree, so nothing was changed. Run the verb inside the worktree "
-            "instead. Read-only verbs (status, log, diff, show, rev-parse, grep) "
-            "are forwarded with GIT_OPTIONAL_LOCKS=0, so they read another "
-            "checkout without refreshing its index, and an option naming an "
-            "output file is refused."
-        ),
-    ]
-    return "\n".join(lines)
+    return "\n".join(
+        [
+            head,
+            *_resolved_target_lines(
+                run_id=run_id,
+                worktree=worktree,
+                worktree_git_dir=worktree_git_dir,
+                invocation_git_dir=invocation_git_dir,
+                invocation_toplevel=invocation_toplevel,
+            ),
+            (
+                "A crew worker may run a mutating git verb only against its own "
+                "worktree, so nothing was changed. Run the verb inside the worktree "
+                "instead. Read-only verbs (status, log, diff, show, rev-parse, grep) "
+                "are forwarded with GIT_OPTIONAL_LOCKS=0, so a refresh is not "
+                "recorded against another checkout; a form whose answer needs a "
+                "refreshed index, such as `describe --dirty` or a work tree diff, is "
+                "forwarded only inside this run's worktree."
+            ),
+        ]
+    )
+
+
+def index_refusal(
+    *,
+    verb: str,
+    form: str,
+    run_id: str,
+    worktree: Path,
+    worktree_git_dir: str | None,
+    invocation_git_dir: str | None,
+    invocation_toplevel: str | None,
+) -> str:
+    """The refusal for a read form that would refresh another checkout's index.
+
+    The verb is on the read allowlist, so the verb test alone forwards it, and
+    the form carries no output option, so neither of the other two checks sees
+    it. What it carries is the index write: git refreshes the stat cache and
+    records it, and only a target that is this run's own worktree makes that
+    write one the worker is allowed to make.
+    """
+    head = (
+        f"refusing `git {verb}`: {form} refreshes the index and writes it back, "
+        "and this invocation resolves to a repository that is not this run's "
+        "worktree."
+    )
+    return "\n".join(
+        [
+            head,
+            *_resolved_target_lines(
+                run_id=run_id,
+                worktree=worktree,
+                worktree_git_dir=worktree_git_dir,
+                invocation_git_dir=invocation_git_dir,
+                invocation_toplevel=invocation_toplevel,
+            ),
+            (
+                "GIT_OPTIONAL_LOCKS=0 keeps a read from recording an optional "
+                "refresh, but the answer this form computes is defined in terms "
+                "of a refreshed index, so it takes the index lock and writes the "
+                "target's index. Run it inside this run's worktree, drop the "
+                "option, or use a form that answers from the object store "
+                "(`--cached`), so nothing was changed."
+            ),
+        ]
+    )
 
 
 def main(
@@ -541,14 +654,16 @@ def main(
         return _forward(found, argv, environ=env)
     guarded = mutating_verb(verb, tail)
     writing = writing_argument(tail)
-    if guarded is None and writing is None:
+    indexing = index_writing_form(verb, tail)
+    if guarded is None and writing is None and indexing is None:
         return _forward(found, argv, environ=env)
     if writing is not None:
         print(output_refusal(verb or "git", writing), file=sys.stderr)
         return REFUSAL_STATUS
+    subject = guarded or verb or "git"
     if not _safe_run_component(run_id):
         print(
-            f"refusing `git {guarded}`: {RUN_ID_ENV}={run_id!r} is not a single "
+            f"refusing `git {subject}`: {RUN_ID_ENV}={run_id!r} is not a single "
             "path component, so it cannot name this run's live pointer and the "
             "command changed nothing.",
             file=sys.stderr,
@@ -558,7 +673,7 @@ def main(
     worktree = _run_worktree(run_id)
     if worktree is None:
         print(
-            f"refusing `git {guarded}`: {RUN_ID_ENV}={run_id} has no readable "
+            f"refusing `git {subject}`: {RUN_ID_ENV}={run_id} has no readable "
             "live pointer, so this run's worktree cannot be resolved and the "
             "command changed nothing.",
             file=sys.stderr,
@@ -569,7 +684,7 @@ def main(
     invocation_git_dir, toplevel = _probe(found, prefix, environ=env, cwd=cwd)
     if not refuses(
         run_id=run_id,
-        verb=guarded,
+        verb=subject,
         invocation_git_dir=invocation_git_dir,
         invocation_toplevel=toplevel,
         worktree=worktree,
@@ -577,13 +692,25 @@ def main(
     ):
         return _forward(found, argv, environ=env)
     print(
-        refusal_message(
-            run_id=run_id,
-            verb=guarded,
-            worktree=worktree,
-            worktree_git_dir=worktree_git_dir,
-            invocation_git_dir=invocation_git_dir,
-            invocation_toplevel=toplevel,
+        (
+            index_refusal(
+                verb=subject,
+                form=indexing,
+                run_id=run_id,
+                worktree=worktree,
+                worktree_git_dir=worktree_git_dir,
+                invocation_git_dir=invocation_git_dir,
+                invocation_toplevel=toplevel,
+            )
+            if indexing is not None
+            else refusal_message(
+                run_id=run_id,
+                verb=subject,
+                worktree=worktree,
+                worktree_git_dir=worktree_git_dir,
+                invocation_git_dir=invocation_git_dir,
+                invocation_toplevel=toplevel,
+            )
         ),
         file=sys.stderr,
     )

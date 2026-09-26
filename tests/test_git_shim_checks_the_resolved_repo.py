@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -28,7 +29,12 @@ from typing import Any
 
 import pytest
 
-from reckon.worker_git_shim import worker_shim_directory
+from reckon.worker_git_shim import (
+    _READ_ACTIONS,
+    _READ_ONLY_VERBS,
+    MISSING_BINARY_STATUS,
+    worker_shim_directory,
+)
 
 SHIM = worker_shim_directory() / "git"
 RUN_ID = "r-git-shim-resolved-repo"
@@ -102,6 +108,13 @@ def _repo(path: Path, home: Path) -> str:
         _git_run(["commit", "-q", "-am", "first"], cwd=path, home=home).returncode == 0
     )
     first = _head(path, home)
+    # A tag, so a describe in these repositories has something to resolve: the
+    # work-tree forms the read allowlist has to consider answer only when a tag
+    # is reachable, and refreshing the index is part of answering.
+    assert (
+        _git_run(["tag", "-a", "v1", "-m", "tagged"], cwd=path, home=home).returncode
+        == 0
+    )
     (path / "a.txt").write_text("two\n", encoding="utf-8")
     assert (
         _git_run(["commit", "-q", "-am", "second"], cwd=path, home=home).returncode == 0
@@ -552,3 +565,243 @@ def test_status_against_another_checkout_leaves_its_index_unchanged(
 
     assert result.returncode == 0, result.stderr
     assert index.read_bytes() == before_bytes
+
+
+# --- the whole read allowlist, driven against another checkout --------------
+#
+# Both writes this guard kept missing are made by a verb the allowlist forwards,
+# and neither is visible in the verb: an output option names a file, and a read
+# form whose answer is defined in terms of a refreshed index records that
+# refresh in the target's index. The cases below are built by reading the
+# allowlist from the module rather than by listing verbs here, so a verb added
+# to the shim joins the parametrisation without an edit to this file, and every
+# verb is run against a checkout that is not the run's with its stat cache
+# deliberately stale, so a refresh has something to record. The assertion is the
+# invariant that matters: the target's index bytes are unchanged and no new file
+# appears in the target.
+
+# The read invocation for each allowlisted verb. A verb not named here is run
+# bare, so a verb added to the allowlist is still exercised — every verb is
+# covered structurally, and the table only chooses the argument that makes a
+# verb answer rather than error.
+_READ_INVOCATION: dict[str, list[str]] = {
+    "blame": ["blame", "a.txt"],
+    "branch": ["branch", "--list"],
+    "cat-file": ["cat-file", "-p", "HEAD"],
+    "check-attr": ["check-attr", "text", "a.txt"],
+    "check-ignore": ["check-ignore", "a.txt"],
+    "cherry": ["cherry", "HEAD"],
+    "config": ["config", "--get", "user.name"],
+    "count-objects": ["count-objects", "-v"],
+    "describe": ["describe", "--tags"],
+    "diff": ["diff", "--cached"],
+    "diff-tree": ["diff-tree", "-r", "HEAD"],
+    "for-each-ref": ["for-each-ref"],
+    "grep": ["grep", "one"],
+    "help": ["help", "status"],
+    "log": ["log", "--oneline"],
+    "ls-files": ["ls-files", "--stage"],
+    "ls-remote": ["ls-remote", "."],
+    "ls-tree": ["ls-tree", "HEAD"],
+    "merge-base": ["merge-base", "HEAD", "HEAD"],
+    "name-rev": ["name-rev", "HEAD"],
+    "notes": ["notes", "list"],
+    "reflog": ["reflog", "show"],
+    "remote": ["remote", "-v"],
+    "rev-list": ["rev-list", "--count", "HEAD"],
+    "show": ["show", "--stat"],
+    "show-ref": ["show-ref"],
+    "stash": ["stash", "list"],
+    "status": ["status", "--porcelain"],
+    "tag": ["tag", "--list"],
+    "var": ["var", "GIT_AUTHOR_IDENT"],
+    "verify-commit": ["verify-commit", "HEAD"],
+    "verify-tag": ["verify-tag", "HEAD"],
+    "version": ["version"],
+    "whatchanged": ["whatchanged"],
+    "worktree": ["worktree", "list"],
+}
+
+# The forms that refresh the index and record the refresh. Measured against
+# another checkout with a stale stat cache, every one of them moved that
+# checkout's index when the shim forwarded it.
+_INDEX_FORM_CASES: list[tuple[str, list[str]]] = [
+    ("describe --dirty", ["describe", "--dirty"]),
+    ("describe --dirty=<suffix>", ["describe", "--dirty=-dirty"]),
+    ("describe --broken", ["describe", "--broken"]),
+    ("diff", ["diff"]),
+    ("diff --stat", ["diff", "--stat"]),
+    ("diff HEAD", ["diff", "HEAD"]),
+    ("diff --quiet", ["diff", "--quiet"]),
+]
+
+# A ``diff`` answered from the object store is a read the guard must not refuse:
+# it is here so a fix that refuses every ``diff`` fails the suite rather than
+# passing it.
+_READ_ONLY_FORM_CASES: list[tuple[str, list[str]]] = [
+    ("diff --cached", ["diff", "--cached"]),
+    ("diff --staged", ["diff", "--staged"]),
+    ("diff --no-index", ["diff", "--no-index", "--", "/dev/null", "/dev/null"]),
+    ("describe --tags", ["describe", "--tags"]),
+]
+
+# The read verbs carrying an option that names an output file.
+_OUTPUT_FORM_CASES: list[tuple[str, list[str]]] = [
+    ("log --output", ["log", "--output=ESCAPE-allowlist.txt"]),
+    ("show --output", ["show", "--output=ESCAPE-allowlist.txt"]),
+    ("diff --output", ["diff", "--output=ESCAPE-allowlist.txt"]),
+]
+
+
+def _read_cases() -> list[tuple[str, list[str]]]:
+    """A case per allowlisted verb, plus the forms that write.
+
+    Reading the two allowlisted sets is what makes the coverage structural: a
+    verb added to either set is exercised by the case built from it, whatever
+    its arguments, because a verb the table does not name is run bare.
+    """
+    cases = [
+        (verb, _READ_INVOCATION.get(verb, [verb]))
+        for verb in sorted(set(_READ_ONLY_VERBS) | set(_READ_ACTIONS))
+    ]
+    cases.extend(_INDEX_FORM_CASES)
+    cases.extend(_READ_ONLY_FORM_CASES)
+    cases.extend(_OUTPUT_FORM_CASES)
+    return cases
+
+
+_READ_CASES = _read_cases()
+
+
+# The tracked file the fixture writes and commits, and the one whose mtime is
+# moved to make the stat cache stale without changing what it holds.
+_TRACKED = "a.txt"
+
+
+def _target_files(repo: Path) -> list[str]:
+    """Every file under a repository, as its own relative path."""
+    return sorted(
+        entry.relative_to(repo).as_posix()
+        for entry in repo.rglob("*")
+        if entry.is_file()
+    )
+
+
+@pytest.mark.parametrize("staleness", ["older", "newer"])
+@pytest.mark.parametrize(
+    ("label", "argv"), _READ_CASES, ids=[case[0] for case in _READ_CASES]
+)
+def test_no_read_form_writes_another_checkouts_index_or_files(
+    repos: dict[str, Any], label: str, argv: list[str], staleness: str
+) -> None:
+    """No forwarded read form writes the target's index or a new file in it.
+
+    The target is not the run's worktree, every tracked file is touched so its
+    mtime differs from the recorded stat cache — older in one direction, newer
+    in the other, because git re-checks in both — and the content is left
+    alone. A form that refreshes the index and records the refresh, or that
+    names a file to write, then moves one of those two bytes or files and the
+    case fails.
+    """
+    home, other = repos["home"], repos["other"]
+    index = other / ".git" / "index"
+    before_index = index.read_bytes()
+    before_files = _target_files(other)
+    before_contents = (other / _TRACKED).read_text()
+    delta = -3600 if staleness == "older" else 3600
+    tracked = other / _TRACKED
+    stat = tracked.stat()
+    os.utime(tracked, (stat.st_atime + delta, stat.st_mtime + delta))
+    # The staleness is the setup, not the measurement: touching a file with its
+    # content unchanged must not have moved the index or anything else by itself.
+    assert index.read_bytes() == before_index
+    assert _target_files(other) == before_files
+
+    result = _shell(f"git -C {other} {shlex.join(argv)}", cwd=home, home=home)
+
+    assert result.returncode != MISSING_BINARY_STATUS, result.stderr
+    assert "Traceback" not in result.stderr, result.stderr
+    if result.returncode == REFUSAL_STATUS:
+        assert "refusing" in result.stderr, result.stderr
+    assert index.read_bytes() == before_index, (
+        f"`git {label}` rewrote another checkout's index\n{result.stderr}"
+    )
+    assert _target_files(other) == before_files, (
+        f"`git {label}` left a new file in another checkout\n{result.stderr}"
+    )
+    assert (other / _TRACKED).read_text() == before_contents
+
+
+@pytest.mark.parametrize(
+    ("label", "argv"), _INDEX_FORM_CASES, ids=[case[0] for case in _INDEX_FORM_CASES]
+)
+def test_an_index_writing_read_form_against_another_repo_is_refused(
+    repos: dict[str, Any], label: str, argv: list[str]
+) -> None:
+    """An index-refreshing read form is refused, naming it and the mechanism.
+
+    The verb is on the read allowlist, so nothing in the verb test or the
+    output-option test sees this form, and it carries no output option. What it
+    carries is the index write: it refreshes the stat cache and records the
+    refresh, so forwarding it against a repository that is not this run's
+    worktree edits that repository.
+    """
+    home, other = repos["home"], repos["other"]
+    index = other / ".git" / "index"
+    before_index = index.read_bytes()
+    stat = (other / "a.txt").stat()
+    os.utime(other / "a.txt", (stat.st_atime - 3600, stat.st_mtime - 3600))
+
+    result = _shell(f"git -C {other} {shlex.join(argv)}", cwd=home, home=home)
+
+    assert result.returncode == REFUSAL_STATUS, result.stderr
+    assert "refusing" in result.stderr
+    assert "refreshes the index" in result.stderr
+    assert RUN_ID in result.stderr
+    assert index.read_bytes() == before_index
+
+
+def test_the_same_index_writing_form_inside_the_run_worktree_passes(
+    repos: dict[str, Any],
+) -> None:
+    """The index written by these forms is a worker's own when it is at home.
+
+    A worker legitimately asks whether its own work tree is dirty, and that
+    refresh records into its own worktree's index, so the form is forwarded
+    with the same arguments inside the run's worktree.
+    """
+    home, worktree = repos["home"], repos["worktree"]
+    tracked = worktree / _TRACKED
+    tracked.write_text(tracked.read_text() + "changed\n", encoding="utf-8")
+
+    result = _shell(f"git -C {worktree} describe --dirty", cwd=home, home=home)
+
+    # The forward is what this case is for, and the suffix proves it answered a
+    # question about the run's own work tree rather than being refused.
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip().endswith("-dirty")
+
+
+def test_the_index_form_check_reads_the_form_and_not_the_verb() -> None:
+    """Only a form whose answer needs a refreshed index is matched.
+
+    ``--cached``, ``--staged`` and ``--no-index`` answer from the object store,
+    so a ``diff`` carrying one is a read the guard must forward. ``diff-index``
+    and ``diff-files`` are not on the read allowlist at all, so every one of
+    their forms is refused by the verb test rather than by this one.
+    """
+    from reckon.worker_git_shim import index_writing_form, mutating_verb
+
+    assert index_writing_form("describe", ["--dirty"]) == "--dirty"
+    assert index_writing_form("describe", ["--dirty=-dirty"]) == "--dirty"
+    assert index_writing_form("describe", ["--broken"]) == "--broken"
+    assert index_writing_form("diff", []) == "the work tree comparison"
+    assert index_writing_form("diff", ["--stat", "HEAD"]) == "the work tree comparison"
+    assert index_writing_form("diff", ["--cached"]) is None
+    assert index_writing_form("diff", ["--staged", "HEAD"]) is None
+    assert index_writing_form("diff", ["--no-index", "a", "b"]) is None
+    assert index_writing_form("describe", ["--tags"]) is None
+    assert index_writing_form("log", ["--dirty"]) is None
+    assert index_writing_form("status", []) is None
+    assert mutating_verb("diff-index", []) == "diff-index"
+    assert mutating_verb("diff-files", []) == "diff-files"
