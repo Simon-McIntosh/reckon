@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="10.0">
-  <meta name="plan-impl" content="0.42">
+  <meta name="plan-impl" content="0.5">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -23,8 +23,8 @@
   <title>The local lane is the default | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="47">
+<meta name="plan-modified" content="2026-09-26">
+<meta name="plan-version" content="48">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -436,6 +436,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260925T1655-readings-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>The readings half of f-tllitd-readings-and-durability has landed. It merged at <code>ea7ee57b</code> (commits <code>904d3baf</code>, <code>b44fcb9d</code>, <code>6b51b1ee</code>, <code>f863abdb</code> and <code>2aad37b3</code>). The paid-lane publisher now reads codex session rollouts for their rate-limit windows, respects each lane's shelf life, and publishes a local-lane block. The re-review scored 91. Its one finding was that the evidence row called four lanes' windows recent while the cited receipt marks them stale. That was corrected at the merge: claude is 53 h, claude-opus 21 d, codex-astra 2.8 h and codex-terra 13 h, so only codex and codex-luna carry current readings. The durability half stays open on the same followup: the publisher timer and the refresh figure.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260926T0825-digest-d1-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p><strong>D1, the role digest generator, landed</strong> at <code>137767cf</code> (re-review 94, after two repair rounds). <code>reckon/crew/worker_digest.py</code> composes one digest per worker role from the global guidance. It excludes coordinator-only push, branch-policy and fleet-orchestration lines, and the implement and test digests carry Test Visibility. Its tests assert required headings per role and a forbidden-content set, so either leak fails a case. <strong>What remains:</strong> D2, a <code>--worker-profile</code> option on dispatch. imas-ambix measured the route it should use: clive merges the operator's hooks into its <code>--settings</code> and adds <code>--setting-sources ''</code>, with the digest and the repo's AGENTS.md passed via <code>--append-system-prompt</code>. That keeps the Stop hook and git guards while dropping the roughly 22.5k-token global memory block. Production measurement (imas-ambix, 2026-09-25): the git-safety rules reach an unfenced clive worker today twice, in the dispatch prompt and in user memory, so D2 must keep them in the digest. D4 qualification asserts the global memory marker is absent, the digest's git-safety text is present, the Stop hook ran, and the first-request size.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260925T1255-gate-aware-headroom" data-who="reckon-build" data-when="2026-09-25T12:55:00Z">
     <div class="r-comment-body">The implementation commit is <code>d677269f</code>. The gate-aware reader landed in the worker tree: <code>reckon/crew/lane_document.py</code> carries <code>router_generation_gate</code> width, in-flight and waiting, computes <code>admission_headroom</code>, reports the minimum of admission and engine headroom, and emits a congested verdict with its arithmetic reason. A published <code>admission</code> block wins when present. <code>docs/state/reckon/flight.yaml</code> declares clive's <code>~/public/imas-ambix/lane.json</code>. The focused gate passed 19 tests; the adjacent lane-document, flight and lanes selection passed 122 with 2 skipped. The live reader resolved this host's document as width 14, in-flight 14, waiting 7, admission headroom -7 and congested. The declared negative control loaded the base reader, read the 12:42Z fixture as headroom 6 and failed the congestion assertion. The actual <code>crew(view="lanes")</code> surface was run and logged but still omits clive gate fields; its renderer is outside this node's write scope and remains a coordinator follow-on.</div>
