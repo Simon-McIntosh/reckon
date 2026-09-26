@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 </head>
 <body>
   <main class="plan-doc">
@@ -175,6 +175,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260926T0930-launch-path-reports-plan-review-missing" data-who="launch-path-reports-plan-review-missing" data-when="2026-09-26T09:30:00Z">
     <div class="r-comment-body"><p><b>Node <code>launch-path-reports-plan-review-missing</code> landed.</b> The re-review of the dispatch gate (run <code>r-20260925T131953539635</code>, 92) found the launch path's <code>plan-review-missing</code> mapping untested while the dry-run mapping beside it was asserted, so the divergence an earlier review caught could return on the launch side and still pass. One case now drives <code>crew dispatch</code> without <code>--dry-run</code>, under <code>plan_review_gate: enforce</code>, for an implement node on the fixture plan that carries no stored review, and asserts the emitted error is <code>plan-review-missing</code> naming <code>fixture</code>. No worker is spawned — the gate refuses inside <code>plan_dispatch</code> before a worktree, pointer or ledger row exists. Commit <code>35da2422</code>. Gate: <code>pytest -q tests/test_plan_review_gate.py</code> → 18 passed, exit 0 (base <code>4b0ccd34</code> 17 passed), and the compatibility gate <code>tests/test_crew_dispatch_guard.py</code> 14 passed against 14 at base — <strong>zero added failures</strong>. Negative control <i>change the launch-path mapping in <code>reckon/cli.py</code> to emit <code>plan-unavailable</code>; the new case must fail</i>: base arm 1 passed, head arm 1 failed with <code>assert 'plan-unavailable' == 'plan-review-missing'</code>, both arms in scratch trees exported from the same revision, header lines naming revision, tree, <code>module.__file__</code> and command. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#launch-path-reports-plan-review-missing">§2 landed record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260926T092819229022-review-of-launch-path-reports-plan-review-missing" data-who="reckon-build" data-when="2026-09-26T10:41:55.710Z">
+    <div class="r-comment-body"><p>review record stored and read by the coordinator (96)</p></div>
 </div>
 </section>
 </main>
