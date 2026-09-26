@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="89">
+<meta name="plan-version" content="90">
 <meta name="plan-impl" content="0.75">
 </head>
 <body>
@@ -1106,6 +1106,11 @@
     <div class="r-fu-body"><p>s22-coord reported this on 2026-09-26. Run r-20260926T151648830270 died at launch, before any stream record, and was discarded. It left its worktree on disk, clean. The redispatch then refused with <q>worktree path already exists</q> until the tree was removed by hand. A discarded run with a clean worktree, whose head adds nothing beyond its base, has nothing to preserve. Discard should remove it, as gc would. A dirty or unintegrated worktree must still be withheld, with the reason printed. Done when a test discards a synthesised run with a clean worktree at its base, and a dispatch of the same node id then succeeds. A second case asserts that a dirty worktree survives the discard and the withheld reason is printed. The negative control is to skip the release, under which the first case must fail on the existing path.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner discard-releases-a-clean-worktree</pre>
     <p class="r-fu-outcome">Landed at a4b8a06d (run r-20260926T152959325320, review 92). crew discard releases a discarded run's worktree through _release_run_workspace, the audit crew complete applies. A dirty or unintegrated tree is withheld with the audit's reason. The review's two findings are evidence-precision: the lint delta counts summary lines, and the gate log header names the base revision though it ran on the uncommitted tree.</p>
+    </article>
+<article class="r-fu" data-id="f-acpewio-reflex-worker-outlives-its-follower" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A reflex-launched worker detaches from the follower that launched it</h4>
+    <div class="r-fu-body"><p>On 2026-09-26 two review runs in session s21-coord ended by SIGTERM mid-turn, with no error, each within seconds of the <code>crew follow</code> process that had launched it being killed at its harness Monitor's 29-minute expiry. review-of-discard-releases-a-clean-worktree was launched by the reflex at 16:05:21Z and killed at 16:26:58Z. review-of-fence-creates-a-missing-write-parent was launched at 16:56:21Z and killed at 17:25:12Z. A hand-dispatched review's supervisor runs as its own session leader with parent pid 1 (r-20260926T171349394642: supervisor 217703, ppid 1, sid 217703), so it survives any follower. The two killed runs were the reflex-launched ones. So the reflex's launch path evidently leaves its supervisor in the follower's process tree, and the harness kills that tree on expiry. No live reflex run was inspected, so this is strongly indicated rather than measured. Measure it first: arm a follower, let the reflex launch a review, and print the supervisor's ppid and sid. Then make the reflex launch through the same detached path hand dispatch uses. Done when a test asserts that a reflex-launched supervisor's session id differs from the follower's, and that its parent is not the follower. The negative control is the current launch path, under which the assertion must fail. This belongs with the section on processes ending with their owner, because the defect runs the other way: a worker ends with a process that does not own it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner reflex-worker-outlives-its-follower</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
