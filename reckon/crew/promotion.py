@@ -128,25 +128,45 @@ class _CumulativeDiff:
     changed_lines: dict[str, Any]
 
 
-def _committed_scope(*, cwd: Path, commits: Sequence[str]) -> _CumulativeDiff:
+def _committed_scope(
+    *, cwd: Path, commits: Sequence[str], run_id: str = ""
+) -> _CumulativeDiff:
     """Return paths and counts from the cited commits' own diffs.
 
     A tree diff from the first cited commit's parent to the run's tip is a diff
     of a span, not of a run: a head that merged the integration branch carries
-    every path that branch changed, and the span charges them to the run. Each
-    cited commit is diffed against its own parent instead, and a cited merge is
-    skipped rather than resolved, because what a merge brought belongs to the
-    branch it came from — not to the run that merged it.
+    every path that branch changed, and the span charges them to the run. The
+    paths are therefore read from each cited commit's own diff, and a cited
+    merge is skipped rather than resolved, because what a merge brought belongs
+    to the branch it came from — not to the run that merged it.
+
+    The counts are one net diff over the run's own commits, restricted to the
+    paths those commits touched. Adding each commit's own numstat counts churn
+    the run netted out for itself — a path rewritten across two cited commits
+    contributes both revisions — so the row would describe the run's keystrokes
+    rather than its effect.
+
+    A citation list that measures no path is refused rather than recorded as
+    zero. A merge cited alone reaches that state by the skip above, and would
+    otherwise be promoted as a run that changed nothing; a citation list whose
+    own commits changed no path reaches it by containing no deliverable at all.
     """
     if not commits:
         return _CumulativeDiff((), {"available": False, "reason": "missing_base"})
     merges = set(_merge_revisions(cwd, commits))
-    added = removed = 0
+    own = [commit for commit in commits if commit not in merges]
+    if not own:
+        raise CrewError(
+            f"run {run_id!r} cites only merge commits ("
+            + ", ".join(str(commit) for commit in commits)
+            + "); a merge's own diff belongs to the branch it brought, so this "
+            "citation list measures no path and the run's own work cannot be "
+            "measured from it. Cite the non-merge commit(s) the run made, or "
+            "pass --no-commit '<why>' when it produced none"
+        )
     paths: list[str] = []
     seen: set[str] = set()
-    for commit in commits:
-        if commit in merges:
-            continue
+    for commit in own:
         result = subprocess.run(
             [
                 "git",
@@ -170,14 +190,31 @@ def _committed_scope(*, cwd: Path, commits: Sequence[str]) -> _CumulativeDiff:
             fields = raw_line.split(b"\t", 2)
             if len(fields) != 3:
                 continue
-            added += int(fields[0]) if fields[0].isdigit() else 0
-            removed += int(fields[1]) if fields[1].isdigit() else 0
             path = os.fsdecode(fields[2])
             if path not in seen:
                 seen.add(path)
                 paths.append(path)
+    if not paths:
+        raise CrewError(
+            f"run {run_id!r} cites "
+            + ", ".join(str(commit) for commit in commits)
+            + ", and none of them changes a path, so this citation list "
+            "measures no path. Cite the commit(s) whose diff is the work, or "
+            "pass --no-commit '<why>' when the run produced none"
+        )
+    counts = scoped_diff_stat(cwd=cwd, base=f"{own[0]}^", head=commits[-1], paths=paths)
+    if not counts.get("available", True):
+        return _CumulativeDiff(
+            (),
+            {"available": False, "reason": counts.get("reason") or "diff_unavailable"},
+        )
     return _CumulativeDiff(
-        tuple(paths), {"added": added, "removed": removed, "files": len(paths)}
+        tuple(paths),
+        {
+            "added": counts["added"],
+            "removed": counts["removed"],
+            "files": len(paths),
+        },
     )
 
 
@@ -4128,7 +4165,9 @@ def _complete_locked(
         changed_lines = _shadow_patch_stat(artifact, cwd=tree)
         shadow_patch = str(artifact)
     elif commit_list:
-        cumulative = _committed_scope(cwd=tree, commits=commit_list)
+        cumulative = _committed_scope(
+            cwd=tree, commits=commit_list, run_id=run_id
+        )
         if cumulative.changed_lines.get("available", True):
             if (
                 not role_may_write_repository_paths(str(record.get("role") or ""))
