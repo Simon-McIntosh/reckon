@@ -252,6 +252,38 @@
       and the coordinator commits the digests recorded in the
       <a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed#disposable-member-tests">evidence
       anchor</a>; the driving followup and section closure remain with the coordinator.</p>
+      <div class="r-note" data-reckon="landed" data-node="rename-member-tests-by-what-they-assert" data-when="2026-09-26">
+      <p><strong>Outcome: the two member cases are named by what they assert.</strong>
+      Node <code>rename-member-tests-by-what-they-assert</code>, based on
+      <code>26b48f0f</code>, commit <code>3d950ac9</code>. The bodies are unchanged: each
+      rename is a single <code>def</code> line. In
+      <code>tests/test_member_registration_commits.py</code>,
+      <code>test_a_dispatch_naming_no_member_commits_its_registration</code> becomes
+      <code>test_a_dispatch_naming_no_member_is_disposable_and_commits_nothing</code>; in
+      <code>tests/test_crew_ephemeral_members.py</code>,
+      <code>test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session</code>
+      becomes
+      <code>test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session</code>.
+      Both old names described the retired shared member, which neither case asserts.</p>
+      <p><strong>Evidence.</strong> One grep for the two old names over <code>tests/</code>
+      reports <strong>two hits at base</strong> (line 254 and line 94) and
+      <strong>zero at the rename commit</strong>; a scratch copy with the base name
+      reintroduced at line 254 makes the same grep report that one line, so the
+      instrument is shown able to see the name before the zero is believed. The two
+      measured files in one invocation pass <strong>11 at base</strong> (exit 0, 8.38 s)
+      and <strong>11 at the head</strong> (exit 0, 4.94 s) with no failures in either arm
+      and the same test count, and ruff over the committed paths reports the same single
+      pre-existing <code>I001</code> in both arms. Receipts under run
+      <code>r-20260926T131823497018</code>: <code>gate-base.log</code>,
+      <code>gate-after.log</code>, <code>grep-base.log</code>, <code>grep-after.log</code>,
+      <code>grep-control.log</code>, <code>ruff-base.log</code>,
+      <code>ruff-after.log</code>. Full record:
+      <a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed#member-test-names">evidence
+      anchor</a>.</p>
+      <p>The archive's earlier anchor quoted a gate duration its receipt does not carry;
+      the receipt's own figure is appended beside that line, which stands as delivered.
+      Coordinator owns the driving followup, the section status and closure.</p>
+      </div>
     </section>
 
     <section id="s5" data-reckon="section">
