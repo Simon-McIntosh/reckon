@@ -2210,6 +2210,10 @@ def _follow_watch_lines(
     def _stopped() -> bool:
         return stop is not None and stop.is_set()
 
+    # The place this arming last wrote, so a poll that changes nothing does not
+    # rewrite it. Declared beside the writer that owns it.
+    written_place: tuple[Any, ...] | None = None
+
     def _record_checkpoint(
         stream_path: Path,
         offset: int,
@@ -2227,9 +2231,34 @@ def _follow_watch_lines(
         ``identity`` is the open stream's own identity when the offset was read
         from that handle, so a replacement landing between the read and this
         write cannot pair the old offset with the new file's inode.
+
+        A write is performed only when the place has moved — the stream, the
+        offset, the stream's identity or the reported map. The per-tick hook
+        runs on every wait pass, so an arming sitting against a quiet stream
+        would otherwise rewrite the same record once a pass, two fsyncs and a
+        rename each, for as long as it sat there.
         """
         from reckon.crew import follow_checkpoint
 
+        nonlocal written_place
+        try:
+            resolved_identity: Mapping[str, Any] | None = (
+                identity
+                if identity is not None
+                else follow_checkpoint.stream_identity(stream_path)
+            )
+        except OSError:
+            resolved_identity = None
+        place = (
+            str(stream_path),
+            int(offset),
+            None
+            if resolved_identity is None
+            else (resolved_identity.get("dev"), resolved_identity.get("ino")),
+            tuple(sorted((str(key), str(value)) for key, value in reported.items())),
+        )
+        if place == written_place:
+            return
         try:
             follow_checkpoint.write(
                 project,
@@ -2241,6 +2270,7 @@ def _follow_watch_lines(
             )
         except OSError:
             return
+        written_place = place
 
     def _tick(
         *,
@@ -2348,21 +2378,26 @@ def _follow_watch_lines(
             cursor["offset"] = offset
             reported.clear()
             reported.update(recorded)
-            if first_attach and not reloading:
+            if first_attach:
                 # Continue each run's chain from what the pane last showed it,
                 # for the runs the checkpoint does not name. The checkpoint is
                 # the primary carrier and is read first; the log is the memory
                 # for a re-arm whose checkpoint is gone, so a run renders
                 # ``abandoned → working`` rather than restarting from a state
                 # the reader never saw. ``setdefault`` keeps the checkpoint's
-                # word when both carry one.
+                # word when both carry one. This runs on a reload too: the
+                # replacement image's grid starts empty, so it needs the same
+                # memory a re-arm does, or the first row it draws falls back to
+                # the producer's own ``from_state``.
                 for run_id, state in follow_checkpoint.seed_states(
                     follow_checkpoint.read_history(project, session)
                 ).items():
                     reported.setdefault(run_id, state)
             # The pane's own line, before the gap's: a restored history or the
             # format switch, never a run's row and never a baseline re-derived
-            # from the fleet as it stands now.
+            # from the fleet as it stands now. It carries the remembered states
+            # so the renderer can seed its grid from the same map, which is what
+            # keeps a row's left side on the state the pane last showed.
             if first_attach:
                 yield {
                     "event": (
@@ -2370,6 +2405,7 @@ def _follow_watch_lines(
                     ),
                     "project": project,
                     "session": session or "",
+                    "reported": dict(reported),
                 }
         # Left behind before the first read rather than after the first line:
         # an arming that starts against a quiet stream and then ends has still
@@ -2580,6 +2616,24 @@ def _ticker_grid(width, theme, no_color):
         width=ticker_module.resolve_terminal_width() if width is None else width,
         theme=ticker_module.DEFAULT_THEME if theme is None else theme,
         color=not no_color,
+    )
+
+
+def _seed_ticker_memory(grid, states) -> None:
+    """Give the grid the states the pane already showed, before its next row.
+
+    A grid remembers the state it last put on screen for each run, and reads a
+    row's left side from that memory rather than from the producer's own record.
+    A replacement image builds a fresh grid, so the memory has to be handed to
+    it: without this a reloaded pane draws the producer's ``from_state`` and
+    shows a bare state where the reader had a transition. The map travels on the
+    attach event, which is where the follower has already merged the checkpoint
+    and the stored history into one remembered set.
+    """
+    if not states:
+        return
+    grid._reported.update(
+        {str(key): str(value) for key, value in dict(states).items()}
     )
 
 
@@ -2806,6 +2860,12 @@ def crew_follow(
             lifetime=lifetime_seconds,
             registration=registration,
         ):
+            # An attach event carries the states the pane already showed, so the
+            # grid is seeded from the same remembered map the follower filtered
+            # against — before any fresh row is consumed. The map is the
+            # follower's own bookkeeping rather than part of the pane's event,
+            # so it is taken off before the event goes on to the reader.
+            _seed_ticker_memory(grid, event.pop("reported", None))
             if event.get("event") == FOLLOWER_END_EVENT:
                 # This one line is about the follower, not the fleet, so it is
                 # printed as it was written rather than rendered as a fleet row.
