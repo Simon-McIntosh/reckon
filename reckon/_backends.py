@@ -2108,6 +2108,52 @@ def protected_read_only_binds(
     return pairs
 
 
+def worktree_git_write_roots(worktree: str | Path) -> list[Path]:
+    """Return the git directories a commit in ``worktree`` must be able to write.
+
+    A linked worktree keeps its own git directory — HEAD, index and reflog —
+    under the main checkout's ``.git``, and it stores the objects it writes in
+    that repository's shared object store. Both live below a path the fence
+    seals, so a worker asked to commit in its own worktree finds them read-only
+    unless the fence re-opens exactly them.
+
+    Only the object store is named from the common directory, never the common
+    directory itself: objects are content-addressed and append-only, so a write
+    there cannot rewrite another tree's history, while ``refs/heads``, the
+    common index and the main working tree stay sealed. A path that is not a
+    linked worktree — the main checkout itself, whose git directory *is* the
+    common directory — returns nothing, because its refs and index are exactly
+    what the fence exists to keep closed. A path that git cannot resolve
+    returns nothing rather than refusing a launch over an unreadable root.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "--absolute-git-dir", "--git-common-dir"],
+            cwd=str(worktree),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return []
+    lines = proc.stdout.splitlines()
+    if len(lines) < 2:
+        return []
+    git_directory = Path(lines[0])
+    common_directory = Path(lines[1])
+    if not common_directory.is_absolute():
+        common_directory = Path(worktree) / common_directory
+    git_directory = git_directory.resolve()
+    common_directory = common_directory.resolve()
+    if git_directory == common_directory:
+        return []
+    roots = [git_directory]
+    objects = common_directory / "objects"
+    if objects.is_dir():
+        roots.append(objects)
+    return roots
+
+
 def fence_argv(
     argv: Sequence[str],
     *,
@@ -2128,7 +2174,10 @@ def fence_argv(
 
     A write root is the run's declared writable directories, its worktree, and
     the run directory the manifest lives in — the last because a worker that
-    cannot write its own manifest has delivered nothing.
+    cannot write its own manifest has delivered nothing. A linked worktree also
+    needs its own git directory and its repository's shared object store
+    writable, or a worker cannot commit the work it was dispatched to do; see
+    :func:`worktree_git_write_roots`.
 
     A protected path is bound at its resolved target rather than at its own
     path, because bubblewrap cannot create a mount point below a symlink; see
@@ -2147,6 +2196,7 @@ def fence_argv(
     roots: list[Path] = [Path(path) for path in writable_directories]
     if worktree is not None:
         roots.append(Path(worktree))
+        roots.extend(worktree_git_write_roots(worktree))
     if manifest_path is not None:
         roots.append(Path(manifest_path).parent)
 
