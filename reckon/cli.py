@@ -3357,14 +3357,25 @@ def crew_check_manifest(run_id, pretty):
         raise click.exceptions.Exit(1)
 
 
-# The one pointer phase a fence may be widened in: a blocked run has stopped and
-# is waiting for a decision, so its boundary can move without a live process
-# already writing against it.
+# The one pointer phase a fence may be widened in: a blocked run has stopped on a
+# scope decision and is waiting for an answer, so its boundary can move without a
+# live process already writing against it. The phase is only where the stop is
+# usually stated -- whether the worker is in fact gone is read from the worker
+# process, below, because a phase is a mirror that can lag the run it describes.
 WIDENABLE_PHASE = "blocked"
 
 # The statuses a run's own manifest can report that leave no scope decision to
 # widen for: the work has ended, so a wider fence is not what the run awaits.
 WIDEN_REFUSING_MANIFEST_STATUSES = frozenset({"complete", "failed"})
+
+# The one rule the predicate, the refusals and the command's own documentation
+# state, written once so the three cannot drift apart: the fence moves for a run
+# that has stopped, and only a run whose worker process has stopped has.
+WIDEN_RULE = (
+    "only a run whose worker process has stopped on a blocked fence is widened, "
+    "because a live worker is already writing against the boundary a widening "
+    "would move"
+)
 
 
 def _manifest_reported_status(record: Mapping[str, Any]) -> str:
@@ -3402,31 +3413,77 @@ def _manifest_reported_status(record: Mapping[str, Any]) -> str:
     return "" if manifest_status_is_template(status) else status
 
 
-def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str]:
-    """The state refusing this run's fence, and the status its manifest reports.
+def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str, str]:
+    """The state refusing this run's fence, its manifest status, and its remedy.
 
     The first value is the state that refuses a widening, or ``""`` when the
     fence may move; the second is the manifest's own reported status, so the
-    answer can name which of the two accounts authorised the write.
+    answer can name which of the two accounts authorised the write; the third is
+    what a refused caller can do next, and is empty when the refusal leaves no
+    move open.
 
-    Two sources state whether a run has stopped on a blocked fence: the folded
-    phase, and the manifest the run delivered. A run is wideniable when either
-    reports ``blocked``, because a run launched through a backend folds its
-    phase from a terminal stream event and a worker that writes ``status:
-    blocked`` before ending its turn leaves the two disagreeing. A manifest
-    reporting complete or failed refuses on its own -- a finished run has no
-    scope decision outstanding, and a wider fence would be granted to work that
-    has already ended. Every other state is refused, since only a run that has
-    stopped and stated a block has a boundary that can move without a live
-    process writing against it.
+    One rule decides this, and the command's own documentation states the same
+    sentence: only a run whose worker process has stopped on a blocked fence is
+    widened. Its two halves are read from different places on purpose. Whether
+    the run has stopped is read from the worker the record names, never from the
+    phase -- a phase mirrors the stream that folded it and the manifest the run
+    wrote, so a live worker under a blocked-looking phase is exactly the writer
+    this refusal exists for. Whether the run stated a block is read from the
+    folded phase and from the manifest the run delivered. A run is wideniable
+    when either reports ``blocked``, because a run launched through a backend
+    folds its phase from a terminal stream event and a worker that writes
+    ``status: blocked`` before ending its turn leaves the two disagreeing. A
+    manifest reporting complete or failed refuses on its own -- a finished run
+    has no scope decision outstanding, and a wider fence would be granted to
+    work that has already ended.
     """
     phase = str(record.get("phase") or "")
     reported = _manifest_reported_status(record)
     if reported in WIDEN_REFUSING_MANIFEST_STATUSES:
-        return f"{reported!r} in its own manifest", reported
-    if WIDENABLE_PHASE in (phase, reported):
-        return "", reported
-    return repr(phase or "unphased"), reported
+        return f"it reports {reported!r} in its own manifest", reported, ""
+    if WIDENABLE_PHASE not in (phase, reported):
+        label = phase or "unphased"
+        return f"it reads {label!r}, not {WIDENABLE_PHASE!r}", reported, ""
+    running = _widen_running_worker(record)
+    if running:
+        return (
+            f"it records a worker still running as pid {running}",
+            reported,
+            (
+                "Wait for that process to exit and widen again, or resume the "
+                "run with `crew resume` once its turn has ended"
+            ),
+        )
+    return "", reported, ""
+
+
+def _widen_running_worker(record: Mapping[str, Any]) -> str:
+    """The pid of this run's worker while it is still running, or ``""`` once gone.
+
+    The fence a widening moves is the boundary the run's worker writes against,
+    so the process that must no longer exist is the one the record names, and the
+    read goes through the single helper every liveness decision about a run
+    takes: a pid the kernel has since handed to a different process does not
+    answer for the worker this record means.
+
+    A record that names no process is admitted rather than refused. ``None`` is
+    not a running worker, the pointer is written before its worker is spawned,
+    and a widening already requires a block stated in a manifest the run itself
+    delivered -- which no unspawned worker can have written.
+    """
+    from reckon.crew.runs import record_process_alive
+
+    if record_process_alive(record) is not True:
+        return ""
+    return str(record.get("pid") or "")
+
+
+def _widen_refusal(run_id: str, state: str, remedy: str, *, where: str) -> str:
+    """Compose the refusal naming the state, where it was read, and the next move."""
+    message = (
+        f"run {run_id!r} cannot have its fence widened{where}: {state}; {WIDEN_RULE}"
+    )
+    return f"{message}. {remedy}" if remedy else message
 
 
 @crew.command(name="widen")
@@ -3455,20 +3512,22 @@ def crew_widen(run_id, write_paths, pretty):
     session with its own work intact. The field written is the one promotion
     reads, so a scope granted here is the scope the promotion validator honours.
 
-    The run must be blocked, read from two sources rather than from the folded
-    phase alone: the phase, and the status the run's own manifest reports. A run
-    whose manifest reports ``blocked`` is wideniable even when its phase has
-    folded to ``complete``, because a run launched through a backend folds its
-    phase from its stream's terminal event -- so a worker that ends its turn
+    The run must have stopped, and it must have stated a block. Whether it has
+    stopped is read from the worker process the pointer records -- a run whose
+    worker is still running is refused whatever its phase and its manifest say,
+    because that worker is already writing against the boundary a widening would
+    move. Whether it stated a block is read from two sources rather than from the
+    folded phase alone: the phase, and the status the run's own manifest reports.
+    A run whose manifest reports ``blocked`` is wideniable even when its phase
+    has folded to ``complete``, because a run launched through a backend folds
+    its phase from its stream's terminal event -- so a worker that ends its turn
     after writing ``status: blocked`` folds to ``complete``, and its own
     delivery is the only place the block is stated. A manifest reporting
     ``complete`` or ``failed`` is refused, because a finished run has no scope
-    decision outstanding. Every other state is refused too: a working run's
-    fence is the boundary it is currently writing against, so widening one would
-    move that boundary under a live process that already read it. Eligibility is
-    read twice -- once on the pointer as it stands and again on the record read
-    under the per-run lock -- so a run that reaches either read in a
-    non-wideniable state is refused rather than widened in place.
+    decision outstanding. Eligibility is read twice -- once on the pointer as it
+    stands and again on the record read under the per-run lock -- so a run that
+    reaches either read in a non-wideniable state is refused rather than widened
+    in place.
     """
     crew_module, _ = _crew_modules()
     try:
@@ -3476,13 +3535,9 @@ def crew_widen(run_id, write_paths, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    state, manifest_status = _widen_eligibility(record)
+    state, manifest_status, remedy = _widen_eligibility(record)
     if state:
-        raise click.ClickException(
-            f"run {run_id!r} reads {state}, not {WIDENABLE_PHASE!r}: only a "
-            "blocked run's fence is widened, because a working run is already "
-            "writing against the boundary this would move"
-        )
+        raise click.ClickException(_widen_refusal(run_id, state, remedy, where=""))
     if not isinstance(record.get("node"), Mapping):
         raise click.ClickException(
             f"live pointer for {run_id!r} records no node holding a write scope"
@@ -3498,12 +3553,15 @@ def crew_widen(run_id, write_paths, pretty):
         # wideniable state and start writing against its boundary, and widening
         # there would move that boundary under a live process. Raising before the
         # write leaves the pointer as this mutation found it.
-        locked_state, _ = _widen_eligibility(pointer)
+        locked_state, _, locked_remedy = _widen_eligibility(pointer)
         if locked_state:
             raise click.ClickException(
-                f"run {run_id!r} reads {locked_state} at the pointer write, not "
-                f"{WIDENABLE_PHASE!r}: only a blocked run's fence is widened, and "
-                "nothing was written"
+                _widen_refusal(
+                    run_id,
+                    locked_state,
+                    locked_remedy,
+                    where=" at the pointer write, and nothing was written",
+                )
             )
         node = dict(pointer.get("node") or {})
         declared = [str(path) for path in node.get("write_paths") or ()]

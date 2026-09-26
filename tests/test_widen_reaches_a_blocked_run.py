@@ -15,6 +15,15 @@ command surface a coordinator reaches for, and the field it writes is the one
 the promotion validator reads, so the assertions are made on the pointer bytes
 on disk rather than on the reply alone.
 
+The block is only half the rule the command states. The other half is that the
+worker process has stopped, read from the process the pointer records rather than
+from the phase: a run reporting a block while its worker still runs is a worker
+writing against the boundary a widening would move, and the phase and the
+manifest can both say blocked while it does. Every case here therefore asserts
+the liveness read its fixture was built to produce before the command is
+invoked, because a case whose pid read answered otherwise would pass or fail on
+the wrong fact.
+
 The state a case writes is isolated the way the sibling fence-widening cases
 isolate theirs: ``RECKON_HOME`` points at a temporary home so a case's pointer
 write stays inside the case, and the crew home the process resolved *before*
@@ -26,18 +35,31 @@ difference there would say the machine is busy rather than that a case escaped.
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 from click.testing import CliRunner
 
 from reckon.cli import main as cli_main
-from reckon.crew.runs import _write_json, crew_home, pointer_path
+from reckon.crew.runs import (
+    _process_start_time,
+    _write_json,
+    crew_home,
+    pointer_path,
+    record_process_alive,
+)
 
 BLOCKED_RUN_ID = "r-20260925T000000000000-widen-blocked-manifest"
 COMPLETE_RUN_ID = "r-20260925T000000000000-widen-complete-manifest"
 STALE_RUN_ID = "r-20260925T000000000000-widen-stale-manifest"
 BLOCKED_PHASE_RUN_ID = "r-20260925T000000000000-widen-phase-blocked"
+RUNNING_RUN_ID = "r-20260925T000000000000-widen-running-worker"
+RUNNING_BEHIND_BLOCKED_ID = "r-20260925T000000000000-widen-running-behind-blocked"
+STOPPED_RUN_ID = "r-20260925T000000000000-widen-stopped-worker"
 DECLARED = "reckon/crew/runs.py"
 MISSING = "reckon/crew/dispatch.py"
 SESSION_ID = "s22-cli-20260925"
@@ -145,6 +167,21 @@ def crew_home_watch(isolated_reckon_home: Path) -> CrewHomeWatch:
     return CrewHomeWatch(root)
 
 
+def _exited_pid() -> int:
+    """The pid of a process that has run to completion and been collected.
+
+    The stop half of the rule is asserted against a pid the process table can no
+    longer answer for, so the number is taken from a child that has been reaped
+    rather than made up: a made-up number would exercise the same lookup while
+    leaving it possible that no such process ever existed. The returned pid is
+    checked by the case that uses it, which fails loudly rather than reporting a
+    passing widen if the number has since been handed to another process.
+    """
+    child = subprocess.Popen([sys.executable, "-c", "pass"])
+    child.wait()
+    return child.pid
+
+
 def _run_pointer(
     root: Path,
     run_id: str,
@@ -152,6 +189,7 @@ def _run_pointer(
     phase: str,
     manifest: str | None,
     baseline: int | None = None,
+    pid: int | None = None,
 ) -> dict:
     """Write one live pointer, its delivery and its dispatch-time baseline.
 
@@ -159,6 +197,13 @@ def _run_pointer(
     dispatched, which is what tells a fresh delivery from a status left behind
     by an earlier attempt at the same path. It is written explicitly here
     because the case controls which of the two it is synthesising.
+
+    ``pid`` is the worker process the pointer records, and the case that passes
+    one intends a specific liveness answer from it: the recorded start tick is
+    read from the process table so the pointer carries the shape a dispatch
+    writes, which is also the shape the pid-reuse check reads. A pid whose tick
+    cannot be read is recorded without one, which is the unknown shape the
+    lookup resolves on the probe alone.
     """
     worktree = root / "repo"
     manifest_path = root / f"{run_id}.md"
@@ -169,7 +214,7 @@ def _run_pointer(
         )
     else:
         recorded_baseline = 0
-    pointer = {
+    pointer: dict[str, Any] = {
         "run_id": run_id,
         "project": "sample",
         "repo": str(worktree),
@@ -190,6 +235,11 @@ def _run_pointer(
         "manifest_path": str(manifest_path),
         "manifest_baseline_mtime_ns": recorded_baseline,
     }
+    if pid is not None:
+        pointer["pid"] = pid
+        start = _process_start_time(pid)
+        if start is not None:
+            pointer["pid_start_time"] = start
     _write_json(pointer_path(run_id), pointer)
     return pointer
 
@@ -268,6 +318,75 @@ def stale_manifest_run(
     (tmp_path / "repo").mkdir()
     return _run_pointer(
         tmp_path, STALE_RUN_ID, phase="complete", manifest=BLOCKED_MANIFEST
+    )
+
+
+@pytest.fixture()
+def running_worker_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, crew_home_watch: CrewHomeWatch
+):
+    """A blocked manifest over a worker that is still running.
+
+    The pointer's phase reads ``working`` and the manifest is this attempt's own,
+    reporting blocked: the run is mid-turn, and the live process it records is
+    the only thing that says so. The process is this test's own, which is the one
+    pid a case can prove alive without spawning a second worker for the machine
+    to carry.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(_case_home(tmp_path)))
+    (tmp_path / "repo").mkdir()
+    return _run_pointer(
+        tmp_path,
+        RUNNING_RUN_ID,
+        phase="working",
+        manifest=BLOCKED_MANIFEST,
+        baseline=0,
+        pid=os.getpid(),
+    )
+
+
+@pytest.fixture()
+def running_worker_behind_a_blocked_phase(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, crew_home_watch: CrewHomeWatch
+):
+    """Both accounts of the block say blocked. The worker is running anyway.
+
+    This is the case that separates the two halves of the rule: whatever the
+    phase and the manifest say, a widening is refused while the process the
+    pointer records still answers.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(_case_home(tmp_path)))
+    (tmp_path / "repo").mkdir()
+    return _run_pointer(
+        tmp_path,
+        RUNNING_BEHIND_BLOCKED_ID,
+        phase="blocked",
+        manifest=BLOCKED_MANIFEST,
+        baseline=0,
+        pid=os.getpid(),
+    )
+
+
+@pytest.fixture()
+def stopped_worker_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, crew_home_watch: CrewHomeWatch
+):
+    """The stopped twin of the running case, and the state widening exists for.
+
+    The worker has exited and the manifest it left reports blocked, so the run is
+    waiting on a scope decision the boundary can be moved for. The pid is one the
+    process table has released, which is what "stopped" has to mean for the
+    admission to be worth anything.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(_case_home(tmp_path)))
+    (tmp_path / "repo").mkdir()
+    return _run_pointer(
+        tmp_path,
+        STOPPED_RUN_ID,
+        phase="complete",
+        manifest=BLOCKED_MANIFEST,
+        baseline=0,
+        pid=_exited_pid(),
     )
 
 
@@ -393,6 +512,93 @@ def test_a_manifest_from_an_earlier_attempt_does_not_widen_the_run(
 
     assert result.exit_code != 0, result.output
     assert _read(STALE_RUN_ID)["node"]["write_paths"] == [DECLARED]
+    crew_home_watch.assert_untouched()
+
+
+def _assert_liveness(run_id: str, expected: bool | None) -> None:
+    """Assert the read the command itself makes, before the command makes it.
+
+    A case built to exercise the stop half is worth nothing if the pid it
+    recorded does not answer as intended, and a passing widen would then report
+    the wrong fact about it. The read is taken through the same helper the
+    command uses, on the pointer as it is on disk.
+    """
+    alive = record_process_alive(_read(run_id))
+    assert alive is expected, (
+        f"the fixture's worker for {run_id} reads alive={alive}, not {expected}: "
+        "the case would otherwise be measuring a different state"
+    )
+
+
+def test_a_blocked_manifest_does_not_widen_a_run_whose_worker_still_runs(
+    running_worker_run: dict, crew_home_watch: CrewHomeWatch
+) -> None:
+    """A fresh block statement is not a stopped worker, and the process decides.
+
+    The manifest is this attempt's own and reports blocked, which is the whole
+    of the condition the phase-only refinement added -- so under a predicate that
+    stops at the manifest this run is widened while its worker is mid-turn. The
+    refusal is asserted on the reply and on the pointer bytes, and the pid the
+    fixture recorded is asserted alive first, because the case is only about the
+    liveness read if it really is.
+    """
+    _assert_liveness(RUNNING_RUN_ID, True)
+    before = _tree_bytes(pointer_path(RUNNING_RUN_ID).parent)
+
+    result = _widen(RUNNING_RUN_ID, MISSING)
+
+    assert result.exit_code != 0, result.output
+    assert "still running" in result.output
+    assert "crew resume" in result.output or "exit" in result.output
+    assert MISSING not in result.output
+    assert _read(RUNNING_RUN_ID)["node"]["write_paths"] == [DECLARED]
+    assert _tree_bytes(pointer_path(RUNNING_RUN_ID).parent) == before
+    crew_home_watch.assert_untouched()
+
+
+def test_a_running_worker_refuses_the_widening_the_phase_alone_would_allow(
+    running_worker_behind_a_blocked_phase: dict, crew_home_watch: CrewHomeWatch
+) -> None:
+    """Both accounts say blocked; the worker says running, and the worker decides.
+
+    Reading the block from the phase and the manifest covers a mirror that lags
+    the run. It does not cover a worker whose phase is blocked because it
+    recovered mid-stream, or one the coordinator is racing as it writes its last
+    delivery, and those are the writers this refusal exists for. The run is
+    documented as blocked by both sources and is still refused, which is only
+    true if the process -- and not either field -- is what admits the widening.
+    """
+    _assert_liveness(RUNNING_BEHIND_BLOCKED_ID, True)
+    before = _tree_bytes(pointer_path(RUNNING_BEHIND_BLOCKED_ID).parent)
+
+    result = _widen(RUNNING_BEHIND_BLOCKED_ID, MISSING)
+
+    assert result.exit_code != 0, result.output
+    assert "still running" in result.output
+    assert _read(RUNNING_BEHIND_BLOCKED_ID)["node"]["write_paths"] == [DECLARED]
+    assert _tree_bytes(pointer_path(RUNNING_BEHIND_BLOCKED_ID).parent) == before
+    crew_home_watch.assert_untouched()
+
+
+def test_a_run_whose_worker_has_exited_still_widens_exactly_as_before(
+    stopped_worker_run: dict, crew_home_watch: CrewHomeWatch
+) -> None:
+    """The stopped twin, unchanged: the admission is for this run, not against it.
+
+    Every assertion of the case the manifest read was added for is repeated here
+    against a pointer that records a worker the process table has released, so
+    the stop half admits what the block half admits and refuses only the run
+    whose worker can still write.
+    """
+    _assert_liveness(STOPPED_RUN_ID, False)
+
+    result = _widen(STOPPED_RUN_ID, MISSING)
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["added"] == [MISSING]
+    assert payload["manifest_status"] == "blocked"
+    assert _read(STOPPED_RUN_ID)["node"]["write_paths"] == [DECLARED, MISSING]
     crew_home_watch.assert_untouched()
 
 
