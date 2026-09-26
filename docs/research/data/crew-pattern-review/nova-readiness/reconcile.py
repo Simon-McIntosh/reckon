@@ -75,18 +75,59 @@ def enrich(snapshot):
     source_paths = census.git_out(
         "ls-tree", "-r", "--name-only", snapshot["sha"]
     ).splitlines()
+    snapshot["archive_entries"] = snapshot["tree_files"]
+    snapshot["tree_files"] = len(source_paths)
     q = snapshot["pytest"]
     text = read_log(q)
     parsed = census.parse_pytest_log(text)
     q.update(parsed["counts"])
     q["summary_seen"] = parsed["summary_seen"]
+    q["whole_run_timeout_s"] = census.RUN_TIMEOUT_S
     event_path = Path(q["outcomes_log"]) if q.get("outcomes_log") else None
     events = {}
     if event_path:
         raw = event_path.read_bytes()
         assert hashlib.sha256(raw).hexdigest() == q["outcomes_sha256"]
         events = json.loads(raw)
-    q["selected"] = len(events["selected"]) if "selected" in events else None
+    if not events and not parsed["summary_seen"]:
+        reports = []
+        for match in re.finditer(
+            r"^((?:tests|nova)/.+?)\s+(PASSED|FAILED|SKIPPED|XFAIL|XPASS|ERROR)(?:\s|\(|$)",
+            text,
+            re.MULTILINE,
+        ):
+            node, status = match.groups()
+            reports.append(
+                {
+                    "nodeid": node,
+                    "when": "setup" if status == "ERROR" else "call",
+                    "outcome": {
+                        "PASSED": "passed",
+                        "FAILED": "failed",
+                        "SKIPPED": "skipped",
+                        "XFAIL": "skipped",
+                        "XPASS": "passed",
+                        "ERROR": "failed",
+                    }[status],
+                    "wasxfail": "reported expected failure"
+                    if status in ("XFAIL", "XPASS")
+                    else None,
+                }
+            )
+        events = {"tests": reports, "collection": [], "partial": True}
+        q["observed_progress"] = dict(
+            collections.Counter(outcome_states(events).values())
+        )
+        for key in ("passed", "failed", "errored", "skipped", "xfailed", "xpassed"):
+            q[key] = None
+    selected_match = re.search(r" / (\d+) selected", text)
+    q["selected"] = (
+        len(events["selected"])
+        if "selected" in events
+        else int(selected_match.group(1))
+        if selected_match
+        else None
+    )
     q["executed_unique_tests"] = len({e["nodeid"] for e in events.get("tests", [])})
     q["collection_errors"] = []
     for event in events.get("collection", []):
@@ -136,14 +177,18 @@ def enrich(snapshot):
         if q["test_outcomes_measured"]
         else "Default pytest stopped at collection; zero passed/failed records are not a zero-percent pass rate."
         if q["collection_errors"]
+        else "No complete pytest summary: the 1500-second census process bound expired; full outcome totals are unknown and observed progress is only a lower bound."
+        if q["truncated"]
         else "No complete pytest summary; inspect the retained log and process exit status."
     )
     q["zero_outcome_interpretation"] = (
         "observed counts in the complete pytest summary"
         if q["test_outcomes_measured"]
         else "no executed test outcomes; collection counts and errors are observed"
+        if q["collection_errors"]
+        else "outcome totals are null, because the run is incomplete; observed_progress carries lower bounds"
     )
-    if events:
+    if events and not events.get("partial"):
         assert (
             len([e for e in events["collection"] if e["outcome"] == "failed"])
             <= q["errored"]
@@ -170,7 +215,10 @@ def write_changes(first, last, first_events, last_events):
     before, after = outcome_states(first_events), outcome_states(last_events)
     rows = []
     for node in sorted(before.keys() | after.keys()):
-        old, new = before.get(node, "not_selected"), after.get(node, "not_selected")
+        old = before.get(node, "not_selected")
+        new = after.get(
+            node, "unobserved" if last_events.get("partial") else "not_selected"
+        )
         if old != new:
             rows.append({"nodeid": node, "first": old, "last": new})
     counts = collections.Counter((r["first"], r["last"]) for r in rows)
@@ -201,7 +249,9 @@ def write_changes(first, last, first_events, last_events):
         "first": first["key"],
         "last": last["key"],
         "first_selected": len(before),
-        "last_selected": len(after),
+        "last_selected": last["pytest"]["selected"],
+        "last_observed_unique": len(after),
+        "last_run_complete": not last_events.get("partial", False),
         "common_selected": len(before.keys() & after.keys()),
         "changed": len(rows),
         "transitions": [
@@ -209,7 +259,7 @@ def write_changes(first, last, first_events, last_events):
             for (old, new), number in sorted(counts.items())
         ],
         "artifacts": shards,
-        "qualification": "not_run means selected but collection prevented execution; not_selected means absent from the filtered collected node IDs, not necessarily deleted. Neither establishes a pass-to-fail regression.",
+        "qualification": "not_run means selected but collection prevented execution; not_selected means absent from a complete filtered collection, not necessarily deleted; unobserved means missing from an interrupted run. These states do not establish pass-to-fail regressions.",
     }
 
 
