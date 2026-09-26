@@ -1247,6 +1247,32 @@ def promoted_budget_fallback(
     return dict(fallback)
 
 
+def promoted_pace_row(run_id: str) -> dict[str, Any] | None:
+    """Carry the pace row the run's live pointer holds onto the committed row.
+
+    A dispatch writes the allowance it was admitted under onto the run's live
+    pointer, and promotion deletes that pointer in the step that appends the
+    committed row — so a row composed from the promotion's own arguments would
+    drop the pace the run was judged by, and a week of decisions could be
+    replayed only by reopening streams the reaper reclaims. The pointer is
+    therefore read here, by run id, while the promotion still holds it.
+
+    Absent rather than empty, for the same reason as the fields above: a key
+    carrying nothing would assert a pace was recorded for a run that has none,
+    and a row for a run whose pointer is already gone has no pace to state.
+    """
+    from reckon.crew import runs
+
+    try:
+        pointer = runs.read_pointer(run_id)
+    except runs.CrewError:
+        return None
+    pace = pointer.get("pace")
+    if not isinstance(pace, Mapping) or not pace:
+        return None
+    return dict(pace)
+
+
 def is_unmetered_backend(backend: str) -> bool:
     """Whether a named backend has no metered per-token price."""
     return str(backend or "").strip() in UNMETERED_BACKENDS
@@ -1449,6 +1475,13 @@ def build_record(
     stored_fallback = promoted_budget_fallback(budget_fallback)
     if stored_fallback is not None:
         record["budget_fallback"] = stored_fallback
+    # The pace the run was admitted under lives on the live pointer, which this
+    # promotion deletes, so it is read by run id rather than taken as an
+    # argument: a committed row that could not name its own allowance left every
+    # dispatch decision replayable only from the stream beside it.
+    stored_pace = promoted_pace_row(run_id)
+    if stored_pace is not None:
+        record["pace"] = stored_pace
     if resume_remedy is not None:
         record["resume_remedy"] = dict(resume_remedy)
     # Contamination is a measurement of the shadow's stream, so a row with no

@@ -4000,13 +4000,15 @@ def dispatch(
 
         # The pace this dispatch was judged against, composed by the module that
         # owns every figure in it and carried on the record the run already
-        # writes, which is where its evidence lives: promotion takes the whole
-        # record into the committed ledger, so a week of dispatch decisions
-        # replays from those rows alone rather than from the streams they were
-        # read out of. The row reports the reading's age and its source, so a
-        # row that paced a dispatch on stale evidence says so itself, and a lane
-        # declaring no wallet records that no group paced it rather than a
-        # wallet nothing read.
+        # writes, which is where its evidence lives. Promotion rebuilds the
+        # committed row from selected fields rather than whole, and carries this
+        # one across by reading it back from the run's own pointer while that
+        # pointer is still open, so a week of dispatch decisions replays from
+        # those rows alone rather than from the streams they were read out of.
+        # The row reports the reading's age and its source, so a row that paced
+        # a dispatch on stale evidence says so itself, and a lane declaring no
+        # wallet records that no group paced it rather than a wallet nothing
+        # read.
         from reckon import budget as budget_module
 
         pace_record = budget_module.pace_row(

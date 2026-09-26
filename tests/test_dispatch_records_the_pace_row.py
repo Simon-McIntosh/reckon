@@ -37,7 +37,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _backends, budget, crew
+from reckon import _backends, budget, crew, ledger
 from reckon.crew import bar as bar_module
 from reckon.crew import pace as pace_module
 from reckon.crew import runs
@@ -263,9 +263,15 @@ def host(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 def _assert_home_untouched(config_home: Path, run_id: str) -> None:
-    """Nothing a case wrote may exist under this workstation's own crew home."""
+    """Nothing a case wrote may exist under this workstation's own crew home.
+
+    A case may leave its run live or promote it, so the run's own directory —
+    not its pointer, which promotion deletes — is what proves the dispatch
+    landed under the temporary home rather than this workstation's.
+    """
     assert str(runs.live_dir()).startswith(str(config_home)), runs.live_dir()
-    assert runs.pointer_path(run_id).is_file(), run_id
+    assert str(runs.run_dir(run_id)).startswith(str(config_home)), runs.run_dir(run_id)
+    assert runs.run_dir(run_id).is_dir(), run_id
     for directory in (REAL_HOME / "crew" / "live", REAL_HOME / "crew" / "runs"):
         assert not (directory / f"{run_id}.json").exists(), f"{directory}/{run_id}"
         assert not (directory / run_id).exists(), f"{directory}/{run_id}"
@@ -637,3 +643,74 @@ def test_a_lane_with_no_declared_wallet_records_the_absence_not_an_empty_one(hos
         assert clock["age_seconds"] is None, clock
         assert clock["observed_at"] is None, clock
         assert clock["resets_at"] is None, clock
+
+
+def _promote(host: _Host, run_id: str) -> dict:
+    """Complete a dispatched run through the promotion entry point.
+
+    Promotion is where the live pointer is deleted and the committed ledger row
+    is written, so it is the one moment at which a row's durability can be
+    observed at all: the run is completed here exactly as an orchestrator
+    completes one.
+    """
+    return crew.complete(
+        run_id,
+        gate="passed",
+        outcome="the run carried its pace row through promotion",
+        root=host.repo,
+    )
+
+
+def _committed_row(host: _Host, run_id: str) -> dict:
+    """Read one run's committed ledger row back out of the repository's store."""
+    rows = [
+        row
+        for row in ledger.runs("sample", root=host.repo)
+        if str(row.get("run_id") or "") == run_id
+    ]
+    assert len(rows) == 1, f"{len(rows)} committed rows for {run_id}"
+    return rows[0]
+
+
+def test_a_promoted_run_replays_its_allowance_from_the_committed_row(host):
+    """The row must outlive the pointer, or the week it records dies with it.
+
+    A dispatch writes the pace row to the live pointer, and promotion deletes
+    that pointer in the step that appends the committed row — so the committed
+    row is the only place a week of dispatch decisions can be replayed from.
+    Each case here dispatches for real, promotes through the completion entry
+    point, and then recomputes the allowance from the committed row alone: the
+    pointer is gone and no stream, receipt or configuration layer is opened to
+    interpret what the row already spells out.
+    """
+    fills = (22.0, 55.0)
+    replayed = []
+    for index, fill in enumerate(fills):
+        # The receipt is refreshed ahead of each dispatch so each row reads the
+        # week as it stood at its own decision rather than at the first one.
+        _plant_receipt(host, f"r-seed-{index}", backend="alpha", five=fill, week=fill)
+        node = _open_node(host.config_home, f"promoted-{index}")
+        record = _dispatch(host, f"promoted-{index}", node)
+        row = _row(record)
+        run_id = str(record["run_id"])
+        assert runs.pointer_path(run_id).is_file(), run_id
+
+        promoted = _promote(host, run_id)
+
+        # The pointer the row was written to is gone before anything is read
+        # back, so every figure below comes off the committed store.
+        assert promoted["pointer_removed"] is True, promoted
+        assert not runs.pointer_path(run_id).exists(), run_id
+        stored = _committed_row(host, run_id)
+        assert stored["pace"] == row, (stored.get("pace"), row)
+        assert stored["pace"]["allowance"] == _replay_allowance(stored["pace"]), (
+            stored["pace"]["allowance"],
+            _replay_allowance(stored["pace"]),
+        )
+        replayed.append(_replay_allowance(stored["pace"]))
+
+    # Two rows of one wallet, both replayed from the committed store alone: the
+    # curve falls as the week fills, and no stream was read to say so.
+    derived = [entry["derived"] for entry in replayed]
+    assert derived == sorted(derived, reverse=True), derived
+    assert derived[0] > derived[-1], derived
