@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="104">
+<meta name="plan-version" content="105">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
-<meta name="plan-impl" content="0.6">
+<meta name="plan-impl" content="0.7">
 </head>
 <body>
   <main class="plan-doc">
@@ -1820,10 +1820,16 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <div class="r-fu-body"><p>Review of window-groups-declare-one-wallet (85) at 5d3f52e4: the assertion near <code>tests/test_budget_group_declaration.py:242</code> computes both sides from the same reading under the module's own FILL_CLOCK, so swapping FILL_CLOCK and WEEK_CLOCK in <code>reckon/crew/budget_group.py</code> leaves it green. Pin the expected value from an independently built reading, and add a mutation that swaps the two constants.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §5b — the budget-group clock assertion must fail on a swapped constant</pre>
     </article>
-<article class="r-fu" data-id="f-awpl-currency-lanes" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-window-paces-the-lane" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awpl-currency-lanes" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-window-paces-the-lane" data-resolved-at="2026-09-26T20:28:37+00:00" data-resolved-by="s22-coord">
     <h4 class="r-fu-title">Land the currency audit&#x27;s lanes: §2 keys, §9 row, §5b re-query and wallet pin now; §4 reserve and the §6/§8 replay after the row</h4>
     <div class="r-fu-body"><p>A read-only currency audit (run r-20260926T085450107836, reviewed 92) measured this plan at three sections landed (§3, §5, §7), four partial (§2, §4, §5b, §6) and two not started (§8, §9). The declared impl of 0.99 was overstated and is corrected to 0.6. Report: <code>~/.config/reckon/crew/reports/reckon/s22-coord/window-plan-currency/window-plan-currency.md</code>.</p><p>In flight: pace-keys-are-declarable (§2), dispatch-records-the-pace-row (§9), stale-reading-requery-reaches-lanes-view (§5b), wallet-clock-case-pins-its-constants (§5b). After the §9 row lands: §4's reserve reaching the refusal boundary (serial with §9 on dispatch.py), then one node replaying the rows for §6's second clause and §8. That node's brief must name its new module and test file, as the review asked.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane</pre>
+    <p class="r-fu-outcome">Lanes A to D landed: pace-keys-are-declarable (§2, reviewed 96), stale-reading-requery-reaches-lanes-view (§5b, reviewed 90), wallet-clock-case-pins-its-constants (§5b, reviewed 98), dispatch-records-the-pace-row (§9, reviewed 98; the row survives promotion through ledger.build_record). Seven of ten sections landed; §4, §6 and §8 remain, and the next followup carries them.</p>
+    </article>
+<article class="r-fu" data-id="f-awpl-reserve-and-replay" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-window-paces-the-lane" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §4&#x27;s reserve at the refusal boundary, then one replay node for §6&#x27;s second clause and §8</h4>
+    <div class="r-fu-body"><p>With the §9 row on the committed record, the two lanes the currency audit held behind it are ready. (1) §4: reserve.admit reaches the dispatch refusal boundary (reckon/crew/dispatch.py, reckon/crew/reserve.py, tests/test_reserve.py). (2) One node replaying a week of committed pace rows for §6's second clause and §8; its brief must name its new module and test file, as the audit review asked. Also carried: in tests/test_lanes_view_is_live.py every crew_lanes_view call injects a probe reader (:223, :574), so no case reaches the production cache writer the home guard watches (stale-reading re-review, 90).</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §4</pre>
     </article>
 </section>
 
