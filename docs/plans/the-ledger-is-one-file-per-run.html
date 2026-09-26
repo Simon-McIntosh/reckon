@@ -396,6 +396,34 @@
       yet. It also prints how many rows already have a file identical to the serialiser's output for the row,
       and how many already have a file that differs, which the real run would refuse. On a first dry run the
       last two are zero.</p>
+      <aside id="split-runs-landing">
+        <h3>Split entry point landed in the worker checkout</h3>
+        <p><strong>2026-09-26.</strong> Commits
+        <code>98ac4ced664b572ac445ef36427940c9f792fe82</code> and
+        <code>4c77e4e726cdb24b7c1486e390393eda67c56908</code> add
+        <code>ledger.split_runs</code> and its <code>crew split-runs</code> verb with
+        <code>--dry-run</code>. Per mounted project: every row of the aggregate's
+        <code>runs</code> list is written to <code>runs/&lt;run_id&gt;.json</code> through the one
+        serialiser, the <code>runs</code> key is removed through the shared envelope writer with
+        <code>members</code> and <code>holds</code> left in place, and the run files and the
+        aggregate are one commit. A differing file stops that project before any write; the
+        aggregate's rows are the whole population considered, so a run file whose id no row names
+        is never opened.</p>
+        <p>The measured cohort is the new <code>tests/test_split_existing_runs.py</code> plus
+        <code>tests/test_ledger.py</code>, in one invocation each arm: <strong>95 passed, 9
+        failed</strong> at head against <strong>87 passed, 17 failed</strong> at the base revision,
+        so zero failures were added and all eight new cases are red at base, each with
+        <code>No such command 'split-runs'</code>. The tests run under a throwaway config home
+        over synthesised repositories in a throwaway git repo, with the workstation's own mount
+        registry and the state files it names fingerprinted before and after every case. The
+        declared negative control — the serialiser replaced by a plain <code>json.dumps(row)</code>
+        in the split's file write — fails assertion 1 on the file's bytes.</p>
+        <p><a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#split-runs">Split
+        evidence and gate receipts</a> retain the cohort arms, the negative control's red log and
+        the lint delta. <a href="/reckon/figures/the-ledger-is-one-file-per-run/split-flow.svg">The
+        split's decision path</a> shows the per-project order. Integration, the mounted-project
+        promotion gate and followup closure remain coordinator-owned.</p>
+      </aside>
     </section>
 
     <section id="s4" data-reckon="section">
