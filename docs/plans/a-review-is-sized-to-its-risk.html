@@ -40,61 +40,89 @@
     <p>Review is worth keeping where it pays: on source changes it catches real defects and leads to an
       observable repair about one time in eight. On documentation, evidence and measurement nodes it leads to a
       repair about one time in forty (<a href="/reckon/research/review-node-utility#s6">review-node utility §6</a>).
-      This plan keeps the first and stops paying full price for the second.</p>
+      This plan keeps full review for runtime source and stops reviewing documentation, evidence and measurement nodes, which the integrated gate re-run checks instead.</p>
 
-    <h2 id="s2">§2 — Review tier by node class, declared in flight config</h2>
-    <p><strong>Deliverable.</strong> A <code>review.tiers</code> table in flight config, read by the review
-      reflex and by promotion, that assigns every promotable node one of three tiers from its changed paths,
-      role and diff size:</p>
+    <h2 id="s2">§2 — A review tier derived from what the node changed</h2>
+    <p><strong>Deliverable.</strong> A <code>review.tiers</code> key in the shipped flight defaults
+      (<code>reckon/schema/flight-defaults.yaml</code>), overridable in the host and project layers like every other
+      flight key, and a resolver that assigns each finished run one tier <em>at completion</em>, from its actual
+      changed paths, its changed-line count (added plus deleted) and its declared spec level:</p>
     <ul>
-      <li><strong>full</strong> — any change to runtime source outside <code>tests/</code>, and any node whose
-        plan section is declared guard, fence or security work. Today's review, unchanged.</li>
-      <li><strong>light</strong> — a source change under 50 changed lines at spec level <code>exact</code>. A
-        read-only review with a ten-minute budget that answers two questions: does the diff do what the brief
-        says, and does the negative control fail on the mutation it names.</li>
-      <li><strong>none</strong> — tests-only, documentation, evidence, figures, plan text and measurement nodes.
-        The integrated gate re-run and the negative control are the check; promotion records the tier as the
-        reason no review exists.</li>
+      <li><strong>full</strong> — the run changes runtime source, meaning package source outside <code>tests/</code>
+        plus the SPA the server delivers (<code>docs/ui/</code>, <code>docs/_ui/</code>, <code>docs/_shared/</code>
+        <code>.js</code>, <code>.jsx</code>, <code>.css</code>), the same classification the velocity census uses;
+        or its plan or section declares capability risk <code>elevated</code> or <code>critical</code> (the existing
+        <code>plan-capability-risk</code> field), which is how guard, fence and security work is marked. Today's review,
+        unchanged.</li>
+      <li><strong>light</strong> — the run changes runtime source by fewer than 50 changed lines at spec level
+        <code>exact</code> or <code>guided</code>, with no elevated risk. A review dispatched with a ten-minute time
+        budget that answers two questions — does the diff do what the brief says, and does the node's recorded
+        negative-control log show a failure for the mutation it names — and stores its review record like any other.
+        It reads; it does not re-execute. A light review that exceeds its budget escalates to a full review.</li>
+      <li><strong>none</strong> — the run changes no runtime source: tests, plans, evidence, research data, figures,
+        or any combination of them. Promotion runs <code>verify-gate</code> at the merged head, and the node's
+        negative control where it declared one; the ledger row records the tier as the reason no review exists.</li>
     </ul>
-    <p><strong>Done when</strong> the tier is recorded on every promoted ledger row, a fixture set of one run of
-      each class resolves to the declared tier in a test, and the velocity view (or the census script in
-      <code>docs/research/data/crew-pattern-review/velocity/</code>) shows review and investigate nodes at or below
-      30% of promotions over a full week, with the seven-day deletion share of product lines no higher than the
-      2.99% measured on 12–19 September.</p>
+    <p>The tier is recorded on every run promoted after this lands; earlier rows are not backfilled.</p>
+    <p><strong>Done when</strong> a fixture set — one run per tier, plus one <code>none</code> run for each path class
+      (tests, plans, evidence, research data, figures) and one mixed tests-plus-plan run — resolves to its declared
+      tier in a test; and, one week after landing, the velocity census re-run over the trailing seven days across the
+      mounted projects shows review and investigate nodes at or below 30% of promotions, with the seven-day deletion
+      share of product lines no higher than the 2.99% measured on 12–19 September.</p>
 
     <h2 id="s3">§3 — One repair per review round</h2>
-    <p><strong>Deliverable.</strong> When a review carries findings, the reflex (and any coordinator acting on
-      it) composes exactly one repair node whose brief carries every finding of that review, as a numbered list,
-      against the same write paths. A finding the repair declines is answered in its manifest with a reason.</p>
-    <p><strong>Done when</strong> a test drives a stored review with three findings through the reflex and
-      observes one repair dispatch naming all three, and over a week of ledger rows the count of repair nodes per
-      finding-bearing review is at most one.</p>
+    <p><strong>Deliverable.</strong> When a review carries findings, the reflex (and any coordinator acting on it)
+      composes exactly one repair node for that review round, whose brief lists every finding and whose write scope is
+      the union of the paths the findings name — declared at dispatch, so a finding outside the reviewed run's fence
+      is granted rather than refused. The repair's own manifest answers each finding it declines, with a reason. A
+      repair that fails or blocks may be redispatched as another attempt of the same round; that is not a second
+      round.</p>
+    <p><strong>Done when</strong> a test drives a stored review with three findings through the reflex and observes one
+      repair dispatch naming all three; and over a week of ledger rows every finding-bearing review has exactly one
+      repair round, and no finding is left without either a repair commit or a declined-with-reason answer.</p>
 
-    <h2 id="s4">§4 — A clean review promotes without a coordinator beat</h2>
-    <p><strong>Deliverable.</strong> A run whose stored review scores at least 90, carries no finding, whose gate
-      passed and whose <code>verify-gate</code> re-run passes at the merged head is promoted by the review's own
-      completion, and the ledger row records that no coordinator beat was spent. Anything short of that returns
-      to the coordinator exactly as today. This builds on the refusal landed by
-      <code>scoring-should-stop-a-promotion</code>; it adds an acceptance path, not a bypass.</p>
-    <p><strong>Done when</strong> a synthesised repository promotes a clean run end to end with no coordinator
-      command after dispatch, a run whose review carries one finding is not promoted, and a run whose integrated
-      gate fails is not promoted — three named tests.</p>
+    <h2 id="s4">§4 — A clean review promotes without a coordinator</h2>
+    <p><strong>Deliverable.</strong> When a review run completes with a stored record whose five-dimension total is at
+      least 90 of 100 and which carries no finding, the review's completion handler promotes the reviewed run itself:
+      it confirms the run's recorded gate passed, runs <code>verify-gate</code> against the primary branch's current
+      head with the run merged, and on both passing promotes with <code>promoted_by: review-acceptance</code> on the
+      ledger row. Anything short of that returns to the coordinator exactly as today. This adds an accepting branch to
+      the refusal <code>scoring-should-stop-a-promotion</code> landed; it is not a bypass of it.</p>
+    <p><strong>Done when</strong> a synthesised repository takes a clean run from its implement dispatch to promotion
+      with no coordinator command in between; a run whose review carries one finding is not promoted; and a run whose
+      integrated gate fails at the merged head is not promoted — three named tests.</p>
 
-    <h2 id="s5">§5 — The reflex reviews a settled head, once</h2>
-    <p><strong>Deliverable.</strong> The reflex dispatches a review only for a run that is terminal and has not
-      been resumed within the last five minutes; a resume cancels a review still queued for the superseded head;
-      and a review of an earlier head carries forward when the later commits change no path the review's tier
-      covers (a relocation of a data file, a manifest correction), so a second full review is not demanded.
-      Observed in the review that motivated this plan: three census runs were reviewed at heads their
-      coordinator was already correcting, and each correction demanded a second review.</p>
-    <p><strong>Done when</strong> tests show a resumed run's queued review is withdrawn, and a head change
-      confined to paths outside the review tier's scope does not raise a review-missing obligation.</p>
+    <h2 id="s5">§5 — The reflex reviews a settled head, and re-reviews only what changed</h2>
+    <p><strong>Deliverable.</strong> The reflex dispatches a review only for a run that is terminal and has not been
+      resumed in the last five minutes. A resume withdraws a review still queued for the superseded head; a review
+      already running when a resume lands finishes, and its verdict applies to the new head only under the rule that
+      follows. When a reviewed run gains commits, the stored review carries forward if those commits change no runtime
+      source path; if they do, the reflex dispatches a light review of those commits alone rather than a second full
+      review of the run. The carry-forward is written to the run's record as satisfying the review requirement, never
+      left as a silent absence.</p>
+    <p><strong>Done when</strong> tests show: a resumed run's queued review is withdrawn; a data-file relocation after
+      a review writes a carried-forward record and raises no review-missing obligation; and a later runtime-source
+      commit dispatches a light review scoped to that commit.</p>
+
+    <h2 id="s6">§6 — The project's own suite is a standing gate</h2>
+    <p><strong>Why.</strong> Per-node gates run the tests a node's brief names. In nova the default test command stopped
+      at collection and ran no test from 29 August to at least 19 September while nodes kept promoting
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s8">crew pattern review §8</a>). Lighter per-node
+      review is only safe beside a check that sees the whole project.</p>
+    <p><strong>Deliverable.</strong> Project configuration declares its suite command and a whole-run budget; the
+      coordinator's wave close runs that command once at the merged head, recording collected, passed, failed and
+      errored counts on the sprint's evidence; and while the last recorded run failed to collect or exceeded its
+      budget, promotions at tier <code>none</code> and <code>light</code> are held with the reason named, until a
+      passing run is recorded or the lead waives it.</p>
+    <p><strong>Done when</strong> reckon and nova each declare a suite command and budget; a synthetic project whose
+      suite fails at collection holds a tier-none promotion in a test; and one real wave close in each of the two
+      projects records its counts.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
       <h2><span class="sec">§</span> Followups</h2>
       <article class="r-fu" data-id="f-arist-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26">
         <h4 class="r-fu-title">Build the review tiers</h4>
-        <div class="r-fu-body"><p>Start with §2; §3 and §5 can run beside it; §4 follows §2.</p></div>
+        <div class="r-fu-body"><p>§2 first; then §3, §4 and §5, which all touch the review reflex and run in that order; §6 is independent and can run beside §2.</p></div>
         <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk</pre>
       </article>
     </section>
