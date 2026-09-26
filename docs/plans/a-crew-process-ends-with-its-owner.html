@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="87">
-<meta name="plan-impl" content="0.7">
+<meta name="plan-version" content="88">
+<meta name="plan-impl" content="0.75">
 </head>
 <body>
   <main class="plan-doc">
@@ -1101,10 +1101,11 @@
     <div class="r-fu-body"><p><code>tests/test_crew_promotion.py::test_a_checkout_that_cannot_commit_refuses_before_any_store_is_written</code> (near line 1623) builds a directory it treats as a non-git checkout, <code>tmp_path / 'nongit'</code>, and drives a real promotion there. Git discovers a repository by walking up, so when pytest's basetemp sits inside a repository, the promotion finds the enclosing repo and commits into it. On 2026-09-26 complete-refuses-a-live-run ran pytest with <code>--basetemp=bt-after</code> inside its worktree, and the test committed a fake promote and release (<code>ca3d7ca3</code>, <code>aeabb778</code>) with <code>bt-after/</code> scratch into the worker's branch. Its review caught it before merge. Run with a basetemp inside the main checkout, it would commit into main. The test should set <code>GIT_CEILING_DIRECTORIES</code> to the parent of its non-git root, or assert that <code>git rev-parse</code> fails there, so it can never reach an enclosing repository. Worker briefs should also say never to put a basetemp inside a repository.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
     </article>
-<article class="r-fu" data-id="f-acpewio-discard-releases-a-clean-worktree" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-discard-releases-a-clean-worktree" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="2026-09-26T16:52:38+00:00" data-resolved-by="">
     <h4 class="r-fu-title">crew discard releases a clean worktree, so a redispatch of the node is not refused</h4>
     <div class="r-fu-body"><p>s22-coord reported this on 2026-09-26. Run r-20260926T151648830270 died at launch, before any stream record, and was discarded. It left its worktree on disk, clean. The redispatch then refused with <q>worktree path already exists</q> until the tree was removed by hand. A discarded run with a clean worktree, whose head adds nothing beyond its base, has nothing to preserve. Discard should remove it, as gc would. A dirty or unintegrated worktree must still be withheld, with the reason printed. Done when a test discards a synthesised run with a clean worktree at its base, and a dispatch of the same node id then succeeds. A second case asserts that a dirty worktree survives the discard and the withheld reason is printed. The negative control is to skip the release, under which the first case must fail on the existing path.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner discard-releases-a-clean-worktree</pre>
+    <p class="r-fu-outcome">Landed at a4b8a06d (run r-20260926T152959325320, review 92). crew discard releases a discarded run's worktree through _release_run_workspace, the audit crew complete applies. A dirty or unintegrated tree is withheld with the audit's reason. The review's two findings are evidence-precision: the lint delta counts summary lines, and the gate log header names the base revision though it ran on the uncommitted tree.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
