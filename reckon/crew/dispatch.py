@@ -26,7 +26,9 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 from reckon import _backends, _store, capability, flight, ledger
+from reckon.crew import bar as bar_module
 from reckon.crew import lane_document as _lane_document
+from reckon.crew import prescription as prescription_module
 from reckon.crew import summary
 from reckon.crew.node import (
     BudgetHold,
@@ -3408,6 +3410,75 @@ def _resolved_wave_id(project: str, session: str, requested: str) -> str:
     return f"wave-{uuid.uuid4().hex}"
 
 
+# How much of its own shape a node leaves a worker to decide, per declared
+# input, each banded on that one axis. Declared here rather than inferred from
+# a node's name, and declared as a total order over each vocabulary so a score
+# can be compared against a bar that moves. A value outside a map bands at the
+# middle rather than at an extreme: an unrecognised level or role is not
+# evidence of a maximally open-ended node, and scoring one as though it were
+# would move a dispatch off the metered lane on a typo.
+SPEC_LEVEL_OPENNESS = {"exact": 0.0, "guided": 0.5, "open": 1.0}
+ROLE_OPENNESS = {
+    "cleanup": 0.0,
+    "documentation": 0.0,
+    "review": 0.0,
+    "test": 0.0,
+    "verify": 0.0,
+    "implement": 0.5,
+    "design": 1.0,
+    "investigate": 1.0,
+}
+UNKNOWN_OPENNESS = 0.5
+
+
+def open_endedness_score(node: TaskNode) -> float:
+    """Score how much of its own shape a node leaves a worker to decide.
+
+    The bar admits a node to the metered lane on this score, so it is read from
+    what dispatch already holds about the node and nothing else: the
+    specification level the node declares, its role, and how completely it is
+    prescribed. The last is the prescription module's own judgement, read rather
+    than restated -- it names every property the node fails, and the score reads
+    that fraction rather than a second opinion about it.
+
+    The prescription verdict selects the band and the declared inputs order a
+    node within it. That is the arrangement in which the two constants the
+    design already fixes agree exactly: the prescription module decides whether
+    a node is prescribed at all, and the bar's ``PRESCRIBED_MAX`` is the top of
+    the band a prescribed node scores inside. So a node failing any property
+    scores above the band however fixed its level and role look, which is what
+    keeps work that is not prescribed off the free lane, and a node failing none
+    scores inside it however open those look, which is what makes prescription
+    decidable before the window is read and a prescribed node never held at a
+    full one. Below the band the third input is identically zero, so the two
+    declared inputs are averaged across the band's own width; above it the
+    failures take half the remaining scale and the declared inputs the other
+    half, since the third input is the one the evidence behind the score is
+    about and it is what the two bands are told apart by.
+
+    The score is reported rounded, because rows are compared against one another
+    and last-bit noise would make two identically shaped nodes read as
+    different. A maximally prescribed node scores exactly zero and a node
+    leaving everything to invent scores exactly one, so the two ends the bar
+    names are the two ends of this scale rather than approximations of them.
+    """
+    prescribed = prescription_module.judge_prescribed(node)
+    failures = [str(name) for name in prescribed.get("failures") or ()]
+    properties = prescription_module.PRESCRIBED_PROPERTIES
+    declared = (
+        SPEC_LEVEL_OPENNESS.get(str(node.spec_level or "").strip().lower(), UNKNOWN_OPENNESS)
+        + ROLE_OPENNESS.get(str(node.role or "").strip().lower(), UNKNOWN_OPENNESS)
+    ) / 2.0
+    if not failures:
+        return round(bar_module.PRESCRIBED_MAX * declared, 6)
+    failed = len(failures) / len(properties) if properties else 0.0
+    return round(
+        bar_module.PRESCRIBED_MAX
+        + (1.0 - bar_module.PRESCRIBED_MAX) * (declared + failed) / 2.0,
+        6,
+    )
+
+
 def _plan_impl_at_dispatch(
     project: str, plan: str, root: str | Path | None
 ) -> float | None:
@@ -3916,6 +3987,27 @@ def dispatch(
         # so attribution lives there as well as at the pointer's top level.
         node_definition["coordinator"] = coordinator
 
+        # The pace this dispatch was judged against, composed by the module that
+        # owns every figure in it and carried on the record the run already
+        # writes, which is where its evidence lives: promotion takes the whole
+        # record into the committed ledger, so a week of dispatch decisions
+        # replays from those rows alone rather than from the streams they were
+        # read out of. The row reports the reading's age and its source, so a
+        # row that paced a dispatch on stale evidence says so itself, and a lane
+        # declaring no wallet records that no group paced it rather than a
+        # wallet nothing read.
+        from reckon import budget as budget_module
+
+        pace_record = budget_module.pace_row(
+            config,
+            project=project,
+            lane=backend_name,
+            node=node.id,
+            score=open_endedness_score(node),
+            root=ledger_root,
+            hold=None if budget_fallback is None else budget_fallback["hold"],
+        )
+
         attempt_started_at = _utc_now()
         record: dict[str, Any] = {
             "run_id": run_id,
@@ -4014,6 +4106,7 @@ def dispatch(
             "dialect": None,
             "budget": _backends.unknown_budget("no events yet"),
             "budget_fallback": budget_fallback,
+            "pace": pace_record,
             "warnings": [
                 *resolution.warnings,
                 *budget_warnings,

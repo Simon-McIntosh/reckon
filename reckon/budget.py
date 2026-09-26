@@ -2047,6 +2047,120 @@ def group_pace(
     return report
 
 
+def pace_row(
+    config: Mapping[str, Any],
+    *,
+    project: str,
+    lane: str,
+    node: str,
+    score: float,
+    root: str | Path | None = None,
+    hold: Mapping[str, Any] | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Record one dispatch's pace, from the wallet that paced it.
+
+    A dispatch runs on one lane, and the wallet that paced it is that lane's
+    declared budget group — the same authority the pre-flight and the position
+    read. A lane declaring no wallet was paced by no group, and the row says so
+    rather than reporting an allowance nothing derived: an absent wallet is not
+    an empty one.
+
+    Every figure in the row is the output of the module that owns it. The clocks
+    and the allowance come from :func:`group_pace`, which delegates the
+    derivation to :mod:`reckon.crew.pace` and draws the bar in
+    :mod:`reckon.crew.bar`; the readings come from :func:`recorded_windows`,
+    which is where every other consumer of a recorded window reads. Nothing is
+    derived here and nothing is read twice, so the row cannot disagree with the
+    pace the dispatch itself was judged against.
+
+    ``score`` is the node's own open-endedness, taken from the caller for the
+    same reason the bar takes it from its caller: it is a property of the node
+    rather than of the wallet being read. ``hold`` is the verdict that fired
+    against the lane the dispatch asked for, where one fired, and is recorded
+    with the evidence behind it beside the lane that ran instead.
+
+    The row is what a week of rows replays: each carries the week's utilisation
+    and the instant it was judged at, so the allowance curve and every hold
+    decision can be recomputed from the record alone, without a stream being
+    opened. A governor whose own account of itself cannot be checked is a
+    governor that has to be trusted instead.
+    """
+    moment = _now(now)
+    # The pace policy rides the row because the allowance is only recomputable
+    # from the figures the policy was applied to: a stored derived figure beside
+    # an unstated multiple cannot be checked by a reader, only believed.
+    policy_block = pace_module.policy(config)
+    row: dict[str, Any] = {
+        "lane": lane,
+        "node": node,
+        "score": float(score),
+        "recorded_at": moment.isoformat(),
+        "policy": {
+            "drain_lead_hours": float(policy_block.drain_lead_hours),
+            "pace_multiple": float(policy_block.pace_multiple),
+        },
+        # The hold is recorded whole, with the reading and the reason that fired
+        # it: a row saying a dispatch was held without saying against what is a
+        # decision a reader has to take on faith.
+        "hold": None if hold is None else dict(hold),
+    }
+    group = next(
+        (
+            name
+            for name, members in budget_group.declared_groups(config).items()
+            if lane in members
+        ),
+        None,
+    )
+    if group is None:
+        empty = window_reading.WindowReading()
+        row.update(
+            {
+                "group": None,
+                "state": UNKNOWN,
+                "source": None,
+                "member": None,
+                "clocks": {
+                    period: _clock(empty, period)
+                    for period in (CLOCK_FIVE_HOUR, CLOCK_SEVEN_DAY)
+                },
+                "allowance": None,
+                "bar": None,
+                "reason": "the lane declares no budget group, so no wallet paced it",
+            }
+        )
+        return row
+    readings = recorded_windows(project, config, root=root, now=moment)
+    entry = next(
+        item
+        for item in group_pace(
+            config,
+            windows=readings,
+            ready=[{"name": node, "group": group, "score": float(score)}],
+            now=moment,
+        )
+        if item["group"] == group
+    )
+    row.update(
+        {
+            "group": group,
+            "state": entry["state"],
+            "source": WINDOW_SOURCE_RECORDED,
+            "member": entry["member"],
+            "clocks": entry["clocks"],
+            # The bar's whole judgement of this one node: the fill it was drawn
+            # against, the verdict, the bar itself, the margin, and whether the
+            # window or prescription decided it. The group's other ready nodes
+            # are not the dispatch's business — one dispatch is one node.
+            "bar": entry["bar"]["recommendations"][0],
+            "allowance": entry["allowance"],
+            "reason": None,
+        }
+    )
+    return row
+
+
 # The window lengths a lane receipt names, mapped to the clock a group's pace
 # reads. A receipt identifies its windows by length in minutes rather than by
 # name, so this map is what lets a recorded receipt and a stream-carried event
