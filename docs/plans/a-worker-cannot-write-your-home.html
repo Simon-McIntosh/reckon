@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="50">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.85">
@@ -945,6 +945,11 @@
     <h4 class="r-fu-title">The fence comment in dispatch.py names worker launches, and the probe exemption</h4>
     <div class="r-fu-body"><p>The review of fence-is-on-again (score 93, head 01327c5b) found that the comment on <code>FENCE_WORKERS</code> in <code>reckon/crew/dispatch.py</code> says every launch sits behind the overlay. But <code>reckon/crew/resumption.py</code> composes the lane-availability probe with <code>fence=False</code>. Reword the comment to say every <em>worker</em> launch, and name the probe as deliberately exempt, with the reason. The same review found that <code>gate-fence-is-on-again-head.txt</code> records only its revision. A gate log should carry the tree, the module under test and the file set, as its base arm does. Done when the comment names the exemption. No behaviour changes.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §2 fence-comment-names-worker-launches</pre>
+    </article>
+<article class="r-fu" data-id="f-awcwyh-harness-seed-stays-out-of-the-cwd" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A harness-home seed never lands in the process working directory</h4>
+    <div class="r-fu-body"><p>The fence-is-on-again worktree held untracked <code>harness/settings.json</code>, <code>harness/CLAUDE.md</code>, <code>codex-home/AGENTS.md</code>, <code>codex-home/config.toml</code> and <code>codex-home/rules/default.rules</code> at its root. They were written at 13:01–13:02Z during the run. They were byte copies of operator config (<code>config.toml</code> differed only in lines the live file has since grown), so they were removed and the worktree reclaimed. But something seeded a run harness home relative to the working directory rather than under the run directory or a <code>tmp_path</code>. That something is either a gate test or a probe. A seed in the cwd copies the operator's 90 KB <code>AGENTS.md</code> and a 55 KB <code>config.toml</code> into a git worktree, where an <code>add</code> by path could commit them. Find the writer. Done when every caller of <code>seed_harness_home</code> passes an absolute destination, and a relative destination is refused. A test asserts that a seed with a relative destination raises. The negative control is to accept a relative path, under which the test must fail.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §2 harness-seed-stays-out-of-the-cwd</pre>
     </article>
 </section>
 
