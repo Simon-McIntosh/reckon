@@ -1613,6 +1613,90 @@ exit: 0</pre>
     &mdash; is the coordinator's separate node, as the re-enable decision records. This node flips the
     switch, states the guarantee, and pins the composed default.</p>
   </section>
+<section id="s2-missing-write-parent" data-reckon="section">
+    <h2>&sect;2 follow-up &mdash; a declared write path is created before the fence binds it</h2>
+
+    <p><strong>What landed.</strong> bubblewrap binds a writable root by <em>source</em> path. A
+    declared write path whose directory had not been created yet therefore aborted the launch with
+    <code>bwrap: Can't find source path &hellip;: No such file or directory</code> and exit 1 before
+    the worker started &mdash; an exit-1 launch with no stream, which reads as an abandoned run
+    rather than as a missing directory. <code>launch_plan</code> now creates each declared write path,
+    with every missing parent, before the fence argv is composed
+    (<code>create_declared_write_paths</code> in <code>reckon/_backends.py</code>). The bind itself is
+    unchanged: only a root inside a sealed path is bound, and each is bound by name, so the grant is
+    no wider than declared and no existing ancestor is bound in its place. A declared path whose
+    parent is a regular file cannot be created at all; that launch is refused by
+    <code>BackendError</code>, naming the path, which dispatch converts into a D22 refusal rather
+    than an abandoned run.</p>
+
+    <p><strong>The defect, reproduced before the repair.</strong> A declared root under a sealed
+    directory that did not exist composed to
+    <code>--bind &lt;root&gt; &iacute;&lt;root&gt;</code> and running it printed
+    <code>bwrap: Can't find source path &hellip;/.claude/projects/missing/reports: No such file or
+    directory</code> with exit status 1.</p>
+
+    <p><strong>The measure.</strong> <code>tests/test_fence_creates_a_missing_write_parent.py</code>
+    synthesises a run against a synthetic operator home whose sealed
+    <code>.config/reckon/reports</code> exists and whose <code>reports/missing/report.md</code> child
+    does not. It asserts:</p>
+    <ul>
+      <li>the declared path exists as a directory after composition;</li>
+      <li>the composed argv's writable bind is exactly the declared path, never the reports root
+      that happened to exist;</li>
+      <li>the sealed config root still carries its <code>--ro-bind</code> overlay, and the reports
+      root is not among the writable binds;</li>
+      <li>running the composed argv exits 0, so bubblewrap accepts the mount the argv
+      describes.</li>
+    </ul>
+
+    <p>A second case pins that a declared path that already exists &mdash; a file in the sealed
+    reports root &mdash; is bound by name rather than by its directory. A third asserts that a
+    declared path whose parent is a regular file refuses with the resolved path named in the
+    message.</p>
+
+    <p><strong>Isolation and scope of the fixture.</strong> The write path sits inside a path the
+    fence seals, because that is the only place a declared root is bound at all: a root outside every
+    seal is already writable through the composition's <code>--dev-bind / /</code> and needs no grant
+    of its own. Everything is created under pytest's <code>tmp_path</code>; the synthetic home is
+    named explicitly as <code>fence_home</code>, so nothing under the operator's real home is read or
+    written.</p>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>remove the directory
+    creation; the composed launch for a write path under a missing directory must fail the existence
+    assertion.</em> Applied to <code>launch_plan</code> at head and re-run
+    (<code>negative-control-remove-directory-creation.txt</code>, whose first line repeats the
+    mutation verbatim): the case asserting the declared path exists fails with
+    <code>assert False</code> on <code>declared.is_dir()</code>, and running the composed argv
+    directly reports <code>bwrap: Can't find source path &hellip;/reports/missing/report.md: No such
+    file or directory</code>, exit 1. The source was restored byte for byte afterwards (sha256
+    compared before and after).</p>
+
+    <p><strong>Gate, base against head.</strong> This node's own file:
+    <code>3 passed</code> at head <code>d05240eb</code>. The four neighbouring files the node names
+    (<code>tests/test_each_run_owns_its_harness_home.py</code>,
+    <code>tests/test_fence_is_on_again.py</code>, <code>tests/test_backend_environment.py</code>,
+    <code>tests/test_a_fenced_worker_can_commit.py</code>): <code>20 passed</code> at base
+    <code>c21cf915</code> against <code>20 passed</code> at head, so the change adds no failure. Both
+    arms are recorded under the run directory
+    (<code>gate/gate-fence-creates-a-missing-write-parent-head.txt</code>,
+    <code>gate/neighbour-tests-base.txt</code>, <code>gate/neighbour-tests-head.txt</code>); the base
+    arm ran in a scratch tree extracted at <code>c21cf915</code>, and its header names the tree and
+    the module under test as imported.</p>
+
+    <p><strong>Lint and format delta.</strong> The new test file is lint-clean and format-clean after
+    one formatting pass. <code>reckon/_backends.py</code> carries six pre-existing ruff findings and
+    the change adds none (six before, six after); the file was not reformatted &mdash;
+    <code>git diff --stat</code> reads 36 insertions and no deletions, so no unrelated rewrite rode
+    along.</p>
+
+    <p><strong>Commits.</strong> <code>d05240eb</code> carries the composition change, the path-creation
+    helper and the new test; this record and the plan landing comment land in the node's closing
+    commit. The bind layering this record describes is the existing figure
+    <code>/reckon/figures/a-worker-cannot-write-your-home/fence-layering.svg</code>; no new figure was
+    drawn, because the composed argv is a list and the layering it encodes is already illustrated
+    there. Gate and control logs live under the run directory rather than in <code>docs/figures</code>,
+    per this node's brief.</p>
+  </section>
 </main>
 </body>
 </html>
