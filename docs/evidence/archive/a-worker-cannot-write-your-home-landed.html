@@ -1038,6 +1038,93 @@ exit: 0</pre>
     pointer can never widen a write's reach. Lint on <code>tests/conftest.py</code> is
     clean at base and at head, the new test file is clean, and both are formatted.</p>
   </section>
+
+
+  <section id="s2-plan-reads" data-reckon="section">
+    <h2>&sect;2 &mdash; A worker's plan reads come from its own worktree</h2>
+    <p><strong>Node:</strong> <code>plan-reads-stay-in-the-worktree</code>.</p>
+
+    <p><strong>What landed.</strong> A run's plan <em>reads</em> now resolve the
+    same run scope the write path already did. <code>read_plan</code>,
+    <code>read_plan_view</code>, <code>roadmap</code> and <code>audit</code> each
+    resolve a run-scoped checkout root when the caller names none: it reads
+    <code>RECKON_RUN_ID</code>, then that run's live pointer for its
+    <code>worktree</code> and <code>project</code>, and returns the recorded
+    worktree only when the run's project is the project being read. A read of a
+    project the run does not own, a caller passing <code>checkout_path</code>
+    explicitly, and a caller with no run at all all keep today's behaviour and
+    reach the mounts-registered main checkout. So a worker reads the base
+    revision its own tree holds rather than the coordinator's live state.</p>
+
+    <p><strong>Why the write guard is part of the same node.</strong> The seven
+    granular plan mutators (<code>_set_status</code>, <code>_set_impl</code>,
+    <code>_patch_plan</code>, <code>_lock_decision</code>,
+    <code>_append_followup</code>, <code>_resolve_followup</code>,
+    <code>_append_comment</code>) and the four sprint writers take no
+    <code>checkout_path</code>: their writers do not accept a root, so they cannot
+    be redirected into a worktree. With read scoping in place a run-scoped call
+    to one would resolve the run, find its own project, and then write to the main
+    checkout &mdash; a silently widened write. Each is therefore guarded: inside a
+    run, a call resolving to any project returns a structured refusal
+    (<code>error: run_scoped_write</code>) whose message names the run and the path
+    it would have written, rather than <code>ok</code>. The registered entry point
+    is unaffected; these mutators are unregistered and have no production caller,
+    so the guard is inert outside tests.</p>
+
+    <p><strong>The defect reproduces before the repair.</strong> At the base
+    revision <code>80d55621</code>, over the four declared files
+    (<code>tests/test_plan_reads_stay_in_the_worktree.py</code> plus
+    <code>test_plan_write_stays_in_the_worktree.py</code>,
+    <code>test_mcp_tools.py</code>, <code>test_edit_plan.py</code>):
+    <code>3 failed, 123 passed</code>. The three failures are this node's own new
+    behaviour &mdash; the run-scoped read returning the main version instead of the
+    worktree's, and both granular-write refusals returning <code>ok</code>. Head,
+    same selection: <code>126 passed</code>
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-plan-reads-base.txt</code>,
+    <code>gate-plan-reads-head.txt</code>).</p>
+
+    <p><strong>Ambient identity still isolated.</strong> The gate was re-run at
+    head with <code>RECKON_RUN_ID</code> and <code>RECKON_MANIFEST</code> exported
+    into the invoking shell, as a worker's shell has them. Same selection:
+    <code>126 passed</code>, so the conftest fixture that clears the dispatch
+    identity for every test still holds with the new read scoping in place
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-plan-reads-head-runid.txt</code>).</p>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>read a
+    run-scoped plan from the mounted main checkout when no checkout path is
+    given</em> &mdash; applied to a scratch copy of the module with
+    <code>_run_scoped_read_root</code>'s body replaced by <code>return None</code>,
+    the read test fails exactly there, asserting main's version where the worktree's
+    was expected: <code>1 failed, 6 passed</code>. The other six tests pass in both
+    arms, being controls or write-side assertions unaffected by this mutation. The
+    log's first line repeats the declared string verbatim
+    (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-plan-reads.txt</code>).
+    Without the control, the green read test would not be evidence that the
+    resolution is what moved the read.</p>
+
+    <p><strong>Lint and format delta, measured against the base revision.</strong>
+    Over complete git-archive trees, <code>reckon/</code> carries 233 ruff findings
+    at base and 233 at head, and <code>reckon/mcp.py</code> 20 and 20, so the change
+    adds none; the new test file is clean and both touched files are formatted
+    (<code>docs/figures/a-worker-cannot-write-your-home/lint-plan-reads.txt</code>).</p>
+
+    <p><strong>Paths changed.</strong> <code>reckon/mcp.py</code> (the read-root
+    resolver, the write guard, and its wiring into the read entry points and the
+    eleven granular mutators), <code>tests/test_plan_reads_stay_in_the_worktree.py</code>
+    (seven tests over a synthetic main checkout, worktree, sibling project, mounts
+    file and live pointer), plus the four gate logs, the negative-control log, the
+    lint log and the figure under
+    <code>docs/figures/a-worker-cannot-write-your-home/</code>. Commit
+    <code>0871ec7b</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/plan-read-resolution.svg"
+           alt="A run-scoped plan call with no checkout_path: a read for the run's own project resolves to the run's worktree, a read for another project resolves to the main checkout as before, and a granular plan write is refused with an out-of-scope error naming the run and the path.">
+      <figcaption>Reads follow the run scope; a granular write cannot, so it is
+      refused rather than redirected. The main checkout is read only, never
+      written, from inside a run.</figcaption>
+    </figure>
+  </section>
 </main>
 </body>
 </html>
