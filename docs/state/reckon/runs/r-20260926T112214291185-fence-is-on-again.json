@@ -1,0 +1,382 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "b11cf190caea9bd843451293957772c38aa0ddd9",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 15632616,
+      "input_tokens_cumulative": 15632616,
+      "output_tokens": 71312,
+      "output_tokens_cumulative": 71312,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 410,
+    "files": 8,
+    "removed": 8
+  },
+  "commit_resolution": null,
+  "commits": [
+    "d7ba7433e1b03841db506fa7a145fee0f9da01e0",
+    "01327c5bcd45a44fb0ef2b25c9d29fb71d825298"
+  ],
+  "completed_at": "2026-09-26T14:17:46.009Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-26T11:22:33Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "harness/",
+    "codex-home/",
+    "harness/settings.json",
+    "harness/CLAUDE.md",
+    "codex-home/AGENTS.md",
+    "config.toml",
+    "rules/",
+    "docs/figures/a-worker-cannot-write-your-home/gate-base.txt"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q <the seven fence test files> at head d7ba7433 (41 passed; base arm with FENCE_WORKERS forced False: 39)",
+    "exit_status": 0,
+    "log_digest": "sha256:6e52135768a82a243b8b308e46abb33cc66f9cafe0b87cf0a42ee83fc526360e",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T112214291185-fence-is-on-again/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.85,
+    "at_dispatch": 0.8,
+    "plan": "a-worker-cannot-write-your-home",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-26T12:02:14.781140+00:00",
+    "horizon_seconds": 2400,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-26T11:22:14Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 4,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": -12,
+    "mean_context": 102857,
+    "observed_at": "2026-09-26T11:22:10Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-26T14:17:46.009Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T112214291185-fence-is-on-again/manifest.md",
+  "member": "burn-captures",
+  "negative_control": {
+    "declaration": "leave FENCE_WORKERS False; the dispatch-path fenced case must fail with an unfenced argv",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T112214291185-fence-is-on-again/negative-control-fence-is-on-again.txt",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T112214291185-fence-is-on-again/negative-control-fence-is-on-again.txt",
+    "test_paths": [
+      "tests/test_backend_environment.py",
+      "tests/test_each_run_owns_its_harness_home.py",
+      "tests/test_fence_is_on_again.py",
+      "tests/test_fenced_resume_reaches_its_harness.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "fence-is-on-again",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1931,
+          "cached_input_tokens": 867995,
+          "input_tokens": 869928,
+          "output_tokens": 1221,
+          "reasoning_output_tokens": 198,
+          "total_tokens": 871149,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+      "session_id": "s21-coord"
+    },
+    "done_when": "FENCE_WORKERS is True at this worktree head; the comment above it states what the fence guarantees rather than why it was off; tests that asserted the unfenced worker default now assert the fenced default, and tests that opted into the fence explicitly are unchanged; tests/test_fence_is_on_again.py asserts that a launch plan composed through the dispatch path for a clive backend is fenced (its argv starts with the fence binary) and sets CLAUDE_CONFIG_DIR to the run's harness home, whose settings.json carries the operator hooks from a synthetic operator home; tests/test_each_run_owns_its_harness_home.py, tests/test_fenced_resume_reaches_its_harness.py, tests/test_harness_home_carries_the_operator_config.py, tests/test_a_fenced_worker_can_commit.py, tests/test_backend_environment.py and tests/test_every_attempt_is_supervised.py add no failures against base b11cf190; gate and control logs are written under the run directory; the declared negative control is executed and logged; the change is committed in this worktree",
+    "estimated_hours": null,
+    "goal": "Launch crew workers fenced again by setting FENCE_WORKERS to True in reckon/crew/dispatch.py, now that every reason it was switched off at 39fd7a28 is fixed on main (harness-home carry 80d55621, fenced commit grant 29a30fb1, protected-worktree refusal 3db08a97, worktree plan writes e562d32e).",
+    "id": "fence-is-on-again",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-26T11:22:14Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 4,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": -12,
+      "mean_context": 102857,
+      "observed_at": "2026-09-26T11:22:10Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T112214291185-fence-is-on-again/manifest.md",
+    "negative_control": "leave FENCE_WORKERS False; the dispatch-path fenced case must fail with an unfenced argv",
+    "plan": "a-worker-cannot-write-your-home",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "exact",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/dispatch.py",
+      "tests/test_fence_is_on_again.py",
+      "tests/test_each_run_owns_its_harness_home.py",
+      "tests/test_fenced_resume_reaches_its_harness.py",
+      "tests/test_backend_environment.py",
+      "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+      "docs/figures/a-worker-cannot-write-your-home",
+      "docs/plans/a-worker-cannot-write-your-home.html"
+    ]
+  },
+  "orientation_input_tokens": 1899399.0,
+  "outcome": "",
+  "plan": "a-worker-cannot-write-your-home",
+  "plan_impl_at_dispatch": 0.8,
+  "promoted_revision": "01327c5bcd45a44fb0ef2b25c9d29fb71d825298",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 17,
+      "evidence": 17,
+      "fit": 19,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 93
+  },
+  "role": "implement",
+  "run_id": "r-20260926T112214291185-fence-is-on-again",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "fa39d9ba-9404-43c1-b0ee-35f6c48cf525",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 15799298,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 10487.788,
+    "generated_tokens": 76492,
+    "generation_seconds": 10141.987,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.5,
+    "machine_seconds": 345.801,
+    "peak_input_tokens": 165382,
+    "tokens_per_second": 7.54,
+    "wall_tokens_per_second": 7.29
+  },
+  "time_budget": "40m",
+  "tool_steps": 134.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "blocked",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports blocked: crew resume of a fenced run composes the fence binary as its harness and bubblewrap refuses it; so a resume produces no turn. Reproduce with `crew resume --run <fenced run> --print-only`: the argv's inner command (after the -- separator) is /usr/bin/bwrap; not the backend's harness. The run itself completed; only its resume path is dead.",
+        "effective_phase": "working",
+        "elapsed_seconds": 0,
+        "exit_record": {
+          "attempt": 3,
+          "ended_during": "working",
+          "exit_code": 1,
+          "exited_at": "2026-09-25T16:46:34Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T16:46:33Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 40106,
+          "worker_pid": 1757639
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "crew resume of a fenced run composes the fence binary as its harness and bubblewrap refuses it; so a resume produces no turn. Reproduce with `crew resume --run <fenced run> --print-only`: the argv's inner command (after the -- separator) is /usr/bin/bwrap; not the backend's harness. The run itself completed; only its resume path is dead.",
+          "lifting_condition": null,
+          "recovery": "decide",
+          "recovery_classification": "blocked",
+          "state": "blocked"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 66942,
+        "log_fresh": false,
+        "manifest_commits": [
+          "18a89e6f80b66f63185c27b6f531ee2d46e6d907"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "9481241fbcf4259e3d9c1d96f5459e30805e6fe87b1ff9b9bf4b400e4d440d70",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "blocked",
+        "manifest_status": "blocked",
+        "marker": "!",
+        "needs_help_complete": false,
+        "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md; resolve the blocker before resuming the run",
+        "node": "fenced-workers-smoke",
+        "phase": "working",
+        "plan": "a-worker-cannot-write-your-home",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "decide",
+        "recovery_classification": "blocked",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+        "session": "s21-coord",
+        "session_resolution": {
+          "consulted": [
+            "pointer",
+            "stream",
+            "ledger"
+          ],
+          "resolved": true,
+          "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+          "session_id": "eb46c4e0-0ac6-4891-b9b6-6fd5fb4773e4",
+          "source": "pointer"
+        },
+        "terminal_age_seconds": 78068,
+        "terminal_at": "2026-09-25T13:41:08Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fenced-workers-smoke"
+      }
+    ]
+  },
+  "wall_seconds": 10513,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-26T14:17:46Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-26T11:22:55Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T112214291185-fence-is-on-again",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 12462,
+    "worker_pid": 3397479
+  },
+  "worker_seconds": 10434,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
