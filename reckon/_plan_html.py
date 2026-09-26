@@ -31,11 +31,7 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-from reckon._schema import (
-    LEGACY_EFFORT_HOURS,
-    SECTION_DECLARATION_ENUM,
-    PlanState,
-)
+from reckon._schema import LEGACY_EFFORT_HOURS, PlanState
 from reckon.capability import (
     CAPABILITY_SCHEMA_VERSION,
     from_legacy_tier,
@@ -301,14 +297,6 @@ def _section_record_elements(soup: BeautifulSoup) -> list:
     ]
 
 
-SECTION_STATUSES = tuple(SECTION_DECLARATION_ENUM)
-
-_SECTION_ELEMENT_RE = re.compile(
-    r"<(section|h2)\b([^>]*?)/?>", re.IGNORECASE | re.DOTALL
-)
-_SECTION_ATTRIBUTE_RE = re.compile(
-    r"""([A-Za-z_:][-\w:.]*)\s*=\s*(?:"([^"]*)"|'([^']*)')"""
-)
 _SECTION_RECORD_ATTRIBUTES = (
     "data-id",
     "data-effort-hours",
@@ -316,6 +304,7 @@ _SECTION_RECORD_ATTRIBUTES = (
     "data-status",
     "data-links",
 )
+_RECORD_MARKER_RE = re.compile(r"""data-reckon\s*=\s*["']section["']""", re.IGNORECASE)
 
 
 def _record_field(record, name):
@@ -356,36 +345,19 @@ def derive_impl_from_sections(sections) -> float | None:
     return done / total
 
 
-def _section_records_from_text(text: str) -> list[dict] | None:
-    """Extract record effort/status without a parser, for the regex fast path.
+def _document_carries_records(html_text: str) -> bool:
+    """Whether the document declares record metadata, judged without parsing.
 
-    Returns None when a record is malformed or is not a lone metadata element,
-    so the caller falls back to the authored value instead of deriving from a
-    partially read contract.
+    A gate rather than an approximation of the contract: a document carrying no
+    such marker cannot hold a record, and one that does is handed to the parsed
+    read so the figure the fast path reports is the figure the parser derived.
+    A record the parser would refuse yields no figure on either path.
     """
-    records: list[dict] = []
-    for match in _SECTION_ELEMENT_RE.finditer(text):
-        attributes: dict[str, str] = {}
-        for attribute in _SECTION_ATTRIBUTE_RE.finditer(match.group(2)):
-            value = attribute.group(2)
-            if value is None:
-                value = attribute.group(3)
-            attributes[attribute.group(1).lower()] = value
-        if attributes.get("data-reckon", "").lower() != "section":
-            continue
-        if not any(key in attributes for key in _SECTION_RECORD_ATTRIBUTES) and not any(
-            key.startswith("data-capability-") for key in attributes
-        ):
-            continue
-        try:
-            hours = float(attributes.get("data-effort-hours") or "")
-        except ValueError:
-            return None
-        status = (attributes.get("data-status") or "").lower()
-        if status not in SECTION_STATUSES:
-            return None
-        records.append({"effort_hours": hours, "status": status})
-    return records
+    if _RECORD_MARKER_RE.search(html_text or "") is None:
+        return False
+    return any(key in html_text for key in _SECTION_RECORD_ATTRIBUTES) or (
+        "data-capability-" in html_text
+    )
 
 
 def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]:
@@ -1198,7 +1170,7 @@ def write_state(html_text: str, state: dict) -> str:
     # meta alone there — on either side of the write, since regeneration must
     # stay byte-stable whether the records are on disk or only in the state.
     if "impl" in state and not (
-        state.get("sections") or _section_records_from_text(html_text)
+        state.get("sections") or _document_carries_records(html_text)
     ):
         out = _set_meta(out, "plan-impl", state["impl"])
     if "version" in state:
@@ -1369,13 +1341,24 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
             rec["capability"] = mapped
             rec["compatibility_warnings"] = [f"plan: {diagnostic}"]
     warnings = list(rec.get("compatibility_warnings") or [])
-    records = _section_records_from_text(text)
-    derived = None if records is None else derive_impl_from_sections(records)
-    if derived is not None:
-        rec["impl"] = derived
-        rec["impl_source"] = "computed"
-    elif "plan-impl" in metas:
-        rec["impl_source"] = "authored"
+    # The record contract is validated in one place only: a document carrying
+    # record metadata is read by the parser, so this path can never report a
+    # figure the parsed read refuses to produce.
+    if _document_carries_records(text):
+        try:
+            parsed_state = read_state(text)
+        except ValueError:
+            parsed_state = None
+        derived = (
+            None
+            if parsed_state is None
+            else derive_impl_from_sections(parsed_state.get("sections"))
+        )
+        if derived is not None:
+            rec["impl"] = derived
+            rec["impl_source"] = "computed"
+        elif "plan-impl" in metas:
+            rec["impl_source"] = "authored"
     authored_hours = "plan-effort-hours" in metas and "effort_hours" in rec
     legacy_effort = metas.get("plan-effort", "")
     if authored_hours:

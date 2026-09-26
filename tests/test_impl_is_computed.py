@@ -107,11 +107,10 @@ def test_adding_an_implementable_section_moves_impl_with_no_other_write(tmp_path
     )
     assert read_state(two)["impl"] == pytest.approx(0.4)
     assert read_state(three)["impl"] == pytest.approx(0.2)
-    assert parse_meta(_write_plan(tmp_path, "three", three))["impl"] == pytest.approx(
-        0.2
-    )
-    # The stored figure never moved; only the records did.
-    assert 'name="plan-impl" content="0.9"' in three
+    path = _write_plan(tmp_path, "three", three)
+    assert parse_meta(path)["impl"] == pytest.approx(0.2)
+    # The stored figure on disk never moved; only the records did.
+    assert 'name="plan-impl" content="0.9"' in path.read_text(encoding="utf-8")
 
 
 def test_deferred_effort_sits_outside_the_denominator():
@@ -122,6 +121,28 @@ def test_deferred_effort_sits_outside_the_denominator():
     ]
     state = read_state(_records_html(records, stored_impl="0.9"))
     assert state["impl"] == pytest.approx(0.4)
+
+
+def test_a_record_element_carrying_authored_prose_yields_no_computed_figure(tmp_path):
+    """The fast path must refuse exactly what the parsed path refuses.
+
+    A record element carrying authored prose is refused by the parsed read, so
+    no reader may derive a figure from it: the fast path has to fall back to
+    the authored value rather than report one the parser's own read denies.
+    """
+    html = _records_html([DONE_4H], stored_impl="0.9").replace(
+        'data-links=""></section>', 'data-links="">Authored prose.</section>'
+    )
+    path = _write_plan(tmp_path, "computed", html)
+
+    with pytest.raises(ValueError, match="must not contain authored prose"):
+        read_state(html)
+    with pytest.raises(ValueError, match="must not contain authored prose"):
+        parse_plan(path)
+
+    meta = parse_meta(path)
+    assert meta.get("impl_source") != "computed"
+    assert meta["impl"] == pytest.approx(0.9)
 
 
 def test_state_mode_set_impl_is_refused_naming_the_computed_source(project):
