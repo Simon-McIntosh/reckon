@@ -7,8 +7,10 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
-from reckon import crew
+from reckon import cli as cli_module
+from reckon import crew, flight
 from reckon.crew import node as node_module
 from reckon.crew import plan_review
 
@@ -105,10 +107,28 @@ def _node(config_home: Path, *, role: str = "implement", name: str = "delivery")
     )
 
 
-def _plan(node: crew.TaskNode, repo: Path, **kwargs):
+def _plan(
+    node: crew.TaskNode,
+    repo: Path,
+    *,
+    mode: str | None = None,
+    config: dict | None = None,
+    **kwargs,
+):
+    """Resolve one dispatch, selecting the gate's mode through the config key.
+
+    ``mode`` is layered onto the base config the way a caller setting the key
+    would; ``config`` replaces the base outright, which is how a case drives the
+    gate from a config a flight layer actually produced. With neither, the key
+    is absent from the base and the gate takes its shipped report-only default,
+    which is what the report-mode cases assert.
+    """
+    base = CONFIG if config is None else config
+    if mode is not None:
+        base = {**base, "plan_review_gate": mode}
     return crew.plan_dispatch(
         node=node,
-        config=CONFIG,
+        config=base,
         project="sample",
         repo=repo,
         base="HEAD",
@@ -147,6 +167,40 @@ def _store_answered_review(plan_path: Path, config_home: Path) -> None:
     )
 
 
+UNANSWERED_FINDING_ID = "orphan-finding"
+
+
+def _store_unanswered_review(plan_path: Path, config_home: Path) -> str:
+    """Store a review whose one finding no response answers.
+
+    The finding is listed and ``responses`` is empty, which is the state the
+    gate must treat as unread rather than answered. Returns the finding id so a
+    case can assert the refusal names the specific finding left open.
+    """
+    plan_review.store_plan_review(
+        {
+            "project": "sample",
+            "plan_slug": "fixture",
+            "plan_version": 1,
+            "rubric": "plan_review",
+            "reviewed_blob_sha": "b" * 40,
+            "plan_fingerprint": plan_review.plan_fingerprint(plan_path),
+            "findings": [
+                {
+                    "id": UNANSWERED_FINDING_ID,
+                    "type": "coverage",
+                    "text": "the plan omits its rollback step",
+                }
+            ],
+            "responses": {},
+            "status": "open",
+            "review_run_id": "r-plan-review",
+        },
+        base_dir=config_home / "crew" / "reviews",
+    )
+    return UNANSWERED_FINDING_ID
+
+
 def test_unreviewed_implementation_is_refused_with_a_composed_remedy(
     reviewed_project: tuple[Path, Path, Path],
 ) -> None:
@@ -154,7 +208,7 @@ def test_unreviewed_implementation_is_refused_with_a_composed_remedy(
 
     expected_error = getattr(node_module, "PlanReviewMissingError", crew.CrewError)
     with pytest.raises(expected_error) as excinfo:
-        _plan(_node(config_home), repo)
+        _plan(_node(config_home), repo, mode="enforce")
 
     refusal = str(excinfo.value)
     assert "fixture" in refusal
@@ -241,3 +295,212 @@ def test_unreviewed_waiver_is_recorded_on_the_run_pointer(
     waiver = record["unreviewed_plan_override"]
     assert waiver == {"requested": True, "plan": "fixture"}
     assert crew.read_pointer(record["run_id"])["unreviewed_plan_override"] == waiver
+
+
+def test_a_finding_left_unanswered_refuses_the_build_by_name(
+    reviewed_project: tuple[Path, Path, Path],
+) -> None:
+    config_home, repo, plan_path = reviewed_project
+    finding_id = _store_unanswered_review(plan_path, config_home)
+
+    expected_error = getattr(node_module, "PlanReviewMissingError", crew.CrewError)
+    with pytest.raises(expected_error) as excinfo:
+        _plan(_node(config_home), repo, mode="enforce")
+
+    refusal = str(excinfo.value)
+    assert finding_id in refusal
+    assert "unanswered" in refusal
+
+
+def test_report_only_mode_records_a_missing_review_and_lets_the_dispatch_run(
+    reviewed_project: tuple[Path, Path, Path],
+) -> None:
+    """The shipped default: no review yet, so a warning and the dispatch goes.
+
+    Nearly no plan carries a review while the node that writes one is unbuilt,
+    so an enforced gate would be disabled by its operators rather than answered.
+    The default records the same sentence an enforced refusal would carry as a
+    warning on the result, so the condition is visible without being fatal.
+    """
+    config_home, repo, _plan_path = reviewed_project
+
+    resolution = _plan(_node(config_home), repo)
+
+    assert resolution.validation.ok is True
+    warnings = resolution.as_dict()["warnings"]
+    assert any("report-only" in warning for warning in warnings)
+    assert any("fixture" in warning for warning in warnings)
+
+
+def test_report_only_mode_records_an_unanswered_finding_by_name(
+    reviewed_project: tuple[Path, Path, Path],
+) -> None:
+    config_home, repo, plan_path = reviewed_project
+    finding_id = _store_unanswered_review(plan_path, config_home)
+
+    resolution = _plan(_node(config_home), repo)
+
+    assert resolution.validation.ok is True
+    warnings = resolution.as_dict()["warnings"]
+    assert any(finding_id in warning for warning in warnings)
+
+
+def test_dry_run_names_the_plan_review_error_key(
+    reviewed_project: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A validating dry run points at the review, not at the plan's mounts.
+
+    The same condition answered ``plan-unavailable`` on this path while the
+    launching path answered ``plan-review-missing``, so an operator diagnosing
+    with --dry-run was sent to the mounts for what was a missing review.
+    """
+    _config_home, repo, _plan_path = reviewed_project
+    monkeypatch.setattr(
+        cli_module,
+        "_resolved_flight",
+        lambda *args, **kwargs: {**CONFIG, "plan_review_gate": "enforce"},
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--section",
+            "delivery",
+            "--role",
+            "implement",
+            "--spec-level",
+            "exact",
+            "--node",
+            "dry-run-delivery",
+            "--goal",
+            "ship one measured change",
+            "--done-when",
+            "pytest reports one passing plan review gate case",
+            "--write-path",
+            "src/change.py",
+            "--session",
+            "dry-run-session",
+            "--repo",
+            str(repo),
+            "--dry-run",
+        ],
+    )
+
+    payload = json.loads(result.stdout.splitlines()[0])
+    assert result.exit_code == 4
+    assert payload["error"] == "plan-review-missing"
+    assert "fixture" in payload["detail"]
+
+
+def test_dry_run_in_report_only_mode_admits_and_carries_the_warning(
+    reviewed_project: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _config_home, repo, _plan_path = reviewed_project
+    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--section",
+            "delivery",
+            "--role",
+            "implement",
+            "--spec-level",
+            "exact",
+            "--node",
+            "dry-run-delivery",
+            "--goal",
+            "ship one measured change",
+            "--done-when",
+            "pytest reports one passing plan review gate case",
+            "--write-path",
+            "src/change.py",
+            "--session",
+            "dry-run-session",
+            "--repo",
+            str(repo),
+            "--dry-run",
+        ],
+    )
+
+    payload = json.loads(result.stdout.splitlines()[0])
+    assert result.exit_code == 0
+    assert any("report-only" in warning for warning in payload["warnings"])
+
+
+def test_the_shipped_default_layer_names_the_report_only_mode(
+    tmp_path: Path,
+) -> None:
+    resolved = flight.resolve(host_path=tmp_path / "absent.yaml")
+
+    assert resolved.config[flight.PLAN_REVIEW_GATE_KEY] == "report"
+
+
+def test_a_config_layer_selects_the_enforced_mode(tmp_path: Path) -> None:
+    host = tmp_path / "enforce.yaml"
+    host.write_text("plan_review_gate: enforce\n", encoding="utf-8")
+
+    resolved = flight.resolve(host_path=host)
+
+    assert resolved.config[flight.PLAN_REVIEW_GATE_KEY] == "enforce"
+    assert flight.plan_review_gate_enforces(resolved.config) is True
+
+
+def test_the_layer_selected_mode_drives_the_gate(
+    reviewed_project: tuple[Path, Path, Path], tmp_path: Path
+) -> None:
+    """End to end through a layer: a host file's mode becomes the gate's.
+
+    The key is checked by flight rather than by the generated schema, so this is
+    the case that proves the mode a real configuration layer sets is the mode
+    the gate reads — not merely a value passed straight into a resolver.
+    """
+    config_home, repo, _plan_path = reviewed_project
+    host = tmp_path / "enforce.yaml"
+    host.write_text(
+        json.dumps(
+            {
+                **CONFIG,
+                # The shipped layer declares the review role read-only, and a
+                # role overlay merges onto it rather than replacing it, so this
+                # layer states the sandbox its own execution-capable roles need.
+                "roles": {
+                    role: {**settings, "sandbox": "worktree-full"}
+                    for role, settings in CONFIG["roles"].items()
+                },
+                "plan_review_gate": "enforce",
+            }
+        ),
+        encoding="utf-8",
+    )
+    resolved = flight.resolve(host_path=host)
+
+    expected_error = getattr(node_module, "PlanReviewMissingError", crew.CrewError)
+    with pytest.raises(expected_error):
+        _plan(_node(config_home), repo, config=resolved.config)
+
+
+def test_a_mode_outside_the_declared_set_is_refused_naming_the_key(
+    tmp_path: Path,
+) -> None:
+    host = tmp_path / "bad.yaml"
+    host.write_text("plan_review_gate: off\n", encoding="utf-8")
+
+    with pytest.raises(flight.FlightConfigError) as excinfo:
+        flight.resolve(host_path=host)
+
+    refusal = str(excinfo.value)
+    assert "plan_review_gate" in refusal
+    assert "report" in refusal and "enforce" in refusal

@@ -52,6 +52,15 @@ _AUTH_PROBE_TIMEOUT_SECONDS = 10
 _CATALOG_PROBE_TIMEOUT_SECONDS = 10
 _ENVIRONMENT_REFERENCE = re.compile(r"\$\{([^{}]+)\}")
 
+# The plan-review gate's mode. Its polarity is the opposite of the evidence
+# gates' own gate key: an evidence gate ships strict and is relaxed by naming a
+# weaker mode, while the plan-review gate ships advisory and is strengthened by
+# naming ``enforce``. One key carrying both polarities would be read backwards
+# by whoever configured the other, so the two are separate.
+PLAN_REVIEW_GATE_KEY = "plan_review_gate"
+PLAN_REVIEW_GATE_MODES = ("report", "enforce")
+PLAN_REVIEW_GATE_DEFAULT = "report"
+
 
 class FlightConfigError(Exception):
     """A flight config layer is malformed.
@@ -338,6 +347,37 @@ def _ignore_removed_backend_keys(
     return migrated, warnings
 
 
+def _validate_plan_review_gate(data: Mapping[str, Any], source: str | Path) -> None:
+    """Check the plan-review gate mode, which the generated schema does not carry.
+
+    The key is checked here rather than by adding a property to the LinkML source
+    and regenerating the model from it: the generated artifact is not hand-edited,
+    and the mode is a two-word enum whose default polarity already differs from
+    the gate key the schema does carry. A value outside the declared modes is
+    refused naming the file and the key, as any schema violation is.
+    """
+    if PLAN_REVIEW_GATE_KEY not in data:
+        return
+    value = data[PLAN_REVIEW_GATE_KEY]
+    if value not in PLAN_REVIEW_GATE_MODES:
+        raise FlightConfigError(
+            source,
+            PLAN_REVIEW_GATE_KEY,
+            "must be one of " + ", ".join(PLAN_REVIEW_GATE_MODES),
+        )
+
+
+def plan_review_gate_enforces(config: Mapping[str, Any] | None) -> bool:
+    """Whether a resolved config selects the plan-review gate's enforced mode.
+
+    Absence is the report-only default rather than a missing fact, because the
+    shipped default layer names it and a config assembled by hand — a test, an
+    in-process caller — should still report rather than refuse.
+    """
+    mode = (config or {}).get(PLAN_REVIEW_GATE_KEY) or PLAN_REVIEW_GATE_DEFAULT
+    return str(mode) == "enforce"
+
+
 def placement_for(backend: Mapping[str, Any]) -> dict[str, Any] | None:
     """Return this backend's declared placement, or None when it declares none.
 
@@ -402,19 +442,28 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
     Every layer is partial — a host config setting one backend's model is
     complete in itself — so this checks shape, types, enums, ranges, patterns and
     unknown keys, and leaves whole-config rules to :func:`_validate_resolved`.
+
+    The one key the generated schema does not carry, the plan-review gate's
+    mode, is held out of the schema check and validated just below, so the
+    generated model stays the artifact its source produces.
     """
     from pydantic import ValidationError
 
     from reckon._flight_schema import FlightConfig
 
+    schema_layer = {
+        key: value for key, value in data.items() if key != PLAN_REVIEW_GATE_KEY
+    }
     try:
-        FlightConfig.model_validate(_inject_map_keys(data))
+        FlightConfig.model_validate(_inject_map_keys(schema_layer))
     except ValidationError as exc:
         first = exc.errors()[0]
         key_path = ".".join(str(part) for part in first.get("loc", ()))
         raise FlightConfigError(
             source, key_path, first.get("msg", "is invalid")
         ) from exc
+
+    _validate_plan_review_gate(data, source)
 
     for backend_name, backend in (data.get("backends") or {}).items():
         if not isinstance(backend, Mapping):

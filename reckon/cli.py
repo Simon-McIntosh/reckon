@@ -1261,9 +1261,19 @@ def crew_dispatch(
                 member=member,
                 allow_unreviewed_plan=allow_unreviewed_plan,
             )
-        except (crew_module.PlanVisibilityError, PlanReviewMissingError) as exc:
+        except crew_module.PlanVisibilityError as exc:
             _emit(
                 {"ok": False, "error": "plan-unavailable", "detail": str(exc)},
+                pretty,
+            )
+            raise click.exceptions.Exit(4) from exc
+        except PlanReviewMissingError as exc:
+            # The plan is readable but unreviewed: one refusal class, one error
+            # key, on both the validating and the launching path, so an operator
+            # diagnosing with --dry-run is pointed at the composed review rather
+            # than at mounts.
+            _emit(
+                {"ok": False, "error": "plan-review-missing", "detail": str(exc)},
                 pretty,
             )
             raise click.exceptions.Exit(4) from exc
@@ -1331,7 +1341,8 @@ def crew_dispatch(
         raise click.exceptions.Exit(4) from exc
     except PlanReviewMissingError as exc:
         # The plan is readable but unreviewed: a refusal the caller resolves by
-        # dispatching the composed review, so it rides the dry-run
+        # dispatching the composed review, so it carries its own error key on
+        # this path exactly as it does on the dry run, and rides the
         # plan-unavailable exit code rather than the generic dispatch refusal.
         _emit(
             {"ok": False, "error": "plan-review-missing", "detail": str(exc)},

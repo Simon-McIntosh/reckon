@@ -1138,6 +1138,21 @@ def _plan_review_exempt(node: TaskNode) -> bool:
     return _is_review_node({"node": {"id": node.id}})
 
 
+def _plan_review_verdict(enforce: bool, detail: str) -> str | None:
+    """Refuse in enforce mode; otherwise return the warning to record.
+
+    Report-only is the shipped default, because the node that dispatches a plan
+    review is not built yet and a gate that stopped every build on that account
+    would be turned off rather than answered. In report-only mode the dispatch
+    proceeds and the same sentence an enforced refusal would carry is recorded
+    on the dispatch result as a warning, so the fact is visible without being
+    fatal and the wording does not drift between the two modes.
+    """
+    if enforce:
+        raise PlanReviewMissingError(detail)
+    return f"plan-review gate in report-only mode — {detail}"
+
+
 def require_plan_reviewed(
     *,
     node: TaskNode,
@@ -1145,23 +1160,28 @@ def require_plan_reviewed(
     repo: str | Path,
     authority: Mapping[str, Any],
     allow_unreviewed: bool = False,
-) -> None:
-    """Refuse a building dispatch whose plan carries no answered review.
+    enforce: bool = False,
+) -> str | None:
+    """Judge whether a building dispatch's plan carries an answered review.
 
     A plan is reviewed before it is built: the gate joins a stored review to the
     plan content by fingerprint rather than by the plan's version integer, so a
     metadata-only write neither demands a review nor orphans one, and an
-    authored edit demands a fresh one. Every finding of the review must be
-    answered — acted on or declined with a reason — because the findings are
+    authored edit demands a fresh one. Every finding of the review must
+    be answered — acted on or declined with a reason — because the findings are
     advisory and the answer is the record; an unanswered finding is an unread
     one, and the gate refuses a plan whose review nobody read.
 
     ``allow_unreviewed`` is the operational waiver: a broken local review lane
     must not stop every build, so the caller may waive the gate and the waiver
-    is recorded on the run that carries it.
+    is recorded on the run that carries it. ``enforce`` selects the mode: when
+    false (the default) a plan's missing or unanswered review returns the
+    warning to record and the dispatch proceeds; when true the same condition
+    raises :class:`PlanReviewMissingError`. ``None`` is returned when there is
+    nothing to report.
     """
     if allow_unreviewed or _plan_review_exempt(node):
-        return
+        return None
 
     from reckon.crew import plan_review
     from reckon.resources import ResourceCollision, resolve_resource
@@ -1173,7 +1193,7 @@ def require_plan_reviewed(
     ):
         # A repository that has not adopted HTML plans has no reviewable plan
         # document, the same carve-out the visibility check makes.
-        return
+        return None
     try:
         resource = resolve_resource(
             docs_dir, project, node.plan, "plan", include_archived=False
@@ -1186,25 +1206,28 @@ def require_plan_reviewed(
     if resource is None:
         # The visibility check refuses an unreadable plan ahead of this gate, so
         # an unresolved resource here has nothing to review.
-        return
+        return None
 
     fingerprint = plan_review.plan_fingerprint(resource.path)
     record = plan_review.read_plan_review(
         project, node.plan, plan_fingerprint=fingerprint
     )
     if record is None:
-        raise PlanReviewMissingError(
+        return _plan_review_verdict(
+            enforce,
             f"plan {node.plan!r} in project {project!r} carries no stored review "
             f"of the content about to be built (fingerprint {fingerprint[:12]}); "
-            "a plan is reviewed before it is built"
+            "a plan is reviewed before it is built",
         )
     unanswered = plan_review.unanswered_findings(record)
     if unanswered:
-        raise PlanReviewMissingError(
+        return _plan_review_verdict(
+            enforce,
             f"the review of plan {node.plan!r} leaves {len(unanswered)} "
             f"finding(s) unanswered: {', '.join(unanswered)}; answer each by "
-            "acting on it or declining it with a reason"
+            "acting on it or declining it with a reason",
         )
+    return None
 
 
 def resolve_dispatch_authority(project: str, repo: str | Path) -> dict[str, Any]:

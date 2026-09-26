@@ -66,6 +66,15 @@ gates:
   require_evidence: true
   on_fail: hold
 
+# The plan-review gate ships advisory, whatever every other gate here does.
+# Almost no plan carries a stored review yet, and the node that writes one is
+# not built, so an enforced plan-review gate would stop every build on a review
+# nobody can produce — and be turned off rather than answered. In report mode a
+# missing or unanswered review is recorded on the dispatch result as a warning
+# and the dispatch proceeds; `enforce` refuses exactly as the gate's own
+# refusal describes. Set `enforce` once the review-writing node exists.
+plan_review_gate: report
+
 # The ceiling sits at full utilisation, so only a backend that actually reported
 # being spent holds a wave; the reserves are what stop a dispatch spending the
 # last of a quota and leaving no way to answer a worker that asks for help.

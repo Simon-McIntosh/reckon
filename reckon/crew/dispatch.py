@@ -2916,13 +2916,16 @@ def plan_dispatch(
             base=base,
             authority=resolved_authority,
         )
-        require_plan_reviewed(
+        review_warning = require_plan_reviewed(
             node=node,
             project=project,
             repo=repo,
             authority=resolved_authority,
             allow_unreviewed=allow_unreviewed_plan,
+            enforce=flight.plan_review_gate_enforces(config),
         )
+        if review_warning is not None:
+            warnings.append(review_warning)
         resolved_authority["plan"] = {
             **resolved_authority["plan"],
             "base_sha": plan_commit,
