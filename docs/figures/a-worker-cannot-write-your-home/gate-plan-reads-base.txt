@@ -1,0 +1,72 @@
+# rev base=80d5562139fee5153ccafe0a66054896af43b956  tree /tmp/reads-base-3bPp
+# cmd: tests/test_plan_reads_stay_in_the_worktree.py tests/test_plan_write_stays_in_the_worktree.py tests/test_mcp_tools.py tests/test_edit_plan.py
+F...FF.................................................................. [ 57%]
+......................................................                   [100%]
+=================================== FAILURES ===================================
+_________ test_a_run_scoped_read_returns_the_worktree_version_not_main _________
+
+run_scoped = {'main': PosixPath('/tmp/pytest-of-mcintos/pytest-11243/test_a_run_scoped_read_returns0/main'), 'worktree': PosixPath(...PosixPath('/tmp/pytest-of-mcintos/pytest-11243/test_a_run_scoped_read_returns0/main/docs/plans/sample-plan.html'), ...}
+
+    def test_a_run_scoped_read_returns_the_worktree_version_not_main(run_scoped):
+        fixture = run_scoped
+        main_version = _version(fixture["main"], PROJECT, SLUG)
+        worktree_version = _version(fixture["worktree"], PROJECT, SLUG)
+        assert worktree_version != main_version
+    
+        result = _read(project=PROJECT)
+    
+>       assert result["version"] == worktree_version, result
+E       AssertionError: {'project': 'proj', 'slug': 'sample-plan', 'version': 0, 'data': {'slug': 'sample-plan', 'sections': [], 'type': 'plan', 'project': 'proj', ...}}
+E       assert 0 == 1
+
+tests/test_plan_reads_stay_in_the_worktree.py:127: AssertionError
+________ test_a_run_scoped_granular_write_to_another_project_is_refused ________
+
+run_scoped = {'main': PosixPath('/tmp/pytest-of-mcintos/pytest-11243/test_a_run_scoped_granular_wri0/main'), 'worktree': PosixPath(...PosixPath('/tmp/pytest-of-mcintos/pytest-11243/test_a_run_scoped_granular_wri0/main/docs/plans/sample-plan.html'), ...}
+
+    def test_a_run_scoped_granular_write_to_another_project_is_refused(run_scoped):
+        """A plan-writing entry point with no checkout path cannot escape the worktree."""
+        fixture = run_scoped
+        before = _sha(fixture["other_plan"])
+    
+        result = mcp_module._set_status(
+            OTHER_PROJECT,
+            SLUG,
+            "active",
+            expected_version=_version(fixture["other_repo"], OTHER_PROJECT, SLUG),
+        )
+    
+>       assert result["ok"] is False, result
+E       AssertionError: {'ok': True, 'project': 'other', 'slug': 'sample-plan', 'new_version': 1}
+E       assert True is False
+
+tests/test_plan_reads_stay_in_the_worktree.py:168: AssertionError
+_____ test_a_run_scoped_granular_write_to_the_runs_own_project_is_refused ______
+
+run_scoped = {'main': PosixPath('/tmp/pytest-of-mcintos/pytest-11243/test_a_run_scoped_granular_wri1/main'), 'worktree': PosixPath(...PosixPath('/tmp/pytest-of-mcintos/pytest-11243/test_a_run_scoped_granular_wri1/main/docs/plans/sample-plan.html'), ...}
+
+    def test_a_run_scoped_granular_write_to_the_runs_own_project_is_refused(run_scoped):
+        """The granular mutators cannot land in the worktree, so their write fails loudly."""
+        fixture = run_scoped
+        before = _sha(fixture["main_plan"])
+    
+        result = mcp_module._set_status(
+            PROJECT,
+            SLUG,
+            "active",
+            expected_version=_version(fixture["worktree"], PROJECT, SLUG),
+        )
+    
+        assert result["ok"] is False, result
+>       assert result["error"] == "run_scoped_write"
+E       AssertionError: assert 'version_conflict' == 'run_scoped_write'
+E         
+E         - run_scoped_write
+E         + version_conflict
+
+tests/test_plan_reads_stay_in_the_worktree.py:188: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_plan_reads_stay_in_the_worktree.py::test_a_run_scoped_read_returns_the_worktree_version_not_main
+FAILED tests/test_plan_reads_stay_in_the_worktree.py::test_a_run_scoped_granular_write_to_another_project_is_refused
+FAILED tests/test_plan_reads_stay_in_the_worktree.py::test_a_run_scoped_granular_write_to_the_runs_own_project_is_refused
+3 failed, 123 passed in 13.67s
