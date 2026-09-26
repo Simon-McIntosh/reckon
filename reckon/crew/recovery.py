@@ -110,10 +110,16 @@ LAUNCH_WINDOW_SECONDS = 120
 # worker's verdict but its absence in transit, and is treated as unchanged. The
 # window is short because it only has to cover a single rewrite, not a stall.
 MANIFEST_REWRITE_WINDOW_SECONDS = 10
-# The size of each manifest the last read saw, keyed by path, so a file that
-# shrank since then — the signature of a truncating rewrite caught between the
-# truncate and the write — is recognised even when its mtime has since settled.
-_MANIFEST_SIZES_READ: dict[str, int] = {}
+# The size each readable manifest last had, with the moment it was read, keyed by
+# the run and attempt that owns the path. A file that shrank since that read is
+# the signature of a truncating rewrite caught between the truncate and the
+# write, so the previous reading stands — earlier than a normal rewrite, before
+# its mtime has moved — and it expires with the same short window so it can
+# never hold the unwritten reading back forever.
+_MANIFEST_SIZES_READ: dict[str, tuple[int, float]] = {}
+# A reader classifies every run it is shown, over days, so the size memory is
+# capped and drops its least recently touched entry.
+MANIFEST_SIZE_MEMORY_MAX = 256
 
 # This is the authoritative answer to "what should the coordinator do now?".
 # The older classification remains a lifecycle grouping used by recovery and
@@ -3362,17 +3368,25 @@ def _within_launch_window(record: Mapping[str, Any], moment: float) -> bool:
 
 
 def _manifest_may_be_mid_rewrite(
-    manifest: Path, manifest_error: str, moment: float
+    record: Mapping[str, Any], manifest: Path, manifest_error: str, moment: float
 ) -> bool:
     """Whether a manifest that cannot be parsed is plausibly being rewritten.
 
     Workers write manifests in place rather than atomically, so a reader can
     catch a file between the truncate and the write: it is unparseable, and it
-    either moved seconds ago or is smaller than the size the last read saw. Both
-    are the absence of a verdict in transit, not an absence of delivery, so the
-    reader treats the file as unchanged rather than reading its contents as a
-    refusal. Only a parse failure qualifies — a readable manifest is a verdict
-    whatever the writer would do next.
+    either moved seconds ago or is smaller than the size the last readable read
+    saw. Both are the absence of a verdict in transit, not an absence of
+    delivery, so the reader treats the file as unchanged rather than reading its
+    contents as a refusal. Only a parse failure qualifies — a readable manifest
+    is a verdict whatever the writer would do next.
+
+    Both signatures are bounded by the same short window, and neither can hold a
+    reading back past it. The mtime signature is measured from the file's own
+    modification; the size signature is measured from the read that recorded the
+    larger size. Without that second bound a path that once held a bigger
+    readable manifest would suppress the unwritten reading for as long as it
+    stayed unreadable and smaller, which is exactly the shape of a retry reusing
+    its run directory's manifest, and the run would never be reported at all.
     """
     if not manifest_error:
         return False
@@ -3382,8 +3396,44 @@ def _manifest_may_be_mid_rewrite(
         return False
     if moment - stat.st_mtime < MANIFEST_REWRITE_WINDOW_SECONDS:
         return True
-    last_size = _MANIFEST_SIZES_READ.get(str(manifest))
-    return last_size is not None and stat.st_size < last_size
+    remembered = _MANIFEST_SIZES_READ.get(_manifest_size_key(record, manifest))
+    if remembered is None:
+        return False
+    size, recorded_at = remembered
+    return (
+        moment - recorded_at < MANIFEST_REWRITE_WINDOW_SECONDS and stat.st_size < size
+    )
+
+
+def _manifest_size_key(record: Mapping[str, Any], manifest: Path) -> str:
+    """The identity of one run's view of one manifest path.
+
+    A retry writes the same path, so the path alone would let it inherit the
+    size a predecessor left behind and suppress its own reading. The key carries
+    the run and the attempt, and falls back to the dispatch stamp for a pointer
+    that records no attempt, so a redispatch starts with nothing remembered.
+    """
+    run_id = str(record.get("run_id") or "")
+    attempt = record.get("attempt")
+    if attempt is None:
+        attempt = str(record.get("created_at") or "")
+    return f"{run_id}::{attempt}::{manifest}"
+
+
+def _remember_manifest_size(key: str, size: int, moment: float) -> None:
+    """Record the last readable size of a manifest under its run's identity.
+
+    A long-lived reader classifies every run it sees, so the memory is capped
+    and evicts the least recently touched entry. The map's own bound is the
+    policy: holding entries only for runs that currently hold a live pointer
+    would tie this cache to a fleet read it does not otherwise need, and would
+    drop the entry for a run whose pointer is briefly unreadable.
+    """
+    _MANIFEST_SIZES_READ.pop(key, None)
+    _MANIFEST_SIZES_READ[key] = (size, moment)
+    while len(_MANIFEST_SIZES_READ) > MANIFEST_SIZE_MEMORY_MAX:
+        oldest = next(iter(_MANIFEST_SIZES_READ))
+        del _MANIFEST_SIZES_READ[oldest]
 
 
 def _absence_of_a_verdict_is_transient(
@@ -3400,7 +3450,7 @@ def _absence_of_a_verdict_is_transient(
     caller keeps its liveness reading instead of naming it unwritten.
     """
     return _within_launch_window(record, moment) or _manifest_may_be_mid_rewrite(
-        manifest, manifest_error, moment
+        record, manifest, manifest_error, moment
     )
 
 
@@ -3424,6 +3474,9 @@ def classify_pointer(
     """
     run_id = str(record.get("run_id") or "")
     phase = str(record.get("phase") or "")
+    # Read once here because the manifest read records when it happened, and
+    # every reading below is ordered against the same instant.
+    moment = _utc_seconds() if now_seconds is None else float(now_seconds)
     manifest = Path(str(record.get("manifest_path") or ""))
     manifest_file_present, manifest_present = _run_chain_manifest_freshness(record)
     manifest_data: dict[str, Any] = {}
@@ -3439,10 +3492,14 @@ def classify_pointer(
             # that parsed the status, so the digest and the verdict can never
             # describe different versions of the file.
             manifest_digest = hashlib.sha256(manifest_text.encode("utf-8")).hexdigest()
-            # The last size a readable manifest had, so a later read that finds
-            # the file smaller recognises a truncating rewrite even after its
-            # mtime has settled past the rewrite window.
-            _MANIFEST_SIZES_READ[str(manifest)] = len(manifest_text.encode("utf-8"))
+            # The last size a readable manifest had, with the moment of this
+            # read, so a later read that finds the file smaller recognises a
+            # truncating rewrite earlier than the mtime signature would.
+            _remember_manifest_size(
+                _manifest_size_key(record, manifest),
+                len(manifest_text.encode("utf-8")),
+                moment,
+            )
         except (OSError, ManifestParseError) as exc:
             # The file exists but no reader can judge it: an unreadable file is
             # a condition of the delivery, not an exception in the classifier.
@@ -3618,7 +3675,6 @@ def classify_pointer(
         else _admission_refusal(record)
     )
     terminal = phase in ("complete", "failed")
-    moment = _utc_seconds() if now_seconds is None else float(now_seconds)
     wait = _manifest_wait(
         manifest_data,
         manifest,

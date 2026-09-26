@@ -62,12 +62,14 @@ def _pointer(
     created_at: float,
     manifest: Path,
     stream: Path,
+    attempt: int = 1,
 ) -> dict:
     return {
         "run_id": run_id,
         "project": "proj",
         "node": {"id": run_id, "plan": "plan-a", "time_budget": "40m"},
         "phase": "working",
+        "attempt": attempt,
         "created_at": recovery.datetime.fromtimestamp(
             created_at, tz=recovery.timezone.utc
         ).isoformat(),
@@ -150,30 +152,98 @@ def test_a_manifest_caught_mid_rewrite_keeps_the_previous_reading(
     assert row["recovery_classification"] == "running"
 
 
-def test_a_shrunk_manifest_is_mid_rewrite_after_its_mtime_settles(
+def test_a_settled_shrink_is_not_mid_rewrite_once_the_memory_expires(
     tmp_path: Path, crew_home: Path, live_pid: int
 ) -> None:
-    # The second signature of a truncating rewrite: the file is smaller than the
-    # last read saw it, even though its mtime has moved past the short window. A
-    # reader that only watched the clock would call this unwritten.
+    # The shrink signature is bounded in time. A path that once held a larger
+    # readable manifest and is now smaller and unreadable, its mtime long settled,
+    # is not a rewrite in transit: the read that recorded the larger size is past
+    # the window too. Without that bound a retry reusing the path would never be
+    # reported unwritten at all, however long it stayed broken.
     now = time.time()
-    manifest = _manifest_path(tmp_path, "r-shrunk")
+    manifest = _manifest_path(tmp_path, "r-settled")
     _write(manifest, IN_PROGRESS_MANIFEST, age_seconds=600)
     pointer = _pointer(
         tmp_path,
-        "r-shrunk",
+        "r-settled",
         pid=live_pid,
         created_at=now - 900,
         manifest=manifest,
-        stream=_stream_path(tmp_path, "r-shrunk"),
+        stream=_stream_path(tmp_path, "r-settled"),
     )
     recovery.classify_pointer(pointer, now_seconds=now)
 
     _write(manifest, "stat", age_seconds=600)
 
-    row = recovery.classify_pointer(pointer, now_seconds=now)
+    row = recovery.classify_pointer(
+        pointer, now_seconds=now + recovery.MANIFEST_REWRITE_WINDOW_SECONDS + 20
+    )
 
-    assert row["recovery_classification"] != "unwritten"
+    assert row["recovery_classification"] == "unwritten"
+
+
+def test_a_retry_does_not_inherit_the_size_a_predecessor_left(
+    tmp_path: Path, crew_home: Path, live_pid: int
+) -> None:
+    # A retry reuses its run directory's manifest path, so a size remembered by
+    # path alone would let the second attempt inherit the first attempt's larger
+    # manifest and hold its own reading back. The memory is keyed by the attempt,
+    # so the retry starts with nothing remembered.
+    now = time.time()
+    manifest = _manifest_path(tmp_path, "r-retry")
+    first = _pointer(
+        tmp_path,
+        "r-retry",
+        pid=live_pid,
+        created_at=now - 900,
+        manifest=manifest,
+        stream=_stream_path(tmp_path, "r-retry"),
+        attempt=1,
+    )
+    _write(manifest, IN_PROGRESS_MANIFEST, age_seconds=600)
+    recovery.classify_pointer(first, now_seconds=now)
+
+    _write(manifest, "stat", age_seconds=600)
+    # The retry is well past its own launch window too, so the reading under test
+    # is the size memory and nothing else: only the attempt key can make it unwritten.
+    retry = _pointer(
+        tmp_path,
+        "r-retry",
+        pid=live_pid,
+        created_at=now - 900,
+        manifest=manifest,
+        stream=_stream_path(tmp_path, "r-retry"),
+        attempt=2,
+    )
+
+    row = recovery.classify_pointer(retry, now_seconds=now)
+
+    assert row["recovery_classification"] == "unwritten"
+
+
+def test_the_size_memory_stays_within_its_bound(
+    tmp_path: Path, crew_home: Path, live_pid: int
+) -> None:
+    # A long-lived reader classifies every run it is shown. The memory cannot
+    # grow with the fleet's history, so it holds a bounded number of entries and
+    # evicts the least recently touched ones.
+    now = time.time()
+    bound = recovery.MANIFEST_SIZE_MEMORY_MAX
+    for index in range(bound * 2):
+        run_id = f"r-bound-{index}"
+        manifest = _manifest_path(tmp_path, run_id)
+        _write(manifest, IN_PROGRESS_MANIFEST, age_seconds=600)
+        pointer = _pointer(
+            tmp_path,
+            run_id,
+            pid=live_pid,
+            created_at=now - 900,
+            manifest=manifest,
+            stream=_stream_path(tmp_path, run_id),
+        )
+        recovery.classify_pointer(pointer, now_seconds=now)
+
+    assert len(recovery._MANIFEST_SIZES_READ) <= bound
 
 
 def test_a_run_past_the_grace_with_no_verdict_still_reads_unwritten(
