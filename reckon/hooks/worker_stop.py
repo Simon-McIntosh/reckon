@@ -12,8 +12,10 @@ worker's environment), else by matching the payload's working directory against
 the live crew run pointers on this host. When no run resolves it writes nothing
 and exits 0, so a coordinator or an interactive session is never affected.
 
-When a run does resolve, the hook blocks while the manifest is absent or its
-top-level ``status:`` line does not name a terminal value. The reason names the
+When a run does resolve, the hook blocks in three cases: the manifest is absent,
+its top-level ``status:`` line does not name a terminal value, or it is terminal
+but was last written before this attempt began, which states that it was written
+by an earlier attempt and not by the worker now stopping. The reason names the
 manifest path and what is missing. So a worker that genuinely cannot finish is
 never trapped, the hook blocks at most three times per stop chain, counting in a
 file in the run directory. The chain is delimited by the payload's

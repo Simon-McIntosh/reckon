@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 400" role="img" aria-labelledby="title desc">
+  <title id="title">An in-harness lane change carries the attempt environment a launch attaches</title>
+  <desc id="desc">A fresh dispatch to an in-harness backend builds the run directive environment, and a lane change that re-pointed a live cli run in-harness rebuilds it. Both now name the same three variables. Without them a re-pointed run reads as the attempt it replaced; the loss is latent because the guard reads the attach directive alone.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#718096"/>
+    </marker>
+    <style>
+      .box { fill: #f8fafc; stroke: #4a5568; stroke-width: 2; rx: 12; }
+      .runtime { fill: #ebf8ff; stroke: #2b6cb0; }
+      .added { fill: #f0fff4; stroke: #2f855a; }
+      .label { font: 600 18px system-ui, sans-serif; fill: #1a202c; }
+      .detail { font: 14px system-ui, sans-serif; fill: #4a5568; }
+      .key { font: 600 15px ui-monospace, monospace; fill: #1a202c; }
+      .arrow { stroke: #718096; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .note { font: 13px system-ui, sans-serif; fill: #744210; }
+    </style>
+  </defs>
+
+  <text class="label" x="30" y="36">Two in-harness directive construction sites</text>
+
+  <rect class="box" x="30" y="60" width="280" height="96"/>
+  <text class="label" x="48" y="92">Fresh dispatch</text>
+  <text class="detail" x="48" y="116">claude / clive / codex</text>
+  <text class="detail" x="48" y="138">delegated with the runtime plan</text>
+
+  <rect class="box" x="30" y="196" width="280" height="120"/>
+  <text class="label" x="48" y="228">Lane change</text>
+  <text class="detail" x="48" y="252">a live cli run moved</text>
+  <text class="detail" x="48" y="274">to an in-harness backend:</text>
+  <text class="detail" x="48" y="296">the preview and the persisted record</text>
+
+  <rect class="runtime box" x="560" y="96" width="450" height="170"/>
+  <text class="label" x="580" y="128">directive.environment</text>
+  <text class="key" x="580" y="164">RECKON_RUN_ID</text>
+  <text class="key" x="580" y="194">RECKON_MANIFEST</text>
+  <text class="key" x="580" y="224">RECKON_ATTEMPT_STARTED_AT = changed_at</text>
+
+  <path class="arrow" d="M310 108 C 430 108 440 150 556 150"/>
+  <path class="arrow" d="M310 256 C 430 256 440 214 556 214"/>
+
+  <rect class="added box" x="30" y="344" width="980" height="40"/>
+  <text class="note" x="48" y="370">Both sites now attach the same three variables. The guard reads the attach directive alone, so a re-pointed run losing them is latent today.</text>
+</svg>
