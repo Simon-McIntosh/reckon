@@ -799,6 +799,43 @@
       inside this node's fence, so it is left as a follow-on.</p>
     </div>
 
+    <div data-reckon="landing" data-node="watch-suite-green-on-main" data-when="2026-09-26">
+      <h3>Landing record &mdash; three follower-counter tests return to green; eight were already green</h3>
+      <p>The eleven ids were reported red in the sibling follower run's
+      <code>gate-follow-watch-head.log</code>, taken at that branch's head
+      <code>e21cb520</code> whose base <code>80d55621</code> predates the main-line test
+      repair. Reproducing them at base <code>0391d7fa</code> measures
+      <strong>3 failed / 17 passed</strong>: the eight ids in the watch-lifetime,
+      observed-session, death and unit-inventory files already pass, because
+      <code>63f40039</code> (the promoted-departure test repair) is an ancestor of the base
+      and carries their fix. Only the three <code>test_follow_counts_its_session.py</code>
+      ids were red.</p>
+      <p><strong>Adjudication.</strong> The eight pass at the measured base and no file was
+      touched for them. The three reddened because the <em>test</em> encoded a superseded
+      renderer format, so the test changed and no executable code changed:
+      <code>5ef9ee49</code> dropped the <code>·</code> separator between the fleet counters,
+      and the block is now the fixed two-column
+      <code>&lt;n&gt;w &lt;n&gt;b &lt;n&gt;u &lt;n&gt;q</code> the ticker always prints. The
+      regex now matches the whole block rather than a prefix, so a bucket added later cannot
+      slip past it. <code>reckon/crew/recovery.py</code> is byte-identical to base.</p>
+      <p><strong>Delivered.</strong> The eleven named ids pass (20 passed); the focused module
+      passes (4 passed); the four comparison files
+      (<code>test_crew_recovery.py</code>, <code>test_crew_watch_stream.py</code>,
+      <code>test_a_discard_never_reads_promoted.py</code>,
+      <code>test_producer_shares_the_classifier_verdict.py</code>) pass with zero added
+      failures (111 passed). The declared negative control forced every departure to
+      <code>withdrawn</code> and failed
+      <code>test_cold_watch_holds_an_already_stale_terminal_pointer</code> (1 failed, exit 1),
+      reverted before finishing. Receipts under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T090019682272-follow-watch-suite-green-on-main/logs/</code>.
+      Full record:
+      <code>a-crew-process-ends-with-its-owner-landed.html#s10-watch-suite-green-on-main</code>;
+      figure:
+      <code>docs/figures/a-crew-process-ends-with-its-owner/watch_tests_red_by_commit.svg</code>.
+      This gate measures only this node's own change; verifying the merged result belongs to a
+      separately dispatched test node, and the driving followup stays open.</p>
+    </div>
+
     <h2 id="s11">&sect;11 &mdash; A live producer reads only what changed since its last poll</h2>
     <p><strong>The defect.</strong> &sect;3 ends a producer that nobody uses. &sect;4 stops
     whole-tree <code>git status</code> walks. Neither covers a producer that is legitimately
