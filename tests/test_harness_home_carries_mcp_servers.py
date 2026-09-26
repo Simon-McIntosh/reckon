@@ -16,6 +16,15 @@ The declared negative control drops the ``~/.claude.json`` declaration from the
 flight defaults; the mcpServers assertion then fails with no ``.claude.json``
 under the run harness home. Running this file with ``HARNESS_HOME_MCP_MUTATION=1``
 reproduces that red log.
+
+The merged copy is private from creation: written to a sibling temporary opened
+``0o600`` and moved onto the destination, never created at a umask mode and
+narrowed afterwards. Its final mode is the narrower of ``0o600`` and any
+existing destination's own mode, so a wider source never widens the run's copy.
+The second declared negative control restores the chmod-after-write path;
+running the file with ``HARNESS_HOME_MERGE_MUTATION=1`` reproduces its red log,
+in which the private-from-creation case fails because no temporary is ever
+observed.
 """
 
 from __future__ import annotations
@@ -34,6 +43,14 @@ from reckon import _backends, flight
 NEGATIVE_CONTROL_MUTATION = (
     "drop the ~/.claude.json declaration from the flight defaults; the "
     "mcpServers assertion must fail"
+)
+
+# The second declared negative control: restore the chmod-after-write path, so
+# the seeded file exists at the umask mode until a later chmod and the spy on
+# os.replace never fires. The private-from-creation case must then fail.
+MERGE_NEGATIVE_CONTROL = (
+    "restore the chmod-after-write path for the merged home file; the "
+    "private-from-creation case must fail"
 )
 
 OPERATOR_SERVERS = {
@@ -90,6 +107,19 @@ def _apply_declared_mutation(monkeypatch):
     if not os.environ.get("HARNESS_HOME_MCP_MUTATION"):
         return
     monkeypatch.setattr(flight, "shipped_harness_home_adjacent_files", dict)
+
+
+@pytest.fixture(autouse=True)
+def _apply_merge_mutation(monkeypatch):
+    """The declared negative control: the chmod-after-write path is restored."""
+    if not os.environ.get("HARNESS_HOME_MERGE_MUTATION"):
+        return
+
+    def _legacy_write(destination, payload, _mode=0o600):
+        destination.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+        destination.chmod(0o644)
+
+    monkeypatch.setattr(_backends, "_write_private_json", _legacy_write)
 
 
 def _metadata_snapshot(root: Path) -> list[tuple]:
@@ -208,6 +238,67 @@ def test_the_operator_home_is_never_written(tmp_path: Path):
     run.mkdir()
     _launch(home, run, CLAUDE_BACKEND)
     assert _metadata_snapshot(home) == before
+
+
+def test_a_wider_source_never_widens_an_existing_destination(tmp_path: Path):
+    """A 0o644 source and a 0o600 destination leave the destination 0o600."""
+    home = _operator_home(tmp_path)
+    (home / ".claude.json").chmod(0o644)
+    run = tmp_path / "run"
+    run.mkdir()
+    harness = run / "harness"
+    harness.mkdir(parents=True)
+    destination = harness / ".claude.json"
+    destination.write_text(json.dumps({"projects": {"/home/operator/x": {}}}))
+    destination.chmod(0o600)
+
+    _launch(home, run, CLAUDE_BACKEND)
+
+    assert stat.S_IMODE(destination.stat().st_mode) == 0o600
+    seeded = json.loads(destination.read_text())
+    assert seeded["mcpServers"] == OPERATOR_SERVERS
+    assert "projects" in seeded
+
+
+def test_a_wider_destination_is_narrowed_to_the_ceiling(tmp_path: Path):
+    """An existing 0o644 destination is never left wider than 0o600."""
+    home = _operator_home(tmp_path)
+    run = tmp_path / "run"
+    run.mkdir()
+    harness = run / "harness"
+    harness.mkdir(parents=True)
+    destination = harness / ".claude.json"
+    destination.write_text(json.dumps({"projects": {}}))
+    destination.chmod(0o644)
+
+    _launch(home, run, CLAUDE_BACKEND)
+
+    assert stat.S_IMODE(destination.stat().st_mode) == 0o600
+
+
+def test_the_seeded_file_is_private_from_creation(tmp_path: Path, monkeypatch):
+    """The file is only ever observed at 0o600, never after a widening chmod."""
+    home = _operator_home(tmp_path)
+    (home / ".claude.json").chmod(0o644)
+    run = tmp_path / "run"
+    run.mkdir()
+    destination = run / "harness" / ".claude.json"
+
+    observed: list[int] = []
+    real_replace = os.replace
+
+    def _spy(source, target, *args, **kwargs):
+        if str(target) == str(destination):
+            observed.append(stat.S_IMODE(os.stat(source).st_mode))
+        return real_replace(source, target, *args, **kwargs)
+
+    monkeypatch.setattr(os, "replace", _spy)
+    _launch(home, run, CLAUDE_BACKEND)
+
+    # The private write moves a temporary onto the destination exactly once,
+    # and that temporary is 0o600 at the instant it is observed.
+    assert observed == [0o600]
+    assert stat.S_IMODE(destination.stat().st_mode) == 0o600
 
 
 if __name__ == "__main__":  # pragma: no cover - reproduces the red log

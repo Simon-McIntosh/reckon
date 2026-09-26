@@ -52,6 +52,7 @@ describes the whole run and can legitimately exceed that window many times over.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import queue
@@ -1891,19 +1892,69 @@ def _merge_harness_entry(
     if merged is None:
         return
     existing: dict[str, Any] = {}
+    existing_mode: int | None = None
     if destination.exists():
         loaded = _load_json_mapping(destination)
         if loaded is None:
             return
         existing = dict(loaded)
+        existing_mode = _permission_bits(destination)
     for key, value in merged.items():
         if isinstance(value, Mapping) and isinstance(existing.get(key), Mapping):
             existing[key] = {**existing[key], **value}
         else:
             existing[key] = value
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(existing, indent=2, sort_keys=True) + "\n")
-    _copy_writable_mode(source, destination)
+    _write_private_json(
+        destination,
+        existing,
+        0o600 if existing_mode is None else min(0o600, existing_mode),
+    )
+
+
+def _permission_bits(path: Path) -> int | None:
+    """Return ``path``'s permission bits, or None if it cannot be read."""
+    try:
+        return path.stat().st_mode & 0o777
+    except OSError:
+        return None
+
+
+def _write_private_json(
+    destination: Path, payload: Mapping[str, Any], mode: int = 0o600
+) -> None:
+    """Write a JSON object private from creation, then put it at ``mode``.
+
+    The payload is the operator's own home configuration, so the run's copy
+    must never be readable beyond ``0o600`` at any instant. A file created by
+    ``Path.write_text`` takes the umask — commonly ``0o644`` — and is only
+    narrowed by a later ``chmod``, which leaves a window in which another
+    principal on the host can read it. The bytes are instead written to a
+    sibling temporary file opened ``0o600`` and moved onto the destination with
+    :func:`os.replace`, so the destination is only ever the private inode or the
+    file it replaces.
+
+    ``mode`` is the ceiling applied to the final file; it is never wider than
+    ``0o600`` because the caller derives it as the narrower of ``0o600`` and any
+    existing destination's own mode.
+    """
+    data = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode()
+    temporary = destination.parent / f".{destination.name}.{os.getpid()}.tmp"
+    descriptor = os.open(temporary, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(data)
+        # O_CREAT's mode is filtered by the umask, which can only narrow it;
+        # set the ceiling explicitly so a stricter umask cannot leave the file
+        # below the mode the caller asked for.
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, destination)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(temporary)
+        raise
+    if mode != 0o600:
+        os.chmod(destination, mode)
 
 
 def _load_json_mapping(path: Path) -> dict[str, Any] | None:
