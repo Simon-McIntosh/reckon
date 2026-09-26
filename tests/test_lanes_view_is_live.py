@@ -19,14 +19,25 @@ from typing import Any
 import pytest
 
 from reckon import _backends, _store, mcp_views
-from reckon.crew import staleness
+from reckon.crew import resumption, staleness
 
 SHORT_WINDOW_MINUTES = 5 * 60
 LONG_WINDOW_MINUTES = 7 * 24 * 60
 SHARED_SHORT_RESET = 1_893_484_800
 SHARED_LONG_RESET = 1_894_089_600
 SEPARATE_LONG_RESET = SHARED_LONG_RESET + 4 * 60 * 60
-_WRITE_REACHABLE_TREES = ("crew/lane-probes", "crew/lanes")
+
+
+def _probe_cache_tree(root: Path) -> Path:
+    """The lane-probe cache's tree under ``root``, named by the writer that composes it.
+
+    The path is derived from the production builder rather than written down
+    here: a literal is a second statement of where the cache lives, free to
+    drift from the writer it is meant to watch, and a guard pointed at a tree
+    nothing writes reports a protection it cannot provide.
+    """
+    composed = resumption.lane_probe_cache_path("project", "backend")
+    return root / composed.relative_to(_store._config_home()).parent.parent
 
 
 @dataclass(frozen=True)
@@ -124,23 +135,22 @@ _REAL_CONFIG_HOME = _real_config_home()
 
 
 def _inventory(root: Path) -> list[tuple[str, int, int]]:
-    """The composition-writable trees under ``root``, walked whole.
+    """The composition-writable tree under ``root``, walked whole.
 
-    Only the two subtrees a composition writes a probe cache or a lane document
-    into are inventoried; a tree that does not exist yet contributes nothing,
-    so a write that creates one is caught as a mismatch as well as a modified
-    file inside one that already exists.  The rest of the configuration home is
-    deliberately out of scope: a fleet dispatch creates and removes run
-    directories and live pointers every few seconds, so an inventory reaching
-    ``crew/runs`` or ``crew/live`` would report a peer's dispatch as this
-    test's write.
+    One tree is inventoried -- the lane-probe cache's, named by the writer that
+    composes it -- and a tree that does not exist yet contributes nothing, so a
+    write that creates it is caught as a mismatch as well as a modified file
+    inside one that already exists.  The rest of the configuration home is
+    deliberately out of scope: a tree nothing writes would be a tripwire that
+    cannot fire, and a fleet dispatch creates and removes run directories and
+    live pointers every few seconds, so an inventory reaching ``crew/runs`` or
+    ``crew/live`` would report a peer's dispatch as this test's write.
     """
     findings: list[tuple[str, int, int]] = []
-    for subtree in _WRITE_REACHABLE_TREES:
-        whole = root / subtree
-        if not whole.exists():
-            continue
-        for path in sorted(whole.rglob("*")):
+    tree = _probe_cache_tree(root)
+    if not tree.exists():
+        return findings
+    for path in sorted(tree.rglob("*")):
             try:
                 path_stat = path.stat()
             except OSError:
@@ -161,12 +171,13 @@ def real_config_home_is_untouched(isolated_reckon_home: Path) -> None:
 
     Pointing ``RECKON_HOME`` at a temporary tree proves an isolated read.  The
     write is the direction that can make another session wrong, so the real
-    home's composition-writable subtrees are inventoried before and after every
-    case and must come back identical -- an isolated read does not prove an
-    isolated write.  Only those subtrees are walked: a fleet dispatch churns
-    run directories and live pointers constantly, so inventorying the whole
-    home would fail on a peer's dispatch, which no composition writes, and
-    accuse this test's own code of it.
+    home's composition-writable tree -- the lane-probe cache's, named by the
+    production writer that composes it -- is inventoried before and after every
+    case and must come back identical: an isolated read does not prove an
+    isolated write.  Only that tree is walked: a fleet dispatch churns run
+    directories and live pointers constantly, so inventorying the whole home
+    would fail on a peer's dispatch, which no composition writes, and accuse
+    this test's own code of it.
     """
     assert _store._config_home() == isolated_reckon_home.resolve()
     before = _inventory(_REAL_CONFIG_HOME)
