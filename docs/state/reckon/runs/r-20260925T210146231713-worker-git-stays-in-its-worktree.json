@@ -1,0 +1,294 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "2cd573f16da3d3e726047091547afe6f4af6d458",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 14276649,
+      "input_tokens_cumulative": 14276649,
+      "output_tokens": 68524,
+      "output_tokens_cumulative": 68524,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 1820,
+    "files": 21,
+    "removed": 34
+  },
+  "commit_resolution": null,
+  "commits": [
+    "8d515f5e8ffc9737a9f442adc25424555522e806",
+    "c9ac064ed4430263270c4a03668848f980e5f5b1",
+    "9db0672b32d83a1a45e99d7a4434a03185cab777",
+    "5a8f6ce6f680d898b4bb5caee18057d870c317d0"
+  ],
+  "completed_at": "2026-09-25T22:26:15.250Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-25T21:01:56Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/cli.py",
+    "/"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_worker_git_guard.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T210146231713-worker-git-stays-in-its-worktree/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.5,
+    "at_dispatch": 0.5,
+    "plan": "a-worker-cannot-write-your-home",
+    "reason": "a compensating control for the fence-off window on a plan owned by s21-coord, whose owner sets its impl",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-25T21:56:46.918179+00:00",
+    "horizon_seconds": 3300,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-25T21:01:46Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 4,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 5,
+    "mean_context": 105714,
+    "observed_at": "2026-09-25T21:01:42Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-25T22:26:15.250Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T210146231713-worker-git-stays-in-its-worktree/manifest.md",
+  "member": "disposable-r-20260925T210146231713-worker-git-stays-in-its-worktree",
+  "negative_control": {
+    "declaration": "allow a mutating git verb whose -C target is another checkout",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T210146231713-worker-git-stays-in-its-worktree/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T210146231713-worker-git-stays-in-its-worktree/negative-control.log",
+    "test_paths": [
+      "tests/test_worker_git_guard.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "worker-git-stays-in-its-worktree",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 518,
+          "cached_input_tokens": 696071,
+          "input_tokens": 696591,
+          "output_tokens": 962,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 697553,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+      "session_id": "s23-coord"
+    },
+    "done_when": "the four tests the followup names are red at base and green at head, the installer can emit the hook entry without writing ~/.claude/settings.json (asserted untouched), and tests/test_hook_installer.py tests/test_guard_install.py tests/test_worker_stop_hook.py show no added failures against base",
+    "estimated_hours": null,
+    "goal": "implement followup f-awcwyh-worker-git-stays-in-its-worktree on this plan: a PreToolUse Bash guard that, inside a crew run, denies a mutating git verb aimed at any repository other than the run own worktree, with an installer entry and no installation",
+    "id": "worker-git-stays-in-its-worktree",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-25T21:01:46Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 4,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 5,
+      "mean_context": 105714,
+      "observed_at": "2026-09-25T21:01:42Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T210146231713-worker-git-stays-in-its-worktree/manifest.md",
+    "negative_control": "allow a mutating git verb whose -C target is another checkout",
+    "plan": "a-worker-cannot-write-your-home",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "exact",
+    "time_budget": "55m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/hooks/worker_git_guard.py",
+      "reckon/hooks/install.py",
+      "tests/test_worker_git_guard.py",
+      "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+      "docs/figures/a-worker-cannot-write-your-home",
+      "docs/plans/a-worker-cannot-write-your-home.html"
+    ]
+  },
+  "orientation_input_tokens": 1350386.0,
+  "outcome": "",
+  "plan": "a-worker-cannot-write-your-home",
+  "plan_impl_at_dispatch": 0.5,
+  "promoted_revision": "5a8f6ce6f680d898b4bb5caee18057d870c317d0",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 19,
+      "fit": 19,
+      "goal_fidelity": 17,
+      "scope_discipline": 18
+    },
+    "status": "parsed",
+    "total": 91
+  },
+  "role": "implement",
+  "run_id": "r-20260925T210146231713-worker-git-stays-in-its-worktree",
+  "scope_acceptances": [
+    {
+      "path": "reckon/cli.py",
+      "reason": "wires the git guard into _configure_crew_guards behind the crew-guard opt-in, as the review required"
+    }
+  ],
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "ac7bc6f8-f3b3-4b1e-8406-d1476d0c7ace",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 26358998,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 1407.064,
+    "generated_tokens": 150357,
+    "generation_seconds": 1350.68,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.7,
+    "machine_seconds": 56.384,
+    "peak_input_tokens": 166754,
+    "tokens_per_second": 111.32,
+    "wall_tokens_per_second": 106.86
+  },
+  "time_budget": "55m",
+  "tool_steps": 111.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 5059,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-25T22:26:15Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-25T22:02:45Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260925T210146231713-worker-git-stays-in-its-worktree",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 17870,
+    "worker_pid": 2411359
+  },
+  "worker_seconds": 5024,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
