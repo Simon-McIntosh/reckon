@@ -708,6 +708,10 @@ tests/test_session_lives_on_its_run.py::test_resume_starts_fresh_when_the_curren
     <strong>2 failed in 3.24 s</strong> (exit 1), and no assertion is deleted without a
     replacement: every assertion removed above has a counterpart in the middle column of the
     table. At the head the three gate files report <strong>13 passed in 6.23 s</strong> (exit 0).</p>
+    <p><strong>Correction appended 2026-09-26.</strong> The receipt this figure came from,
+    <code>logs/head-arm-three-files.log</code> under run
+    <code>r-20260925T181651809360</code>, carries <strong>13 passed in 10.87s</strong>;
+    the quoted 6.23 s is not the receipt's own figure and is left standing beside it.</p>
     <p><strong>Failure delta over the dispatch, routing and member test files.</strong> The set is
     the 25 files matching <code>ls tests/ | grep -E "dispatch|routing|member"</code>, run whole in
     each arm with the root environment's interpreter and <code>-p no:cacheprovider</code>.</p>
@@ -749,6 +753,52 @@ tests/test_no_member_dispatch_runs_alone.py::test_two_unnamed_reviews_launch_wit
     <code>head-arm-dispatch-routing-member.log</code>,
     <code>head-arm-scratch-dispatch-routing-member.log</code>. The scratch trees are temporary;
     the logs are durable.</p>
+  </section>
+  <section id="member-test-names">
+    <h2>Two member test names now state the disposable identity they assert</h2>
+    <p><strong>Worker delivery, 2026-09-26.</strong> Node
+    <code>rename-member-tests-by-what-they-assert</code>, based on
+    <code>26b48f0fb4ac552034286c13eaab215055872e26</code>, commit
+    <code>3d950ac988fdded10c464f0e9357a5c71374c70b</code>. The two cases were renamed by
+    what they assert and nothing else changed: the diff is two <code>def</code> lines,
+    with every docstring and assertion body byte-identical to base.</p>
+    <table>
+      <thead><tr><th>Case (base line)</th><th>Name at base</th><th>Name at head</th></tr></thead>
+      <tbody>
+        <tr><td><code>tests/test_member_registration_commits.py</code>:254</td>
+        <td><code>test_a_dispatch_naming_no_member_commits_its_registration</code></td>
+        <td><code>test_a_dispatch_naming_no_member_is_disposable_and_commits_nothing</code></td></tr>
+        <tr><td><code>tests/test_crew_ephemeral_members.py</code>:94</td>
+        <td><code>test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session</code></td>
+        <td><code>test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session</code></td></tr>
+      </tbody>
+    </table>
+    <p><strong>The absence assertion, and the check that it can fire.</strong> One grep for
+    the two names at base, over <code>tests/</code>, reports <strong>two hits</strong>, one
+    at each line above; at the rename commit the same grep reports <strong>zero
+    hits</strong> (exit 1). A scratch copy of <code>tests/</code> with the base name
+    reintroduced at line 254 makes the same grep report exactly that one line, so the
+    instrument is shown to see a present name before the zero is believed. Receipts, with
+    their exit codes and the derived names: <code>grep-base.log</code>,
+    <code>grep-after.log</code>, <code>grep-control.log</code>,
+    <code>derived-names.txt</code> and <code>driver-grep.sh</code> under the run directory
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T131823497018-rename-member-tests-by-what-they-assert/</code>.</p>
+    <p><strong>The gate, both arms.</strong> The two measured files in one invocation:
+    <strong>11 passed at base</strong> (exit 0, 8.38 s) and <strong>11 passed at the rename
+    commit</strong> (exit 0, 4.94 s) &mdash; no failures in either arm, and the test count
+    is the same, so the rename adds no failure. Ruff over the two committed paths reports one
+    pre-existing <code>I001</code> at base and the same single finding at the head, so the
+    commit adds none. Logs: <code>gate-base.log</code>, <code>gate-after.log</code>,
+    <code>ruff-base.log</code>, <code>ruff-after.log</code> in the same run directory.</p>
+    <p><strong>A duration corrected beside the line it was quoted on.</strong> The anchor
+    above this one (<a href="#disposable-member-tests">the disposable-member-tests
+    anchor</a>) quotes <strong>13 passed in 6.23 s</strong> for the three gate files; its
+    receipt, <code>logs/head-arm-three-files.log</code> in run
+    <code>r-20260925T181651809360</code>, carries <strong>13 passed in 10.87s</strong>.
+    The quoted figure stands as delivered and the receipt's own figure is appended beside
+    it.</p>
+    <p>The coordinator owns the plan-side landing record, the driving followup and section
+    closure.</p>
   </section>
 </main>
 </body>

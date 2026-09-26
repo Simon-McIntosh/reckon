@@ -91,7 +91,7 @@ def _node(node_id: str, manifest: Path) -> crew.TaskNode:
     )
 
 
-def test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session(
+def test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session(
     isolated_home: Path, repository: Path
 ) -> None:
     """Two unnamed dispatches are disposable; neither registers nor composes a session.
