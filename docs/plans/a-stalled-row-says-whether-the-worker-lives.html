@@ -232,6 +232,45 @@
     <code>reckon/crew/recovery.py</code> and
     <code>tests/test_resume_offer_needs_a_dead_process.py</code>.</p>
 
+    <h3 id="s4-landed">Landed &mdash; node <code>resume-offer-waits-while-the-worker-lives</code></h3>
+    <p><strong>Landed</strong> (<code>e1e31482</code>). The wait-met arm of
+    <code>classify_pointer</code> in <code>reckon/crew/recovery.py</code> now consults the process
+    reading before it composes an offer. The three-way reading the stalled detail states is hoisted
+    into one helper (<code>_process_reading</code>: <code>alive</code>, <code>process gone</code>,
+    <code>liveness unknown</code>) and the same helper composes the unreadable arm's clause, so no
+    second liveness reader exists and no two surfaces can call one run alive and gone at once. The
+    offer, its printed action and the <code>ready</code> recovery classification are all gated on the
+    reading being <code>process gone</code>; every other reading renders the same event as a wait on
+    the named condition: <code>waiting on &lt;condition&gt;: the probe reported
+    '&lt;observed&gt;', a declared terminal state, but the process reading is '&lt;reading&gt;', so
+    no lift is offered until the process is observed to have ended</code>, with the row's recovery
+    reading <code>wait</code> rather than <code>resume</code> and the sweep's action naming the
+    process it is waiting for. The unproven reading is the case the wording exists for: it is not a
+    death, so the offer would rest on an observation nobody took, and the row names
+    <code>liveness unknown</code> so a reader sees why the lift is withheld instead of concluding the
+    run was already lifted.</p>
+    <p><strong>Evidence:</strong> three cases in
+    <code>tests/test_resume_offer_needs_a_dead_process.py</code>, each driven through the classifier,
+    the watcher snapshot, the transition the events log persists and
+    <code>format_watch_transition</code> at the 208-column pane. The live reading is a child the test
+    itself starts and the gone reading is a pid beyond the kernel's ceiling checked on this host, so
+    the process table is asked rather than stubbed, and each case asserts the run reaches the arm
+    under test (<code>wait_condition_state == "met"</code>) before it asserts what the arm says. The
+    condition is a file the fixture writes, so the met state comes from the run's own declared path.
+    The fixture also asserts at its own teardown that the real config home is untouched, entry by
+    entry. At the base revision the same three files give 2 failed, 27 passed, exit 1, and both
+    failures are this node's own cases &mdash; the live case on
+    <code>assert "resume" not in "ready to resume: scheduler job 42 has finished reported 'present',
+    a declared terminal state"</code>, which is the reading the plan quotes; the gone case already
+    offered the resume at base and still does. At the delivered head the three files pass in one
+    invocation (29 passed, exit 0), so the added-failure delta is zero. The declared negative control
+    was executed and logged: with the liveness gate removed from the wait-met arm the live case's row
+    contains <code>resume</code> again and fails on that same assertion. The staged paths' ruff
+    findings equal their count at base (8 in <code>recovery.py</code>, all pre-existing; 0 in the
+    added test). Figure and full table in
+    <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#s4">&sect;4
+    of the landed evidence record</a>.</p>
+
     <h2 id="s5">&sect;5 &mdash; An unreadable manifest names the word it could not read</h2>
     <p>When the process is gone and the classifier reads a manifest whose status word is outside
     <code>MANIFEST_STATUSES</code> in <code>reckon/crew/reports.py</code>, emit a transition into
