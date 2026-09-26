@@ -281,3 +281,56 @@ def test_a_run_id_with_no_pointer_refuses_rather_than_guessing(
     assert result.returncode == REFUSAL_STATUS, result.stderr
     assert "refusing" in result.stderr
     assert _head(other, home) == before
+
+
+def test_an_alias_in_the_target_repository_config_is_refused(
+    repos: dict[str, Any],
+) -> None:
+    """A verb the target repository aliases to a writer is refused.
+
+    The alias lives in the repository's own config, so the shim cannot see it in
+    the invocation's argv. The rule is an allowlist for that reason: a name that
+    is not a built-in reader is refused whether it expands to a reader or a
+    writer, because a deny-list would have to know the name in advance.
+    """
+    home, other = repos["home"], repos["other"]
+    configured = _git_run(["config", "alias.ci", "commit"], cwd=other, home=home)
+    assert configured.returncode == 0, configured.stderr
+    before = _head(other, home)
+    assert before != repos["first_other"]
+
+    result = _shell(
+        f"git -C {other} ci --allow-empty -m bypass",
+        cwd=home,
+        home=home,
+    )
+
+    _assert_refused(result, repo=other, worktree=repos["worktree"])
+    assert _head(other, home) == before
+
+
+def test_a_run_id_that_is_not_one_path_component_is_refused(
+    repos: dict[str, Any],
+) -> None:
+    """A run id carrying a separator cannot name a pointer outside the live dir.
+
+    The record a traversal reaches is made to point at the other checkout, so a
+    shim that trusts it forwards the mutation; one that requires a single safe
+    component refuses before reading it.
+    """
+    home, other = repos["home"], repos["other"]
+    escape = home / "crew" / "escape.json"
+    escape.write_text(json.dumps({"worktree": str(other)}), encoding="utf-8")
+    before = _head(other, home)
+    assert before != repos["first_other"]
+
+    result = _shell(
+        f"git -C {other} reset --hard {repos['first_other']}",
+        cwd=home,
+        home=home,
+        run_id="../escape",
+    )
+
+    assert result.returncode == REFUSAL_STATUS, result.stderr
+    assert "refusing" in result.stderr
+    assert _head(other, home) == before

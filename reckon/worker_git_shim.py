@@ -13,11 +13,19 @@ run's worktree — or the git dir of that worktree.
 Scope comes from ``RECKON_RUN_ID``, the identity dispatch exports into every
 worker; a coordinator session carries no run id and the shim is transparent for
 it. The run's worktree is read from the run's live pointer, exactly as the
-pre-tool-use guard reads it. Read-only verbs, and any verb outside the mutating
-set, are forwarded unchanged. A forwarded invocation replaces this process with
-the real git resolved with the shim's own directory removed from ``PATH``, so
-the shim never finds itself, and the exit status and signals are the real
-tool's.
+pre-tool-use guard reads it. A run id that is not a single safe path component
+is refused rather than used to name a pointer file, so a value carrying a
+separator cannot read a record outside the live directory.
+
+The verb test is an allowlist, not a deny-list. Enumerating the ways a
+repository can be changed is open-ended — a verb the list does not name, or a
+name the target repository's own configuration aliases to a mutating verb, would
+be forwarded unexamined — so every verb is treated as mutating unless it is on
+the read-only allowlist below, and an alias, whose name is by definition not a
+built-in read-only verb, is refused without being resolved. A forwarded
+invocation replaces this process with the real git resolved with the shim's own
+directory removed from ``PATH``, so the shim never finds itself, and the exit
+status and signals are the real tool's.
 
 A probe that cannot resolve the run's own git dir refuses, because the safe
 direction is to leave the repository alone: the guard exists to stop a write
@@ -46,33 +54,114 @@ REFUSAL_STATUS = 97
 # The status returned when no real git can be found outside the shim.
 MISSING_BINARY_STATUS = 127
 
-# The git subcommands that change a repository's state. A read-only verb, and
-# any verb not named here, is never refused.
-MUTATING_VERBS = frozenset(
+# The built-in verbs that never change a repository, whatever arguments they
+# carry. Every verb not named here is treated as mutating, so this list is the
+# only way an invocation is forwarded under a run id.
+_READ_ONLY_VERBS = frozenset(
     {
-        "add",
-        "am",
-        "apply",
-        "checkout",
-        "cherry-pick",
-        "clean",
-        "commit",
-        "merge",
-        "mv",
-        "pull",
-        "push",
-        "rebase",
-        "reset",
-        "restore",
-        "revert",
-        "rm",
-        "stash",
-        "switch",
+        "blame",
+        "cat-file",
+        "check-attr",
+        "check-ignore",
+        "cherry",
+        "count-objects",
+        "describe",
+        "diff",
+        "diff-tree",
+        "for-each-ref",
+        "fsck",
+        "grep",
+        "help",
+        "log",
+        "ls-files",
+        "ls-remote",
+        "ls-tree",
+        "merge-base",
+        "name-rev",
+        "rev-list",
+        "rev-parse",
+        "shortlog",
+        "show",
+        "show-ref",
+        "status",
+        "var",
+        "verify-commit",
+        "verify-tag",
+        "version",
+        "whatchanged",
     }
 )
 
+# Verbs that read with some arguments and write with others. They are read-only
+# only when the first token after the verb is one they list and no later token
+# begins with a dash outside it, so `config --get a.b` passes while
+# `config --unset a.b` and `branch --list -D topic` do not.
+_READ_ONLY_ARGUMENTS: dict[str, frozenset[str]] = {
+    "branch": frozenset(
+        {
+            "-a",
+            "-l",
+            "-r",
+            "-v",
+            "-vv",
+            "--all",
+            "--contains",
+            "--format",
+            "--list",
+            "--merged",
+            "--no-merged",
+            "--points-at",
+            "--remotes",
+            "--show-current",
+            "--sort",
+            "--verbose",
+        }
+    ),
+    "config": frozenset(
+        {
+            "-f",
+            "-l",
+            "-z",
+            "--file",
+            "--get",
+            "--get-all",
+            "--get-color",
+            "--get-colorbool",
+            "--get-regexp",
+            "--includes",
+            "--list",
+            "--local",
+            "--name-only",
+            "--null",
+            "--show-origin",
+            "--show-scope",
+            "--type",
+        }
+    ),
+    "reflog": frozenset({"show"}),
+    "remote": frozenset({"-v", "--verbose", "get-url", "show"}),
+    "stash": frozenset({"list", "show"}),
+    "tag": frozenset(
+        {
+            "-l",
+            "-n",
+            "-v",
+            "--column",
+            "--contains",
+            "--format",
+            "--list",
+            "--merged",
+            "--no-merged",
+            "--points-at",
+            "--sort",
+            "--verify",
+        }
+    ),
+    "worktree": frozenset({"list"}),
+}
+
 # Git's global options that consume the token after them. Everything before the
-# subcommand is forwarded verbatim, so this list only has to find the verb.
+# subject is forwarded verbatim, so this list only has to find the verb.
 _VALUE_OPTIONS = frozenset(
     {
         "-c",
@@ -86,9 +175,6 @@ _VALUE_OPTIONS = frozenset(
         "--attr-source",
     }
 )
-
-# Options that carry their value attached (`--git-dir=<path>`, `-C<path>`).
-_ATTACHED_PREFIXES = ("-C", "--git-dir=", "--work-tree=", "--config-env=")
 
 # Environment variables the run-worktree probe must not inherit: a ``GIT_DIR``
 # left in a worker's environment would otherwise make the probe report the same
@@ -119,62 +205,76 @@ def real_git(shim_dir: Path, path: str) -> str | None:
     return shutil.which("git", path=os.pathsep.join(kept))
 
 
-def _split_verb(argv: Sequence[str]) -> tuple[list[str], str]:
-    """Return the global-option prefix and the subcommand of one git argv.
+def _split_verb(argv: Sequence[str]) -> tuple[list[str], str, list[str]]:
+    """Return one git argv as its global-option prefix, verb and remaining args.
 
     A token that is not an option ends the prefix: everything before it is the
-    global options git accepts, and the token itself is the verb (an empty
-    string when the argv names none).
+    global options git accepts, the token itself is the verb (an empty string
+    when the argv names none), and everything after it is returned as the tail.
     """
     prefix: list[str] = []
     index = 0
     while index < len(argv):
         argument = argv[index]
         if not argument.startswith("-"):
-            return prefix, argument
+            return prefix, argument, list(argv[index + 1 :])
         prefix.append(argument)
         if argument in _VALUE_OPTIONS and index + 1 < len(argv):
             prefix.append(argv[index + 1])
             index += 2
             continue
         index += 1
-    return prefix, ""
+    return prefix, "", []
 
 
-def _aliases(prefix: Sequence[str]) -> dict[str, str]:
-    """Alias definitions the invocation declares with ``-c alias.<name>=...``."""
-    aliases: dict[str, str] = {}
-    for index, argument in enumerate(prefix):
-        entry = ""
-        if argument == "-c" and index + 1 < len(prefix):
-            entry = prefix[index + 1]
-        elif argument.startswith("-c") and len(argument) > 2:
-            entry = argument[2:]
-        if not entry.startswith("alias."):
-            continue
-        name, separator, value = entry[len("alias.") :].partition("=")
-        if separator and name:
-            aliases[name] = value
-    return aliases
+def _read_only_form(tail: Sequence[str], allowed: frozenset[str]) -> bool:
+    """Whether a multi-purpose verb's arguments are all of an allowed read form.
+
+    The verb reads when its first argument names an allowed sub-form and no
+    later token begins with a dash outside that same set, so an option that
+    writes (`--unset`, `-D`) cannot ride behind a reading first argument.
+    """
+    if not tail:
+        return True
+    if tail[0] not in allowed:
+        return False
+    return all(token in allowed for token in tail[1:] if token.startswith("-"))
 
 
-def mutating_verb(prefix: Sequence[str], verb: str) -> str | None:
-    """The mutating verb this invocation runs, or None when it runs none.
+def mutating_verb(verb: str, tail: Sequence[str]) -> str | None:
+    """The verb to treat as mutating, or None when it is read-only.
 
-    A verb the invocation aliases is expanded through the invocation's own
-    ``-c alias.<name>=...`` settings, so an alias that expands to a mutating
-    verb is refused rather than read as an unknown name.
+    The allowlist is the decision: a verb is read-only only when it is a
+    built-in reader, or a multi-purpose verb in a read form. Anything else —
+    including a name the target repository aliases to a reader or a writer,
+    since the name itself is neither — is returned as mutating and refused.
+    Refusing an alias that would have been harmless is visible and recoverable;
+    forwarding an alias whose expansion this cannot see is not.
     """
     if not verb:
         return None
-    if verb in MUTATING_VERBS:
-        return verb
-    expansion = _aliases(prefix).get(verb)
-    if expansion:
-        first = _split_verb(expansion.split())[1]
-        if first in MUTATING_VERBS:
-            return first
-    return None
+    if verb in _READ_ONLY_VERBS:
+        return None
+    if verb in _READ_ONLY_ARGUMENTS and _read_only_form(
+        tail, _READ_ONLY_ARGUMENTS[verb]
+    ):
+        return None
+    return verb
+
+
+def _safe_run_component(run_id: str) -> bool:
+    """Whether a run id is a single path component safe to name a file with.
+
+    A value carrying a separator or standing for a directory of its own is not
+    one run's id, and using it would read a record outside the live directory.
+    The test is the same one the pre-tool-use guard applies when it reduces a
+    run id to a basename: the name must survive the reduction unchanged.
+    """
+    if not run_id or run_id in {os.curdir, os.pardir}:
+        return False
+    if os.sep in run_id or (os.altsep and os.altsep in run_id):
+        return False
+    return Path(run_id).name == run_id
 
 
 def _probe(
@@ -225,8 +325,10 @@ def _run_git_dir(git: str, worktree: Path, *, environ: Mapping[str, str]) -> str
 def _run_worktree(run_id: str) -> Path | None:
     """The worktree the live pointer for ``run_id`` records, or None.
 
-    The run id is reduced to its basename before it names a file, so a value
-    carrying a separator cannot reach outside the live directory.
+    The caller rejects a run id that is not a single safe path component before
+    reaching here, so the id names a file inside the live directory; a record
+    the pointer cannot be read from is None, and the caller refuses rather than
+    guessing a worktree.
     """
     from reckon.crew.runs import pointer_path
 
@@ -333,12 +435,20 @@ def main(
         return MISSING_BINARY_STATUS
 
     run_id = str(env.get(RUN_ID_ENV) or "").strip()
-    prefix, verb = _split_verb(argv)
+    prefix, verb, tail = _split_verb(argv)
     if not run_id:
         return _forward(found, argv)
-    guarded = mutating_verb(prefix, verb)
+    guarded = mutating_verb(verb, tail)
     if guarded is None:
         return _forward(found, argv)
+    if not _safe_run_component(run_id):
+        print(
+            f"refusing `git {guarded}`: {RUN_ID_ENV}={run_id!r} is not a single "
+            "path component, so it cannot name this run's live pointer and the "
+            "command changed nothing.",
+            file=sys.stderr,
+        )
+        return REFUSAL_STATUS
 
     worktree = _run_worktree(run_id)
     if worktree is None:
