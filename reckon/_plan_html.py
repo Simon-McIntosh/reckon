@@ -1119,6 +1119,24 @@ def _splice_section(html_text: str, reckon_id: str, rendered: str) -> str:
     return html_text + "\n" + rendered
 
 
+def _impl_is_carried_by_records(state: dict, html_text: str) -> bool:
+    """Whether this plan carries its impl as section records around this write.
+
+    A state naming records carries it after the write, because the state is what
+    the writer regenerates record elements from. A document holding record
+    elements carries it before the write, and the state's ``impl`` is then the
+    figure those records derived: storing it would author a number the records
+    produced, and a document whose records are being removed would change beyond
+    its record spans. Only a plan record-less on both sides stores its impl as
+    meta, and that is settled by the parser's own selector — a text match would
+    also fire on prose that quotes the record syntax, and a plan documenting the
+    contract would then lose an authored write it must keep.
+    """
+    if state.get("sections"):
+        return True
+    return bool(_section_record_elements(BeautifulSoup(html_text or "", "html.parser")))
+
+
 def write_state(html_text: str, state: dict) -> str:
     """Regenerate the reckon-owned meta + sections from `state`.
 
@@ -1168,10 +1186,9 @@ def write_state(html_text: str, state: dict) -> str:
             out = _remove_meta(out, "plan-tier")
     # A plan carrying records holds its impl as records, so the writer leaves the
     # meta alone there — on either side of the write, since regeneration must
-    # stay byte-stable whether the records are on disk or only in the state.
-    if "impl" in state and not (
-        state.get("sections") or _document_carries_records(html_text)
-    ):
+    # stay byte-stable whether the records are on disk or only in the state, and
+    # a derived figure must never be stored as the authored one.
+    if "impl" in state and not _impl_is_carried_by_records(state, html_text):
         out = _set_meta(out, "plan-impl", state["impl"])
     if "version" in state:
         out = _set_meta(out, "plan-version", int(state.get("version") or 0))

@@ -176,6 +176,64 @@ def test_plan_without_section_records_still_reads_its_authored_impl(tmp_path):
     assert parse_meta(path)["impl"] == pytest.approx(0.9)
 
 
+def _documenting_prose_html(stored_impl: str) -> str:
+    """A plan that quotes the record syntax and carries no record element.
+
+    The quoted markup lives inside ``<code>``, so it is text a reader sees
+    rather than a record the parser reads.
+    """
+    return (
+        '<!doctype html>\n<html lang="en"><head>\n'
+        '<meta charset="utf-8">\n'
+        '<meta name="docs-project" content="sample">\n'
+        '<meta name="reckon-type" content="plan">\n'
+        '<meta name="plan-slug" content="documenting">\n'
+        '<meta name="plan-title" content="Documenting the record syntax">\n'
+        '<meta name="plan-version" content="4">\n'
+        f'<meta name="plan-impl" content="{stored_impl}">\n'
+        "</head><body><main>\n"
+        '<h2 id="contract">The record contract</h2>\n'
+        "<p>A section record is written "
+        '<code>&lt;section data-reckon="section" data-id="first" '
+        'data-effort-hours="4" data-status="done"&gt;&lt;/section&gt;</code> '
+        "beside its heading, so the id, the effort and the status are carried "
+        "by the section element itself.</p>\n"
+        "</main></body></html>\n"
+    )
+
+
+def test_a_plan_documenting_the_syntax_keeps_its_impl_writable(project):
+    """A document quoting the record syntax does not hold its impl as records.
+
+    The write gate asks the parsed state, not a text match: this plan names
+    ``data-reckon="section"`` and the record attributes inside its own prose and
+    carries no record element, so its impl stays authored and a set on it must
+    land on disk and read back.
+    """
+    project_name, docs = project
+    html = _documenting_prose_html("0.6")
+    path = _write_plan(docs, "documenting", html)
+
+    state = read_state(html)
+    assert state["impl"] == pytest.approx(0.6)
+    assert state["impl_source"] == "authored"
+    assert parse_meta(path)["impl"] == pytest.approx(0.6)
+
+    result = mcp_module._edit_plan_tool(
+        project_name,
+        "documenting",
+        expected_version=4,
+        mode="state",
+        ops=[{"op": "set", "path": "impl", "value": 0.7}],
+    )
+
+    assert result["ok"] is True, result
+    written = path.read_text(encoding="utf-8")
+    assert written != html
+    assert parse_meta(path)["impl"] == pytest.approx(0.7)
+    assert read_state(written)["impl"] == pytest.approx(0.7)
+
+
 def _impl_figures(node, slug: str, found: list[dict]) -> None:
     if isinstance(node, dict):
         if node.get("slug") == slug:
