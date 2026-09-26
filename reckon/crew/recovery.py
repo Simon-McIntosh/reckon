@@ -98,6 +98,29 @@ WAITING_STATES = frozenset({"waiting", "wait-aged", "paused"})
 WAIT_CONDITION_STATES = frozenset({"pending", "met", "unknown"})
 WAIT_PROBE_TIMEOUT_SECONDS = 1.0
 
+# A dispatch writes no manifest of its own, so between launch and the worker's
+# first write a live run has no verdict to read. Reporting that gap as unwritten
+# the instant it opens makes a working run flicker, so a manifest that carries
+# no status is not called unwritten inside this window after the run's dispatch;
+# the run keeps whatever its liveness already said. Past the window the word is
+# the truthful one: a live run still without a written verdict is unwritten.
+LAUNCH_WINDOW_SECONDS = 120
+# Workers write manifests by hand rather than atomically, so a reader can catch
+# one mid-rewrite: an unparseable, just-modified or shrunk file is not the
+# worker's verdict but its absence in transit, and is treated as unchanged. The
+# window is short because it only has to cover a single rewrite, not a stall.
+MANIFEST_REWRITE_WINDOW_SECONDS = 10
+# The size each readable manifest last had, with the moment it was read, keyed by
+# the run and attempt that owns the path. A file that shrank since that read is
+# the signature of a truncating rewrite caught between the truncate and the
+# write, so the previous reading stands — earlier than a normal rewrite, before
+# its mtime has moved — and it expires with the same short window so it can
+# never hold the unwritten reading back forever.
+_MANIFEST_SIZES_READ: dict[str, tuple[int, float]] = {}
+# A reader classifies every run it is shown, over days, so the size memory is
+# capped and drops its least recently touched entry.
+MANIFEST_SIZE_MEMORY_MAX = 256
+
 # This is the authoritative answer to "what should the coordinator do now?".
 # The older classification remains a lifecycle grouping used by recovery and
 # promotion, while this vocabulary names the cause whose remedy differs. A
@@ -3368,6 +3391,121 @@ def _interruption_evidence(
     return None, 0
 
 
+def _seconds_since_dispatch(record: Mapping[str, Any], moment: float) -> float | None:
+    """Seconds between the run's dispatch and ``moment``, or None when unknown.
+
+    The dispatch is the pointer's ``created_at``, recorded by the launcher. A
+    missing or unparseable stamp is None rather than zero: a run whose launch
+    time cannot be read has taken no measurement, and a zero would place every
+    such run outside the launch window on no evidence.
+    """
+    try:
+        dispatched = datetime.fromisoformat(str(record.get("created_at") or ""))
+    except (TypeError, ValueError):
+        return None
+    if dispatched.tzinfo is None:
+        dispatched = dispatched.replace(tzinfo=UTC)
+    return moment - dispatched.timestamp()
+
+
+def _within_launch_window(record: Mapping[str, Any], moment: float) -> bool:
+    """Whether the run is still inside the window after its own dispatch.
+
+    A negative elapsed time — a clock that moved backwards, or a caller passing
+    a moment before the launch — is not inside the window: the guard covers the
+    run's own first minutes and nothing a future time is asked to invent.
+    """
+    elapsed = _seconds_since_dispatch(record, moment)
+    return elapsed is not None and 0 <= elapsed < LAUNCH_WINDOW_SECONDS
+
+
+def _manifest_may_be_mid_rewrite(
+    record: Mapping[str, Any], manifest: Path, manifest_error: str, moment: float
+) -> bool:
+    """Whether a manifest that cannot be parsed is plausibly being rewritten.
+
+    Workers write manifests in place rather than atomically, so a reader can
+    catch a file between the truncate and the write: it is unparseable, and it
+    either moved seconds ago or is smaller than the size the last readable read
+    saw. Both are the absence of a verdict in transit, not an absence of
+    delivery, so the reader treats the file as unchanged rather than reading its
+    contents as a refusal. Only a parse failure qualifies — a readable manifest
+    is a verdict whatever the writer would do next.
+
+    Both signatures are bounded by the same short window, and neither can hold a
+    reading back past it. The mtime signature is measured from the file's own
+    modification; the size signature is measured from the read that recorded the
+    larger size. Without that second bound a path that once held a bigger
+    readable manifest would suppress the unwritten reading for as long as it
+    stayed unreadable and smaller, which is exactly the shape of a retry reusing
+    its run directory's manifest, and the run would never be reported at all.
+    """
+    if not manifest_error:
+        return False
+    try:
+        stat = manifest.stat()
+    except OSError:
+        return False
+    if moment - stat.st_mtime < MANIFEST_REWRITE_WINDOW_SECONDS:
+        return True
+    remembered = _MANIFEST_SIZES_READ.get(_manifest_size_key(record, manifest))
+    if remembered is None:
+        return False
+    size, recorded_at = remembered
+    return (
+        moment - recorded_at < MANIFEST_REWRITE_WINDOW_SECONDS and stat.st_size < size
+    )
+
+
+def _manifest_size_key(record: Mapping[str, Any], manifest: Path) -> str:
+    """The identity of one run's view of one manifest path.
+
+    A retry writes the same path, so the path alone would let it inherit the
+    size a predecessor left behind and suppress its own reading. The key carries
+    the run and the attempt, and falls back to the dispatch stamp for a pointer
+    that records no attempt, so a redispatch starts with nothing remembered.
+    """
+    run_id = str(record.get("run_id") or "")
+    attempt = record.get("attempt")
+    if attempt is None:
+        attempt = str(record.get("created_at") or "")
+    return f"{run_id}::{attempt}::{manifest}"
+
+
+def _remember_manifest_size(key: str, size: int, moment: float) -> None:
+    """Record the last readable size of a manifest under its run's identity.
+
+    A long-lived reader classifies every run it sees, so the memory is capped
+    and evicts the least recently touched entry. The map's own bound is the
+    policy: holding entries only for runs that currently hold a live pointer
+    would tie this cache to a fleet read it does not otherwise need, and would
+    drop the entry for a run whose pointer is briefly unreadable.
+    """
+    _MANIFEST_SIZES_READ.pop(key, None)
+    _MANIFEST_SIZES_READ[key] = (size, moment)
+    while len(_MANIFEST_SIZES_READ) > MANIFEST_SIZE_MEMORY_MAX:
+        oldest = next(iter(_MANIFEST_SIZES_READ))
+        del _MANIFEST_SIZES_READ[oldest]
+
+
+def _absence_of_a_verdict_is_transient(
+    record: Mapping[str, Any],
+    manifest: Path,
+    manifest_error: str,
+    moment: float,
+) -> bool:
+    """Whether a live run's missing written verdict is too early to report.
+
+    Two windows cover it: the launch window after dispatch, before the worker
+    has had time to write anything, and a manifest caught mid-rewrite. In both
+    the run has not failed to deliver — it has not finished writing — so the
+    caller keeps its liveness reading instead of naming it unwritten.
+    """
+    return _within_launch_window(record, moment) or _manifest_may_be_mid_rewrite(
+        record, manifest, manifest_error, moment
+    )
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -3388,6 +3526,9 @@ def classify_pointer(
     """
     run_id = str(record.get("run_id") or "")
     phase = str(record.get("phase") or "")
+    # Read once here because the manifest read records when it happened, and
+    # every reading below is ordered against the same instant.
+    moment = _utc_seconds() if now_seconds is None else float(now_seconds)
     manifest = Path(str(record.get("manifest_path") or ""))
     manifest_file_present, manifest_present = _run_chain_manifest_freshness(record)
     manifest_data: dict[str, Any] = {}
@@ -3403,6 +3544,14 @@ def classify_pointer(
             # that parsed the status, so the digest and the verdict can never
             # describe different versions of the file.
             manifest_digest = hashlib.sha256(manifest_text.encode("utf-8")).hexdigest()
+            # The last size a readable manifest had, with the moment of this
+            # read, so a later read that finds the file smaller recognises a
+            # truncating rewrite earlier than the mtime signature would.
+            _remember_manifest_size(
+                _manifest_size_key(record, manifest),
+                len(manifest_text.encode("utf-8")),
+                moment,
+            )
         except (OSError, ManifestParseError) as exc:
             # The file exists but no reader can judge it: an unreadable file is
             # a condition of the delivery, not an exception in the classifier.
@@ -3578,7 +3727,6 @@ def classify_pointer(
         else _admission_refusal(record)
     )
     terminal = phase in ("complete", "failed")
-    moment = _utc_seconds() if now_seconds is None else float(now_seconds)
     wait = _manifest_wait(
         manifest_data,
         manifest,
@@ -3612,6 +3760,21 @@ def classify_pointer(
                 "observed": "unavailable",
                 "detail": f"condition probe could not answer: {exc}",
             }
+    # A live worker may hold no written verdict yet, because the reader caught
+    # its manifest between a rewrite's truncate and write. That is not a
+    # delivery a reader must repair, but naming it unwritten in that instant
+    # makes a working run flicker, so the reading is held back while the file is
+    # clearly mid-rewrite. Past that window a live run whose manifest still
+    # carries no readable verdict is genuinely unwritten, which keeps the
+    # word's purpose. An absent manifest is deliberately left alone: a live run
+    # with no manifest at all is already classified by the stall and liveness
+    # arms, and re-labelling it here would take that reading away from it.
+    if alive is True:
+        if _absence_of_a_verdict_is_transient(record, manifest, manifest_error, moment):
+            manifest_unwritten = False
+        elif manifest_present and not manifest_reported_status and bool(manifest_error):
+            manifest_unwritten = True
+            manifest_status = ""
     terminal_at = None
     terminal_age_seconds = None
     deferred_outcome = alive is True and manifest_status in TERMINAL_MANIFEST_STATUSES
@@ -3699,6 +3862,15 @@ def classify_pointer(
                 f"reckon crew resume --run {run_id} --advice "
                 "write the manifest's current status before continuing"
             )
+        if not manifest_present or manifest_error:
+            # A live run whose manifest is absent or unreadable carries no
+            # verdict to repair, so the reader is pointed at the run rather
+            # than at a status line that does not exist.
+            detail = (
+                f"the run is live and has no written verdict at {manifest}; "
+                "the worker has not delivered a status yet"
+            )
+            action = f"reckon crew observe --run {run_id}"
     elif deferred_outcome:
         classification = "running"
         detail = "the process is alive"
