@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" font-family="Helvetica, Arial, sans-serif" font-size="15">
+  <rect width="900" height="560" fill="#ffffff"/>
+  <text x="40" y="38" font-size="20" font-weight="bold" fill="#1b2430">crew complete: the live-worker refusal</text>
+  <text x="40" y="62" fill="#4a5568">Promotion deletes the live pointer, so it lands only when the worker behind it has finished.</text>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 z" fill="#4a5568"/>
+    </marker>
+  </defs>
+
+  <!-- start -->
+  <rect x="330" y="92" width="240" height="46" rx="8" fill="#eef2f7" stroke="#4a5568"/>
+  <text x="450" y="120" text-anchor="middle" fill="#1b2430">crew complete --run R</text>
+  <line x1="450" y1="138" x2="450" y2="168" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- q1: manifest non-terminal -->
+  <rect x="300" y="170" width="300" height="58" rx="8" fill="#ffffff" stroke="#2b6cb0" stroke-width="1.5"/>
+  <text x="450" y="193" text-anchor="middle" fill="#1b2430">manifest fresh and status</text>
+  <text x="450" y="214" text-anchor="middle" fill="#1b2430">outside {complete, blocked, failed}?</text>
+  <line x1="450" y1="228" x2="450" y2="258" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="470" y="248" fill="#2f855a">yes</text>
+  <text x="600" y="196" fill="#b7791f">no</text>
+  <line x1="600" y1="199" x2="770" y2="199" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- q2: process alive -->
+  <rect x="300" y="260" width="300" height="58" rx="8" fill="#ffffff" stroke="#2b6cb0" stroke-width="1.5"/>
+  <text x="450" y="283" text-anchor="middle" fill="#1b2430">recorded worker process</text>
+  <text x="450" y="304" text-anchor="middle" fill="#1b2430">alive in the process table?</text>
+  <line x1="450" y1="318" x2="450" y2="348" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="470" y="338" fill="#2f855a">yes</text>
+  <line x1="300" y1="289" x2="200" y2="289" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="215" y="280" fill="#b7791f">no</text>
+
+  <!-- q3: waiver -->
+  <rect x="300" y="350" width="300" height="58" rx="8" fill="#ffffff" stroke="#2b6cb0" stroke-width="1.5"/>
+  <text x="450" y="373" text-anchor="middle" fill="#1b2430">--waive-live-run REASON</text>
+  <text x="450" y="394" text-anchor="middle" fill="#1b2430">given?</text>
+  <line x1="450" y1="408" x2="450" y2="438" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="470" y="428" fill="#b7791f">no</text>
+  <line x1="600" y1="379" x2="770" y2="379" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="622" y="370" fill="#2f855a">yes</text>
+
+  <!-- terminal promote branch -->
+  <rect x="640" y="176" width="230" height="46" rx="8" fill="#e6fffa" stroke="#2f855a"/>
+  <text x="755" y="204" text-anchor="middle" fill="#1b2430">promote as before</text>
+  <line x1="770" y1="199" x2="770" y2="222" stroke="#4a5568" stroke-width="1.5"/>
+  <line x1="660" y1="289" x2="770" y2="289" stroke="#4a5568" stroke-width="1.5"/>
+  <line x1="770" y1="289" x2="770" y2="379" stroke="#4a5568" stroke-width="1.5"/>
+  <line x1="770" y1="379" x2="770" y2="356" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- promote with waiver branch -->
+  <rect x="640" y="356" width="230" height="66" rx="8" fill="#e6fffa" stroke="#2f855a"/>
+  <text x="755" y="382" text-anchor="middle" fill="#1b2430">promote and record</text>
+  <text x="755" y="403" text-anchor="middle" fill="#1b2430">reason, pid, status</text>
+
+  <!-- refuse branch -->
+  <rect x="300" y="440" width="300" height="72" rx="8" fill="#fff5f5" stroke="#c53030" stroke-width="1.5"/>
+  <text x="450" y="466" text-anchor="middle" font-weight="bold" fill="#c53030">REFUSE</text>
+  <text x="450" y="488" text-anchor="middle" fill="#1b2430">names the live pid and the manifest status</text>
+  <text x="450" y="506" text-anchor="middle" fill="#4a5568">pointer and ledger untouched</text>
+
+  <!-- left promote branch (dead process) -->
+  <rect x="60" y="266" width="140" height="46" rx="8" fill="#e6fffa" stroke="#2f855a"/>
+  <text x="130" y="294" text-anchor="middle" fill="#1b2430">promote</text>
+
+  <text x="40" y="545" fill="#718096" font-size="13">A manifest that is absent states no status, so a live process with no manifest is left to the recovery arms, not judged here.</text>
+</svg>

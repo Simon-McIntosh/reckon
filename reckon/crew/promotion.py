@@ -37,7 +37,11 @@ from reckon.crew.node import (
 from reckon.crew.reports import (
     _NONE_VALUES as _MANIFEST_NOTHING,
 )
-from reckon.crew.reports import ManifestParseError, parse_manifest
+from reckon.crew.reports import (
+    TERMINAL_MANIFEST_STATUSES,
+    ManifestParseError,
+    parse_manifest,
+)
 from reckon.crew.routing import (
     RECLAIMABLE_CLASSES,
     WITHHELD_REASONS,
@@ -2564,6 +2568,61 @@ def _require_recognised_manifest_status(run_id: str, record: Mapping[str, Any]) 
         ) from refusal
 
 
+def _require_worker_stopped_before_promotion(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    waiver_reason: str,
+) -> dict[str, str] | None:
+    """Refuse promoting a run whose worker is still alive and not finished.
+
+    Promotion deletes the live pointer, so a run promoted while its own process
+    is still running carries on with no pointer, no follower row and no
+    obligation to any coordinator — an orphaned process whose worktree cannot be
+    reclaimed until it exits. The guard fires only on the conjunction that makes
+    that harm real: the recorded process is alive *and* its manifest states a
+    status that is not terminal. A run whose process has exited, or whose
+    manifest reads complete, blocked or failed, promotes as before.
+
+    A manifest that is absent or not fresh states no status, so there is nothing
+    to judge and the guard stays silent: a live process with no manifest is a
+    recovery case rather than a promotion one, and the release step that signals
+    a finished writer already draws the same line on a fresh terminal manifest,
+    so the two cannot disagree about which live process belongs to closed work.
+
+    ``waiver_reason`` is the operator's own statement of why the run may be
+    promoted anyway, and it is recorded on the promoted row rather than erased.
+    An unconditional waiver would stop meaning anything, so a waiver offered
+    against a run with nothing to waive is itself refused.
+    """
+    manifest = _fresh_manifest(record)
+    status = (
+        "" if manifest is None else str(manifest.get("status") or "").strip().lower()
+    )
+    reason = str(waiver_reason).strip()
+    live = (
+        manifest is not None
+        and status not in TERMINAL_MANIFEST_STATUSES
+        and record_process_alive(record, process_alive) is True
+    )
+    if not live:
+        if reason:
+            raise CrewError(
+                f"run {run_id!r} has no live, in-progress worker to waive for "
+                f"--waive-live-run {reason!r}"
+            )
+        return None
+    if reason:
+        return {"reason": reason, "pid": str(record.get("pid")), "status": status}
+    raise CrewError(
+        f"run {run_id!r} cannot be promoted: its recorded worker process "
+        f"{record.get('pid')} is still alive and its manifest status is "
+        f"{status!r}. Promotion would delete the live pointer and orphan the "
+        "worker. Wait for the process to exit, or state why it may land "
+        "anyway with --waive-live-run REASON"
+    )
+
+
 def _require_review_waiver(
     run_id: str,
     record: Mapping[str, Any],
@@ -2682,6 +2741,7 @@ def complete(
     discard_resume_worktree: bool = False,
     accepted_paths: Mapping[str, str] | None = None,
     no_impl_change: str = "",
+    live_run_waiver: str = "",
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
     verdict = str(gate).strip().lower()
@@ -2722,6 +2782,13 @@ def complete(
             )
         _require_commit_for_changed_manifest(run_id, record)
         _require_recognised_manifest_status(run_id, record)
+        # A run whose own worker is still alive and not finished is refused
+        # before any store is written: deleting its live pointer now would
+        # orphan the process until it exits on its own. The waiver names the
+        # reason and rides the promoted row.
+        live_run_waived = _require_worker_stopped_before_promotion(
+            run_id, record, waiver_reason=live_run_waiver
+        )
         if _is_shadow(record) and commit_list:
             raise CrewError(
                 f"shadow run {run_id!r} is commitless evidence; --commit is refused"
@@ -2832,6 +2899,7 @@ def complete(
             accepted_paths=accepted_paths,
             commit_list_shortfall=commit_list_shortfall,
             no_impl_change=no_impl_change,
+            live_run_waived=live_run_waived,
         )
         if commit_list_shortfall is not None:
             result["commit_list_shortfall"] = dict(commit_list_shortfall)
@@ -3973,6 +4041,7 @@ def _complete_locked(
     accepted_paths: Mapping[str, str] | None = None,
     commit_list_shortfall: Mapping[str, Any] | None = None,
     no_impl_change: str = "",
+    live_run_waived: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -4389,6 +4458,11 @@ def _complete_locked(
             run["resume_waiver"]["worktree_discarded"] = True
     if review_waived is not None:
         run["review_waiver"] = dict(review_waived)
+    # A run promoted while its own worker was still alive survives on the row
+    # with the reason given, so an audit can tell a deliberate promotion of a
+    # live worker from the accidental orphan this refusal exists to prevent.
+    if live_run_waived is not None:
+        run["live_run_waiver"] = dict(live_run_waived)
     if worktree_retention is not None:
         run["worktree_retention"] = dict(worktree_retention)
     watch_override = record.get("watch_override")

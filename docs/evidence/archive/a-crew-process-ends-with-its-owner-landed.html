@@ -530,6 +530,62 @@
       A long-lived producer must load the integrated code before this result describes its
       live output; this worker did not restart any shared service or close the followup.</p>
     </section>
+  <section id="s10-complete-refuses-a-live-run">
+    <h2>&sect;10 &mdash; Promotion refuses a run whose own worker is still running</h2>
+    <p><strong>Landing record.</strong> Commit <code>dc47da0a</code> makes
+    <code>crew complete</code> refuse a run whose recorded worker process is alive and whose
+    manifest status is not terminal. Promotion deletes the run's live pointer, so a run promoted
+    while its own process is still alive continues with no pointer, no follower row and no
+    obligation to any coordinator until it exits on its own &mdash; measured 2026-09-25, when
+    <code>r-20260925T134804008927-re-review-of-headroom-publishes-real-readings</code> was
+    promoted with its manifest reading <code>in-progress</code> and its worker (pid 1204697)
+    still alive, and the process had to be stopped by hand after its pointer was deleted. The
+    guard fires before any store is written, names the live pid and the manifest status, and
+    leaves the pointer and the ledger untouched.</p>
+    <figure>
+      <img src="/reckon/figures/a-crew-process-ends-with-its-owner/complete_refuses_a_live_run.svg"
+           alt="crew complete refuses a run whose manifest status is non-terminal and whose recorded process is alive, naming the pid and status; an explicit waiver promotes and records the reason beside the pid and status; a run whose process has exited, or whose manifest is terminal, promotes as before.">
+    </figure>
+    <p><strong>The line the guard draws.</strong> It fires only on the conjunction the defect
+    turned on: the process is alive <em>and</em> the manifest states a status outside
+    <code>{complete, blocked, failed}</code>. A run whose process has exited, or whose manifest
+    reads a terminal status, promotes as before. A manifest that is absent or not fresh states no
+    status, so a live process with no manifest is left to the recovery arms rather than judged
+    here &mdash; the same distinction <code>tests/test_promotion_release.py</code> rests on for the
+    release step, which signals a finished writer on exactly a fresh terminal manifest.</p>
+    <p><strong>Waiver.</strong> <code>--waive-live-run REASON</code> lets an operator land such a
+    run anyway: the refusal was the reason a live promotion could not be deliberate, so the waiver
+    supplies that reason and the row carries it as <code>live_run_waiver</code> beside the
+    <code>pid</code> and <code>status</code> it waived. A deliberate promotion of a live worker is
+    then distinguishable afterwards from the orphan the refusal prevents. A waiver offered against
+    a run with nothing to waive (no live, non-terminal worker) is itself refused, so the flag
+    cannot become an unconditional bypass.</p>
+    <p><strong>Measured.</strong> <code>tests/test_complete_refuses_a_live_run.py</code> passes
+    (<strong>6 passed</strong>): the live, in-progress run is refused naming the pid and status with
+    the pointer kept and no row written; the same run promotes under a waiver and records the
+    reason, status and pid; a dead process with a non-terminal manifest, a live process with a
+    terminal manifest, and a live process with no manifest all promote as before; and a waiver with
+    no live worker is refused. The live process is a stub the test starts and stops itself, under a
+    synthetic <code>RECKON_HOME</code> and repository, so it reaches neither the real fleet pointer
+    directory nor a real checkout. The named gate adds zero failures: base <code>9fafad1f</code>
+    runs <code>tests/test_crew_promotion.py</code> and <code>tests/test_crew_promotion_scope.py</code>
+    at <strong>76 passed</strong> (<code>base-promotion.log</code>, exit 0), and at
+    <code>dc47da0a</code> the same two modules plus the new one reach <strong>82 passed</strong>
+    (<code>after-promotion.log</code>, exit 0). The after arm ran from a scratch head tree with
+    <code>reckon</code> pinned to that tree, so the product module under measurement is the
+    committed head and not the installed checkout.</p>
+    <p><strong>Declared negative control.</strong> Removing the liveness check restores the source
+    as it behaved before this node; the live, in-progress case then promotes and its refusal
+    assertion fails (<strong>1 failed, exit 1</strong>, <code>negative-control-live-run.log</code>),
+    the failure reading <code>DID NOT RAISE CrewError</code>. The red log's first line repeats the
+    declared mutation verbatim: <em>skip the liveness check as today; the live in-progress case
+    must fail with the run promoted</em>.</p>
+    <p><strong>Receipts.</strong> Run directory:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103214701580-complete-refuses-a-live-run/</code>
+    &mdash; <code>base-promotion.log</code>, <code>after-promotion.log</code>,
+    <code>negative-control-live-run.log</code>, <code>negative-control-driver.py</code>.</p>
+  </section>
+
   <section id="s10-watch-suite-green-after-departures">
       <h2>Eight watch and follower tests return to green</h2>
       <p>Measured on fleet compute node <code>98dci4-clu-2058</code> under allocation
