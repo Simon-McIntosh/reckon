@@ -5626,5 +5626,3 @@ def install_skills(repair):
     )
     if updated == 0 and skipped == 0:
         click.echo("(No skills found in the reckon install's skills/ directory.)")
-
-# follower reload probe

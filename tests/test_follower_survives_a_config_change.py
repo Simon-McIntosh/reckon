@@ -170,10 +170,18 @@ def test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error(
 
     real_cursor = runs.watch_stream_cursor
     attempts = {"n": 0}
+    ticks_meeting_the_error = 3
 
     def cursor_meeting_a_config_error(project, **kwargs):
-        """The per-tick read: raises while the config is unreadable."""
-        if attempts["n"] == 0:
+        """The per-tick read: raises on consecutive ticks while the config is unreadable.
+
+        The error has to be met by more than one tick or the loop's dedup guard
+        is never exercised: with a single failing tick the line prints once
+        whether the guard is present or not, so the assertion below would pass on
+        a loop that printed once per tick. Raising across several ticks makes the
+        count of lines the thing under test.
+        """
+        if attempts["n"] < ticks_meeting_the_error:
             attempts["n"] += 1
             raise FlightConfigError(
                 "<merged layer>",
@@ -190,14 +198,18 @@ def test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error(
 
     printed = capfd.readouterr().out
 
-    assert attempts["n"] == 1, "the per-tick read met the config error exactly once"
+    assert attempts["n"] == ticks_meeting_the_error, (
+        "the per-tick read met the config error on every consecutive tick before "
+        f"one succeeded; got {attempts['n']}"
+    )
     assert [event["run_id"] for event in events] == [RUN_A], (
         f"the follower resumed delivering once the read stopped raising; got {events!r}"
     )
 
     deferrals = [line for line in printed.splitlines() if "deferred a tick" in line]
     assert len(deferrals) == 1, (
-        f"exactly one dim deferral line, printed once; got {deferrals!r} from {printed!r}"
+        "the deferral is announced once for the whole run of failing ticks, not once "
+        f"per tick; got {len(deferrals)} from {printed!r}"
     )
     assert deferrals[0].startswith(cli.HISTORY_DIM), (
         f"the deferral line is dimmed; got {deferrals[0]!r}"
