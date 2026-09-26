@@ -1896,6 +1896,13 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
     if len(parts) != 1 or head not in _PLAN_SET_TOP:
         raise OpError(f"unsupported plan set path {path!r}")
     if head == "impl":
+        if working.get("sections"):
+            raise OpError(
+                "impl is computed from the section records on this plan: the sum of "
+                "effort over sections whose status is done, over that sum plus the "
+                "predicted effort of every remaining implementable section. It is "
+                "not authorable — move a section's status instead."
+            )
         try:
             f = float(value)
         except (TypeError, ValueError):

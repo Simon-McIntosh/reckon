@@ -31,7 +31,11 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-from reckon._schema import LEGACY_EFFORT_HOURS, PlanState
+from reckon._schema import (
+    LEGACY_EFFORT_HOURS,
+    PlanState,
+    SECTION_DECLARATION_ENUM,
+)
 from reckon.capability import (
     CAPABILITY_SCHEMA_VERSION,
     from_legacy_tier,
@@ -297,6 +301,91 @@ def _section_record_elements(soup: BeautifulSoup) -> list:
     ]
 
 
+SECTION_STATUSES = tuple(SECTION_DECLARATION_ENUM)
+
+_SECTION_ELEMENT_RE = re.compile(r"<(section|h2)\b([^>]*?)/?>", re.IGNORECASE | re.DOTALL)
+_SECTION_ATTRIBUTE_RE = re.compile(
+    r"""([A-Za-z_:][-\w:.]*)\s*=\s*(?:"([^"]*)"|'([^']*)')"""
+)
+_SECTION_RECORD_ATTRIBUTES = (
+    "data-id",
+    "data-effort-hours",
+    "data-attempts",
+    "data-status",
+    "data-links",
+)
+
+
+def _record_field(record, name):
+    if hasattr(record, "get"):
+        return record.get(name)
+    return getattr(record, name, None)
+
+
+def derive_impl_from_sections(sections) -> float | None:
+    """impl from section effort: done over done plus remaining implementable.
+
+    Deferred sections sit outside the denominator, and a plan carrying no
+    record in scope derives nothing — the caller keeps the authored figure
+    rather than reporting a fabricated zero.
+    """
+    if not sections:
+        return None
+    done = 0.0
+    predicted = 0.0
+    for record in sections:
+        effort = _record_field(record, "effort_hours")
+        status = str(_record_field(record, "status") or "").lower()
+        try:
+            hours = float(effort)
+        except (TypeError, ValueError):
+            return None
+        if hours <= 0:
+            return None
+        if status == "done":
+            done += hours
+        elif status == "implementable":
+            predicted += hours
+        elif status != "deferred":
+            return None
+    total = done + predicted
+    if total <= 0:
+        return None
+    return done / total
+
+
+def _section_records_from_text(text: str) -> list[dict] | None:
+    """Extract record effort/status without a parser, for the regex fast path.
+
+    Returns None when a record is malformed or is not a lone metadata element,
+    so the caller falls back to the authored value instead of deriving from a
+    partially read contract.
+    """
+    records: list[dict] = []
+    for match in _SECTION_ELEMENT_RE.finditer(text):
+        attributes: dict[str, str] = {}
+        for attribute in _SECTION_ATTRIBUTE_RE.finditer(match.group(2)):
+            value = attribute.group(2)
+            if value is None:
+                value = attribute.group(3)
+            attributes[attribute.group(1).lower()] = value
+        if attributes.get("data-reckon", "").lower() != "section":
+            continue
+        if not any(key in attributes for key in _SECTION_RECORD_ATTRIBUTES) and not any(
+            key.startswith("data-capability-") for key in attributes
+        ):
+            continue
+        try:
+            hours = float(attributes.get("data-effort-hours") or "")
+        except ValueError:
+            return None
+        status = (attributes.get("data-status") or "").lower()
+        if status not in SECTION_STATUSES:
+            return None
+        records.append({"effort_hours": hours, "status": status})
+    return records
+
+
 def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]:
     """Validate explicitly opted-in metadata without changing legacy declarations."""
     records = []
@@ -390,6 +479,12 @@ def read_state(html_text: str) -> dict:
                 "object mapping section identities to classifications"
             )
     st["sections"] = _read_section_records(soup, st.get("section_declarations", {}))
+    derived = derive_impl_from_sections(st["sections"])
+    if derived is not None:
+        st["impl"] = derived
+        st["impl_source"] = "computed"
+    elif "impl" in st:
+        st["impl_source"] = "authored"
     capability = _capability_from_values(
         meta_values,
         prefix="plan-capability-",
@@ -1097,7 +1192,12 @@ def write_state(html_text: str, state: dict) -> str:
                 out = _remove_meta(out, meta_name)
         if "tier" not in state:
             out = _remove_meta(out, "plan-tier")
-    if "impl" in state:
+    # A plan carrying records holds its impl as records, so the writer leaves the
+    # meta alone there — on either side of the write, since regeneration must
+    # stay byte-stable whether the records are on disk or only in the state.
+    if "impl" in state and not (
+        state.get("sections") or _section_records_from_text(html_text)
+    ):
         out = _set_meta(out, "plan-impl", state["impl"])
     if "version" in state:
         out = _set_meta(out, "plan-version", int(state.get("version") or 0))
@@ -1267,6 +1367,13 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
             rec["capability"] = mapped
             rec["compatibility_warnings"] = [f"plan: {diagnostic}"]
     warnings = list(rec.get("compatibility_warnings") or [])
+    records = _section_records_from_text(text)
+    derived = None if records is None else derive_impl_from_sections(records)
+    if derived is not None:
+        rec["impl"] = derived
+        rec["impl_source"] = "computed"
+    elif "plan-impl" in metas:
+        rec["impl_source"] = "authored"
     authored_hours = "plan-effort-hours" in metas and "effort_hours" in rec
     legacy_effort = metas.get("plan-effort", "")
     if authored_hours:
