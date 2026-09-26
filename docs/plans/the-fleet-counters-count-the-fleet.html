@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="73">
+<meta name="plan-version" content="74">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -229,6 +229,11 @@
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-row-gives-the-reason-room</pre>
     <p class="r-fu-outcome">landed on main at merge 81833342. The fixed cells are compressed so the reason starts at column 120 (60 columns at 180, 88 at 208), a reason is never cut to a bare ellipsis, and a re-arm replays its rows with no banner lines (5ef9ee49, committed as fence integration). The ticker and watch tests pin the compressed geometry and a long state word keeps the arrow on one column (c9a2ff4b, 39f4c96f; 259 passed at head; review 88). The coordinator's earlier claim that long state words misalign the arrow was wrong at the head: the rendered row elides them.</p>
     </article>
+<article class="r-fu" data-id="f-tfcctf-unmanaged-producer-keeps-a-log" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A watcher started without systemd keeps a log, so its death has a cause</h4>
+    <div class="r-fu-body"><p>Measured 2026-09-26 on 98dci4-clu-2058. The node has no systemd user manager, so <code>crew watch --ensure</code> arms the reckon producer as a plain background process. That process's stdout and stderr are <code>/dev/null</code> (pid 2981414 checked through <code>/proc/&lt;pid&gt;/fd/1</code> and <code>/fd/2</code>). The previous producer stopped writing after 06:28:42Z, its seat read <code>{}</code> at 06:44:46Z, and nothing records why. The follower went silent for about 40 minutes, three workers' abandonment surfaced only as baseline inventory rows at 07:10Z, and the cause cannot be established.</p><p>When the ensure path arms a producer without a service manager, it sends that process's stdout and stderr, with timestamps, to a per-project log under the reckon logs directory (the same place the systemd units write, <code>watch-&lt;project&gt;.log</code>), size-bounded or rotated. The seat record names the log path, so a reader who finds a dead seat finds its last words.</p><p>Tests: an unmanaged arming writes its log file, and the seat record carries its path. A producer that raises leaves the traceback in that log. The real logs directory is untouched (synthetic home). Each red at base.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-unmanaged-producer-keeps-a-log</pre>
+    </article>
 </section>
 
     
@@ -330,7 +335,7 @@
     <div class="r-comment-body"><p>the ticker and watch tests pin the compressed row (reason at column 120, 60 columns at 180, 88 at 208); a long state word keeps the arrow on one column; 259 passed at head against 4 failed at base and 28 at 5ef9ee49; carries 5ef9ee49, the fence-integration commit of row-gives-the-reason-room (banners removed, reason never cut to an empty ellipsis); review 88, whose finding is a false base-revision history in the landing record, corrected beside it</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T213155307357-review-of-reason-room-geometry-lands-whole" data-who="reckon-build" data-when="2026-09-25T22:17:12.202Z">
-    <div class="r-comment-body"><p>review of reason-room-geometry-lands-whole at 39f4c96f scored 88: a long state word keeps the arrow on one column at head; the landing record&#x27;s base-revision history was false and is corrected beside it</p></div>
+    <div class="r-comment-body"><p>review of reason-room-geometry-lands-whole at 39f4c96f scored 88: a long state word keeps the arrow on one column at head; the landing record's base-revision history was false and is corrected beside it</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-correction-watcher-seat-gate-record" data-who="s23-coord" data-when="2026-09-25T21:02:00Z">
     <div class="r-comment-body"><p><strong>Correction to the promotion record of r-20260925T164609522941-watcher-seat-survives-other-hosts.</strong> That promotion cited <code>gate-head-rerun.log</code> with exit status 0, under a gate command naming only <code>tests/test_watch_seat_across_hosts.py</code>. The log is in fact the node's full family run at head, which ends <code>11 failed, 219 passed, 2 skipped</code>. The accurate account: at base 9a9cb581 the same family is 16 failed (11 pre-existing, owned by other nodes, plus this node's 5 new tests red, per <code>gate-base-new-tests.log</code>). At head it is 11 failed, identical by id to the 11 pre-existing ones, so no failures were added and the 5 new tests are fixed. The verdict stands; the recorded exit status and command did not describe that log.</p></div>
