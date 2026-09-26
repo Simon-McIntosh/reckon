@@ -209,6 +209,47 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
       passed, identical to the base arm.</p>
     </div>
 
+
+    <h3 id="s2-integrated-gate-attribution">Landing &mdash; the integrated gate's four failures are attributed to the fence's resolution of the composed argv</h3>
+
+    <p><strong>Ask: attribute the pace-keys gate's exit 1 at the integrated head <code>4dcfb73a</code>
+    to named failing tests and to the pace change if it owned them. Answer: four failures in
+    <code>tests/test_crew_launch_resolution.py</code>, all introduced by <code>d7ba7433</code>, none
+    by the declaration.</strong> Base arm <code>b18b6ce7</code>: 627 passed, 3 skipped, exit 0
+    (reproducing the recorded figure). Integrated arm <code>4dcfb73a</code>: 4 failed, 624 passed,
+    3 skipped, exit 1. Reverting <code>d7ba7433</code> at the integrated head takes the failing file
+    to 6 passed, exit 0; reverting the other candidate, <code>dc47da0a</code>, leaves the same four
+    red.</p>
+
+    <p><strong>The mechanism is that the fence moved the subject of launch resolution.</strong>
+    <code>_backends.launch_plan(fence=True)</code> composes
+    <code>[bwrap, --dev-bind, /, /, …, --, *backend_argv]</code> and appends the backend command bare;
+    <code>resolve_launch_executable</code> then resolves <code>argv[0]</code> &mdash; the fence binary
+    &mdash; against the launch's own <code>PATH</code>, so the backend binary is not resolved at all.
+    A two-probe matrix over <code>PATH</code> overlays is an exact inversion: at the base a launch
+    missing its backend was refused naming <code>codex</code> and one missing <code>bwrap</code> was
+    accepted; at the integrated head a launch missing its backend is <em>accepted</em> with the
+    backend left bare inside the fence, and one missing <code>bwrap</code> is refused while naming
+    <code>bwrap</code> as the backend command. The accepted arm is the recorded fault this surface
+    exists to prevent &mdash; a bare backend name whose watcher dies at exec and leaves a 0-byte
+    stream while the run reads as working. Classification, per the node's three outcomes: a peer
+    change is wrong, all four; the test-fixture reading was tested and rejected, because the
+    realistic <code>/usr/bin</code> direction shows the property violated without any synthetic
+    <code>PATH</code>.</p>
+
+    <p><strong>Evidence: <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#pace-gate-attribution">the
+    attribution, measured</a>; report <code>~/.config/reckon/crew/reports/reckon/s22-coord/integrated-pace-gate-attribution/attribution.md</code>.</strong>
+    The worktree's reports mount is read-only on the node while the reports directory is a separate
+    writable bind, so every gate log for this node lives in that report's <code>logs/</code>
+    directory rather than in the run directory the dispatch named, and the difference is stated in
+    the report. Read-only as to the repository: no source, test or config file was changed.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/launch-resolution-subject.svg"
+           alt="The composed launch argv before and after the fence default turns on: before, argv[0] is the backend command resolved against the launch PATH; after, argv[0] is bwrap resolved against the same PATH while the backend is appended bare and never resolved.">
+      <figcaption>Which token launch resolution targets, before and after the fence default turns on.</figcaption>
+    </figure>
+
     <h2 id="s3">&sect;3 &mdash; A rising bar, not a switch</h2>
 
     <p>Lane choice is not metered-or-local by category. Each node gets an <strong>open-endedness

@@ -2254,6 +2254,104 @@ both fields, so a layer setting them survives the <code>extra=&quot;forbid&quot;
       <code>wallet-figures.svg</code> already draws the two clocks and the figures they supply.</li>
     </ul>
   </section>
+  <section id="pace-gate-attribution">
+    <h2>The pace-keys gate at the integrated head: four failures, one introducing commit</h2>
+
+    <p><strong>The gate that passed at <code>b18b6ce7</code> (627 passed, exit 0) fails at
+    <code>4dcfb73a</code> with four failures, all in <code>tests/test_crew_launch_resolution.py</code>,
+    all introduced by <code>d7ba7433</code> "fix(crew): launch workers fenced again".</strong>
+    Reverting that one commit at the integrated head takes the file to 6 passed, exit 0, and leaves
+    the gate's other 624 tests untouched. The mechanism is that the fence turn-on moved the subject
+    of launch resolution from the backend binary to the fence binary.</p>
+
+    <h3>The measure</h3>
+
+    <p>The stored gate command (35 test files, <code>-p no:cacheprovider -q</code>), run under the
+    project interpreter with <code>PYTHONPATH</code> at a scratch tree extracted by
+    <code>git archive</code> from the measured revision, <code>RECKON_HOME</code> /
+    <code>XDG_CONFIG_HOME</code> / <code>RECKON_STATE_ROOT</code> pointing into that tree, the
+    operator's <code>HOME</code> inherited, and one <code>--basetemp</code> per run.</p>
+
+    <table>
+      <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+      <tbody>
+        <tr><td>base</td><td><code>b18b6ce7</code></td><td><strong>627 passed, 3 skipped, exit 0</strong> — reproduces the recorded base figure</td></tr>
+        <tr><td>integrated</td><td><code>4dcfb73a</code></td><td><strong>4 failed, 624 passed, 3 skipped, exit 1</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h3>The four failures, and the commit that introduced each</h3>
+
+    <ul>
+      <li><code>test_a_dispatch_plan_carries_an_absolute_executable</code> — <code>LaunchResolutionError: backend command 'bwrap' cannot be resolved on the PATH this launch would search</code>; the plan's <code>argv[0]</code> is the fence binary, which the test's backend <code>PATH</code> does not carry.</li>
+      <li><code>test_a_launcher_reached_through_a_symlink_keeps_its_own_name</code> — the same refusal, so the name-keeping assertions are never reached.</li>
+      <li><code>test_a_dispatch_refuses_an_unresolvable_backend_before_writing_anything</code> — <code>assert 'codex' in "backend command 'bwrap' cannot be resolved …"</code>: the refusal fires on the fence binary and calls it a backend command.</li>
+      <li><code>test_a_resume_refuses_an_unresolvable_backend_and_leaves_the_pointer_alone</code> — the same assertion, same message.</li>
+    </ul>
+
+    <p><strong>Introducing commit, established by reverting each candidate at the head</strong> —
+    <code>git archive 4dcfb73a</code> then <code>git apply -R &lt;commit&gt;</code>, re-running
+    <code>tests/test_crew_launch_resolution.py</code>: with <code>d7ba7433</code> reverted
+    <strong>6 passed, exit 0</strong>; with <code>dc47da0a</code> reverted
+    <strong>4 failed, 2 passed, exit 1</strong>. All four failures are <code>d7ba7433</code>'s.</p>
+
+    <h3>Why: the guard's subject moved, and in one direction the guard stopped firing</h3>
+
+    <p><code>_backends.launch_plan(fence=True)</code> composes
+    <code>[bwrap, --dev-bind, /, /, …binds…, "--", *backend_argv]</code> and appends the backend
+    command <em>bare</em>; <code>dispatch</code> then calls
+    <code>resolve_launch_executable(plan)</code>, which resolves <code>argv[0]</code> — the fence
+    binary — against <code>launch_search_path(plan.environment)</code>. A two-probe matrix over
+    <code>PATH</code> overlays, run at both revisions, is an exact inversion:</p>
+
+    <table>
+      <thead><tr><th>launch environment</th><th>b18b6ce7</th><th>4dcfb73a</th></tr></thead>
+      <tbody>
+        <tr><td><code>PATH</code> = backend dir only</td><td>accepted, <code>argv[0]</code> = backend, absolute</td><td><strong>refused</strong>, naming <code>bwrap</code> as the backend command</td></tr>
+        <tr><td><code>PATH</code> = /usr/bin (no backend)</td><td><strong>refused</strong>, naming <code>codex</code></td><td><strong>accepted</strong>, <code>argv[0]</code> = <code>/usr/bin/bwrap</code>, backend bare inside</td></tr>
+      </tbody>
+    </table>
+
+    <p>The accepted arm is the fault the surface was built to prevent: a plan carrying a bare backend
+    name, whose watcher dies at exec and leaves a 0-byte stream per tick while the run reads as
+    working. <code>d7ba7433</code>'s own test asserts the new behaviour as intended ("The launch
+    resolves the fence through PATH"), and that file is not in this gate's list, which is why the
+    collision first shows up here.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/launch-resolution-subject.svg"
+           alt="The composed launch argv before the fence default turns on: argv[0] is codex, resolved against the launch PATH, accepted when present and refused naming codex when absent. After the fence turns on: argv[0] is bwrap, resolved against the same PATH, with codex appended bare and never resolved; a missing fence binary is refused while a missing backend is accepted.">
+      <figcaption>Launch argv before and after the fence default turns on, and which token resolution targets.</figcaption>
+    </figure>
+
+    <h3>Classification</h3>
+
+    <p><strong>All four: a peer change is wrong — <code>d7ba7433</code>.</strong> Not the pace-keys
+    change: it touches the flight schema and <code>reckon/crew/pace.py</code>, and
+    <code>test_crew_launch_resolution.py</code> is in this gate's file list because those tests
+    resolve flight config, not because the pace change reaches launch resolution. And not "the test
+    encodes an environment assumption the fence now violates", though tests 1 and 2 invite that
+    reading with their synthetic <code>PATH</code>: the probe's <code>/usr/bin</code> direction is a
+    realistic overlay and shows the guard no longer fires on a missing backend there, so the defect
+    is the resolution model, not the fixtures.</p>
+
+    <h3>Logs</h3>
+
+    <ul>
+      <li><code>logs/arm-base.log</code>, <code>logs/arm-integrated.log</code> — the two full-gate arms, headers naming revision, tree and command.</li>
+      <li><code>logs/arm-rev-d7ba7433.log</code>, <code>logs/arm-rev-dc47da0a.log</code> — the revert arms, each with a <code>.revert-status.txt</code> naming the commit.</li>
+      <li><code>logs/probe-launch-path-guard.log</code> and its <code>.py</code> — the two-probe matrix at both revisions.</li>
+      <li><code>logs/gate-targets.txt</code>, <code>logs/run_gate.sh</code> — the exact 35-file target list and the runner that reproduces every header above.</li>
+    </ul>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>Not the repair.</strong> No source, test or config file was changed; the shape of the fix (resolve the fence binary from the host PATH, resolve the backend against the launch environment) is the coordinator's to dispatch.</li>
+      <li><strong>Not the whole gate's health.</strong> Two further tests in the gate read the codex CLI's own <code>~/.codex/sessions</code> and only pass with the operator's <code>HOME</code>; that is an environment assumption of their own and is reported, not triaged, here.</li>
+      <li><strong>Not a merged-head verdict.</strong> This node attributes the failure; verifying the merged result belongs to a separately dispatched test node.</li>
+    </ul>
+  </section>
 </main>
 
 </body>
