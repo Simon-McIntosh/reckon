@@ -411,3 +411,144 @@ def test_fsck_lost_found_against_another_checkout_is_refused(
 
     _assert_refused(result, repo=other, worktree=repos["worktree"])
     assert not (other / ".git" / "lost-found").exists()
+
+
+def _assert_output_refused(
+    result: subprocess.CompletedProcess[str], *, option: str
+) -> None:
+    """An output option is refused by naming the option and saying why.
+
+    The refusal happens before the repository is resolved, so it names the run
+    and the worktree only as the rule it applies, not as a target: the check is
+    on the option, whatever the repository.
+    """
+    assert result.returncode == REFUSAL_STATUS, result.stderr
+    assert "refusing" in result.stderr
+    assert option in result.stderr
+    assert "output file" in result.stderr
+
+
+@pytest.mark.parametrize("verb", ["log", "show", "diff"])
+def test_an_output_option_against_another_checkout_is_refused(
+    repos: dict[str, Any], verb: str
+) -> None:
+    """A read verb carrying `--output=<path>` writes <path>, so it is refused.
+
+    The verb is on the read-only allowlist, so the verb test alone forwards it;
+    the file it names is written wherever the path points — another checkout
+    here — and is the write the option check exists to stop.
+    """
+    home, other = repos["home"], repos["other"]
+    target = other / f"ESCAPE-{verb}.txt"
+    assert not target.exists()
+
+    result = _shell(f"git -C {other} {verb} --output={target}", cwd=home, home=home)
+
+    _assert_output_refused(result, option="--output")
+    assert not target.exists()
+
+
+def test_an_output_option_into_the_home_directory_is_refused(
+    repos: dict[str, Any],
+) -> None:
+    """The refusal is on the option, not on the repository it names.
+
+    A path outside any checkout — the home directory, which a worker must not
+    write — is refused the same way, because the option is what is checked.
+    """
+    home, other = repos["home"], repos["other"]
+    target = home / "x"
+    assert not target.exists()
+
+    result = _shell(f"git -C {other} log --output={target}", cwd=home, home=home)
+
+    _assert_output_refused(result, option="--output")
+    assert not target.exists()
+
+
+def test_an_output_option_in_separate_argument_form_is_refused(
+    repos: dict[str, Any],
+) -> None:
+    """The separated spelling `--output <path>` writes too, so it is refused.
+
+    Only the option token has to be found: the path is the next token and is
+    left in the tail, so a check that required the joined form would forward a
+    command that writes the same file.
+    """
+    home, other = repos["home"], repos["other"]
+    target = other / "ESCAPE-separate.txt"
+    assert not target.exists()
+
+    result = _shell(f"git -C {other} log --output {target}", cwd=home, home=home)
+
+    _assert_output_refused(result, option="--output")
+    assert not target.exists()
+
+
+def test_the_output_option_check_ignores_options_that_write_nothing() -> None:
+    """Only an option that names an output file is matched.
+
+    ``--output-indent`` and the other ``--output-*`` modifiers write nothing, and
+    the short ``-o`` is not an output on this allowlist at all: on ``ls-files``
+    it is ``--others`` and on ``grep`` it is ``--only-matching``.
+    """
+    from reckon.worker_git_shim import writing_argument
+
+    assert writing_argument(["--output=out.txt", "HEAD"]) == "--output"
+    assert writing_argument(["--output", "out.txt"]) == "--output"
+    assert writing_argument(["--output-directory", "dir"]) == "--output-directory"
+    assert writing_argument(["--output-directory=dir"]) == "--output-directory"
+    assert writing_argument(["--output-indent=2"]) is None
+    assert writing_argument(["-o"]) is None
+    assert writing_argument(["--oneline", "HEAD"]) is None
+    assert writing_argument([]) is None
+
+
+def test_a_reader_whose_short_option_is_not_an_output_passes(
+    repos: dict[str, Any],
+) -> None:
+    """The reads whose short `-o` means something else still pass.
+
+    ``git ls-files -o`` lists untracked files and ``git grep -o`` prints only
+    the match: both read, so an output check that matched every short ``-o``
+    would refuse reads it has no reason to.
+    """
+    home, other = repos["home"], repos["other"]
+
+    untracked = _shell(
+        f"git -C {other} ls-files -o --exclude-standard", cwd=home, home=home
+    )
+    matched = _shell(f"git -C {other} grep -o two", cwd=home, home=home)
+
+    assert untracked.returncode == 0, untracked.stderr
+    assert matched.returncode == 0, matched.stderr
+    assert "two" in matched.stdout
+
+
+def test_status_against_another_checkout_leaves_its_index_unchanged(
+    repos: dict[str, Any],
+) -> None:
+    """A forwarded read takes no optional lock, so it cannot write the index.
+
+    ``git status`` refreshes the stat cache and writes the index back when it
+    can take the index lock, so a read aimed at another checkout edits that
+    checkout's index — a write performed by a verb this guard forwards. The
+    forwarded environment sets ``GIT_OPTIONAL_LOCKS=0``, git's documented switch
+    that keeps a read from taking an optional lock, so the refresh still happens
+    in memory and the bytes on disk do not move when only the stat cache is
+    stale.
+    """
+    home, other = repos["home"], repos["other"]
+    tracked = other / "a.txt"
+    index = other / ".git" / "index"
+    assert tracked.read_text(encoding="utf-8") == "two\n"
+    before_bytes = index.read_bytes()
+    stat = tracked.stat()
+    os.utime(tracked, (stat.st_atime - 3600, stat.st_mtime - 3600))
+    assert tracked.read_text(encoding="utf-8") == "two\n"
+    assert index.read_bytes() == before_bytes
+
+    result = _shell(f"git -C {other} status --porcelain", cwd=home, home=home)
+
+    assert result.returncode == 0, result.stderr
+    assert index.read_bytes() == before_bytes

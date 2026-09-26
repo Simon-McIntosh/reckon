@@ -272,6 +272,59 @@ def _read_only_form(verb: str, tail: Sequence[str]) -> bool:
     return any(token in actions for token in tail)
 
 
+# Options that name a file or directory for git to write. A read verb carrying
+# one is not a read: `git diff --output=<path>` writes <path>, whatever the verb
+# on the allowlist. Both spellings are caught — the joined form
+# (``--output=<path>``) and the separate form (``--output <path>``) — because
+# the option token alone is matched.
+#
+# The short ``-o`` is deliberately absent. On this allowlist it never names an
+# output: ``git ls-files -o`` means ``--others`` and ``git grep -o`` means
+# ``--only-matching``, both reads. The verbs where ``-o`` does name an output
+# directory (``format-patch``, ``archive``) are not on the allowlist and are
+# refused whole, so a short-form check here would refuse reads and add nothing.
+_OUTPUT_OPTIONS = frozenset({"--output", "--output-directory"})
+
+
+def writing_argument(tail: Sequence[str]) -> str | None:
+    """The option in ``tail`` that names an output file, or None.
+
+    Only the option token is returned, so a refusal can name it. A separate
+    value (``--output <path>``) is left in the tail and does not have to be
+    joined to the option for the option to be found. The head is compared
+    exactly, so ``--output-indent`` and the other ``--output-*`` modifiers
+    — which write nothing — are not matched.
+    """
+    for token in tail:
+        if not token.startswith("--"):
+            continue
+        head = token.split("=", 1)[0]
+        if head in _OUTPUT_OPTIONS:
+            return head
+    return None
+
+
+def output_refusal(verb: str, option: str) -> str:
+    """The refusal naming an output-file option carried by a read verb.
+
+    A read-only verb is forwarded without inspecting its repository, and it is
+    forwarded with optional locks disabled, so nothing it does normally writes.
+    An output option defeats that: the file it names is written wherever it
+    points, so the option is refused instead of the invocation.
+    """
+    lines = [
+        (
+            f"refusing `git {verb}`: `{option}` names an output file, so the "
+            "command would write wherever the path points."
+        ),
+        (
+            "A crew worker may write only inside its own worktree. Drop the "
+            "option, or run a form that writes nothing."
+        ),
+    ]
+    return "\n".join(lines)
+
+
 def mutating_verb(verb: str, tail: Sequence[str]) -> str | None:
     """The verb to treat as mutating, or None when it is read-only.
 
@@ -452,7 +505,9 @@ def refusal_message(
             "A crew worker may run a mutating git verb only against its own "
             "worktree, so nothing was changed. Run the verb inside the worktree "
             "instead. Read-only verbs (status, log, diff, show, rev-parse, grep) "
-            "pass everywhere."
+            "are forwarded with GIT_OPTIONAL_LOCKS=0, so they read another "
+            "checkout without refreshing its index, and an option naming an "
+            "output file is refused."
         ),
     ]
     return "\n".join(lines)
@@ -483,10 +538,14 @@ def main(
     run_id = str(env.get(RUN_ID_ENV) or "").strip()
     prefix, verb, tail = _split_verb(argv)
     if not run_id:
-        return _forward(found, argv)
+        return _forward(found, argv, environ=env)
     guarded = mutating_verb(verb, tail)
-    if guarded is None:
-        return _forward(found, argv)
+    writing = writing_argument(tail)
+    if guarded is None and writing is None:
+        return _forward(found, argv, environ=env)
+    if writing is not None:
+        print(output_refusal(verb or "git", writing), file=sys.stderr)
+        return REFUSAL_STATUS
     if not _safe_run_component(run_id):
         print(
             f"refusing `git {guarded}`: {RUN_ID_ENV}={run_id!r} is not a single "
@@ -516,7 +575,7 @@ def main(
         worktree=worktree,
         worktree_git_dir=worktree_git_dir,
     ):
-        return _forward(found, argv)
+        return _forward(found, argv, environ=env)
     print(
         refusal_message(
             run_id=run_id,
@@ -531,10 +590,18 @@ def main(
     return REFUSAL_STATUS
 
 
-def _forward(git: str, argv: Sequence[str]) -> int:
-    """Replace this process with the real git, argv unchanged."""
-    # The binary is resolved by absolute path and the argv is already split, so
-    # there is no shell to route through; exec forwards signals and the exit
-    # status unchanged.
-    os.execv(git, ["git", *argv])  # noqa: S606
-    raise AssertionError("os.execv returned; a forwarded invocation cannot continue.")
+def _forward(git: str, argv: Sequence[str], *, environ: Mapping[str, str]) -> int:
+    """Replace this process with the real git, argv unchanged.
+
+    ``GIT_OPTIONAL_LOCKS=0`` is set on the forwarded environment: it is git's
+    documented switch that stops a read from taking an optional lock, and
+    without it a plain `status` against another checkout refreshes and rewrites
+    that checkout's index when the stat cache is stale — a write performed by a
+    verb treated as read-only. The binary is resolved by absolute path and the
+    argv is already split, so there is no shell to route through; exec forwards
+    signals and the exit status unchanged.
+    """
+    environment = dict(environ)
+    environment["GIT_OPTIONAL_LOCKS"] = "0"
+    os.execve(git, ["git", *argv], environment)  # noqa: S606
+    raise AssertionError("os.execve returned; a forwarded invocation cannot continue.")
