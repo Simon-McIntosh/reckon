@@ -304,14 +304,51 @@ def seed_states(rows: list[dict[str, Any]]) -> dict[str, str]:
     return latest
 
 
+def collapse_format_markers(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop a format marker that directly follows another, keeping the first.
+
+    A marker says the drawing style changed at this point, so two with no row
+    between them say it changed once. A log can hold such a pair — written
+    before the append collapsed new ones, or by another writer — and a replay
+    that drew both would claim a second switch that never happened. Adjacency is
+    the whole test: a marker after an intervening row is a genuine second switch
+    and is kept. The repair is idempotent, so applying it on every read is safe.
+    """
+    kept: list[dict[str, Any]] = []
+    for row in rows:
+        if (
+            row["kind"] == FORMAT_CHANGED_KIND
+            and kept
+            and kept[-1]["kind"] == FORMAT_CHANGED_KIND
+        ):
+            continue
+        kept.append(row)
+    return kept
+
+
 def read_history(project: str, session: str | None) -> list[dict[str, Any]]:
-    """Every row in a session's log, oldest first. Unreadable reads as empty."""
+    """Every row in a session's log, oldest first. Unreadable reads as empty.
+
+    Adjacent format markers are collapsed on the way out, so every reader —
+    the replay and the append's own tail check alike, because :func:`append_history`
+    reads through here — sees one marker where the log holds a pair.
+    """
     path = history_path(project, session)
     try:
         raw = path.read_text(encoding="utf-8")
     except OSError:
         return []
-    return _parse_history(raw)
+    return collapse_format_markers(_parse_history(raw))
+
+
+def exists(project: str, session: str | None) -> bool:
+    """Whether this session's checkpoint file is present on disk.
+
+    A follower that wrote a place and later finds the file gone must rewrite it
+    rather than assume its own recorded place still stands, so its write gate
+    asks this instead of trusting its memory of the write.
+    """
+    return checkpoint_path(project, session).exists()
 
 
 def cap_history(

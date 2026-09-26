@@ -181,3 +181,50 @@ def test_an_idle_arming_writes_no_checkpoint_across_several_polls(
         f"an idle arming must not rewrite its checkpoint on every poll; "
         f"{len(writes)} writes over {polls} polls, at {writes!r}"
     )
+
+
+def test_a_deleted_checkpoint_is_rewritten_on_the_next_poll(home) -> None:
+    """A checkpoint deleted under an idle arming comes back on the next poll.
+
+    The write gate compared the place against the arming's own memory and never
+    looked at the file, so a checkpoint removed while the pane sat quiet stayed
+    removed until the fleet next moved; a reload in that window found no record
+    and lost the pane's memory. The gate must also write when the file is gone.
+
+    The declared control mutation is the same arming with the file-existence
+    half of that gate removed, which skips the write and leaves the deleted
+    checkpoint deleted; the assertion below is the one it trips.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+        assert acquired
+        crew.list_live(project=PROJECT)
+        path = follow_checkpoint.checkpoint_path(PROJECT, SESSION)
+
+        polls = 0
+        stop = threading.Event()
+
+        def sleeper(_seconds: float) -> None:
+            nonlocal polls
+            polls += 1
+            if polls == 3:
+                path.unlink()
+            elif polls >= 12:
+                stop.set()
+
+        list(
+            cli._follow_watch_lines(
+                PROJECT,
+                session=SESSION,
+                poll_interval=0.0,
+                sweep=None,
+                sleeper=sleeper,
+                stop=stop,
+            )
+        )
+
+        assert polls >= 12, f"the arming did not idle long enough to measure; {polls}"
+        assert path.exists(), (
+            "a checkpoint deleted while the arming sat idle must be rewritten on "
+            "the next poll, not left absent until the place moves"
+        )

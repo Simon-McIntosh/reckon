@@ -721,6 +721,48 @@ def test_consecutive_format_markers_collapse_to_one(home) -> None:
     assert len(markers) == 2, f"a marker after a row is a second switch; got {rows!r}"
 
 
+def test_adjacent_format_markers_already_in_the_log_collapse_on_replay(home) -> None:
+    """A pair of markers already on disk replays as one.
+
+    The append collapses a *new* marker that lands on another, but a log written
+    before that guard — or by another arity of the writer — can hold two markers
+    already adjacent. A replay reads them back, so the collapse has to happen on
+    the read as well, or the pane draws a switch that happened once as two. The
+    file is written directly here, because the append is exactly the path that
+    would have prevented the pair.
+    """
+    moment = 1_800_000_000.0
+    path = follow_checkpoint.history_path(PROJECT, SESSION)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "".join(
+            json.dumps(
+                {
+                    "kind": follow_checkpoint.FORMAT_CHANGED_KIND,
+                    "at": moment + index,
+                    "text": follow_checkpoint.FORMAT_CHANGED_TEXT,
+                    "run_id": "",
+                    "state": "",
+                },
+                sort_keys=True,
+            )
+            + "\n"
+            for index in range(2)
+        ),
+        encoding="utf-8",
+    )
+
+    rows = follow_checkpoint.read_history(PROJECT, SESSION)
+    markers = [
+        row for row in rows if row["kind"] == follow_checkpoint.FORMAT_CHANGED_KIND
+    ]
+    assert len(markers) == 1, (
+        f"a pair already in the log is one on a replay; got {rows!r}"
+    )
+    burst = cli._follow_history_burst(rows, dim=str)
+    assert burst.count(follow_checkpoint.FORMAT_CHANGED_TEXT) == 1, burst
+
+
 def test_the_history_caps_come_from_flight_config(monkeypatch) -> None:
     """A configured pane overrides both caps; an unreadable config falls back."""
 

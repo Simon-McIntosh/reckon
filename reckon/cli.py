@@ -2266,10 +2266,14 @@ def _follow_watch_lines(
         write cannot pair the old offset with the new file's inode.
 
         A write is performed only when the place has moved — the stream, the
-        offset, the stream's identity or the reported map. The per-tick hook
-        runs on every wait pass, so an arming sitting against a quiet stream
-        would otherwise rewrite the same record once a pass, two fsyncs and a
-        rename each, for as long as it sat there.
+        offset, the stream's identity or the reported map — or when the file
+        this place names is gone. The per-tick hook runs on every wait pass, so
+        an arming sitting against a quiet stream would otherwise rewrite the
+        same record once a pass, two fsyncs and a rename each, for as long as it
+        sat there. The existence half is what makes a checkpoint survive a
+        deletion: a file removed while the pane sat idle is rewritten on the
+        next poll rather than staying absent until the place moves, so a reload
+        in that window still finds the pane's memory.
         """
         from reckon.crew import follow_checkpoint
 
@@ -2290,7 +2294,7 @@ def _follow_watch_lines(
             else (resolved_identity.get("dev"), resolved_identity.get("ino")),
             tuple(sorted((str(key), str(value)) for key, value in reported.items())),
         )
-        if place == written_place:
+        if place == written_place and follow_checkpoint.exists(project, session):
             return
         try:
             follow_checkpoint.write(
