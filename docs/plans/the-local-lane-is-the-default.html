@@ -474,6 +474,25 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260925T203158493582-re-review-of-worker-digest-generator" data-who="reckon-build" data-when="2026-09-25T21:06:49.314Z">
     <div class="r-comment-body"><p>review record stored and read by the coordinator</p></div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260925T171904958707-context-estimate-reads-declared-files" data-who="reckon-build" data-when="2026-09-25T18:0:00Z">
+    <div class="r-comment-body"><p><strong>Context estimate reads declared files, not named paths.</strong>
+    Reproduced before repair: a one-worker-hour node whose done-when named the project run ledger
+    (<code>docs/state/&lt;project&gt;/crew.json</code>) estimated <strong>6,150,700</strong> tokens for
+    that single named path against a 480,000 window and was refused, and the competence verdict's
+    top-level <code>detail</code> was empty while the reason sat under <code>competence.context</code>.
+    <code>routing._context_file_inputs</code> now charges only the declared write paths (minus
+    dispatcher grants) and paths a clause explicitly declares as inputs; a bare mention is not a load.
+    <code>_competence_verdict</code> now sets a top-level <code>detail</code> naming the estimate, the
+    window and the largest contributing files.
+    <code>tests/test_context_estimate_reads_declared_files.py</code> is new (4 tests); together with
+    <code>tests/test_crew_dispatch_guard.py</code> and <code>tests/test_crew_routing_visibility.py the
+    gate is 20 passed, and the pre-existing <code>tests/test_context_estimate_excludes_granted_paths.py</code>
+    stays green. The declared negative control restored the prose sweep and the prose-mention case failed
+    with the larger estimate. Anchor: <a href="/reckon/evidence/archive/the-local-lane-is-the-default-landed#context-estimate-reads-declared-files">context-estimate-reads-declared-files</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260925T2107-context-estimate-tests-assert-fixed-figures" data-who="reckon-build" data-when="2026-09-25T21:07:45Z">
+    <div class="r-comment-body">The estimate's tests no longer assert against their own output. The review of <code>r-20260925T171904958707-context-estimate-reads-declared-files</code> scored the four tests against <code>assert tokens == _file_tokens(tmp_path, declared)</code>, which is a second call of the same function: a write path whose bytes stopped being counted would still satisfy it. Each expectation is now computed from the fixture's own byte counts under the documented rule <code>ceil(utf8-bytes / 3.5)</code>, so <code>LARGE_BYTES = 2,000,000</code> expects <strong>571,429</strong> tokens and <code>LEDGER_BYTES = 4,000,000</code> expects <strong>1,142,858</strong>; the prose-mention cases expect exactly zero. The module docstring's author attribution was removed. The focused gate is 4 passed at head; the base and head arms over <code>tests/test_crew_dispatch_guard.py</code> and <code>tests/test_crew_routing_visibility.py</code> are each 16 passed with no added failures at <code>318ec2b6</code> and the node head. The declared negative control — make <code>_file_tokens</code> also count files named in done-when prose — fails both prose-mention cases (2 failed, 2 passed) and is logged. Evidence anchor: <a href="/reckon/evidence/archive/the-local-lane-is-the-default-landed#context-estimate-tests-assert-fixed-figures">context-estimate-tests-assert-fixed-figures</a>. This node closes its own record only: it sets no terminal status and resolves no followup.</div>
+</div>
 </section>
 </main>
 </body>

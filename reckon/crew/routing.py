@@ -1503,11 +1503,25 @@ def _standing_context_input(
     }
 
 
-def _named_repository_files(node: TaskNode) -> list[str]:
-    """Extract repository file names carried by the node's own declaration."""
+def _declared_input_files(node: TaskNode) -> list[str]:
+    """Extract repository files the node's brief declares as its inputs.
+
+    A path a brief merely names is not a read. The estimate once charged every
+    resolvable path in the prose at full file load, so a done-when that named a
+    large ledger made a one-worker-hour node estimate millions of tokens and be refused
+    against its window. A path counts only when the clause naming it also
+    declares it an input; a clause that only mentions the path is a reference,
+    not a load.
+    """
 
     text = f"{node.goal}\n{node.done_when}"
-    return sorted(set(_NAMED_REPOSITORY_FILE.findall(text)))
+    declared: set[str] = set()
+    for clause in re.split(r"[;\n]|(?<=\.)\s+", text):
+        lowered = clause.lower()
+        if "input" not in lowered or "declar" not in lowered:
+            continue
+        declared.update(_NAMED_REPOSITORY_FILE.findall(clause))
+    return sorted(declared)
 
 
 def _context_file_inputs(
@@ -1574,7 +1588,7 @@ def _context_file_inputs(
         describe(str(path), declared_read=False) for path in node.write_paths
     ]
     named_files = [
-        describe(path, declared_read=True) for path in _named_repository_files(node)
+        describe(path, declared_read=True) for path in _declared_input_files(node)
     ]
     all_inputs = [*write_paths, *named_files]
     file_tokens = sum(
@@ -1689,6 +1703,68 @@ def _context_fit_verdict(
     }
 
 
+def _context_contributors(
+    context_fit: Mapping[str, Any], limit: int = 3
+) -> list[dict[str, Any]]:
+    """Return the counted inputs that contribute the most estimated tokens."""
+
+    inputs = context_fit.get("inputs") if isinstance(context_fit, Mapping) else None
+    inputs = inputs if isinstance(inputs, Mapping) else {}
+    records: list[dict[str, Any]] = []
+    standing = inputs.get("standing_instructions")
+    standing = standing if isinstance(standing, Mapping) else {}
+    for item in standing.get("files") or ():
+        if isinstance(item, Mapping):
+            records.append(
+                {
+                    "path": str(item.get("path") or ""),
+                    "estimated_tokens": int(item.get("estimated_tokens") or 0),
+                }
+            )
+    repository = inputs.get("repository_files")
+    repository = repository if isinstance(repository, Mapping) else {}
+    for group in ("write_paths", "named_files"):
+        for item in repository.get(group) or ():
+            if isinstance(item, Mapping) and item.get("counted"):
+                records.append(
+                    {
+                        "path": str(item.get("path") or ""),
+                        "estimated_tokens": int(item.get("estimated_tokens") or 0),
+                    }
+                )
+    records = [record for record in records if record["estimated_tokens"] > 0]
+    records.sort(key=lambda record: (-record["estimated_tokens"], record["path"]))
+    return records[:limit]
+
+
+def _context_refusal_detail(context_fit: Mapping[str, Any]) -> str:
+    """Render the top-level sentence a context refusal answers with.
+
+    The refusal payload carries the informative reason only under a nested
+    ``context`` field, so a caller reading the refusal's own top level sees an
+    empty detail and a bare reason code. This names the figures a reader needs
+    to act -- the estimate, the window it exceeded and the inputs that
+    dominated the estimate -- at the level the refusal answers on."""
+
+    contributors = _context_contributors(context_fit)
+    if contributors:
+        rendered = ", ".join(
+            f"{record['path']} ({record['estimated_tokens']} tokens)"
+            for record in contributors
+        )
+        dominant = f"largest contributing files: {rendered}"
+    else:
+        dominant = (
+            "no repository file dominates the estimate; the standing instruction "
+            "context alone exceeds the window"
+        )
+    return (
+        f"context-window-exceeded: estimated {context_fit['estimated_tokens']} "
+        f"usable input tokens against a {context_fit['window_tokens']} token "
+        f"window (shortfall {context_fit['shortfall_tokens']} tokens); {dominant}"
+    )
+
+
 def _estimated_hours(
     repo: Path, project: str, node: TaskNode
 ) -> tuple[float | None, str]:
@@ -1774,6 +1850,7 @@ def _competence_verdict(
             {
                 "allowed": False,
                 "reason": "context-window-exceeded",
+                "detail": _context_refusal_detail(context_fit),
                 "estimated_tokens": context_fit["estimated_tokens"],
                 "window_tokens": context_fit["window_tokens"],
                 "shortfall_tokens": context_fit["shortfall_tokens"],
