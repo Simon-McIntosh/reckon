@@ -44,6 +44,15 @@ NOW = datetime(2026, 9, 25, 12, 0, 0, tzinfo=UTC)
 WEEK_RESET_IN_HOURS = 124.0
 FIVE_HOUR_RESET_IN_HOURS = 1.0
 
+# The provider's two metered periods, under the names its streams carry and the
+# reader publishes.  Expectations name them here rather than reading them off
+# the module's own clock constants, so a pair of constants that traded windows
+# moves the wallet's fill onto the week clock and fails rather than agreeing
+# with itself.  The five-hour window is the one that fills; the seven-day window
+# is the week the allowance divides.
+FIVE_HOUR_PERIOD = "five_hour"
+WEEK_PERIOD = "seven_day"
+
 # The declarations a host layer carries: four lanes on one subscription, one on
 # a second, and a lane declaring none.  No lane name reaches the assertions
 # through a shortcut — the resolver reads them out of this file.
@@ -229,7 +238,12 @@ def test_a_wallet_reads_the_same_clocks_the_preflight_publishes(resolved):
 
 
 def test_the_figures_read_the_readers_own_period_names(resolved):
-    """Both clocks are the reader's own periods, not keys this module invented."""
+    """Both clocks are the reader's own periods, not keys this module invented.
+
+    The expected figures are built from the period the provider's stream
+    carries, named in this file, so the case pins which window each clock reads
+    instead of agreeing with whatever the module's constants happen to spell.
+    """
     reading = window_reading.read_windows(
         [_report(0.14, 0.31, observed_at=NOW - timedelta(minutes=6))], now=NOW
     )
@@ -239,11 +253,16 @@ def test_the_figures_read_the_readers_own_period_names(resolved):
 
     assert bg.FILL_CLOCK in window_reading.PERIODS
     assert bg.WEEK_CLOCK in window_reading.PERIODS
-    assert figures.fill == pytest.approx(reading.utilisation(bg.FILL_CLOCK))
+    assert bg.FILL_CLOCK == FIVE_HOUR_PERIOD
+    assert bg.WEEK_CLOCK == WEEK_PERIOD
+    expected_fill = reading.utilisation(FIVE_HOUR_PERIOD)
+    expected_week = reading.utilisation(WEEK_PERIOD)
+    # The pin discriminates only while the two windows carry different
+    # utilisations: equal figures would let a swap move nothing.
+    assert expected_fill != expected_week
+    assert figures.fill == pytest.approx(expected_fill)
     assert figures.pace is not None
-    assert figures.pace["utilisation"] == pytest.approx(
-        reading.utilisation(bg.WEEK_CLOCK)
-    )
+    assert figures.pace["utilisation"] == pytest.approx(expected_week)
 
 
 def test_a_wallet_never_paces_on_another_wallets_reading(resolved):
