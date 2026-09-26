@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="106">
+<meta name="plan-version" content="107">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.7">
@@ -1129,6 +1129,30 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     second clause is not: nothing yet shows a <em>deliberately mistuned lead time</em> detectable from
     the log alone, and a log that cannot expose a bad setting cannot tune one. That demonstration
     belongs to a follow-up node rather than to this landing.</p>
+
+    <h4 id="s9-replay-landed">Landing &mdash; a week of committed pace rows replays without a stream</h4>
+
+    <p><strong>Landed 2026-09-26 (commits <code>d711aee1</code> and <code>b1bd3510</code>).</strong>
+    <code>reckon/crew/pace_replay.py</code> reads only the committed
+    <code>docs/state/&lt;project&gt;/runs/*.json</code> files that carry a <code>pace</code> row. For each
+    row it reconstructs the weekly elapsed time from the row's own recorded instant and seven-day
+    reset, then calls <code>reckon.crew.pace.allowance_for_group</code> with the row's recorded policy.
+    It validates each hold from the evidence carried in that row, and counts local versus metered
+    lanes by the run's work class. No stream, receipt or live pointer is opened. The report also
+    accepts a candidate <code>drain_lead_hours</code>; when set to 24.0 against rows recorded at 12.0,
+    all three rows moved and the report flagged the mistuning. Figure:
+    <a href="/reckon/figures/a-window-paces-the-lane/pace-replay-flow.svg">pace replay flow</a>.</p>
+
+    <p><strong>Gate.</strong> One invocation over <code>tests/test_pace_replay.py</code> and
+    <code>tests/test_dispatch_records_the_pace_row.py</code> passed <strong>11 tests, exit 0</strong>
+    at <code>d711aee1</code>; the new report's four focused cases passed as well. Ruff check and
+    format are clean on both staged source paths. The base arm at <code>99455576</code> reaches the
+    expected new-test collection boundary: its only error is
+    <code>ModuleNotFoundError: reckon.crew.pace_replay</code>, because the module does not exist at
+    that revision. The declared negative control was applied to the replay's allowance path and
+    failed the mistuned-lead assertion: it reported <code>detected: false</code> with no moved rows.
+    Full evidence: <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#s9-replay">the
+    cumulative landing record</a>.</p>
 
     <h2 id="s6">&sect;6 &mdash; The pace is visible before a wave opens</h2>
 
