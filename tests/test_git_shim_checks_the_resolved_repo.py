@@ -334,3 +334,80 @@ def test_a_run_id_that_is_not_one_path_component_is_refused(
     assert result.returncode == REFUSAL_STATUS, result.stderr
     assert "refusing" in result.stderr
     assert _head(other, home) == before
+
+
+def test_a_bare_stash_against_another_checkout_is_refused(
+    repos: dict[str, Any],
+) -> None:
+    """A multi-purpose verb is mutating bare: `git stash` pushes.
+
+    Only an explicit listing or reading form is read-only, so a bare verb is
+    checked rather than forwarded. The other checkout is left dirty so the
+    forwarding arm would have stashed and reverted it.
+    """
+    home, other = repos["home"], repos["other"]
+    (other / "a.txt").write_text("dirty\n", encoding="utf-8")
+    before = _head(other, home)
+
+    result = _shell(f"git -C {other} stash", cwd=home, home=home)
+
+    _assert_refused(result, repo=other, worktree=repos["worktree"])
+    assert _head(other, home) == before
+    assert (other / "a.txt").read_text(encoding="utf-8") == "dirty\n"
+    listed = _git_run(["stash", "list"], cwd=other, home=home)
+    assert listed.stdout.strip() == ""
+
+
+def test_a_stash_listing_against_another_checkout_passes(
+    repos: dict[str, Any],
+) -> None:
+    """The explicit read form of the same verb still passes."""
+    home, other = repos["home"], repos["other"]
+    listed = _shell(f"git -C {other} stash list", cwd=home, home=home)
+    assert listed.returncode == 0, listed.stderr
+
+
+def test_a_work_tree_flag_override_is_refused(repos: dict[str, Any]) -> None:
+    """The run's own git dir with a foreign work tree is refused.
+
+    ``--git-dir`` naming the run's repository is not enough: ``--work-tree``
+    sends the write to another directory, so both must be checked.
+    """
+    home, worktree, other = repos["home"], repos["worktree"], repos["other"]
+    (other / "a.txt").write_text("keep me\n", encoding="utf-8")
+
+    result = _shell(
+        f"git --git-dir {worktree}/.git --work-tree {other} reset --hard HEAD",
+        cwd=home,
+        home=home,
+    )
+
+    _assert_refused(result, repo=other, worktree=worktree)
+    assert (other / "a.txt").read_text(encoding="utf-8") == "keep me\n"
+
+
+def test_a_work_tree_env_override_is_refused(repos: dict[str, Any]) -> None:
+    """The same escape through GIT_DIR + GIT_WORK_TREE is refused."""
+    home, worktree, other = repos["home"], repos["worktree"], repos["other"]
+    (other / "a.txt").write_text("keep me\n", encoding="utf-8")
+
+    result = _shell(
+        f"env GIT_DIR={worktree}/.git GIT_WORK_TREE={other} git reset --hard HEAD",
+        cwd=home,
+        home=home,
+    )
+
+    _assert_refused(result, repo=other, worktree=worktree)
+    assert (other / "a.txt").read_text(encoding="utf-8") == "keep me\n"
+
+
+def test_fsck_lost_found_against_another_checkout_is_refused(
+    repos: dict[str, Any],
+) -> None:
+    """`fsck --lost-found` writes into the target's git dir, so it is refused."""
+    home, other = repos["home"], repos["other"]
+
+    result = _shell(f"git -C {other} fsck --lost-found", cwd=home, home=home)
+
+    _assert_refused(result, repo=other, worktree=repos["worktree"])
+    assert not (other / ".git" / "lost-found").exists()

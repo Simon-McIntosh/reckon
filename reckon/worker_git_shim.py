@@ -7,8 +7,10 @@ is invisible to a parser reading one string. This module is the decision the
 ``git`` shim under :mod:`reckon.worker_shims` composes its behaviour from, and
 it does not parse the command at all: it asks the real git which repository one
 invocation resolves to, under that invocation's own environment, working
-directory and ``-C``, and refuses a mutating verb unless that repository is the
-run's worktree — or the git dir of that worktree.
+directory and ``-C``, and refuses a mutating verb unless that invocation's git
+dir is the run's and the work tree it resolves lies inside the run's worktree.
+Both must agree: ``--git-dir`` can name the run's own repository while
+``--work-tree`` (or ``GIT_WORK_TREE``) writes another directory's files.
 
 Scope comes from ``RECKON_RUN_ID``, the identity dispatch exports into every
 worker; a coordinator session carries no run id and the shim is transparent for
@@ -56,7 +58,9 @@ MISSING_BINARY_STATUS = 127
 
 # The built-in verbs that never change a repository, whatever arguments they
 # carry. Every verb not named here is treated as mutating, so this list is the
-# only way an invocation is forwarded under a run id.
+# only way an invocation is forwarded under a run id. A verb that writes under
+# one of its options is kept out: `fsck --lost-found` writes into the target's
+# git dir, so no form of `fsck` is forwarded.
 _READ_ONLY_VERBS = frozenset(
     {
         "blame",
@@ -69,7 +73,6 @@ _READ_ONLY_VERBS = frozenset(
         "diff",
         "diff-tree",
         "for-each-ref",
-        "fsck",
         "grep",
         "help",
         "log",
@@ -92,12 +95,15 @@ _READ_ONLY_VERBS = frozenset(
     }
 )
 
-# Verbs that read with some arguments and write with others. They are read-only
-# only when the first token after the verb is one they list and no later token
-# begins with a dash outside it, so `config --get a.b` passes while
-# `config --unset a.b` and `branch --list -D topic` do not.
-_READ_ONLY_ARGUMENTS: dict[str, frozenset[str]] = {
-    "branch": frozenset(
+# Verbs that read with some arguments and write with others. A verb named here
+# is read-only only in an explicit listing or reading form: the tail must name
+# one of the verb's read actions, every option it carries must be an allowed
+# token, and a bare invocation names no action at all and is therefore mutating
+# (`git stash` pushes, `git branch` may create). The action and option sets are
+# kept apart so a reading modifier (`config --local`) cannot stand in for an
+# action: `config --local a.b value` writes; `config --local --list` reads.
+_READ_ACTIONS: dict[str, frozenset[str]] = {
+    "branch": frozenset(  # the listing modes; any other name creates a branch
         {
             "-a",
             "-l",
@@ -117,39 +123,28 @@ _READ_ONLY_ARGUMENTS: dict[str, frozenset[str]] = {
             "--verbose",
         }
     ),
-    "config": frozenset(
+    "config": frozenset(  # the reading actions; anything else may set a value
         {
-            "-f",
             "-l",
-            "-z",
-            "--file",
             "--get",
             "--get-all",
             "--get-color",
             "--get-colorbool",
             "--get-regexp",
-            "--includes",
             "--list",
-            "--local",
-            "--name-only",
-            "--null",
-            "--show-origin",
-            "--show-scope",
-            "--type",
         }
     ),
+    "notes": frozenset({"list", "show"}),
     "reflog": frozenset({"show"}),
     "remote": frozenset({"-v", "--verbose", "get-url", "show"}),
     "stash": frozenset({"list", "show"}),
-    "tag": frozenset(
+    "tag": frozenset(  # the listing modes; any other name creates a tag
         {
             "-l",
-            "-n",
-            "-v",
+            "--list",
             "--column",
             "--contains",
             "--format",
-            "--list",
             "--merged",
             "--no-merged",
             "--points-at",
@@ -158,6 +153,35 @@ _READ_ONLY_ARGUMENTS: dict[str, frozenset[str]] = {
         }
     ),
     "worktree": frozenset({"list"}),
+}
+
+# Every token that may appear anywhere in a read form: the verb's read actions
+# plus the modifiers that qualify them without changing what they do. An option
+# outside this union (`--unset`, `-D`) makes the invocation mutating wherever it
+# sits.
+_READ_OPTIONS: dict[str, frozenset[str]] = {
+    "branch": _READ_ACTIONS["branch"],
+    "config": _READ_ACTIONS["config"]
+    | frozenset(
+        {
+            "-f",
+            "-z",
+            "--file",
+            "--includes",
+            "--local",
+            "--name-only",
+            "--null",
+            "--show-origin",
+            "--show-scope",
+            "--type",
+        }
+    ),
+    "notes": _READ_ACTIONS["notes"],
+    "reflog": _READ_ACTIONS["reflog"],
+    "remote": _READ_ACTIONS["remote"],
+    "stash": _READ_ACTIONS["stash"],
+    "tag": _READ_ACTIONS["tag"] | frozenset({"-n", "-v", "--format"}),
+    "worktree": _READ_ACTIONS["worktree"],
 }
 
 # Git's global options that consume the token after them. Everything before the
@@ -227,37 +251,42 @@ def _split_verb(argv: Sequence[str]) -> tuple[list[str], str, list[str]]:
     return prefix, "", []
 
 
-def _read_only_form(tail: Sequence[str], allowed: frozenset[str]) -> bool:
-    """Whether a multi-purpose verb's arguments are all of an allowed read form.
+def _read_only_form(verb: str, tail: Sequence[str]) -> bool:
+    """Whether a multi-purpose verb's arguments are an explicit read form.
 
-    The verb reads when its first argument names an allowed sub-form and no
-    later token begins with a dash outside that same set, so an option that
-    writes (`--unset`, `-D`) cannot ride behind a reading first argument.
+    The form is read-only only when it names one of the verb's read actions,
+    carries no option outside the verb's allowed options, and is not bare: a
+    bare invocation names no action, and every multi-purpose verb does
+    something on its own (`git stash` pushes, `git branch` may create). A
+    positional token is the data a reading action consumes (`config --get a.b`),
+    so only the action's presence is required, not the absence of arguments.
     """
     if not tail:
-        return True
-    if tail[0] not in allowed:
         return False
-    return all(token in allowed for token in tail[1:] if token.startswith("-"))
+    actions = _READ_ACTIONS[verb]
+    options = _READ_OPTIONS[verb]
+    if tail[0] not in options:
+        return False
+    if any(token not in options for token in tail if token.startswith("-")):
+        return False
+    return any(token in actions for token in tail)
 
 
 def mutating_verb(verb: str, tail: Sequence[str]) -> str | None:
     """The verb to treat as mutating, or None when it is read-only.
 
     The allowlist is the decision: a verb is read-only only when it is a
-    built-in reader, or a multi-purpose verb in a read form. Anything else —
-    including a name the target repository aliases to a reader or a writer,
-    since the name itself is neither — is returned as mutating and refused.
-    Refusing an alias that would have been harmless is visible and recoverable;
-    forwarding an alias whose expansion this cannot see is not.
+    built-in reader, or a multi-purpose verb in an explicit read form. Anything
+    else — including a name the target repository aliases to a reader or a
+    writer, since the name itself is neither — is returned as mutating and
+    refused. Refusing an alias that would have been harmless is visible and
+    recoverable; forwarding an alias whose expansion this cannot see is not.
     """
     if not verb:
         return None
     if verb in _READ_ONLY_VERBS:
         return None
-    if verb in _READ_ONLY_ARGUMENTS and _read_only_form(
-        tail, _READ_ONLY_ARGUMENTS[verb]
-    ):
+    if verb in _READ_ACTIONS and _read_only_form(verb, tail):
         return None
     return verb
 
@@ -354,6 +383,18 @@ def _same(left: str | None, right: str | None) -> bool:
     return os.path.realpath(left) == os.path.realpath(right)
 
 
+def _within(child: str | None, parent: Path) -> bool:
+    """Whether a reported directory is ``parent`` itself or beneath it."""
+    if not child:
+        return False
+    try:
+        inner = Path(os.path.realpath(child))
+        outer = Path(os.path.realpath(parent))
+    except OSError:
+        return False
+    return inner == outer or outer in inner.parents
+
+
 def refuses(
     *,
     run_id: str,
@@ -365,21 +406,19 @@ def refuses(
 ) -> bool:
     """Whether this invocation must be refused.
 
-    The repository that decides it is the git dir, because that is where a
-    mutating verb's HEAD, refs and index live; naming a matching ``--work-tree``
-    while pointing ``--git-dir`` at another checkout is not the run's own
-    repository, and it is the git dir alone that is compared when both resolve.
+    Two things must agree, because either alone can be pointed elsewhere. The
+    git dir must be the run's, since that is where a mutating verb's HEAD, refs
+    and index live; and the work tree the invocation resolves must be inside the
+    run's worktree, since ``--work-tree`` (or ``GIT_WORK_TREE``) can name the
+    run's own git dir while writing a different directory's files. A matching
+    git dir with a foreign work tree is ``git --git-dir <run>/.git --work-tree
+    <other>``, which is the escape both checks together close.
     """
     if worktree_git_dir is None:
         return True
-    if _same(invocation_git_dir, worktree_git_dir):
-        return False
-    # A bare or otherwise top-level-only report is accepted only when the git
-    # dir itself could not be resolved, which keeps an invocation that mutates
-    # another checkout's HEAD from being allowed on a work-tree name alone.
-    return not (
-        invocation_git_dir is None and _same(invocation_toplevel, str(worktree))
-    )
+    if not _same(invocation_git_dir, worktree_git_dir):
+        return True
+    return not _within(invocation_toplevel, worktree)
 
 
 def refusal_message(
@@ -391,8 +430,12 @@ def refusal_message(
     invocation_git_dir: str | None,
     invocation_toplevel: str | None,
 ) -> str:
-    """The refusal, naming the run, its worktree and the resolved target."""
-    target = invocation_git_dir or invocation_toplevel or "an unresolved repository"
+    """The refusal, naming the run, its worktree and the resolved target.
+
+    Both halves of the resolved target are named, because either one alone can
+    be the mismatch: a foreign git dir, or the run's own git dir with a work
+    tree pointing somewhere else.
+    """
     head = (
         f"refusing `git {verb}`: it runs against a repository that is not this "
         "run's worktree."
@@ -401,7 +444,10 @@ def refusal_message(
         head,
         f"  run:      {run_id}",
         f"  worktree: {worktree} (git dir {worktree_git_dir or 'unresolved'})",
-        f"  target:   {target}",
+        (
+            f"  target:   git dir {invocation_git_dir or 'unresolved'}, "
+            f"work tree {invocation_toplevel or 'unresolved'}"
+        ),
         (
             "A crew worker may run a mutating git verb only against its own "
             "worktree, so nothing was changed. Run the verb inside the worktree "
