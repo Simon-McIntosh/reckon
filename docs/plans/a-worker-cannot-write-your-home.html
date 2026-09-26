@@ -569,29 +569,56 @@
         outside tests.</p>
 
         <p><strong>The defect reproduces at base.</strong> At <code>80d55621</code> over
-        the four declared files: <code>3 failed, 123 passed</code> &mdash; the run-scoped
-        read returning the main version instead of the worktree's, and both
-        granular-write refusals returning <code>ok</code>. Head: <code>126 passed</code>
+        the four declared files: <code>6 failed, 124 passed</code> &mdash; the read
+        entry points (the plan read and the <code>roadmap</code>, <code>audit</code>
+        and typed-resource reads) returning the main inventory instead of the
+        worktree's, and both granular-write refusals returning <code>ok: True</code>.
+        Head: <code>130 passed</code>
         (<code>docs/figures/a-worker-cannot-write-your-home/gate-plan-reads-base.txt</code>,
         <code>gate-plan-reads-head.txt</code>). Re-run at head with
         <code>RECKON_RUN_ID</code> and <code>RECKON_MANIFEST</code> exported in the
-        invoking shell, as a worker's shell has them: <code>126 passed</code>, so the
+        invoking shell, as a worker's shell has them: <code>130 passed</code>, so the
         conftest isolation fixture still holds with the read scoping in place
         (<code>gate-plan-reads-head-runid.txt</code>).</p>
+
+        <p><strong>Coverage closed under review.</strong> A review found three of the
+        four scoped read entry points undriven and no test of the write scope's own
+        case &mdash; a worker whose worktree copy is <em>unmodified</em>. Each of
+        <code>_roadmap_tool</code>, <code>_audit_tool</code> and the typed-resource
+        branch of <code>_read_plan_view</code> now has a test separating the two trees
+        by inventory count, with an explicit-<code>checkout_path</code> arm as the
+        control. A further test starts with the worktree plan byte-identical to main's
+        and asserts a run-scoped write lands in the worktree while main stays
+        byte-identical: a diverged copy would show which file was written whichever
+        path resolved, so only the identical pair proves the <em>path</em> was
+        scoped.</p>
+
+        <p><strong>The granular own-project refusal is deliberate, not a version
+        conflict.</strong> The review asked whether it was merely a version conflict;
+        the test now passes the <em>main checkout's</em> version, the one an unguarded
+        write would accept. At base that call <em>succeeds</em> and writes main
+        (<code>ok: True</code>, <code>new_version</code> 1); at head it is refused with
+        main's bytes and version unchanged. The redirect is unavailable to these entry
+        points: <code>patch_plan</code>, <code>append_to_list</code>,
+        <code>set_nested</code> and <code>resolve_in_list</code> read and write with no
+        checkout root, so the run's own project could be reached only by widening the
+        write to main. Where a root cannot be threaded, the write stops.</p>
 
         <p><strong>Declared negative control, executed and logged.</strong> <em>read a
         run-scoped plan from the mounted main checkout when no checkout path is
         given</em> &mdash; with <code>_run_scoped_read_root</code>'s body replaced by
-        <code>return None</code> in a scratch copy, the read test fails exactly there
-        (<code>1 failed, 6 passed</code>); the log's first line repeats the declared
-        string verbatim
+        <code>return None</code> in a scratch copy, the four read-resolution tests fail
+        there and the write tests pass (<code>4 failed, 7 passed</code>); the log's first
+        line repeats the declared string verbatim
         (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-plan-reads.txt</code>).</p>
 
-        <p><strong>Lint and format delta.</strong> Complete trees: <code>reckon/</code>
-        carries 233 findings at base and 233 at head, <code>reckon/mcp.py</code> 20 and 20,
+        <p><strong>Lint and format delta.</strong> Complete trees, counting finding lines
+        only: <code>reckon/</code>
+        carries 231 findings at base and 231 at head, <code>reckon/mcp.py</code> 18 and 18,
         the new test file is clean, and both touched files are formatted
         (<code>docs/figures/a-worker-cannot-write-your-home/lint-plan-reads.txt</code>).
-        Commit <code>0871ec7b</code>; paths <code>reckon/mcp.py</code>,
+        Commit <code>0871ec7b</code>, with the review coverage and regenerated logs at
+        <code>99d31ad1</code>; paths <code>reckon/mcp.py</code>,
         <code>tests/test_plan_reads_stay_in_the_worktree.py</code>, and the five logs and
         figure under <code>docs/figures/a-worker-cannot-write-your-home/</code>. Evidence:
         <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-plan-reads</code>,

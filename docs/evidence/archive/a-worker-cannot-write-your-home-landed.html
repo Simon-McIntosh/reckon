@@ -1076,46 +1076,81 @@ exit: 0</pre>
     (<code>tests/test_plan_reads_stay_in_the_worktree.py</code> plus
     <code>test_plan_write_stays_in_the_worktree.py</code>,
     <code>test_mcp_tools.py</code>, <code>test_edit_plan.py</code>):
-    <code>3 failed, 123 passed</code>. The three failures are this node's own new
-    behaviour &mdash; the run-scoped read returning the main version instead of the
-    worktree's, and both granular-write refusals returning <code>ok</code>. Head,
-    same selection: <code>126 passed</code>
+    <code>6 failed, 124 passed</code>. The six failures are this node's own new
+    behaviour: the run-scoped read (<code>version</code> 0 where the worktree holds
+    1) and each of the three further read entry points returning the main
+    inventory; the cross-project refusal returning <code>ok: True</code>,
+    <code>new_version</code> 1; and the own-project granular write &mdash; passed
+    the <em>main</em> checkout's version, the one an unguarded write would accept
+    &mdash; also <code>ok: True</code>, <code>new_version</code> 1, against main.
+    Head, same selection: <code>130 passed</code>
     (<code>docs/figures/a-worker-cannot-write-your-home/gate-plan-reads-base.txt</code>,
     <code>gate-plan-reads-head.txt</code>).</p>
 
     <p><strong>Ambient identity still isolated.</strong> The gate was re-run at
     head with <code>RECKON_RUN_ID</code> and <code>RECKON_MANIFEST</code> exported
     into the invoking shell, as a worker's shell has them. Same selection:
-    <code>126 passed</code>, so the conftest fixture that clears the dispatch
-    identity for every test still holds with the new read scoping in place
+    <code>130 passed</code>, so the conftest fixture that clears the dispatch
+    identity for every test still holds with the new read scoping in place. The log
+    header now names the resolved git revision of the tree each arm measured, so the
+    figure is checkable rather than inferred
     (<code>docs/figures/a-worker-cannot-write-your-home/gate-plan-reads-head-runid.txt</code>).</p>
+
+    <p><strong>Coverage added under review.</strong> A review found three of the
+    four scoped read entry points undriven, and no test of the case the write scope
+    exists for: a worker whose worktree copy is <em>unmodified</em>.
+    <code>_roadmap_tool</code>, <code>_audit_tool</code> and the typed-resource
+    branch of <code>_read_plan_view</code> each now have a test: a run-scoped call
+    reads the worktree while an explicit <code>checkout_path</code> call reads main,
+    and the two must disagree. The discriminator is a plan the worktree holds and
+    main does not, so the <em>count</em> separates the trees rather than one file's
+    content, and the explicit-main arm is the control that proves the assertion can
+    fail. The unmodified-copy test starts with the worktree plan byte-identical to
+    main's and asserts main is byte-identical after a run-scoped write &mdash; a copy
+    that has diverged would show which file was written whichever path resolved, so
+    only the identical pair proves the <em>path</em> was scoped.</p>
+
+    <p><strong>The granular own-project refusal is deliberate, not a version
+    conflict.</strong> The review asked whether the own-project refusal was merely a
+    version conflict between the two copies. It is not: the test now passes the
+    version the <em>main checkout</em> holds, the <code>expected_version</code> an
+    unguarded write would have accepted. At base that call <em>succeeds</em> and
+    writes main (<code>ok: True</code>, <code>new_version</code> 1); at head it is
+    refused (<code>error: run_scoped_write</code>) with main's bytes and version
+    unchanged. A redirect is not available to these entry points:
+    <code>patch_plan</code>, <code>append_to_list</code>, <code>set_nested</code> and
+    <code>resolve_in_list</code> read and write with no checkout root, so a run's own
+    project could be reached only by widening the plan write to main. The registered
+    entry point accepts a root and lands in the worktree; here, where it cannot, the
+    write stops.</p>
 
     <p><strong>Declared negative control, executed and logged.</strong> <em>read a
     run-scoped plan from the mounted main checkout when no checkout path is
     given</em> &mdash; applied to a scratch copy of the module with
     <code>_run_scoped_read_root</code>'s body replaced by <code>return None</code>,
-    the read test fails exactly there, asserting main's version where the worktree's
-    was expected: <code>1 failed, 6 passed</code>. The other six tests pass in both
-    arms, being controls or write-side assertions unaffected by this mutation. The
-    log's first line repeats the declared string verbatim
+    the four read-resolution tests fail exactly there and the write tests pass, which
+    is what a read-side mutation should leave behind: <code>4 failed, 7 passed</code>.
+    The log's first line repeats the declared string verbatim
     (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-plan-reads.txt</code>).
-    Without the control, the green read test would not be evidence that the
+    Without the control, the green read tests would not be evidence that the read
     resolution is what moved the read.</p>
 
     <p><strong>Lint and format delta, measured against the base revision.</strong>
-    Over complete git-archive trees, <code>reckon/</code> carries 233 ruff findings
-    at base and 233 at head, and <code>reckon/mcp.py</code> 20 and 20, so the change
-    adds none; the new test file is clean and both touched files are formatted
+    Over complete git-archive trees, counting finding lines only, <code>reckon/</code>
+    carries 231 ruff findings at base and 231 at head, and <code>reckon/mcp.py</code>
+    18 and 18, so the change adds none; the new test file is clean and both touched
+    files are formatted
     (<code>docs/figures/a-worker-cannot-write-your-home/lint-plan-reads.txt</code>).</p>
 
     <p><strong>Paths changed.</strong> <code>reckon/mcp.py</code> (the read-root
     resolver, the write guard, and its wiring into the read entry points and the
     eleven granular mutators), <code>tests/test_plan_reads_stay_in_the_worktree.py</code>
-    (seven tests over a synthetic main checkout, worktree, sibling project, mounts
+    (eleven tests over a synthetic main checkout, worktree, sibling project, mounts
     file and live pointer), plus the four gate logs, the negative-control log, the
     lint log and the figure under
     <code>docs/figures/a-worker-cannot-write-your-home/</code>. Commit
-    <code>0871ec7b</code>.</p>
+    <code>0871ec7b</code> implements it; <code>99d31ad1</code> adds the coverage the
+    review asked for and the regenerated logs.</p>
 
     <figure>
       <img src="/reckon/figures/a-worker-cannot-write-your-home/plan-read-resolution.svg"
