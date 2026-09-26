@@ -160,15 +160,25 @@ def _declared_write_grant(
     bound writable already, so a second grant for a path beneath it says
     nothing new and only lengthens the argv.
 
+    A relative declared path names a file in the worker's own checkout, so it
+    resolves against the *worktree* when one is given rather than against the
+    repository. The repository is the main checkout; joining a node's
+    repo-relative declaration to it would grant a root inside the very checkout
+    the fence exists to seal, re-opening it for a worker whose file actually
+    lands in its own tree. Only an absolute declared path can name a location
+    outside the worktree.
+
     A path whose nearest existing ancestor is a regular file cannot be realised
     at all. That is refused by name rather than composed against a wider
     ancestor, because the launch would otherwise fail inside bubblewrap with
     the missing-source condition this composition exists to remove.
     """
     raw = Path(path).expanduser()
-    resolved = (
-        raw if raw.is_absolute() else Path(repository).expanduser() / raw
-    ).resolve()
+    if raw.is_absolute():
+        resolved = raw.resolve()
+    else:
+        base = worktree if worktree is not None else repository
+        resolved = (Path(base).expanduser() / raw).resolve()
     if worktree is not None and resolved.is_relative_to(resolved_destination(worktree)):
         return None
     named_as_file = resolved.is_file() or bool(resolved.suffix)
@@ -213,7 +223,8 @@ def fenced_write_roots(
     What is granted here is therefore: the same delivery roots every restricted
     tier gets, the repository for a ``workspace-write`` run, and every declared
     write path that lies outside the worktree — whatever the tier. A declared
-    path is resolved against the repository when it is not absolute, and a path
+    path is resolved against the worktree when it is not absolute, because a
+    relative declaration names a file in the worker's own checkout; a path
     naming a file is granted through its parent directory.
     """
     roots = delivery_write_roots(
@@ -2596,6 +2607,21 @@ def launch_plan(
     # composes a plan before anything has been created — so no home is seeded
     # and no variable is invented for a run that has nowhere to keep it.
     run_directory = None if manifest is None else Path(manifest).parent
+    # Under the fence the run's write roots are created *before* the harness
+    # home is resolved, because the run directory a manifest lands in may not
+    # exist yet and the home is seeded inside it. Creating the roots first also
+    # means a manifest declared under a missing directory still gets its home
+    # and its config-home variable, so a fenced codex launch does not fall back
+    # to the sealed operator home and exit "Read-only file system". An unfenced
+    # composition creates nothing, so a preview still invents no directory.
+    write_roots: list[str | Path] = []
+    lock_directory: Path | None = None
+    if fence:
+        write_roots = list(writable_directories)
+        lock_directory = seed_write_lock_namespace(fence_home)
+        if lock_directory is not None:
+            write_roots.append(lock_directory)
+        create_write_roots(write_roots)
     harness = (
         None
         if run_directory is None or not run_directory.is_dir()
@@ -2636,19 +2662,6 @@ def launch_plan(
     # cannot commit until those are granted writable; and its harness home does
     # not yet carry the operator's hooks or instruction files.
     if fence:
-        # The run's write roots are the caller's grants plus the lock directory
-        # every plan write serialises through: a worker with a read-only lock
-        # directory can write no plan at all, its own worktree copy included.
-        # Each of them is created here, before the fence binds it: a declared
-        # write path and the run directory a manifest lands in may both be named
-        # before they exist, and bubblewrap refuses a writable root it cannot
-        # find. A preview hands none of them, so nothing is created for a run
-        # that was never dispatched.
-        write_roots = list(writable_directories)
-        lock_directory = seed_write_lock_namespace(fence_home)
-        if lock_directory is not None:
-            write_roots.append(lock_directory)
-        create_write_roots(write_roots)
         argv = fence_argv(
             argv,
             writable_directories=write_roots,
