@@ -988,11 +988,22 @@ def _resolved_scope_entries(
     return entries
 
 
-def _repository_scope_claims() -> list[_RepositoryScopeClaim]:
-    """Read live claims globally and group their paths by repository root."""
+def _repository_scope_claims(
+    *, exclude_run_ids: Iterable[str] = ()
+) -> list[_RepositoryScopeClaim]:
+    """Read live claims globally and group their paths by repository root.
+
+    ``exclude_run_ids`` drops runs by identity. A dispatch that has already
+    published a claim for the run it created reads every other live claim, never
+    its own: an arbitration run against a run's own claim would refuse the
+    dispatch that had just made it.
+    """
+    excluded = set(exclude_run_ids)
     repository_projects = mounted_repository_projects()
     claims: list[_RepositoryScopeClaim] = []
     for pointer in list_live():
+        if str(pointer.get("run_id") or "") in excluded:
+            continue
         pointer_repo_value = str(pointer.get("repo") or "")
         if not pointer_repo_value:
             continue
@@ -1053,6 +1064,60 @@ def _repository_scope_claims() -> list[_RepositoryScopeClaim]:
         claims,
         key=lambda claim: (claim.run_id, claim.node_id, claim.absolute_path.as_posix()),
     )
+
+
+def _publish_launch_claim(
+    run_id: str,
+    *,
+    node: TaskNode,
+    project: str,
+    repo: Path,
+    session: str,
+    authority: Mapping[str, Any],
+    member: str,
+    backend: str,
+    launch: str,
+    agent: Mapping[str, Any],
+    session_id: str | None,
+) -> None:
+    """Write this run's live pointer as a claim, before its launch is composed.
+
+    Every arbitration surface — a peer dispatch's admission check, the review
+    reflex deciding whether a review is already in flight, an operator reading
+    the fleet — reads live pointers, and dispatch writes its pointer only after
+    the worktree is cut, the prompt composed and the peer channels wired. A
+    dispatch that leaves its claim unpublished for that whole span is invisible
+    while it holds the paths, so a second dispatch arriving inside the span
+    reads no claim, takes the same paths and launches a duplicate worker over
+    the first. The claim therefore goes out at the run id's own moment: what is
+    known then, and nothing invented.
+
+    The record carries no ``pid``, exactly as the pointer written before the
+    worker is spawned does not, so a reader sees a run whose process has not
+    started yet rather than a run whose process has died. The full record
+    overwrites this one at the same path, and a launch that refuses anywhere
+    after this point unlinks it on the way out, so a refused dispatch leaves no
+    claim behind. A shadow run publishes nothing and reads no claims, so that
+    lineage is untouched.
+    """
+    record: dict[str, Any] = {
+        "run_id": run_id,
+        "project": project,
+        "repo": str(repo),
+        "authority": authority,
+        "session": session,
+        "node": node.as_dict(),
+        "role": node.role,
+        "member": member,
+        "backend": backend,
+        "launch": launch,
+        "agent": dict(agent),
+        "session_id": session_id,
+        "manifest_path": node.manifest_path,
+        "created_at": _utc_now(),
+        "phase": "starting",
+    }
+    _write_json(pointer_path(run_id), record)
 
 
 def _can_write_worktree(
@@ -3869,11 +3934,26 @@ def dispatch(
     suite_command = str(gates.get("suite_command") or "").strip() or None
     wave_id = _resolved_wave_id(project, session, wave)
 
-    worktree = _create_worktree(repo_root, worktree_identity, node.id, base)
+    if not shadow_lineage:
+        _publish_launch_claim(
+            run_id,
+            node=node,
+            project=project,
+            repo=repo_root,
+            session=session,
+            authority=resolution.authority,
+            member=effective_member,
+            backend=backend_name,
+            launch=launch_kind,
+            agent=agent,
+            session_id=reuse_session,
+        )
+    worktree: dict[str, Any] | None = None
     spawned_pid: int | None = None
     spawned_start_time: str | None = None
     wired_peer_run_ids: list[str] = []
     try:
+        worktree = _create_worktree(repo_root, worktree_identity, node.id, base)
         directory.mkdir(parents=True, exist_ok=True)
         working_directory = worktree["path"]
         if launch_kind == "cli":
@@ -4151,6 +4231,20 @@ def dispatch(
                 claude_headers=False,
             )
 
+        # Read the claims once more, now that the worktree, the prompt and the
+        # peer wiring exist: two dispatches can both pass the admission check
+        # before either has published a claim, and whichever arrives here
+        # second must be the one refused, naming the first. This run's own
+        # claim is excluded by identity, so the dispatch never arbitrates
+        # against the claim it made itself.
+        if not shadow_lineage:
+            _raise_repository_scope_conflict(
+                node,
+                project=project,
+                repo=repo_root,
+                authority=authority,
+                claims=_repository_scope_claims(exclude_run_ids=(run_id,)),
+            )
         # Publish the pointer before probing the watcher. Otherwise a watcher
         # could drain an empty fleet between the probe and this write, leaving
         # a new run behind a payload that incorrectly said it was watched.
@@ -4250,7 +4344,12 @@ def dispatch(
         # indistinguishable from a dispatch that never ran.
         pointer_path(run_id).unlink(missing_ok=True)
         shutil.rmtree(directory, ignore_errors=True)
-        _remove_worktree(repo_root, worktree["path"])
+        # A refusal can land before the worktree exists — the creation itself is
+        # the first thing inside this guard — and there is then nothing of this
+        # run's to remove. The pre-existing worktree of an earlier run is left
+        # in place either way, which is what its owner expects.
+        if worktree is not None:
+            _remove_worktree(repo_root, worktree["path"])
         raise
     return record
 
