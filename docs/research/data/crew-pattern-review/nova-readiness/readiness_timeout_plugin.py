@@ -6,7 +6,10 @@ modify the environment or nova itself, so the census loads this module with
 whose message names the bound.
 """
 
+import json
+import os
 import signal
+from pathlib import Path
 
 import pytest
 
@@ -30,3 +33,39 @@ def pytest_runtest_protocol(item, nextitem):
     finally:
         signal.alarm(0)
         signal.signal(signal.SIGALRM, previous)
+
+
+_REPORT = {"collection": [], "tests": []}
+
+
+def pytest_collectreport(report):
+    if report.failed or report.skipped:
+        _REPORT["collection"].append(
+            {
+                "nodeid": report.nodeid,
+                "outcome": report.outcome,
+                "message": str(report.longrepr),
+            }
+        )
+
+
+def pytest_runtest_logreport(report):
+    _REPORT["tests"].append(
+        {
+            "nodeid": report.nodeid,
+            "when": report.when,
+            "outcome": report.outcome,
+            "wasxfail": getattr(report, "wasxfail", None),
+        }
+    )
+
+
+def pytest_collection_finish(session):
+    _REPORT["selected"] = [item.nodeid for item in session.items]
+
+
+def pytest_sessionfinish(session, exitstatus):
+    target = os.environ.get("READINESS_REPORT")
+    if target:
+        _REPORT["exit_status"] = int(exitstatus)
+        Path(target).write_text(json.dumps(_REPORT, sort_keys=True) + "\n")

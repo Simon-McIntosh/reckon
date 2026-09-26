@@ -1,32 +1,31 @@
 """Nova readiness census: fast test lane, lint and markers at weekly snapshots.
 
 Per snapshot: extract the tree at the commit nearest 12:00Z (plus the current
-head) with git ls-tree + cat-file --batch into /tmp, run nova's default fast
+head) with git archive into /tmp, run nova's default fast
 lane (the tree's own pytest configuration, whose addopts select
 ``-m 'not slow'``) against the main checkout's environment with a 120 s
 per-test timeout, run ruff under the tree's own configuration, and count
 comment and pytest markers.
 
-git archive is the natural extraction tool, but the fleet's worker git guard
-does not name it among its read-only verbs and refuses it against another
-checkout; ls-tree and cat-file are named there and copy the same bytes.
-
-Re-running reproduces readiness.json byte for byte: it is a pure function of
-the resolved commits and their trees under the rules below, and holds no
-timestamp or duration.  Timings live in census.log, which is a log.
+Saved per-snapshot receipts are the immutable inputs to --assemble. Reassembling
+those receipts reproduces readiness.json byte for byte; executing tests again
+is a new measurement and can change outcomes or timing-dependent log hashes.
 """
 
 import argparse
 import concurrent.futures
 import datetime as dt
 import hashlib
+import io
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import time
+import tokenize
 from pathlib import Path
 
 NOVA = Path("/home/ITER/mcintos/Code/nova")
@@ -44,8 +43,12 @@ DATES = [
 NOON = "T12:00:00Z"
 PER_TEST_TIMEOUT_S = 120
 RUN_TIMEOUT_S = 1500
-TMP_ROOT = Path("/tmp/nova-readiness")  # noqa: S108 - trees belong on node-local disk
+TMP_ROOT = Path("/tmp/nova-readiness-resumed")  # noqa: S108 - trees belong on node-local disk
 DATA_DIR = Path(__file__).resolve().parent
+RUN_DIR = Path(
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T105233192444-nova-readiness-snapshots"
+)
+MAX_COMMITTED_BYTES = 300_000
 PLUGIN_NAME = "readiness_timeout_plugin"
 ORDER = [*DATES, "head"]
 
@@ -104,7 +107,9 @@ def log(msg: str) -> None:
 
 
 def run(cmd, **kw):
-    return subprocess.run(cmd, capture_output=True, check=False, **kw)
+    if "stdout" not in kw and "stderr" not in kw:
+        kw["capture_output"] = True
+    return subprocess.run(cmd, check=False, **kw)
 
 
 def git_out(*args: str) -> str:
@@ -159,82 +164,57 @@ def resolve_snapshots() -> list:
 
 
 def extract_tree(sha: str, dest: Path, log_lines: list) -> int:
-    """Materialise <sha>'s tree into dest with git's read-only verbs.
-
-    ls-tree names every entry, cat-file --batch streams the blob contents, and
-    together they copy the bytes git archive would.  Symlinks and the
-    executable bit are reproduced; submodule gitlinks are named but not
-    materialised.  git archive itself is refused against another checkout by
-    the fleet's worker git guard, whose read-only set does not name the verb.
-    """
-    if dest.exists():
-        shutil.rmtree(dest)
-    dest.mkdir(parents=True)
-    listing = run(["git", "-C", str(NOVA), "ls-tree", "-r", "-z", sha]).stdout
-    entries = []
-    for raw in listing.split(b"\0"):
-        if not raw:
-            continue
-        meta, _, path = raw.partition(b"\t")
-        mode, kind, blob = meta.decode().split()
-        entries.append((mode, kind, blob, path.decode()))
-    blobs = [e[2] for e in entries if e[1] == "blob"]
-    proc = subprocess.Popen(
-        ["git", "-C", str(NOVA), "cat-file", "--batch"],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
+    """Materialise the committed tree using git archive on node-local disk."""
+    dest.mkdir(parents=True, exist_ok=False)
+    archive = dest.parent / f"{dest.name}.tar"
+    proc = run(
+        ["git", "-C", str(NOVA), "archive", "--format=tar", f"--output={archive}", sha]
     )
-    payload, _ = proc.communicate(("\n".join(blobs) + "\n").encode())
-    contents = {}
-    offset = 0
-    for requested in blobs:
-        newline = payload.index(b"\n", offset)
-        header = payload[offset:newline].decode()
-        fields = header.split()
-        if len(fields) < 3:
-            raise RuntimeError(f"cat-file --batch answered {header!r} for {requested}")
-        size = int(fields[2])
-        start = newline + 1
-        contents[fields[0]] = payload[start : start + size]
-        offset = start + size + 1
-    written = 0
-    for mode, kind, blob, path in entries:
-        if kind != "blob":
-            continue
-        target = dest / path
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if mode == "120000":
-            if dest.joinpath(path).exists() or dest.joinpath(path).is_symlink():
-                target.unlink()
-            os.symlink(contents[blob].decode(), target)
-        else:
-            target.write_bytes(contents[blob])
-            if mode == "100755":
-                target.chmod(0o755)
-        written += 1
-    log_lines.append(f"extracted {written} files from {sha} into {dest}")
+    if proc.returncode:
+        raise RuntimeError(proc.stderr.decode(errors="replace"))
+    with tarfile.open(archive) as bundle:
+        bundle.extractall(dest, filter="data")
+        written = len(bundle.getmembers())
+    archive.unlink()
+    log_lines.append(f"extracted {written} archive entries from {sha} into {dest}")
     return written
 
 
+def save_artifact(name: str, content: str) -> dict:
+    """Keep complete large artifacts in the durable run directory."""
+    raw = content.encode()
+    target = (DATA_DIR if len(raw) < MAX_COMMITTED_BYTES else RUN_DIR) / name
+    target.write_bytes(raw)
+    return {
+        "log": name if target.parent == DATA_DIR else str(target),
+        "log_sha256": hashlib.sha256(raw).hexdigest(),
+        "log_bytes": len(raw),
+    }
+
+
 def count_markers(tree: Path) -> dict:
-    """Count comment and pytest markers over the whole extracted tree."""
+    """Count Python comment notes and pytest marker occurrences in source/tests."""
     compiled = {name: re.compile(pattern) for name, pattern in MARKER_PATTERNS.items()}
     counts = dict.fromkeys(MARKER_PATTERNS, 0)
     files_scanned = 0
-    for root, dirs, files in os.walk(tree):
-        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
-        for name in sorted(files):
-            path = Path(root) / name
-            try:
-                raw = path.read_bytes()
-            except OSError:
-                continue
-            if b"\0" in raw[:4096]:
-                continue
+    for subtree in (tree / "nova", tree / "tests"):
+        for path in sorted(subtree.rglob("*.py")):
+            text = path.read_text(errors="replace")
             files_scanned += 1
-            text = raw.decode(errors="replace")
+            try:
+                comments = "\n".join(
+                    tok.string
+                    for tok in tokenize.generate_tokens(io.StringIO(text).readline)
+                    if tok.type == tokenize.COMMENT
+                )
+            except (tokenize.TokenError, IndentationError):
+                comments = "\n".join(
+                    line.partition("#")[2] for line in text.splitlines()
+                )
             for key, pattern in compiled.items():
-                counts[key] += len(pattern.findall(text))
+                counts[key] += len(
+                    pattern.findall(comments if key in ("todo", "fixme") else text)
+                )
     counts["files_scanned"] = files_scanned
     counts["todo_or_fixme"] = counts["todo"] + counts["fixme"]
     counts["xfail_markers"] = counts["xfail_decorator"] + counts["xfail_call"]
@@ -330,6 +310,16 @@ def lane_env(tree: Path) -> dict:
     """The environment the lane runs in: the tree first, then this data dir."""
     env = dict(os.environ)
     env["PYTHONPATH"] = f"{tree}:{DATA_DIR}"
+    env["READINESS_REPORT"] = str(RUN_DIR / f"outcomes-{tree.name}.json")
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    for key in (
+        "OMP_NUM_THREADS",
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "NUMBA_NUM_THREADS",
+    ):
+        env[key] = "1"
+    env["JAX_PLATFORMS"] = "cpu"
     env["TMPDIR"] = "/tmp"  # noqa: S108 - node-local scratch for the lane's temp files
     return env
 
@@ -367,6 +357,8 @@ def pytest_command(tree: Path, basetemp: Path) -> list:
         "-p",
         PLUGIN_NAME,
         f"--basetemp={basetemp}",
+        "-vv",
+        "--tb=short",
     ]
 
 
@@ -414,7 +406,7 @@ def run_snapshot(snapshot: dict, log_lines: list) -> dict:
     environment, code = classify(parsed["failures"] + parsed["errors"])
     log_name = f"pytest-{key}-{short}.log"
     header = [
-        "# nova readiness census: one snapshot's fast-lane pytest run",
+        f"# revision={sha} tree={tree} command={' '.join(command)}",
         f"# revision: {sha}",
         f"# tree: {tree}",
         f"# command: {' '.join(command)}",
@@ -424,7 +416,7 @@ def run_snapshot(snapshot: dict, log_lines: list) -> dict:
         f"# elapsed_s: {elapsed:.1f}",
         f"# exit_status: {exit_status}",
     ]
-    (DATA_DIR / log_name).write_text("\n".join(header) + "\n" + body)
+    pytest_artifact = save_artifact(log_name, "\n".join(header) + "\n" + body)
     raw_log.unlink()
     log_lines.append(f"   pytest {elapsed:.1f}s exit={exit_status} -> {log_name}")
     ruff_proc = run(
@@ -437,8 +429,10 @@ def run_snapshot(snapshot: dict, log_lines: list) -> dict:
         rule = finding.get("code") or "unknown"
         by_rule[rule] = by_rule.get(rule, 0) + 1
     ruff_log = f"ruff-{key}-{short}.json"
-    (DATA_DIR / ruff_log).write_text(raw_findings)
+    ruff_artifact = save_artifact(ruff_log, raw_findings)
     markers = count_markers(tree)
+    outcome_path = RUN_DIR / f"outcomes-{key}.json"
+    outcomes = json.loads(outcome_path.read_text()) if outcome_path.exists() else None
     return {
         **snapshot,
         "short": short,
@@ -449,7 +443,14 @@ def run_snapshot(snapshot: dict, log_lines: list) -> dict:
         "measurement_cwd": cwd_resolved,
         "pytest": {
             "command": command,
-            "log": log_name,
+            **pytest_artifact,
+            "measured": parsed["summary_seen"]
+            and not truncated
+            and exit_status in (0, 1),
+            "outcomes_log": str(outcome_path) if outcomes else None,
+            "outcomes_sha256": hashlib.sha256(outcome_path.read_bytes()).hexdigest()
+            if outcomes
+            else None,
             "exit_status": exit_status,
             "truncated": truncated,
             "summary_seen": parsed["summary_seen"],
@@ -463,7 +464,7 @@ def run_snapshot(snapshot: dict, log_lines: list) -> dict:
         },
         "ruff": {
             "command": [str(RUFF), "check", "--no-cache", "--output-format=json", "."],
-            "log": ruff_log,
+            **ruff_artifact,
             "exit_status": ruff_proc.returncode,
             "version": run([str(RUFF), "--version"]).stdout.decode().strip(),
             "findings": len(findings),
@@ -484,7 +485,7 @@ def lane_description() -> dict:
         "pythonpath": "the extracted tree, then this data directory",
         "per_test_timeout_s": PER_TEST_TIMEOUT_S,
         "timeout_mechanism": f"{PLUGIN_NAME}.py loaded with -p",
-        "extraction": "git ls-tree + git cat-file --batch into /tmp",
+        "extraction": "git archive into /tmp",
         "notes": (
             "no sync and no write to the nova checkout; each snapshot runs "
             "with its own --basetemp"
@@ -537,7 +538,7 @@ def main() -> int:
     parser.add_argument("--jobs", type=int, default=4)
     parser.add_argument("--out", default=str(DATA_DIR / "readiness.json"))
     args = parser.parse_args()
-    snapshots = resolve_snapshots()
+    snapshots = json.loads((DATA_DIR / "snapshots.json").read_text())
     if args.list:
         for snapshot in snapshots:
             print(snapshot["key"], snapshot["sha"])
@@ -558,10 +559,34 @@ def main() -> int:
         results = [run_snapshot(snapshot, log_lines)]
     elif args.all:
         results = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-            futures = {pool.submit(run_snapshot, s, []): s for s in snapshots}
+        unique = {s["sha"]: s for s in reversed(snapshots)}
+        parts = RUN_DIR / "parts"
+        parts.mkdir(exist_ok=True)
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=min(args.jobs, 4)
+        ) as pool:
+            futures = {pool.submit(run_snapshot, s, []): s for s in unique.values()}
             for future in concurrent.futures.as_completed(futures):
-                results.append(future.result())
+                result = future.result()
+                results.append(result)
+                (parts / f"{result['key']}.json").write_text(
+                    json.dumps(result, indent=2, sort_keys=True) + "\n"
+                )
+                log(
+                    f"completed {result['key']}: pytest exit={result['pytest']['exit_status']}"
+                )
+        for snapshot in snapshots:
+            if not any(r["key"] == snapshot["key"] for r in results):
+                measured = next(r for r in results if r["sha"] == snapshot["sha"])
+                alias = {
+                    **measured,
+                    **snapshot,
+                    "measurement_alias_of": measured["key"],
+                }
+                results.append(alias)
+                (parts / f"{snapshot['key']}.json").write_text(
+                    json.dumps(alias, indent=2, sort_keys=True) + "\n"
+                )
         for key in ORDER:
             entry = next(r for r in results if r["key"] == key)
             log_lines.append(
