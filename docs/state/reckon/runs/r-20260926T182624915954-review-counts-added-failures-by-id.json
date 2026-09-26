@@ -1,0 +1,291 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "2184a9f1407789c6ff74af18b09e95663cf97311",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 9382723,
+      "input_tokens_cumulative": 9382723,
+      "output_tokens": 40248,
+      "output_tokens_cumulative": 40248,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 635,
+    "files": 4,
+    "removed": 2
+  },
+  "commit_resolution": null,
+  "commits": [
+    "bd575117b617de35cef7e9d1506c0b17275b149d",
+    "ab5e524b2481f1f59f5dbd974a50f3aa51abc94f",
+    "9838365a9a289306bc5c03d0face0ae8337c5d2a",
+    "e6340d81dd8d7b77981f97f3e648ec8c3058e861",
+    "0684130beca0391ac3b3b3619b42d3a7f273a920",
+    "f94c8b9bd6494e59d54d99a47b14febdd6c67858",
+    "a2c0a6565bf72c20088c216d681ddee3f3aa3fbb"
+  ],
+  "completed_at": "2026-09-26T19:32:28.845Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-26T18:26:38Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest node",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/crew/promotion.py",
+    "//",
+    "reckon/crew/review.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_counts_added_failures.py",
+    "exit_status": 0,
+    "log_digest": "sha256:55c6a641de78f01f8cbdad2ece127e12f5dcb6522a35c030a1aafbe4e1b8759f",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T182624915954-review-counts-added-failures-by-id/gate-added-failures.log"
+  },
+  "impl_move": {
+    "at_complete": 0.95,
+    "at_dispatch": 0.93,
+    "plan": "scoring-should-stop-a-promotion",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-26T19:06:25.636972+00:00",
+    "horizon_seconds": 2400,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-26T18:26:25Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 9,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 5,
+    "mean_context": 126667,
+    "observed_at": "2026-09-26T18:26:16Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-26T19:32:28.845Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T182624915954-review-counts-added-failures-by-id/manifest.md",
+  "member": "disposable-r-20260926T182624915954-review-counts-added-failures-by-id",
+  "negative_control": {
+    "declaration": "count added failures as head minus base by number rather than by id; the disjoint-ids case must fail",
+    "log": "negative-control-count-by-number.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T182624915954-review-counts-added-failures-by-id/negative-control-count-by-number.log",
+    "test_paths": [
+      "tests/test_review_counts_added_failures.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "review-counts-added-failures-by-id",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1520,
+          "cached_input_tokens": 408868,
+          "input_tokens": 410390,
+          "output_tokens": 1329,
+          "reasoning_output_tokens": 177,
+          "total_tokens": 411719,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+      "session_id": "s21-coord"
+    },
+    "done_when": "reckon/crew/review.py derives, for every review it stores, an added-failures-by-id count from the reviewed run's own base and head gate logs. The count is the pytest node ids reported FAILED or ERROR in the head log that do not appear in the base log, read from the files the reviewed manifest names. The count and the added ids are stored on the review record. When the count is nonzero, the stored total is capped at a threshold below the promotion floor the promotion path already reads, and the record says why, unless the reviewed node's done-when or manifest explicitly retires those test ids by name. When the manifest names no base log or no head log, the record says the count is unmeasured, rather than zero, and does not cap. tests/test_review_counts_added_failures.py synthesises a reviewed run in tmp_path (the pytest fixture) whose base log fails test ids A and B, and whose head log fails B, C and D. It asserts the stored record carries count 2 with ids C and D, and a total at or below the cap. A second case has the same logs and a done-when retiring C and D, and asserts no cap. A third case has no base log, and asserts the count is recorded as unmeasured and not zero. The negative control computes the count as head failures minus base failures by number rather than by id, and the first case must fail, because 3 minus 2 is 1, not 2. reckon/crew/recovery.py is not edited. tests/test_crew_review.py and any existing review test files add no failures against the base, with pytest basetemp outside any git repository. Gate and control logs are written under the run directory. The change is committed in this worktree.",
+    "estimated_hours": null,
+    "goal": "Make a stored review carry an added-failures-by-id count from the reviewed run's own gate logs, and cap the score when it is nonzero and the brief retired none of those tests.",
+    "id": "review-counts-added-failures-by-id",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-26T18:26:25Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 9,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 5,
+      "mean_context": 126667,
+      "observed_at": "2026-09-26T18:26:16Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T182624915954-review-counts-added-failures-by-id/manifest.md",
+    "negative_control": "count added failures as head minus base by number rather than by id; the disjoint-ids case must fail",
+    "plan": "scoring-should-stop-a-promotion",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "exact",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/review.py",
+      "tests/test_review_counts_added_failures.py",
+      "docs/plans/scoring-should-stop-a-promotion.html",
+      "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+      "docs/figures/scoring-should-stop-a-promotion"
+    ]
+  },
+  "orientation_input_tokens": 3317741.0,
+  "outcome": "",
+  "plan": "scoring-should-stop-a-promotion",
+  "plan_impl_at_dispatch": 0.93,
+  "promoted_revision": "a2c0a6565bf72c20088c216d681ddee3f3aa3fbb",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 14,
+      "fit": 18,
+      "goal_fidelity": 18,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 88
+  },
+  "role": "implement",
+  "run_id": "r-20260926T182624915954-review-counts-added-failures-by-id",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "d6f5933a-60f5-4ca8-ade5-136838edecab",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 20495245,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 917.807,
+    "generated_tokens": 96955,
+    "generation_seconds": 825.692,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 31.1,
+    "machine_seconds": 92.115,
+    "peak_input_tokens": 149486,
+    "tokens_per_second": 117.42,
+    "wall_tokens_per_second": 105.64
+  },
+  "time_budget": "40m",
+  "tool_steps": 109.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 3950,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-26T19:32:29Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-26T19:17:07Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T182624915954-review-counts-added-failures-by-id",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 12461,
+    "worker_pid": 629224
+  },
+  "worker_seconds": 3917,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
