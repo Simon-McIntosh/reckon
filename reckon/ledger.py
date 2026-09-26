@@ -2014,9 +2014,7 @@ def append_run(
     }
 
 
-def _split_project_runs(
-    project: str, docs: Path, *, dry_run: bool
-) -> dict[str, Any]:
+def _split_project_runs(project: str, docs: Path, *, dry_run: bool) -> dict[str, Any]:
     """Classify and then migrate one project's aggregate run rows.
 
     Every row is written by :func:`serialize_run`, so the file a split produces
@@ -2070,8 +2068,7 @@ def _split_project_runs(
                 existing = target.read_text(encoding="utf-8")
             except OSError as exc:
                 raise LedgerError(
-                    f"cannot read run file {target} while splitting "
-                    f"{project!r}: {exc}"
+                    f"cannot read run file {target} while splitting {project!r}: {exc}"
                 ) from exc
             if existing == serialize_run(row):
                 entry["identical"] += 1
@@ -2171,7 +2168,11 @@ def _commit_run_split(
             f"could not commit the run split for {project!r} in {checkout}: "
             f"{committed.stderr.strip() or committed.stdout.strip()}"
         )
-    return committed.stdout.strip().splitlines()[0] if committed.stdout.strip() else subject
+    return (
+        committed.stdout.strip().splitlines()[0]
+        if committed.stdout.strip()
+        else subject
+    )
 
 
 def split_runs(*, dry_run: bool = False) -> dict[str, Any]:

@@ -220,7 +220,9 @@ def test_an_empty_runs_list_migrates_to_the_key_s_removal_alone(home, tmp_path) 
 def test_a_second_invocation_writes_nothing_and_commits_nothing(home, tmp_path) -> None:
     repo = tmp_path / "repo"
     _write_ledger(
-        repo, PROJECT, {"members": MEMBERS, "runs": _rows("r-alpha", "r-beta"), "holds": HOLDS}
+        repo,
+        PROJECT,
+        {"members": MEMBERS, "runs": _rows("r-alpha", "r-beta"), "holds": HOLDS},
     )
     _seed_repo(repo)
     _mount(home, {PROJECT: repo / "docs"})
@@ -284,7 +286,9 @@ def test_a_promoted_run_beside_the_list_is_left_alone_and_not_counted(
     home, tmp_path
 ) -> None:
     repo = tmp_path / "repo"
-    _write_ledger(repo, PROJECT, {"members": [], "runs": _rows("r-listed"), "holds": []})
+    _write_ledger(
+        repo, PROJECT, {"members": [], "runs": _rows("r-listed"), "holds": []}
+    )
     promoted_row = ledger.build_record(
         run_id="r-window",
         plan="plan-a",
@@ -318,7 +322,9 @@ def test_a_promoted_run_beside_the_list_is_left_alone_and_not_counted(
 def test_a_dry_run_reports_the_counts_and_writes_nothing(home, tmp_path) -> None:
     repo = tmp_path / "repo"
     _write_ledger(
-        repo, PROJECT, {"members": MEMBERS, "runs": _rows("r-alpha", "r-beta"), "holds": HOLDS}
+        repo,
+        PROJECT,
+        {"members": MEMBERS, "runs": _rows("r-alpha", "r-beta"), "holds": HOLDS},
     )
     _seed_repo(repo)
     _mount(home, {PROJECT: repo / "docs"})
