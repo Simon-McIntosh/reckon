@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 420" width="880" height="420" font-family="monospace" font-size="13">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a7a7a"/>
+    </marker>
+  </defs>
+
+  <rect width="880" height="420" fill="#ffffff"/>
+
+  <text x="20" y="28" font-size="16" font-weight="bold" fill="#111">A tick whose config read fails: deferred and retried, not fatal</text>
+  <text x="20" y="50" fill="#555">four ticks across one merge; the broken layer is written after tick 1 and removed before tick 4</text>
+
+  <line x1="140" y1="72" x2="820" y2="72" stroke="#bbbbbb"/>
+  <circle cx="200" cy="72" r="4" fill="#bbbbbb"/>
+  <circle cx="380" cy="72" r="4" fill="#bbbbbb"/>
+  <circle cx="560" cy="72" r="4" fill="#bbbbbb"/>
+  <circle cx="740" cy="72" r="4" fill="#bbbbbb"/>
+  <g fill="#111" font-size="12" text-anchor="middle">
+    <text x="200" y="96">tick 1</text>
+    <text x="380" y="96">tick 2</text>
+    <text x="560" y="96">tick 3</text>
+    <text x="740" y="96">tick 4</text>
+  </g>
+  <g fill="#777777" font-size="11" text-anchor="middle">
+    <text x="200" y="112">config valid</text>
+    <text x="380" y="112">merge lands a broken layer</text>
+    <text x="560" y="112">still broken</text>
+    <text x="740" y="112">layer loads again</text>
+  </g>
+
+  <rect x="20" y="140" width="840" height="120" rx="6" fill="#f6f9f6" stroke="#cfe0cf"/>
+  <text x="34" y="164" font-weight="bold" fill="#1d5c2a">AFTER</text>
+  <text x="34" y="182" fill="#333333">the tick is deferred; the process keeps the seat</text>
+
+  <rect x="150" y="196" width="100" height="44" rx="4" fill="#e8f2e8" stroke="#9cc39c"/>
+  <text x="200" y="215" text-anchor="middle" fill="#1d5c2a" font-size="11">prices the run</text>
+  <text x="200" y="231" text-anchor="middle" fill="#1d5c2a" font-size="11">publishes the row</text>
+
+  <rect x="286" y="196" width="110" height="44" rx="4" fill="#fdf3e0" stroke="#e0c184"/>
+  <text x="341" y="212" text-anchor="middle" fill="#8a5a12" font-size="11">the read raises</text>
+  <text x="341" y="227" text-anchor="middle" fill="#8a5a12" font-size="11">FlightConfigError</text>
+  <text x="341" y="240" text-anchor="middle" fill="#8a5a12" font-size="10">one dim deferral line</text>
+
+  <rect x="430" y="196" width="110" height="44" rx="4" fill="#f2f2f2" stroke="#c4c4c4"/>
+  <text x="485" y="215" text-anchor="middle" fill="#555555" font-size="11">still broken</text>
+  <text x="485" y="231" text-anchor="middle" fill="#555555" font-size="11">returns, no repeat</text>
+
+  <rect x="576" y="196" width="120" height="44" rx="4" fill="#e8f2e8" stroke="#9cc39c"/>
+  <text x="636" y="212" text-anchor="middle" fill="#1d5c2a" font-size="11">loads again</text>
+  <text x="636" y="227" text-anchor="middle" fill="#1d5c2a" font-size="11">owed transitions</text>
+  <text x="636" y="240" text-anchor="middle" fill="#1d5c2a" font-size="10">published, not dropped</text>
+
+  <line x1="250" y1="218" x2="282" y2="218" stroke="#7a7a7a" marker-end="url(#arrow)"/>
+  <line x1="396" y1="218" x2="426" y2="218" stroke="#7a7a7a" marker-end="url(#arrow)"/>
+  <line x1="540" y1="218" x2="572" y2="218" stroke="#7a7a7a" marker-end="url(#arrow)"/>
+
+  <rect x="20" y="280" width="840" height="110" rx="6" fill="#fdf4f4" stroke="#e4c9c9"/>
+  <text x="34" y="304" font-weight="bold" fill="#8c2020">BEFORE</text>
+  <text x="34" y="322" fill="#333333">the error leaves the tick and ends the producer</text>
+
+  <rect x="150" y="336" width="100" height="36" rx="4" fill="#e8f2e8" stroke="#9cc39c"/>
+  <text x="200" y="358" text-anchor="middle" fill="#1d5c2a" font-size="11">publishes the row</text>
+
+  <rect x="286" y="336" width="110" height="36" rx="4" fill="#f7d9d9" stroke="#c98a8a"/>
+  <text x="341" y="358" text-anchor="middle" fill="#8c2020" font-size="11">the read raises</text>
+
+  <rect x="430" y="336" width="266" height="36" rx="4" fill="#f2d5d5" stroke="#c98a8a"/>
+  <text x="563" y="358" text-anchor="middle" fill="#8c2020" font-size="11">the pane goes dark; the seat thins to nothing</text>
+
+  <line x1="250" y1="354" x2="282" y2="354" stroke="#7a7a7a" marker-end="url(#arrow)"/>
+  <line x1="396" y1="354" x2="426" y2="354" stroke="#7a7a7a" marker-end="url(#arrow)"/>
+</svg>
