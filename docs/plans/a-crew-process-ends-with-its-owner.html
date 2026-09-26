@@ -730,6 +730,42 @@
       figure:
       <code>docs/figures/a-crew-process-ends-with-its-owner/stall_clock_starts_at_the_attempt.svg</code>.</p>
     </div>
+    <div data-reckon="landing" data-node="watch-suite-green-after-departures" data-when="2026-09-25">
+      <h3>Landing record &mdash; eight watch and follower tests return to green</h3>
+      <p>At base <code>ac7e9e50</code> the eight ids:
+      <code>test_cold_watch_holds_an_already_stale_terminal_pointer</code>,
+      <code>test_dispatch_is_admitted_during_the_stale_terminal_window</code>,
+      <code>test_empty_fleet_still_waits_for_its_first_pointer</code>,
+      <code>test_an_empty_observed_set_render_is_byte_identical_to_today</code>,
+      <code>test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_not</code>,
+      <code>test_an_observed_session_named_identically_to_the_owning_session_adds_no_duplicate</code>,
+      <code>test_a_stream_that_ended_in_a_result_record_is_not_a_death</code> and
+      <code>test_every_unit_template_in_the_tree_is_covered_here</code>.</p>
+      <p>Adjudicating each against the departure rule (<code>9f55e200</code>) and the shared
+      classifier verdict (<code>7bcd27ac</code>), all eight reddened on a <em>test</em>
+      expectation superseded by a landed design change, so no executable code changed:
+      <code>reckon/crew/recovery.py</code> is byte-identical to base. The three watch-lifetime
+      fixtures now record the promotion row a landing writes (the rule that a rowless departure
+      reads <code>withdrawn</code> is the code's, and stays); the three observed-session cases
+      move off the retired ticker owner glyph onto the surviving render-path distinction; the
+      death case asserts the typed <code>recovery_classification</code> rather than the
+      lifecycle <code>state</code> that <code>11ad0a89</code> deliberately grouped as
+      <code>blocked</code>; and the unit-template inventory accounts for the newly added
+      <code>Type=oneshot</code> timer publisher that systemd refuses a restart policy.</p>
+      <p><strong>Delivered.</strong> The eight named ids pass (8 passed); the four changed files
+      pass together (24 passed); the four comparison files add zero failures (119 passed). The
+      declared negative control forced every departure to <code>withdrawn</code> and failed
+      <code>test_cold_watch_holds_an_already_stale_terminal_pointer</code> (1 failed, exit 1),
+      reverted before finishing. Receipts under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T170440473739-watch-suite-green-after-departures/logs/</code>:
+      <code>named-eight.log</code>, <code>gate.log</code>, <code>compare-four.log</code> and
+      <code>negative-control.log</code>. Full record:
+      <code>a-crew-process-ends-with-its-owner-landed.html#s10-watch-suite-green-after-departures</code>.</p>
+      <p><strong>Delivery blocker.</strong> The worker sandbox ro-binds the shared checkout, so a
+      worktree's <code>git commit</code> fails on <code>index.lock</code> with Read-only file
+      system. The worktree edits stand on disk for the coordinator to commit; this worker
+      recorded no commit and did not close the followup.</p>
+    </div>
 
     <h2 id="s11">&sect;11 &mdash; A live producer reads only what changed since its last poll</h2>
     <p><strong>The defect.</strong> &sect;3 ends a producer that nobody uses. &sect;4 stops

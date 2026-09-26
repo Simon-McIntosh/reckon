@@ -13,10 +13,23 @@ from pathlib import Path
 
 import pytest
 
-from reckon import crew
+from reckon import crew, ledger
 from reckon.crew.recovery import watch_ticker
 from reckon.crew import runs
 from reckon.crew.runs import project_watch_visibility
+
+
+def _record_promotion(project: str, run_id: str) -> None:
+    """Write the ledger row a promotion leaves behind when a run lands.
+
+    A departure is not a fact the pointer records: a run that was promoted and
+    a pointer that vanished with nothing behind it look identical from the
+    fleet. The ledger decides which one it was, so a fixture that models a
+    landing records the row a promotion would have written.
+    """
+    row = ledger.run_path(project, run_id)
+    row.parent.mkdir(parents=True, exist_ok=True)
+    row.write_text(json.dumps({"run_id": run_id}), encoding="utf-8")
 
 
 CONFIG = {
@@ -117,6 +130,7 @@ def _write_stale_terminal_pointer(home: Path, *, repo: Path | None = None) -> di
         "process_alive": False,
     }
     crew._write_json(crew.pointer_path(record["run_id"]), record)
+    _record_promotion(str(record["project"]), str(record["run_id"]))
     return record
 
 
@@ -236,6 +250,10 @@ def test_dispatch_is_admitted_during_the_stale_terminal_window(
         assert accepted["watch"]["watcher_live"] is True
         assert accepted["watch"]["session_attached"] is True
         assert accepted["watch_override"] is None
+        # Both runs land, so both departures carry the row a promotion writes;
+        # the ledger is the whole of what separates a landing from a vanished
+        # pointer, and this case asserts the promoted reading of it.
+        _record_promotion("sample", str(accepted["run_id"]))
         crew.pointer_path(record["run_id"]).unlink()
         crew.pointer_path(accepted["run_id"]).unlink()
         poll.release.set()

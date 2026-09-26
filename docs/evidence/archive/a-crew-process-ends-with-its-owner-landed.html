@@ -466,6 +466,94 @@
       A long-lived producer must load the integrated code before this result describes its
       live output; this worker did not restart any shared service or close the followup.</p>
     </section>
+  <section id="s10-watch-suite-green-after-departures">
+      <h2>Eight watch and follower tests return to green</h2>
+      <p>Measured on fleet compute node <code>98dci4-clu-2058</code> under allocation
+      <code>1277272</code>, at base <code>ac7e9e500b88a0ca1d3fd804527195945d5f5ae3</code>. The
+      eight ids were red at base <code>d8dc247d</code> in the sibling follower-reloads run's
+      <code>suite-base.log</code>. Every failure was adjudicated against the departure rule
+      (<code>9f55e200</code>, the ledger decides a promoted departure) and the shared
+      classifier verdict (<code>7bcd27ac</code>); the verdict for every id was that the
+      <em>test</em> encoded a superseded expectation, so no code changed and
+      <code>reckon/crew/recovery.py</code> is byte-identical to base in this change.</p>
+      <table>
+        <thead><tr><th>Test id</th><th>Changed</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_cold_watch_holds_an_already_stale_terminal_pointer</code></td>
+          <td>test (fixture)</td>
+          <td>The fixture unlinked a pointer and read the departure as <code>promoted</code>,
+          but wrote no ledger row. The departure rule makes the ledger the whole of what
+          separates a landing from a vanished pointer, so a rowless departure reads
+          <code>withdrawn</code>. The fixture now records the promotion row a landing writes,
+          the pattern <code>test_crew_ticker.py</code> already uses; the promoted reading and
+          the <code>completed_unpromoted</code> baseline are unchanged.</td></tr>
+          <tr><td><code>test_dispatch_is_admitted_during_the_stale_terminal_window</code></td>
+          <td>test (fixture)</td>
+          <td>Same rowless fixture; the dispatched run that departs in the same fold also
+          records its promotion row.</td></tr>
+          <tr><td><code>test_empty_fleet_still_waits_for_its_first_pointer</code></td>
+          <td>test (fixture)</td>
+          <td>Same rowless fixture.</td></tr>
+          <tr><td><code>test_an_empty_observed_set_render_is_byte_identical_to_today</code></td>
+          <td>test</td>
+          <td>Asserted <code>ticker.FOREIGN_OWNER</code>, a symbol the ticker retired. The owner
+          glyph was removed when the row became one aligned transition
+          (<code>926b8743</code>, "ownership is no longer a row column"), so the case now
+          asserts the render is invariant to <code>with_session</code>.</td></tr>
+          <tr><td><code>test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_not</code></td>
+          <td>test</td>
+          <td>Same retired glyph. The surviving distinction is the event the render path keeps:
+          an own row's <code>session</code> is blanked and an observed row's is retained, and
+          blanking the session changes no rendered byte.</td></tr>
+          <tr><td><code>test_an_observed_session_named_identically_to_the_owning_session_adds_no_duplicate</code></td>
+          <td>test</td>
+          <td>Same retired glyph; now asserts exactly one row and a blanked own session.</td></tr>
+          <tr><td><code>test_a_stream_that_ended_in_a_result_record_is_not_a_death</code></td>
+          <td>test</td>
+          <td>Asserted the lifecycle <code>state</code> differed between a concluded turn and a
+          mid-turn death. <code>11ad0a89</code> deliberately grouped both under the
+          <code>blocked</code> row vocabulary and moved the reading into
+          <code>recovery_classification</code> ("carry concluded turns ... as precise recovery
+          classifications on the existing blocked row vocabulary"). The case now asserts the
+          typed classification and the recovery verb, which is what a reader acts on.</td></tr>
+          <tr><td><code>test_every_unit_template_in_the_tree_is_covered_here</code></td>
+          <td>test</td>
+          <td>The tree scan now finds <code>reckon/crew/paid_lanes.py</code>, a timer-activated
+          <code>Type=oneshot</code> publisher added after the case was written. systemd refuses
+          <code>Restart=</code> on a oneshot unit, so it cannot join the watcher restart policy.
+          The inventory is exhaustive again and the new test asserts the oneshot type and the
+          absent restart directive, keeping the catch-all: a further template still fails
+          until listed.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Gate.</strong> The eight named ids pass at the worktree head
+      (<code>named-eight.log</code>, 8 passed). The four changed files pass together
+      (<code>tests/test_crew_watch_lifetime.py</code>,
+      <code>tests/test_follow_observes_other_sessions.py</code>,
+      <code>tests/test_watch_reports_death_at_once.py</code>,
+      <code>tests/test_watcher_unit_restart.py</code>: 24 passed, <code>gate.log</code>). The
+      comparison files <code>tests/test_crew_recovery.py</code>,
+      <code>tests/test_crew_watch_stream.py</code>,
+      <code>tests/test_a_live_run_never_reads_dead.py</code> and
+      <code>tests/test_producer_shares_the_classifier_verdict.py</code> pass with no failures
+      (119 passed, <code>compare-four.log</code>); the head equals base for every file and
+      code path they exercise, so this is also the base arm and adds zero failures.</p>
+      <p><strong>Declared negative control.</strong> Forcing every departure in
+      <code>fleet_transitions</code> to <code>withdrawn</code> restores the pretence that a
+      promoted departure reads withdrawn:
+      <code>test_cold_watch_holds_an_already_stale_terminal_pointer</code> then fails
+      (<strong>1 failed, exit 1</strong>, <code>negative-control.log</code>), and the mutation
+      is reverted before finishing. The red log's first line repeats the declared mutation
+      verbatim.</p>
+      <p><strong>Delivery blocker.</strong> The sandbox ro-binds the shared checkout
+      (<code>/home/ITER/mcintos/Code/reckon</code>), which lives on a filesystem mounted
+      <code>ro</code> in this container; a detached worktree's index is the sandbox's only
+      writable path to it. Every <code>git commit</code> therefore fails on
+      <code>index.lock</code> with <code>Read-only file system</code>, against
+      <code>skills/reckon-build/references/worker-backends.md</code>, which requires the main
+      repository root writable for exactly this index. The edits stand on disk in the
+      worktree for the coordinator to commit; no local commit was possible.</p>
+    </section>
   </main>
 </body>
 </html>

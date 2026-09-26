@@ -23,7 +23,6 @@ import pytest
 
 from reckon import cli, crew
 from reckon.crew import recovery, runs
-from reckon.crew import ticker as ticker_module
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
 
@@ -250,7 +249,12 @@ def test_a_follower_without_observed_sessions_behaves_exactly_as_today(home) -> 
 
 
 def test_an_empty_observed_set_render_is_byte_identical_to_today(home) -> None:
-    """With ``observed=()`` the render path rewrites nothing and adds no column."""
+    """With ``observed=()`` the render path rewrites nothing and adds no column.
+
+    Ownership is no longer a row column: the ticker's owner glyph was retired
+    when the row became one aligned transition, so asking for the owner mark
+    changes nothing about the line.
+    """
     event = {
         "project": "proj",
         "event": "transition",
@@ -264,8 +268,9 @@ def test_an_empty_observed_set_render_is_byte_identical_to_today(home) -> None:
     }
     render = cli._follow_render_event(event, session="mine", observed=())
     assert render is event, "an empty observed set must not rewrite the row"
-    plain = recovery.format_watch_transition(event, with_session=False)
-    assert ticker_module.FOREIGN_OWNER not in plain
+    assert recovery.format_watch_transition(event, with_session=True) == (
+        recovery.format_watch_transition(event, with_session=False)
+    ), "ownership is not a row column: no owner mark is drawn"
 
 
 # ── Marking ─────────────────────────────────────────────────────────────────
@@ -274,7 +279,15 @@ def test_an_empty_observed_set_render_is_byte_identical_to_today(home) -> None:
 def test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_not(
     home,
 ) -> None:
-    """The other-session marker is the ticker's own glyph, not a second spelling."""
+    """A row observed from another session keeps its name where an own row's is blanked.
+
+    The ticker's foreign-owner glyph was retired when the row became one
+    aligned transition and ownership stopped being a column, so the marker is
+    now the retained session on the event rather than a drawn glyph. The
+    owning session's row is blanked and an observed one keeps its name; the
+    render treats the two identically, which is exactly what "no owner column"
+    means.
+    """
     _write_pointer(home, "r-mine", "my-node", session="mine", phase="working")
     _write_pointer(home, "r-old", "old-node", session="old-a", phase="working")
 
@@ -283,29 +296,38 @@ def test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_
         events = _follow("proj", session="mine", observed=("old-a",))
 
     by_node = {event["node"]: event for event in events}
-    own_rendered = recovery.format_watch_transition(
-        cli._follow_render_event(
-            by_node["my-node"], session="mine", observed=("old-a",)
-        ),
-        with_session=True,
+    own_event = cli._follow_render_event(
+        by_node["my-node"], session="mine", observed=("old-a",)
     )
+    observed_event = cli._follow_render_event(
+        by_node["old-node"], session="mine", observed=("old-a",)
+    )
+    assert own_event["session"] == "", "the owning session's row is blanked"
+    assert observed_event["session"] == "old-a", "an observed row keeps its name"
+    own_rendered = recovery.format_watch_transition(own_event, with_session=True)
     observed_rendered = recovery.format_watch_transition(
-        cli._follow_render_event(
-            by_node["old-node"], session="mine", observed=("old-a",)
-        ),
-        with_session=True,
+        observed_event, with_session=True
     )
-    assert ticker_module.FOREIGN_OWNER in observed_rendered
-    assert ticker_module.FOREIGN_OWNER not in own_rendered
     assert "old-a" not in observed_rendered, (
-        "the marker names no session: the glyph is the whole statement"
+        "the marker names no session: ownership is not a row column"
     )
+    assert "mine" not in own_rendered.split("my-node", 1)[0], (
+        "the owning session's row carries no session either"
+    )
+    assert observed_rendered == recovery.format_watch_transition(
+        {**observed_event, "session": ""}, with_session=True
+    ), "ownership draws no column: blanking the session changes nothing"
 
 
 def test_an_observed_session_named_identically_to_the_owning_session_adds_no_duplicate(
     home,
 ) -> None:
-    """Observing your own session again is harmless: one transition, one row."""
+    """Observing your own session again is harmless: one transition, one row.
+
+    The row is the owning session's, so it is blanked like any own row and no
+    second copy is delivered for the same name. Ownership draws no column, so
+    there is no marker to be added or withheld.
+    """
     _write_pointer(home, "r-mine", "my-node", session="mine", phase="working")
 
     with runs._project_watch_claim("proj", "1h"):
@@ -314,11 +336,12 @@ def test_an_observed_session_named_identically_to_the_owning_session_adds_no_dup
 
     rows = [event for event in received if event["node"] == "my-node"]
     assert len(rows) == 1, "the owning session's row is delivered exactly once"
-    rendered = recovery.format_watch_transition(
-        cli._follow_render_event(rows[0], session="mine", observed=("mine",)),
-        with_session=True,
+    rendered_event = cli._follow_render_event(
+        rows[0], session="mine", observed=("mine",)
     )
-    assert ticker_module.FOREIGN_OWNER not in rendered, (
+    assert rendered_event["session"] == "", "an own row stays blank"
+    rendered = recovery.format_watch_transition(rendered_event, with_session=True)
+    assert "mine" not in rendered.split("my-node", 1)[0], (
         "an own row stays own even when it is also named as observed"
     )
 

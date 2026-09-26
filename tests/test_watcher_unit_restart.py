@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 from reckon import service
+from reckon.crew import paid_lanes
 from reckon.crew import runs as crew_runs
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -23,7 +24,15 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # test_a_generator_renders_restart_always_with_a_brief_delay, and the tree scan
 # requires the set to equal what the source carries, so a generator added
 # elsewhere fails both halves until it is listed here and rendered.
-UNIT_GENERATORS = ("reckon/crew/runs.py", "reckon/service.py")
+RESTART_POLICY_UNITS = ("reckon/crew/runs.py", "reckon/service.py")
+
+# A timer-activated oneshot unit runs once per activation and exits, and
+# systemd refuses to apply a Restart= policy to Type=oneshot. The refresh
+# publisher is one, so it is inventoried here with its own assertion rather
+# than folded into the watcher restart policy it cannot carry.
+ONESHOT_UNITS = ("reckon/crew/paid_lanes.py",)
+
+UNIT_GENERATORS = RESTART_POLICY_UNITS + ONESHOT_UNITS
 
 # An exited unit is worth a brief pause before the manager brings it back, but
 # not long enough that an exited process stays down for a meaningful fraction
@@ -48,6 +57,9 @@ def _rendered_units(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str
             "demo", environment={"PATH": "/usr/bin:/bin"}, executable=str(binary)
         ),
         "reckon/service.py": service.render_unit(executable=binary, node=binary),
+        "reckon/crew/paid_lanes.py": paid_lanes.render_service_unit(
+            executable=str(binary), root=tmp_path
+        ),
     }
 
 
@@ -60,7 +72,7 @@ def _unit_template_sources() -> set[str]:
     return found
 
 
-@pytest.mark.parametrize("generator", UNIT_GENERATORS)
+@pytest.mark.parametrize("generator", RESTART_POLICY_UNITS)
 def test_a_generator_renders_restart_always_with_a_brief_delay(
     generator: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
@@ -71,12 +83,27 @@ def test_a_generator_renders_restart_always_with_a_brief_delay(
     assert int(delay.group(1)) <= MAX_RESTART_DELAY_SECONDS
 
 
-@pytest.mark.parametrize("generator", UNIT_GENERATORS)
+@pytest.mark.parametrize("generator", RESTART_POLICY_UNITS)
 def test_no_generator_still_restarts_only_on_failure(
     generator: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     unit = _rendered_units(tmp_path, monkeypatch)[generator]
     assert "Restart=on-failure" not in unit, unit
+
+
+@pytest.mark.parametrize("generator", ONESHOT_UNITS)
+def test_a_timer_activated_oneshot_unit_carries_no_restart_policy(
+    generator: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A oneshot unit runs once per activation, so systemd refuses it a Restart.
+
+    Asserting the Type is what keeps the exemption honest: a template that
+    quietly dropped the oneshot type would need the restart policy above
+    rather than this acknowledgement.
+    """
+    unit = _rendered_units(tmp_path, monkeypatch)[generator]
+    assert "Type=oneshot" in unit, unit
+    assert "Restart=" not in unit, unit
 
 
 def test_every_unit_template_in_the_tree_is_covered_here():
