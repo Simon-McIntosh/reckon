@@ -15,6 +15,7 @@ Cached input is included in total input but is also reported separately.
 from __future__ import annotations
 
 import argparse
+import ast
 import bisect
 import collections
 import concurrent.futures
@@ -23,6 +24,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import sqlite3
 import subprocess
 import tempfile
@@ -359,11 +361,37 @@ def git_verb(command):
     return match.group(1) if match else None
 
 
+def shell_tokens(command):
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        return list(lexer)
+    except ValueError:
+        return []
+
+
+def crew_verbs(command):
+    # A quoted goal or resume advice may mention other crew commands. Only
+    # separate shell words identify calls; prose inside one argument does not.
+    tokens = shell_tokens(command)
+    return {tokens[i + 1] for i, word in enumerate(tokens[:-1]) if word == "crew"}
+
+
+def literal_flag(command, flag):
+    tokens = shell_tokens(command)
+    values = {tokens[i + 1] for i, word in enumerate(tokens[:-1]) if word == flag}
+    return (
+        next(iter(values))
+        if len(values) == 1 and not any("$" in v for v in values)
+        else None
+    )
+
+
 def tool_call_category(name, tool_input):
     """Assign one exclusive category, with semantic crew actions taking precedence."""
     if name in ("Bash", "exec_command", "shell_command"):
         command = str(tool_input.get("command") or tool_input.get("cmd") or "")
-        verbs = set(CREW_VERB.findall(command))
+        verbs = crew_verbs(command)
         if verbs & DISPATCH_VERBS:
             return "dispatch"
         if verbs & FOLLOWER_VERBS:
@@ -515,6 +543,15 @@ def read_transcript(meta):
 
 def receipt_objects(text, families):
     receipts = [obj for obj in json_objects(text) if isinstance(obj.get("ok"), bool)]
+    for line in text.splitlines():
+        if not line.startswith("{") or "'ok':" not in line:
+            continue
+        try:
+            obj = ast.literal_eval(line)
+        except (ValueError, SyntaxError):
+            continue
+        if isinstance(obj, dict) and isinstance(obj.get("ok"), bool):
+            receipts.append({**obj, "receipt_shape": "python-literal-receipt"})
     receipts.extend(
         {
             "ok": False,
@@ -549,6 +586,15 @@ def receipt_objects(text, families):
                         "already_promoted": match.group(1) == "true",
                         "receipt_shape": "clipped-promotion-success-marker",
                     }
+                )
+        if not receipts and families == {"dispatch"}:
+            match = re.search(
+                r'"resumed_session"\s*:\s*"([^"]+)".*?"resumed_turn"\s*:\s*([1-9][0-9]*)',
+                text,
+            )
+            if match:
+                receipts.append(
+                    {"ok": True, "receipt_shape": "clipped-resume-success-marker"}
                 )
     return receipts
 
@@ -595,13 +641,17 @@ def extract_attempts(turns, uses, results):
         if use["name"] != "Bash":
             continue
         command = str(use["input"].get("command") or "")
-        verbs = set(CREW_VERB.findall(command))
+        verbs = crew_verbs(command)
         families = set()
         if verbs & DISPATCH_VERBS:
             families.add("dispatch")
         if verbs & PROMOTION_VERBS:
             families.add("promotion")
-        if not families or "--help" in command:
+        if (
+            not families
+            or "--help" in shell_tokens(command)
+            or "--dry-run" in shell_tokens(command)
+        ):
             continue
         result = results.get(uid)
         receipts = receipt_objects(result["text"], families) if result else []
@@ -646,8 +696,9 @@ def extract_attempts(turns, uses, results):
                 continue
             run = obj.get("run_id") or (obj.get("record") or {}).get("run_id")
             if not run and family == "promotion":
-                match = re.search(r'--run\s+[\'"]?(' + RUN_ID.pattern + ")", command)
-                run = match.group(1) if match else None
+                value = literal_flag(command, "--run")
+                run = value if value and RUN_ID.fullmatch(value) else None
+            target = literal_flag(command, "--node") if family == "dispatch" else run
             rows.append(
                 {
                     "family": family,
@@ -662,6 +713,7 @@ def extract_attempts(turns, uses, results):
                     "tool_use_id": uid,
                     "receipt_index": index,
                     "run_id": run,
+                    "target": target,
                     "already_promoted": obj.get("already_promoted"),
                     "source": result["source"],
                     "call_source": use["source"],
@@ -685,6 +737,23 @@ def extract_attempts(turns, uses, results):
                 if later
                 else None
             )
+            same = next(
+                (
+                    s
+                    for s in success
+                    if row["target"]
+                    and s["target"] == row["target"]
+                    and stamp(s["at"]) > stamp(row["at"])
+                ),
+                None,
+            )
+            row["next_success_same_target_at"] = same["at"] if same else None
+            row["turns_to_next_success_same_target"] = (
+                bisect.bisect_right(turn_stamps, stamp(same["at"]))
+                - bisect.bisect_right(turn_stamps, stamp(row["at"]))
+                if same
+                else None
+            )
     return rows, unmeasured
 
 
@@ -697,9 +766,17 @@ def refusal_summary(rows, family):
         if r["turns_to_next_success"] is not None
     ]
     reasons = collections.Counter(r["error"] or "unspecified" for r in refused)
+    same_target = [
+        r["turns_to_next_success_same_target"]
+        for r in refused
+        if r["turns_to_next_success_same_target"] is not None
+    ]
     return {
         "receipts": len(selected),
         "success_receipts": sum(r["ok"] for r in selected),
+        "receipt_shapes": dict(
+            sorted(collections.Counter(r["receipt_shape"] for r in selected).items())
+        ),
         "refusals": len(refused),
         "by_error_code": dict(sorted(reasons.items())),
         "by_reason": dict(
@@ -709,6 +786,11 @@ def refusal_summary(rows, family):
         "right_censored": len(refused) - len(intervals),
         "turns_to_next_success_sum_overlapping": sum(intervals),
         "turns_to_next_success_mean": ratio(sum(intervals), len(intervals)),
+        "same_target_recovered_refusals": len(same_target),
+        "same_target_right_censored_or_unidentified": len(refused) - len(same_target),
+        "turns_to_next_success_same_target_mean": ratio(
+            sum(same_target), len(same_target)
+        ),
     }
 
 
