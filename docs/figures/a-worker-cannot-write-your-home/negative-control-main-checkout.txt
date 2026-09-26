@@ -1,0 +1,69 @@
+delete the early return that excludes a main checkout git dir; the new case must fail with that .git directory among the writable binds
+git-directory=/tmp/tmpjqjl8mag/home/Code/zzmain/.git
+objects-directory=/tmp/tmpjqjl8mag/home/Code/zzmain/.git/objects
+git-directory-among-writable-binds=True
+objects-among-writable-binds=True
+case-assertion-failed: ['/tmp/tmpjqjl8mag/home/Code/zzmain', '/tmp/tmpjqjl8mag/home/Code/zzmain/.git', '/tmp/tmpjqjl8mag/home/Code/zzmain/.git/objects']
+=== pytest with the guard's early return deleted (mutate_guard plugin) ===
+
+[mutate_guard] early return deleted
+..F.                                                                     [100%]
+=================================== FAILURES ===================================
+______________ test_a_main_checkout_worktree_grants_no_git_roots _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11276/test_a_main_checkout_worktree_0')
+
+    def test_a_main_checkout_worktree_grants_no_git_roots(tmp_path: Path) -> None:
+        """A worktree that is itself the main checkout re-opens no git metadata.
+    
+        A main checkout's git directory and its common directory are the same path,
+        so the write-roots helper grants nothing for it: its refs, index and objects
+        must not appear among the fence's writable binds. The two cases above
+        compose a linked worktree, where the two directories differ and the guard is
+        never reached — this case is the one that pins it. It reads the composed argv
+        rather than executing the fence, because the guard's contract is a property
+        of the composition; the executed-fence experiment belongs to the
+        linked-worktree case above, where the grant is what lets a commit succeed.
+        """
+        home = tmp_path / "home"
+        repo = _make_main_checkout(home)
+        git_directory = _git_directory(repo).resolve()
+        objects = _common_objects(repo)
+    
+        # The guard's precondition: for a main checkout the git directory is the
+        # common directory, so the helper has nothing to re-open.
+        common = Path(_git(repo, "rev-parse", "--git-common-dir").stdout.strip())
+        if not common.is_absolute():
+            common = repo / common
+        assert common.resolve() == git_directory
+    
+        argv = _backends.fence_argv(["true"], worktree=repo, home=home)
+        # The checkout is a protected class the fence overlays read-only, which is
+        # why naming neither git path writable leaves both sealed.
+        assert str(repo.resolve()) in _read_only_bind_destinations(argv)
+        # The case: neither git path is among the writable re-binds. This is the
+        # assertion the declared mutation trips — the git directory appears here.
+>       _assert_git_roots_not_writable(argv, git_directory, objects)
+
+tests/test_a_fenced_worker_can_commit.py:363: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+argv = ['bwrap', '--dev-bind', '/', '/', '--ro-bind', '/tmp/pytest-of-mcintos/pytest-11276/test_a_main_checkout_worktree_0/home/Code/zzmain', ...]
+git_directory = PosixPath('/tmp/pytest-of-mcintos/pytest-11276/test_a_main_checkout_worktree_0/home/Code/zzmain/.git')
+objects = PosixPath('/tmp/pytest-of-mcintos/pytest-11276/test_a_main_checkout_worktree_0/home/Code/zzmain/.git/objects')
+
+    def _assert_git_roots_not_writable(
+        argv: list[str], git_directory: Path, objects: Path
+    ) -> None:
+        """The write-roots guard's contract: neither git path is a writable bind."""
+        binds = _writable_binds(argv)
+>       assert str(git_directory) not in binds, binds
+E       AssertionError: ['/tmp/pytest-of-mcintos/pytest-11276/test_a_main_checkout_worktree_0/home/Code/zzmain', '/tmp/pytest-of-mcintos/pytes...Code/zzmain/.git', '/tmp/pytest-of-mcintos/pytest-11276/test_a_main_checkout_worktree_0/home/Code/zzmain/.git/objects']
+E       assert '/tmp/pytest-of-mcintos/pytest-11276/test_a_main_checkout_worktree_0/home/Code/zzmain/.git' not in ['/tmp/pytest-of-mcintos/pytest-11276/test_a_main_checkout_worktree_0/home/Code/zzmain', '/tmp/pytest-of-mcintos/pytes...Code/zzmain/.git', '/tmp/pytest-of-mcintos/pytest-11276/test_a_main_checkout_worktree_0/home/Code/zzmain/.git/objects']
+E        +  where '/tmp/pytest-of-mcintos/pytest-11276/test_a_main_checkout_worktree_0/home/Code/zzmain/.git' = str(PosixPath('/tmp/pytest-of-mcintos/pytest-11276/test_a_main_checkout_worktree_0/home/Code/zzmain/.git'))
+
+tests/test_a_fenced_worker_can_commit.py:222: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_a_fenced_worker_can_commit.py::test_a_main_checkout_worktree_grants_no_git_roots
+1 failed, 3 passed in 0.80s
+EXIT=1

@@ -685,6 +685,80 @@ exit: 0</pre>
     figure <code>/reckon/figures/a-worker-cannot-write-your-home/git-write-roots.svg</code>. This
     gate measures only this node's own change; verifying the merged result belongs to a separately
     dispatched test node.</p>
+
+    <h3 id="s2-main-checkout-git-roots">The main checkout's git metadata, pinned: the write-roots guard stops naming a main checkout's git directory writable</h3>
+
+    <p><strong>Node:</strong> <code>fence-never-grants-a-main-git-dir</code>.
+    <strong>Defect.</strong> Both cases of the node above compose a linked worktree, where the
+    worktree's git directory differs from the repository's common directory, so the write-roots
+    helper's early return — taken exactly when the two are equal, which is the shape of a main
+    checkout — is never reached by anything the suite executes. Reproduced before the repair: with
+    the early return deleted from <code>reckon._backends.worktree_git_write_roots</code> at
+    <code>ca46d6ab</code>, <code>tests/test_a_fenced_worker_can_commit.py</code> still reports its
+    two cases passing, so the guard was pinned by nothing and the code comment plus this record
+    stated a guarantee no measurement held.</p>
+
+    <p><strong>What landed.</strong> A third case composes a fence for a synthetic main checkout
+    under a synthetic code root — git directory and common directory the same path — and asserts
+    that neither the git directory nor <code>.git/objects</code> appears among the argv's writable
+    binds. The case reads the composed argv rather than executing the fence, because the guard's
+    contract is a property of the composition; the executed-fence experiment belongs to the
+    linked-worktree case above, where the absent grant is what makes a commit fail. The
+    <code>_common_objects</code>
+    helper now resolves a relative <code>--git-common-dir</code> against the worktree, as the
+    helper under test does; resolving it against the process working directory named the running
+    checkout's own object store instead of the synthetic repository's.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/main-checkout-git-roots.svg"
+           alt="Two columns. Left, a linked worktree: git dir is Code/.reckon-worktrees/.../.git/worktrees/x while common is Code/&lt;checkout&gt;/.git, so the helper grants the worktree git dir and the common object store and both are writable binds. Right, a main checkout as the worktree: git dir and common are the same path, so the early return grants nothing and neither .git nor .git/objects is named a writable bind.">
+      <figcaption>One helper, two shapes: the linked worktree reachable by dispatch needs its two
+      grants, while a main checkout grants nothing because its refs, index and objects are exactly
+      what the fence seals.</figcaption>
+    </figure>
+
+    <p><strong>The measure.</strong>
+    <code>tests/test_a_main_checkout_worktree_grants_no_git_roots</code> builds the synthetic main
+    checkout, asserts the guard's precondition (<code>--git-common-dir</code> resolves to the git
+    directory), composes <code>fence_argv</code> for it, and reads the argv's <code>--bind</code>
+    destinations, requiring the checkout itself to be a read-only overlay destination and neither
+    the git directory nor its <code>objects</code> to be a writable bind. The property pinned is a
+    property of the composition, so the case reads the argv rather than executing the fence; a
+    companion case applies the mutation and asserts the git directory does appear among the binds.
+    No real checkout is touched.</p>
+
+    <p><strong>Declared negative control</strong> — <em>delete the early return that excludes a main
+    checkout git dir; the new case must fail with that .git directory among the writable binds</em>
+    — is applied and logged (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-main-checkout.txt</code>).
+    The log's first line repeats the mutation verbatim; then the helper's grants and the writable
+    binds with the case's own assertion failing on
+    <code>['&hellip;/zzmain', '&hellip;/zzmain/.git', '&hellip;/zzmain/.git/objects']</code>; then a
+    pytest run with the early return deleted, in which
+    <code>test_a_main_checkout_worktree_grants_no_git_roots</code> is the only failure
+    (<code>1 failed, 3 passed</code>). So the case's pass at head rests on the early return.</p>
+
+    <p><strong>Gate.</strong> <code>tests/test_a_fenced_worker_can_commit.py</code> plus
+    <code>tests/test_launch_plan_fences_the_home.py</code> and
+    <code>tests/test_each_run_owns_its_harness_home.py</code>: base <code>ca46d6ab</code>
+    <code>16 passed</code>, head <code>74e6c86d</code> <code>18 passed</code>, zero added failures
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-main-checkout-base.txt</code>,
+    <code>gate-main-checkout-head.txt</code>). Lint and format over the touched path are clean at
+    head. Commit <code>74e6c86d</code>. Evidence:
+    <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-main-checkout-git-roots</code>,
+    figure <code>/reckon/figures/a-worker-cannot-write-your-home/main-checkout-git-roots.svg</code>.
+    This gate measures only this node's own change; verifying the merged result belongs to a
+    separately dispatched test node.</p>
+
+    <p><strong>Measured limit, recorded rather than closed.</strong> The guard keeps the git
+    directory from being <em>named</em> as a grant; it does not make the fence leave that directory
+    read-only when the worktree is itself a main checkout. Such a worktree is a protected path, so
+    <code>fence_argv</code> re-binds the whole checkout writable and that bind covers its
+    <code>.git</code>. Composed for a synthetic main checkout, the executed fence permits
+    <code>touch &lt;checkout&gt;/.git/index</code> and
+    <code>&lt;checkout&gt;/.git/objects/probe</code>. The ordinary dispatch path does not reach it —
+    a run's worktree is a linked worktree under <code>Code/.reckon-worktrees</code>, which the
+    protected set excludes — so the limit is latent, and closing it is separate work rather than
+    part of pinning this guard.</p>
   </section>
   <section id="s2-fenced-resume" data-reckon="section">
     <h2>&sect;2 follow-up &mdash; a fenced resume reaches its harness</h2>

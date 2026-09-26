@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430" font-family="DejaVu Sans, Helvetica, sans-serif">
+  <rect width="900" height="430" fill="#fbfbfd"/>
+  <text x="30" y="34" font-size="19" font-weight="bold" fill="#1b1b1f">The git write-roots guard: which git metadata the fence re-opens</text>
+  <text x="30" y="56" font-size="13" fill="#555">reckon._backends.worktree_git_write_roots(worktree) feeds fence_argv's writable roots</text>
+
+  <rect x="30" y="80" width="400" height="320" rx="8" fill="#ffffff" stroke="#c9cdd6"/>
+  <text x="50" y="108" font-size="15" font-weight="bold" fill="#1b1b1f">Linked worktree (a dispatched run)</text>
+  <text x="50" y="132" font-size="12.5" fill="#333">git dir  = Code/.reckon-worktrees/&lt;pool&gt;/&lt;node&gt;/.git/worktrees/x</text>
+  <text x="50" y="152" font-size="12.5" fill="#333">common   = Code/&lt;checkout&gt;/.git</text>
+  <text x="50" y="176" font-size="12.5" fill="#333">git dir != common  →  helper grants:</text>
+
+  <rect x="50" y="190" width="360" height="52" rx="8" fill="#eef7ee" stroke="#5aa06a"/>
+  <text x="64" y="212" font-size="12" fill="#22432b">grants[0] = worktree's own .git dir (HEAD, index, reflog)</text>
+  <text x="64" y="232" font-size="12" fill="#22432b">grants[1] = common .git/objects (append-only store)</text>
+
+  <text x="50" y="268" font-size="12.5" fill="#333">fence_argv writable binds then name both, so a commit lands</text>
+  <text x="50" y="288" font-size="12.5" fill="#333">while refs/heads, the index and the main tree stay sealed.</text>
+  <text x="50" y="320" font-size="12" fill="#6b7280">Pinned by test_a_fenced_worker_commits_in_its_own_worktree</text>
+  <text x="50" y="338" font-size="12" fill="#6b7280">and its negative control (grant removed → read-only refusal).</text>
+
+  <rect x="470" y="80" width="400" height="320" rx="8" fill="#ffffff" stroke="#c9cdd6"/>
+  <text x="490" y="108" font-size="15" font-weight="bold" fill="#1b1b1f">Main checkout as the worktree (the pinned case)</text>
+  <text x="490" y="132" font-size="12.5" fill="#333">git dir  = Code/&lt;checkout&gt;/.git</text>
+  <text x="490" y="152" font-size="12.5" fill="#333">common   = Code/&lt;checkout&gt;/.git  (the same path)</text>
+  <text x="490" y="176" font-size="12.5" fill="#333">git dir == common  →  early return, helper grants:</text>
+
+  <rect x="490" y="190" width="360" height="52" rx="6" fill="#f7eeee" stroke="#b06a6a"/>
+  <text x="504" y="212" font-size="12" fill="#4a2424">grants = [] — nothing named</text>
+  <text x="504" y="232" font-size="12" fill="#4a2424">so .git and .git/objects are not writable binds</text>
+
+  <text x="490" y="268" font-size="12.5" fill="#333">refs/heads, the index and the working tree of a main checkout</text>
+  <text x="490" y="288" font-size="12.5" fill="#333">are exactly what the fence seals, so none may be re-opened.</text>
+  <text x="490" y="320" font-size="12" fill="#6b7280">Pinned by test_a_main_checkout_worktree_grants_no_git_roots;</text>
+  <text x="490" y="338" font-size="12" fill="#6b7280">its control deletes the early return and the case fails there.</text>
+
+  <text x="30" y="420" font-size="11.5" fill="#8a8f98">Declaration: deleting the early return names the main checkout's .git dir and .git/objects among the writable binds, and the new case fails.</text>
+</svg>

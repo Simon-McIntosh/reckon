@@ -662,6 +662,31 @@
       The section's owed real-worker resume falsifier is still owed: this node proved the
       composed argv, not a live resumed turn, and only a separately dispatched test node can
       confirm the merged result.</p>
+    <p><strong>The main-checkout guard is pinned.</strong> The review of
+      <code>a-fenced-worker-can-commit</code> found that both of that node's cases compose a linked
+      worktree, where the worktree's git directory differs from the common directory, so the
+      write-roots helper's early return is never reached by anything the suite executes. Reproduced
+      with the early return deleted at <code>ca46d6ab</code>: both cases still pass. The new case
+      composes a fence for a synthetic main checkout under a synthetic code root and asserts that
+      neither its git directory nor its <code>objects</code> directory is among the argv's writable
+      binds; the declared negative control deletes the early return and the case fails with the git
+      directory among those binds. Gate over the fence file and the two harness-home fixture files:
+      base <code>ca46d6ab</code> <code>16 passed</code>, head <code>74e6c86d</code>
+      <code>18 passed</code>, zero added failures; lint and format clean on the touched path. Commit
+      <code>74e6c86d</code>. Evidence:
+      <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-main-checkout-git-roots</code>,
+      figure <code>/reckon/figures/a-worker-cannot-write-your-home/main-checkout-git-roots.svg</code>.
+      This gate measures only this node's own change; verifying the merged result belongs to a
+      separately dispatched test node.</p>
+    <p><strong>Measured limit of that guard, for the re-enable decision.</strong> Removing the
+      git directory from the writable roots stops it being <em>named</em> a grant; it does not, on
+      its own, leave a main checkout's <code>.git</code> read-only when the worktree is itself a
+      main checkout, because <code>fence_argv</code> still re-binds that whole checkout writable
+      and the bind covers its <code>.git</code>. Composed for a synthetic main checkout, the
+      executed fence permits writes to <code>.git/index</code> and <code>.git/objects</code>. The
+      dispatch path does not reach it — a run's worktree is a linked worktree under
+      <code>Code/.reckon-worktrees</code>, which the protected set excludes — so the limit is
+      latent and closing it is separate work, not a precondition of the fence re-enable.</p>
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host
