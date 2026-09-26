@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="75">
-<meta name="plan-impl" content="0.55">
+<meta name="plan-version" content="76">
+<meta name="plan-impl" content="0.6">
 </head>
 <body>
   <main class="plan-doc">
@@ -985,6 +985,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260925T1700-complete-accepts-a-live-run" data-who="" data-when="">
     <div class="r-comment-body"><p><strong>A promotion can orphan a live worker.</strong> At 16:52 <code>crew complete --gate not-run</code> promoted r-20260925T134804008927-re-review-of-headroom-publishes-real-readings. Its manifest still read <code>status: in-progress</code>, and its worker (pid 1204697) and supervisor (pid 1198847) were both alive. The review record was already stored, so no deliverable was lost. But the promotion deleted the live pointer mid-turn: the process then runs with no pointer, no follower row and no obligation, and its worktree cannot be reclaimed until it exits. That is the orphan this plan exists to prevent. <code>complete</code> should refuse a run whose recorded process is alive and whose manifest is not terminal, unless an explicit waiver is given, the same way it refuses a boundary or negative-control mismatch. This belongs with f-acpewio-worker-retired-at-acceptance, which is the reverse direction: acceptance must end the worker, and it must not be possible to accept a worker that has not ended.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260926T0936-discard-and-watch-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p><strong>Two monitor fixes landed.</strong> <code>a-discard-never-reads-promoted</code> (merged at <code>2f1cfd17</code>, review 94): a departing pointer reads promoted only when the ledger records a promotion of that run id. Otherwise it reads withdrawn, or discarded when the run directory records a discard. So <code>crew discard</code> no longer renders as <code>blocked → promoted</code>, which reckon-ee saw on 2026-09-25 and I reproduced on my own discards. Separately, <code>watch-suite-green-after-departures</code> (merged at <code>93abcf35</code>, review 93) returned eight watch and follower tests to green. Each encoded an expectation that the departure rule and the shared classifier verdict had superseded, and <code>recovery.py</code> was unchanged by it. <strong>Still open on this plan:</strong> <code>crew complete</code> accepts a live, in-progress run and deletes its pointer (comment c-20260925T1700), and f-acpewio-worker-retired-at-acceptance.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260924T081323251327-review-of-the-pause-hold-contract" data-who="reckon-ship" data-when="2026-09-24T08:26:05.983Z">
     <div class="r-comment-body"><p>read-back of section 9 found F1 blocking and F3 to F5 material; all applied at f4291476 with imas-ambix-af's two gate guards</p></div>
