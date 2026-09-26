@@ -27,53 +27,69 @@
 <body>
   <main class="plan-doc">
     <h2 id="s1">§1 — Why: the fleet cannot see its own rate</h2>
-    <p>The review of the dispatch pattern needed six study nodes to answer how much work lands and how fast, and
-      the most important trend it found — promotions up 77% while source output fell 27% in the week review became
-      mandatory — was visible to nobody while it happened
-      (<a href="/reckon/research/orchestrator-crew-pattern-review#s4">crew pattern review §4</a>). The burn
-      analysis needed three SLURM scans of 2.9 GB to price a run, the run store's <code>backend</code> column is
-      empty on every row since 20 September, codex resume streams report thread-cumulative usage so summing them
-      overcounts by 57%, and the budget preflight never projects the weekly window forward, so it did not hold
-      when the codex window reached 87% 57 hours into its week (reckon-a0, §3). The census scripts written for the
-      review work; they belong in the product, not in a data directory.</p>
+    <p>The review of the dispatch pattern needed six study nodes to answer how much work lands and how fast. Its most
+      important trend — from the week of 14–20 September to the week of 21–26 September, when review became
+      mandatory, promotions rose from 830 to 1,473 (+77%) while source lines landed fell from 85,685 to 62,775 (−27%)
+      — was visible to nobody while it happened
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s4">crew pattern review §4</a>). The burn analysis
+      reported by the <code>reckon-a0</code> coordinator in the review's survey
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s13">§13</a>) needed three SLURM scans over 2.9 GB of
+      streams to price a run; found the run store's <code>backend</code> column empty on all 851 rows written since
+      20 September; found that codex resume streams report thread-cumulative usage, so summing them gives 157% of the
+      rollout totals; and found that the budget preflight never projects the weekly window forward, so it did not refuse
+      a wave when the shared codex window reached 87% 57 hours into its week. The census logic written for the review
+      works; the product should carry it, while the study's scripts stay where they are as the review's reproduction
+      artifact.</p>
 
     <h2 id="s2">§2 — A velocity view</h2>
-    <p><strong>Deliverable.</strong> <code>crew(view="velocity")</code> and <code>reckon crew velocity</code>,
-      computed in Python from the committed ledgers and primary-branch history, reporting per project, lane and
-      day: promotions by class; product (source, tests) and record (plan, evidence, research HTML, figures, state)
-      lines landed; the seven-day deletion share of mature product lines; dispatch-to-completion and
-      dispatch-to-promotion median and p75; attempts per landed node; and the review share of promotions. The
-      implementation starts from <code>docs/research/data/crew-pattern-review/velocity/census.py</code> and keeps
-      its denominators and censoring rules.</p>
-    <p><strong>Done when</strong> the view reproduces the review's §4 headline figures within 1% on the same
-      pinned window, and a parity test compares the view's JSON with the census's compact output.</p>
+    <p><strong>Deliverable.</strong> A product module, <code>reckon/velocity.py</code>, ported from
+      <code>docs/research/data/crew-pattern-review/velocity/census.py</code> with its denominators and censoring rules,
+      serving <code>crew(view="velocity")</code> and <code>reckon crew velocity</code> for a window the caller names. It
+      reports, separately by project, by lane and by day, and in project-by-lane-by-day cells: promotions split into
+      implementation-class and review-or-investigate; lines landed on the primary branch in six classes — product
+      (source, tests), record (plan, evidence and research HTML; figures; <code>docs/state</code>) and other, the last
+      reported on its own; the seven-day deletion share, meaning deletions within seven days over additions that have
+      a full seven days of follow-up; dispatch-to-completion and dispatch-to-promotion, each with median and p75;
+      attempts per landed node; and the review share, meaning review-or-investigate promotions over all promotions.</p>
+    <p><strong>Done when</strong> a parity test runs the view over the review's pinned window
+      (2026-09-12T00:00:00Z to 2026-09-26T10:00:00Z, primary heads as recorded in the census's
+      <code>summary.json</code>) and matches that file's totals and per-project rows — counts within 1% relative,
+      shares within 0.5 percentage points — including the week-over-week pair quoted in §1.</p>
 
     <h2 id="s3">§3 — Coordinator cost per landed node</h2>
-    <p><strong>Deliverable.</strong> The view joins each promoted run to its coordinator session through
-      <code>node_definition.coordinator</code> and reports coordinator turns and input and output tokens per landed
-      node, using the coordinator-overhead census as its reference.</p>
-    <p><strong>Done when</strong> the figure agrees with that census's per-session totals for the window.</p>
+    <p><strong>Deliverable.</strong> For each coordinator session named by a promoted run's
+      <code>node_definition.coordinator.runtime_session_id</code>, the view reports the session's assistant responses,
+      input tokens (cache reads reported separately) and output tokens, divided by the number of nodes that session
+      landed in the window. Runs with no coordinator identity are counted in an explicit unattributed bucket.</p>
+    <p><strong>Done when</strong> over the pinned window the per-session figures agree within 1% with
+      <code>docs/research/data/crew-pattern-review/coordinator-overhead/overhead.json</code>.</p>
 
     <h2 id="s4">§4 — Quota runway and session hygiene</h2>
-    <p><strong>Deliverable.</strong> Before each wave the preflight reports, per metered lane and role, runs
-      remaining until the weekly reset from measured quota per run, and holds a wave that would exhaust the window
-      before its reset; per-run burn uses per-attempt deltas rather than summed cumulative streams, and the run
-      store records the backend. The view also reports, per day, the share of dispatches that inherited another
-      task's session, so a regression of task-keyed sessions shows the same day.</p>
-    <p><strong>Done when</strong> a fixture of three resumed codex streams prices to the rollout totals rather
-      than 157% of them, and the preflight holds a synthetic wave projected past its reset.</p>
+    <p><strong>Deliverable.</strong> Before each wave, the preflight reports for each metered budget group and role the
+      runs remaining before the weekly reset, from the mean quota cost per run over the trailing seven days, and refuses
+      to open a wave whose projected cost exceeds the remaining window, naming the runs remaining and the reset time. A
+      resumed run's burn is its cumulative total minus the previous attempt's last cumulative total. Dispatch writes the
+      backend into the run store. The view reports, per lane and day, the share of all dispatches that continued another
+      task's session.</p>
+    <p><strong>Done when</strong> a fixture of three resumed codex streams prices within 1% of their rollout totals
+      rather than at 157%, and a synthetic wave projected past its reset is refused with the runs-remaining figure in the
+      refusal.</p>
 
     <h2 id="s5">§5 — Work in progress is visible</h2>
-    <p><strong>Deliverable.</strong> The view reports, per project and ISO week, plans opened and plans closed
-      (shipped, done, archived or superseded), and the count of pending plans.</p>
-    <p><strong>Done when</strong> it reports reckon's 60 opened and 9 closed for the fortnight ending
-      2026-09-26, matching the review's §9 count.</p>
+    <p><strong>Deliverable.</strong> Per project and ISO week, the view reports plans opened (the week of the commit
+      that added the plan file) and plans closed (the week the plan's status became shipped, done, superseded or
+      abandoned, or its archive flag was set, counted once), and the count of pending plans — every plan not closed. It
+      also reports the cohort reading the review used: of the plans opened in a window, how many are closed as of a
+      named commit.</p>
+    <p><strong>Done when</strong> the cohort reading, run as of commit <code>23eb2545</code> over the pinned window,
+      reports reckon's 58 opened and 7 closed, matching the review's §9, and the test pins that commit rather than
+      today's date.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
       <h2><span class="sec">§</span> Followups</h2>
       <article class="r-fu" data-id="f-tfriv-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-26">
         <h4 class="r-fu-title">Build the velocity view</h4>
-        <div class="r-fu-body"><p>§2 first; §3, §4 and §5 extend it and can run in parallel after it.</p></div>
+        <div class="r-fu-body"><p>§2 first. §3 and §5 extend the velocity module and run one after the other; §4 changes the preflight and the run store and can run beside them.</p></div>
         <pre class="r-fu-prompt">/reckon-build the-fleet-reports-its-velocity</pre>
       </article>
     </section>
