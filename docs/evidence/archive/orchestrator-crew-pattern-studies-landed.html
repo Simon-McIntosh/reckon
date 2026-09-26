@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="orchestrator-crew-pattern-studies-landed">
+  <meta name="plan-title" content="Orchestrator crew pattern studies: cumulative evidence">
+  <meta name="plan-summary" content="Measured coordinator costs, refusal recovery and documentation merge conflicts, with explicit transcript coverage gaps.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-evidence-for" content="orchestrator-crew-pattern-studies">
+  <meta name="plan-verifies" content="orchestrator-crew-pattern-studies#s4">
+  <meta name="plan-recorded-at" content="2026-09-26">
+  <meta name="plan-verdict" content="qualified measurement">
+  <meta name="plan-environment" content="fleet allocation; root project virtualenv; frozen transcript snapshots">
+  <meta name="plan-tags" content="crew,analysis,measurement">
+  <title>Orchestrator crew pattern studies: cumulative evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Orchestrator crew pattern studies: cumulative evidence</h1>
+    <section id="coordinator-overhead">
+      <h2>Coordinator overhead census</h2>
+      <p>The fixed window is <code>2026-09-12T00:00:00Z</code> through
+        <code>2026-09-26T10:00:00Z</code>, inclusive. Across five primary branches,
+        <strong>2,182 distinct promoted runs</strong> are linked to
+        52 recorded coordinator identities. Usable transcripts cover
+        38 sessions, 1,789 promotions and
+        38,699 distinct assistant API responses:
+        <strong>21.63 responses per promotion</strong>.</p>
+      <p>Promotions are administrative dispositions: 1,567
+        have a passed gate, 497 have a not-run gate and
+        118 have a failed gate. These counts do not equate
+        failed work or review records with landed product code. Run roles are preserved in the JSON.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Numerator</th><th>Denominator</th><th>Per promotion</th></tr></thead>
+        <tbody>
+          <tr><td>Assistant API responses</td><td>38,699</td><td>1,789</td><td>21.63</td></tr>
+          <tr><td>Logical input tokens</td><td>20,375,175,527</td><td>1,789</td><td>11,389,142</td></tr>
+          <tr><td>Output tokens</td><td>28,029,284</td><td>1,789</td><td>15,668</td></tr>
+        </tbody>
+      </table>
+      <p>Logical input includes repeated cached context: 99.04% is cache-read volume.
+        It is not billed-token volume or dollars. Each message ID contributes usage once;
+        repeated content records cannot inflate the count. Whole coordinator sessions inside
+        the window include work outside crew, so this is an observed cost ratio, not causal labor attribution.</p>
+      <figure>
+        <img src="/reckon/figures/orchestrator-crew-pattern-studies/coordinator-effort.svg"
+             alt="Scatter plot of promotions per session against logical input tokens per promotion; the pooled rate is shown as a horizontal line.">
+        <figcaption>Sessions with positive measured input and at least one promotion. The
+          pooled line is an aggregate observation; no causal relationship is fitted.</figcaption>
+      </figure>
+      <p>The five largest tool-call categories are ranked in
+        <a href="/reckon/research/data/crew-pattern-review/coordinator-overhead/findings.md">the findings</a>.
+        Other tools lead at 6.631 calls per promotion,
+        followed by Git and merges (3.132),
+        reading diffs and gate logs (2.728),
+        crew reads and MCP views (2.670),
+        and dispatch/resume (1.599). Compound shell calls
+        count once under an exclusive heuristic category; unclassified work remains visible.</p>
+      <h3>Refusals and merge friction</h3>
+      <p>Observed receipts contain <strong>320 dispatch refusals
+        and 338 promotion refusals</strong>. Error codes,
+        exact reason text, per-refusal turns to the next family success and to a same-target
+        success are retained with transcript source lines. The matched same-target means are
+        12.50 responses across
+        111 dispatch recoveries and
+        14.83 across
+        107 promotion recoveries.
+        Intervals overlap and include other work. 2,896
+        candidate calls have missing or ambiguous receipts, so refusal counts are lower bounds.</p>
+      <table>
+        <thead><tr><th>Primary branch</th><th>Documentation merges</th><th>Conflict anywhere</th><th>Conflict in plans/evidence</th></tr></thead>
+        <tbody>
+<tr><td>imas-ambix/main</td><td>111</td><td>54</td><td>54</td></tr>
+<tr><td>imas-codex/main</td><td>173</td><td>56</td><td>56</td></tr>
+<tr><td>imas-efit/develop</td><td>124</td><td>40</td><td>29</td></tr>
+<tr><td>nova/main</td><td>229</td><td>99</td><td>99</td></tr>
+<tr><td>reckon/main</td><td>449</td><td>177</td><td>177</td></tr>
+        </tbody>
+      </table>
+      <p>All 1,086 documentation-touching first-parent merges
+        were replayed on their recorded parents with <code>git merge-tree</code>.
+        426 conflict anywhere; 415
+        conflict in plans/evidence. These replay outcomes do not establish historical manual-resolution
+        work. Temporary object stores keep every source repository untouched.</p>
+      <h3>Coverage limits and reproducibility</h3>
+      <p><strong>Hand-committed worker diffs remain unmeasured.</strong> Candidate successful
+        commit receipts are retained, but copied patches and quiet commits need an additional
+        worker-diff/primary-commit provenance join. The count is null, never an inferred zero.
+        Thirteen transcript files are missing and one has no in-window records; their combined
+        393 promotions remain in the full census but outside its measured-cost denominator.
+        All 2,328 selected runs carry a recorded coordinator runtime ID;
+        no worker session ID substitutes for a missing coordinator identity.</p>
+      <p>The instrument, frozen input index, compact
+        <a href="/reckon/research/data/crew-pattern-review/coordinator-overhead/overhead.json">overhead JSON</a>,
+        findings and one complete run log are under
+        <code>docs/research/data/crew-pattern-review/coordinator-overhead/</code>.
+        Large raw snapshots and detail artifacts remain in the assigned durable run directory;
+        every reference carries its path and SHA-256. The JSON reproduces byte for byte.
+        The verification checks a known repeated response (111,913 input and 197 output tokens),
+        a real missing-gate refusal, coverage totals, and clean/conflicting merge controls.
+        No mutation negative control applies to this measurement.</p>
+      <p>The measured instrument is committed at <code>43b6a500ef123e19992d1be6b4e55f14463832b1</code>.
+        Run <code>python verify.py --rerun</code> with the root project environment from the data directory.
+        This landing leaves the driving followup and plan lifecycle open for coordinator review.
+        Next: integrate and verify at the merged head, then commission the hand-integration provenance
+        join if an exhaustive value is required.</p>
+    </section>
+  </main>
+</body>
+</html>
