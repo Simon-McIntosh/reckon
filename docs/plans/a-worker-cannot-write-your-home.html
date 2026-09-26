@@ -738,6 +738,45 @@
         (<code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim-review2.txt</code>).
         Commit <code>4aa785dc</code>.</p>
 
+        <p><strong>A third review closed two writes the shim still forwarded.</strong> The
+        round's gate, red-arm, control and lint logs are kept under the run directory,
+        <code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/</code>,
+        rather than in the figures directory, so a review-round measurement does not contend
+        for a directory another node's evidence also writes. (1) <em>An allowlisted read verb's
+        arguments were never inspected.</em> <code>git -C &lt;other&gt; log
+        --output=&lt;other&gt;/f</code> exits 0 and writes <code>f</code>, and the same holds
+        for <code>show</code> and <code>diff</code> and for a path in the home directory. Every
+        forwarded invocation's arguments are now checked for an option naming an output file
+        whose head is <code>--output</code> or <code>--output-directory</code> &mdash; joined
+        or separated from its value &mdash; and refused, naming the option. The short
+        <code>-o</code> is deliberately not matched: on this allowlist it is
+        <code>--others</code> for <code>ls-files</code> and <code>--only-matching</code> for
+        <code>grep</code>, and the verbs where it does name an output directory
+        (<code>format-patch</code>, <code>archive</code>), the other file-writing forms
+        checked (<code>diff --output</code>, <code>bundle create</code>) and
+        <code>fsck --lost-found</code> are all off the allowlist and refused whole. (2) <em>A
+        forwarded read could take the index lock.</em> <code>git status</code> against another
+        checkout with a stale stat cache refreshed and rewrote that checkout's index. The
+        forward now execs the real git with <code>GIT_OPTIONAL_LOCKS=0</code>, git's documented
+        switch that keeps a read from taking an optional lock, and the refusal message states
+        that mechanism in place of the earlier claim that reads pass everywhere untouched.</p>
+
+        <p>Each fix is proved by a test that is red before it: the output-option cases
+        (<code>log</code>, <code>show</code> and <code>diff</code>, the joined, separated and
+        home-directory forms, and the option-detection unit case) and the index-bytes case are
+        <code>7 failed, 16 passed</code> against <code>a370c5be</code> at
+        <code>gate-git-shim-review3-red.txt</code>, and green at a head of
+        <code>40 passed</code> (23 shim tests + 17 companions) at
+        <code>gate-git-shim-review3-head.txt</code>. The declared negative control &mdash;
+        <em>exec the real git without checking the resolved repository</em> &mdash; bypasses
+        the resolved-repository check (<code>9 failed, 14 passed</code> at
+        <code>negative-control-git-shim.txt</code>, reverted <code>23 passed</code>), and two
+        further controls isolate each new fix: <em>forward a read verb without the output-option
+        check</em> &mdash; <code>5 failed, 18 passed</code> &mdash; and <em>forward a read verb
+        without disabling optional locks</em> &mdash; <code>1 failed, 22 passed</code>. Lint
+        stays <code>0 &rarr; 0</code> on the two changed files at both revisions
+        (<code>lint-git-shim-review3.txt</code>). Commit <code>9065ca47</code>.</p>
+
         <p><strong>Scope.</strong> This node delivers the shim, the PATH wiring and the tests.
         Verifying the merged result belongs to a separately dispatched test node, and the
         PreToolUse guard stays as the early, readable refusal. The shim file itself carries no

@@ -1116,8 +1116,9 @@ exit: 0</pre>
 
     <table>
       <caption>The measure: base <code>7f97afda</code>, first head <code>fd521f3c</code>,
-      review heads <code>9ab5e097</code> and <code>4aa785dc</code>. Each arm ran in its own
-      tree so the <code>reckon</code> imported is the tree under test.</caption>
+      review heads <code>9ab5e097</code> and <code>4aa785dc</code>, third review head
+      <code>9065ca47</code>. Each arm ran in its own tree so the <code>reckon</code> imported
+      is the tree under test.</caption>
       <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
       <tbody>
         <tr><td>new shim suite, base tree (module absent)</td><td><code>1 error</code> at collection</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-red-at-base.txt</code></td></tr>
@@ -1128,7 +1129,9 @@ exit: 0</pre>
         <tr><td>the two first-review tests against the pre-fix head</td><td><code>2 failed, 8 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review-red.txt</code></td></tr>
         <tr><td>new shim suite at the second review head</td><td><code>15 passed</code> (<code>32</code> with the companions)</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review2-head.txt</code></td></tr>
         <tr><td>the five second-review tests against the pre-fix head</td><td><code>4 failed, 11 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review2-red.txt</code></td></tr>
-        <tr><td>lint on complete trees</td><td><code>dispatch.py</code> <code>7 &rarr; 7</code>; both reviewed files <code>0 &rarr; 0</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim.txt</code></td></tr>
+        <tr><td>new shim suite at the third review head</td><td><code>23 passed</code> (<code>40</code> with the companions)</td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review3-head.txt</code></td></tr>
+        <tr><td>the third-review cases against the pre-fix head</td><td><code>7 failed, 16 passed</code></td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review3-red.txt</code></td></tr>
+        <tr><td>lint on complete trees</td><td><code>dispatch.py</code> <code>7 &rarr; 7</code>; both reviewed files <code>0 &rarr; 0, 0 &rarr; 0, 0 &rarr; 0</code> at the three review heads</td><td><code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim.txt</code></td></tr>
       </tbody>
     </table>
 
@@ -1180,6 +1183,37 @@ exit: 0</pre>
     (<code>negative-control-empty-tail-reverted.txt</code>). Lint on the two changed files
     stays <code>0 &rarr; 0</code>
     (<code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim-review2.txt</code>).</p>
+
+    <p><strong>A third review closed two writes the shim still forwarded</strong> (commit
+    <code>9065ca47</code>), each by a test red before the fix. The round's gate, red-arm,
+    control and lint logs are kept under the run directory rather than in the figures
+    directory, so a review-round measurement does not contend for a directory another node's
+    evidence also writes. (1) An allowlisted read verb's arguments were never inspected, so a
+    writing option passed through: <code>git -C &lt;other&gt; log --output=&lt;other&gt;/f</code>
+    exits 0 and writes <code>f</code>, and the same holds for <code>show</code> and
+    <code>diff</code> and for a path in the home directory. Every forwarded invocation's
+    arguments are now checked for an option naming an output file whose head is
+    <code>--output</code> or <code>--output-directory</code> &mdash; joined or separated from
+    its value &mdash; and refused, naming the option. The short <code>-o</code> is deliberately
+    not matched: on this allowlist it means <code>--others</code> for <code>ls-files</code> and
+    <code>--only-matching</code> for <code>grep</code>, while the verbs where it does name an
+    output directory (<code>format-patch</code>, <code>archive</code>) are off the allowlist
+    and refused whole, as are the other file-writing forms checked (<code>diff
+    --output</code>, <code>bundle create</code>) and <code>fsck --lost-found</code>. (2) A
+    forwarded read could take the index lock:
+    <code>git status</code> against another checkout with a stale stat cache refreshed and
+    rewrote that checkout's index. The forward now execs the real git with
+    <code>GIT_OPTIONAL_LOCKS=0</code>, git's documented switch that keeps a read from taking an
+    optional lock, and the refusal message states that mechanism in place of the earlier claim
+    that reads pass everywhere untouched. The eight new cases are <code>7 failed, 16
+    passed</code> against <code>a370c5be</code> and green at a head of <code>40 passed</code>
+    (23 shim tests + 17 companions). The declared negative control &mdash; <em>exec the real git
+    without checking the resolved repository</em> &mdash; bypasses the resolved-repository
+    check (<code>9 failed, 14 passed</code>, reverted <code>23 passed</code>), and two further
+    controls isolate each new fix: <em>forward a read verb without the output-option
+    check</em> (<code>5 failed, 18 passed</code>) and <em>forward a read verb without disabling
+    optional locks</em> (<code>1 failed, 22 passed</code>). Lint on the two changed files stays
+    <code>0 &rarr; 0</code>.</p>
 
     <p><strong>Scope stated.</strong> This node delivers the shim, the PATH wiring and the
     tests. Verifying the merged result belongs to a separately dispatched test node, and the
