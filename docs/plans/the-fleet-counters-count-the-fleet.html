@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="84">
+<meta name="plan-version" content="85">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -261,6 +261,16 @@
     <h4 class="r-fu-title">An idle follower rewrites a deleted checkpoint, and the producer takes new code</h4>
     <div class="r-fu-body"><p>Two gaps, found 2026-09-26.</p><ul><li><strong>A deleted checkpoint stays deleted while idle.</strong> The review of follower-keeps-memory-and-idles-quietly (85) found that the write gate at <code>reckon/cli.py:2260</code> compares the place against the arming's own memory and never checks that the checkpoint file still exists. A checkpoint removed while the pane is idle is not rewritten until the place moves, so a reload in that window finds no record and loses the pane memory. The gate should also write when the file is missing.</li><li><strong>The producer does not take new code.</strong> The follower reloads onto new code, but the watch producer does not. The discard fix (2f1cfd17, merged 09:35) had no effect until the producer was restarted by hand at about 11:00; until then a discarded run still rendered as <code>→ promoted</code>. The producer should reload onto changed follower-side modules the way the follower does, behind the same content-hash and import check, or its seat should record the code revision it runs so a reader can see it is stale.</li></ul><p>Tests: an idle arming whose checkpoint is deleted rewrites it on the next poll. A producer whose modules change content re-executes onto the new image, or reports itself stale. Each red at base.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-checkpoint-survives-deletion-and-producer-reloads</pre>
+    </article>
+<article class="r-fu" data-id="f-tfcctf-classifier-reads-a-run-in-motion" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The classifier reads a run in motion without flicker, and the reflex reviews a resumed run</h4>
+    <div class="r-fu-body"><p>Measured 2026-09-25/26. Five display defects in the classifier and one in the review reflex. (1) A completed review run rendered <code>working → dispatched</code> after its record was stored. (2) A run resumed seconds earlier rendered <code>complete → stalled</code>, because the classifier aged it by the previous <code>stream.jsonl</code> before <code>resume-N.jsonl</code> existed. A resume should count from its own start. (3) A fresh launch rendered <code>working → unwritten → working</code> within 12 s, before the worker wrote its manifest. <code>unwritten</code> needs a launch-window grace. (4) A manifest being rewritten in place (4 bytes) read as <code>unwritten</code>. Readers should treat a shrunk or just-modified manifest as unchanged, and manifests should be written atomically. (5) A promoted run passed through <code>complete → unpromoted</code> for 16 s between the promote commit and the pointer removal. (7) The review reflex launched no review for <code>git-shim-checks-the-resolved-repo</code> after either of its resumes (15:59, 18:33), although the plan-reads resume got one. Suspect a once-per-run marker or a head key already consumed. Each fix needs a test that is red at base. These live in <code>reckon/crew/recovery.py</code>, so the node dispatches only after the session-resolution node releases that file.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-classifier-reads-a-run-in-motion</pre>
+    </article>
+<article class="r-fu" data-id="f-tfcctf-producer-loop-survives-a-config-change" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The producer&#x27;s own loop survives a config change</h4>
+    <div class="r-fu-body"><p>On 2026-09-26 a schema-extending merge (6d5ef87b) killed the follower and the reckon watch producer. Each read the new <code>flight-defaults.yaml</code> key with the old schema on its per-tick path. Node <code>follower-survives-a-config-change</code> makes the quota reader degrade to unknown and guards the follower loop in <code>reckon/cli.py</code>. The producer's own loop in <code>reckon/crew/runs.py</code> still needs the same guard: catch a config error, print one dim deferral line and keep producing. It dispatches once <code>producer-takes-new-code</code> releases <code>runs.py</code>.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-producer-loop-survives-a-config-change</pre>
     </article>
 </section>
 
