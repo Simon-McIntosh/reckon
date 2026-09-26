@@ -60,6 +60,27 @@ _PRODUCER_LIFECYCLE_MODULES = frozenset(
     }
 )
 
+# The environment a crew dispatch exports into the process it launches: the run
+# it belongs to, that run's manifest, and when the attempt started. Every one is
+# a fact about the worker, not about the code under test, and a suite that
+# inherits it reads it as one. Measured with RECKON_RUN_ID exported, as it is in
+# every worker's shell: 66 of the 79 tests in tests/test_edit_plan.py fail,
+# because a plan write with no checkout_path is resolved against a run that is
+# not the test's and the write is refused. Removed for every test; a test whose
+# subject IS the run scope sets what it needs for itself.
+_DISPATCH_IDENTITY_ENV = (
+    "RECKON_RUN_ID",
+    "RECKON_MANIFEST",
+    "RECKON_ATTEMPT_STARTED_AT",
+)
+
+
+@pytest.fixture(autouse=True)
+def without_dispatch_identity(monkeypatch):
+    """No test inherits the identity of the worker that ran it."""
+    for name in _DISPATCH_IDENTITY_ENV:
+        monkeypatch.delenv(name, raising=False)
+
 
 def watch_record_dirs(root: Path) -> list[Path]:
     """Watcher-record directories belonging to configuration homes under ``root``.

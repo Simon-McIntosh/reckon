@@ -108,7 +108,8 @@ from reckon.crew.directory import DirectoryError
 from reckon.crew.directory import directory as crew_directory
 from reckon.crew.query import RunQueryError, project_live_rows
 from reckon.crew.query import runs_view as crew_runs_view
-from reckon.crew.runs import project_watch_visibility
+from reckon.crew.runs import CrewError, project_watch_visibility
+from reckon.crew.runs import read_pointer as read_run_pointer
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
 from reckon.mcp_budget import bound_response
 from reckon.mcp_views import (
@@ -410,7 +411,98 @@ def _plan_path_hint(kwargs: Mapping[str, Any]) -> str | None:
         doc_type = doc_type or resource.get("type")
     if not project or not slug:
         return None
-    return _written_path(str(project), str(slug), kwargs.get("checkout_path"), doc_type)
+    checkout = kwargs.get("checkout_path")
+    if checkout is None:
+        checkout, _refusal = _run_scoped_checkout(str(project), str(slug), doc_type)
+    return _written_path(str(project), str(slug), checkout, doc_type)
+
+
+#: Environment variable a crew run exports into every worker it launches. The
+#: worker's harness — and the MCP server that harness starts as a child — inherit
+#: it, so a plan write can tell it is running inside a run.
+RUN_ID_ENV = "RECKON_RUN_ID"
+
+
+def _run_worktree(run_id: str) -> tuple[str | None, str | None]:
+    """The (worktree, project) a live run recorded, or (None, None).
+
+    The live pointer is the run's own record of the checkout its worker holds,
+    so it is the authority for scoping a write. A pointer that cannot be read
+    leaves the write unscoped rather than guessing a directory.
+    """
+
+    try:
+        record = read_run_pointer(run_id)
+    except CrewError:
+        return None, None
+    worktree = record.get("worktree")
+    project = record.get("project")
+    return (str(worktree) if worktree else None, str(project) if project else None)
+
+
+def _run_scoped_refusal(
+    run_id: str,
+    project: str,
+    slug: str,
+    doc_type: str | None,
+    detail: str,
+) -> dict[str, Any]:
+    """The structured refusal for a run-scoped write that must not proceed."""
+
+    target = _written_path(project, slug, None, doc_type)
+    where = (
+        f"the mounted main checkout ({target})"
+        if target
+        else "the mounted main checkout"
+    )
+    return {
+        "ok": False,
+        "error": "run_scoped_write",
+        "message": (
+            f"Refused a plan write for run {run_id}: {detail}. A run's plan write "
+            f"lands in its own worktree; this one would have written {where}."
+        ),
+        "run_id": run_id,
+        "project": project,
+        "slug": slug,
+        "would_write": target,
+        "hint": (
+            "Pass checkout_path explicitly to target a checkout, or write only "
+            "the plan this run's own project owns."
+        ),
+    }
+
+
+def _run_scoped_checkout(
+    project: str,
+    slug: str,
+    doc_type: str | None,
+) -> tuple[str | None, dict[str, Any] | None]:
+    """Resolve a worker's plan write to its own run worktree.
+
+    Returns ``(root, refusal)``. When ``RECKON_RUN_ID`` names a live run, a
+    write with no explicit ``checkout_path`` may only target the run's own
+    project, and it lands in the worktree the run recorded. A caller with no
+    run — a coordinator — is unaffected.
+    """
+
+    run_id = os.environ.get(RUN_ID_ENV)
+    if not run_id:
+        return None, None
+    worktree, run_project = _run_worktree(run_id)
+    if worktree is None:
+        return None, _run_scoped_refusal(
+            run_id, project, slug, doc_type, "the run has no recorded worktree"
+        )
+    if run_project != project:
+        return None, _run_scoped_refusal(
+            run_id,
+            project,
+            slug,
+            doc_type,
+            f"it is scoped to project {run_project!r}, not {project!r}",
+        )
+    return worktree, None
 
 
 def _document_path_hint(kwargs: Mapping[str, Any]) -> str | None:
@@ -2727,6 +2819,15 @@ def _edit_plan(
             "error": "invalid_edit_mode",
             "detail": "mode must be 'state' or 'text'",
         }
+    # A write made from inside a crew run belongs to that run's own worktree.
+    # Without an explicit checkout_path a run-scoped write resolves there, and
+    # a write to any other project's plan is refused rather than silently
+    # reaching the mounts-registered main checkout.
+    if checkout_path is None:
+        scoped_root, scoped_refusal = _run_scoped_checkout(project, slug, doc_type)
+        if scoped_refusal is not None:
+            return scoped_refusal
+        checkout_path = scoped_root
     if mode == "text":
         if create:
             return {

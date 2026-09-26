@@ -1,0 +1,4209 @@
+arm=ambient-base (the reviewed head; the isolation fixture is what is missing) revision=22ae76dc tree=/tmp/pwsitw-base2
+condition: RECKON_RUN_ID exported in the invoking shell, an id this run owns
+selection (7 files: this node's test file plus the six sibling plan-write and mcp modules): tests/test_plan_write_stays_in_the_worktree.py tests/test_mcp_tools.py tests/test_mcp_store.py tests/test_edit_plan.py tests/test_edit_plan_append_evidence.py tests/test_edit_plan_section_writes.py tests/test_plan_write_preserves_unparsed.py
+fixture_present_in_conftest=0
+module.__file__ /tmp/pwsitw-base2/reckon/__init__.py
+cwd /tmp/pwsitw-base2
+RECKON_RUN_ID r-20260925T205418461250-plan-write-stays-in-the-worktree
+# 72 failed
+......F.........................................................FFFFF... [ 40%]
+
+.FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF..FFFFFFF.F... [ 80%]
+
+...F...............................                                      [100%]
+
+=================================== FAILURES ===================================
+
+__________ test_typed_read_write_provenance_tracks_selected_checkout ___________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_typed_read_write_provenan0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_typed_read_write_provenan0/state'), 'proj')
+
+tmp_path = PosixPath('/tmp/pwsitw-BASE2/test_typed_read_write_provenan0')
+
+
+
+    def test_typed_read_write_provenance_tracks_selected_checkout(setup, tmp_path):
+
+        docs_dir, _, project = setup
+
+        mounted_root = docs_dir.parent
+
+        _init_checkout(mounted_root, "mounted")
+
+        mounted_plan = _make_plan_html(
+
+            docs_dir,
+
+            "tracked",
+
+            {
+
+                "slug": "tracked",
+
+                "title": "Tracked",
+
+                "summary": "Mounted content.",
+
+                "status": "draft",
+
+                "version": 0,
+
+            },
+
+        )
+
+        selector = {"project": project, "type": "plan", "id": "tracked"}
+
+    
+
+        first = mcp_module._read_plan(resource=selector, view="raw")
+
+        unchanged = mcp_module._read_plan(resource=selector, view="version")
+
+    
+
+        assert first["provenance"] == {
+
+            "checkout": str(mounted_root.resolve()),
+
+            "branch": "mounted",
+
+            "content_digest": _content_digest(mounted_plan),
+
+        }
+
+        assert unchanged["provenance"] == first["provenance"]
+
+    
+
+        written = mcp_module._edit_plan(
+
+            project,
+
+            "tracked",
+
+            [{"op": "set", "path": "summary", "value": "Written content."}],
+
+            expected_version=0,
+
+            doc_type="plan",
+
+        )
+
+        after = mcp_module._read_plan(resource=selector, view="raw")
+
+    
+
+>       assert written["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_mcp_tools.py:176: AssertionError
+
+________ test_edit_project_sets_north_star_collection_and_reads_it_back ________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_project_sets_north_s0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_project_sets_north_s0/state'), 'test-proj')
+
+
+
+    def test_edit_project_sets_north_star_collection_and_reads_it_back(setup):
+
+        _, state_root, project = setup
+
+        _write_project_config(state_root, project, {"name": "Test Project"})
+
+        north_stars = [
+
+            {
+
+                "id": "reliable-delivery",
+
+                "name": "Reliable delivery",
+
+                "statement": "Every accepted change is reproducible and observable.",
+
+            },
+
+            {
+
+                "id": "clear-direction",
+
+                "name": "Clear direction",
+
+                "statement": "Every material plan serves a durable outcome.",
+
+                "href": "/test-proj/research/direction",
+
+            },
+
+        ]
+
+    
+
+        result = _mcp_module._edit_plan(
+
+            project,
+
+            "project",
+
+            [{"op": "set", "path": "north_stars", "value": north_stars}],
+
+            expected_version=0,
+
+        )
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_mcp_store.py:703: AssertionError
+
+________________ test_edit_project_sets_north_star_field_by_id _________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_project_sets_north_s1/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_project_sets_north_s1/state'), 'test-proj')
+
+
+
+    def test_edit_project_sets_north_star_field_by_id(setup):
+
+        _, state_root, project = setup
+
+        north_star = {
+
+            "id": "clear-direction",
+
+            "name": "Clear direction",
+
+            "statement": "Every material plan serves a durable outcome.",
+
+        }
+
+        _write_project_config(
+
+            state_root,
+
+            project,
+
+            {"name": "Test Project", "north_stars": [north_star]},
+
+        )
+
+    
+
+        result = _mcp_module._edit_plan(
+
+            project,
+
+            "project",
+
+            [
+
+                {
+
+                    "op": "set",
+
+                    "path": "north_stars.clear-direction.statement",
+
+                    "value": "Every active plan names the durable outcome it serves.",
+
+                }
+
+            ],
+
+            expected_version=0,
+
+        )
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_mcp_store.py:735: AssertionError
+
+_________ test_edit_project_refuses_north_star_missing_required_field __________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_project_refuses_nort0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_project_refuses_nort0/state'), 'test-proj')
+
+
+
+    def test_edit_project_refuses_north_star_missing_required_field(setup):
+
+        _, state_root, project = setup
+
+        _write_project_config(state_root, project, {"name": "Test Project"})
+
+    
+
+        result = _mcp_module._edit_plan(
+
+            project,
+
+            "project",
+
+            [
+
+                {
+
+                    "op": "set",
+
+                    "path": "north_stars",
+
+                    "value": [{"id": "clear-direction", "name": "Clear direction"}],
+
+                }
+
+            ],
+
+            expected_version=0,
+
+        )
+
+    
+
+        assert result["ok"] is False
+
+>       assert result["error"] == "schema_validation"
+
+E       AssertionError: assert 'run_scoped_write' == 'schema_validation'
+
+E         
+
+E         - schema_validation
+
+E         + run_scoped_write
+
+
+
+tests/test_mcp_store.py:760: AssertionError
+
+______________ test_edit_project_refuses_duplicate_north_star_id _______________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_project_refuses_dupl0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_project_refuses_dupl0/state'), 'test-proj')
+
+
+
+    def test_edit_project_refuses_duplicate_north_star_id(setup):
+
+        _, state_root, project = setup
+
+        _write_project_config(state_root, project, {"name": "Test Project"})
+
+        duplicate = {
+
+            "id": "clear-direction",
+
+            "name": "Clear direction",
+
+            "statement": "Every material plan serves a durable outcome.",
+
+        }
+
+    
+
+        result = _mcp_module._edit_plan(
+
+            project,
+
+            "project",
+
+            [
+
+                {
+
+                    "op": "set",
+
+                    "path": "north_stars",
+
+                    "value": [duplicate, {**duplicate, "name": "Repeated direction"}],
+
+                }
+
+            ],
+
+            expected_version=0,
+
+        )
+
+    
+
+>       assert result == {
+
+            "ok": False,
+
+            "error": "op_error",
+
+            "detail": "duplicate north-star id 'clear-direction'",
+
+        }
+
+E       assert {'ok': False,...orktree', ...} == {'ok': False,...r-direction'"}
+
+E         
+
+E         Omitting 1 identical items, use -vv to show
+
+E         Differing items:
+
+E         {'error': 'run_scoped_write'} != {'error': 'op_error'}
+
+E         Left contains 6 more items:
+
+E         {'hint': 'Pass checkout_path explicitly to target a checkout, or write only '
+
+E                  "the plan this run's own project owns.",...
+
+E         
+
+E         ...Full output truncated (12 lines hidden), use '-vv' to show
+
+
+
+tests/test_mcp_store.py:789: AssertionError
+
+_________ test_edit_project_warns_when_north_stars_exceed_advisory_cap _________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_project_warns_when_n0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_project_warns_when_n0/state'), 'test-proj')
+
+
+
+    def test_edit_project_warns_when_north_stars_exceed_advisory_cap(setup):
+
+        _, state_root, project = setup
+
+        _write_project_config(state_root, project, {"name": "Test Project"})
+
+        north_stars = [
+
+            {
+
+                "id": f"direction-{index}",
+
+                "name": f"Direction {index}",
+
+                "statement": f"Durable outcome {index} remains visible.",
+
+            }
+
+            for index in range(6)
+
+        ]
+
+    
+
+        result = _mcp_module._edit_plan(
+
+            project,
+
+            "project",
+
+            [{"op": "set", "path": "north_stars", "value": north_stars}],
+
+            expected_version=0,
+
+        )
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_mcp_store.py:818: AssertionError
+
+_______________________________ test_set_scalar ________________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_scalar0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_scalar0/state'), 'proj')
+
+
+
+    def test_set_scalar(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "draft"})
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "set", "path": "status", "value": "active"}], 0
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:106: AssertionError
+
+_________ test_set_section_declarations_round_trips_through_edit_plan __________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_section_declarations_0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_section_declarations_0/state'), 'proj')
+
+
+
+    def test_set_section_declarations_round_trips_through_edit_plan(setup):
+
+        docs_dir, _, project = setup
+
+        declarations = {"s1": "implementable", "s2": "deferred"}
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [{"op": "set", "path": "section_declarations", "value": declarations}],
+
+            0,
+
+        )
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:123: AssertionError
+
+____________ test_section_declarations_survive_two_versioned_writes ____________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_section_declarations_surv0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_section_declarations_surv0/state'), 'proj')
+
+
+
+    def test_section_declarations_survive_two_versioned_writes(setup):
+
+        docs_dir, _, project = setup
+
+        original = {"s1": "implementable", "s2": "done"}
+
+        replacement = {"s1": "implementable", "s2": "deferred", "s3": "done"}
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    
+
+        first = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [{"op": "set", "path": "section_declarations", "value": original}],
+
+            0,
+
+        )
+
+        reread = mcp_module._read_plan(project, "plan-a")
+
+        second = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [{"op": "set", "path": "section_declarations", "value": replacement}],
+
+            reread["version"],
+
+        )
+
+    
+
+>       assert first["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:148: AssertionError
+
+_________ test_set_section_declarations_rejects_unknown_classification _________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_section_declarations_1/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_section_declarations_1/state'), 'proj')
+
+
+
+    def test_set_section_declarations_rejects_unknown_classification(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                {
+
+                    "op": "set",
+
+                    "path": "section_declarations",
+
+                    "value": {"s1": "queued"},
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+    
+
+        assert result["ok"] is False
+
+>       assert result["error"] == "schema_validation"
+
+E       AssertionError: assert 'run_scoped_write' == 'schema_validation'
+
+E         
+
+E         - schema_validation
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:173: AssertionError
+
+___________ test_set_section_declarations_rejects_malformed_identity ___________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_section_declarations_2/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_section_declarations_2/state'), 'proj')
+
+
+
+    def test_set_section_declarations_rejects_malformed_identity(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                {
+
+                    "op": "set",
+
+                    "path": "section_declarations",
+
+                    "value": {"not a section": "implementable"},
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+    
+
+        assert result["ok"] is False
+
+>       assert result["error"] == "schema_validation"
+
+E       AssertionError: assert 'run_scoped_write' == 'schema_validation'
+
+E         
+
+E         - schema_validation
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:197: AssertionError
+
+_____________ test_write_path_makes_executable_remainder_reachable _____________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_write_path_makes_executab0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_write_path_makes_executab0/state'), 'proj')
+
+
+
+    def test_write_path_makes_executable_remainder_reachable(setup):
+
+        docs_dir, _, project = setup
+
+        declarations = {
+
+            "s1": "implementable",
+
+            "s2": "implementable",
+
+            "s3": "deferred",
+
+            "s4": "done",
+
+        }
+
+        _make_plan_html(
+
+            docs_dir,
+
+            "plan-a",
+
+            {
+
+                "version": 0,
+
+                "status": "active",
+
+                "comments": {"s1": [{"id": "landing"}]},
+
+            },
+
+        )
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [{"op": "set", "path": "section_declarations", "value": declarations}],
+
+            0,
+
+        )
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:228: AssertionError
+
+______________ test_edit_plan_selects_duplicate_leaf_by_doc_type _______________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_selects_duplica0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_selects_duplica0/state'), 'proj')
+
+
+
+    def test_edit_plan_selects_duplicate_leaf_by_doc_type(setup):
+
+        docs_dir, _, project = setup
+
+        plan_path = _make_plan_html(
+
+            docs_dir,
+
+            "shared",
+
+            {"version": 3, "summary": "plan"},
+
+            relative="plans/shared.html",
+
+        )
+
+        research_path = _make_plan_html(
+
+            docs_dir,
+
+            "shared",
+
+            {"version": 7, "summary": "research", "status": ""},
+
+            artifact_type="research",
+
+            relative="research/shared.html",
+
+        )
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "shared",
+
+            [{"op": "set", "path": "summary", "value": "selected research"}],
+
+            expected_version=7,
+
+            doc_type="research",
+
+        )
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:258: AssertionError
+
+____________ test_edit_plan_ignores_unrelated_invalid_resource_path ____________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_ignores_unrelat0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_ignores_unrelat0/state'), 'proj')
+
+
+
+    def test_edit_plan_ignores_unrelated_invalid_resource_path(setup):
+
+        docs_dir, _, project = setup
+
+        work = _make_plan_html(
+
+            docs_dir,
+
+            "work",
+
+            {"version": 2, "summary": "before"},
+
+            relative="plans/work.html",
+
+        )
+
+        invalid = _make_plan_html(
+
+            docs_dir,
+
+            "study",
+
+            {"version": 0, "summary": "invalid path", "status": ""},
+
+            artifact_type="research",
+
+            relative="research/topic/study.html",
+
+        )
+
+        read = mcp_module._read_plan(project, "work", doc_type="plan")
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "work",
+
+            [{"op": "set", "path": "summary", "value": "after"}],
+
+            expected_version=read["version"],
+
+            doc_type="plan",
+
+        )
+
+    
+
+>       assert result["ok"] is True, result
+
+E       AssertionError: {'ok': False, 'error': 'run_scoped_write', 'message': 'Refused a plan write for run r-20260925T205418461250-plan-write...an_ignores_unrelat0/docs/plans/work.html).', 'run_id': 'r-20260925T205418461250-plan-write-stays-in-the-worktree', ...}
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:298: AssertionError
+
+___________ test_edit_plan_rejects_ambiguous_untyped_duplicate_leaf ____________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_rejects_ambiguo0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_rejects_ambiguo0/state'), 'proj')
+
+
+
+    def test_edit_plan_rejects_ambiguous_untyped_duplicate_leaf(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "shared", {"version": 3}, relative="plans/shared.html")
+
+        _make_plan_html(
+
+            docs_dir,
+
+            "shared",
+
+            {"version": 7, "status": ""},
+
+            artifact_type="research",
+
+            relative="research/shared.html",
+
+        )
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "shared",
+
+            [{"op": "set", "path": "summary", "value": "unsafe"}],
+
+            expected_version=3,
+
+        )
+
+    
+
+        assert result["ok"] is False
+
+>       assert result["error"] == "ambiguous_resource"
+
+E       AssertionError: assert 'run_scoped_write' == 'ambiguous_resource'
+
+E         
+
+E         - ambiguous_resource
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:326: AssertionError
+
+_____________ test_edit_plan_rejects_duplicate_requested_identity ______________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_rejects_duplica0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_rejects_duplica0/state'), 'proj')
+
+
+
+    def test_edit_plan_rejects_duplicate_requested_identity(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "work", {"version": 3}, relative="first.html")
+
+        _make_plan_html(docs_dir, "work", {"version": 3}, relative="second.html")
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "work",
+
+            [{"op": "set", "path": "summary", "value": "unsafe"}],
+
+            expected_version=3,
+
+            doc_type="plan",
+
+        )
+
+    
+
+        assert result["ok"] is False
+
+>       assert result["error"] == "ambiguous_resource"
+
+E       AssertionError: assert 'run_scoped_write' == 'ambiguous_resource'
+
+E         
+
+E         - ambiguous_resource
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:344: AssertionError
+
+____________ test_edit_plan_typed_version_and_state_type_are_paired ____________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_typed_version_a0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_typed_version_a0/state'), 'proj')
+
+
+
+    def test_edit_plan_typed_version_and_state_type_are_paired(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "shared", {"version": 3}, relative="plans/shared.html")
+
+        research = _make_plan_html(
+
+            docs_dir,
+
+            "shared",
+
+            {"version": 7, "status": ""},
+
+            artifact_type="research",
+
+            relative="research/shared.html",
+
+        )
+
+        before = research.read_bytes()
+
+    
+
+        conflict = mcp_module._edit_plan(
+
+            project,
+
+            "shared",
+
+            [{"op": "set", "path": "summary", "value": "wrong version"}],
+
+            expected_version=3,
+
+            doc_type="research",
+
+        )
+
+>       assert conflict["error"] == "version_conflict"
+
+E       AssertionError: assert 'run_scoped_write' == 'version_conflict'
+
+E         
+
+E         - version_conflict
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:367: AssertionError
+
+________________ test_edit_plan_rejects_typed_non_plan_creation ________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_rejects_typed_n0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_rejects_typed_n0/state'), 'proj')
+
+
+
+    def test_edit_plan_rejects_typed_non_plan_creation(setup):
+
+        docs_dir, _, project = setup
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "new-study",
+
+            [{"op": "set", "path": "title", "value": "Study"}],
+
+            expected_version=0,
+
+            create=True,
+
+            doc_type="research",
+
+        )
+
+        assert result["ok"] is False
+
+>       assert "typed creation is not supported" in result["error"]
+
+E       AssertionError: assert 'typed creation is not supported' in 'run_scoped_write'
+
+
+
+tests/test_edit_plan.py:393: AssertionError
+
+_____________________________ test_set_impl_clamps _____________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_impl_clamps0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_impl_clamps0/state'), 'proj')
+
+
+
+    def test_set_impl_clamps(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0})
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "set", "path": "impl", "value": 2.5}], 0
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:403: AssertionError
+
+___________________________ test_set_decision_field ____________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_decision_field0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_decision_field0/state'), 'proj')
+
+
+
+    def test_set_decision_field(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(
+
+            docs_dir,
+
+            "plan-a",
+
+            {
+
+                "version": 0,
+
+                "decisions": {
+
+                    "transport": {"title": "T?", "choices": ["a", "b"], "choice": ""}
+
+                },
+
+            },
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [{"op": "set", "path": "decisions.transport.choice", "value": "a"}],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:432: AssertionError
+
+__________________ test_set_sprint_status_active_side_effect ___________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_sprint_status_active_0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_sprint_status_active_0/state'), 'proj')
+
+
+
+    def test_set_sprint_status_active_side_effect(setup):
+
+        _, state_root, project = setup
+
+        _seed_index(
+
+            state_root,
+
+            project,
+
+            {
+
+                "active_sprint_id": None,
+
+                "sprints": [{"id": "S1", "status": "planned", "items": []}],
+
+            },
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "index",
+
+            [{"op": "set", "path": "sprints.S1.status", "value": "active"}],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:454: AssertionError
+
+__________________ test_set_sprint_status_double_active_warns __________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_sprint_status_double_0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_sprint_status_double_0/state'), 'proj')
+
+
+
+    def test_set_sprint_status_double_active_warns(setup):
+
+        _, state_root, project = setup
+
+        _seed_index(
+
+            state_root,
+
+            project,
+
+            {
+
+                "active_sprint_id": "S1",
+
+                "sprints": [
+
+                    {"id": "S1", "status": "active", "items": []},
+
+                    {"id": "S2", "status": "planned", "items": []},
+
+                ],
+
+            },
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "index",
+
+            [{"op": "set", "path": "sprints.S2.status", "value": "active"}],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:479: AssertionError
+
+__________________ test_set_sprint_status_done_clears_active ___________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_sprint_status_done_cl0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_sprint_status_done_cl0/state'), 'proj')
+
+
+
+    def test_set_sprint_status_done_clears_active(setup):
+
+        _, state_root, project = setup
+
+        _seed_index(
+
+            state_root,
+
+            project,
+
+            {
+
+                "active_sprint_id": "S1",
+
+                "sprints": [{"id": "S1", "status": "active", "items": []}],
+
+            },
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "index",
+
+            [{"op": "set", "path": "sprints.S1.status", "value": "done"}],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:499: AssertionError
+
+_______________________ test_set_active_sprint_id_index ________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_active_sprint_id_inde0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_active_sprint_id_inde0/state'), 'proj')
+
+
+
+    def test_set_active_sprint_id_index(setup):
+
+        _, state_root, project = setup
+
+        _seed_index(
+
+            state_root,
+
+            project,
+
+            {"active_sprint_id": None, "sprints": [{"id": "S1", "items": []}]},
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project, "index", [{"op": "set", "path": "active_sprint_id", "value": "S1"}], 0
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:514: AssertionError
+
+_____________________ test_set_inventory_accepted_as_noop ______________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_inventory_accepted_as0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_inventory_accepted_as0/state'), 'proj')
+
+
+
+    def test_set_inventory_accepted_as_noop(setup):
+
+        """inventory[] is synthesised live; a set on it is accepted (folds
+
+        update_inventory_item) but is a durable no-op — the contract requires it
+
+        stay accepted, not rejected."""
+
+        _, state_root, project = setup
+
+        _seed_index(
+
+            state_root,
+
+            project,
+
+            {"inventory": [{"slug": "plan-x", "status": "active"}]},
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "index",
+
+            [{"op": "set", "path": "inventory.plan-x.status", "value": "shipped"}],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True  # accepted, not an op_error
+
+        ^^^^^^^^^^^^^^^^^^^^^^
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:535: AssertionError
+
+_____________________________ test_append_followup _____________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_followup1/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_followup1/state'), 'proj')
+
+
+
+    def test_append_followup(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+
+        fu = {
+
+            "id": "f1",
+
+            "written_by": "smc",
+
+            "written_at": "2026-01-01",
+
+            "title": "next",
+
+            "body": "do it",
+
+            "prompt": "/reckon-build plan-a §2",
+
+        }
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:555: AssertionError
+
+__________________ test_append_duplicate_followup_id_rejected __________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_duplicate_followup0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_duplicate_followup0/state'), 'proj')
+
+
+
+    def test_append_duplicate_followup_id_rejected(setup):
+
+        docs_dir, _, project = setup
+
+        existing = {
+
+            "id": "f1",
+
+            "written_by": "smc",
+
+            "written_at": "2026-01-01",
+
+            "title": "existing",
+
+            "body": "already recorded",
+
+            "prompt": "/reckon-build plan-a",
+
+        }
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": [existing]})
+
+        duplicate = {**existing, "title": "collision"}
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [{"op": "append", "target": "followups", "item": duplicate}],
+
+            0,
+
+        )
+
+    
+
+        assert result["ok"] is False
+
+>       assert result["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:581: AssertionError
+
+_________ test_append_duplicate_ids_rejected_for_addressed_collections _________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_duplicate_ids_reje0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_duplicate_ids_reje0/state'), 'proj')
+
+
+
+    def test_append_duplicate_ids_rejected_for_addressed_collections(setup):
+
+        docs_dir, _, project = setup
+
+        cases = [
+
+            (
+
+                "research-plan",
+
+                {"research": [{"id": "shared", "title": "existing"}]},
+
+                {"op": "append", "target": "research", "item": {"id": "shared"}},
+
+                "research entry 'shared' already exists",
+
+            ),
+
+            (
+
+                "question-plan",
+
+                {"questions": [{"id": "shared", "body": "existing"}]},
+
+                {"op": "append", "target": "questions", "item": {"id": "shared"}},
+
+                "question 'shared' already exists",
+
+            ),
+
+            (
+
+                "comment-plan",
+
+                {"comments": {"overview": [{"id": "shared", "body": "existing"}]}},
+
+                {
+
+                    "op": "append",
+
+                    "target": "comments",
+
+                    "section": "details",
+
+                    "item": {"id": "shared", "body": "collision"},
+
+                },
+
+                "comment 'shared' already exists",
+
+            ),
+
+        ]
+
+    
+
+        for slug, initial, op, detail in cases:
+
+            _make_plan_html(docs_dir, slug, {"version": 0, **initial})
+
+            result = mcp_module._edit_plan(project, slug, [op], 0)
+
+            assert result["ok"] is False
+
+>           assert result["error"] == "op_error"
+
+E           AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E             
+
+E             - op_error
+
+E             + run_scoped_write
+
+
+
+tests/test_edit_plan.py:620: AssertionError
+
+__________________ test_append_followup_empty_prompt_rejected __________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_followup_empty_pro0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_followup_empty_pro0/state'), 'proj')
+
+
+
+    def test_append_followup_empty_prompt_rejected(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+
+        fu = {
+
+            "id": "f1",
+
+            "written_by": "smc",
+
+            "written_at": "2026-01-01",
+
+            "title": "next",
+
+            "body": "do it",
+
+            "prompt": "   ",
+
+        }
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:641: AssertionError
+
+_ test_append_followup_requires_one_line_ship_invocation[Project: proj\nDone-when: x] _
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_followup_requires_0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_followup_requires_0/state'), 'proj')
+
+prompt = 'Project: proj\nDone-when: x'
+
+
+
+    @pytest.mark.parametrize(
+
+        "prompt",
+
+        [
+
+            "Project: proj\nDone-when: x",
+
+            "do this",
+
+            " /reckon-build plan-a §2",
+
+        ],
+
+    )
+
+    def test_append_followup_requires_one_line_ship_invocation(setup, prompt):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+
+        fu = {
+
+            "id": "f1",
+
+            "written_by": "smc",
+
+            "written_at": "2026-01-01",
+
+            "title": "next",
+
+            "body": "do it",
+
+            "prompt": prompt,
+
+        }
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:667: AssertionError
+
+_______ test_append_followup_requires_one_line_ship_invocation[do this] ________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_followup_requires_1/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_followup_requires_1/state'), 'proj')
+
+prompt = 'do this'
+
+
+
+    @pytest.mark.parametrize(
+
+        "prompt",
+
+        [
+
+            "Project: proj\nDone-when: x",
+
+            "do this",
+
+            " /reckon-build plan-a §2",
+
+        ],
+
+    )
+
+    def test_append_followup_requires_one_line_ship_invocation(setup, prompt):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+
+        fu = {
+
+            "id": "f1",
+
+            "written_by": "smc",
+
+            "written_at": "2026-01-01",
+
+            "title": "next",
+
+            "body": "do it",
+
+            "prompt": prompt,
+
+        }
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:667: AssertionError
+
+_ test_append_followup_requires_one_line_ship_invocation[ /reckon-build plan-a \xa72] _
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_followup_requires_2/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_followup_requires_2/state'), 'proj')
+
+prompt = ' /reckon-build plan-a §2'
+
+
+
+    @pytest.mark.parametrize(
+
+        "prompt",
+
+        [
+
+            "Project: proj\nDone-when: x",
+
+            "do this",
+
+            " /reckon-build plan-a §2",
+
+        ],
+
+    )
+
+    def test_append_followup_requires_one_line_ship_invocation(setup, prompt):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+
+        fu = {
+
+            "id": "f1",
+
+            "written_by": "smc",
+
+            "written_at": "2026-01-01",
+
+            "title": "next",
+
+            "body": "do it",
+
+            "prompt": prompt,
+
+        }
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:667: AssertionError
+
+_______________________ test_append_followup_autogen_id ________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_followup_autogen_i0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_followup_autogen_i0/state'), 'proj')
+
+
+
+    def test_append_followup_autogen_id(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+
+        fu = {
+
+            "written_by": "smc",
+
+            "written_at": "2026-01-01",
+
+            "title": "next",
+
+            "body": "do it",
+
+            "prompt": "/reckon-build plan-a §2",
+
+        }
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:688: AssertionError
+
+______________ test_append_followup_rejects_the_former_skill_name ______________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_followup_rejects_t0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_followup_rejects_t0/state'), 'proj')
+
+
+
+    def test_append_followup_rejects_the_former_skill_name(setup):
+
+        """A followup invocation must name the build skill.
+
+    
+
+        The skill is reckon-build; an invocation line naming anything else would
+
+        point a successor session at a skill that does not exist.
+
+        """
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+
+        fu = {
+
+            "id": "f1",
+
+            "written_by": "smc",
+
+            "written_at": "2026-01-01",
+
+            "title": "next",
+
+            "body": "do it",
+
+            "prompt": "/reckon-ship plan-a §2",
+
+        }
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
+
+        )
+
+        assert r["ok"] is False
+
+>       assert "one /reckon-build invocation line" in r["detail"]
+
+                                                      ^^^^^^^^^^^
+
+E       KeyError: 'detail'
+
+
+
+tests/test_edit_plan.py:713: KeyError
+
+______________ test_set_followup_prompt_migrates_existing_handoff ______________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_set_followup_prompt_migra0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_set_followup_prompt_migra0/state'), 'proj')
+
+
+
+    def test_set_followup_prompt_migrates_existing_handoff(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(
+
+            docs_dir,
+
+            "plan-a",
+
+            {
+
+                "version": 0,
+
+                "followups": [
+
+                    {
+
+                        "id": "f1",
+
+                        "written_by": "smc",
+
+                        "written_at": "2026-01-01",
+
+                        "title": "next",
+
+                        "body": "do it",
+
+                        "prompt": "Project: proj\nDone-when: x",
+
+                    }
+
+                ],
+
+            },
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                {
+
+                    "op": "set",
+
+                    "path": "followups.f1.prompt",
+
+                    "value": "/reckon-build plan-a §2",
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:747: AssertionError
+
+__________________ test_append_comment_section_and_autogen_id __________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_comment_section_an0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_comment_section_an0/state'), 'proj')
+
+
+
+    def test_append_comment_section_and_autogen_id(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "comments": {}})
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                {
+
+                    "op": "append",
+
+                    "target": "comments",
+
+                    "section": "s1",
+
+                    "item": {"who": "agent", "when": "2026-01-01", "body": "hi"},
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:769: AssertionError
+
+________________________ test_append_decision_with_key _________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_decision_with_key0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_decision_with_key0/state'), 'proj')
+
+
+
+    def test_append_decision_with_key(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "decisions": {}})
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                {
+
+                    "op": "append",
+
+                    "target": "decisions",
+
+                    "key": "transport",
+
+                    "item": {"title": "Which?", "choices": ["a", "b"], "choice": ""},
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:791: AssertionError
+
+_________________________ test_append_sprint_new_index _________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_sprint_new_index0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_sprint_new_index0/state'), 'proj')
+
+
+
+    def test_append_sprint_new_index(setup):
+
+        _, state_root, project = setup
+
+        _seed_index(state_root, project, {"active_sprint_id": None, "sprints": []})
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "index",
+
+            [
+
+                {
+
+                    "op": "append",
+
+                    "target": "sprints",
+
+                    "item": {"id": "S1", "theme": "alpha", "status": "active"},
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:811: AssertionError
+
+____________________ test_append_sprint_duplicate_rejected _____________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_sprint_duplicate_r0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_sprint_duplicate_r0/state'), 'proj')
+
+
+
+    def test_append_sprint_duplicate_rejected(setup):
+
+        _, state_root, project = setup
+
+        _seed_index(state_root, project, {"sprints": [{"id": "S1", "items": []}]})
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "index",
+
+            [{"op": "append", "target": "sprints", "item": {"id": "S1"}}],
+
+            0,
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:827: AssertionError
+
+____________________ test_append_sprint_item_and_dup_reject ____________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_sprint_item_and_du0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_sprint_item_and_du0/state'), 'proj')
+
+
+
+    def test_append_sprint_item_and_dup_reject(setup):
+
+        _, state_root, project = setup
+
+        _seed_index(state_root, project, {"sprints": [{"id": "S1", "items": []}]})
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "index",
+
+            [{"op": "append", "target": "sprints.S1.items", "item": "plan-x"}],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:839: AssertionError
+
+_________________________ test_append_milestone_index __________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_append_milestone_index0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_append_milestone_index0/state'), 'proj')
+
+
+
+    def test_append_milestone_index(setup):
+
+        _, state_root, project = setup
+
+        _seed_index(state_root, project, {"milestones": []})
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "index",
+
+            [
+
+                {
+
+                    "op": "append",
+
+                    "target": "milestones",
+
+                    "item": {"id": "M1", "name": "launch"},
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:867: AssertionError
+
+____________________________ test_resolve_followup _____________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_resolve_followup0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_resolve_followup0/state'), 'proj')
+
+
+
+    def test_resolve_followup(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(
+
+            docs_dir,
+
+            "plan-a",
+
+            {
+
+                "version": 0,
+
+                "followups": [
+
+                    {
+
+                        "id": "f1",
+
+                        "title": "x",
+
+                        "body": "y",
+
+                        "written_by": "smc",
+
+                        "written_at": "2026-01-01",
+
+                        "prompt": "Done-when: z",
+
+                    },
+
+                    # A second open followup carries the chain, so resolving f1 is a
+
+                    # landing that still names what comes next.
+
+                    {
+
+                        "id": "f2",
+
+                        "title": "next",
+
+                        "body": "y",
+
+                        "written_by": "smc",
+
+                        "written_at": "2026-01-01",
+
+                        "prompt": "/reckon-build plan-a §3",
+
+                    },
+
+                ],
+
+            },
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                {
+
+                    "op": "resolve",
+
+                    "target": "followups",
+
+                    "id": "f1",
+
+                    "by": "smc",
+
+                    "outcome": "landed",
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:918: AssertionError
+
+____________________________ test_resolve_question _____________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_resolve_question1/docs'), PosixPath('/tmp/pwsitw-BASE2/test_resolve_question1/state'), 'proj')
+
+
+
+    def test_resolve_question(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(
+
+            docs_dir,
+
+            "plan-a",
+
+            {
+
+                "version": 0,
+
+                "questions": [
+
+                    {
+
+                        "id": "q1",
+
+                        "section": "§2",
+
+                        "body": "How?",
+
+                        "opened_by": "smc",
+
+                        "opened_at": "2026-01-01",
+
+                    }
+
+                ],
+
+            },
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                {
+
+                    "op": "resolve",
+
+                    "target": "questions",
+
+                    "id": "q1",
+
+                    "by": "smc",
+
+                    "resolution": "use X",
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:958: AssertionError
+
+_______________________ test_resolve_missing_id_rejected _______________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_resolve_missing_id_reject0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_resolve_missing_id_reject0/state'), 'proj')
+
+
+
+    def test_resolve_missing_id_rejected(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [{"op": "resolve", "target": "followups", "id": "nope", "by": "x"}],
+
+            0,
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:975: AssertionError
+
+_________________ test_resolve_requires_a_matching_open_entry __________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_resolve_requires_a_matchi0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_resolve_requires_a_matchi0/state'), 'proj')
+
+
+
+    def test_resolve_requires_a_matching_open_entry(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(
+
+            docs_dir,
+
+            "plan-a",
+
+            {
+
+                "version": 0,
+
+                "followups": [
+
+                    {
+
+                        "id": "f1",
+
+                        "status": "resolved",
+
+                        "resolved_at": "2026-01-01T00:00:00+00:00",
+
+                        "resolved_by": "smc",
+
+                        "outcome": "done — no followup",
+
+                    }
+
+                ],
+
+            },
+
+        )
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                {
+
+                    "op": "resolve",
+
+                    "target": "followups",
+
+                    "id": "f1",
+
+                    "by": "smc",
+
+                    "outcome": "done — no followup",
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+    
+
+        assert result["ok"] is False
+
+>       assert result["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1013: AssertionError
+
+_______________ test_resolve_duplicate_id_selects_the_open_entry _______________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_resolve_duplicate_id_sele0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_resolve_duplicate_id_sele0/state'), 'proj')
+
+
+
+    def test_resolve_duplicate_id_selects_the_open_entry(setup):
+
+        docs_dir, _, project = setup
+
+        duplicate_id = "f1"
+
+        _make_plan_html(
+
+            docs_dir,
+
+            "plan-a",
+
+            {
+
+                "version": 0,
+
+                "followups": [
+
+                    {
+
+                        "id": duplicate_id,
+
+                        "status": "resolved",
+
+                        "written_by": "smc",
+
+                        "written_at": "2026-01-01",
+
+                        "title": "closed entry",
+
+                        "body": "already handled",
+
+                        "prompt": "/reckon-build plan-a",
+
+                        "resolved_at": "2026-01-01T00:00:00+00:00",
+
+                        "resolved_by": "smc",
+
+                        "outcome": "folded into current work",
+
+                    },
+
+                    {
+
+                        "id": duplicate_id,
+
+                        "status": "open",
+
+                        "written_by": "smc",
+
+                        "written_at": "2026-01-01",
+
+                        "title": "remaining entry",
+
+                        "body": "close this entry",
+
+                        "prompt": "/reckon-build plan-a",
+
+                    },
+
+                ],
+
+            },
+
+        )
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                {
+
+                    "op": "resolve",
+
+                    "target": "followups",
+
+                    "id": duplicate_id,
+
+                    "by": "smc",
+
+                    "outcome": "done — no followup",
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1068: AssertionError
+
+_____________________ test_lock_preserves_authored_fields ______________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_lock_preserves_authored_f0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_lock_preserves_authored_f0/state'), 'proj')
+
+
+
+    def test_lock_preserves_authored_fields(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(
+
+            docs_dir,
+
+            "plan-a",
+
+            {
+
+                "version": 0,
+
+                "decisions": {
+
+                    "transport": {
+
+                        "title": "Which transport?",
+
+                        "context": "ctx",
+
+                        "choices": ["stdio", "http"],
+
+                        "choice": "",
+
+                    }
+
+                },
+
+            },
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                {
+
+                    "op": "lock",
+
+                    "key": "transport",
+
+                    "choice": "stdio",
+
+                    "rationale": "default",
+
+                    "by": "simon",
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1109: AssertionError
+
+____________ test_gate_op_declares_gate_readable_through_read_plan _____________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_gate_op_declares_gate_rea0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_gate_op_declares_gate_rea0/state'), 'proj')
+
+
+
+    def test_gate_op_declares_gate_readable_through_read_plan(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0})
+
+    
+
+        result = mcp_module._edit_plan(project, "plan-a", [_gate_op()], 0)
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1141: AssertionError
+
+______ test_gate_declaration_and_prose_retirement_share_one_version_bump _______
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_gate_declaration_and_pros0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_gate_declaration_and_pros0/state'), 'proj')
+
+
+
+    def test_gate_declaration_and_prose_retirement_share_one_version_bump(setup):
+
+        docs_dir, _, project = setup
+
+        path = _make_plan_html(docs_dir, "plan-a", {"version": 0})
+
+        prose = (
+
+            '<table id="authored-gates"><tbody><tr><td>Round-trip parity</td>'
+
+            "<td>Focused log</td></tr></tbody></table>"
+
+        )
+
+        original = path.read_text(encoding="utf-8")
+
+        path.write_text(original.replace("</main>", f"{prose}\n</main>"), encoding="utf-8")
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [_gate_op(), {"op": "retire_prose", "preimage": prose}],
+
+            0,
+
+        )
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1175: AssertionError
+
+_ test_retire_prose_requires_one_exact_preimage_without_writing[<p>Unrelated prose.</p>-0] _
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_retire_prose_requires_one0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_retire_prose_requires_one0/state'), 'proj')
+
+body = '<p>Unrelated prose.</p>', occurrences = 0
+
+
+
+    @pytest.mark.parametrize(
+
+        ("body", "occurrences"),
+
+        [
+
+            ("<p>Unrelated prose.</p>", 0),
+
+            ("<p>Superseded.</p><p>Superseded.</p>", 2),
+
+        ],
+
+    )
+
+    def test_retire_prose_requires_one_exact_preimage_without_writing(
+
+        setup, body, occurrences
+
+    ):
+
+        docs_dir, _, project = setup
+
+        path = _make_plan_html(docs_dir, "plan-a", {"version": 0})
+
+        original = path.read_text(encoding="utf-8")
+
+        path.write_text(original.replace("</main>", f"{body}\n</main>"), encoding="utf-8")
+
+        before = path.read_bytes()
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                _gate_op(),
+
+                {"op": "retire_prose", "preimage": "<p>Superseded.</p>"},
+
+            ],
+
+            0,
+
+        )
+
+    
+
+        assert result["ok"] is False
+
+>       assert result["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1211: AssertionError
+
+_ test_retire_prose_requires_one_exact_preimage_without_writing[<p>Superseded.</p><p>Superseded.</p>-2] _
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_retire_prose_requires_one1/docs'), PosixPath('/tmp/pwsitw-BASE2/test_retire_prose_requires_one1/state'), 'proj')
+
+body = '<p>Superseded.</p><p>Superseded.</p>', occurrences = 2
+
+
+
+    @pytest.mark.parametrize(
+
+        ("body", "occurrences"),
+
+        [
+
+            ("<p>Unrelated prose.</p>", 0),
+
+            ("<p>Superseded.</p><p>Superseded.</p>", 2),
+
+        ],
+
+    )
+
+    def test_retire_prose_requires_one_exact_preimage_without_writing(
+
+        setup, body, occurrences
+
+    ):
+
+        docs_dir, _, project = setup
+
+        path = _make_plan_html(docs_dir, "plan-a", {"version": 0})
+
+        original = path.read_text(encoding="utf-8")
+
+        path.write_text(original.replace("</main>", f"{body}\n</main>"), encoding="utf-8")
+
+        before = path.read_bytes()
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                _gate_op(),
+
+                {"op": "retire_prose", "preimage": "<p>Superseded.</p>"},
+
+            ],
+
+            0,
+
+        )
+
+    
+
+        assert result["ok"] is False
+
+>       assert result["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1211: AssertionError
+
+_____ test_retire_prose_refuses_structured_section_overlap_without_writing _____
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_retire_prose_refuses_stru0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_retire_prose_refuses_stru0/state'), 'proj')
+
+
+
+    def test_retire_prose_refuses_structured_section_overlap_without_writing(setup):
+
+        docs_dir, _, project = setup
+
+        path = _make_plan_html(
+
+            docs_dir,
+
+            "plan-a",
+
+            {
+
+                "version": 0,
+
+                "decisions": {
+
+                    "transport": {
+
+                        "title": "Which transport?",
+
+                        "choices": ["stdio", "http"],
+
+                        "choice": "",
+
+                    }
+
+                },
+
+            },
+
+        )
+
+        preimage = '<p class="r-dec-q">Which transport?</p>'
+
+        before = path.read_bytes()
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [_gate_op(), {"op": "retire_prose", "preimage": preimage}],
+
+            0,
+
+        )
+
+    
+
+        assert result["ok"] is False
+
+>       assert result["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1244: AssertionError
+
+_____ test_retirement_only_preserves_structured_sections_and_is_not_a_noop _____
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_retirement_only_preserves0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_retirement_only_preserves0/state'), 'proj')
+
+
+
+    def test_retirement_only_preserves_structured_sections_and_is_not_a_noop(setup):
+
+        docs_dir, _, project = setup
+
+        path = _make_plan_html(
+
+            docs_dir,
+
+            "plan-a",
+
+            {"version": 0, "decisions": {}, "followups": [], "gates": []},
+
+        )
+
+        prose = '<table id="superseded"><tr><td>Old gate prose</td></tr></table>'
+
+        original = path.read_text(encoding="utf-8")
+
+        original = original.replace("</main>", f"{prose}\n</main>")
+
+        path.write_text(original, encoding="utf-8")
+
+        structured_before = [
+
+            original[start:end].encode()
+
+            for start, end in _plan_html_module.structured_section_spans(original)
+
+        ]
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [{"op": "retire_prose", "preimage": prose}],
+
+            0,
+
+        )
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1273: AssertionError
+
+__________________ test_pass_op_records_verdict_and_evidence ___________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_pass_op_records_verdict_a0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_pass_op_records_verdict_a0/state'), 'proj')
+
+
+
+    def test_pass_op_records_verdict_and_evidence(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0})
+
+        evidence = "/proj/evidence/archive/round-trip#result"
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                _gate_op(),
+
+                {
+
+                    "op": "pass",
+
+                    "id": "round-trip-parity",
+
+                    "evidence": evidence,
+
+                },
+
+            ],
+
+            0,
+
+        )
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1304: AssertionError
+
+_____________ test_pass_without_evidence_is_rejected_when_required _____________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_pass_without_evidence_is_0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_pass_without_evidence_is_0/state'), 'proj')
+
+
+
+    def test_pass_without_evidence_is_rejected_when_required(setup):
+
+        docs_dir, _, project = setup
+
+        project_config = docs_dir / "state" / project / "flight.yaml"
+
+        project_config.parent.mkdir(parents=True)
+
+        project_config.write_text("gates:\n  require_evidence: true\n")
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0})
+
+        declared = mcp_module._edit_plan(project, "plan-a", [_gate_op()], 0)
+
+>       assert declared["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1319: AssertionError
+
+____________________ test_fail_op_records_negative_verdict _____________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_fail_op_records_negative_0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_fail_op_records_negative_0/state'), 'proj')
+
+
+
+    def test_fail_op_records_negative_verdict(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0})
+
+        evidence = "/proj/evidence/archive/round-trip#failure"
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                _gate_op(),
+
+                {
+
+                    "op": "fail",
+
+                    "id": "round-trip-parity",
+
+                    "evidence": evidence,
+
+                },
+
+            ],
+
+            0,
+
+        )
+
+    
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1356: AssertionError
+
+____________________________ test_move_sprint_item _____________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_move_sprint_item0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_move_sprint_item0/state'), 'proj')
+
+
+
+    def test_move_sprint_item(setup):
+
+        _, state_root, project = setup
+
+        item = {"slug": "plan-a", "why_now": "priority", "tier": "opus"}
+
+        _seed_index(
+
+            state_root,
+
+            project,
+
+            {
+
+                "sprints": [
+
+                    {"id": "S1", "items": [item]},
+
+                    {"id": "S2", "items": []},
+
+                ]
+
+            },
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "index",
+
+            [
+
+                {
+
+                    "op": "move",
+
+                    "target": "sprint_item",
+
+                    "slug": "plan-a",
+
+                    "from": "S1",
+
+                    "to": "S2",
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1394: AssertionError
+
+________________________ test_move_not_in_from_rejected ________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_move_not_in_from_rejected0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_move_not_in_from_rejected0/state'), 'proj')
+
+
+
+    def test_move_not_in_from_rejected(setup):
+
+        _, state_root, project = setup
+
+        _seed_index(
+
+            state_root,
+
+            project,
+
+            {
+
+                "sprints": [
+
+                    {"id": "S1", "items": []},
+
+                    {"id": "S2", "items": []},
+
+                ]
+
+            },
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "index",
+
+            [
+
+                {
+
+                    "op": "move",
+
+                    "target": "sprint_item",
+
+                    "slug": "x",
+
+                    "from": "S1",
+
+                    "to": "S2",
+
+                }
+
+            ],
+
+            0,
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1429: AssertionError
+
+_____________________________ test_create_new_plan _____________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_create_new_plan0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_create_new_plan0/state'), 'proj')
+
+
+
+    def test_create_new_plan(setup):
+
+        docs_dir, _, project = setup
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "brand-new",
+
+            [
+
+                {"op": "set", "path": "title", "value": "Brand New"},
+
+                {"op": "set", "path": "status", "value": "active"},
+
+                {"op": "set", "path": "standalone", "value": "a scratch plan wired to nothing"},
+
+            ],
+
+            expected_version=0,
+
+            create=True,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1448: AssertionError
+
+________________________ test_create_existing_rejected _________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_create_existing_rejected0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_create_existing_rejected0/state'), 'proj')
+
+
+
+    def test_create_existing_rejected(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0})
+
+        r = mcp_module._edit_plan(project, "plan-a", [], expected_version=0, create=True)
+
+        assert r["ok"] is False
+
+>       assert "already exists" in r["error"]
+
+E       AssertionError: assert 'already exists' in 'run_scoped_write'
+
+
+
+tests/test_edit_plan.py:1463: AssertionError
+
+_______________________ test_edit_missing_plan_rejected ________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_missing_plan_rejecte0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_missing_plan_rejecte0/state'), 'proj')
+
+
+
+    def test_edit_missing_plan_rejected(setup):
+
+        _, _, project = setup
+
+        r = mcp_module._edit_plan(
+
+            project, "ghost", [{"op": "set", "path": "status", "value": "active"}], 0
+
+        )
+
+        assert r["ok"] is False
+
+>       assert "not found" in r["error"]
+
+E       AssertionError: assert 'not found' in 'run_scoped_write'
+
+
+
+tests/test_edit_plan.py:1472: AssertionError
+
+_______________________ test_reject_invalid_status_enum ________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_reject_invalid_status_enu0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_reject_invalid_status_enu0/state'), 'proj')
+
+
+
+    def test_reject_invalid_status_enum(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "set", "path": "status", "value": "bogus"}], 0
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "schema_validation"
+
+E       AssertionError: assert 'run_scoped_write' == 'schema_validation'
+
+E         
+
+E         - schema_validation
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1485: AssertionError
+
+_____________________ test_reject_persisted_blocked_status _____________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_reject_persisted_blocked_0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_reject_persisted_blocked_0/state'), 'proj')
+
+
+
+    def test_reject_persisted_blocked_status(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [{"op": "set", "path": "status", "value": "blocked"}],
+
+            0,
+
+        )
+
+    
+
+        assert result["ok"] is False
+
+>       assert result["error"] == "schema_validation"
+
+E       AssertionError: assert 'run_scoped_write' == 'schema_validation'
+
+E         
+
+E         - schema_validation
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1505: AssertionError
+
+_______________________ test_reject_blank_required_title _______________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_reject_blank_required_tit0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_reject_blank_required_tit0/state'), 'proj')
+
+
+
+    def test_reject_blank_required_title(setup):
+
+        """Setting a required-on-write scalar (title) to empty is rejected by
+
+        validate_for_write — nothing is written."""
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(
+
+            docs_dir, "plan-a", {"version": 0, "title": "T", "status": "active"}
+
+        )
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "set", "path": "title", "value": ""}], 0
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "schema_validation"
+
+E       AssertionError: assert 'run_scoped_write' == 'schema_validation'
+
+E         
+
+E         - schema_validation
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1546: AssertionError
+
+__________ test_reject_preexisting_empty_followup_prompt_via_validate __________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_reject_preexisting_empty_0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_reject_preexisting_empty_0/state'), 'proj')
+
+
+
+    def test_reject_preexisting_empty_followup_prompt_via_validate(setup):
+
+        """A plan carrying a followup with an empty §05 prompt becomes un-editable via
+
+        edit_plan: even an UNRELATED edit re-validates the whole dict and is rejected
+
+        at the validate_for_write boundary (the reject half of reject-write-warn).
+
+        This is the documented sharp edge — the granular tools are the escape hatch."""
+
+        docs_dir, _, project = setup
+
+        # Seed a plan whose existing followup already has an empty prompt (a violation
+
+        # that the lenient read path tolerates).
+
+        _make_plan_html(
+
+            docs_dir,
+
+            "plan-a",
+
+            {
+
+                "version": 0,
+
+                "title": "Plan A",
+
+                "status": "active",
+
+                "followups": [
+
+                    {
+
+                        "id": "f1",
+
+                        "title": "x",
+
+                        "body": "y",
+
+                        "written_by": "smc",
+
+                        "written_at": "2026-01-01",
+
+                        "prompt": "",  # pre-existing violation
+
+                    }
+
+                ],
+
+            },
+
+        )
+
+        # An unrelated edit (set status) must still be rejected — the whole dict is
+
+        # validated, and the empty prompt trips validate_for_write.
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "set", "path": "status", "value": "shipped"}], 0
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "schema_validation"
+
+E       AssertionError: assert 'run_scoped_write' == 'schema_validation'
+
+E         
+
+E         - schema_validation
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1586: AssertionError
+
+_____________ test_create_missing_required_rejected_and_no_orphan ______________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_create_missing_required_r0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_create_missing_required_r0/state'), 'proj')
+
+
+
+    def test_create_missing_required_rejected_and_no_orphan(setup):
+
+        """A create that fails schema validation must leave NO stub file behind
+
+        (contract: on failure → no write) and must not block a later retry."""
+
+        docs_dir, _, project = setup
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "new-plan",
+
+            [{"op": "set", "path": "slug", "value": ""}],
+
+            expected_version=0,
+
+            create=True,
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "schema_validation"
+
+E       AssertionError: assert 'run_scoped_write' == 'schema_validation'
+
+E         
+
+E         - schema_validation
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1605: AssertionError
+
+________________________ test_create_op_error_no_orphan ________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_create_op_error_no_orphan0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_create_op_error_no_orphan0/state'), 'proj')
+
+
+
+    def test_create_op_error_no_orphan(setup):
+
+        """A create whose ops fail at the op layer also leaves no stub behind."""
+
+        docs_dir, _, project = setup
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "new-plan",
+
+            [{"op": "frobnicate"}],
+
+            expected_version=0,
+
+            create=True,
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1650: AssertionError
+
+____________________________ test_version_conflict _____________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_version_conflict0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_version_conflict0/state'), 'proj')
+
+
+
+    def test_version_conflict(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "set", "path": "status", "value": "shipped"}], 99
+
+        )
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "version_conflict"
+
+E       AssertionError: assert 'run_scoped_write' == 'version_conflict'
+
+E         
+
+E         - version_conflict
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1664: AssertionError
+
+______________________ test_multiple_ops_applied_in_order ______________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_multiple_ops_applied_in_o0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_multiple_ops_applied_in_o0/state'), 'proj')
+
+
+
+    def test_multiple_ops_applied_in_order(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "decisions": {}})
+
+        r = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [
+
+                {
+
+                    "op": "append",
+
+                    "target": "decisions",
+
+                    "key": "d1",
+
+                    "item": {"title": "Q?", "choices": ["a", "b"], "choice": ""},
+
+                },
+
+                {"op": "lock", "key": "d1", "choice": "a", "rationale": "r", "by": "smc"},
+
+                {"op": "set", "path": "status", "value": "active"},
+
+            ],
+
+            0,
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1688: AssertionError
+
+__________________________ test_unknown_verb_rejected __________________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_unknown_verb_rejected0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_unknown_verb_rejected0/state'), 'proj')
+
+
+
+    def test_unknown_verb_rejected(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0})
+
+        r = mcp_module._edit_plan(project, "plan-a", [{"op": "frobnicate"}], 0)
+
+        assert r["ok"] is False
+
+>       assert r["error"] == "op_error"
+
+E       AssertionError: assert 'run_scoped_write' == 'op_error'
+
+E         
+
+E         - op_error
+
+E         + run_scoped_write
+
+
+
+tests/test_edit_plan.py:1703: AssertionError
+
+________ test_landing_state_write_uses_version_view_instead_of_raw_read ________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_landing_state_write_uses_0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_landing_state_write_uses_0/state'), 'proj')
+
+
+
+    def test_landing_state_write_uses_version_view_instead_of_raw_read(setup):
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    
+
+        read = mcp_module._read_plan(project, "plan-a", view="version")
+
+        result = mcp_module._edit_plan(
+
+            project,
+
+            "plan-a",
+
+            [{"op": "set", "path": "impl", "value": 0.5}],
+
+            expected_version=read["version"],
+
+        )
+
+    
+
+        assert "data" not in read
+
+>       assert result["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1730: AssertionError
+
+_________________ test_edit_plan_no_checkout_path_uses_mounts __________________
+
+
+
+setup = (PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_no_checkout_pat0/docs'), PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_no_checkout_pat0/state'), 'proj')
+
+worktree = PosixPath('/tmp/pwsitw-BASE2/test_edit_plan_no_checkout_pat0/worktree')
+
+
+
+    def test_edit_plan_no_checkout_path_uses_mounts(setup, worktree):
+
+        """Backward-compat: omitting checkout_path writes the mounts-registered MAIN
+
+        checkout, leaving the worktree untouched (existing single-checkout behaviour
+
+        is preserved)."""
+
+        docs_dir, _, project = setup
+
+        _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "draft"})
+
+        _make_plan_html(worktree / "docs", "plan-a", {"version": 0, "status": "draft"})
+
+    
+
+        r = mcp_module._edit_plan(
+
+            project, "plan-a", [{"op": "set", "path": "status", "value": "active"}], 0
+
+        )
+
+>       assert r["ok"] is True
+
+E       assert False is True
+
+
+
+tests/test_edit_plan.py:1988: AssertionError
+
+=========================== short test summary info ============================
+
+FAILED tests/test_mcp_tools.py::test_typed_read_write_provenance_tracks_selected_checkout
+
+FAILED tests/test_mcp_store.py::test_edit_project_sets_north_star_collection_and_reads_it_back
+
+FAILED tests/test_mcp_store.py::test_edit_project_sets_north_star_field_by_id
+
+FAILED tests/test_mcp_store.py::test_edit_project_refuses_north_star_missing_required_field
+
+FAILED tests/test_mcp_store.py::test_edit_project_refuses_duplicate_north_star_id
+
+FAILED tests/test_mcp_store.py::test_edit_project_warns_when_north_stars_exceed_advisory_cap
+
+FAILED tests/test_edit_plan.py::test_set_scalar - assert False is True
+
+FAILED tests/test_edit_plan.py::test_set_section_declarations_round_trips_through_edit_plan
+
+FAILED tests/test_edit_plan.py::test_section_declarations_survive_two_versioned_writes
+
+FAILED tests/test_edit_plan.py::test_set_section_declarations_rejects_unknown_classification
+
+FAILED tests/test_edit_plan.py::test_set_section_declarations_rejects_malformed_identity
+
+FAILED tests/test_edit_plan.py::test_write_path_makes_executable_remainder_reachable
+
+FAILED tests/test_edit_plan.py::test_edit_plan_selects_duplicate_leaf_by_doc_type
+
+FAILED tests/test_edit_plan.py::test_edit_plan_ignores_unrelated_invalid_resource_path
+
+FAILED tests/test_edit_plan.py::test_edit_plan_rejects_ambiguous_untyped_duplicate_leaf
+
+FAILED tests/test_edit_plan.py::test_edit_plan_rejects_duplicate_requested_identity
+
+FAILED tests/test_edit_plan.py::test_edit_plan_typed_version_and_state_type_are_paired
+
+FAILED tests/test_edit_plan.py::test_edit_plan_rejects_typed_non_plan_creation
+
+FAILED tests/test_edit_plan.py::test_set_impl_clamps - assert False is True
+
+FAILED tests/test_edit_plan.py::test_set_decision_field - assert False is True
+
+FAILED tests/test_edit_plan.py::test_set_sprint_status_active_side_effect - a...
+
+FAILED tests/test_edit_plan.py::test_set_sprint_status_double_active_warns - ...
+
+FAILED tests/test_edit_plan.py::test_set_sprint_status_done_clears_active - a...
+
+FAILED tests/test_edit_plan.py::test_set_active_sprint_id_index - assert Fals...
+
+FAILED tests/test_edit_plan.py::test_set_inventory_accepted_as_noop - assert ...
+
+FAILED tests/test_edit_plan.py::test_append_followup - assert False is True
+
+FAILED tests/test_edit_plan.py::test_append_duplicate_followup_id_rejected - ...
+
+FAILED tests/test_edit_plan.py::test_append_duplicate_ids_rejected_for_addressed_collections
+
+FAILED tests/test_edit_plan.py::test_append_followup_empty_prompt_rejected - ...
+
+FAILED tests/test_edit_plan.py::test_append_followup_requires_one_line_ship_invocation[Project: proj\nDone-when: x]
+
+FAILED tests/test_edit_plan.py::test_append_followup_requires_one_line_ship_invocation[do this]
+
+FAILED tests/test_edit_plan.py::test_append_followup_requires_one_line_ship_invocation[ /reckon-build plan-a \xa72]
+
+FAILED tests/test_edit_plan.py::test_append_followup_autogen_id - assert Fals...
+
+FAILED tests/test_edit_plan.py::test_append_followup_rejects_the_former_skill_name
+
+FAILED tests/test_edit_plan.py::test_set_followup_prompt_migrates_existing_handoff
+
+FAILED tests/test_edit_plan.py::test_append_comment_section_and_autogen_id - ...
+
+FAILED tests/test_edit_plan.py::test_append_decision_with_key - assert False ...
+
+FAILED tests/test_edit_plan.py::test_append_sprint_new_index - assert False i...
+
+FAILED tests/test_edit_plan.py::test_append_sprint_duplicate_rejected - Asser...
+
+FAILED tests/test_edit_plan.py::test_append_sprint_item_and_dup_reject - asse...
+
+FAILED tests/test_edit_plan.py::test_append_milestone_index - assert False is...
+
+FAILED tests/test_edit_plan.py::test_resolve_followup - assert False is True
+
+FAILED tests/test_edit_plan.py::test_resolve_question - assert False is True
+
+FAILED tests/test_edit_plan.py::test_resolve_missing_id_rejected - AssertionE...
+
+FAILED tests/test_edit_plan.py::test_resolve_requires_a_matching_open_entry
+
+FAILED tests/test_edit_plan.py::test_resolve_duplicate_id_selects_the_open_entry
+
+FAILED tests/test_edit_plan.py::test_lock_preserves_authored_fields - assert ...
+
+FAILED tests/test_edit_plan.py::test_gate_op_declares_gate_readable_through_read_plan
+
+FAILED tests/test_edit_plan.py::test_gate_declaration_and_prose_retirement_share_one_version_bump
+
+FAILED tests/test_edit_plan.py::test_retire_prose_requires_one_exact_preimage_without_writing[<p>Unrelated prose.</p>-0]
+
+FAILED tests/test_edit_plan.py::test_retire_prose_requires_one_exact_preimage_without_writing[<p>Superseded.</p><p>Superseded.</p>-2]
+
+FAILED tests/test_edit_plan.py::test_retire_prose_refuses_structured_section_overlap_without_writing
+
+FAILED tests/test_edit_plan.py::test_retirement_only_preserves_structured_sections_and_is_not_a_noop
+
+FAILED tests/test_edit_plan.py::test_pass_op_records_verdict_and_evidence - a...
+
+FAILED tests/test_edit_plan.py::test_pass_without_evidence_is_rejected_when_required
+
+FAILED tests/test_edit_plan.py::test_fail_op_records_negative_verdict - asser...
+
+FAILED tests/test_edit_plan.py::test_move_sprint_item - assert False is True
+
+FAILED tests/test_edit_plan.py::test_move_not_in_from_rejected - AssertionErr...
+
+FAILED tests/test_edit_plan.py::test_create_new_plan - assert False is True
+
+FAILED tests/test_edit_plan.py::test_create_existing_rejected - AssertionErro...
+
+FAILED tests/test_edit_plan.py::test_edit_missing_plan_rejected - AssertionEr...
+
+FAILED tests/test_edit_plan.py::test_reject_invalid_status_enum - AssertionEr...
+
+FAILED tests/test_edit_plan.py::test_reject_persisted_blocked_status - Assert...
+
+FAILED tests/test_edit_plan.py::test_reject_blank_required_title - AssertionE...
+
+FAILED tests/test_edit_plan.py::test_reject_preexisting_empty_followup_prompt_via_validate
+
+FAILED tests/test_edit_plan.py::test_create_missing_required_rejected_and_no_orphan
+
+FAILED tests/test_edit_plan.py::test_create_op_error_no_orphan - AssertionErr...
+
+FAILED tests/test_edit_plan.py::test_version_conflict - AssertionError: asser...
+
+FAILED tests/test_edit_plan.py::test_multiple_ops_applied_in_order - assert F...
+
+FAILED tests/test_edit_plan.py::test_unknown_verb_rejected - AssertionError: ...
+
+FAILED tests/test_edit_plan.py::test_landing_state_write_uses_version_view_instead_of_raw_read
+
+FAILED tests/test_edit_plan.py::test_edit_plan_no_checkout_path_uses_mounts
+
+72 failed, 107 passed in 12.81s

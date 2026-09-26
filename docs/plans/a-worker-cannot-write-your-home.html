@@ -448,6 +448,98 @@
         reverted. Commit <code>9db0672b</code>. Evidence:
         <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-worker-git-guard</code>.</p></div>
       </div>
+      <div class="r-comment" data-section="s2" data-id="c-20260925T2130-plan-write-scoped-to-its-run" data-who="node plan-write-stays-in-the-worktree" data-when="2026-09-25T23:35:00+00:00">
+        <div class="r-comment-body"><p><strong>A run's plan write now resolves to its
+        own worktree, and a write to another project's plan is refused.</strong> The
+        hazard this closes is the one &sect;1's MCP measure only bounded: the fence
+        answers a worker whose MCP server runs <em>inside</em> it, and a write made
+        with no <code>checkout_path</code> still meant the mounts-registered main
+        checkout. A worker's MCP server inherits the run id its launcher exports, so
+        <code>edit_plan</code> can tell which run it is serving. With no explicit
+        <code>checkout_path</code> it now reads the run's live pointer: a write for the
+        run's own project lands in the worktree the run recorded, and a write for any
+        other project returns a structured refusal
+        (<code>error: run_scoped_write</code>) naming the run and the path it would
+        have written. A pointer that cannot be read is treated as
+        <em>no worktree</em> and refused, never as a guess at a directory. A caller
+        that names <code>checkout_path</code>, and a caller with no run at all, keep
+        today's behaviour.</p>
+
+        <p><strong>The defect reproduces at base.</strong> The base arm
+        (<code>dc0c6f34</code> plus the new test file) is
+        <code>2 failed, 176 passed</code>. The worktree test fails at
+        <code>assert fixture["worktree"] in written.parents</code> &mdash; the write
+        landed in the main checkout &mdash; and the cross-project test fails at
+        <code>assert result["ok"] is False</code> because the write to the
+        <em>other</em> project's plan returned <code>ok: True</code> and updated its
+        main plan. Head <code>22ae76dc</code> is <code>178 passed</code>
+        (<code>docs/figures/a-worker-cannot-write-your-home/gate-plan-write-base.txt</code>,
+        <code>gate-plan-write-head.txt</code>). The measure the section states first
+        &mdash; the main checkout's plan file byte-identical after a run-scoped write
+        &mdash; is the worktree test's sha256 comparison, unmoved across the write.</p>
+
+        <p><strong>What the arm does <em>not</em> show, stated rather than
+        glossed.</strong> The declared measure reads "the three tests the followup
+        names are red at base". Only the two new-behaviour tests are. The
+        coordinator-with-no-run test and the explicit-<code>checkout_path</code> test
+        are green in <em>both</em> arms by design, because they assert behaviour this
+        node deliberately leaves unchanged; they are controls, not red-at-base
+        evidence.</p>
+
+        <p><strong>Declared negative control, executed and logged.</strong> <em>resolve
+        a run-scoped plan write with no checkout path to the mounted main
+        checkout</em> &mdash; the resolution disabled in a scratch copy
+        (<code>_run_scoped_checkout</code> returning <code>(None, None)</code>), the
+        two new tests fail exactly there: the write lands in
+        <code>&lt;main&gt;/docs/plans/sample-plan.html</code> and the cross-project
+        write reports success
+        (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-plan-write.txt</code>).</p>
+
+        <p><strong>Lint and format delta.</strong> <code>reckon/mcp.py</code> carries
+        18 findings at base and 18 at head, and the new test file is clean; both
+        touched files are formatted
+        (<code>docs/figures/a-worker-cannot-write-your-home/lint-plan-write.txt</code>).
+        Commit <code>22ae76dc</code>; paths
+        <code>reckon/mcp.py</code>,
+        <code>tests/test_plan_write_stays_in_the_worktree.py</code>, and the four
+        logs and figure under
+        <code>docs/figures/a-worker-cannot-write-your-home/</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-plan-write</code>,
+        figure
+        <code>/reckon/figures/a-worker-cannot-write-your-home/plan-write-resolution.svg</code>.</p>
+
+        <p><strong>Review follow-up: the run scope leaked into every test's
+        environment.</strong> The first version of this record reported the ambient
+        sensitivity as a follow-on. Review found it fleet-breaking, because a dispatch
+        exports <code>RECKON_RUN_ID</code> into every worker, so any worker whose gate
+        runs the plan-write tests met the refusal for a run that is not the test's:
+        with the variable exported, <code>tests/test_edit_plan.py</code> reads
+        <code>66 failed / 13 passed</code>, and the seven declared files read
+        <code>72 failed / 107 passed</code>. The fixture that closes it lives in
+        <code>tests/conftest.py</code>, which the run's dispatch fence does not include,
+        so the delivery carries that one scope finding for the coordinator to resolve at
+        promotion rather than a fence this worker may move. An
+        autouse fixture in <code>tests/conftest.py</code> now removes
+        <code>RECKON_RUN_ID</code>, <code>RECKON_MANIFEST</code> and
+        <code>RECKON_ATTEMPT_STARTED_AT</code> for every test, so no test inherits the
+        identity of the worker running it, and a test whose subject <em>is</em> the run
+        scope sets what it needs itself. Measured with the variable exported in the
+        invoking shell, as it is in a worker's shell: base (feature commit, no fixture)
+        <code>72 failed / 107 passed</code>, head (<code>e784afea</code>)
+        <code>196 passed / 0 failed</code> over the nine files. The same review found the
+        no-readable-pointer branch untested;
+        <code>test_a_run_with_no_readable_pointer_is_refused</code> now covers it and
+        asserts the refusal names the run and leaves both plan files byte-identical.
+        Lint clean on both repaired files at base and head. Commit
+        <code>4dce31a2</code>; logs at
+        <code>docs/figures/a-worker-cannot-write-your-home/gate-ambient-base.txt</code>,
+        <code>gate-ambient-head.txt</code>,
+        <code>gate-ambient-base-nine.txt</code>,
+        <code>gate-head-with-ambient-run-id.txt</code>,
+        <code>edit-plan-ambient-before.txt</code>,
+        <code>edit-plan-ambient-after.txt</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-plan-write</code>.</p></div>
+      </div>
     </section>
 
     <p><strong>Smoke: the fence does not start a worker on this host.</strong>

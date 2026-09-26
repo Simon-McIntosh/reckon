@@ -886,6 +886,158 @@ exit: 0</pre>
     <code>8d515f5e</code>, <code>2 failed, 5 passed</code>), and both files share the declaration's
     first line, so the run directory's cumulative red log carries it verbatim.</p>
   </section>
+
+
+  <section id="s2-plan-write" data-reckon="section">
+    <h2>&sect;2 &mdash; A worker's plan write lands in the run's worktree</h2>
+    <p><strong>Node:</strong> <code>plan-write-stays-in-the-worktree</code>.</p>
+
+    <p><strong>What landed.</strong> <code>edit_plan</code> is the single registered
+    plan-writing MCP entry point (its state, text and create modes all pass through one
+    body), and it now resolves the caller's run when no <code>checkout_path</code> is
+    given. It reads <code>RECKON_RUN_ID</code>, which the launcher exports into every
+    worker and the worker's MCP server inherits as a child process, then reads that
+    run's live pointer for its <code>worktree</code> and <code>project</code>. A write
+    for the run's own project resolves to the recorded worktree; a write for any other
+    project, or a run whose worktree cannot be established, returns a structured
+    refusal (<code>error: run_scoped_write</code>) whose message names the run and the
+    path it would have written. A caller passing <code>checkout_path</code> explicitly,
+    and a caller with no run at all, are untouched. <code>_plan_path_hint</code> uses
+    the same resolution, so a storage-slow hint names the file the write actually
+    targets.</p>
+
+    <p><strong>The defect reproduces before the repair.</strong> The base arm is
+    <code>dc0c6f34</code> with the new test file added, run from its own tree so the
+    <code>reckon</code> imported is the tree under test (base module
+    <code>/tmp/pwsitw-base/reckon/__init__.py</code>, head module under the worktree
+    root, both named on the log headers). Base: <code>2 failed, 176 passed</code>. The
+    two failures are <code>test_run_scoped_write_lands_in_the_worktree_and_leaves_main_identical</code>,
+    which fails on <code>assert fixture["worktree"] in written.parents</code> because
+    the write landed in the worktree's sibling main checkout, and
+    <code>test_write_to_another_projects_plan_is_refused</code>, which fails on
+    <code>assert result["ok"] is False</code> because the cross-project write returned
+    <code>ok: True</code> and updated the other project's main plan. Head
+    <code>22ae76dc</code>: <code>178 passed</code>
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-plan-write-base.txt</code>,
+    <code>gate-plan-write-head.txt</code>). The section's own first measure &mdash; the
+    main checkout's plan file byte-identical after a run-scoped write &mdash; is the
+    worktree test's sha256 comparison of that file before and after, which holds while
+    the worktree copy advances one version.</p>
+
+    <p><strong>What the arm does not show.</strong> The declared measure reads "the
+    three tests the followup names are red at base". Only the two new-behaviour tests
+    are red at base. The coordinator-with-no-run test and the
+    explicit-<code>checkout_path</code> test pass in <em>both</em> arms, because they
+    assert the behaviour this node deliberately leaves unchanged; they are controls
+    against over-reach, not red-at-base evidence. Reporting them as base failures would
+    be the wrong claim.</p>
+
+    <p><strong>Guarded behaviour shown, not asserted.</strong> The refusal is exercised
+    by the cross-project test, which asserts the error code, the run id in the message
+    and the target path in the message, and that the other project's plan file is
+    byte-identical afterwards. An unreadable pointer is the same refusal: the resolver
+    returns "the run has no recorded worktree" rather than falling through to the main
+    checkout, so an unreadable live directory can never widen a write's reach.</p>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>resolve a
+    run-scoped plan write with no checkout path to the mounted main checkout</em> &mdash;
+    applied to a scratch copy of the module with the resolution disabled
+    (<code>_run_scoped_checkout</code> returning <code>(None, None)</code>), the two new
+    tests fail exactly there: the worktree test finds the write at
+    <code>&lt;main&gt;/docs/plans/sample-plan.html</code> rather than under the
+    worktree, and the cross-project test finds <code>ok: True</code>. The log's first
+    line repeats the declared string verbatim
+    (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-plan-write.txt</code>).
+    Without the control, the passing tests would not be evidence that the resolution is
+    what moved the write.</p>
+
+    <p><strong>Lint and format delta, measured against the base revision.</strong>
+    <code>reckon/mcp.py</code> carries 18 ruff findings at base and 18 at head, so the
+    change adds none; the new test file carries none, and both touched files are
+    formatted. Two lint defects introduced during the work &mdash; an unsorted import
+    line and one line over the formatter's budget &mdash; were repaired before the
+    commit rather than left for review
+    (<code>docs/figures/a-worker-cannot-write-your-home/lint-plan-write.txt</code>).</p>
+
+    <p><strong>Paths changed.</strong> <code>reckon/mcp.py</code> (the resolver, the
+    refusal, and the wiring in <code>edit_*</code>'s single body),
+    <code>tests/test_plan_write_stays_in_the_worktree.py</code> (four tests over a
+    synthetic repository, mounts file and live pointer), plus the two gate logs, the
+    negative-control log, the lint log and the figure under
+    <code>docs/figures/a-worker-cannot-write-your-home/</code>. Commit
+    <code>22ae76dc</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/plan-write-resolution.svg"
+           alt="Decision flow for a plan write made through the MCP: an explicit checkout_path and a caller with no run both reach the main checkout as before; a caller inside a run resolves its live pointer, and the write either lands in the run's own worktree or is refused with a structured error naming the run and the path it would have written.">
+      <figcaption>Two decisions and three outcomes. The main checkout is reached only
+      when a caller names it or when there is no run; a run-scoped write for another
+      project, or for a run with no recorded worktree, is refused rather than
+      redirected.</figcaption>
+    </figure>
+
+    <p><strong>Ambient sensitivity, then repaired.</strong> A test that writes a plan
+    with no <code>checkout_path</code> and <em>no</em> synthetic pointer meets this
+    refusal whenever <code>RECKON_RUN_ID</code> is in its environment, which is true of
+    any pytest process a worker starts. The first version of this record reported that
+    as a follow-on, because the test files it lands in were outside the node's write
+    scope; review found it fleet-breaking and directed the fixture that closes it into
+    <code>tests/conftest.py</code>. The run's dispatch fence still does not name that
+    file &mdash; a worker may not move its own fence, and a widen refuses a run whose
+    manifest reports complete &mdash; so the delivery carries that one scope finding for
+    the coordinator to resolve at promotion.</p>
+
+    <p><strong>The measurement, before and after.</strong> With <code>RECKON_RUN_ID</code>
+    exported in the invoking shell, as it is in every worker's shell, over the seven
+    declared files (this node's test file and six sibling plan-write and mcp modules) at
+    the feature commit <code>22ae76dc</code>: <code>72 failed / 107 passed</code> &mdash;
+    66 in <code>tests/test_edit_plan.py</code> alone, plus 5 in
+    <code>tests/test_mcp_store.py</code> and 1 in <code>tests/test_mcp_tools.py</code>.
+    That one file on its own reads <code>66 failed / 13 passed</code>. Every failure is
+    a plan-write test resolving a run that is not the test's. With the isolation fixture
+    in place, at revision <code>e784afea</code> (the head when these arms were run):
+    <code>179 passed / 0 failed</code> over the same seven
+    files and <code>196 passed / 0 failed</code> over nine &mdash; the seven plus the two
+    files that reference the exported variables &mdash; with the same variable still
+    exported. The fixture is autouse in
+    <code>tests/conftest.py</code> and removes <code>RECKON_RUN_ID</code>,
+    <code>RECKON_MANIFEST</code> and <code>RECKON_ATTEMPT_STARTED_AT</code> &mdash; the
+    three a dispatch exports, read from <code>reckon/crew/dispatch.py</code> rather than
+    guessed &mdash; for every test, so the identity of the process running the suite is
+    never read as a fact about the code under test. A test whose subject is the run
+    scope sets what it needs itself, as the run-scoped tests already did
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-ambient-base.txt</code>,
+    <code>gate-ambient-head.txt</code>,
+    <code>edit-plan-ambient-before.txt</code>,
+    <code>edit-plan-ambient-after.txt</code>,
+    <code>gate-head-with-ambient-run-id.txt</code>,
+    <code>gate-ambient-base-nine.txt</code>).</p>
+
+    <p><strong>Every arm's log names the tree it measured, and one was corrected for
+    not doing so.</strong> Each log carries its revision, its tree, its selection and the
+    <code>module.__file__</code> it imported, so a figure can be checked rather than
+    taken on trust. The nine-file head arm's log named <code>96728b7d</code>, a commit
+    that does not carry the isolation fixture and therefore cannot produce a green arm
+    under an exported <code>RECKON_RUN_ID</code>; the arm was re-run and the log now
+    names the head it actually measured. The earlier selection count of eight was
+    likewise wrong &mdash; the selection is seven files &mdash; and the figures drawn
+    from it are restated above.</p>
+
+    <p><strong>The base arm for this repair is the feature commit, not its
+    parent.</strong> Run against <code>dc0c6f34</code> the ambient variable is harmless,
+    because the refusal does not exist there: <code>2 failed / 176 passed</code> over
+    that selection &mdash; the same two new-file failures and not one refusal. The
+    sensitivity was introduced by this change, so the arm that shows it must carry the
+    change and lack only the fixture, or the comparison measures nothing.</p>
+
+    <p><strong>Coverage gap closed.</strong> The branch that refuses a run id naming no
+    readable pointer had no test of its own. It now has one:
+    <code>test_a_run_with_no_readable_pointer_is_refused</code> asserts the refusal's
+    error code, that the message names the run, and that both the main checkout's and
+    the worktree's plan files are byte-identical afterwards &mdash; so an unreadable
+    pointer can never widen a write's reach. Lint on <code>tests/conftest.py</code> is
+    clean at base and at head, the new test file is clean, and both are formatted.</p>
+  </section>
 </main>
 </body>
 </html>
