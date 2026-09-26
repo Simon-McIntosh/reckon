@@ -872,6 +872,96 @@ def _preserve_cited_gate_log(
     return {**dict(gate_check), "log_path": str(destination)}
 
 
+# ── A recorded gate command is re-executed, so it has to be a command ───────
+
+# Every shape below marks a description of a check rather than the check. The
+# integration re-run executes the recorded text through a shell at the merged
+# head, so a description exits non-zero without running anything and the row
+# then reports a failure the merge did not cause. Measured 2026-09-20: a gate
+# command whose file set was written as an angle-bracket description re-ran
+# pytest against a path that does not exist, and the ledger recorded a finding
+# against a clean node.
+#
+# Each shape is spelled so that a runnable command does not match it, because a
+# refusal here blocks a promotion:
+#
+# * an angle-bracket placeholder requires a non-space at both inner edges, so
+#   the shell's own `< file` and `> file` redirections, which carry a space in
+#   the pair, are left alone;
+# * an ellipsis is a whole token of its own, so `cd ..` and a quoted `'...'`
+#   pass, while a bare `...` standing in for the rest of a file list does not;
+# * a parenthetical group is judged only when it is whitespace-delimited on
+#   both sides and reads as words — no shell operator and more than one word
+#   inside — so `python -c "print(a, b)"`, a quoted `-k "(a or b)"` and the
+#   genuine subshell `(cd sub && pytest)` all pass, while a parenthetical
+#   selection written in prose does not.
+_GATE_COMMAND_PLACEHOLDER = re.compile(r"<[^\s<>][^<>]*[^\s<>]>")
+_GATE_COMMAND_ELLIPSIS = re.compile(r"(?:^|(?<=\s))\.\.\.(?=\s|$)|…")
+_GATE_COMMAND_PARENTHETICAL = re.compile(r"(?:^|(?<=\s))\([^()]*\)(?=\s|$)")
+_GATE_COMMAND_SHELL_OPERATORS = frozenset("&|;$><=*?!`\"'")
+
+
+def gate_command_prose(command: str) -> tuple[str, str] | None:
+    """The shape in a gate command that a shell cannot execute, or None.
+
+    Returns the offending token class beside the token itself, so a refusal can
+    name both. The classes are the three a description is written in: an
+    angle-bracket placeholder, an ellipsis standing for the rest of a list, and
+    a parenthetical selection written as prose. Anything else is admitted: this
+    judges only the shapes that cannot run, never the spelling of a command
+    that can, because a false refusal costs a coordinator a promotion.
+    """
+    text = str(command or "").strip()
+    if not text:
+        return None
+    found = _GATE_COMMAND_PLACEHOLDER.search(text)
+    if found is not None:
+        return "angle-bracket placeholder", found.group(0)
+    found = _GATE_COMMAND_ELLIPSIS.search(text)
+    if found is not None:
+        return "ellipsis", found.group(0).strip()
+    for found in _GATE_COMMAND_PARENTHETICAL.finditer(text):
+        group = found.group(0)
+        inner = group[1:-1]
+        if len(inner.split()) < 2:
+            continue
+        if any(character in inner for character in _GATE_COMMAND_SHELL_OPERATORS):
+            continue
+        return "parenthetical prose selection", group
+    return None
+
+
+def _require_runnable_gate_command(
+    run_id: str,
+    gate_check: Mapping[str, Any] | None,
+) -> None:
+    """Refuse a promotion that records a gate command nothing can re-execute.
+
+    The command a promotion records is not narrative: the integration re-run
+    executes it verbatim through a shell, whatever the verdict on the row, so a
+    text that describes the check rather than running it makes the re-run
+    report an invented failure. Refused here, before any store is written, so
+    the record never holds a command that reads as evidence and executes as
+    gibberish. A readable summary of the check belongs in the log header or in
+    the outcome line, both of which are free text.
+    """
+    if not isinstance(gate_check, Mapping):
+        return
+    command = str(gate_check.get("command") or "").strip()
+    prose = gate_command_prose(command)
+    if prose is None:
+        return
+    token_class, token = prose
+    raise CrewError(
+        f"run {run_id!r} records the gate command {command!r}, which carries a "
+        f"{token_class} ({token!r}): that describes the check rather than "
+        "running it, so the integration re-run would execute the description, "
+        "exit non-zero and record a failure the merge did not cause. Record the "
+        "command itself — the literal file list, not a description of it — and "
+        "put the readable summary in the gate log header or in --outcome"
+    )
+
+
 def _merged_gate_finding(
     base_verdict: str,
     integrated_verdict: str,
@@ -974,8 +1064,17 @@ def rerun_gate_at_integrated_revision(
         "reason": None,
         "finding": None,
     }
+    prose = gate_command_prose(command)
     if not command:
         reason = "no gate command is stored to re-run"
+    elif prose is not None:
+        token_class, token = prose
+        reason = (
+            f"the gate command {command!r} carries a {token_class} ({token!r}), "
+            "so it describes the check rather than running it. A shell cannot "
+            "execute the description, and executing it would report a failure "
+            "the integrated revision did not cause"
+        )
     elif integrated is None:
         reason = (
             f"integrated revision {integrated_revision!r} does not resolve to "
@@ -2855,6 +2954,10 @@ def complete(
         # refused with nothing landed and nothing to unwind.
         _require_commits_beyond_base(run_id, record, commit_list)
         _require_gate_log_agrees(run_id, gate_check, verdict=verdict)
+        # The recorded command is what the integration re-run executes, so a
+        # text that describes the check must be refused here rather than land
+        # on a row that later reports a failure the merge did not cause.
+        _require_runnable_gate_command(run_id, gate_check)
         from reckon.crew.recovery import classify_pointer
 
         classified = classify_pointer(record)
