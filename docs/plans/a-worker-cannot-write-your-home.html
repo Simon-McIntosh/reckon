@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="58">
+<meta name="plan-version" content="59">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.94">
@@ -1264,6 +1264,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260926T162158829752-fenced-launch-resolves-the-backend-complete" data-who="reckon-build" data-when="2026-09-26T17:10:00Z">
     <div class="r-comment-body"><p><strong>Blocked state resolved; node complete.</strong> The coordinator ruled that the fence leads the plan's argv by design, so the two stale reads in <code>tests/test_crew_launch_resolution.py</code> were corrected (read position only; every other assertion unchanged, four tests unedited) and the fence was left as the head. The resume refusal was confirmed a real requirement, and <code>preflight_launch_command</code> now resolves the backend's harness command against the launch PATH <em>before</em> <code>launch_plan</code> composes and seeds the harness home, on dispatch, resume and lane change alike. One helper, <code>harness_command_index</code>, returns the harness's position for either shape and is used by the pre-flight, by the composed-plan rewrite, and by the corrected tests, so a test reading the position and the code rewriting it cannot disagree. Committed at <code>7af45521</code> atop <code>d3898433</code>; <code>record["command"]</code> now records the harness rather than the fence. Gate: 22 passed across the six launch-resolution cases, the three new cases and the neighbour files, zero added failures. The declared control was re-run: with the shared helper mutated to read element 0, the fenced absent-backend case is accepted again and the present-backend case names <code>bwrap</code>. Anchor: <a href="/reckon/#/evidence/a-worker-cannot-write-your-home-landed">evidence, §2</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260926T173006300483-review-of-fenced-launch-resolves-the-backend" data-who="reckon-build" data-when="2026-09-26T18:15:27.463Z">
+    <div class="r-comment-body"><p>review stored at head 2435e6cb, total 92; a review is not gated by a suite</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T122925465818-s19-internals-consumers-survey" data-who="reckon-ship" data-when="2026-09-24T12:38:14.943Z">
     <div class="r-comment-body"><p>eight consumer rows that read reckon internals directly; ranked top five: worktree_fleet re-implements pointer classification, reckon-sync fallback writes mounts.json, lane.json read by hand with no crew verb, inline pointer read in the recovery recipe, hand manifest repair</p></div>
