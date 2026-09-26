@@ -269,7 +269,9 @@ def _write_watch_driver(tmp_path: Path, *, hold: str = "0.8") -> Path:
 def _wait_for_marker(path: Path, marker: str, *, timeout: float = 20.0) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        if path.is_file() and marker in path.read_text(encoding="utf-8", errors="replace"):
+        if path.is_file() and marker in path.read_text(
+            encoding="utf-8", errors="replace"
+        ):
             return True
         time.sleep(0.05)
     return False
