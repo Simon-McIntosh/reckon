@@ -1,0 +1,271 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "read-only",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "redispatch",
+  "backend": "clive",
+  "base_sha": "9945557624511d329211b5b573cdf77d38b02ac4",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "detail": "no events yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": null,
+    "utilisation_pct": null
+  },
+  "changed_lines": null,
+  "commit_resolution": null,
+  "commits": [],
+  "completed_at": "2026-09-26T22:01:09.354Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-26T20:41:16Z",
+  "dispute_count": 0,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": false,
+    "matched_measure": null,
+    "override": false,
+    "role": "review",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/_plan_html.py",
+    "tests/test_mcp_vocabulary_is_complete.py"
+  ],
+  "gate": "not-run",
+  "gate_check": null,
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.6,
+    "plan": "section-contract-and-computed-impl",
+    "reason": "role-not-enforced:review",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-26T21:41:04.897152+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-26T20:41:04Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 18,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 10,
+    "mean_context": 146667,
+    "observed_at": "2026-09-26T20:40:46Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-26T22:01:09.354Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": {
+    "attempt": 2,
+    "kind": "redispatch",
+    "previous_run_id": "r-20260926T200232513791-review-of-impl-is-computed-from-section-records",
+    "root_run_id": "r-20260926T200232513791-review-of-impl-is-computed-from-section-records"
+  },
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T204104256915-review-of-impl-is-computed-from-section-records/manifest.md",
+  "member": "disposable-r-20260926T204104256915-review-of-impl-is-computed-from-section-records",
+  "negative_control": {
+    "reason": "node-writes-no-test-path",
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "review-of-impl-is-computed-from-section-records",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 890,
+          "cached_input_tokens": 713062,
+          "input_tokens": 713954,
+          "output_tokens": 893,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 714847,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "the review for r-20260926T192056949404-impl-is-computed-from-section-records stores a parsed record scoring all 5 dimensions in the range 0..20 at head b3b7dc86d48c0bd5141dcef35b161261ee98baaa, naming each prior finding (the regex fast path accepting a record the parser refuses, the fixture-string assertion, the head-arm count) resolved or not, and whether read_plan and roadmap agree on the computed impl; the turn ends once that record is stored and the manifest reads complete",
+    "estimated_hours": null,
+    "goal": "attach an independent re-review to run r-20260926T192056949404-impl-is-computed-from-section-records at head b3b7dc86, judging whether the three prior findings are resolved",
+    "id": "review-of-impl-is-computed-from-section-records",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-26T20:41:04Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 18,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 10,
+      "mean_context": 146667,
+      "observed_at": "2026-09-26T20:40:46Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T204104256915-review-of-impl-is-computed-from-section-records/manifest.md",
+    "negative_control": "",
+    "plan": "section-contract-and-computed-impl",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "review",
+    "section": "§3",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260926T192056949404-impl-is-computed-from-section-records.json",
+      "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260926T192056949404-impl-is-computed-from-section-records.at-b3b7dc86d48c0bd5141dcef35b161261ee98baaa.json"
+    ]
+  },
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "review-of-impl-is-computed-from-section-records",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-26T20:41:12.081688+00:00",
+    "score": 0.625,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "section-contract-and-computed-impl",
+  "plan_impl_at_dispatch": 0.6,
+  "promoted_revision": "9945557624511d329211b5b573cdf77d38b02ac4",
+  "resume_waiver": null,
+  "review": null,
+  "role": "review",
+  "run_id": "r-20260926T204104256915-review-of-impl-is-computed-from-section-records",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "b6d13fb4-95d9-4011-a42c-34f921c5b44e",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "time_budget": "60m",
+  "tool_steps": 104.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 4793,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": null,
+    "exited_at": "2026-09-26T22:06:16Z",
+    "last_record_type": "system",
+    "launched_at": "2026-09-26T20:41:36Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T204104256915-review-of-impl-is-computed-from-section-records",
+    "signal": 15,
+    "signal_name": "SIGTERM",
+    "stream_records_seen": 35147,
+    "worker_pid": 975485
+  },
+  "worker_seconds": 4079,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
