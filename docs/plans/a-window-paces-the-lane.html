@@ -167,6 +167,46 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
       outside this node's write paths, so until they are declared an operator cannot set either
       key and the pair documented in <code>pace.py</code> is what applies. Recorded as a
       follow-on rather than taken.</p>
+
+            <p><strong>The declaration landed 2026-09-26, commits <code>41706dc0</code> and
+      <code>a003a2d2</code>.</strong> <code>BudgetConfig</code> now carries
+      <code>drain_lead_hours</code> and <code>pace_multiple</code> as minimum-zero floats in
+      <code>reckon/schema/flight.yaml</code>; the model and JSON schema are regenerated from
+      that source
+      by <code>scripts/regen_flight_schema.py</code> in the same commit as the YAML and are never
+      hand-edited; the shipped defaults now declare the documented pair, 12.0 h and 1.1, so a
+      fresh install paces from the <code>shipped</code> layer rather than the fallback
+      constants. Evidence: <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#pace-keys-declared">the
+      declaration, landed</a>.</p>
+      <figure>
+        <img src="/reckon/figures/a-window-paces-the-lane/pace-keys-resolve.svg"
+             alt="Left: the two pace keys declared once in reckon/schema/flight.yaml and regenerated into reckon/_flight_schema.py and docs/_shared/flight.schema.json. Right: flight.resolve validates the shipped, host, project and override layers, hands a resolved config to pace.policy, and the returned allowance carries the multiple. Below: a layer setting an undeclared budget key is refused by that same validation with FlightConfigError, extra inputs not permitted, before any code reads it.">
+        <figcaption>The declaration and the two paths a layer's pair can take: read out of the
+        resolver, or refused as an undeclared key before any code reads it.</figcaption>
+      </figure>
+      <p><strong>A changed key is now asserted through the resolver, not a mapping.</strong>
+      Every key-change test writes a real configuration layer file and resolves it with
+      <code>flight.resolve(project_path=..., host_path=&lt;absent&gt;)</code>, so the pair travels
+      the same validated path an operator's own layer takes: a key the schema does not declare
+      is refused by <code>extra=&quot;forbid&quot;</code> rather than silently read back. Three
+      assertions pin the new surface &mdash; a project layer carrying 24.0 and 2.2 resolves
+      with <code>origin</code> <code>project</code> and the allowance carrying the multiple; the
+      shipped layer reports the documented pair with <code>origin</code> <code>shipped</code>;
+      and a config carrying neither key still falls back to 12.0 and 1.1.</p>
+      <p><strong>Measured over the 27 files that resolve flight config or read the generated
+      schema, in one invocation.</strong> <strong>15 failed, 573 passed, 3 skipped, exit
+      1</strong> at the head against <strong>15 failed, 571 passed, exit 1</strong> at the
+      dispatch base, the FAILED sets identical &mdash; zero added failures, the fifteen
+      pre-existing and in files owned by concurrent nodes. At the base the added assertions
+      fail <strong>9 failed, 12 passed</strong>, which is the recorded defect reproducing: a
+      layer setting the pair is refused as <code>Extra inputs are not permitted</code>. Both
+      runs used a temporary config home with the real one asserted untouched.</p>
+      <p><strong>The declared negative control: remove the two slots from the schema's budget
+      block and regenerate.</strong> The red log's first line is the declared mutation
+      verbatim and the refusal arrives at the shipped defaults &mdash; one layer earlier than an
+      operator's own layer would be refused, because the regenerated model no longer accepts
+      the keys the shipped layer still sets. The same nine assertions fail, 9 failed / 12
+      passed, identical to the base arm.</p>
     </div>
 
     <h2 id="s3">&sect;3 &mdash; A rising bar, not a switch</h2>

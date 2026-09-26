@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 345" width="100%" height="345" role="img" aria-label="The two pace keys: declared once in the LinkML source, regenerated into the Pydantic model and JSON Schema, then read by the resolver from whichever layer supplies them, with a layer carrying an undeclared key refused before any code reads it.">
+  <title>Where the pace keys are declared, and the two paths a layer's pair can take</title>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a4d55"/>
+    </marker>
+    <marker id="redhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c0392b"/>
+    </marker>
+  </defs>
+  <style>
+    .box { fill: #f4f6fa; stroke: #6e7282; stroke-width: 1.2; }
+    .key { fill: #e8f0fb; stroke: #2f6fd0; stroke-width: 1.4; }
+    .bad { fill: #fdecec; stroke: #c0392b; stroke-width: 1.4; }
+    .lbl { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; fill: #24262b; }
+    .sm { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; fill: #4a4d55; }
+    .hd { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; font-weight: 600; fill: #24262b; }
+  </style>
+
+  <text x="24" y="28" class="hd">Reckon flight: one declaration, two generated artifacts, four layers</text>
+
+  <rect class="box" x="24" y="48" width="220" height="86" rx="6"/>
+  <text x="36" y="70" class="lbl">reckon/schema/flight.yaml</text>
+  <text x="36" y="90" class="sm">BudgetConfig slots</text>
+  <rect class="key" x="36" y="98" width="196" height="26" rx="4"/>
+  <text x="44" y="116" class="lbl">drain_lead_hours, pace_multiple</text>
+
+  <line x1="244" y1="91" x2="288" y2="91" stroke="#4a4d55" stroke-width="1.4" marker-end="url(#head)"/>
+  <text x="242" y="82" class="sm">regen_flight_schema.py</text>
+
+  <rect class="box" x="292" y="48" width="238" height="86" rx="6"/>
+  <text x="304" y="70" class="lbl">reckon/_flight_schema.py</text>
+  <text x="304" y="90" class="sm">BudgetConfig, extra=forbid</text>
+  <text x="304" y="108" class="sm">docs/_shared/flight.schema.json</text>
+
+  <line x1="292" y1="150" x2="700" y2="150" stroke="#4a4d55" stroke-width="1.4" marker-end="url(#head)"/>
+
+  <rect class="box" x="560" y="40" width="316" height="102" rx="6"/>
+  <text x="572" y="62" class="lbl">flight.resolve(...)</text>
+  <text x="572" y="80" class="sm">shipped defaults -&gt; host -&gt; project -&gt; override</text>
+  <text x="572" y="98" class="sm">every layer validated before it merges</text>
+  <text x="572" y="122" class="sm">budget.drain_lead_hours: 12.0 (shipped)</text>
+
+  <line x1="600" y1="142" x2="600" y2="196" stroke="#4a4d55" stroke-width="1.4" marker-end="url(#head)"/>
+  <text x="608" y="172" class="sm">resolved config</text>
+
+  <rect class="box" x="470" y="196" width="264" height="52" rx="6"/>
+  <text x="482" y="218" class="lbl">pace.policy(resolved)</text>
+  <text x="482" y="237" class="sm">12.0 h lead, 1.1 multiple</text>
+
+  <line x1="470" y1="222" x2="418" y2="222" stroke="#4a4d55" stroke-width="1.4" marker-end="url(#head)"/>
+  <rect class="box" x="150" y="196" width="266" height="52" rx="6"/>
+  <text x="162" y="218" class="lbl">allowance carries the multiple</text>
+  <text x="162" y="237" class="sm">derived = multiple * share of windows</text>
+
+  <rect class="bad" x="150" y="278" width="584" height="52" rx="6"/>
+  <text x="162" y="300" class="lbl">a layer setting an undeclared budget key</text>
+  <text x="162" y="319" class="sm">FlightConfigError: budget.pace_multiple: Extra inputs are not permitted</text>
+  <line x1="560" y1="278" x2="560" y2="242" stroke="#c0392b" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#redhead)"/>
+  <text x="568" y="272" class="sm" fill="#c0392b">refused here, before any code reads it</text>
+</svg>
