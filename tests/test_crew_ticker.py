@@ -289,6 +289,42 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
     assert clause_starts.pop() > block_ends.pop()
 
 
+def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
+    """A count three digits wide carries its digits rather than being cut.
+
+    The block reserves two digits per count, so any fleet up to ninety-nine
+    keeps one block width and one clause column. A larger count is the case that
+    forces a choice, and the renderer widens that one row instead of eliding the
+    figure: a reader watching a queue pass a hundred needs the number, not a
+    marker. The extra column comes out of the clause, so the row still ends at
+    the pane's width and the counts stay four separate tokens.
+    """
+    escapes = re.compile(r"\x1b\[[0-9;]*m")
+    counters = re.compile(r"(\d+)w\s+(\d+)b\s+(\d+)u\s+(\d+)q")
+
+    def render(index: int, **counts: int) -> str:
+        grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
+        return escapes.sub("", grid.render(_event(run_id=f"r-wide-{index}", **counts)))
+
+    kept = render(0, working=99, blocked=99, unpromoted=99, waiting=99)
+    widened = render(1, working=100, blocked=9, unpromoted=0, waiting=0)
+
+    # The figure survives whole, as four tokens, with the wide count's own cell
+    # carrying the third digit.
+    assert "100w" in widened, widened
+    match = counters.search(widened)
+    assert match is not None, widened
+    assert match.groups() == ("100", "9", "0", "0"), widened
+
+    # The widening is the wide row's alone: it costs the clause one column and
+    # the row still ends at the pane's width, so nothing wrapped to make room.
+    assert len(kept) == len(widened) == 180, (len(kept), len(widened))
+    assert widened.index(_event()["reason"]) == kept.index(_event()["reason"]) + 1
+    # A wider fleet's block is one column further right than a fleet inside the
+    # fixed width, which is the whole cost of carrying the figure.
+    assert match.end() == counters.search(kept).end() + 1
+
+
 def test_cli_follow_prints_compact_transition_lines_by_default(
     home, monkeypatch
 ) -> None:
