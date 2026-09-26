@@ -105,18 +105,25 @@ def test_records_with_no_fragments_compose_to_their_own_bytes() -> None:
         (evidence_dir / "archive").glob("*-landed.html")
     )
 
-    checked = 0
-    for record_path in records:
+    # The check set is derived by the same rule the assertion is about — a
+    # record with no fragments — rather than pinned to the tree's current
+    # count, so a fragment landing under another plan does not turn this test
+    # red. The count checked is reported, not asserted against the total.
+    def _fragment_dir(record_path: Path) -> Path:
+        return evidence_dir / "fragments" / record_path.name[: -len("-landed.html")]
+
+    without_fragments = [
+        record_path
+        for record_path in records
+        if not any(_fragment_dir(record_path).glob("*.html"))
+    ]
+
+    assert without_fragments, "every record has fragments; nothing was checked"
+
+    for record_path in without_fragments:
         plan_slug = record_path.name[: -len("-landed.html")]
-        fragment_dir = evidence_dir / "fragments" / plan_slug
-        if fragment_dir.is_dir() and any(fragment_dir.glob("*.html")):
-            continue
         project = str(_plan_html.parse_plan(record_path).get("project") or "reckon")
         assert (
             compose_landed_record(record_path, plan_slug, project=project)
             == record_path.read_bytes()
         ), record_path
-        checked += 1
-
-    assert checked == len(records)
-    assert checked > 0
