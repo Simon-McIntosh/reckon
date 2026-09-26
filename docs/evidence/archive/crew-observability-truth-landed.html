@@ -87,6 +87,7 @@
         <tr><td>§12</td><td><a href="#nested-manifest-key-stays-nested">nested-manifest-key-stays-nested</a></td><td>0d3c6cf5</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#block-scalar-ends-at-the-field-column">block-scalar-ends-at-the-field-column</a></td><td>dbd96dbd</td><td>run outcome</td></tr>
         <tr><td>§22</td><td><a href="#widen-reaches-a-blocked-manifest">widen-reaches-a-blocked-manifest</a></td><td>bd10fb72</td><td>run outcome</td></tr>
+        <tr><td>§22</td><td><a href="#widen-refuses-a-running-worker">widen-refuses-a-running-worker</a></td><td>184fbbed</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#a-refusal-at-admission-is-named">a-refusal-at-admission-is-named</a></td><td>1f519333</td><td>run outcome</td></tr>
       </tbody>
     </table>
@@ -2007,6 +2008,91 @@ reading taken as an authority it was not.</p>
       for a node that owns that file. A pre-existing stale anchor count and a duplicated
       <code>plan-summary</code> meta in this record were left as they are, since peer nodes
       hold this file concurrently. Nothing in the widening path is left half-closed.</p>
+    </section>
+
+<section id="widen-refuses-a-running-worker">
+    <h3>§22 — A widen refuses a run whose worker process is still running</h3>
+    <p>Node <code>widen-refuses-a-running-worker</code>, landed under commit
+      <code>184fbbed</code>, which changed <code>reckon/cli.py</code> and added three cases
+      to <code>tests/test_widen_reaches_a_blocked_run.py</code>. Its sibling above made
+      eligibility consult both the folded phase and the run's own manifest; both are
+      statements the run left behind, so a run whose pointer happened to read
+      <code>blocked</code> was widened while its worker was still running — the boundary
+      moved under a live process, which is the state the command's own documentation
+      already said it refused.</p>
+    <p><strong>Reproduction:</strong> a pointer that records a worker pid which is still
+      alive, beside a fresh manifest reporting <code>blocked</code>, is exactly the run the
+      base command admitted. Reproduced at base <code>3e6115fb</code>: the two added
+      refusal cases drive the CLI runner against that state — one with the phase reading
+      <code>working</code>, one with it reading <code>blocked</code> over a blocked
+      manifest, so neither account can authorise the widening on its own — and each
+      asserts the liveness read its fixture was built to produce before the command is
+      invoked. The base command answers the first with
+      <code>{"added": ["reckon/crew/dispatch.py"], "manifest_status": "blocked",
+      "node": "widen", "ok": true, "phase": "working", ...}</code>, exit 0 where the
+      added assertion requires a refusal, the red arm reading <strong>2 failed, 14
+      passed</strong>, exit 1.</p>
+    <p><strong>Mechanism:</strong> whether the run has stopped is read from the worker
+      process the record names, through the single helper every liveness decision about a
+      run takes, and a run whose worker is still running is refused whatever its phase and
+      its manifest report. The refusal names the recorded pid and offers both moves:
+      waiting for that process to exit and widening again, or resuming the run once its
+      turn has ended. The predicate, its refusals and the command's docstring now state one
+      rule, written once as a constant and composed into every message, so the three
+      cannot drift apart. The read refuses only on positive liveness — a record naming no
+      process is admitted rather than refused, because an unknown pid is not a running
+      worker, the pointer is written before its worker is spawned, and a widening still
+      requires a block stated in a manifest the run itself delivered.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/widen-refuses-a-running-worker.svg"
+           alt="Three gates read in order from one record. Is the worker process the record names still running? Yes refuses, naming the pid and offering the two moves, waiting for exit or resuming the run once its turn has ended. No falls through to the manifest's own report: complete or failed refuses, because a finished run has no scope decision outstanding. Third, is blocked stated in the folded phase or in the manifest? No refuses, naming the phase it read instead; yes widens, adding the path to write_paths while the session id and every other recorded field are carried through byte for byte. Liveness is read from the worker process rather than the phase, because a phase is a mirror that can lag the run; the block statement is read from both accounts, because a worker that ends its turn after reporting a block folds the phase to complete."
+           style="max-width:760px;width:100%">
+      <figcaption>The predicate's inputs are read from different places on purpose:
+      liveness from the worker process, because a phase is a mirror that can lag the run it
+      describes, and the block statement from both the phase and the run's own manifest,
+      because a worker that ends its turn after reporting a block leaves the phase reading
+      <code>complete</code>.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Falsifier half</th><th>Edit</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>the repair is needed</td>
+          <td>the liveness refusal removed from the predicate by exact-string replacement
+            (the declared mutation, applied in a scratch copy of the head tree; the
+            worktree itself was never mutated)</td>
+          <td><strong>failed</strong> on the two added refusal cases — the run with a live
+            worker was widened — <strong>2 failed, 14 passed</strong>, exit 1, the red
+            log's first line the declared string verbatim</td></tr>
+        <tr><td>the read is scoped to positive liveness, not to proof of death</td>
+          <td>the converse mutation, in a second scratch copy: refuse unless liveness is
+            provably False, so an unrecorded pid refuses too</td>
+          <td><strong>failed</strong> on the five cases that widen a record naming no
+            process — three in the sibling suite and two in this file, which is what fixes
+            the admittance of an unknown pid rather than leaving it to taste — and on the
+            two refusal cases, whose message no longer names the running worker:
+            <strong>7 failed, 9 passed</strong>, exit 1; the case whose worker has exited
+            still widens</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Measure:</strong> <code>tests/test_widen_reaches_a_blocked_run.py</code>
+      plus <code>tests/test_fence_widening.py</code> in ONE invocation at each arm, on
+      node-local scratch trees whose <code>module.__file__</code> and <code>cwd</code> are
+      printed into each log header: base <code>3e6115fb</code> (base code, base tests)
+      <strong>13 passed</strong>, exit 0; head <code>184fbbed</code> (head code, head
+      tests) <strong>16 passed</strong>, exit 0 — three added cases, zero added failures,
+      every pre-existing case unchanged; the reproduction arm (base code, head tests)
+      <strong>2 failed, 14 passed</strong>, exit 1. The added refusal cases assert the
+      liveness read their fixture was built to produce before the command runs, so a case
+      whose pid read answered otherwise would fail on that assertion rather than pass on
+      the wrong fact. Ruff over the staged paths is two pre-existing findings in
+      <code>reckon/cli.py</code> at both arms, and the one file both arms would reformat is
+      the same file with the same pre-existing region — zero added in either measure.</p>
+    <p><strong>Leaves behind:</strong> the guard binds only for records that record a
+      worker, which is the shape the pointer template writes; a record naming no process
+      keeps the pre-existing behaviour, and the converse arm above is what holds that
+      boundary rather than leaving it undocumented. Both scratch arms and their logs are
+      named in the run directory and the trees themselves die with the node. Nothing in the
+      widening path is left half-closed.</p>
     </section>
 
   <section id="s11-refusal-names-the-roots">

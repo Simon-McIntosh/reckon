@@ -1,0 +1,76 @@
+<svg viewBox="0 0 760 470" width="100%" style="max-width:760px" xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-label="The widen predicate as three gates read in order from one record. First gate: is the worker process the record names still running? Yes refuses, naming the recorded pid and offering the two moves, wait for the process to exit or resume the run once its turn has ended. No falls through to the second gate: does the run's own manifest report complete or failed? Yes refuses, naming the manifest, because a finished run has no scope decision outstanding. Third gate: is a block stated in the folded phase or in the manifest? No refuses, naming the phase it read instead of blocked. Yes widens: the path joins the pointer's write_paths and the session id, the recorded commits and every other field are carried through untouched. The two inputs are read from different places on purpose: liveness from the worker process, because a phase is a mirror that can lag the run, and the block statement from both the phase and the manifest, because a worker that ends its turn after reporting a block leaves the phase reading complete.">
+  <style>
+    text { font-family: system-ui, font-size: 12px; fill: #3a3a38; }
+    .gate { fill: #eef2f7; stroke: #7d8ea6; stroke-width: 1.2; rx: 6; }
+    .refuse { fill: #f6ecec; stroke: #b98080; stroke-width: 1.2; rx: 6; }
+    .widen { fill: #eaf3ec; stroke: #78a184; stroke-width: 1.2; rx: 6; }
+    .q { font-size: 12.5px; font-weight: 600; }
+    .h { font-size: 12.5px; font-weight: 700; }
+    .n { font-size: 11.5px; }
+    .ear { font-size: 11.5px; font-weight: 600; }
+    .edge { stroke: #6d6d68; stroke-width: 1.3; fill: none; }
+  </style>
+  <text class="h" x="28" y="24">crew widen: the fence moves only for a run whose worker process has stopped on a blocked fence</text>
+
+  <rect class="gate" x="28" y="40" width="300" height="56"></rect>
+  <text class="q" x="42" y="64">is the worker process the record</text>
+  <text class="q" x="42" y="82">names still running?</text>
+
+  <path class="edge" d="M328 68 H392" marker-end="url(#a)"></path>
+  <text class="ear" x="344" y="60">yes</text>
+  <rect class="refuse" x="392" y="34" width="340" height="68"></rect>
+  <text class="h" x="404" y="56">REFUSE</text>
+  <text class="n" x="404" y="74">it records a worker still running as pid N</text>
+  <text class="n" x="404" y="90">wait for that process to exit, or crew resume once its turn has ended</text>
+
+  <path class="edge" d="M178 96 V128" marker-end="url(#a)"></path>
+  <text class="ear" x="186" y="118">no</text>
+
+  <rect class="gate" x="28" y="132" width="300" height="56"></rect>
+  <text class="q" x="42" y="156">does the run's own manifest report</text>
+  <text class="q" x="42" y="174">complete or failed?</text>
+
+  <path class="edge" d="M328 160 H392" marker-end="url(#a)"></path>
+  <text class="ear" x="344" y="152">yes</text>
+  <rect class="refuse" x="392" y="126" width="340" height="68"></rect>
+  <text class="h" x="404" y="148">REFUSE</text>
+  <text class="n" x="404" y="166">it reports 'complete' in its own manifest</text>
+  <text class="n" x="404" y="182">a finished run has no scope decision outstanding</text>
+
+  <path class="edge" d="M178 188 V220" marker-end="url(#a)"></path>
+  <text class="ear" x="186" y="210">no</text>
+
+  <rect class="gate" x="28" y="224" width="300" height="56"></rect>
+  <text class="q" x="42" y="248">is blocked stated in the folded phase</text>
+  <text class="q" x="42" y="266">or in the manifest?</text>
+
+  <path class="edge" d="M328 252 H392" marker-end="url(#a)"></path>
+  <text class="ear" x="344" y="244">no</text>
+  <rect class="refuse" x="392" y="218" width="340" height="68"></rect>
+  <text class="h" x="404" y="240">REFUSE</text>
+  <text class="n" x="404" y="258">it reads 'working' (or 'unphased'), not 'blocked'</text>
+  <text class="n" x="404" y="274">nothing stated a block to widen for</text>
+
+  <path class="edge" d="M178 280 V316" marker-end="url(#a)"></path>
+  <text class="ear" x="186" y="302">yes</text>
+
+  <rect class="widen" x="28" y="320" width="300" height="68"></rect>
+  <text class="h" x="42" y="342">WIDEN</text>
+  <text class="n" x="42" y="360">the path joins node.write_paths, read by</text>
+  <text class="n" x="42" y="376">the promotion validator</text>
+  <path class="edge" d="M328 354 H664" stroke-dasharray="4 3"></path>
+  <text class="n" x="360" y="346">the session id, the recorded commits and every</text>
+  <text class="n" x="360" y="364">other field are carried through byte for byte</text>
+
+  <text class="n" x="28" y="414">Liveness is read from the worker process, not the phase: a phase is a mirror that can lag the run it describes, and a</text>
+  <text class="n" x="28" y="430">worker writing against the boundary is exactly what a blocked-looking phase cannot rule out.</text>
+  <text class="n" x="28" y="446">The block statement is read from both the phase and the manifest, because a worker that ends its turn after reporting</text>
+  <text class="n" x="28" y="462">a block folds the phase to complete and leaves its delivery as the only place the block is stated.</text>
+
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6d6d68"></path>
+    </marker>
+  </defs>
+</svg>
