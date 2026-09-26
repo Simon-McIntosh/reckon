@@ -255,10 +255,20 @@ def _recomputed_allowance(
         raise TypeError("a pace row must carry a seven-day clock")
     if week.get("state") != "observed":
         return _UNMEASURED
-    if not isinstance(week.get("resets_at"), str) or not week["resets_at"].strip():
-        return _UnmeasuredAllowance("the seven-day clock has no reset stamp")
-    recorded_at = _instant(row.get("recorded_at"))
-    reset_at = _instant(week.get("resets_at"))
+    recorded_at = _instant_or_unmeasured(
+        row.get("recorded_at"),
+        label="the pace row recorded_at stamp",
+        missing_reason="the pace row has no recorded instant",
+    )
+    if isinstance(recorded_at, _UnmeasuredAllowance):
+        return recorded_at
+    reset_at = _instant_or_unmeasured(
+        week.get("resets_at"),
+        label="the seven-day clock reset stamp",
+        missing_reason="the seven-day clock has no reset stamp",
+    )
+    if isinstance(reset_at, _UnmeasuredAllowance):
+        return reset_at
     elapsed_hours = max(
         0.0,
         pace_module.WEEK_HOURS - (reset_at - recorded_at).total_seconds() / 3600.0,
@@ -385,6 +395,21 @@ def _number(value: Any) -> float | None:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
     return float(value)
+
+
+def _instant_or_unmeasured(
+    value: Any,
+    *,
+    label: str,
+    missing_reason: str,
+) -> datetime | _UnmeasuredAllowance:
+    """Turn an invalid clock instant into row-local unmeasured evidence."""
+    try:
+        return _instant(value)
+    except (TypeError, ValueError) as exc:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return _UnmeasuredAllowance(missing_reason)
+        return _UnmeasuredAllowance(f"{label} is not a valid instant: {exc}")
 
 
 def _instant(value: Any) -> datetime:

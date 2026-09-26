@@ -296,6 +296,43 @@ def test_a_measured_week_without_reset_stamp_is_unmeasured(committed_week):
     assert "no reset stamp" in report["text"]
 
 
+@pytest.mark.parametrize(
+    "reset_stamp",
+    ["", "not-a-date", "2026-13-40T99:00Z", 12345, None],
+)
+def test_malformed_reset_stamps_are_unmeasured_with_the_week_replayed(
+    committed_week, reset_stamp
+):
+    record = _row(
+        node="malformed-reset",
+        role="implement",
+        backend="codex",
+        local=False,
+        utilisation=0.3,
+        elapsed=72.0,
+    )
+    record["pace"]["clocks"]["seven_day"]["resets_at"] = reset_stamp
+    record["pace"]["allowance"] = None
+    _write_run(committed_week, record)
+
+    report = _replay_project(committed_week, "sample")
+
+    assert report["row_count"] == 4
+    assert report["allowances"]["unmeasured"] == 1
+    assert report["allowances"]["matched"] == 3
+    assert report["ok"] is False
+    malformed = next(
+        row for row in report["rows"] if row["run_id"] == "run-malformed-reset"
+    )
+    assert malformed["allowance_unmeasured"] is True
+    assert malformed["allowance_unmeasured_reason"]
+    assert all(
+        row["allowance_match"]
+        for row in report["rows"]
+        if row["run_id"] != "run-malformed-reset"
+    )
+
+
 def test_a_hold_without_threshold_evidence_is_unverifiable(committed_week):
     record = _row(
         node="bare-hold",
