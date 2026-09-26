@@ -1608,6 +1608,10 @@ def _project_watch_claim(project: str, stall_window: str):
                     return
                 time.sleep(0.01)
 
+        # Adopt the log the arming named before the record is written, so a
+        # reader who finds this seat dead finds the producer's own last words
+        # beside it rather than a path that was named and never written.
+        _adopt_watch_log()
         record = {
             "project": project,
             "pid": os.getpid(),
@@ -1620,6 +1624,9 @@ def _project_watch_claim(project: str, stall_window: str):
             "stall_window": stall_window,
             "started_at": _utc_now(),
             "stream_path": str(watch_stream_path(project)),
+            # Where this producer's stdout and stderr go, so a dead seat can be
+            # dated and explained from the file rather than only observed empty.
+            "log_path": str(watch_log_path(project)),
             "reckon_version": __version__,
         }
         # Which unit owns this seat, so a reader can tell a watcher a service
@@ -2358,7 +2365,7 @@ def render_watch_unit(
     """Render the systemd user unit that runs one project's watcher."""
     command = executable or _reckon_console_script()
     argv = [command, "crew", "watch", "--project", project]
-    log_file = _config_home() / "logs" / f"watch-{watch_unit_name(project)}.log"
+    log_file = watch_log_path(project)
     override = "".join(
         f'Environment="{name}={value}"\n'
         for name, value in environment.items()
@@ -2486,10 +2493,24 @@ def _arm_watcher_as_process(project: str) -> Mapping[str, Any]:
     implementation rather than adding a second: it takes the seat once, replaces
     a seat whose supervisor has died, and reports liveness rather than raising.
     Imported lazily because the dispatch path imports this module.
+
+    A process nothing supervises is a process whose death leaves no record, so
+    the arming names the file a watcher's output belongs in before it starts
+    one. The child inherits :data:`WATCH_LOG_ENV` and adopts that file as it
+    takes its seat; the entry is restored afterwards so this process cannot hand
+    the same log to anything else it starts.
     """
     from reckon.crew.dispatch import _ensure_watch_producer
 
-    return _ensure_watch_producer(project)
+    previous = os.environ.get(WATCH_LOG_ENV)
+    os.environ[WATCH_LOG_ENV] = str(watch_log_path(project))
+    try:
+        return _ensure_watch_producer(project)
+    finally:
+        if previous is None:
+            os.environ.pop(WATCH_LOG_ENV, None)
+        else:
+            os.environ[WATCH_LOG_ENV] = previous
 
 
 def ensure_watcher_service(
@@ -2725,6 +2746,20 @@ WATCH_UNIT_ENV = "RECKON_WATCH_UNIT"
 # refuses. Lingering is what keeps a user manager alive past the last session.
 LINGER_IF_REQUIRED = True
 
+# The arming path sets this to the file the watcher it starts must append its
+# stdout and stderr to, and the watcher reads it when it takes its seat. Read
+# from the environment for the same reason the unit name is: the watcher's argv
+# is the arming contract a person copies, and a path-only flag would appear
+# there. A watcher a service manager started leaves it unset, because systemd
+# already appends the unit's output to that same file.
+WATCH_LOG_ENV = "RECKON_WATCH_LOG"
+
+# A watcher's own log is diagnostic, not a ledger, so it is bounded: the file is
+# rotated to a single ``.1`` sibling once it passes this size, which keeps the
+# most recent output a reader needs to date a producer's death without letting
+# an unmanaged watcher fill the shared home over months.
+WATCH_LOG_MAX_BYTES = 2 * 1024 * 1024
+
 
 def ensure_placement_reservation(
     *,
@@ -2761,6 +2796,119 @@ def watch_unit_name(project: str) -> str:
     """Return the systemd user unit that runs one project's watcher service."""
     readable = re.sub(r"[^A-Za-z0-9._-]", "-", project).strip("-") or "project"
     return f"reckon-watch-{readable}.service"
+
+
+def watch_log_path(project: str) -> Path:
+    """Return the file a project's watcher appends its output to.
+
+    One path serves both arming routes, so a reader who finds a dead seat finds
+    that producer's last words whichever way it was started: a service manager
+    appends the unit's stdout and stderr here, and an unmanaged watcher adopts
+    the same file when it takes its seat.
+    """
+    return _config_home() / "logs" / f"watch-{watch_unit_name(project)}.log"
+
+
+class _WatchLogStream:
+    """A stdout/stderr stand-in that appends timestamped lines to a file.
+
+    A watcher's log is read after the fact, so every line it carries has to say
+    when it arrived — otherwise a traceback says what killed the producer but
+    not whether that was an hour or a week ago. The file is rotated to a single
+    ``.1`` sibling once it passes :data:`WATCH_LOG_MAX_BYTES`, so a watcher left
+    running for months cannot fill the shared home.
+
+    Accepts bytes as well as text because a library writing to ``sys.stdout``
+    may reach for a binary writer once it sees a non-tty stream, and silently
+    dropping those writes would lose exactly the diagnostics this exists for.
+    """
+
+    def __init__(self, path: Path, *, max_bytes: int = WATCH_LOG_MAX_BYTES) -> None:
+        self.path = Path(path)
+        self.max_bytes = max_bytes
+        self._handle = None
+        self._at_line_start = True
+        self._open()
+
+    def _open(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            oversized = self.path.stat().st_size >= self.max_bytes
+        except FileNotFoundError:
+            oversized = False
+        if oversized:
+            self.path.replace(self.path.with_name(f"{self.path.name}.1"))
+        self._handle = self.path.open("a", encoding="utf-8", errors="replace")
+
+    def _rotate_if_needed(self) -> None:
+        try:
+            size = self._handle.tell()
+        except (OSError, ValueError):
+            return
+        if size < self.max_bytes:
+            return
+        self._handle.close()
+        self.path.replace(self.path.with_name(f"{self.path.name}.1"))
+        self._handle = self.path.open("a", encoding="utf-8", errors="replace")
+
+    def write(self, text: Any) -> int:
+        if isinstance(text, (bytes, bytearray)):
+            text = bytes(text).decode("utf-8", "replace")
+        pieces: list[str] = []
+        for line in str(text).splitlines(keepends=True):
+            if self._at_line_start and line.strip():
+                pieces.append(f"[{_utc_now()}] ")
+            pieces.append(line)
+            self._at_line_start = line.endswith("\n")
+        self._rotate_if_needed()
+        self._handle.write("".join(pieces))
+        self._handle.flush()
+        return len(text)
+
+    def flush(self) -> None:
+        self._handle.flush()
+
+    def fileno(self) -> int:
+        return self._handle.fileno()
+
+    def isatty(self) -> bool:
+        return False
+
+    def writable(self) -> bool:
+        return True
+
+    def close(self) -> None:
+        self._handle.close()
+
+
+def _adopt_watch_log() -> Path | None:
+    """Send this process's stdout and stderr to the log its arming named.
+
+    Called by the watcher when it takes its seat, which is the point at which a
+    plain background process becomes the project's producer. Returns the path it
+    adopted, or ``None`` when the arming named none — a service-armed watcher's
+    output is already appended to that file by its unit, so it has nothing to
+    adopt.
+
+    The environment entry is removed on adoption so a watcher that starts
+    anything of its own cannot hand the same log on to it. Both the file
+    descriptor and the Python streams are redirected: the descriptors so a
+    library writing unbuffered output, or the interpreter printing an uncaught
+    traceback, still lands in the log, and the Python streams so each line
+    carries the time it was written.
+    """
+    target = os.environ.pop(WATCH_LOG_ENV, "")
+    if not target:
+        return None
+    log = _WatchLogStream(Path(target))
+    sys.stdout = log
+    sys.stderr = log
+    for descriptor in (1, 2):
+        try:
+            os.dup2(log.fileno(), descriptor)
+        except OSError:
+            continue
+    return log.path
 
 
 def watcher_ensure_line(project: str) -> str:
