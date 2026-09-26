@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="80">
-<meta name="plan-impl" content="0.6">
+<meta name="plan-version" content="81">
+<meta name="plan-impl" content="0.65">
 </head>
 <body>
   <main class="plan-doc">
@@ -1005,10 +1005,11 @@
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
     <p class="r-fu-outcome">Landed at merge 97924aa8 (commits 40102f8b, 299dac8a). The stall verdict measures quiet time from the later of the last stream record and the current attempt's attempt_started_at, so a resumed or redispatched run no longer reads stalled on its predecessor's silence. The review scored 92; its one finding was a miscounted pre-existing lint figure in the manifest (8, not 9). The unwritten flicker at 17:13 was a separate transient, and it did not recur on runs launched after the producer fix.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-discard-leaves-its-marker" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26T11:20:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-discard-leaves-its-marker" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-26T11:20:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="2026-09-26T13:37:25+00:00" data-resolved-by="">
     <h4 class="r-fu-title">crew discard leaves the marker that makes its departure read discarded</h4>
     <div class="r-fu-body"><p>Low priority. The departure rule landed at <code>2f1cfd17</code> reads a pointer's departure as promoted only when the ledger records a promotion, as discarded when the run directory records a discard, and as withdrawn otherwise. reckon-ee observed live at 11:14:53 on 2026-09-26 that a <code>crew discard</code> rendered <code>complete → withdrawn</code>. That is correct as far as it goes, since it no longer reads promoted, but the discarded branch is unreachable: <code>crew discard</code> writes no discard record in the run directory. Make discard write that record, carrying the time and the reason if one is given, so a reader can tell a deliberate discard from a pointer that vanished. The done-when needs a case that discards a run through the real command and asserts that the departure reads discarded.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
+    <p class="r-fu-outcome">Landed at merge 92de3b39 (commits 88bd5e41, 05548a14, review 93). discard() now writes a discard record in the run directory before removing the live pointer, and the departure rule reads it as discarded, distinct from withdrawn, while a ledger-recorded promotion still reads promoted. The ticker has a discarded hue in both themes. The review found two defects. The node's new signature in promotion.py and its call in recovery.py are not ruff-format-stable, two formatting hunks against the repository's clean-format target. And the recorded gate omitted the ticker suites, which the reviewer ran green (37 and 70). The formatting is left for the next node that touches promotion.py to fix.</p>
     </article>
 <article class="r-fu" data-id="f-acpewio-complete-refuses-an-open-merge" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26T14:40:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">crew complete refuses while the checkout has a merge open</h4>
