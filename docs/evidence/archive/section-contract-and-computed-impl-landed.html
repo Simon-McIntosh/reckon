@@ -897,30 +897,68 @@ Use edit_plan mode=state. Example: {"op": "append", "target": "sections", "item"
     <table>
       <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
       <tbody>
-        <tr><td>base, 19 files the change reaches</td><td><code>bcca11f0</code></td><td>3 failed, 392 passed</td></tr>
-        <tr><td>head, the same 19 plus the new file</td><td><code>8e67f2bc</code></td><td>2 failed, 399 passed</td></tr>
-        <tr><td>head over the ids that pass at base</td><td><code>8e67f2bc</code></td><td><strong>400 passed, EXIT=0</strong></td></tr>
-        <tr><td>head with the derivation disabled</td><td>scratch import of the head, mutated</td><td>4 failed, 2 passed</td></tr>
+        <tr><td>base, the 20 files the change reaches</td><td><code>bcca11f0</code></td><td>9 failed, 393 passed</td></tr>
+        <tr><td>head, the same 20 files</td><td><code>ec53f8f6</code></td><td>1 failed, 401 passed</td></tr>
+        <tr><td>head over the ids that pass at base</td><td><code>ec53f8f6</code></td><td><strong>393 passed, EXIT=0</strong></td></tr>
+        <tr><td>head with the derivation disabled</td><td>scratch import of the head, mutated</td><td>4 failed, 3 passed</td></tr>
+        <tr><td>the prose-refusal case alone, before the repair</td><td><code>4d7f15bb</code></td><td>1 failed, 6 passed</td></tr>
       </tbody>
     </table>
-    <p>One failure is shared by both arms — <code>test_op_vocab_names_every_dispatchable_op</code>,
-    red at the base before this change — so the added-failure count is zero, and the exit-0 arm
-    above is the promotion gate. The red arm's failure set is exactly the computed-figure cases
-    (0.4, 0.2, the deferred denominator and the roadmap parity), and the two that survive it are
-    the no-records control, which must keep the authored 0.9, and the refusal, which does not read
-    the derivation. The mutation was applied as an import-time substitution of the derivation
-    helper, so the arm measured the same tree as the green run.</p>
+    <p>The two arms run the same twenty files, so the delta is like-for-like. The base's nine failures
+    are three that do not belong to this change — <code>test_op_vocab_names_every_dispatchable_op</code>,
+    red on both sides, and two roadmap cases
+    (<code>test_sprint_surface_reads_state_and_drift_from_roadmap_payload</code>,
+    <code>test_graph_endpoint_rows_equal_the_project_roadmap_rows</code>) that redden only in the
+    scratch base tree, an environment-order effect that passes at the head — plus this node's six
+    feature cases, which cannot pass before the contract exists. The seventh case, the prose refusal,
+    pins base-correct behaviour and passes on both sides. The single failure the head keeps is red at
+    the base too, so the added-failure count is zero and the exit-0 arm above is the promotion gate.
+    The disabled-derivation arm's failure set is exactly the computed-figure cases (0.4, 0.2, the
+    deferred denominator and the roadmap parity); the three that survive it are the no-records
+    control, which must keep the authored 0.9, the refusal, which does not read the derivation, and
+    the prose refusal, which has no figure to disable. The mutation was applied as an import-time
+    substitution of the derivation helper, so the arm measured the same tree as the green run. The
+    base arm is driven by a script that asserts which tree served <code>import&nbsp;reckon</code>
+    before pytest starts, because the shell resets its working directory between calls and a
+    <code>cd</code>-based base arm can silently run the head package; its log's first line names the
+    scratch tree.</p>
     <h3>Artifacts and integrity</h3>
-    <p>The durable run directory is
+    <p>This node's logs live beside its manifest at
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/impl-is-computed-from-section-records/logs/</code>
+    — <code>base-gate.log</code>, <code>head-gate.log</code>, <code>green-gate.log</code>,
+    <code>negative-control.log</code>, whose first line is the declared mutation string, and
+    <code>red-reproduction.log</code> from the repair round. The first four were also copied to
+    <code>logs/</code> under the run directory
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T192056949404-impl-is-computed-from-section-records/</code>,
-    with <code>logs/base-gate.log</code>, <code>logs/head-gate.log</code>,
-    <code>logs/green-gate.log</code> and <code>logs/negative-control.log</code> (whose first line
-    is the declared mutation string). This anchor and the plan's landing prose are append-only;
-    plan declarations, status, implementation fraction, version and modified date are unchanged,
-    and the version-stamping <code>edit_plan</code> route was not used. Two items of the
-    section's own done-when did <em>not</em> land and remain with the coordinator: the SPA label
-    that marks the figure as computed, and the authored-against-measured calibration column.
-    Section closure and the driving followup remain with the coordinator.</p>
+    which went read-only when the run closed, so the re-measured arms exist only in the reports
+    directory. Earlier landings in this section state that this anchor and the plan's landing prose
+    are append-only; that held for the first round and is corrected here rather than silently: the
+    review round revised two figures inside this node's own section — the head-arm count, misrecorded
+    as <em>2 failed, 399 passed</em> where its log read <em>1 failed, 400 passed</em>, and the log
+    directory, which moved when the run closed — and no other node's content was touched. Plan
+    declarations, status, implementation fraction, version and modified date are unchanged, and the
+    version-stamping <code>edit_plan</code> route was not used. Two items of the section's own
+    done-when did <em>not</em> land and remain with the coordinator: the SPA label that marks the
+    figure as computed, and the authored-against-measured calibration column. Section closure and the
+    driving followup remain with the coordinator.</p>
+    <p><strong>Repair under review, commit <code>ec53f8f6</code>.</strong> Review found the regex
+    fast path wider than the parsed read: a record element carrying authored prose —
+    <code>&lt;section data-reckon="section" data-id="first" data-effort-hours="4"
+    data-status="done"&gt;</code> with text inside it — was refused by <code>read_state</code> and
+    accepted by the fast path, so <code>parse_meta</code> and the roadmap reported <code>1.0</code>
+    for a plan whose parsed state raises. The repair removes the fast path's own record reading
+    entirely: it detects that a document declares record metadata and hands the document to
+    <code>read_state</code>, falling back to the authored value when the parser refuses, so a figure
+    exists only where the parser produced one. The reproduction is pinned by
+    <code>test_a_record_element_carrying_authored_prose_yields_no_computed_figure</code>, which fails
+    against the head before the repair (<code>4d7f15bb</code>: 1 failed, 6 passed, the case's own
+    assertion catching <code>impl_source: computed</code>) and passes at <code>ec53f8f6</code> and at
+    the base. The stored-meta assertion in the 0.2 case now reads the file on disk rather than the
+    in-memory fixture, so a read path that rewrote the stored meta would redden it. The parity case
+    that confirms <code>read_plan</code> and the roadmap agree on the fixture is
+    <code>test_read_plan_and_roadmap_report_the_same_computed_impl</code>: it compares
+    <code>read_plan</code>'s raw impl against the roadmap row's <code>progress_pct</code>, so neither
+    surface is asserted about alone.</p>
   </section>
 </main>
 </body>
