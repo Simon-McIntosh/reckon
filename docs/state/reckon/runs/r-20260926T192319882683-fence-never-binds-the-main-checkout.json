@@ -1,0 +1,283 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "461d57d8fd4db1e583551d25527fdc00cb924372",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 7873785,
+      "input_tokens_cumulative": 7873785,
+      "output_tokens": 38038,
+      "output_tokens_cumulative": 38038,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 394,
+    "files": 5,
+    "removed": 17
+  },
+  "commit_resolution": null,
+  "commits": [
+    "af310d815e48c1aebb7d8dd0074ab62daef47e3c",
+    "c11c988fb99f5b06a1cff90158cc6b998e37cd6f"
+  ],
+  "completed_at": "2026-09-26T19:41:12.774Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-26T19:23:32Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest fixture)",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "pytest -q tests/test_fence_never_binds_the_main_checkout.py tests/test_fence_creates_a_missing_write_parent.py tests/test_fence_is_on_again.py tests/test_each_run_owns_its_harness_home.py tests/test_harness_home_carries_mcp_servers.py tests/test_crew_launch_resolution.py (32 passed)",
+    "exit_status": 0,
+    "log_digest": "sha256:62af2e63f7dbae56845747f35d9c9499f54c8c190dc5e6dfffb98255cd074825",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T192319882683-fence-never-binds-the-main-checkout/gate-head.txt"
+  },
+  "impl_move": {
+    "at_complete": 0.98,
+    "at_dispatch": 0.98,
+    "plan": "a-worker-cannot-write-your-home",
+    "reason": "this run repairs a regression the delivery-root merge 3464b851 introduced in work already counted in the plan's impl; it closes a hole rather than landing new scope",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-26T20:03:20.872039+00:00",
+    "horizon_seconds": 2400,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-26T19:23:20Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 22,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 8,
+    "mean_context": 115000,
+    "observed_at": "2026-09-26T19:22:58Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-26T19:41:12.774Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T192319882683-fence-never-binds-the-main-checkout/manifest.md",
+  "member": "disposable-r-20260926T192319882683-fence-never-binds-the-main-checkout",
+  "negative_control": {
+    "declaration": "resolve a relative declared path against the repository; the no-main-checkout-bind assertion must fail",
+    "log": "negative-control-main-checkout-bind.txt",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T192319882683-fence-never-binds-the-main-checkout/negative-control-main-checkout-bind.txt",
+    "test_paths": [
+      "tests/test_fence_never_binds_the_main_checkout.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "fence-never-binds-the-main-checkout",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1912,
+          "cached_input_tokens": 497259,
+          "input_tokens": 499173,
+          "output_tokens": 590,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 499763,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+      "session_id": "s21-coord"
+    },
+    "done_when": "Two defects in the fenced launch composition in reckon/_backends.py are fixed.\n\n(1) _declared_write_grant resolves a declared write path that is not absolute against the WORKTREE when a worktree is given. A repo-relative path names a file in the worker's own checkout, so it lies inside the worktree and is skipped. It must never be joined to the repository argument, which is the main checkout. Only an absolute declared path can produce a grant outside the worktree. Measured today: node declarations such as reckon/crew/x.py produced --bind ~/Code/reckon/reckon, ~/Code/reckon/tests and ~/Code/reckon/docs/plans in fenced argv, re-opening the main checkout the fence exists to seal. The tests use a synthesised repository and a detached worktree under tmp_path (the pytest fixture), with every crew directory environment-resolved to tmp_path. Compose a fenced launch plan through the production path, launch_plan, with fence roots from fenced_write_roots, for a worktree-full backend whose node declares reckon/crew/x.py, tests/test_x.py and docs/plans/p.html. Assert no --bind destination lies under the repository root except that worktree's own .git/worktrees directory entry for that worktree and the shared .git/objects. Negative control: resolve against the repository again; the no-main-checkout-bind assertion must fail.\n\n(2) When fenced, every write root including the manifest's parent directory is created BEFORE the harness home is resolved and seeded. A manifest declared in a directory that does not exist yet then still gets its harness home and its CLAUDE_CONFIG_DIR or CODEX_HOME. Measured today: codex-luna run r-20260926T191902635940 had its manifest in a missing directory. No harness home was seeded, codex fell back to the read-only ~/.codex, and it exited 1 with \"failed to initialize in-process app-server client: Read-only file system\". Test: a fenced launch plan for a codex-dialect backend and a claude-dialect backend whose manifest lies in a missing directory under tmp_path. Assert the harness variable is set to a directory that exists afterwards, under that manifest's parent. Negative control: seed before creating the roots; the variable assertion must fail.\n\ntests/test_fence_creates_a_missing_write_parent.py, tests/test_fence_is_on_again.py, tests/test_each_run_owns_its_harness_home.py, tests/test_harness_home_carries_mcp_servers.py and tests/test_crew_launch_resolution.py add no failures against the base, with pytest basetemp outside any git repository. Gate and control logs are written under the run directory. The change is committed in this worktree.",
+    "estimated_hours": null,
+    "goal": "Stop the fence binding the main checkout for repo-relative declared paths, and seed the harness home only after the manifest's directory exists.",
+    "id": "fence-never-binds-the-main-checkout",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-26T19:23:20Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 22,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 8,
+      "mean_context": 115000,
+      "observed_at": "2026-09-26T19:22:58Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T192319882683-fence-never-binds-the-main-checkout/manifest.md",
+    "negative_control": "resolve a relative declared path against the repository; the no-main-checkout-bind assertion must fail",
+    "plan": "a-worker-cannot-write-your-home",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "exact",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/_backends.py",
+      "tests/test_fence_never_binds_the_main_checkout.py",
+      "docs/plans/a-worker-cannot-write-your-home.html",
+      "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+      "docs/figures/a-worker-cannot-write-your-home"
+    ]
+  },
+  "orientation_input_tokens": 2544588.0,
+  "outcome": "",
+  "plan": "a-worker-cannot-write-your-home",
+  "plan_impl_at_dispatch": 0.98,
+  "promoted_revision": "c11c988fb99f5b06a1cff90158cc6b998e37cd6f",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 15,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 91
+  },
+  "role": "implement",
+  "run_id": "r-20260926T192319882683-fence-never-binds-the-main-checkout",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "e3cd3b32-2623-42ea-a26a-c10e45784b0c",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 8041162,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 1037.145,
+    "generated_tokens": 43634,
+    "generation_seconds": 891.476,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.6,
+    "machine_seconds": 145.669,
+    "peak_input_tokens": 166077,
+    "tokens_per_second": 48.95,
+    "wall_tokens_per_second": 42.07
+  },
+  "time_budget": "40m",
+  "tool_steps": 67.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 1060,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-26T19:41:13Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-26T19:23:51Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T192319882683-fence-never-binds-the-main-checkout",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 6267,
+    "worker_pid": 650170
+  },
+  "worker_seconds": 1028,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
