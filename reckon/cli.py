@@ -2,6 +2,7 @@ import json
 import os
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -1847,6 +1848,8 @@ class _FollowerReloader:
         deadline: float | None = None,
         owner: tuple[int, str] | None = None,
         color: bool = False,
+        label: str = "crew follow",
+        seat: bool = False,
     ) -> None:
         from reckon.crew import runs
 
@@ -1854,6 +1857,14 @@ class _FollowerReloader:
         self.registration = registration
         self.stream = stream
         self.color = color
+        # The command this reloader speaks for, so its deferral and failure
+        # lines name the process a reader must cycle rather than always the
+        # follower's.
+        self.label = label
+        # A producer holds the project's watch seat rather than a session
+        # registration, so its replacement must be handed the seat descriptor
+        # rather than the reader checkpoint.
+        self.seat = seat
         # The instant this arming ends, handed to the replacement only through
         # the environment ``os.execve`` passes: it never enters this image's
         # ``os.environ``, so no child started here inherits it.
@@ -1920,7 +1931,7 @@ class _FollowerReloader:
         if not reloadable:
             self.deferred_stamp = current_stamp
             line = (
-                "reckon crew follow deferred its reload: the new image does not "
+                f"reckon {self.label} deferred its reload: the new image does not "
                 f"import ({reason}); keeping the current image, retrying when the "
                 "code changes"
             )
@@ -1929,9 +1940,10 @@ class _FollowerReloader:
             _echo_follow_line(line, stream=self.stream)
             return
 
-        os.environ[_FOLLOWER_CHECKPOINT_ENV] = json.dumps(
-            {"project": self.project, "checkpoint": dict(checkpoint)}
-        )
+        if not self.seat:
+            os.environ[_FOLLOWER_CHECKPOINT_ENV] = json.dumps(
+                {"project": self.project, "checkpoint": dict(checkpoint)}
+            )
         # The launched-worker registry does not survive an image replacement,
         # though the process (and therefore the parent-child relationships)
         # does. Hand the outstanding pids over beside the checkpoint so the
@@ -1959,6 +1971,20 @@ class _FollowerReloader:
             exec_environment[runs._FOLLOWER_OWNER_ENV] = runs._format_follower_owner(
                 self.owner
             )
+        if self.seat:
+            # The producer's seat is an open advisory lock, which the image
+            # replacement would otherwise close and release; naming the held
+            # descriptor in the replacement's environment keeps the seat held
+            # across the exec rather than re-entered against a race.
+            seat_fd = runs.prepare_watch_seat_reexec(self.project)
+            if seat_fd is not None:
+                exec_environment[runs._WATCH_SEAT_ENV] = str(seat_fd)
+        # An interval timer belongs to the process rather than to the image, so
+        # a poll timer still armed here keeps firing in the replacement -- and
+        # does so before that image has installed its own handler, where the
+        # default disposition for the signal is to kill it. Disarming at the
+        # exec leaves the replacement free to arm its own on its own terms.
+        signal.setitimer(signal.ITIMER_REAL, 0)
         try:
             os.execve(  # noqa: S606 - replacement preserves descriptors and stdout
                 sys.executable,
@@ -1972,15 +1998,48 @@ class _FollowerReloader:
             )
         except OSError as exc:
             os.environ.pop(_FOLLOWER_CHECKPOINT_ENV, None)
+            if self.seat:
+                runs.cancel_watch_seat_reexec(self.project)
             if self.registration is not None:
                 self.registration.cancel_reexec()
             self.failed = True
             command = shlex.join(["reckon", *sys.argv[1:]])
             _echo_follow_line(
-                "reckon crew follow is stale and could not reload itself "
+                f"reckon {self.label} is stale and could not reload itself "
                 f"({exc}); cycle it with: {command}",
                 stream=self.stream,
             )
+
+
+class _StampPoll:
+    """Poll the producer's code stamp on the follower's cadence.
+
+    A follower reaches its reload check through the per-wait hook its own
+    stream loop runs. The producer does not own that loop — ``watch_follow``
+    sleeps inside a generator it does not hand ticks to — so it needs its own
+    cadence, and a signal timer is the one that keeps the check in the main
+    thread: an image replacement is well defined only from the thread that
+    performs it, and ``os.execve`` from a helper thread would race the main
+    thread's own stream writes.
+    """
+
+    def __init__(self, reloader: _FollowerReloader, interval: float) -> None:
+        self.reloader = reloader
+        self.interval = interval
+        self.previous = None
+
+    def _tick(self, signum, frame) -> None:
+        self.reloader.poll({})
+
+    def start(self) -> None:
+        self.previous = signal.signal(signal.SIGALRM, self._tick)
+        signal.setitimer(signal.ITIMER_REAL, self.interval, self.interval)
+
+    def stop(self) -> None:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        if self.previous is not None:
+            signal.signal(signal.SIGALRM, self.previous)
+            self.previous = None
 
 
 # The one line on this stream that is about the follower rather than the fleet.
@@ -3084,16 +3143,39 @@ def crew_watch(
     single_event = once or exit_on_empty
     try:
         if follow or not single_event:
+            from reckon.crew import runs as runs_module
             from reckon.crew.recovery import format_watch_transition, watch_follow
 
             grid = _ticker_grid(width, theme, no_color)
-            for result in watch_follow(
-                project, stall_window=stall_window, transitions=True
-            ):
-                if json_output or result.get("event") not in {"baseline", "transition"}:
-                    _emit({"ok": True, **result}, pretty)
-                elif not _row_is_stale_inventory(result):
-                    click.echo(format_watch_transition(result, ticker=grid), color=True)
+            # The producer holds the seat for the life of its stream, so it
+            # takes changed follower-side modules the way the follower does:
+            # the same content-hash stamp gates the check, the same throwaway
+            # import proves the replacement loads, and the seat descriptor
+            # rides the exec so the seat is never released.
+            reloader = _FollowerReloader(
+                project,
+                None,
+                label="crew watch",
+                seat=True,
+                color=getattr(grid, "color", False),
+            )
+            poller = _StampPoll(reloader, runs_module.FOLLOWER_FRESHNESS_SECONDS)
+            poller.start()
+            try:
+                for result in watch_follow(
+                    project, stall_window=stall_window, transitions=True
+                ):
+                    if json_output or result.get("event") not in {
+                        "baseline",
+                        "transition",
+                    }:
+                        _emit({"ok": True, **result}, pretty)
+                    elif not _row_is_stale_inventory(result):
+                        click.echo(
+                            format_watch_transition(result, ticker=grid), color=True
+                        )
+            finally:
+                poller.stop()
             return
         result = crew_module.watch(
             project,
