@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
-<meta name="plan-impl" content="0.85">
+<meta name="plan-impl" content="0.9">
 </head>
 <body>
   <main class="plan-doc">
@@ -1005,6 +1005,11 @@
     <div class="r-fu-body"><p>The fence-is-on-again worktree held untracked <code>harness/settings.json</code>, <code>harness/CLAUDE.md</code>, <code>codex-home/AGENTS.md</code>, <code>codex-home/config.toml</code> and <code>codex-home/rules/default.rules</code> at its root. They were written at 13:01–13:02Z during the run. They were byte copies of operator config (<code>config.toml</code> differed only in lines the live file has since grown), so they were removed and the worktree reclaimed. But something seeded a run harness home relative to the working directory rather than under the run directory or a <code>tmp_path</code>. That something is either a gate test or a probe. A seed in the cwd copies the operator's 90 KB <code>AGENTS.md</code> and a 55 KB <code>config.toml</code> into a git worktree, where an <code>add</code> by path could commit them. Find the writer. Done when every caller of <code>seed_harness_home</code> passes an absolute destination, and a relative destination is refused. A test asserts that a seed with a relative destination raises. The negative control is to accept a relative path, under which the test must fail.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §2 harness-seed-stays-out-of-the-cwd</pre>
     </article>
+<article class="r-fu" data-id="f-awcwyh-smoke-record-cites-its-observables" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The fenced smoke record cites the logs it quotes, and the Stop-hook counter</h4>
+    <div class="r-fu-body"><p>The review of fenced-worker-smoke-after-reenable (score 89, head d264d579) found two evidence-citation gaps in the landed record's <code>#s2-fenced-worker-smoke-after-reenable</code> anchor. (1) Rows 4–6 quote <q>Read-only file system</q>, but the logs they cite record only <code>exit=1</code> and <code>file_exists_after=no</code>. The quoted text is in the run's <code>stream.jsonl</code>, not in the cited logs. Cite the stream, or quote what the logs hold. (2) The record shows the Stop hook only as wiring in the staged <code>settings.json</code>. The direct observable is <code>.worker_stop_blocks</code> in the run directory, and it holds <code>1</code>: the counter <code>reckon/hooks/worker_stop.py</code> writes when the hook refuses a stop. Add it to the anchor as the Stop hook's fired proof. This is an evidence edit only. Done when both cells cite a file that contains what they quote.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §2 smoke-record-cites-its-observables</pre>
+    </article>
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -1114,7 +1119,7 @@
     <div class="r-comment-body"><p>review stored at the reviewed head, total 93; a review is not gated by a suite</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260926T140805853803-review-of-git-shim-checks-the-resolved-repo" data-who="reckon-build" data-when="2026-09-26T15:24:02.514Z">
-    <div class="r-comment-body"><p>review stored at head ab38cee8, total 88, one finding (describe --dirty refreshes another checkout&#x27;s index in-process despite GIT_OPTIONAL_LOCKS=0) returned to the node as a resume closing the whole read-allowlist class</p></div>
+    <div class="r-comment-body"><p>review stored at head ab38cee8, total 88, one finding (describe --dirty refreshes another checkout's index in-process despite GIT_OPTIONAL_LOCKS=0) returned to the node as a resume closing the whole read-allowlist class</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T122925465818-s19-internals-consumers-survey" data-who="reckon-ship" data-when="2026-09-24T12:38:14.943Z">
     <div class="r-comment-body"><p>eight consumer rows that read reckon internals directly; ranked top five: worktree_fleet re-implements pointer classification, reckon-sync fallback writes mounts.json, lane.json read by hand with no crew verb, inline pointer read in the recovery recipe, hand manifest repair</p></div>
