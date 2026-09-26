@@ -1,0 +1,157 @@
+rev=4b0ccd34 test=4b0ccd34 tree=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/harness-home-tests-opt-into-the-fence cmd=pytest tests/test_harness_home_carries_the_operator_config.py
+module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/harness-home-tests-opt-into-the-fence/reckon/__init__.py
+cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/harness-home-tests-opt-into-the-fence
+..F.FF.F.F.                                                              [100%]
+=================================== FAILURES ===================================
+____ test_a_claude_run_home_carries_the_operator_settings_and_instructions _____
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11316/test_a_claude_run_home_carries0')
+
+    def test_a_claude_run_home_carries_the_operator_settings_and_instructions(
+        tmp_path: Path,
+    ):
+        """settings.json holds only the hooks key; CLAUDE.md holds the operator text."""
+        home = _operator_home(tmp_path)
+        run = tmp_path / "run"
+        run.mkdir()
+        plan = _launch(home, run, CLAUDE_BACKEND, fence=False)
+>       harness = Path(plan.environment["CLAUDE_CONFIG_DIR"])
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'CLAUDE_CONFIG_DIR'
+
+tests/test_harness_home_carries_the_operator_config.py:175: KeyError
+__________ test_a_lane_that_declares_a_missing_file_seeds_without_it ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11316/test_a_lane_that_declares_a_mi0')
+
+    def test_a_lane_that_declares_a_missing_file_seeds_without_it(tmp_path: Path):
+        """A declared file absent from the operator home is skipped without error."""
+        home = _operator_home(tmp_path)
+        run = tmp_path / "run"
+        run.mkdir()
+        backend = {
+            "launch": "cli",
+            "command": "claude",
+            "harness_home_files": [
+                {"path": "settings.json", "keys": ["hooks"]},
+                {"path": "MISSING.md"},
+                {"path": "CLAUDE.md"},
+            ],
+        }
+        plan = _launch(home, run, backend, fence=False)
+>       harness = Path(plan.environment["CLAUDE_CONFIG_DIR"])
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'CLAUDE_CONFIG_DIR'
+
+tests/test_harness_home_carries_the_operator_config.py:221: KeyError
+_____________ test_a_claude_resume_places_the_operator_transcript ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11316/test_a_claude_resume_places_th0')
+
+    def test_a_claude_resume_places_the_operator_transcript(tmp_path: Path):
+        """A session recorded in the operator home is copied at the same relative path."""
+        home = _operator_home(tmp_path)
+        run = tmp_path / "run"
+        run.mkdir()
+        operator_transcript = home / ".claude" / "projects" / "-home-op-reckon"
+        relative = Path("projects/-home-op-reckon") / f"{CLAUDE_SESSION}.jsonl"
+        expected = (operator_transcript / f"{CLAUDE_SESSION}.jsonl").read_bytes()
+    
+        plan = _launch(
+            home, run, CLAUDE_BACKEND, fence=False, resume_session=CLAUDE_SESSION
+        )
+>       harness = Path(plan.environment["CLAUDE_CONFIG_DIR"])
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'CLAUDE_CONFIG_DIR'
+
+tests/test_harness_home_carries_the_operator_config.py:239: KeyError
+___________________ test_a_fresh_launch_copies_no_transcript ___________________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11316/test_a_fresh_launch_copies_no_0')
+
+    def test_a_fresh_launch_copies_no_transcript(tmp_path: Path):
+        """Without a resume, no session transcript is placed in the run home."""
+        home = _operator_home(tmp_path)
+        run = tmp_path / "run"
+        run.mkdir()
+        plan = _launch(home, run, CLAUDE_BACKEND, fence=False)
+>       harness = Path(plan.environment["CLAUDE_CONFIG_DIR"])
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'CLAUDE_CONFIG_DIR'
+
+tests/test_harness_home_carries_the_operator_config.py:271: KeyError
+_______________ test_the_operator_home_is_never_read_or_written ________________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11316/test_the_operator_home_is_neve0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7ffabf17b930>
+
+    def test_the_operator_home_is_never_read_or_written(tmp_path: Path, monkeypatch):
+        """The real harness homes stay out of it; only the given operator home is read.
+    
+        The real ``~/.claude`` is live — the fleet running this very test writes to
+        it — so a metadata comparison against it would go red when the environment
+        moves rather than when the code is wrong. The isolation is proved two other
+        ways instead: every home the code could resolve without ``fence_home`` is
+        redirected to a decoy that must stay untouched, and the run's own transcript
+        must not appear under the real projects or sessions tree.
+        """
+        home = _operator_home(tmp_path)
+        synthetic_before = _metadata_snapshot(home)
+    
+        # A decoy home: if the code resolved Path.home() instead of fence_home, it
+        # would read these and the seeded hooks would be the decoy's.
+        decoy = tmp_path / "decoy-home"
+        (decoy / ".claude").mkdir(parents=True)
+        (decoy / ".claude" / "settings.json").write_text(
+            json.dumps({"hooks": {"Stop": [{"command": "DECOY"}]}})
+        )
+        (decoy / ".claude" / "CLAUDE.md").write_text("# decoy guidance\n")
+        (decoy / ".codex").mkdir(parents=True)
+        (decoy / ".codex" / "AGENTS.md").write_text("# decoy codex\n")
+        decoy_before = _metadata_snapshot(decoy)
+    
+        real_claude_projects = Path.home() / ".claude" / "projects"
+        real_codex_sessions = Path.home() / ".codex" / "sessions"
+        monkeypatch.setattr(Path, "home", _decoy_home(decoy))
+    
+        run = tmp_path / "run"
+        run.mkdir()
+        _launch(home, run, CLAUDE_BACKEND, fence=False, resume_session=CLAUDE_SESSION)
+        _launch(home, run, CODEX_BACKEND, fence=True, resume_session=CODEX_SESSION)
+    
+        assert _metadata_snapshot(decoy) == decoy_before
+        assert _metadata_snapshot(home) == synthetic_before
+        # The seeded hooks are the given operator home's, never the decoy's.
+>       seeded = json.loads((run / "harness" / "settings.json").read_text())
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_harness_home_carries_the_operator_config.py:334: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../../.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/pathlib/__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/pytest-of-mcintos/pytest-11316/test_the_operator_home_is_neve0/run/harness/settings.json')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/tmp/pytest-of-mcintos/pytest-11316/test_the_operator_home_is_neve0/run/harness/settings.json'
+
+../../../../../.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_harness_home_carries_the_operator_config.py::test_a_claude_run_home_carries_the_operator_settings_and_instructions
+FAILED tests/test_harness_home_carries_the_operator_config.py::test_a_lane_that_declares_a_missing_file_seeds_without_it
+FAILED tests/test_harness_home_carries_the_operator_config.py::test_a_claude_resume_places_the_operator_transcript
+FAILED tests/test_harness_home_carries_the_operator_config.py::test_a_fresh_launch_copies_no_transcript
+FAILED tests/test_harness_home_carries_the_operator_config.py::test_the_operator_home_is_never_read_or_written
+5 failed, 6 passed in 0.69s

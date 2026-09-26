@@ -1151,6 +1151,75 @@ exit: 0</pre>
     integration. This anchor was written by the coordinator at merge, because the review
     found the node had not written one.</p>
   </section>
+
+  <section id="s2-harness-home-carry-into-the-fence" data-reckon="section">
+    <h2>&sect;2 follow-up &mdash; the carry cases state the fence they depend on</h2>
+
+    <p><strong>The defect reproduced at base <code>4b0ccd34</code>.</strong> The harness-home
+    carry merged after <code>39fd7a28</code> made workers launch unfenced
+    (<code>FENCE_WORKERS = False</code>) and made <code>launch_plan</code> adopt a run's own
+    harness home only when <code>fence=True</code>. Its tests were written while workers launched
+    fenced, so five cases called <code>_launch(..., fence=False)</code> and then expected a run
+    home. Run against the base the whole file reports
+    <code>5 failed, 6 passed</code>
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-harness-home-carry-opt-in-base.txt</code>).
+    Four fail with <code>KeyError: 'CLAUDE_CONFIG_DIR'</code> at the line that reads the variable
+    the unfenced launch never sets
+    (<code>test_a_claude_run_home_carries_the_operator_settings_and_instructions</code>,
+    <code>test_a_lane_that_declares_a_missing_file_seeds_without_it</code>,
+    <code>test_a_claude_resume_places_the_operator_transcript</code>,
+    <code>test_a_fresh_launch_copies_no_transcript</code>). The fifth,
+    <code>test_the_operator_home_is_never_read_or_written</code>, reaches the filesystem instead
+    and fails with <code>FileNotFoundError</code> on the run home that was never created. One
+    cause underlies both: no harness home is adopted when unfenced.</p>
+
+    <p><strong>The repair: each carry case states its fence.</strong> The four cases that expect a
+    run home now pass <code>fence=True</code>; so does the check that an existing run home file is
+    never overwritten, which was vacuous unfenced because no seeding ran. The never-read-or-written
+    case's claude launch is fenced to match its codex launch. A case that asserts the unfenced
+    behaviour is added &mdash; <code>test_an_unfenced_launch_keeps_the_operators_own_home</code>
+    &mdash; asserting that no harness-home variable is invented, no run home is created, and the
+    argv names no fence, which is what "the operator home is kept" means for the launch. No
+    product code changed: <code>git diff 4b0ccd34 1854ee37</code> touches only
+    <code>tests/test_harness_home_carries_the_operator_config.py</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/harness-home-carry-opt-in.svg"
+           alt="launch_plan's fence argument splitting into a fenced arm that adopts a run home and sets CLAUDE_CONFIG_DIR, and an unfenced arm that invents no home and keeps the operator's; the five base failures annotate the unfenced arm's held expectation.">
+      <figcaption>The fence gate and the two clauses. Only a fenced launch adopts a run home, so a
+      carry case states <code>fence=True</code>; an unfenced case asserts the operator home is
+      kept.</figcaption>
+    </figure>
+
+    <p><strong>Measure.</strong> The whole file is <code>5 failed, 6 passed</code> at base
+    <code>4b0ccd34</code> and <code>12 passed</code> at head <code>1854ee37</code>, so this change
+    repairs all five named ids and adds none. The five named ids run together pass at head
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-harness-home-carry-opt-in-head.txt</code>).
+    The three files the gate names as neighbours &mdash;
+    <code>tests/test_each_run_owns_its_harness_home.py</code>,
+    <code>tests/test_a_fenced_worker_can_commit.py</code> and <code>tests/test_flight.py</code>
+    &mdash; report <code>94 passed, 2 skipped</code> at head, so they add no failures against base
+    (<code>gate-harness-home-carry-opt-in-neighbours.txt</code>). Both arms ran in this worktree,
+    whose product code is identical at base and head because the change is test-only; the module
+    imported was <code>&lt;worktree&gt;/reckon/__init__.py</code>, named on each log header.</p>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>remove the fence opt-in
+    from the settings-carry case; it must fail again with KeyError CLAUDE_CONFIG_DIR.</em> Applied,
+    exactly that one line reverted to <code>fence=False</code>, the settings-carry case fails with
+    <code>KeyError: 'CLAUDE_CONFIG_DIR'</code> at
+    <code>tests/test_harness_home_carries_the_operator_config.py:177</code>
+    (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-harness-home-carry-opt-in.txt</code>).
+    Without the control the opt-in would not be the reason the case passes. The mutation was
+    reverted; the committed file carries <code>fence=False</code> only in the new unfenced case and
+    in the module's reproduction block.</p>
+
+    <p><strong>Commit.</strong> <code>1854ee37</code>. Evidence:
+    <code>docs/figures/a-worker-cannot-write-your-home/gate-harness-home-carry-opt-in-base.txt</code>,
+    <code>gate-harness-home-carry-opt-in-head.txt</code>,
+    <code>gate-harness-home-carry-opt-in-neighbours.txt</code>,
+    <code>negative-control-harness-home-carry-opt-in.txt</code>, figure
+    <code>/reckon/figures/a-worker-cannot-write-your-home/harness-home-carry-opt-in.svg</code>.</p>
+  </section>
 </main>
 </body>
 </html>
