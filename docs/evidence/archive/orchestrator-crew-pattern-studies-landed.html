@@ -9,8 +9,8 @@
   <meta name="plan-title" content="Orchestrator Crew Pattern Studies — execution evidence">
   <meta name="plan-summary" content="Cumulative measured evidence for the crew pattern studies: each study's measurements, reproduction checks and limits.">
   <meta name="plan-evidence-for" content="orchestrator-crew-pattern-studies">
-  <meta name="plan-verifies" content="orchestrator-crew-pattern-studies#s2,orchestrator-crew-pattern-studies#s6,orchestrator-crew-pattern-studies#s5,orchestrator-crew-pattern-studies#s7">
-  <meta name="plan-commits" content="95b173b8d99858cdaddc58a4d5ecbe08557cd98e,c29fb51e7820d712a4259eceff8e531585939fca,c602d1bed59d33b62e94ee5d4aa689f153ced664">
+  <meta name="plan-verifies" content="orchestrator-crew-pattern-studies#s2,orchestrator-crew-pattern-studies#s6,orchestrator-crew-pattern-studies#s5,orchestrator-crew-pattern-studies#s7,orchestrator-crew-pattern-studies#s3">
+  <meta name="plan-commits" content="95b173b8d99858cdaddc58a4d5ecbe08557cd98e,c29fb51e7820d712a4259eceff8e531585939fca,c602d1bed59d33b62e94ee5d4aa689f153ced664,238963ad,38a9879a">
   <meta name="plan-tags" content="crew,analysis,measurement">
   <meta name="plan-recorded-at" content="2026-09-26">
   <meta name="plan-verdict" content="passed">
@@ -346,6 +346,79 @@
         changed execution strategy require separately owned work. The plan and its driving followup
         remain open.</p>
     </section>
+  <section id="worker-anatomy-census">
+    <h2>Worker anatomy: where turns and context go</h2>
+
+    <p><strong>What was asked.</strong> A census of how crew workers spend turns, attention and
+    context by lane and role, for runs dispatched in the study window, reporting per cell the median
+    and p90 of first-request input tokens, assistant turns, turns before the first file edit, the
+    share of tool calls reading record-keeping material (plan, evidence or research HTML,
+    <code>AGENTS.md</code>, skill files, manifests), the share of file edits by class, the share of
+    wall time inside gate or test commands, and self-verification reads — each with its sample size,
+    stratified by run outcome.</p>
+
+    <p><strong>What landed.</strong>
+    <code>docs/research/data/crew-pattern-review/worker-anatomy/anatomy_census.py</code> reads the run
+    store, the five project ledgers and the run directories for all 2,326 runs dispatched between
+    <code>2026-09-12T00:00:00Z</code> and <code>2026-09-26T10:00:00Z</code> (2,317 streams parsed, 5
+    runs with no stream file, 4 unreadable) and writes <code>anatomy.json</code> beside it;
+    <code>population.json</code> pins the run population, <code>findings.md</code> states the headline
+    figures, <code>run.log</code> is a complete run, and the figure above plots the two clearest
+    structural findings. Commits <code>238963ad</code> (census) and <code>38a9879a</code> (text made
+    standalone).</p>
+
+    <p><strong>Headline — record-keeping against product code.</strong> Of 12,154 edits classified as
+    product or record, <strong>5,361 (44.1 per cent) are record-keeping</strong>: manifest and report
+    files 3,254, plan/evidence/research HTML 1,681, figures 426; against 6,793 product edits (source
+    4,701, tests 2,092). A further 1,519 edits classify as neither. On reads, <strong>14.3 per cent of
+    70,090 tool calls (10,049) read record-keeping material (plan/evidence/research HTML 5,957,
+    manifests 2,048, skill files 1,444, <code>AGENTS.md</code>/<code>CLAUDE.md</code> 600); the share
+    is a floor, since one call that reads several files counts once.</p>
+
+    <table>
+      <caption>Per lane and role: medians, with p90 where it differs materially. Read the
+      denominators, not the blanks.</caption>
+      <thead><tr><th>Cell</th><th>n</th><th>First-request input tokens (median / p90)</th><th>Assistant turns</th><th>Turn of first edit</th><th>Record reads (pooled)</th><th>Gate wall share (pooled)</th></tr></thead>
+      <tbody>
+        <tr><td>clive/implement</td><td>889</td><td>65,611 / 81,345</td><td>88 / 198</td><td>30 / 59</td><td>10.6%</td><td>0.42%</td></tr>
+        <tr><td>clive/review</td><td>772</td><td>64,844 / 80,749</td><td>46.5 / 78</td><td>36 / 61</td><td>6.0%</td><td>0.06%</td></tr>
+        <tr><td>clive/documentation</td><td>73</td><td>72,827 / 118,684</td><td>56 / 122</td><td>32 / 66</td><td>20.5%</td><td>0.01%</td></tr>
+        <tr><td>clive/investigate</td><td>88</td><td>66,535 / 80,152</td><td>56.5 / 104</td><td>30 / 61</td><td>8.0%</td><td>0.0%</td></tr>
+        <tr><td>codex/implement</td><td>232</td><td>unmeasurable (n=8)</td><td>14 / 42</td><td>2 / 4</td><td>16.0%</td><td>0.11% (n=8)</td></tr>
+        <tr><td>codex/review</td><td>94</td><td>unmeasurable (n=7)</td><td>5 / 17</td><td>2 / 3</td><td>18.5%</td><td>0.14% (n=7)</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Two shapes.</strong> The clearest structural finding is the turn shape: clive-dialect
+    workers read before they write (clive/implement reaches its first edit at median turn 30 of 88),
+    while codex-dialect workers write before they read (first edit at median turn 2, finishing in a
+    median of 14 assistant turns against clive's 88, and 5 in review against 46.5). Both shapes reach
+    the same promotion outcomes, so the census states the shapes; which produces the better work is
+    the synthesis node's question, not this one's.</p>
+
+    <p><strong>Proof.</strong> Two consecutive runs of the script are byte-identical
+    (<code>run.log</code>, kept with the artifact). Because the run store grows after the capture
+    instant — an unpinned re-run two minutes apart differed by one run — the population is pinned in
+    <code>population.json</code> and the script reads the pin when it is present. Each stream grammar
+    is proved on one named healthy run: claude grammar
+    <code>r-20260914T160220568583-cca-solve-profile-kernel-count</code> parses to 319 assistant turns,
+    64 tool calls, first edit at turn 112; <code>thread.started</code> grammar
+    <code>r-20260915T041619672372-cca-private-region-figure-and-wedge-audit</code> to 19 turns, 190
+    tool calls, first edit at turn 2. The script refuses to write output if either proof parses to
+    zero turns or zero tool calls, so a silent parser failure cannot produce an empty census. After
+    the final edits, re-running against the committed <code>anatomy.json</code> reproduced it
+    byte-for-byte (log in the run directory).</p>
+
+    <p><strong>Limits, stated rather than smoothed.</strong> First-request input tokens are
+    unmeasurable on the codex grammar, which publishes only a whole-turn usage sum, so those cells are
+    reported as such instead of labelling a whole-run total "first" (the call
+    <code>carryover_census</code> makes). Gate wall share is claude-grammar only, since the codex
+    dialect emits no timestamps. Outcome strata are thin where outcomes are rare — every cell names
+    its <code>n</code> in <code>anatomy.json</code> (48 strata cells). A
+    <code>discarded</code> stratum resolves to zero because <code>crew discard</code> leaves no
+    durable per-run terminal record this census can read; those runs land in
+    <code>no_terminal_record</code> or <code>complete_unpromoted</code>.</p>
+  </section>
   </main>
 </body>
 </html>
