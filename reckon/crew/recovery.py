@@ -151,6 +151,18 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
     }
 )
 
+# Classifications whose remedy decides whether a run's resume path survives.
+# Each one reads the resolved session — pointer, then stream, then the promoted
+# ledger row — rather than the pointer's own session_id field, which lags it:
+# a stopped or abandoned pointer whose stream still names a session resumes
+# with every turn intact, so an advice to discard or redispatch it would throw
+# away a session that is still there. The blocked and interrupted arms have
+# read the resolution since the escape hatch was built; the two disposal arms
+# are what this set adds.
+RESUMPTION_READING_CLASSIFICATIONS = frozenset(
+    {"blocked", INTERRUPTED_RUN_PHASE, "stopped", "abandoned"}
+)
+
 
 REVIEW_NODE_PREFIX = "review-of-"
 
@@ -4126,7 +4138,7 @@ def classify_pointer(
 
     session_resolution = None
     resume_remedy = None
-    if classification in {"blocked", INTERRUPTED_RUN_PHASE}:
+    if classification in RESUMPTION_READING_CLASSIFICATIONS:
         session_resolution = _blocked_session_resolution(record, run_id)
     if classification == INTERRUPTED_RUN_PHASE and session_resolution is not None:
         resume_remedy = _resume_remedy(session_resolution, run_id)
@@ -4163,6 +4175,22 @@ def classify_pointer(
                     f"inspect the worktree at {record.get('worktree')} and launch "
                     "log; no session id is available to resume"
                 )
+    if classification in {"stopped", "abandoned"} and session_resolution is not None:
+        resume_remedy = _resume_remedy(session_resolution, run_id)
+        if resume_remedy is not None:
+            # The run is over as a process but its session still holds every
+            # turn, so the remedy is to continue it rather than discard or
+            # redispatch the work it had already done. An arm whose own advice
+            # is already a resume keeps it: the run holding only a
+            # recovery-derived manifest must still be told to replace that
+            # artifact, which is part of resuming rather than an alternative to
+            # it, and the surviving session is named beside that advice.
+            if not action.startswith("reckon crew resume"):
+                action = resume_remedy["command"]
+            detail = (
+                f"{detail}; session {resume_remedy['session_id']!r} survives in "
+                f"the {resume_remedy['source']} record"
+            )
 
     hold = refusal_block or exhaustion_block or retry_block or budget_hold
     if classification == INTERRUPTED_RUN_PHASE:
@@ -4184,7 +4212,14 @@ def classify_pointer(
     else:
         recovery_classification = classification
     recovery_verb = RECOVERY_VERBS[recovery_classification]
-    if recovery_classification == INTERRUPTED_RUN_PHASE and resume_remedy is not None:
+    if resume_remedy is not None and recovery_classification in {
+        INTERRUPTED_RUN_PHASE,
+        "stopped",
+        "abandoned",
+    }:
+        # These arms otherwise advise disposing of the run — discard it, or
+        # redispatch its work. A session that survives means the turns come
+        # back with it, so continuing is the remedy.
         recovery_verb = "resume"
 
     lifting_condition = None

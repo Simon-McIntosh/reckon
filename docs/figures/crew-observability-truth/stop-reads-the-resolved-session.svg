@@ -1,0 +1,78 @@
+<svg viewBox="0 0 760 524" width="100%" style="max-width:760px" xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-label="Three panels. Top: a timeline of one run. At dispatch the live pointer is written with session_id null; the run's own stream opens and its first record already names the session; only later does the pointer's field get populated. Between the first two moments is the window in which the raw field reads null while the session to continue already exists. A reader that takes the raw field for the authority sees an unresumable run for that whole window. Middle: the three authorities resolve_session reads in order, the live pointer, the run's own stream and the promoted ledger row, with the first that names a session winning; the stopped and abandoned arms now read that resolved value, as the blocked and interrupted arms already did. Bottom: the stopped arm before and after. Before, the remedy was read from the pointer's own field, so a run whose stream still named a session was offered as discardable. Now a session in the pointer, the stream or the ledger turns the action into crew resume and the verb into resume; when nothing resolves, the next action and the verb are exactly what they were, so an absence is reported rather than assumed.">
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #3a3a38; }
+    .h { font-size: 14px; font-weight: 600; fill: #1a1a19; }
+    .lbl { font-size: 11px; }
+    .code { font-family: system-ui; font-size: 10.5px; }
+    .note { font-size: 10.5px; fill: #6b6a63; }
+    .colhead { font-size: 10.5px; fill: #6b6a63; letter-spacing: 0.04em; }
+    .arrow { stroke: #8a8981; stroke-width: 1.4; fill: none; }
+  </style>
+
+  <text x="16" y="24" class="h">A stopped run whose stream still names its session resumes instead of being discarded</text>
+
+  <!-- Panel A: the window in which the raw field lags -->
+  <text x="16" y="52" class="colhead">WHY THE FIELD IS NOT THE AUTHORITY</text>
+
+  <rect x="120" y="76" width="520" height="30" rx="4" fill="#fbeeee" stroke="#c98c8c"/>
+  <text x="128" y="95" class="note">the window: <tspan class="note" font-weight="600">session_id</tspan> reads null while the session to continue already exists</text>
+
+  <line x1="40" y1="122" x2="716" y2="122" stroke="#c9c8be" stroke-width="1.2"/>
+  <line x1="120" y1="112" x2="120" y2="132" stroke="#8a8981" stroke-width="1.2"/>
+  <line x1="400" y1="120" x2="400" y2="134" stroke="#7fa07f" stroke-width="1.6"/>
+  <line x1="640" y1="112" x2="640" y2="132" stroke="#8a8981" stroke-width="1.2"/>
+
+  <text x="16" y="152" class="lbl"><tspan font-weight="600">dispatch</tspan> writes the pointer,</text>
+  <text x="16" y="167" class="lbl">and its session field is empty</text>
+
+  <text x="248" y="152" class="lbl"><tspan font-weight="600">the stream's first record</tspan></text>
+  <text x="248" y="167" class="lbl">already names the session</text>
+
+  <text x="596" y="152" class="lbl"><tspan font-weight="600">re-read later</tspan></text>
+  <text x="596" y="167" class="lbl">the field is populated</text>
+
+  <text x="16" y="196" class="note">A reader that takes the raw field for the authority sees an unresumable run for the whole window &#8212;</text>
+  <text x="16" y="212" class="note">and the standing discard rule is exactly such a reader.</text>
+
+  <!-- Panel B: the authorities that decide -->
+  <text x="16" y="244" class="colhead">WHAT DECIDES THE REMEDY NOW</text>
+
+  <rect x="16" y="256" width="200" height="54" rx="5" fill="#f4f4f0" stroke="#d6d5cb"/>
+  <text x="28" y="275" class="lbl"><tspan font-weight="600">the live pointer</tspan></text>
+  <text x="28" y="291" class="note">its own session field lags</text>
+
+  <line x1="216" y1="283" x2="248" y2="283" class="arrow"/>
+  <path d="M248,283 l-7,-4 v8 z" fill="#8a8981"/>
+
+  <rect x="252" y="256" width="200" height="54" rx="5" fill="#eef7ee" stroke="#7fa07f"/>
+  <text x="264" y="275" class="lbl"><tspan font-weight="600">the run's own stream</tspan></text>
+  <text x="264" y="291" class="note">names it from the first record</text>
+
+  <line x1="452" y1="283" x2="484" y2="283" class="arrow"/>
+  <path d="M484,283 l-7,-4 v8 z" fill="#8a8981"/>
+
+  <rect x="488" y="256" width="200" height="54" rx="5" fill="#f4f4f0" stroke="#d6d5cb"/>
+  <text x="500" y="275" class="lbl"><tspan font-weight="600">the promoted ledger row</tspan></text>
+  <text x="500" y="291" class="note">the durable record, once there is one</text>
+
+  <text x="16" y="330" class="note">One resolver reads those three in order and the first that names a session wins. The stopped and abandoned arms</text>
+  <text x="16" y="346" class="note">now read that value, as the blocked and interrupted arms already did.</text>
+
+  <!-- Panel C: the remedy, before and after -->
+  <text x="16" y="380" class="colhead">THE STOPPED ARM: DISCARD OR CONTINUE</text>
+
+  <rect x="16" y="392" width="352" height="56" rx="5" fill="#fbeeee" stroke="#c98c8c"/>
+  <text x="28" y="411" class="lbl"><tspan font-weight="600">before</tspan> &#8212; decided from the pointer's own field</text>
+  <text x="28" y="428" class="code">inspect the worktree at &lt;path&gt; and discard when safe</text>
+  <text x="28" y="442" class="note">null in the window, so a resumable run was offered as discardable</text>
+
+  <rect x="392" y="392" width="352" height="56" rx="5" fill="#eef7ee" stroke="#7fa07f"/>
+  <text x="404" y="411" class="lbl"><tspan font-weight="600">now</tspan> &#8212; decided from the resolved session</text>
+  <text x="404" y="428" class="code">reckon crew resume --run &lt;id&gt; --advice continue</text>
+  <text x="404" y="442" class="note">verb reads resume; unresolved &#8594; advice unchanged</text>
+
+  <text x="16" y="472" class="note">Measured on a synthesised run whose pointer carries no session: put the decision back on the raw field and the</text>
+  <text x="16" y="488" class="note">resolve-from-stream case reddens; the case with no session in any authority keeps its discard advice and its verb,</text>
+  <text x="16" y="504" class="note">so an absence is reported rather than assumed.</text>
+</svg>

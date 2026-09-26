@@ -2179,6 +2179,136 @@ E implement role       : (clean)</pre>
     <code>negative-control-1.log</code> (the declared mutation and the reddening).</p>
   </section>
 
+<section id="a-stop-reads-the-resolved-session">
+    <h2 id="a-stop-reads-the-resolved-session-h">&sect;1 &mdash; A stopped run reads the resolved session before it is offered as discardable</h2>
+    <p>Recorded 2026-09-26 by the node that repaired it, landed under commit <code>f64e3fa9</code>:
+    95 insertions over <code>reckon/crew/recovery.py</code> and
+    <code>tests/test_crew_recover.py</code>. The followup
+    <code>f-cot-a-pointer-field-lags-the-authority-it-mirrors</code> named the family &mdash; a
+    pointer field that mirrors the stream that resolves it, read as the authority &mdash; and the
+    resumability readers in <code>resume_plan</code> and the same-harness lane change were moved
+    onto the resolver in an earlier session. The arms that were still deciding from the raw field
+    are the two that dispose of a run.</p>
+
+    <p><strong>The defect, reproduced at base <code>3e6115fb</code></strong> before the repair, in a
+    scratch tree cut from that revision whose header prints the imported module file, so a tree
+    falling through to a checkout cannot read as the base arm. Four pointer shapes were probed,
+    every one carrying no <code>session_id</code> on the live pointer and a
+    <code>stream.jsonl</code> whose first record names a session. Three reach the resolver through
+    an arm that already read it; the stopped pointer with no manifest does not. From the log,
+    abridging only field order and long strings:</p>
+    <pre>### stopped + no manifest
+  classification: "stopped"
+  recovery_classification: "stopped"      recovery: "inspect"
+  next_action: "inspect the worktree at &lt;worktree&gt; and discard when safe"
+  detail: "the run was intentionally stopped"
+  session_resolution: null                resume_remedy: null
+
+### the same run with the manifest reporting blocked
+  classification: "blocked"
+  recovery_classification: "held"         recovery: "resume"
+  session_resolution: {"consulted": ["pointer", "stream", "ledger"], "resolved": true,
+                       "source": "stream", "session_id": "01a0635f-62a3-7283-a81b-61cd39bedb60"}
+  resume_remedy: {"command": "reckon crew resume --run &lt;id&gt; --advice continue", &hellip;}</pre>
+    <p>The contrast is inside one run directory: the resolver finds the session in the stream and a
+    remedy exists, and the block-reporting shape reaches both &mdash; while the stopped shape
+    reports <code>session_resolution: null</code> and offers a discard. The abandoned arm was not
+    probed; reading it shows it did not consult the resolver either, and its advice redispatches the
+    work, which is the same loss by a different verb. A grep of the module found no read of
+    a record's own <code>session_id</code> field anywhere; the only session id it reads is the
+    resolver's own answer, inside the remedy builder. So the repair was not to remove a read but to
+    make the stopped and abandoned arms reach the authority the other arms already use.</p>
+
+    <p><strong>Mechanism:</strong> the classifications whose remedy can throw a resume path away
+    are now declared in one place and read the resolved session &mdash; pointer, then the run's own
+    stream and the promoted ledger row, the same resolver the blocked and interrupted arms use
+    &mdash; instead of the pointer's lagging field. A surviving session rewrites the next action to
+    <code>reckon crew resume --run &lt;id&gt; --advice continue</code>, names the source it survived
+    in, and upgrades the verb to <code>resume</code> &mdash; except where the arm's own advice
+    already composes a resume, which it keeps; the interrupted arm keeps the rewrite it already
+    had. A run with no session in any of the three authorities keeps its discard advice, its
+    redispatch advice and its verb exactly as they were, and the row now carries the
+    <code>session_resolution</code> it decided from, so the absence is reported rather than assumed.
+    A blocked run keeps its decision verb: a block is a question to answer, not a resume path to
+    spend.</p>
+
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/stop-reads-the-resolved-session.svg"
+           alt="Three panels. Top: a timeline of one run &#8212; at dispatch the live pointer is written with session_id null, the run's own stream opens and its first record already names the session, and only later does the pointer's field get populated; the window between the first two moments is the window in which the raw field reads null while the session to continue already exists. Middle: the three authorities the resolver reads in order, the live pointer, the run's own stream and the promoted ledger row, with the first that names a session winning. Bottom: the stopped arm before and after &#8212; before, the remedy was read from the pointer's own field, so a run whose stream still named a session was offered as discardable; now a session in any of the three authorities turns the advice and the verb into resume, and when nothing resolves both are exactly what they were."
+           style="max-width:760px;width:100%">
+      <figcaption>The field and the session are two different facts, and the field is the one a
+      reader reaches first. The disposal arms now read the fact.</figcaption>
+    </figure>
+
+    <table>
+      <thead><tr><th>Falsifier half</th><th>Edit</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>the repair is needed</td>
+          <td>the added cases run against the unmodified base module, in a scratch tree cut from
+            <code>3e6115fb</code> whose header prints the imported module file</td>
+          <td><strong>failed</strong> on
+            <code>test_a_stopped_run_names_the_session_its_own_stream_still_holds</code> at its first
+            assertion &#8212; <code>None == '01a0635f-&hellip;'</code> &#8212; and on its sibling with
+            <code>KeyError: 'session_resolution'</code>: <strong>2 failed, 18 deselected</strong>,
+            exit 1</td></tr>
+        <tr><td>the assertion still bites</td>
+          <td>the decision put back on the raw field: the stopped and abandoned arms discard the
+            resolver's answer and key on <code>record.get("session_id")</code>, with the answer's
+            shape preserved so only the declared assertion can move</td>
+          <td><strong>failed</strong> on
+            <code>test_a_stopped_run_names_the_session_its_own_stream_still_holds</code> and
+            <strong>passed</strong> on the no-session-anywhere sibling &#8212; <strong>1 failed, 1
+            passed</strong>, exit 1 &#8212; so the resume the change buys is what the mutation
+            removes, and the absence case keeps its refusal</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Measure:</strong> one invocation over <code>tests/test_crew_recover.py</code>,
+    <code>tests/test_crew_recovery.py</code>, <code>tests/test_recovery_state_typing.py</code> and
+    <code>tests/test_ledger.py</code> (the last named by the crew package's own cross-cutting rule
+    for any node touching the classifier), each arm in its own tree with the header printing the
+    imported module file: <strong>12 failed, 213 passed</strong> at base
+    <code>3e6115fb</code> and <strong>12 failed, 215 passed</strong> at the commit, exit 1 at both
+    arms, <strong>zero added failures</strong> &mdash; the two extra passes are the added cases. The
+    twelve are pre-existing at the base revision and are reported as follow-ons rather than triaged
+    here. The added cases synthesise a run directory under a temporary config home and assert the
+    real crew home gains no live pointer afterwards.</p>
+
+    <p><strong>Negative control, executed:</strong> the red log's first line is the declared
+    mutation, verbatim. The mutation was asserted present exactly once before the edit, and the
+    log's header prints the module file the resolver was read from. Ruff on the two staged files is
+    the identical set of findings at base and at the commit, and the formatting diff is identical
+    modulo line numbers.</p>
+
+    <p><strong>Reviewed, and one arm's own advice repaired:</strong> an independent review of this
+    run scored it 86 with one promotion-blocking finding: on an abandoned run whose terminal pointer
+    holds only a recovery-derived manifest, the resume reading overwrote that arm's own
+    advice &mdash; replace the derived artifact with a worker-written manifest &mdash; with the
+    generic <code>--advice continue</code>. The reading is right and the advice is not an
+    alternative to it, because the manifest still has to be written, so the repair keeps any action
+    that already composes a resume and only then names the surviving session; the verb still reads
+    <code>resume</code>. The case
+    <code>test_an_abandoned_run_keeps_the_derived_manifest_advice_and_resumes</code> builds exactly
+    that shape &mdash; terminal phase, process recorded dead, derived manifest, session in the
+    stream &mdash; and was red at the head before the repair, where the next action was the generic
+    continue. Landed under commit <code>53648e78</code>; the gate over the same four-file cohort
+    reads <strong>12 failed, 216 passed</strong> against the same twelve failure ids, so zero added,
+    and the negative control re-executed over the repaired head reddens both resolve-from-stream
+    assertions &mdash; the stopped case on its session, the abandoned case on its verb &mdash; while
+    the no-session-anywhere sibling keeps its refusal.</p>
+
+    <p><strong>Leaves behind:</strong> whether the merged result holds, which belongs to a
+    separately dispatched verification node; the plan's status and its driving followup, which the
+    coordinator closes rather than this node. Evidence on disk, under
+    <code>~/.config/reckon/crew/reports/reckon/s22-coord/session-resolution-is-the-resumability-authority/</code>:
+    <code>logs/repro-four-shapes-at-base.log</code> (the four shapes, quoted above),
+    <code>logs/added-tests-at-base.log</code> and <code>logs/negative-control.log</code> (the red
+    arms), <code>logs/gate-base.log</code> and <code>logs/gate-head.log</code> (the gate arms before
+    the review), <code>logs/derived-advice-at-head-before-fix.log</code> (the case red at the
+    pre-repair head), <code>logs/gate-head-after-review.log</code> (the gate re-run) and
+    <code>logs/negative-control-after-review.log</code> (the control over the repaired head).</p>
+  </section>
+
 </main>
 </body>
 </html>
