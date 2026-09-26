@@ -652,7 +652,7 @@
         worktree report the foreign repository and make the comparison agree.</p>
 
         <p><strong>Measure.</strong> <code>tests/test_git_shim_checks_the_resolved_repo.py</code>
-        (8 passed at head) drives the real shim through a shell with its directory first on
+        (10 passed at head) drives the real shim through a shell with its directory first on
         <code>PATH</code>: an env-prefixed <code>GIT_DIR</code>, a <code>cd</code>, a
         <code>pushd</code> and a plain <code>-C</code> against another checkout are each
         refused and leave the other checkout's HEAD unchanged; the same verb inside the run
@@ -664,7 +664,7 @@
         green at the head (<code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code>).
         The companions &mdash; <code>tests/test_worker_path_carries_shims.py</code> and
         <code>tests/test_worker_git_guard.py</code> &mdash; are <code>17 passed</code> at base
-        and green within the head arm's <code>25 passed</code> (8 new + 17 companions), so this
+        and green within the head arm's <code>27 passed</code> (10 new + 17 companions), so this
         change adds no failures;
         <code>test_worker_path_carries_shims.py</code> is legitimately changed, because the
         node's whole point is the outside-allocation path, and each arm runs from its own
@@ -679,6 +679,35 @@
         Evidence:
         <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-git-shim</code>,
         figure <code>/reckon/figures/a-worker-cannot-write-your-home/git-shim-resolution.svg</code>.</p>
+
+        <p><strong>Review closed two ways a verb still reached another checkout.</strong> Both are
+        proved by a test that is red before the fix. (1) <em>A repository-config alias was
+        forwarded.</em> The verb test was a deny-list of mutating names, so a name it did not
+        name was forwarded unexamined, and <code>alias.ci=commit</code> in the target
+        repository's own <code>.git/config</code> made <code>git ci --allow-empty -m x</code>
+        commit to a foreign checkout &mdash; invisible in the invocation's argv, because the
+        expansion lives in the repository. The rule is inverted: every verb is mutating unless
+        it is a built-in reader, or one of the multi-purpose verbs in a read form
+        (<code>config --get</code>/<code>--list</code>, <code>branch --list</code>,
+        <code>tag --list</code>, <code>remote -v</code>, <code>stash list</code>,
+        <code>reflog show</code>, <code>worktree list</code>). An alias name is neither, so it
+        is refused without being resolved. (2) <em>A run id carrying a separator read a record
+        outside the live directory.</em> <code>pointer_path</code> does not reduce its
+        argument, so <code>RECKON_RUN_ID=../escape</code> read a record whose
+        <code>worktree</code> field was trusted, and the pre-fix shim followed it into another
+        checkout. A run id that is not a single safe path component is now refused before the
+        pointer is read. Both new tests fail against <code>883a1bb7</code> (the alias case
+        committing to <code>other</code>, the traversal case resetting its HEAD,
+        <code>2 failed, 8 passed</code> at
+        <code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review-red.txt</code>),
+        and the declared negative control &mdash; <em>treat only a named deny-list of verbs as
+        mutating</em> &mdash; restores the alias bypass in a scratch copy
+        (<code>1 failed, 9 passed</code> at
+        <code>negative-control-alias-allowlist.txt</code>, reverted
+        <code>10 passed</code> at <code>negative-control-alias-allowlist-reverted.txt</code>).
+        Lint on the two reviewed files is <code>0 &rarr; 0</code> at both revisions
+        (<code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim-review.txt</code>).
+        Commit <code>9ab5e097</code>.</p>
 
         <p><strong>Scope.</strong> This node delivers the shim, the PATH wiring and the tests.
         Verifying the merged result belongs to a separately dispatched test node, and the

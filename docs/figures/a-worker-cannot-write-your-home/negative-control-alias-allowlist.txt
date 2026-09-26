@@ -1,0 +1,57 @@
+treat only a named deny-list of verbs as mutating
+# negative control: a scratch copy of head 9ab5e097 with mutating_verb's allowlist test
+#   replaced by a deny-list of named verbs (reckon/worker_git_shim.py)
+# tree: /tmp/reckon-gitshim-ncalias
+# command: env -C /tmp/reckon-gitshim-ncalias PYTHONPATH=/tmp/reckon-gitshim-ncalias /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_git_shim_checks_the_resolved_repo.py
+# module.__file__: /tmp/reckon-gitshim-ncalias/reckon/worker_git_shim.py
+........F.                                                               [100%]
+=================================== FAILURES ===================================
+___________ test_an_alias_in_the_target_repository_config_is_refused ___________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11289/test_an_alias_in_the_target_re0/home'), 'worktree': PosixPath(...ytest-11289/test_an_alias_in_the_target_re0/other'), 'first_worktree': '79ee0373162b138201f07d77fc47486358deff77', ...}
+
+    def test_an_alias_in_the_target_repository_config_is_refused(
+        repos: dict[str, Any],
+    ) -> None:
+        """A verb the target repository aliases to a writer is refused.
+    
+        The alias lives in the repository's own config, so the shim cannot see it in
+        the invocation's argv. The rule is an allowlist for that reason: a name that
+        is not a built-in reader is refused whether it expands to a reader or a
+        writer, because a deny-list would have to know the name in advance.
+        """
+        home, other = repos["home"], repos["other"]
+        configured = _git_run(["config", "alias.ci", "commit"], cwd=other, home=home)
+        assert configured.returncode == 0, configured.stderr
+        before = _head(other, home)
+        assert before != repos["first_other"]
+    
+        result = _shell(
+            f"git -C {other} ci --allow-empty -m bypass",
+            cwd=home,
+            home=home,
+        )
+    
+>       _assert_refused(result, repo=other, worktree=repos["worktree"])
+
+tests/test_git_shim_checks_the_resolved_repo.py:308: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11289/test_an_alias_in_the_target_re0/other ci --allow-empty -m bypass'], returncode=0, stdout='[master b9b940e] bypass\n', stderr='')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11289/test_an_alias_in_the_target_re0/other')
+worktree = PosixPath('/tmp/pytest-of-mcintos/pytest-11289/test_an_alias_in_the_target_re0/worktree')
+
+    def _assert_refused(
+        result: subprocess.CompletedProcess[str], *, repo: Path, worktree: Path
+    ) -> None:
+        """A refusal exits with its own status and names run, worktree and target."""
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11289/test_an_alias_in_the_target_re0/other ci --allow-empty -m bypass'], returncode=0, stdout='[master b9b940e] bypass\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:155: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_an_alias_in_the_target_repository_config_is_refused
+1 failed, 9 passed in 4.07s
+EXIT=1

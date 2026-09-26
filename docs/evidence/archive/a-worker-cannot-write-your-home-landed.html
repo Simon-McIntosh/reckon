@@ -1114,15 +1114,18 @@ exit: 0</pre>
     </figure>
 
     <table>
-      <caption>The measure: base <code>7f97afda</code>, head <code>fd521f3c</code>. Each arm
-      ran in its own tree so the <code>reckon</code> imported is the tree under test.</caption>
+      <caption>The measure: base <code>7f97afda</code>, first head <code>fd521f3c</code>,
+      review head <code>9ab5e097</code>. Each arm ran in its own tree so the
+      <code>reckon</code> imported is the tree under test.</caption>
       <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
       <tbody>
         <tr><td>new shim suite, base tree (module absent)</td><td><code>1 error</code> at collection</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-red-at-base.txt</code></td></tr>
-        <tr><td>new shim suite, head tree</td><td><code>8 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code></td></tr>
+        <tr><td>new shim suite at the first head</td><td><code>8 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code></td></tr>
+        <tr><td>the companions inside that same arm</td><td><code>17 of 25 passed</code> (25 = 8 new + 17 companions)</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code></td></tr>
         <tr><td>companions (<code>test_worker_path_carries_shims</code>, <code>test_worker_git_guard</code>), base</td><td><code>17 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-base.txt</code></td></tr>
-        <tr><td>the same companions inside the head arm</td><td><code>17 of 25 passed</code> (25 = 8 new + 17 companions)</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code></td></tr>
-        <tr><td>lint on complete trees (<code>dispatch.py</code>)</td><td><code>7 &rarr; 7</code>, no finding added</td><td><code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim.txt</code></td></tr>
+        <tr><td>new shim suite at the review head</td><td><code>10 passed</code> (<code>27</code> with the companions)</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review-head.txt</code></td></tr>
+        <tr><td>the two review tests against the pre-fix head</td><td><code>2 failed, 8 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review-red.txt</code></td></tr>
+        <tr><td>lint on complete trees</td><td><code>dispatch.py</code> <code>7 &rarr; 7</code>; both reviewed files <code>0 &rarr; 0</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim.txt</code></td></tr>
       </tbody>
     </table>
 
@@ -1134,6 +1137,26 @@ exit: 0</pre>
     the mutation reverted is <code>8 passed</code>
     (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-git-shim.txt</code>,
     <code>negative-control-git-shim-reverted.txt</code>).</p>
+
+    <p><strong>A review closed two ways a verb still reached another checkout</strong>
+    (commit <code>9ab5e097</code>), each by a test that is red before the fix. A verb the
+    target repository's own config aliases to a writer was forwarded, because the test was a
+    deny-list of mutating names: <code>alias.ci=commit</code> plus <code>git ci --allow-empty
+    -m x</code> committed to a foreign checkout, and the expansion lives in the repository
+    rather than the argv, so nothing the shim read named it. The rule is inverted to an
+    allowlist &mdash; every verb is mutating unless it is a built-in reader or a
+    multi-purpose verb in a read form &mdash; so an alias is refused without being resolved.
+    Separately, <code>pointer_path</code> does not reduce its argument, so
+    <code>RECKON_RUN_ID=../escape</code> read a record outside the live directory whose
+    <code>worktree</code> field was trusted; a run id that is not a single safe path component
+    is now refused before the pointer is read. The declared negative control &mdash; <em>treat
+    only a named deny-list of verbs as mutating</em> &mdash; restores the alias bypass
+    (<code>1 failed, 9 passed</code> at
+    <code>docs/figures/a-worker-cannot-write-your-home/negative-control-alias-allowlist.txt</code>),
+    and the reverted tree is <code>10 passed</code>
+    (<code>negative-control-alias-allowlist-reverted.txt</code>). Lint on the two reviewed
+    files is <code>0 &rarr; 0</code> at the pre-fix and post-fix revisions
+    (<code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim-review.txt</code>).</p>
 
     <p><strong>Scope stated.</strong> This node delivers the shim, the PATH wiring and the
     tests. Verifying the merged result belongs to a separately dispatched test node, and the
