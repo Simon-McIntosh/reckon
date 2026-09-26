@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 640" width="980" height="640" role="img" aria-labelledby="t d">
+  <title id="t">Every arming route carries the log path on the argv, and rotation re-points the descriptors</title>
+  <desc id="d">Left panel: three routes that arm a watcher. The direct spawn, the dispatch admission route and the fleet-delegated route all build one argv whose second and third arguments are the log variable name and the log path; the fleet route hands that argv to the allocation's batch step, which starts it from the batch step's own environment, so the path survives only because it rides the argv. The supervisor the argv starts exports the variable and waits on the supervisor's child, the watcher, which adopts the path when it takes its seat. Right panel: the log rotates at 2 MiB, and the watcher re-points file descriptors 1 and 2 at the new file, so a traceback or an unbuffered library write still lands in the file a reader opens.</desc>
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f7f8fa; stroke: #4a5568; stroke-width: 1.5; rx: 6; }
+    .bad { fill: #fdecec; stroke: #b03030; stroke-width: 1.5; rx: 6; }
+    .good { fill: #eef7ef; stroke: #2f8f4e; stroke-width: 1.5; rx: 6; }
+    .lbl { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 13px; fill: #1a202c; }
+    .dim { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 11px; fill: #5a6472; }
+    .head { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #1a202c; }
+    .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 11px; fill: #1a202c; }
+    .flow { stroke: #4a5568; stroke-width: 1.5; fill: none; marker-end: url(#arw); }
+    .badflow { stroke: #b03030; stroke-width: 1.5; fill: none; marker-end: url(#arwr); stroke-dasharray: 5 4; }
+    .goodflow { stroke: #2f8f4e; stroke-width: 1.5; fill: none; marker-end: url(#arwg); }
+  </style>
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a5568"/>
+    </marker>
+    <marker id="arwr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b03030"/>
+    </marker>
+    <marker id="arwg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f8f4e"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="980" height="640"/>
+  <text class="head" x="24" y="30">One argv, three arming routes</text>
+
+  <rect class="box" x="24" y="48" width="248" height="66"/>
+  <text class="lbl" x="40" y="72">direct spawn</text>
+  <text class="dim" x="40" y="90">_start_watch_producer runs the argv</text>
+  <text class="dim" x="40" y="104">from its own environment</text>
+
+  <rect class="box" x="24" y="128" width="248" height="66"/>
+  <text class="lbl" x="40" y="152">dispatch admission</text>
+  <text class="dim" x="40" y="170">_ensure_watch_producer, the guard's</text>
+  <text class="dim" x="40" y="184">own arming, named no log at all</text>
+
+  <rect class="box" x="24" y="208" width="248" height="80"/>
+  <text class="lbl" x="40" y="232">fleet-delegated</text>
+  <text class="dim" x="40" y="250">the argv goes to the batch step,</text>
+  <text class="dim" x="40" y="264">which starts it from ITS OWN</text>
+  <text class="dim" x="40" y="278">environment, not the arming's</text>
+
+  <rect class="good" x="336" y="128" width="286" height="80"/>
+  <text class="lbl" x="352" y="152">one argv</text>
+  <text class="mono" x="352" y="172">python -c SUPERVISOR</text>
+  <text class="mono" x="352" y="188">  RECKON_WATCH_LOG &lt;log-path&gt; reckon crew watch</text>
+
+  <path class="flow" d="M 272 81 L 300 81 L 300 158 L 336 158"/>
+  <path class="flow" d="M 272 161 L 336 161"/>
+  <path class="flow" d="M 272 248 L 300 248 L 300 180 L 336 180"/>
+
+  <rect class="good" x="336" y="240" width="286" height="112"/>
+  <text class="lbl" x="352" y="264">the supervisor it starts</text>
+  <text class="mono" x="352" y="284">os.environ[argv[1]] = argv[2]</text>
+  <text class="dim" x="352" y="302">exports the path, then waits on the child</text>
+  <text class="dim" x="352" y="318">it starts: the watcher, which adopts the</text>
+  <text class="dim" x="352" y="332">path as it takes its seat</text>
+
+  <path class="flow" d="M 479 208 L 479 240"/>
+
+  <rect class="box" x="686" y="128" width="270" height="66"/>
+  <text class="lbl" x="702" y="152">watch-reckon-watch-&lt;project&gt;.log</text>
+  <text class="dim" x="702" y="170">the one file both the unit route and</text>
+  <text class="dim" x="702" y="184">the unmanaged route resolve</text>
+
+  <path class="flow" d="M 622 168 L 686 161"/>
+  <text class="dim" x="624" y="150">writes</text>
+
+  <text class="head" x="24" y="358">Rotation re-points the descriptors</text>
+
+  <rect class="bad" x="24" y="376" width="446" height="118"/>
+  <text class="lbl" x="40" y="400">pointed once, never re-pointed</text>
+  <text class="dim" x="40" y="420">fd 1 and fd 2 keep the inode the rotation</text>
+  <text class="dim" x="40" y="434">renamed to .1, so a traceback or a library's</text>
+  <text class="dim" x="40" y="448">unbuffered write lands in a file nothing</text>
+  <text class="dim" x="40" y="462">reads, or in one rotation discards</text>
+  <text class="mono" x="40" y="482">red at 7ddc2a4b: "a write through fd 1 was lost"</text>
+
+  <rect class="good" x="510" y="376" width="446" height="118"/>
+  <text class="lbl" x="526" y="400">re-pointed on every rotation</text>
+  <text class="dim" x="526" y="420">_rotate_if_needed renames the file, opens</text>
+  <text class="dim" x="526" y="434">the new one, and dup2's fd 1 and fd 2 onto</text>
+  <text class="dim" x="526" y="448">the new file before writing continues</text>
+  <text class="mono" x="526" y="482">green at head: all three markers in the current log</text>
+
+  <path class="badflow" d="M 470 435 L 510 435"/>
+  <path class="goodflow" d="M 470 447 L 510 447"/>
+
+  <text class="head" x="24" y="534">Measured at the base revision and at the head</text>
+  <text class="dim" x="24" y="556">base 7ddc2a4b, the new checks: 3 failed, 45 passed across the watch, seat and dispatch arming files.</text>
+  <text class="dim" x="24" y="574">head c94e7ee3, the same files: 48 passed. The three failures are the three defects, each on the assertion that names it.</text>
+  <text class="dim" x="24" y="598">negative control: with the re-point removed from _rotate_if_needed only the rotation check fails, so the guard is the assertion that fires.</text>
+  <text class="dim" x="24" y="620">Source: reckon/crew/runs.py, reckon/crew/dispatch.py, tests/test_unmanaged_producer_keeps_a_log.py.</text>
+</svg>
