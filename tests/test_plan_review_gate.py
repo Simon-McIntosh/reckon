@@ -398,6 +398,60 @@ def test_dry_run_names_the_plan_review_error_key(
     assert "fixture" in payload["detail"]
 
 
+def test_launch_path_names_the_plan_review_error_key(
+    reviewed_project: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The launching path reports the missing review under the same key.
+
+    The dry-run case beside this one asserts the mapping on the validating
+    branch; the launching branch is a separate ``except`` clause, so a change
+    to one would leave the other answering a different error key. No worker is
+    spawned: the review gate refuses inside ``plan_dispatch``, before a
+    worktree, pointer or ledger row exists.
+    """
+    _config_home, repo, _plan_path = reviewed_project
+    monkeypatch.setattr(
+        cli_module,
+        "_resolved_flight",
+        lambda *args, **kwargs: {**CONFIG, "plan_review_gate": "enforce"},
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--section",
+            "delivery",
+            "--role",
+            "implement",
+            "--spec-level",
+            "exact",
+            "--node",
+            "launch-delivery",
+            "--goal",
+            "ship one measured change",
+            "--done-when",
+            "pytest reports one passing plan review gate case",
+            "--write-path",
+            "src/change.py",
+            "--session",
+            "launch-session",
+            "--repo",
+            str(repo),
+        ],
+    )
+
+    payload = json.loads(result.stdout.splitlines()[0])
+    assert result.exit_code == 4
+    assert payload["error"] == "plan-review-missing"
+    assert "fixture" in payload["detail"]
+
+
 def test_dry_run_in_report_only_mode_admits_and_carries_the_warning(
     reviewed_project: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
