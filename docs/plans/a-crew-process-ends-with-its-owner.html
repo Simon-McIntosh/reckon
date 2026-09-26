@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="82">
+<meta name="plan-version" content="83">
 <meta name="plan-impl" content="0.65">
 </head>
 <body>
@@ -1019,6 +1019,11 @@
 <article class="r-fu" data-id="f-acpewio-predecessor-commits-reach-the-ledger" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26T14:40:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">A predecessor&#x27;s commits carried by a follow-on reach the ledger</h4>
     <div class="r-fu-body"><p>When a run is discarded to free its claim and a follow-on node is dispatched on its head, the predecessor's commits reach main through the follow-on's merge. They have no ledger row, because the predecessor was never promoted and <code>complete</code> refuses to cite commits at or before the follow-on's base. Measured three times on 2026-09-26: context-estimate-reads-declared-files (<code>318ec2b6</code>, carried by context-estimate-tests-assert-fixed-figures), fence-never-grants-a-main-git-dir (<code>74e6c86d</code> and <code>7f68e6cc</code>, carried by a-fence-refuses-a-protected-worktree), and s23's first unmanaged-producer node (<code>75007b74</code> and <code>7ddc2a4b</code>). The ledger then undercounts landed work and loses its provenance. A follow-on should record the predecessor's commits it carries, or a discarded run whose commits later land should be promotable after the fact.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
+    </article>
+<article class="r-fu" data-id="f-acpewio-nongit-test-stays-outside-a-repo" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26T16:15:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The non-git promotion test cannot commit into an enclosing repository</h4>
+    <div class="r-fu-body"><p><code>tests/test_crew_promotion.py::test_a_checkout_that_cannot_commit_refuses_before_any_store_is_written</code> (near line 1623) builds a directory it treats as a non-git checkout, <code>tmp_path / 'nongit'</code>, and drives a real promotion there. Git discovers a repository by walking up, so when pytest's basetemp sits inside a repository, the promotion finds the enclosing repo and commits into it. On 2026-09-26 complete-refuses-a-live-run ran pytest with <code>--basetemp=bt-after</code> inside its worktree, and the test committed a fake promote and release (<code>ca3d7ca3</code>, <code>aeabb778</code>) with <code>bt-after/</code> scratch into the worker's branch. Its review caught it before merge. Run with a basetemp inside the main checkout, it would commit into main. The test should set <code>GIT_CEILING_DIRECTORIES</code> to the parent of its non-git root, or assert that <code>git rev-parse</code> fails there, so it can never reach an enclosing repository. Worker briefs should also say never to put a basetemp inside a repository.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
     </article>
 </section>
