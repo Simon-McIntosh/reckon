@@ -31,16 +31,19 @@
         minutes per run in August. When review became mandatory on 21 September, the review share of promotions went
         from 25% to 57%, promotions rose 77% and source lines landed fell 27% (§4).</li>
       <li><strong>Where the time goes.</strong> Serial reviews with one repair node per finding, a local lane run at
-        twice its generation width, merge conflicts in record files every node shares, and refusals about wording
-        and bookkeeping. 44% of worker file edits are record-keeping (§5).</li>
+        twice its generation width, merge conflicts in record files every node shares (38% of documentation merges
+        conflict), and refusals — a third of all dispatch and promotion attempts are refused. 44% of worker file edits
+        are record-keeping, and a coordinator spends 21.6 responses on each promoted run (§5).</li>
       <li><strong>Quality.</strong> Better-verified, not better-designed: each node is locally correct, and nothing
         owns the codebase between nodes (§6).</li>
       <li><strong>Code.</strong> Exclusive write scopes make a private copy the cheapest compliant move: 44
         timestamp parsers and 14 atomic JSON writers in reckon, and a crew interface that grew 226% in three weeks
         (§7).</li>
-      <li><strong>nova.</strong> No broad rise in flapping, and no lane difference in churn; the regression is in
-        where effort went — nine commits in ten touching no code in the latest week — and in the evidence: 103 of
-        348 fleet-made figures misrepresent their physics (§8).</li>
+      <li><strong>nova.</strong> No broad rise in flapping, and no lane difference in churn. Readiness did go
+        backwards, through the process: the default test command stopped at collection and ran no test from
+        29 August to at least 19 September while nodes promoted on their own targeted gates; lint findings doubled;
+        nine commits in ten touched no code in the latest week; and 103 of 348 fleet-made figures misrepresent
+        their physics (§8).</li>
       <li><strong>Weight.</strong> 49,000 words of binding instruction before a coordinator reads a plan; reckon
         opened 60 plans and closed 9; half the fleet's promotions are reckon working on itself (§9).</li>
     </ul>
@@ -55,7 +58,8 @@
       forty minutes and reproduced verbatim in §13. <strong>Six measured studies</strong>, dispatched as crew nodes
       under <a href="/reckon/plans/orchestrator-crew-pattern-studies">orchestrator-crew-pattern-studies</a> — three
       on the codex lane (velocity, code depth and reuse, nova history) and three on the local lane (worker anatomy,
-      coordinator overhead, nova readiness) — each writing a census script that reproduces its compact output byte
+      coordinator overhead, nova readiness), of which the last two spent their fences in the local lane's queue and
+      were moved to codex to finish, and the readiness study completed only partially — each writing a census script that reproduces its compact output byte
       for byte, over the closed window 2026-09-12T00:00Z to 2026-09-26T10:00Z so that growing ledgers cannot move
       the counts. The August figures come from the
       <a href="/reckon/research/crew-fleet-rox-review">return-on-experience review</a> and are quoted, not re-derived.
@@ -247,6 +251,12 @@
       </tbody>
     </table>
 
+    <figure>
+      <img src="/reckon/figures/crew-pattern-review-velocity/durable-product-lines.png" alt="Durable product additions by landing day and lane above gross source and test additions; codex dominates until 16 September, clive afterwards.">
+      <figcaption>Product lines still present seven days after landing, by day and lane (top), and gross source plus
+        test additions for context (bottom). Days after 19 September have no seven-day result yet. From the velocity
+        census.</figcaption>
+    </figure>
     <p><strong>The local lane carried 80% of the fleet at about a seventh of codex's durable rate per
       worker-hour.</strong> That comparison is observational — the lanes took different work in different
       projects, and codex was paused for most of the second week — but it is large, and it is consistent with
@@ -281,6 +291,35 @@
       <code>AGENTS.md</code>. The two lanes also work differently: the local model reads for 30 turns before its first
       edit, codex edits on its second turn and finishes in a sixth of the turns. The turn grammars differ, so the turn
       counts compare shapes rather than effort.</p>
+    <h3>Inside the coordinator</h3>
+    <p>The coordinator-overhead census (<a href="/reckon/plans/orchestrator-crew-pattern-studies#s4">study §4</a>)
+      read 38 coordinator transcripts covering 1,789 of the window's 2,182 promoted runs (the other 14 sessions had
+      no usable transcript and are excluded, not zeroed).</p>
+    <table>
+      <thead><tr><th>Per promoted run</th><th>Figure</th></tr></thead>
+      <tbody>
+        <tr><td>Coordinator API responses</td><td>21.6 (38,699 over 1,789)</td></tr>
+        <tr><td>Coordinator logical input tokens, of which 99% cache reads</td><td>11.4 million</td></tr>
+        <tr><td>Coordinator output tokens</td><td>15,668</td></tr>
+        <tr><td>Tool calls: git and merges</td><td>3.13</td></tr>
+        <tr><td>Tool calls: reading diffs, manifests and gate logs</td><td>2.73</td></tr>
+        <tr><td>Tool calls: crew reads and MCP views</td><td>2.67</td></tr>
+        <tr><td>Tool calls: dispatch, resume and redispatch</td><td>1.60</td></tr>
+        <tr><td>Tool calls: promotion</td><td>1.17</td></tr>
+        <tr><td>Tool calls: plan, evidence and research edits</td><td>1.02</td></tr>
+        <tr><td>Tool calls: other shell work</td><td>6.63</td></tr>
+      </tbody>
+    </table>
+    <p><strong>A third of dispatch and promotion attempts are refused.</strong> The census observed 320 dispatch
+      refusals against 778 successful dispatches, and 338 promotion refusals against 486 successful promotions — lower
+      bounds, because clipped shell output hides some. Recovering the same target took a mean 12.5 coordinator
+      responses after a dispatch refusal and 14.8 after a promotion refusal. The most common dispatch refusals were
+      unstructured CLI errors (76), contract-lint refusals (71) and scope conflicts (40); the most common promotion
+      refusals were commit-record mismatches (67), missing gate receipts (52), negative-control mismatches (41) and
+      impl-did-not-move (39). And 415 of 1,086 merges that changed plan or evidence HTML across the five primary
+      branches (38%) conflict when their recorded parents are replayed — reckon 177 of 449, nova 99 of 229. The
+      coordinator is not idle and not reckless; it spends most of each landing on git, on reading, and on getting past
+      the tool.</p>
     <h3>Between workers</h3>
     <p>Wall clock between dispatch and promotion is dominated by three waits that are not work. The local lane is
       driven at about twice its width: at both readings taken during this review the router gate held 14 requests in
@@ -312,7 +351,10 @@
       review found — forty-four timestamp parsers, fourteen atomic writers, an interface that doubled in three
       weeks (§7); 103 nova figures that misrepresent their physics (§8) — are exactly the kind that no per-node
       gate or per-diff review can see, because each node's diff is locally correct. The pattern verifies nodes;
-      nothing in it owns the codebase.</p>
+      nothing in it owns the codebase. The plainest instance is nova: its default test command stopped at
+      collection and ran no test from 29 August to at least 19 September, and nodes kept promoting throughout,
+      each on the targeted tests its own brief named (§8). The integrated-gate re-run checks a run's own gate at the
+      merged head; nothing checks the project's.</p>
 
     <h2 id="s7">§7 — Code quality: depth, interface width and reuse</h2>
     <p>The lead's standard is deep modules behind small interfaces, and no reimplementation of what already
@@ -337,6 +379,11 @@
       </tbody>
     </table>
 
+    <figure>
+      <img src="/reckon/figures/orchestrator-crew-pattern-studies/code-depth-trends.png" alt="Left: clone share of source lines by week for reckon, reckon/crew and nova; crew rises from 5.5% to 7.1%. Right: public definition count indexed to 5 September; crew reaches 326, reckon 183, nova 106.">
+      <figcaption>Clone share of token-bearing source lines (left) and public definitions indexed to the 5 September
+        snapshot (right), for reckon, its crew package and nova. From the code-depth census.</figcaption>
+    </figure>
     <p><strong>reckon is not shallow in the pass-through sense, and it is getting wider much faster than it is
       getting deeper.</strong> Pure forwarding functions are rare (0.8% of reckon's functions) and function
       lengths are ordinary. What moved is the interface: reckon's public definitions grew 83% in three weeks
@@ -374,6 +421,10 @@
       accelerating pattern.</p>
 
     <h2 id="s8">§8 — nova: flapping, readiness and evidence</h2>
+    <p><strong>In short:</strong> the lead's sense that nova went backwards is right, but not for the reason
+      suspected. Code did not flap more under the local lane. Readiness regressed through the process: the default
+      test command could not run for four weeks while nodes promoted on their own targeted gates, lint findings
+      doubled, and nearly a third of the fleet's nova figures misrepresent their physics.</p>
     <p>The lead's impression is that recent local-lane work in nova has been <em>flapping</em> — rewriting the
       same code back and forth — so that the solver's overall quality and readiness have gone backwards. Three
       instruments bear on it: the history census (<a href="/reckon/plans/orchestrator-crew-pattern-studies#s6">study
@@ -398,6 +449,35 @@
       and retired, 1,327 lines deleted within a week, all codex. Four hot files — <code>fixed_point.py</code>,
       <code>forward.py</code>, <code>forward_operator.py</code>, <code>topology.py</code> — changed in every one
       of the six weeks, and 95 functions changed in three or more.</p>
+
+    <h3>Readiness: the default test command ran nothing for four weeks</h3>
+    <p>The readiness census extracted nova at six weekly commits and ran its own default fast lane
+      (<code>pytest</code> with its configured <code>-m 'not slow'</code>) against the shared environment. It
+      completed partially, and the part it completed is the sharpest readiness finding of this review.</p>
+    <table>
+      <thead><tr><th>Snapshot</th><th>Selected tests</th><th>Collection errors</th><th>Ruff findings</th><th>Skip markers</th><th>Python files</th></tr></thead>
+      <tbody>
+        <tr><td>22 Aug</td><td>5,612</td><td>1</td><td>95</td><td>59</td><td>711</td></tr>
+        <tr><td>29 Aug</td><td>6,044</td><td>10</td><td>95</td><td>62</td><td>789</td></tr>
+        <tr><td>5 Sep</td><td>6,385</td><td>10</td><td>95</td><td>66</td><td>849</td></tr>
+        <tr><td>12 Sep</td><td>6,732</td><td>10</td><td>100</td><td>84</td><td>910</td></tr>
+        <tr><td>19 Sep</td><td>6,952</td><td>10</td><td>121</td><td>88</td><td>938</td></tr>
+        <tr><td>26 Sep (head)</td><td>7,273</td><td>none; collects</td><td>201</td><td>93</td><td>983</td></tr>
+      </tbody>
+    </table>
+    <p><strong>From 29 August to at least 19 September, nova's default test command stopped at collection and ran
+      no test.</strong> Ten collection errors — five test modules importing <code>_separatrix</code> from a benchmark
+      module that no longer exported it — interrupted every run. The break predates the local lane's first nova code
+      landing (5 September), and it is repaired at head. Through those four weeks nodes kept promoting on gates
+      that ran the tests their own briefs named, and none of those gates ran the lane a reader would call "the
+      tests". At head the lane collects 7,273 tests; the census's run was stopped by an inherited 25-minute bound
+      after 1,218 outcomes — 1,204 passed and 14 failed, 16.7% of the way through — so the full lane is a
+      multi-hour run that no node can afford as a gate. Lint findings under one configuration doubled from 95 to
+      201, most of the rise in the last week (121 to 201), and skip markers grew from 59 to 93. The full head run,
+      the 14 failures and a fast lane a node can run belong to nova, and are now a node of
+      <a href="/nova/plans/nova-portfolio-replan">nova-portfolio-replan</a> §4. This study's own measure did not
+      complete because its brief gave no whole-run budget that fits nova's lane; it is recorded as failed, with its
+      partial evidence merged.</p>
 
     <h3>Where nova's effort went instead</h3>
     <p>The stronger signal is not reversal but displacement. In the week beginning 19 September nova landed 872
@@ -446,7 +526,18 @@
       needs, and a port override to push from a compute node. After dispatch, the default scope widened every one
       of the six nodes to the same plan file, the same cumulative evidence record and the same figure directory —
       the precise conflict the survey ranks first — and each completed run's review was dispatched by the reflex
-      before the coordinator could correct it, then demanded again at the corrected head.</p>
+      before the coordinator could correct it, then demanded again at the corrected head.
+      Integrating the first three studies took two add/add conflicts on the shared evidence record, a
+      fast-forward refused because main had moved, three refused promotions — a review keyed to the
+      pre-correction head, a live peer worker's uncommitted edit to the shared record, a missing gate-log path —
+      and four promotion waivers. Two of the three local-lane studies spent their whole 55-minute fence queueing and were
+      moved to codex to finish. The read-back reviews of the eight new plans were first refused because one run
+      was waiting on its own in-flight review, and four then died at launch on a 503 from the local lane's model
+      catalog; the discarded runs left their worktrees behind, so their node ids could not be reused.</p>
+    <p><strong>Who writes the memory.</strong> During this review three entries appeared in the reckon project's
+      persistent Claude memory, written by worker sessions rather than any coordinator. They were accurate, but the
+      store is shared by every session in the repository, unreviewed, and outside version control — the property
+      the global guardrails already warn about.</p>
     <p><strong>The backlog.</strong> reckon opened 60 plans in the fortnight and closed 9; the four August weeks
       closed about nine in ten of what they opened. 62 reckon plans are pending, most of them about the crew
       itself. A system whose largest customer is itself, and which answers every measured defect with another
@@ -491,8 +582,10 @@
         node's ceremony like a feature's.</dd>
 
       <dt>Are the orchestrators doing too much or too little?</dt>
-      <dd>Too much bookkeeping and too little ownership. They spend their turns on promotion beats, conflict unions
-        and refusals; nobody owns the codebase between nodes, which is why a pattern that verifies each node still
+      <dd>Too much bookkeeping and too little ownership. A coordinator spends 21.6 responses and about twenty tool
+        calls on each promoted run — more on git and merges (3.1) and on reading diffs and logs (2.7) than on
+        dispatching (1.6) — and a third of its dispatch and promotion attempts are refused (§5). They spend their turns
+        on promotion beats, conflict unions and refusals; nobody owns the codebase between nodes, which is why a pattern that verifies each node still
         reimplements the same helper forty-four times (§7). The first half is fixed by the S25 plans; the second
         needs a shared-primitive home and a copy detector at promotion rather than more coordinator reading.</dd>
 
@@ -523,13 +616,14 @@
       <thead><tr><th>Fix — it costs more than it returns</th><th>Evidence</th></tr></thead>
       <tbody>
         <tr><td>Mandatory review of every node, serially, one repair node per finding</td><td>Review share 25% → 57% of promotions from 21 Sep while source output fell 27%; a 20-minute edit took 5 implement plus 5 review nodes (ambix); docs reviews repair 1 in 40.</td></tr>
-        <tr><td>Every node writes the same plan file and cumulative evidence record</td><td>Conflicts "on every merge" (s21, s23, ambix); reproduced by this review's own six nodes, all granted the same three paths.</td></tr>
+        <tr><td>Every node writes the same plan file and cumulative evidence record</td><td>415 of 1,086 documentation merges (38%) conflict on replay across five branches; "on every merge" (s21, s23, ambix); reproduced by this review's own six nodes, all granted the same three paths.</td></tr>
         <tr><td>Record-keeping sized for features on every node</td><td>5.35 record lines per product line; reckon's HTML record 1.9× its source; census workers committing 4–17 MB of JSON.</td></tr>
-        <tr><td>Refusals about wording and bookkeeping</td><td>~8 dispatches lost to the goal lint (s21), "TODO" refused inside a done-when (this review), impl-move waivers on every other corrective (s23).</td></tr>
+        <tr><td>Refusals about wording and bookkeeping</td><td>658 refusals against 1,264 successes across dispatch and promotion (34%), 12–15 coordinator responses to recover each; ~8 dispatches lost to the goal lint (s21); "TODO" refused inside a done-when (this review).</td></tr>
         <tr><td>Exclusive scope with no shared-primitive home</td><td>44 timestamp parsers, 14 atomic writers, crew clone share 5.5% → 7.1%.</td></tr>
         <tr><td>Every lesson becomes a flag, a refusal or a paragraph</td><td>Crew public definitions +226% in three weeks; skill text 3×; 23 refusal families; 49,000 words before the first dispatch.</td></tr>
         <tr><td>Local lane driven at twice its width</td><td>Router gate 14 wide with 11–15 requests queued at every reading today; clive median 51 minutes to completion against codex's 23.</td></tr>
         <tr><td>Opening plans faster than closing them</td><td>60 opened, 9 closed in the fortnight; 62 pending in reckon; 48% of the fleet's promotions are reckon working on itself.</td></tr>
+        <tr><td>Per-node gates only; nobody runs the project's suite</td><td>nova's default test command ran no test for four weeks (29 Aug to at least 19 Sep) while its nodes promoted on targeted gates; its full fast lane now takes hours.</td></tr>
         <tr><td>Follower replay on every re-arm</td><td>Each 29-minute re-arm replays the session's whole history as if new (observed at every re-arm in this session).</td></tr>
       </tbody>
     </table>
@@ -576,6 +670,13 @@
           <td>reckon closes at least as many plans as it opens for two weeks.</td></tr>
       </tbody>
     </table>
+    <p><strong>nova's share is a section, not a new plan.</strong> nova already has an active plan for exactly
+      this — <a href="/nova/plans/nova-portfolio-replan">nova-portfolio-replan</a>, in its active sprint S21,
+      evaluating every pending plan against the code and naming thin-interface refactors — whose nodes never ran
+      because the local lane took over an hour each. It now carries a fourth section, <em>consolidate before
+      extending</em>: shared constraint algebra, one home per small primitive, contracts for the four modules that
+      changed every week, and draining the figure repairs the audit filed. Adding a tenth plan to a project with
+      eight open sprints would repeat the problem this review measures.</p>
     <p><strong>Two decisions are the lead's.</strong> <code>open-work-is-capped</code> carries the limit's
       enforcement mode and value as open decisions, because the repository holds any tightening of plan creation
       pending the lead's review. And S25 sits beyond the three-sprint schedule horizon while S21 to S24 hold open
