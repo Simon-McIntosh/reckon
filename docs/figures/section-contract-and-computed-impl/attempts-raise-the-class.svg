@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" width="980" height="460" role="img" aria-labelledby="t d">
+  <title id="t">A section's attempt count selects the lane its node resolves on</title>
+  <desc id="d">A plan section's typed record supplies both the capability the work
+  declares and the attempts it has cost. A record below the configured threshold of three
+  resolves at its declared class and lands on the role's own backend. A record at or above
+  the threshold resolves at the raised class, and that class's overlay selects the raised
+  backend, with the raise and its count named in the returned summary.</desc>
+  <style>
+    .box { fill: #ffffff; stroke: #4a5568; stroke-width: 1.5; rx: 6; }
+    .raised { fill: #fff5f5; stroke: #c53030; }
+    .unraised { fill: #f7fafc; stroke: #4a5568; }
+    .label { font: 13px "Source Sans Pro", "Helvetica Neue", Arial, sans-serif; fill: #1a202c; }
+    .head { font: bold 14px "Source Sans Pro", "Helvetica Neue", Arial, sans-serif; fill: #1a202c; }
+    .mono { font: 12px "DejaVu Sans Mono", Menlo, monospace; fill: #2d3744; }
+    .note { font: 12px "Source Sans Pro", "Helvetica Neue", Arial, sans-serif; fill: #4a5568; }
+    .edge { stroke: #4a5568; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    .raisededge { stroke: #c53030; stroke-width: 2; fill: none; marker-end: url(#arrow);
+                  stroke-dasharray: 6 3; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+            orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a5568"/>
+    </marker>
+  </defs>
+
+  <rect class="box" x="20" y="60" width="210" height="330"/>
+  <text class="head" x="36" y="88">plan section record</text>
+  <text class="mono" x="36" y="120">data-attempts="2"</text>
+  <text class="mono" x="36" y="142">class: general</text>
+  <text class="mono" x="36" y="164">reasoning: standard</text>
+  <text class="mono" x="36" y="186">verification: standard</text>
+  <line x1="36" y1="248" x2="214" y2="248" stroke="#cbd5e9" stroke-width="1"/>
+  <text class="mono" x="36" y="276">data-attempts="3"</text>
+  <text class="mono" x="36" y="298">class: general</text>
+  <text class="mono" x="36" y="320">reasoning: standard</text>
+  <text class="mono" x="36" y="342">verification: standard</text>
+  <text class="note" x="36" y="372">one record per section; its own bytes</text>
+
+  <rect class="box" x="300" y="120" width="220" height="210"/>
+  <text class="label" x="316" y="150">capability_raise</text>
+  <text class="mono" x="316" y="182">threshold: 3</text>
+  <text class="mono" x="316" y="204">class: orchestrator</text>
+  <text class="mono" x="316" y="226">reasoning: deep</text>
+  <text class="mono" x="316" y="248">verification: strict</text>
+  <text class="note" x="316" y="284">upward only: a record already</text>
+  <text class="note" x="316" y="302">above the rule records no move</text>
+
+  <rect class="box unraised" x="600" y="70" width="350" height="150"/>
+  <text class="label" x="616" y="98">attempts 2 &lt; 3 &mdash; unraised</text>
+  <text class="mono" x="616" y="126">capability: general</text>
+  <text class="mono" x="616" y="150">backend: section-lane</text>
+  <text class="note" x="616" y="180">summary names no raise:</text>
+  <text class="note" x="616" y="198">&sect;5: capability general; backend section-lane</text>
+
+  <rect class="box raised" x="600" y="250" width="350" height="160"/>
+  <text class="label" x="616" y="278">attempts 3 &ge; 3 &mdash; raised</text>
+  <text class="mono" x="616" y="306">capability: orchestrator / deep / strict</text>
+  <text class="mono" x="616" y="330">backend: raised-lane</text>
+  <text class="note" x="616" y="360">summary names the count that caused it:</text>
+  <text class="note" x="616" y="378">&sect;5 attempt 3 reached the raise threshold 3:</text>
+  <text class="note" x="616" y="396">raised class general&#8594;orchestrator &#8230;</text>
+
+  <path class="edge" d="M 230 140 C 265 140 265 150 300 150"/>
+  <path class="edge" d="M 230 290 C 265 290 265 250 300 250"/>
+  <path class="edge" d="M 520 150 C 560 150 560 145 600 145"/>
+  <path class="raisededge" d="M 520 250 C 560 250 560 330 600 330"/>
+  <text class="note" x="530" y="268">class selects</text>
+  <text class="note" x="530" y="286">the lane</text>
+</svg>
