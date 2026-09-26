@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="97">
+<meta name="plan-version" content="98">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.6">
@@ -1762,6 +1762,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260921T125747809546-review-of-allowance-tracks-the-week" data-who="reckon-ship" data-when="2026-09-21T14:23:37.945Z">
     <div class="r-comment-body"><p>free-lane review of the pace governor, total 94. It measured the landed module by direct call rather than reading it, and found the plan's own computed table still printing pre-multiple allowances while the module returned the multiplied ones — a document-versus-code disagreement in the specification itself. It also established that the carries-the-multiple assertion passes under a mutation dropping the factor from the derivation, and that the flight-key clause is satisfied in appearance only because the tests assert against a plain mapping while the schema rejects unknown keys a layer earlier.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260926T133020576148-review-of-pace-keys-are-declarable" data-who="reckon-build" data-when="2026-09-26T14:47:44.063Z">
+    <div class="r-comment-body"><p>review node: stored a 96/100 record for r-20260926T095357592985 with one formatting finding; a review has no gate of its own</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260921T143322449564-a-hold-carries-the-evidence-that-produced-it" data-who="reckon-ship" data-when="2026-09-21T15:29:17.421Z">
     <div class="r-comment-body"><p>a hold cannot be constructed without its group, figure, observation age and source: the constructor raises for each of the four omissions separately, by construction rather than by string inspection. A stale figure re-queries through the staleness reader; a borrowed probe figure never becomes a group's position. Gate 13 passed, 33 across the three coupled files. Review 94/100, one P3: the docstring claims a borrowed figure is refused before anything else is asked of it while the borrow test runs on the resolved reading, so such a reading probes first — the refusal holds, the stated ordering does not.</p></div>
