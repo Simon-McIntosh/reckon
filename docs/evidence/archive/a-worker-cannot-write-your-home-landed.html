@@ -2417,6 +2417,79 @@ exit: 0</pre>
     decision are in <code>reckon/worker_git_shim.py</code>; the shim file itself contains no
     decision.</p>
   </section>
+
+  <section id="s2-fence-declared-path-and-home-order" data-reckon="section">
+    <h2>&sect;2 follow-up &mdash; the fence never re-opens the main checkout, and seeds a home before it binds</h2>
+
+    <p><strong>Two defects in the fenced launch composition, both proved through the
+    production path.</strong> The measure composes with <code>launch_plan</code> and the
+    roots <code>fenced_write_roots</code> returns &mdash; the way a dispatcher folds
+    them &mdash; against a synthesised repository and a detached worktree created under
+    <code>tmp_path</code> with real <code>git worktree add</code>, never
+    <code>fence_argv</code> with its writable roots filled in by hand.</p>
+
+    <p><strong>(1) A relative declared path names a file in the worktree, not the
+    checkout.</strong> <code>_declared_write_grant</code> resolved a declared write path
+    that was not absolute against the <code>repository</code> argument, which is the
+    <em>main checkout</em>. So a node declaring repo-relative paths
+    (<code>reckon/crew/x.py</code>, <code>tests/test_x.py</code>,
+    <code>docs/plans/p.html</code>) had each resolved outside its worktree, granted, and
+    bound writable &mdash; re-opening the very checkout the fence exists to seal. A
+    relative declaration is now resolved against the <em>worktree</em> when one is given;
+    such a path lies inside a tree that is bound writable already, so it is skipped, and
+    only an absolute declaration can name a location outside the worktree that needs a
+    grant. Reproduced at base <code>461d57d8</code>: the composed argv bound
+    <code>&lt;checkout&gt;/reckon/crew</code>, <code>&lt;checkout&gt;/tests</code> and
+    <code>&lt;checkout&gt;/docs/plans</code> under the main checkout.</p>
+
+    <p><strong>(2) The run's roots are created before the harness home is
+    resolved.</strong> A manifest may be declared in a directory that does not exist yet.
+    The launch created its write roots <em>after</em> resolving and seeding the harness
+    home, so at that moment the run directory was still missing, no home was seeded and
+    <code>CLAUDE_CONFIG_DIR</code>/<code>CODEX_HOME</code> was left unset. A fenced codex
+    launch then fell back to the sealed operator <code>~/.codex</code> and exited
+    <code>"read-only file system"</code> before the worker started. The roots are now
+    created first; an unfenced composition still creates nothing, so a preview invents no
+    directory (the invariant pinned by
+    <code>test_a_manifest_directory_that_is_not_a_live_run_gets_no_harness_home</code> is
+    unmoved).</p>
+
+    <p><strong>Measure.</strong>
+    <code>tests/test_fence_never_binds_the_main_checkout.py</code>, three cases: (a) a
+    worktree-full run whose node declares three repo-relative paths composes with no
+    writable bind under the main checkout except the worktree's own
+    <code>.git/worktrees/&lt;name&gt;</code> directory and the shared
+    <code>.git/objects</code> &mdash; the only roots a commit must write &mdash; with a
+    positive control that the check sees those two bound, so an empty list would be
+    blindness rather than a sealed checkout; and (b,c) a fenced claude and a fenced codex
+    launch whose manifest lies in a missing directory, asserting the run directory is
+    created, the config-home variable names the run's own home, and that home exists
+    afterwards. Figure:
+    <code>/reckon/figures/a-worker-cannot-write-your-home/fence-declared-path-and-home-order.svg</code>.</p>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>resolve a
+    relative declared path against the repository; the no-main-checkout-bind assertion
+    must fail</em> &mdash; applied at head, case (a) fails and names the three re-opened
+    roots: <code>AssertionError: the fence re-opened the main checkout at
+    [&hellip;/Code/proj/docs/plans, &hellip;/Code/proj/reckon/crew, &hellip;/Code/proj/tests]</code>.
+    A second control for defect (2) removes the early root creation, and the missing-home
+    case then fails (<code>AssertionError: the manifest's directory was not created</code>).
+    The source is restored byte for byte after each (sha256
+    <code>04400926&hellip;</code>).</p>
+
+    <p><strong>Gate.</strong> This node's own test plus the five named neighbours
+    (<code>test_fence_creates_a_missing_write_parent</code>,
+    <code>test_fence_is_on_again</code>, <code>test_each_run_owns_its_harness_home</code>,
+    <code>test_harness_home_carries_mcp_servers</code>,
+    <code>test_crew_launch_resolution</code>), <code>basetemp</code> outside every git
+    repository: base <code>461d57d8</code> (original module) <code>3 failed, 29 passed</code>
+    &mdash; the three new cases red, so both defects reproduce &mdash; against head
+    <code>32 passed</code>, zero added failures. Ruff over the touched paths adds no
+    finding (module baseline 8, head 8; the new file clean). Commit <code>af310d81</code>.
+    Gate and control logs live under the run directory named in the manifest. This gate
+    measures only this node's own change; verifying the merged result belongs to a
+    separately dispatched test node.</p>
+  </section>
 </main>
 </body>
 </html>
