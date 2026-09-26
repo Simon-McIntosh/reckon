@@ -1636,6 +1636,58 @@
       <code>bd10fb72</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#widen-reaches-a-blocked-manifest">&#167;22 widen reads the block its mirror lost</a>.</p>
 
+    <h2 id="s23">&#167;23 &mdash; A launch is not its own conflict</h2>
+    <p>Every arbitration surface reads live pointers: a peer dispatch's admission check, the
+    review reflex deciding whether a review is already in flight, an operator reading the fleet.
+    A dispatch minted its run id at entry and wrote its pointer only once the worktree was cut,
+    the prompt composed and the peer channels wired &mdash; so for that whole span it held its
+    declared paths invisibly, and a refusal reached from a later reading named the claim of a run
+    created moments earlier for the identical path.</p>
+    <p><strong>Measured 2026-09-26, twice inside one hour.</strong> A dispatch of the same review
+    record exited 7 with <code>scope-conflict</code> whose detail named, as the live holder of that
+    path, the review run the same command had just created
+    (<code>r-20260926T140559747789-review-of-landing-tests-measure-the-landing</code>, pid 3815290).
+    Candidate path and claimed path were the same path, which is what a duplicate in flight looks
+    like: the claim existed, and the dispatch that should have met it during its own launch had not
+    published it yet. Reviews at 12:03 and 12:41 had returned clean, so the window was read as a
+    new change; it was a race that needs two dispatches arriving inside one launch.</p>
+    <p><strong>The span is not short.</strong> The claims read itself is cheap &mdash; 26 live
+    pointers in 9&nbsp;ms &mdash; so the defect is not the read but the 19&ndash;20 seconds a launch
+    spends in worktree creation, prompt composition and peer wiring, during which a dispatch that
+    has already committed to a run id and its paths is invisible to every other reader of the
+    registry. The claim is published at the run id's own moment, before the worktree exists, and
+    every post-publication reading excludes the run id this call created, so a dispatch can neither
+    hold its paths invisibly nor arbitrate against itself; a second dispatch of the same paths is
+    refused naming the first, which is the behaviour a real conflict must keep. An ordering or
+    tie-break filter was rejected instead of built: it admits a duplicate whenever the earlier
+    claimant stalls, and admission is the expensive error while a rare mutual refusal is safe and
+    recoverable, which the plan records as the accepted cost.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/launch-claim-window.svg"
+           alt="At base, a run id is minted and the claim is published only after worktree creation, prompt composition and peer wiring, so a second dispatch arriving inside that span reads no claim and launches a duplicate. At the change, the claim is published at the run id, a second dispatch is refused naming the first run, and the exclusion falsified turns the acceptance test red with the dispatch refused by its own run id's claim."
+           style="max-width:760px;width:100%">
+      <figcaption>The span is where the paths are held, not where the run is composed; publishing
+      at the run id closes it without serialising dispatches that never meet.</figcaption>
+    </figure>
+
+    <p class="landed-summary">A dispatch held its declared paths invisibly from its run id to its
+      launched record, so a second dispatch arriving inside that 19&ndash;20 second span read no
+      claim, took the same paths, launched a duplicate worker, and a refusal named the claim of the
+      run created moments earlier. The claim is now written as the run's own pointer at the point
+      its run id exists &mdash; before the worktree is created, so the existing single unwind stays
+      the one release point &mdash; and every post-publication reading excludes the run id this
+      call created, so a launch can neither be invisible while it holds its paths nor refuse
+      itself. The gate over the new file and the nine existing dispatch-scope files moves
+      <strong>82 passed, 2 failed</strong> at base <code>3be868de</code> (the two failures are this
+      node's added assertions, red before the change and green after) to <strong>84 passed</strong>
+      at the change, exit 0, <code>zero added failures</code> among the pre-existing 82; both arms
+      print the module file they imported, which is the worktree tree and a scratch tree cut from
+      base. Falsifying the exclusion in memory &mdash; the post-launch reading checking every claim
+      including its own &mdash; reddens the acceptance test with the dispatch refused by the claim
+      of the run id it had just created, which is the recorded incident's shape. Landed under
+      commit <code>a7413c1d</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#launch-holds-its-own-claim">&#167;23 a launch holds its own claim</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="liveness-source" data-choice="reconcile-on-read" data-by="lead" data-when="2026-09-03T07:38:29+00:00">

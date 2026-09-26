@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="900" height="470" role="img" aria-labelledby="t d">
+  <title id="t">Where a launching dispatch's claim is visible</title>
+  <desc id="d">Two timelines. At base, a dispatch mints its run id and publishes its claim only after the worktree, prompt and peer wiring, so a second dispatch arriving in that span reads no claim and launches a duplicate. At the change, the claim is published at the run id, so the second dispatch is refused naming the first run. A third panel shows the exclusion falsified: the dispatch refuses on the claim of the run id it just created.</desc>
+
+  <style>
+    .bg { fill: #ffffff; }
+    .lane { fill: #f5f6f8; stroke: #c9ccd4; }
+    .invisible { fill: #fdecec; stroke: #d98a8a; stroke-dasharray: 5 4; }
+    .axis { stroke: #8b8f99; stroke-width: 1.5; }
+    .mark { stroke: #444851; stroke-width: 2; fill: none; }
+    .t { font-family: sans-serif; font-size: 14px; fill: #23252b; }
+    .small { font-family: sans-serif; font-size: 11.5px; fill: #4a4e57; }
+    .head { font-family: sans-serif; font-size: 15px; font-weight: bold; fill: #23252b; }
+    .bad { font-family: sans-serif; font-size: 12.5px; fill: #a13b3b; }
+    .good { font-family: sans-serif; font-size: 12.5px; fill: #2f6b41; }
+    .dot-bad { fill: #a13b3b; }
+    .dot-good { fill: #2f6b41; }
+  </style>
+
+  <rect class="bg" x="0" y="0" width="900" height="470"/>
+
+  <text class="head" x="40" y="34">A dispatch holds its declared paths from its run id, not from its launch</text>
+  <text class="small" x="40" y="54">Measured 2026-09-26: two dispatches launched a duplicate over the same paths, and a refusal named the claim of a run created moments earlier.</text>
+
+  <text class="head" x="40" y="92">at base</text>
+  <rect class="lane" x="40" y="102" width="820" height="40" rx="6"/>
+  <circle cx="70" cy="122" r="6" class="dot-bad"/>
+  <text class="t" x="82" y="127" font-size="12.5">run id minted</text>
+  <rect class="invisible" x="200" y="106" width="480" height="32" rx="5"/>
+  <text class="bad" x="215" y="127">the span the paths are held invisibly: worktree, prompt, peer wiring</text>
+  <circle cx="710" cy="122" r="6" class="dot-good"/>
+  <text class="t" x="722" y="127" font-size="12.5">claim published</text>
+  <line x1="300" y1="150" x2="300" y2="176" class="axis"/>
+  <text class="bad" x="308" y="170">a second dispatch reads no claim, takes the same paths, launches a duplicate</text>
+
+  <text class="head" x="40" y="212">at the change: the claim is published at the run id</text>
+  <rect class="lane" x="40" y="222" width="820" height="40" rx="6"/>
+  <circle cx="70" cy="242" r="6" class="dot-good"/>
+  <text class="t" x="82" y="247" font-size="12.5">run id minted, claim published</text>
+  <line x1="250" y1="242" x2="464" y2="242" class="axis"/>
+  <text class="good" x="258" y="236">the same span, now read by every peer</text>
+  <circle cx="474" cy="242" r="8" class="mark"/>
+  <path class="mark" d="M470 238 l8 8 M478 238 l-8 8"/>
+  <text class="good" x="490" y="247" font-size="12.5">a second dispatch is refused, naming the first run</text>
+  <circle cx="790" cy="242" r="6" class="dot-good"/>
+  <text class="t" x="802" y="247" font-size="12.5">full record</text>
+
+  <text class="head" x="40" y="322">the exclusion falsified, both arms measured</text>
+  <rect class="lane" x="40" y="332" width="820" height="88" rx="6"/>
+  <text class="small" x="60" y="360">the acceptance test with the exclusion in place: 4 passed, exit 0, one live pointer naming the run.</text>
+  <text class="bad" x="60" y="382">the same test with the exclusion dropped: the dispatch is refused by the claim of the run id it just created -</text>
+  <text class="bad" x="60" y="400">"write scope 'src/claimed.py' conflicts with live claim 'src/claimed.py' held by run 'r-...-node-claiming'" - the incident's shape.</text>
+
+  <text class="small" x="40" y="448">Gate, both arms, one invocation: 84 passed at the change against 82 passed and 2 failed at base - the two failures are this node's added assertions.</text>
+</svg>

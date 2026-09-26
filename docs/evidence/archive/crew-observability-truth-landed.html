@@ -2179,6 +2179,83 @@ E implement role       : (clean)</pre>
     <code>negative-control-1.log</code> (the declared mutation and the reddening).</p>
   </section>
 
+  <section id="launch-holds-its-own-claim">
+    <h2 id="launch-holds-its-own-claim-h">&sect;23 &mdash; a launch holds its own claim from its run id</h2>
+    <p>Recorded 2026-09-26 by the node that repaired it, landed under commit
+    <code>a7413c1d</code>. A dispatch minted its run id at entry and wrote its live pointer only
+    after the worktree was cut, the prompt composed and the peer channels wired. For that whole
+    span it held its declared paths invisibly, so a second dispatch arriving inside the span read
+    no claim, took the same paths and launched a duplicate &mdash; and a refusal reached from a
+    later reading named the claim of a run created moments earlier for the identical path.</p>
+    <p><strong>The defect, measured twice inside one hour.</strong> The captured refusal names the
+    same path on both sides, which is what a duplicate in flight looks like:</p>
+    <pre>error          : scope-conflict
+candidate_path : ~/.config/reckon/crew/reviews/reckon/r-20260926T122131857968-landing-tests-measure-the-landing.json
+claimed_path   : ~/.config/reckon/crew/reviews/reckon/r-20260926T122131857968-landing-tests-measure-the-landing.json
+run_id         : r-20260926T140559747789-review-of-landing-tests-measure-the-landing   (pid 3815290)
+detail         : ... conflicts with live claim ... held by run
+                 'r-20260926T140559747789-review-of-landing-tests-measure-the-landing';
+                 run ... is still running as pid 3815290</pre>
+    <p>The claim existed and its worker was running, so the refusing reading was a later one; the
+    dispatch that took the same paths had read the registry before the claim was there. Reviews at
+    12:03 and 12:41 had returned clean, which is why the window first read as a fresh regression.
+    <strong>The span is not short:</strong> the claims read is 26 live pointers in 9&nbsp;ms, so
+    the name of the defect is not the read but the 19&ndash;20 seconds a launch spends in worktree
+    creation, prompt composition and peer wiring.</p>
+    <p><strong>What the change does.</strong> The claim is published as the run's own pointer at
+    the point its run id exists, before the worktree is created &mdash; after every pre-launch
+    refusal site, so the single existing unwind remains the one release point &mdash; and every
+    post-publication reading excludes the run id this call created, so a launch can neither hold
+    its paths invisibly nor arbitrate against itself. A second dispatch of the same paths is
+    refused naming the first, which is the behaviour a real conflict must keep. Both are gated on
+    the shadow lineage, which publishes and reads nothing, and the unwind tolerates a refusal that
+    landed before the worktree existed. An ordering or tie-break filter was considered and
+    rejected rather than built: it admits a duplicate whenever the earlier claimant stalls in the
+    window, and admission is the expensive error while a mutual refusal is safe and recoverable.
+    The accepted cost is that two dispatches arriving inside one another's span both read the
+    other's claim and both refuse; the population is two dispatches of the same node id inside
+    twenty seconds, and each refusal names a run a coordinator can observe.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/launch-claim-window.svg"
+           alt="At base, a run id is minted and the claim is published only after worktree creation, prompt composition and peer wiring, so a second dispatch arriving inside that span reads no claim and launches a duplicate. At the change, the claim is published at the run id, a second dispatch is refused naming the first run, and falsifying the exclusion turns the acceptance test red with the dispatch refused by its own run id's claim."
+           style="max-width:760px;width:100%">
+      <figcaption>Where the paths are held is the run id's own moment; where the run is composed is
+      nineteen seconds later, and the claim now covers exactly the gap between them.</figcaption>
+    </figure>
+    <p><strong>Measure:</strong> the new file plus the nine existing files that exercise dispatch
+    scope arbitration, in one invocation per arm, each arm printing the module file it imported so
+    a tree falling through to another checkout cannot read as the arm it names. Base arm, at
+    <code>3be868de</code> in a scratch tree cut from that revision:
+    <strong>2 failed, 82 passed</strong>, exit 1 &mdash; the two failures are this node's added
+    assertions. Head arm, in the run's own worktree: <strong>84 passed</strong>, exit 0,
+    <strong>zero added failures</strong>. The two added reds are the held-claim race (a second
+    dispatch issued from inside the first one's worktree seam is refused naming the first run) and
+    a claim published mid-launch (met before this dispatch writes its own pointer). Two further
+    cases hold the release: the accepted launch leaves exactly one live pointer, one run directory
+    and one worktree, and a refusal after the claim is published leaves none of the three. The
+    real config home's pointer directory is asserted unchanged before and after every case.</p>
+    <p><strong>Negative control, executed:</strong> with the exclusion dropped in memory &mdash;
+    the post-launch reading checking every claim including the one this call created &mdash; the
+    acceptance test reddens with the dispatch refused by the claim of its own run id:
+    <code>write scope 'src/claimed.py' conflicts with live claim 'src/claimed.py' held by run
+    'r-...-node-claiming' ... records no worker process yet</code>. That is the recorded incident's
+    shape, produced without touching a source file: the mutation is a plugin that wraps the claims
+    read, the same test file is the only difference between the arms, and the unmutated arm is the
+    84-passed run above. The red log's first line is the declared mutation, verbatim.</p>
+    <p><strong>Leaves behind:</strong> whether the merged result holds, which belongs to a
+    separately dispatched verification node, and the section's status and its driving followup,
+    which the coordinator closes rather than this node. Evidence on disk, all under
+    <code>~/.config/reckon/crew/runs/r-<wbr>20260926T141416527922-a-launch-is-not-its-own-conflict/</code>:
+    <code>gate-after-suite.log</code> and <code>gate-base-suite.log</code> (both combined arms with
+    revisions and imported module files), <code>gate-fixed-arm.log</code> and
+    <code>gate-base-arm.log</code> (the new file alone, each arm), and
+    <code>negative-control.log</code> with <code>negative-control/probe.py</code> and its plugin
+    (the declared mutation and the reddening). The captured incident output this node reproduced
+    against is at
+    <code>~/Code/reckon/...scratchpad/rv-landing-tests-measure-the-landing.json</code> in the
+    session that recorded it.</p>
+  </section>
+
 </main>
 </body>
 </html>
