@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="83">
+<meta name="plan-version" content="84">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -388,6 +388,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260926T151440645322-review-of-counter-cells-keep-their-counts-apart" data-who="reckon-build" data-when="2026-09-26T16:15:56.146Z">
     <div class="r-comment-body"><p>review stored at head 8d1f9aab, total 93, two findings (stale _stats docstring; right-edge test derived from the renderer's own constant); it missed that the run's own base/head logs show ten added failures by id, so the node was resumed to keep fixed-width cells and restore those ten</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260926T173046225726-review-of-counter-cells-keep-their-counts-apart" data-who="reckon-build" data-when="2026-09-26T18:16:12.430Z">
+    <div class="r-comment-body"><p>review stored at head 5c6610ba, total 92, zero added failures by id; its three record findings were corrected in the plan and evidence at merge 6a0ebcf6; the reviewed run was promoted</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-correction-watcher-seat-gate-record" data-who="s23-coord" data-when="2026-09-25T21:02:00Z">
     <div class="r-comment-body"><p><strong>Correction to the promotion record of r-20260925T164609522941-watcher-seat-survives-other-hosts.</strong> That promotion cited <code>gate-head-rerun.log</code> with exit status 0, under a gate command naming only <code>tests/test_watch_seat_across_hosts.py</code>. The log is in fact the node's full family run at head, which ends <code>11 failed, 219 passed, 2 skipped</code>. The accurate account: at base 9a9cb581 the same family is 16 failed (11 pre-existing, owned by other nodes, plus this node's 5 new tests red, per <code>gate-base-new-tests.log</code>). At head it is 11 failed, identical by id to the 11 pre-existing ones, so no failures were added and the 5 new tests are fixed. The verdict stands; the recorded exit status and command did not describe that log.</p></div>
