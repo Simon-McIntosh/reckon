@@ -17,7 +17,9 @@ restricted to the paths those commits touched. A citation list that measures no
 path at all — a merge cited alone, whose own diff belongs to the branch it
 brought — is refused rather than recorded as a run that changed nothing. Each
 case's expectation is derived from the fixture repository rather than echoed
-from the citation list it passed in.
+from the citation list it passed in. The boundary guard for stray peer edits at
+declared paths exempts the paths the project publishes as shareable, leaving
+the refusal for every path off that list.
 """
 
 from __future__ import annotations
@@ -29,6 +31,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew, ledger
+from reckon.crew import routing
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "sample"
@@ -102,27 +105,46 @@ def _pointer(
     base: str,
     *,
     write_paths: tuple[str, ...],
+    guard: bool = False,
 ) -> None:
-    _write_json(
-        pointer_path(run_id),
-        {
-            "run_id": run_id,
-            "project": PROJECT,
-            "repo": str(repository),
-            "worktree": str(run_tree),
-            "base_sha": base,
-            "launch": "in-harness",
-            "role": "implement",
-            "backend": "native",
-            "created_at": "2026-09-25T12:00:00Z",
-            "node": {
-                "id": "scope-counting",
-                "plan": "fixture",
-                "section": "guard",
-                "time_budget": "25m",
-                "write_paths": list(write_paths),
-            },
+    pointer: dict[str, object] = {
+        "run_id": run_id,
+        "project": PROJECT,
+        "repo": str(repository),
+        "worktree": str(run_tree),
+        "base_sha": base,
+        "launch": "in-harness",
+        "role": "implement",
+        "backend": "native",
+        "created_at": "2026-09-25T12:00:00Z",
+        "node": {
+            "id": "scope-counting",
+            "plan": "fixture",
+            "section": "guard",
+            "time_budget": "25m",
+            "write_paths": list(write_paths),
         },
+    }
+    if guard:
+        pointer["repository_tree_snapshot"] = routing._repository_tree_snapshot(
+            repository
+        )
+    _write_json(pointer_path(run_id), pointer)
+
+
+def _declare_shared_write_paths(repository: Path, *paths: str) -> None:
+    """Declare repository-relative files the project admits concurrent claims on."""
+    (repository / "docs" / "state" / PROJECT / "shared-write-paths.json").write_text(
+        json.dumps(
+            {
+                "project": PROJECT,
+                "paths": [
+                    {"path": path, "reason": "concurrent editors touch one file"}
+                    for path in paths
+                ],
+            }
+        ),
+        encoding="utf-8",
     )
 
 
@@ -397,6 +419,154 @@ def test_a_citation_list_that_changes_no_path_is_refused(
 
     assert empty in str(refusal.value)
     assert "measures no path" in str(refusal.value)
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+    _assert_real_home_carries_no_pointer(run_id)
+
+
+def test_a_peer_edit_on_a_declared_shared_path_does_not_refuse_promotion(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A path the project publishes as shareable admits a concurrent editor.
+
+    Dispatch admits a second claim on every path on that list, so a peer's
+    uncommitted edit there says nothing about this run's boundary. Charging it
+    refuses promotions for work that does not collide, while the run below
+    lands its own change in its own fence. The peer tree keeps the edit
+    throughout, so the case fails whenever the shared list is not consulted.
+    """
+    (repository / "shared.txt").write_text("seed\n", encoding="utf-8")
+    _git(repository, "add", "shared.txt")
+    _git(repository, "commit", "-q", "-m", "chore: seed the shared path")
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = tmp_path / "run-tree"
+    peer_tree = tmp_path / "peer-tree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(run_tree), "HEAD")
+    _git(repository, "worktree", "add", "-q", "--detach", str(peer_tree), "HEAD")
+    run_id = "r-shared-peer-edit"
+    _declare_shared_write_paths(repository, "shared.txt")
+    _pointer(
+        repository,
+        run_tree,
+        run_id,
+        base,
+        write_paths=("in_scope.txt", "shared.txt"),
+        guard=True,
+    )
+    _assert_real_home_carries_no_pointer(run_id)
+
+    (run_tree / "in_scope.txt").write_text("seed\nrun\n", encoding="utf-8")
+    _git(run_tree, "add", "in_scope.txt")
+    _git(run_tree, "commit", "-q", "-m", "feat: the run's own change")
+    commit = _git(run_tree, "rev-parse", "HEAD")
+
+    (peer_tree / "shared.txt").write_text("peer in flight\n", encoding="utf-8")
+    assert "shared.txt" in _git(peer_tree, "status", "--porcelain")
+
+    stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
+
+    assert stored["commits"] == [commit]
+    assert [row["run_id"] for row in ledger.runs(PROJECT, root=repository)] == [run_id]
+    assert not pointer_path(run_id).exists()
+    _assert_real_home_carries_no_pointer(run_id)
+
+
+def test_a_peer_edit_on_a_declared_unshared_path_still_refuses_promotion(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A declared path the shared list does not name is still a boundary edit.
+
+    The list is present and names the peer's other declared path; the peer
+    dirties only ``in_scope.txt``, which it does not name. The refusal names
+    that path, so the exemption is not a blanket one and a declared path off
+    the list keeps the guard. No row is written and the pointer is kept.
+    """
+    (repository / "shared.txt").write_text("seed\n", encoding="utf-8")
+    _git(repository, "add", "shared.txt")
+    _git(repository, "commit", "-q", "-m", "chore: seed the shared path")
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = tmp_path / "run-tree"
+    peer_tree = tmp_path / "peer-tree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(run_tree), "HEAD")
+    _git(repository, "worktree", "add", "-q", "--detach", str(peer_tree), "HEAD")
+    run_id = "r-unshared-peer-edit"
+    _declare_shared_write_paths(repository, "shared.txt")
+    _pointer(
+        repository,
+        run_tree,
+        run_id,
+        base,
+        write_paths=("in_scope.txt", "shared.txt"),
+        guard=True,
+    )
+    _assert_real_home_carries_no_pointer(run_id)
+
+    (run_tree / "in_scope.txt").write_text("seed\nrun\n", encoding="utf-8")
+    _git(run_tree, "add", "in_scope.txt")
+    _git(run_tree, "commit", "-q", "-m", "feat: the run's own change")
+    commit = _git(run_tree, "rev-parse", "HEAD")
+
+    (peer_tree / "in_scope.txt").write_text("peer stray\n", encoding="utf-8")
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(run_id, gate="passed", commits=[commit], root=repository)
+
+    message = str(refusal.value)
+    assert "in_scope.txt" in message
+    assert f"peer worktree {peer_tree}" in message
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+    _assert_real_home_carries_no_pointer(run_id)
+
+
+def test_an_unshared_claim_is_charged_even_beside_a_shared_one(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The exemption is per path, so one shared claim cannot mask an unshared one.
+
+    The peer holds uncommitted edits on both declared paths at once: the file
+    the list names and ``in_scope.txt``, which it does not. A tree-level
+    exemption would let the shared edit carry the unshared one through, so the
+    case pins the charged set: the refusal names the unshared path and does not
+    name the shared one. No row is written and the pointer is kept.
+    """
+    (repository / "shared.txt").write_text("seed\n", encoding="utf-8")
+    _git(repository, "add", "shared.txt")
+    _git(repository, "commit", "-q", "-m", "chore: seed the shared path")
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = tmp_path / "run-tree"
+    peer_tree = tmp_path / "peer-tree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(run_tree), "HEAD")
+    _git(repository, "worktree", "add", "-q", "--detach", str(peer_tree), "HEAD")
+    run_id = "r-beside-peer-edit"
+    _declare_shared_write_paths(repository, "shared.txt")
+    _pointer(
+        repository,
+        run_tree,
+        run_id,
+        base,
+        write_paths=("in_scope.txt", "shared.txt"),
+        guard=True,
+    )
+    _assert_real_home_carries_no_pointer(run_id)
+
+    (run_tree / "in_scope.txt").write_text("seed\nrun\n", encoding="utf-8")
+    _git(run_tree, "add", "in_scope.txt")
+    _git(run_tree, "commit", "-q", "-m", "feat: the run's own change")
+    commit = _git(run_tree, "rev-parse", "HEAD")
+
+    (peer_tree / "shared.txt").write_text("peer in flight\n", encoding="utf-8")
+    (peer_tree / "in_scope.txt").write_text("peer stray\n", encoding="utf-8")
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(run_id, gate="passed", commits=[commit], root=repository)
+
+    message = str(refusal.value)
+    assert "in_scope.txt" in message
+    assert "shared.txt" not in message
+    assert f"peer worktree {peer_tree}" in message
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()
     _assert_real_home_carries_no_pointer(run_id)

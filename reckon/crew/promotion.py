@@ -1496,7 +1496,13 @@ def _run_directory_tree_snapshot(run_id: str) -> Mapping[str, Any] | None:
 def _repository_tree_boundary_violations(
     run_id: str, record: Mapping[str, Any]
 ) -> list[str]:
-    """Return the stray uncommitted edits found in another dispatch-visible tree."""
+    """Return the stray uncommitted edits found in another dispatch-visible tree.
+
+    A declared path on the project's shared-write list is not one of them: the
+    list is resolved through the same helper the accepted-path check reads, and
+    dispatch admits a concurrent claim there, so a peer's in-flight edit says
+    nothing about this run's boundary.
+    """
     snapshot = _run_directory_tree_snapshot(run_id)
     if snapshot is None:
         snapshot = record.get("repository_tree_snapshot")
@@ -1522,6 +1528,7 @@ def _repository_tree_boundary_violations(
     declared_roots = _repository_scope_paths(
         declared, worktree=own_tree, repository=repository
     )
+    shared_files = _shared_write_paths(str(record.get("project") or ""), repository)
     terminal_shadows = _shadow_worktree_records(
         repository, str(record.get("project") or "") or None
     )
@@ -1554,10 +1561,14 @@ def _repository_tree_boundary_violations(
         )
         if not status_changed:
             continue
+        # An uncommitted edit on a declared path the project publishes as
+        # shareable admits a concurrent editor, so it says nothing about this
+        # run's boundary; only a declared path off that list can violate it.
         changed_paths = {
             changed
             for _, changed in _snapshot_entries(after) - _snapshot_entries(before)
-            if any(
+            if changed not in shared_files
+            and any(
                 Path(changed) == root or Path(changed).is_relative_to(root)
                 for root in declared_roots
             )
