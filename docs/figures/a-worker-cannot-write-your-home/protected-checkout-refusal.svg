@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="470" viewBox="0 0 940 470" font-family="DejaVu Sans, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="940" height="470" fill="#fbfbfd"/>
+
+  <text x="24" y="34" font-size="19" font-weight="bold" fill="#1a1a2e">A fence pointed at a protected checkout</text>
+  <text x="24" y="56" font-size="13" fill="#555">Mounts apply in argv order, so a later writable bind overrides the earlier read-only overlay of the same path.</text>
+
+  <!-- Panel A: composed -->
+  <rect x="24" y="76" width="430" height="360" rx="8" fill="#fff" stroke="#d9873f" stroke-width="2"/>
+  <text x="44" y="104" font-size="15" font-weight="bold" fill="#a35a12">Before the refusal: composed</text>
+  <text x="44" y="124" font-size="12" fill="#666">worktree == a protected checkout</text>
+
+  <g font-family="DejaVu Sans Mono, monospace" font-size="13">
+    <rect x="44" y="140" width="390" height="30" rx="4" fill="#eef3ee" stroke="#c3d3c3"/>
+    <text x="56" y="160" fill="#2c4a2c">--dev-bind / /</text>
+
+    <rect x="44" y="178" width="390" height="30" rx="4" fill="#eef3ee" stroke="#c3d3c3"/>
+    <text x="56" y="198" fill="#2c4a2c">--ro-bind CHECKOUT CHECKOUT</text>
+
+    <rect x="44" y="216" width="390" height="30" rx="4" fill="#fdecec" stroke="#d9534f" stroke-width="2"/>
+    <text x="56" y="236" fill="#8a2b28">--bind CHECKOUT CHECKOUT</text>
+
+    <text x="44" y="238" font-size="0" fill="none"> </text>
+  </g>
+  <text x="300" y="266" font-size="11" fill="#8a2b28">later bind re-opens the whole tree</text>
+  <path d="M440 231 C468 231 468 231 468 231" stroke="#d9534f" stroke-width="2" fill="none"/>
+
+  <rect x="44" y="286" width="390" height="126" rx="6" fill="#fdecec" stroke="#d9534f" stroke-dasharray="4 3"/>
+  <text x="58" y="310" font-size="13" font-weight="bold" fill="#8a2b28">Observed through the executed fence</text>
+  <g font-family="DejaVu Sans Mono, monospace" font-size="12">
+    <text x="58" y="334" fill="#8a2b28">touch CHECKOUT/.git/index</text>
+    <text x="58" y="352" fill="#8a2b28">touch CHECKOUT/.git/objects/probe</text>
+  </g>
+  <text x="58" y="380" font-size="12" fill="#8a2b28">both land: the metadata the fence exists to seal</text>
+  <text x="58" y="398" font-size="12" fill="#8a2b28">is handed back to the worker</text>
+
+  <!-- Panel B: refused -->
+  <rect x="486" y="76" width="430" height="360" rx="8" fill="#fff" stroke="#2f7d4f" stroke-width="2"/>
+  <text x="506" y="104" font-size="15" font-weight="bold" fill="#1f6b40">After: the composition is refused</text>
+  <text x="506" y="124" font-size="12" fill="#666">no argv is built, so no bind is re-opened</text>
+
+  <rect x="506" y="146" width="390" height="118" rx="6" fill="#eef7f1" stroke="#2f7d4f"/>
+  <text x="522" y="172" font-size="13" font-weight="bold" fill="#1f6b40">BackendError</text>
+  <text x="522" y="196" font-size="12" fill="#33513f">refusing to fence worktree WORKTREE:</text>
+  <text x="522" y="216" font-size="12" fill="#33513f">it is the protected checkout CHECKOUT,</text>
+  <text x="522" y="236" font-size="12" fill="#33513f">or a git working tree inside it &#8230;</text>
+
+  <text x="506" y="292" font-size="13" font-weight="bold" fill="#33513f">The refusal names both paths</text>
+  <text x="506" y="316" font-size="12" fill="#555">&#8226; worktree that equals a protected checkout</text>
+  <text x="506" y="338" font-size="12" fill="#555">&#8226; a git working tree nested inside one</text>
+  <text x="506" y="360" font-size="12" fill="#555">&#8226; a plain directory inside one still composes</text>
+  <text x="506" y="382" font-size="12" fill="#555">&#8594; that directory is not a checkout</text>
+
+  <rect x="506" y="396" width="390" height="28" rx="4" fill="#eef7f1" stroke="#2f7d4f"/>
+  <text x="518" y="415" font-size="12" fill="#1f6b40">A linked worktree outside every checkout composes as before.</text>
+
+  <text x="24" y="458" font-size="11" fill="#888">Dispatch places every worktree under Code/.reckon-worktrees, outside the protected set, so no dispatched run reaches the refusal.</text>
+</svg>
