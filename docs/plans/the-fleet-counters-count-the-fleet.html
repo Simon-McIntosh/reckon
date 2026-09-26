@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="88">
+<meta name="plan-version" content="89">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -287,10 +287,11 @@
     <div class="r-fu-body"><p>Measured 2026-09-25/26. Five display defects in the classifier and one in the review reflex. (1) A completed review run rendered <code>working → dispatched</code> after its record was stored. (2) A run resumed seconds earlier rendered <code>complete → stalled</code>, because the classifier aged it by the previous <code>stream.jsonl</code> before <code>resume-N.jsonl</code> existed. A resume should count from its own start. (3) A fresh launch rendered <code>working → unwritten → working</code> within 12 s, before the worker wrote its manifest. <code>unwritten</code> needs a launch-window grace. (4) A manifest being rewritten in place (4 bytes) read as <code>unwritten</code>. Readers should treat a shrunk or just-modified manifest as unchanged, and manifests should be written atomically. (5) A promoted run passed through <code>complete → unpromoted</code> for 16 s between the promote commit and the pointer removal. (7) The review reflex launched no review for <code>git-shim-checks-the-resolved-repo</code> after either of its resumes (15:59, 18:33), although the plan-reads resume got one. Suspect a once-per-run marker or a head key already consumed. Each fix needs a test that is red at base. These live in <code>reckon/crew/recovery.py</code>, so the node dispatches only after the session-resolution node releases that file.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-classifier-reads-a-run-in-motion</pre>
     </article>
-<article class="r-fu" data-id="f-tfcctf-producer-loop-survives-a-config-change" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfcctf-producer-loop-survives-a-config-change" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="2026-09-26T21:13:48+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">The producer&#x27;s own loop survives a config change</h4>
     <div class="r-fu-body"><p>On 2026-09-26 a schema-extending merge (6d5ef87b) killed the follower and the reckon watch producer. Each read the new <code>flight-defaults.yaml</code> key with the old schema on its per-tick path. Node <code>follower-survives-a-config-change</code> makes the quota reader degrade to unknown and guards the follower loop in <code>reckon/cli.py</code>. The producer's own loop in <code>reckon/crew/runs.py</code> still needs the same guard: catch a config error, print one dim deferral line and keep producing. It dispatches once <code>producer-takes-new-code</code> releases <code>runs.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-producer-loop-survives-a-config-change</pre>
+    <p class="r-fu-outcome">Landed: producer-loop-survives-a-config-change (merge 2bc1811b, review 93) makes the producer's per-tick read defer a flight config that fails validation, with one log line and a retry, and adds the text-mode stale-producer test. follower-survives-a-config-change (merge 7b13af1b, review 96) makes the quota rate reader degrade to unknown and the follower's per-tick loop defer with one dim line per contiguous deferral. A schema-extending merge no longer kills an old-code follower or producer.</p>
     </article>
 </section>
 
@@ -405,7 +406,7 @@
     <div class="r-comment-body"><p>review stored at head f2a9b01b, total 86; findings (test-marker debris committed into cli.py, dedup guard untested, changed_paths understated) returned to the node as a resume</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260926T193949077718-review-of-producer-loop-survives-a-config-change" data-who="reckon-build" data-when="2026-09-26T20:14:35.416Z">
-    <div class="r-comment-body"><p>review stored; verdict read and acted on by the coordinator (producer-loop 93 merged at 2bc1811b; fleet-spawn investigation 87 whose ordering exclusion was corrected in the investigation&#x27;s promotion outcome)</p></div>
+    <div class="r-comment-body"><p>review stored; verdict read and acted on by the coordinator (producer-loop 93 merged at 2bc1811b; fleet-spawn investigation 87 whose ordering exclusion was corrected in the investigation's promotion outcome)</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T130204463138-ticker-row-is-one-aligned-transition" data-who="reckon-build" data-when="2026-09-25T13:46:08Z">
     <div class="r-comment-body"><p>each ticker row is one transition, from → to on an aligned arrow with fixed columns on both sides, chained per run on the pane's last shown state, with no action word; 266 passed; review 86, whose three findings (stale width comment at ticker.py:339, a test assertion that cannot fail, and a wrong rendered-case count in the evidence) go to the next ticker node</p></div>
