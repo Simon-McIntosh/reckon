@@ -4167,9 +4167,7 @@ def _complete_locked(
         changed_lines = _shadow_patch_stat(artifact, cwd=tree)
         shadow_patch = str(artifact)
     elif commit_list:
-        cumulative = _committed_scope(
-            cwd=tree, commits=commit_list, run_id=run_id
-        )
+        cumulative = _committed_scope(cwd=tree, commits=commit_list, run_id=run_id)
         if cumulative.changed_lines.get("available", True):
             if (
                 not role_may_write_repository_paths(str(record.get("role") or ""))

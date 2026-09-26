@@ -300,9 +300,9 @@ def test_abbreviated_citations_are_recorded_as_canonical_object_ids(
     abbreviated = [revision[:10] for revision in cited]
     assert abbreviated != cited
 
-    stored = crew.complete(
-        run_id, gate="passed", commits=abbreviated, root=repository
-    )["record"]
+    stored = crew.complete(run_id, gate="passed", commits=abbreviated, root=repository)[
+        "record"
+    ]
 
     canonical = [_git(repository, "rev-parse", revision) for revision in abbreviated]
     assert stored["commits"] == canonical
@@ -311,6 +311,7 @@ def test_abbreviated_citations_are_recorded_as_canonical_object_ids(
     assert [row["run_id"] for row in ledger.runs(PROJECT, root=repository)] == [run_id]
     assert not pointer_path(run_id).exists()
     _assert_real_home_carries_no_pointer(run_id)
+
 
 def test_a_trailing_merge_does_not_charge_the_content_it_brought(
     repository: Path, tmp_path: Path
@@ -354,9 +355,9 @@ def test_a_trailing_merge_does_not_charge_the_content_it_brought(
     _git(run_tree, "commit", "-q", "--no-edit")
     merge = _git(run_tree, "rev-parse", "HEAD")
 
-    stored = crew.complete(run_id, gate="passed", commits=[own, merge], root=repository)[
-        "record"
-    ]
+    stored = crew.complete(
+        run_id, gate="passed", commits=[own, merge], root=repository
+    )["record"]
 
     own_churn = _numstat(repository, base, own, "in_scope.txt")
     at_tip = _numstat(repository, base, merge, "in_scope.txt")
@@ -366,6 +367,7 @@ def test_a_trailing_merge_does_not_charge_the_content_it_brought(
     assert [row["run_id"] for row in ledger.runs(PROJECT, root=repository)] == [run_id]
     assert not pointer_path(run_id).exists()
     _assert_real_home_carries_no_pointer(run_id)
+
 
 def test_a_citation_list_that_changes_no_path_is_refused(
     repository: Path, tmp_path: Path
