@@ -229,8 +229,12 @@ def test_an_ancient_receipt_yields_to_the_probe_for_every_lane_on_that_account()
     )
 
     assert lanes["separate"]["probe_status"] == "unmatched"
+    # The re-queried lane reports the figure from the one read the probe gave
+    # this composition: the pair is asserted together, because a re-query that
+    # asked the probe again would show it here as a second invocation, and a
+    # re-query that never happened would show the lane's own old receipt.
+    assert (invocations, lanes["separate"]["quota_source"]) == (1, "probe")
     assert lanes["separate"]["requeried"] is True
-    assert lanes["separate"]["quota_source"] == "probe"
     assert {window["source"] for window in separate.values()} == {"probe"}
     assert {window["observed_at"] for window in separate.values()} == {
         _stamp(composed_at)
@@ -242,7 +246,6 @@ def test_an_ancient_receipt_yields_to_the_probe_for_every_lane_on_that_account()
         window["serving_state"] != mcp_views.STALE_SERVING_STATE
         for window in separate.values()
     )
-    assert invocations == 1
 
 
 @pytest.mark.parametrize(
