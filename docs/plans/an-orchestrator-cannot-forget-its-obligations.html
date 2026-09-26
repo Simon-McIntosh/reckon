@@ -69,14 +69,24 @@
     <h3>Landed &mdash; a standing review is recognised by the record it names</h3>
     <p>Commit <code>1f9f4626f8bc86cdd3898ad1c391ef858650be2b</code> extends <code>_review_in_flight</code> in <code>reckon/crew/recovery.py</code> with a third lookup beside the reflex's recorded dispatch and the <code>review-of-&lt;source&gt;</code> node id: a live review-role pointer whose declared write paths include a record path the dispatch composes from the reviewed run. That path names the reviewed run whatever the reviewer is called, so a review launched under a coordinator's own id is found rather than leaving its source run reading <code>review-missing</code>. The head-keyed record path is composed beside the legacy one, and the obligations reader's own currency check still keys on the head, so a review of an older revision does not suppress <code>review-missing</code> for the current one.</p>
     <p>The composed review command now selects its lane through <code>_review_lane_candidates</code>, the same ordering the reflex runs on, rather than printing the owning backend unconditionally: the owning lane leads when it is not excluded, the local lane prints as <code>--local</code>, and a backend named in <code>review_excluded_backends</code> is never named on any fallback. One rule, with no second copy of the ordering.</p>
-    <figure>
-      <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/review-recognition-and-lane.svg" alt="Left: a scoring run is not review-missing when any of three lookups finds a review - the recorded dispatch, a review-of- node id, or a live review-role pointer whose declared write path names the run's record. Right: the printed command orders lanes owning, local, then the rest, and never names an excluded backend.">
-      <figcaption>The recognition half and the lane half both read one composed authority: the record path the dispatch derives from the reviewed run, and the candidate ordering the reflex derives from the flight configuration.</figcaption>
-    </figure>
+    <p>A complete run with no review stored for its head reads <code>review-missing</code>; a review counts as in flight when any one of three lookups finds it:</p>
+    <ol>
+      <li>the reflex's recorded review dispatch, whose review run still holds a live pointer;</li>
+      <li>a live pointer whose node id is <code>review-of-</code> followed by the source node;</li>
+      <li>a live review-role pointer whose declared write paths name this run's record. The reviewing node's id need not be <code>review-of-</code> plus the source, which is the lookup added here.</li>
+    </ol>
+    <p>Any one match puts the run in flight, so it is not <code>review-missing</code>.</p>
+    <p>When the review is missing and the command is printed to be retyped, it names its lane in this order:</p>
+    <ol>
+      <li>first, the owning run's recorded backend &mdash; the review is of that run, so the lane is the owner's recorded choice;</li>
+      <li>then the locally served backend, named <code>--local</code> rather than <code>--backend</code> when it is chosen;</li>
+      <li>last, the remaining configured backends, in a stable alphabetical order.</li>
+    </ol>
+    <p>A backend the flight configuration excludes from review routing (<code>review_excluded_backends</code>) is never named, on any fallback. The printed command is <code>--backend &lt;lane&gt;</code>, or <code>--local</code> when none remains. Both halves read one source of truth: recognition uses the record path the dispatch composes from the reviewed run, and the lane uses the candidate ordering the reflex already runs on, so the command a reader retypes and the command the reflex executes select through the same rule rather than two.</p>
     <p><strong>Measured.</strong> The two tests are red at base and green at this head, run in a scratch base tree whose imported module path was printed to prove which tree answered: <code>tests/test_review_in_flight_by_record_path.py</code> is 2 failed at the base revision against 2 passed at the head. The four files this change reaches are 114 passed at the base revision against 114 passed at the head, zero added failures.</p>
     <p><strong>The declared mutation was observed to fail.</strong> Judging review recognition by the node id alone &mdash; matching live review pointers by node id only, ignoring their declared write paths &mdash; the recognition case fails: 1 failed, the source run reading in flight as the empty string while a review of it is alive. That is the base module's behaviour, and the red log's first line repeats the declared mutation verbatim.</p>
     <p><strong>Scope retained, deliberately.</strong> The driving followup stays open and no terminal status is set: a worker knows its node landed, not whether the section closed.</p>
-    <p>Figure: <code>docs/figures/an-orchestrator-cannot-forget-its-obligations/review-recognition-and-lane.svg</code>. Evidence: <code>docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html</code>, section <code>review-in-flight-by-record-path</code>.</p>
+    <p>Evidence: <code>docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html</code>, section <code>review-in-flight-by-record-path</code>. The two ordered lists above replaced this landing's figure, and the SVG is deleted: the only remaining mention of its filename in the repository is the followup that asked for the change.</p>
 
     <h2 id="s3">&sect;3 &mdash; A deferral is recorded and expires</h2>
     <p><code>reckon crew ack --run X --reason "&hellip;" --until &lt;iso-time&gt;</code> records a deliberate deferral, for example "waiting for S21 to release dispatch.py". It removes that obligation from the list until the deferral expires. The acknowledgement is stored beside the drain dispositions, and the obligations view shows acknowledged items in a separate block.</p>
