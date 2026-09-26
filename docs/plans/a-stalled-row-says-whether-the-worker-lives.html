@@ -175,7 +175,8 @@
 
     <h3 id="s3-landed">Landed &mdash; node <code>stalled-row-names-liveness</code></h3>
     <p><strong>Landed</strong> (<code>8be6a8af</code>, process states made three-way in
-    <code>8236dcc3</code>). The stalled branch of <code>_watch_verdict</code> in
+    <code>8236dcc3</code>, the recorded-exit route added in <code>b09db857</code>). The stalled branch of
+    <code>_watch_verdict</code> in
     <code>reckon/crew/recovery.py</code> composes its reason clause from the process verdict the
     classifier has already put on the same row, so the whole detail is <code>alive, quiet 46m</code>,
     <code>process gone, quiet 15m</code>, or <code>liveness unknown, quiet 15m</code> &mdash; the
@@ -183,31 +184,38 @@
     the pane prints beside the node rather than in a colour or a glyph. The three states are three
     different remedies (a long quiet step needs nothing, a dead process needs a resume, an unproven
     reading needs the check a reader would otherwise run by hand), and the third is not a death:
-    <code>process gone</code> is said only when a pid was checked on the reading host and found dead,
-    which the row's own <code>liveness_proven</code> records. A pointer with no recorded pid, or one
-    whose pid belongs to another host's process table, therefore reads as unknown rather than
-    claiming an observation nobody made. The minutes are the row's own quiet time, floored, so the
+    <code>process gone</code> is said only where something observed the end: a pid checked on the reading
+    host and found dead, which the row's own <code>liveness_proven</code> records, or the
+    supervisor's exit record for the run, which survives a pointer nobody updated and a pid no other
+    machine can look up. A pointer carrying neither &mdash; no recorded pid and no exit record, or a
+    pid this host cannot check and no exit record &mdash; reads as unknown rather than claiming an
+    observation nobody made. The minutes are the row's own quiet time, floored, so the
     figure never claims more silence than was measured. <code>reckon/crew/ticker.py</code> needed no
     change: the pane renders the classifier's detail through its existing reason clause, and the
     words reach the row unchanged.</p>
-    <p><strong>Evidence:</strong> four cases in <code>tests/test_stalled_row_names_liveness.py</code>
-    (4 passed) render one stalled row per state through the classifier, the watcher snapshot, the
+    <p><strong>Evidence:</strong> five cases in <code>tests/test_stalled_row_names_liveness.py</code>
+    (5 passed) render one stalled row per state through the classifier, the watcher snapshot, the
     transition the events log persists, and <code>format_watch_transition</code> at the 208-column
-    pane: a live child, an absent pid checked here, a pointer with no pid, and a pid recorded by
-    another host. Each asserts the row names its own state and not another's. The named minutes are
-    asserted against the age the fixture itself wrote into the stream's mtime, never against the
-    recovery reader the renderer calls, so the two sides cannot drift together; the stalled-detail
-    assertion in <code>tests/test_stall_clock_starts_at_the_attempt.py</code> takes its expectation
-    from the fixture's declared stream age for the same reason, and was moved to the new wording in
-    the first commit so no file landed red. At <code>2fd5f559</code> the two unproven-state cases
-    fail on <code>assert 'liveness unknown' in '&hellip; process gone, quiet 31m'</code> and nothing
-    else did. The declared negative control was executed and logged: with the process-state clause
-    deleted from the stalled detail, the live case fails on its own <code>alive</code> assertion.
-    A second logged mutation shifts the quiet reading by a minute, and every liveness case then
-    fails at <code>assert 32 == (1919 // 60)</code> &mdash; the fixture's independent figure &mdash;
-    which is what an expectation taken from the reader could not do. The three measured files pass
-    in one invocation at the reviewed head (29 passed, exit 0) with zero added failures against
-    base, and the staged paths' ruff findings equal their count at base. Figures and measurements in
+    pane: a live child, an absent pid checked here, an exit record with no pid, a pointer with no pid
+    and no record, and a pid recorded by another host. Each asserts the row names its own state and
+    not another's. The named minutes are asserted against the age the fixture itself wrote into the
+    stream's mtime, never against the recovery reader the renderer calls, so the two sides cannot
+    drift together; the stalled-detail assertion in
+    <code>tests/test_stall_clock_starts_at_the_attempt.py</code> takes its expectation from the
+    fixture's declared stream age for the same reason, and was moved to the new wording in the first
+    commit so no file landed red. Each red arm was reproduced before its repair: at
+    <code>2fd5f559</code> the two unproven-state cases fail on
+    <code>assert 'liveness unknown' in '&hellip; process gone, quiet 31m'</code>, and at
+    <code>b7c1272e</code> the recorded-exit case fails on
+    <code>assert 'process gone' in '&hellip; liveness unknown, quiet 31m'</code> &mdash; each time
+    with nothing else failing. The declared negative control was executed and logged: with the
+    process-state clause deleted from the stalled detail, the live case fails on its own
+    <code>alive</code> assertion. A second logged mutation shifts the quiet reading by a minute, and
+    every liveness case then fails at <code>assert 32 == (1919 // 60)</code> &mdash; the fixture's
+    independent figure &mdash; which is what an expectation taken from the reader could not do. The
+    three measured files pass in one invocation at the delivered head (30 passed, exit 0) with zero
+    added failures against base, and the staged paths' ruff findings equal their count at base.
+    Figures and measurements in
     <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#s3">&sect;3
     of the landed evidence record</a>.</p>
 

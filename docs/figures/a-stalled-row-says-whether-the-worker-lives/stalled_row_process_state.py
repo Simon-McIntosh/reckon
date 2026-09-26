@@ -36,8 +36,8 @@ FIGURES = Path(__file__).parent
 
 
 def main() -> None:
-    fig, (timeline, clause) = plt.subplots(
-        2, 1, figsize=(11.0, 7.2), gridspec_kw={"height_ratios": [1.0, 1.35]}
+    fig, (timeline, clause, rendered) = plt.subplots(
+        3, 1, figsize=(11.0, 8.0), gridspec_kw={"height_ratios": [1.0, 1.05, 1.0]}
     )
     fig.suptitle(
         "A stalled row says whether the worker's process lives",
@@ -100,7 +100,7 @@ def main() -> None:
     for side in ("top", "right", "left"):
         timeline.spines[side].set_visible(False)
 
-    # ── Bottom: the classifier's composition and the rendered clause ──────
+    # ── Middle: the classifier's composition ──────────────────────────────
     clause.axis("off")
     clause.text(
         0.01,
@@ -114,28 +114,29 @@ def main() -> None:
         (
             "process verdict already on the row\n(process_alive, liveness_proven)",
             (
-                "True              →  alive\n"
-                "False, checked here →  process gone\n"
-                "no pid, other host  →  liveness unknown"
+                "True                            →  alive\n"
+                "pid dead here, or exit recorded →  process gone\n"
+                "no pid, other host              →  liveness unknown"
             ),
         ),
         ("stalled detail the pane renders", "process state, quiet <n>m"),
     ]
-    y = 0.80
+    y = 0.85
     for left, right in steps:
         clause.text(0.01, y, left, fontsize=10, va="top", family="monospace")
         clause.text(0.46, y, right, fontsize=10, va="top", family="monospace")
-        y -= 0.235
+        y -= 0.30
 
-    y -= 0.03
-    clause.text(
+    # ── Bottom: the rendered rows ─────────────────────────────────────────
+    rendered.axis("off")
+    rendered.text(
         0.01,
-        y,
+        0.95,
         "rendered rows (208-column pane, measured through format_watch_transition):",
         fontsize=10,
         va="top",
     )
-    y -= 0.14
+    y = 0.76
     rows_text = [
         (
             "r-quiet-held     working → stalled   alive, quiet 31m",
@@ -143,6 +144,10 @@ def main() -> None:
         ),
         (
             "r-quiet-vacant   working → stalled   process gone, quiet 31m",
+            GONE_COLOUR,
+        ),
+        (
+            "r-quiet-released working → stalled   process gone, quiet 31m",
             GONE_COLOUR,
         ),
         (
@@ -155,10 +160,10 @@ def main() -> None:
         ),
     ]
     for text, colour in rows_text:
-        clause.text(
+        rendered.text(
             0.04, y, text, fontsize=10, va="top", family="monospace", color=colour
         )
-        y -= 0.115
+        y -= 0.17
 
     fig.tight_layout(rect=(0, 0, 1, 0.955))
     target = FIGURES / "stalled_row_process_state.png"
