@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="79">
+<meta name="plan-version" content="80">
 <meta name="plan-impl" content="0.6">
 </head>
 <body>
@@ -969,6 +969,16 @@
     <div class="r-fu-body"><p>Low priority. The departure rule landed at <code>2f1cfd17</code> reads a pointer's departure as promoted only when the ledger records a promotion, as discarded when the run directory records a discard, and as withdrawn otherwise. reckon-ee observed live at 11:14:53 on 2026-09-26 that a <code>crew discard</code> rendered <code>complete → withdrawn</code>. That is correct as far as it goes, since it no longer reads promoted, but the discarded branch is unreachable: <code>crew discard</code> writes no discard record in the run directory. Make discard write that record, carrying the time and the reason if one is given, so a reader can tell a deliberate discard from a pointer that vanished. The done-when needs a case that discards a run through the real command and asserts that the departure reads discarded.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
     </article>
+<article class="r-fu" data-id="f-acpewio-complete-refuses-an-open-merge" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26T14:40:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">crew complete refuses while the checkout has a merge open</h4>
+    <div class="r-fu-body"><p>On 2026-09-26 at 14:31, s21's <code>crew complete</code> of a review run committed <code>8dd34128</code> and <code>1b652060</code> into the shared checkout while s23 had a merge open there (MERGE_HEAD <code>df7e400d</code>, one file unmerged). Only the promotion's own paths were committed, and s23's staged files were not swept in, so no harm resulted. But a promotion should not write into a checkout mid-merge: it changes the merge's first parent under another session, and a whole-index commit would have taken the peer's staged work. <code>complete</code> should refuse while <code>.git/MERGE_HEAD</code>, or a rebase or cherry-pick state, exists, naming the state, so the coordinator retries after the peer concludes.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
+    </article>
+<article class="r-fu" data-id="f-acpewio-predecessor-commits-reach-the-ledger" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26T14:40:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A predecessor&#x27;s commits carried by a follow-on reach the ledger</h4>
+    <div class="r-fu-body"><p>When a run is discarded to free its claim and a follow-on node is dispatched on its head, the predecessor's commits reach main through the follow-on's merge. They have no ledger row, because the predecessor was never promoted and <code>complete</code> refuses to cite commits at or before the follow-on's base. Measured three times on 2026-09-26: context-estimate-reads-declared-files (<code>318ec2b6</code>, carried by context-estimate-tests-assert-fixed-figures), fence-never-grants-a-main-git-dir (<code>74e6c86d</code> and <code>7f68e6cc</code>, carried by a-fence-refuses-a-protected-worktree), and s23's first unmanaged-producer node (<code>75007b74</code> and <code>7ddc2a4b</code>). The ledger then undercounts landed work and loses its provenance. A follow-on should record the predecessor's commits it carries, or a discarded run whose commits later land should be promotable after the fact.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T062557423973-review-of-a-crew-process-ends-with-its-owner" data-who="reckon-ship" data-when="2026-09-24T06:45:20.039Z">
@@ -1080,7 +1090,7 @@
     <div class="r-comment-body"><p>review record stored and read by the coordinator (94)</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20260926T093425180689-review-of-follow-watch-suite-green-on-main" data-who="reckon-build" data-when="2026-09-26T11:01:08.030Z">
-    <div class="r-comment-body"><p>review record stored and read by the coordinator (87; its counter-format findings are carried by reckon-ee&#x27;s counter-cells-keep-their-counts-apart)</p></div>
+    <div class="r-comment-body"><p>review record stored and read by the coordinator (87; its counter-format findings are carried by reckon-ee's counter-cells-keep-their-counts-apart)</p></div>
 </div>
 </section>
 </main>
