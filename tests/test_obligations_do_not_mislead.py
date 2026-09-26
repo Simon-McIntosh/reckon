@@ -55,9 +55,7 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ("commit", "-q", "-m", "test: seed mislead fixture"),
     ):
         _git(root, *arguments)
-    (config_home / "mounts.json").write_text(
-        json.dumps({PROJECT: str(root / "docs")})
-    )
+    (config_home / "mounts.json").write_text(json.dumps({PROJECT: str(root / "docs")}))
     monkeypatch.setattr(obligations_module, "_utc_now", lambda: OBSERVED_AT)
     return root
 
