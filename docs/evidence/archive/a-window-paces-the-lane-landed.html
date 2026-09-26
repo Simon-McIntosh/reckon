@@ -2126,6 +2126,114 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
       This node changes neither the schema nor the generated artifacts.</li>
     </ul>
   </section>
+
+
+  <section id="s5b-requery-at-the-lane">
+    <h2>&sect;5b.i &mdash; The lanes view re-queries a reading past its shelf life</h2>
+
+    <p>The re-query module landed first and nothing called it: <code>crew_lanes_view</code> composed
+    <code>serving_state: stale</code> and reported the stale figure anyway. This anchor records the
+    wiring &mdash; each lane's own reading is handed to
+    <code>crew.staleness.resolve_configured_reading</code> before the row is composed, so the figure a
+    lane shows is decided by the reading's age: inside the configured shelf life the receipt stands, past
+    it the lane's probe is asked, and a probe that cannot answer leaves the old figure with the age that
+    disqualifies it. The resolver is the one already landed; the view calls it and does not re-implement
+    it.</p>
+
+    <p><strong>Commits</strong> <code>6d95a559</code>, <code>81c175be</code> (the second states the
+    single-read claim as one assertion). The figure below is
+    <code>docs/figures/a-window-paces-the-lane/stale-reading-requery.svg</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/stale-reading-requery.svg" alt="One lane's four-hour-old receipt and the probe block already read once for its command feed a gate asking whether the reading is older than its configured shelf life; the two outcomes are a green card, where the probe answered and the lane reports the probe's 37 % at age 0 s with requeried true, asserted with one invocation, and a red card, where the probe cannot answer and the receipt is kept at 14 400 s with serving_state unknown and the reason requery_did_not_answer.">
+      <figcaption>A lane's figure is decided by the age of the reading it holds: inside the shelf life
+      the receipt stands, past it the probe the composition already read supplies the number, and a probe
+      that cannot answer leaves the old figure with the age that disqualifies it.</figcaption>
+    </figure>
+
+    <h3>The measure, and what it reads</h3>
+
+    <p>The measure is driven through <code>mcp_views.crew_lanes_view</code> rather than the resolver, so
+    the wiring is what is under test: a lane can only be shown to report a figure if the view that
+    publishes it is the thing asked. The composition is given a counting probe reader and an explicit
+    composition moment, so the probe invocation count and every reported age are read from the view's own
+    output rather than inferred from a helper's return.</p>
+
+    <p><strong>A reading past its shelf life reports the probe's figure.</strong> A four-hour-old receipt
+    against a one-minute configured shelf life is re-queried, and the lane reports the probe's long-window
+    37&nbsp;% rather than its own 43&nbsp;%, at the probe's own stamp and an age of 0&nbsp;s. The
+    single-read claim is asserted as a pair &mdash;
+    <code>assert (invocations, lanes["separate"]["quota_source"]) == (1, "probe")</code> &mdash; because a
+    second read and a missing re-query each fail half of it, so neither a re-query that opened the probe
+    again nor one that never ran can pass.</p>
+
+    <p><strong>A re-query that cannot answer keeps the old figure and says so.</strong> Two failure shapes
+    are driven: a probe that raises, and a probe that returns no block. Both keep the receipt's figure at
+    its 14&nbsp;400-second age with every window's serving state <code>unknown</code>, with
+    <code>requery_did_not_answer</code> beside it, so the row reads as neither headroom nor exhaustion and
+    names the refusal that produced it. The probe adapter also yields no figure when the probe belongs to
+    a pool the lane does not declare, which takes the same refusal path.</p>
+
+    <p><strong>The re-query is conditional, and a live reading is not displaced.</strong> A lane whose
+    window signature the probe matches adopts the live block directly and reports <code>requeried</code>
+    false; a lane whose reading is half an hour old against a one-hour shelf life is reported as it stands
+    even though the probe was read and answers &mdash; its own figure, its own 1&nbsp;800-second age, and
+    the probe's deliberately different number not adopted. Without that clause an implementation that
+    re-queried unconditionally, or that adopted every answering probe, would pass the other cases.</p>
+
+    <p><strong>The real configuration home is watched, not assumed.</strong> Every case runs under a
+    temporary home with <code>RECKON_HOME</code> asserted to resolve there, and the workstation's own home
+    is inventoried to depth two (plus the two subtrees a composition could write into) before and after
+    each case and required byte-identical &mdash; an isolated read does not prove an isolated write. The
+    inventory reads sizes and modification times rather than paths alone, so a rewritten file inside a
+    watched subtree is caught as well as a new one.</p>
+
+    <h3>Gate</h3>
+
+    <p><code>PYTHONPATH=$PWD &lt;venv&gt;/python -m pytest -p no:cacheprovider -q
+    tests/test_crew_lanes_view.py tests/test_lanes_view_is_live.py
+    tests/test_lanes_view_serving_state.py tests/test_lane_evidence.py</code> &mdash; one invocation per
+    arm, whole output captured to a log.</p>
+
+    <table>
+      <caption>The four measured files, each arm in one invocation.</caption>
+      <thead>
+        <tr><th>Arm</th><th>Revision</th><th>Result</th><th>Added failures</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>dispatch base</td><td><code>6b8decd9</code></td><td>40 passed, exit 0</td><td>&mdash;</td></tr>
+        <tr><td>this head</td><td><code>81c175be</code> (tree <code>8474df1d</code>)</td>
+        <td><strong>43 passed</strong>, exit 0</td><td><strong>0</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>Both arms printed the module path before the run, and both resolve to the tree that was measured
+    (the worktree standing at the dispatch base for the first arm, the worktree at
+    <code>81c175be</code> for the second), so neither arm can have measured a neighbouring checkout's
+    revision of the code. The head arm ran with a clean status. The three added cases are the re-query
+    itself, the failed re-query in two parametrisations, and the inside-shelf-life case. Lint by delta
+    against the base copy of the changed module adds no finding: the same two pre-existing findings and
+    the same single unformatted block are present at base and at head, neither introduced by this
+    change.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim &mdash; the first line of the red log:</strong></p>
+
+    <blockquote><p>remove the staleness resolver call from crew_lanes_view; the probe-called-once assertion must fail</p></blockquote>
+
+    <p>The resolver block was replaced with the mutation and the same four files run: <strong>3 failed,
+    40 passed</strong>, exit 1. The named assertion
+    <code>assert (invocations, lanes["separate"]["quota_source"]) == (1, "probe")</code> is the first to
+    fire, at <code>tests/test_lanes_view_is_live.py:236</code>, with
+    <code>E AssertionError: assert (1, 'receipt') == (1, 'probe')</code> &mdash; the lane keeps its own
+    receipt because no re-query happened, which is exactly the state the removal produces. The other two
+    reds are the failed-re-query parametrisations at <code>assert lane["requeried"] is True</code>
+    (<code>assert False is True</code>, line 277). The remaining <code>40 passed</code> are the positive
+    control that the same tree runs under its own mutation. The mutation was reverted and the tree
+    re-run: status and diff against the committed head both empty, <strong>43 passed</strong>, module
+    resolving to the worktree.</p>
+  </section>
 </main>
 </body>
-</html>...
+</html>
