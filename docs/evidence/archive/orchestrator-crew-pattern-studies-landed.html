@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="orchestrator-crew-pattern-studies-landed">
+  <meta name="plan-title" content="Orchestrator Crew Pattern Studies — execution evidence">
+  <meta name="plan-summary" content="Measured crew velocity, immutable inputs, replay checks and coverage limits.">
+  <meta name="plan-evidence-for" content="orchestrator-crew-pattern-studies">
+  <meta name="plan-verifies" content="orchestrator-crew-pattern-studies#s2">
+  <meta name="plan-commits" content="95b173b8d99858cdaddc58a4d5ecbe08557cd98e">
+  <meta name="plan-recorded-at" content="2026-09-26">
+  <meta name="plan-verdict" content="passed">
+  <title>Orchestrator Crew Pattern Studies — execution evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Orchestrator Crew Pattern Studies — execution evidence</h1>
+
+    <section id="velocity">
+      <h2>Velocity census: primary output, survival and effort</h2>
+      <p><strong>Window:</strong> 2026-09-12 00:00 UTC through 2026-09-26 10:00 UTC.
+        <strong>Artifact commit:</strong> <code>95b173b8d99858cdaddc58a4d5ecbe08557cd98e</code>.
+        Five pinned primary heads, frozen ledger/SQLite inputs and an executable census are retained;
+        no live stream or growing database is consulted during replay. The full <code>velocity.json</code> and <code>inputs.json.gz</code> are stored under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T104517371666-velocity-census/</code>; the repository retains a compact <code>summary.json</code> below 300 KB.</p>
+      <table>
+        <thead><tr><th>Project</th><th>Promoted records</th><th>Source/test additions</th><th>Deleted within 7d / mature additions</th><th>Durable mature additions</th></tr></thead>
+        <tbody><tr><td>reckon</td><td>1,107</td><td>125,343</td><td>665 / 28,713</td><td>28,048</td></tr>
+<tr><td>imas-ambix</td><td>264</td><td>33,124</td><td>586 / 8,553</td><td>7,967</td></tr>
+<tr><td>nova</td><td>441</td><td>104,442</td><td>2,074 / 69,552</td><td>67,478</td></tr>
+<tr><td>imas-efit</td><td>248</td><td>23,039</td><td>267 / 9,308</td><td>9,041</td></tr>
+<tr><td>imas-codex</td><td>243</td><td>13,544</td><td>114 / 7,834</td><td>7,720</td></tr></tbody>
+      </table>
+      <p>Total: <strong>2,303 promoted records</strong> (1,259 implement-class; 1,044 review/investigate),
+        2,268 logical nodes, 6,515 primary first-parent commits and 299,492 product additions.
+        Of 123,960 mature additions, 3,706 were deleted within seven days (2.99%); 120,254 survive.
+        A further 175,532 additions lack full follow-up. First-parent merge diffs count landings once,
+        and rename-aware line identities count a changed-and-readded line as a new birth.</p>
+      <figure>
+        <img src="/reckon/figures/crew-pattern-review-velocity/durable-product-lines.png"
+          alt="Daily seven-day durable product additions by crew lane, with later days shaded as censored; gross additions shown underneath" style="max-width:100%">
+        <figcaption>Seven-day durability is observable only through September 19 at 10:00 UTC.
+          September 19 therefore has a partial eligible cohort. Unattributed and mixed lanes remain
+          visible. A lane labels the integration footprint of cited worker commits, including merge
+          resolution; it does not establish authorship of every line or comparable workloads.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Observed numerator / denominator</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Matched mature durable output / worker-hour</td><td>86,478 lines / 739.9025 h; 308 producing runs</td><td>116.88</td></tr>
+          <tr><td>Recorded attempts / landed logical node</td><td>1,788 attempts / 1,107 commit-bearing logical nodes</td><td>1.62; observable lower bound</td></tr>
+          <tr><td>Dispatch to completion</td><td>2,303 / 2,303 records</td><td>median 43.78 min; p75 87.68 min</td></tr>
+          <tr><td>Dispatch to durable promotion record</td><td>2,199 explicit promotion clocks + 104 first-ledger-appearance upper bounds</td><td>median 83.03 min; p75 186.44 min</td></tr>
+          <tr><td>Record / product additions, inclusive</td><td>14,704,768 / 299,492 lines</td><td>49.10</td></tr>
+          <tr><td>Excluding figure support data</td><td>3,510,213 / 299,492 lines</td><td>11.72</td></tr>
+          <tr><td>HTML plus docs/state only</td><td>1,601,335 / 299,492 lines</td><td>5.35</td></tr>
+          <tr><td>Gross attributed product / coordinator active-dispatch-hour</td><td>281,374 lines / 1,099.968478 h; 54 project/session pairs</td><td>255.80; interval-union proxy, not interaction time</td></tr>
+        </tbody>
+      </table>
+      <p>The inclusive record ratio includes <strong>11,194,555 figure-support data lines</strong>,
+        largely scientific JSON stored under figures. One independently checked Nova receipt alone
+        adds 2,428,736 lines at <code>2f0da0c1d3f0cb18c6385446a9802465ae14a7fe</code>.
+        Stored volume must not be interpreted as worker writing effort.</p>
+      <h3>August comparison and evidence limits</h3>
+      <p>The <a href="/reckon/research/crew-fleet-rox-review#s2">published August 12–16 baseline</a>
+        reported 259 completed runs in four projects, 108,587 added lines in three reporting projects,
+        228 commits, median 9.8 minutes/run, 66.2 stall-corrected worker-hours, and median authored
+        throughput of 16–24 changed lines/worker-minute. September adds a fifth project, includes
+        review and record work explicitly, measures primary landings and retains uncorrected duration
+        sources. August reported no seven-day survival, record/product split or durable worker-hour
+        rate; these figures do not establish a causal efficiency change.</p>
+      <ul>
+        <li>83 reachable promotions were missing from the captured final ledgers: 82 imas-efit and one Nova.
+          SQLite supplied those records with explicit fallback provenance. Repairing the primary ledgers
+          is outside this node's scope.</li>
+        <li>104 rows lacked an explicit promote commit. The first primary commit adding their run id
+          supplies a separately labelled upper-bound clock; every recovered clock has a commit citation.</li>
+        <li>28 run records carry unresolved or unreachable commit citations. 18,118 product additions
+          remain unattributed; 3,319 have mixed-lane attribution.</li>
+        <li>24,997 mature attributed additions lack a fully matched positive-duration producing cohort.
+          Eleven rows report zero worker seconds, one with commit citations and a 3,401.36-second
+          dispatch-to-completion interval. They remain visible and receive no zero-cost productivity credit.</li>
+        <li>Attempts use declared lineage, the same plan/node identity and explicit repair-name links.
+          The application can infer <code>predecessor_run</code> from a base SHA; it is therefore
+          excluded as standalone retry evidence. Unrecorded discarded attempts remain missing.</li>
+      </ul>
+      <h3>Reproduction and verification</h3>
+      <p><a href="/reckon/research/data/crew-pattern-review/velocity/census.py">Census script</a>,
+        full receipts in the durable run directory,
+        <a href="/reckon/research/data/crew-pattern-review/velocity/summary.json">compact JSON census</a>,
+        <a href="/reckon/research/data/crew-pattern-review/velocity/findings.md">findings</a>,
+        <a href="/reckon/research/data/crew-pattern-review/velocity/census.log">complete generation log</a>, and
+        <a href="/reckon/research/data/crew-pattern-review/velocity/verification.log">replay gate log</a>.</p>
+      <p>The focused verifier at <code>95b173b8d99858cdaddc58a4d5ecbe08557cd98e</code> passed: byte-identical full and compact JSON; compact file below 300 KB; conserved node, commit
+        and line counts across project, day, lane, week and 450 combined cells; all five projects observed;
+        real churn and censoring nonzero; every known reachable promotion has a record. Positive
+        controls preserve a rename and detect two of three original lines deleted within seven days,
+        while excluding a later deletion. Every captured product delta matches Git additions and removals.</p>
+      <p>The initial zero-context instrument refused a real mismatch: one file's normal Git numstat
+        was 28 additions / 21 deletions, while zero-context output gave 30 / 23. The normal-context
+        parser reproduces 28 / 21 in the independent gate. Failed captures and intermediate logs remain
+        under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T104517371666-velocity-census/</code>.</p>
+      <p>Compact summary: 193,983 bytes; SHA-256 <code>474376e3647aa342a655ea441642b900d70bdf5fe1386cca5d158fd4dce8de45</code>. Full JSON SHA-256: <code>c65afa24ce0da336b9bac4903dabd3fab950d982bc1f46033650adfff9fdea7b</code>.
+        Canonical input SHA-256: <code>5172e82376f8d20158bb65c413dfa1b2f762f7bee1883926d2db0d99fdbab479</code>.
+        The coordinator owns merged verification, synthesis and section closure.</p>
+    </section>
+  </main>
+</body>
+</html>
