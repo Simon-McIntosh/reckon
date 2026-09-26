@@ -1,11 +1,12 @@
 read a run-scoped plan from the mounted main checkout when no checkout path is given
-# mutation: _run_scoped_read_root body replaced with 'return None' in a scratch copy
+# mutation: _run_scoped_read_root body replaced with "return None" in a scratch copy
+# tree: /tmp/reads-negctl (git archive of HEAD plus this node test file)
 # cmd: pytest -q tests/test_plan_reads_stay_in_the_worktree.py
-F......                                                                  [100%]
+F.FFF......                                                              [100%]
 =================================== FAILURES ===================================
 _________ test_a_run_scoped_read_returns_the_worktree_version_not_main _________
 
-run_scoped = {'main': PosixPath('/tmp/pytest-of-mcintos/pytest-11252/test_a_run_scoped_read_returns0/main'), 'worktree': PosixPath(...PosixPath('/tmp/pytest-of-mcintos/pytest-11252/test_a_run_scoped_read_returns0/main/docs/plans/sample-plan.html'), ...}
+run_scoped = {'main': PosixPath('/tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_read_returns0/main'), 'worktree': PosixPath(...PosixPath('/tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_read_returns0/main/docs/plans/sample-plan.html'), ...}
 
     def test_a_run_scoped_read_returns_the_worktree_version_not_main(run_scoped):
         fixture = run_scoped
@@ -19,7 +20,79 @@ run_scoped = {'main': PosixPath('/tmp/pytest-of-mcintos/pytest-11252/test_a_run_
 E       AssertionError: {'project': 'proj', 'slug': 'sample-plan', 'version': 0, 'data': {'slug': 'sample-plan', 'sections': [], 'type': 'plan', 'project': 'proj', ...}}
 E       assert 0 == 1
 
-tests/test_plan_reads_stay_in_the_worktree.py:127: AssertionError
+tests/test_plan_reads_stay_in_the_worktree.py:181: AssertionError
+____________ test_a_run_scoped_roadmap_reads_the_worktree_not_main _____________
+
+run_scoped = {'main': PosixPath('/tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_roadmap_read0/main'), 'worktree': PosixPath(...PosixPath('/tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_roadmap_read0/main/docs/plans/sample-plan.html'), ...}
+
+    def test_a_run_scoped_roadmap_reads_the_worktree_not_main(run_scoped):
+        """The roadmap tool resolves the run scope too, and its inventory shows it.
+    
+        A count discriminates here rather than a field: the worktree holds a plan
+        main does not have, so a roadmap that resolved main would report one plan
+        fewer. The explicit-``checkout_path`` arm is the control: it must report
+        main's count, which proves the assertion separates the two trees.
+        """
+        fixture = run_scoped
+    
+        scoped = mcp_module._roadmap_tool(PROJECT)
+        explicit_main = mcp_module._roadmap_tool(
+            PROJECT, checkout_path=str(fixture["main"])
+        )
+    
+>       assert scoped["completion"]["plans"] == 2, scoped["completion"]
+E       AssertionError: {'plans': 1, 'completed': 0, 'pending': 1, 'lifecycle_completion_pct': 0.0, ...}
+E       assert 1 == 2
+
+tests/test_plan_reads_stay_in_the_worktree.py:208: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  reckon.serve:serve.py:954 Git HEAD lookup failed with exit code 128 in /tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_roadmap_read0/main: fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+WARNING  reckon.serve:serve.py:954 Git HEAD lookup failed with exit code 128 in /tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_roadmap_read0/main: fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+_____________ test_a_run_scoped_audit_reads_the_worktree_not_main ______________
+
+run_scoped = {'main': PosixPath('/tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_audit_reads_0/main'), 'worktree': PosixPath(...PosixPath('/tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_audit_reads_0/main/docs/plans/sample-plan.html'), ...}
+
+    def test_a_run_scoped_audit_reads_the_worktree_not_main(run_scoped):
+        """The audit tool resolves the run scope too; its checked count shows it,
+        with the explicit-``checkout_path`` arm as the control."""
+        fixture = run_scoped
+    
+        scoped = mcp_module._audit_tool(PROJECT)
+        explicit_main = mcp_module._audit_tool(PROJECT, checkout_path=str(fixture["main"]))
+    
+>       assert scoped["state"]["checked"] == 2, scoped["state"]
+E       AssertionError: {'checked': 1, 'conformant': 1, 'finding_counts': {'total': 2, 'by_severity': {'info': 1, 'warn': 1}, 'by_category': {'dag': 2}, 'by_code': {'unscheduled-open-plan': 1, 'unwired-plan': 1}}}
+E       assert 1 == 2
+
+tests/test_plan_reads_stay_in_the_worktree.py:220: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  reckon.serve:serve.py:954 Git HEAD lookup failed with exit code 128 in /tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_audit_reads_0/main: fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+WARNING  reckon.serve:serve.py:954 Git HEAD lookup failed with exit code 128 in /tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_audit_reads_0/main: fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+___________ test_a_run_scoped_resource_read_resolves_to_the_worktree ___________
+
+run_scoped = {'main': PosixPath('/tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_resource_rea0/main'), 'worktree': PosixPath(...PosixPath('/tmp/pytest-of-mcintos/pytest-11302/test_a_run_scoped_resource_rea0/main/docs/plans/sample-plan.html'), ...}
+
+    def test_a_run_scoped_resource_read_resolves_to_the_worktree(run_scoped):
+        """The typed-resource branch resolves the run scope from the resource's project.
+    
+        The plan read is one main does not have, so a resolution that fell back to
+        main could not return it at all.
+        """
+        fixture = run_scoped
+    
+        scoped = _resource_read(WORKTREE_ONLY_SLUG)
+>       assert scoped["version"] == _version(fixture["worktree"], PROJECT, WORKTREE_ONLY_SLUG)
+               ^^^^^^^^^^^^^^^^^
+E       KeyError: 'version'
+
+tests/test_plan_reads_stay_in_the_worktree.py:233: KeyError
 =========================== short test summary info ============================
 FAILED tests/test_plan_reads_stay_in_the_worktree.py::test_a_run_scoped_read_returns_the_worktree_version_not_main
-1 failed, 6 passed in 2.20s
+FAILED tests/test_plan_reads_stay_in_the_worktree.py::test_a_run_scoped_roadmap_reads_the_worktree_not_main
+FAILED tests/test_plan_reads_stay_in_the_worktree.py::test_a_run_scoped_audit_reads_the_worktree_not_main
+FAILED tests/test_plan_reads_stay_in_the_worktree.py::test_a_run_scoped_resource_read_resolves_to_the_worktree
+4 failed, 7 passed in 1.74s
