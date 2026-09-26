@@ -52,6 +52,7 @@ describes the whole run and can legitimately exceed that window many times over.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import queue
@@ -1930,6 +1931,7 @@ def seed_harness_home(
     dialect_name: str,
     operator_home: str | Path,
     declaration: Iterable[Mapping[str, Any]] = (),
+    adjacent_declaration: Iterable[Mapping[str, Any]] = (),
     resume_session: str | None = None,
 ) -> None:
     """Create a run's harness home carrying what its harness reads there.
@@ -1938,17 +1940,27 @@ def seed_harness_home(
     hooks nor their instruction files, so a fenced worker silently loses the
     guards and the standing guidance the operator's own home declares — and a
     codex worker loses everything, because codex reads ``AGENTS.md`` and never
-    ``CLAUDE.md``. The declaration is the operator-home file list the backend's
-    flight entry names (``harness_home_files``), each entry a path relative to
-    the operator's harness home plus an optional JSON key filter.
+    ``CLAUDE.md``. The declaration is the operator-harness-home file list the
+    backend's flight entry names (``harness_home_files``), each entry a path
+    relative to the operator's harness home plus an optional JSON key filter.
+
+    ``adjacent_declaration`` is the second table (``harness_home_adjacent_files``):
+    files that live in the operator's HOME DIRECTORY rather than in the harness
+    config directory, of which ``~/.claude.json`` is the only shipped case. Its
+    entries resolve their source against the home directory and their
+    destination against the run home, so a file the harness keeps beside its
+    config directory reaches the run home without either reading or writing the
+    home root. Because the harness writes such a file itself, an existing copy
+    is authoritative for its own keys and only the declared keys are merged in,
+    rather than the copy being skipped like a config-dir file.
 
     Three properties bound the copy, all read from the operator's home and
-    never written back. A file already in the run home is never overwritten, so
-    a resumed run keeps its own state. The operator home is never modified —
-    only read. And a credential is never copied: the codex login is bound
-    read-only by the fence (:func:`codex_auth_source`), and the declaration
-    below names no credential file, so the run directory never holds a writable
-    copy of the operator's login.
+    never written back. A config-dir file already in the run home is never
+    overwritten, so a resumed run keeps its own state. The operator home is
+    never modified — only read. And a credential is never copied: the codex
+    login is bound read-only by the fence (:func:`codex_auth_source`), and the
+    declarations name no credential file, so the run directory never holds a
+    writable copy of the operator's login.
 
     A resumed run also needs the session's own transcript beside its home,
     because the harness looks for it under the home its variable names; the
@@ -1968,8 +1980,112 @@ def seed_harness_home(
         if not source.exists():
             continue
         _seed_harness_entry(source, home / relative, entry.get("keys"))
+    for entry in adjacent_declaration or ():
+        relative = entry.get("path")
+        if not isinstance(relative, str) or not relative:
+            continue
+        source = Path(operator_home) / relative
+        if not source.exists():
+            continue
+        _merge_harness_entry(source, home / relative, entry.get("keys"))
     if resume_session:
         _seed_harness_session(home, source_home, str(resume_session))
+
+
+def _merge_harness_entry(
+    source: Path, destination: Path, keys: Iterable[str] | None
+) -> None:
+    """Merge one declared home-root file into the run home's own copy.
+
+    The harness writes this file itself — its projects, its oauth account, its
+    own server list — so an existing run copy is authoritative for its own keys
+    and is never replaced, and a fresh run home gains only the declared keys.
+    Unlike a config-dir entry, this one merges rather than skipping an existing
+    destination, because the run's harness is expected to have written one and
+    the declared keys (the operator's MCP declarations) must survive that. A
+    destination the code cannot read as a JSON object is left alone rather than
+    clobbered.
+    """
+    merged = (
+        _load_json_mapping(source)
+        if keys is None
+        else _filter_top_level_keys(source, keys)
+    )
+    if merged is None:
+        return
+    existing: dict[str, Any] = {}
+    existing_mode: int | None = None
+    if destination.exists():
+        loaded = _load_json_mapping(destination)
+        if loaded is None:
+            return
+        existing = dict(loaded)
+        existing_mode = _permission_bits(destination)
+    for key, value in merged.items():
+        if isinstance(value, Mapping) and isinstance(existing.get(key), Mapping):
+            existing[key] = {**existing[key], **value}
+        else:
+            existing[key] = value
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    _write_private_json(
+        destination,
+        existing,
+        0o600 if existing_mode is None else min(0o600, existing_mode),
+    )
+
+
+def _permission_bits(path: Path) -> int | None:
+    """Return ``path``'s permission bits, or None if it cannot be read."""
+    try:
+        return path.stat().st_mode & 0o777
+    except OSError:
+        return None
+
+
+def _write_private_json(
+    destination: Path, payload: Mapping[str, Any], mode: int = 0o600
+) -> None:
+    """Write a JSON object private from creation, then put it at ``mode``.
+
+    The payload is the operator's own home configuration, so the run's copy
+    must never be readable beyond ``0o600`` at any instant. A file created by
+    ``Path.write_text`` takes the umask — commonly ``0o644`` — and is only
+    narrowed by a later ``chmod``, which leaves a window in which another
+    principal on the host can read it. The bytes are instead written to a
+    sibling temporary file opened ``0o600`` and moved onto the destination with
+    :func:`os.replace`, so the destination is only ever the private inode or the
+    file it replaces.
+
+    ``mode`` is the ceiling applied to the final file; it is never wider than
+    ``0o600`` because the caller derives it as the narrower of ``0o600`` and any
+    existing destination's own mode.
+    """
+    data = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode()
+    temporary = destination.parent / f".{destination.name}.{os.getpid()}.tmp"
+    descriptor = os.open(temporary, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(data)
+        # O_CREAT's mode is filtered by the umask, which can only narrow it;
+        # set the ceiling explicitly so a stricter umask cannot leave the file
+        # below the mode the caller asked for.
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, destination)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(temporary)
+        raise
+    if mode != 0o600:
+        os.chmod(destination, mode)
+
+
+def _load_json_mapping(path: Path) -> dict[str, Any] | None:
+    """Return a JSON object read from ``path``, or None if it is not one."""
+    try:
+        loaded = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    return dict(loaded) if isinstance(loaded, Mapping) else None
 
 
 def _seed_harness_entry(
@@ -2491,13 +2607,14 @@ def launch_plan(
     # none of them silently drops the hooks and orphans those sessions.
     adopts_harness_home = fence
     if harness is not None and adopts_harness_home:
-        from reckon.flight import harness_home_files
+        from reckon.flight import harness_home_adjacent_files, harness_home_files
 
         seed_harness_home(
             harness,
             dialect_name=dialect.name,
             operator_home=fence_home if fence_home is not None else Path.home(),
             declaration=harness_home_files(dialect.name, backend),
+            adjacent_declaration=harness_home_adjacent_files(dialect.name),
             resume_session=resume_session,
         )
         environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
