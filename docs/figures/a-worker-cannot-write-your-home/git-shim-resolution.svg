@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <rect x="0" y="0" width="900" height="470" fill="#ffffff"/>
+  <text x="20" y="28" font-size="16" font-weight="bold">The git shim: one worker invocation, decided at execution time</text>
+
+  <text x="20" y="56" font-size="12" font-weight="bold">Worker PATH, left to right</text>
+  <rect x="20" y="66" width="200" height="34" fill="#e8f0fe" stroke="#1a56c4"/>
+  <text x="30" y="88">reckon/worker_shims  (git)</text>
+  <rect x="230" y="66" width="210" height="34" fill="#eef7ee" stroke="#2e7d32"/>
+  <text x="240" y="88">reckon/host_shims  (srun, sbatch, salloc)</text>
+  <rect x="450" y="66" width="150" height="34" fill="#f2f2f2" stroke="#888"/>
+  <text x="460" y="88">the machine PATH</text>
+  <text x="620" y="88" font-size="11">git shim first always; scheduler shims enter only inside an allocation</text>
+
+  <text x="20" y="136" font-size="12" font-weight="bold">The decision the shim makes</text>
+  <rect x="20" y="150" width="180" height="40" fill="#fff" stroke="#1a56c4"/>
+  <text x="30" y="175">read RECKON_RUN_ID</text>
+  <rect x="250" y="150" width="180" height="40" fill="#fff" stroke="#1a56c4"/>
+  <text x="260" y="175">read the subcommand</text>
+  <rect x="480" y="150" width="200" height="40" fill="#fff" stroke="#1a56c4"/>
+  <text x="490" y="175">ask the real git: which repo?</text>
+  <text x="700" y="175" font-size="11">rev-parse --absolute-git-dir,</text>
+  <text x="700" y="189" font-size="11">under this invocation's env, cwd, -C</text>
+  <path d="M200 170 H250" stroke="#444" fill="none"/>
+  <path d="M430 170 H480" stroke="#444" fill="none"/>
+
+  <path d="M70 190 V230" stroke="#444" fill="none"/>
+  <text x="78" y="215" font-size="11">no run id</text>
+  <rect x="20" y="230" width="180" height="36" fill="#f2f2f2" stroke="#888"/>
+  <text x="30" y="253">exec the real git unchanged</text>
+
+  <path d="M340 190 V230" stroke="#444" fill="none"/>
+  <text x="348" y="215" font-size="11">read-only verb</text>
+  <rect x="250" y="230" width="180" height="36" fill="#f2f2f2" stroke="#888"/>
+  <text x="260" y="253">exec the real git unchanged</text>
+
+  <path d="M580 190 V230" stroke="#444" fill="none"/>
+  <text x="588" y="215" font-size="11">mutating verb</text>
+  <rect x="430" y="230" width="260" height="36" fill="#fdecea" stroke="#b3261e"/>
+  <text x="440" y="247">resolved git dir == the run worktree's git dir ?</text>
+  <text x="440" y="261" font-size="11">the git dir decides: --work-tree naming the run is not enough</text>
+
+  <path d="M690 248 H740 V300 H60 V330" stroke="#444" fill="none"/>
+  <text x="700" y="270" font-size="11">no</text>
+  <rect x="20" y="330" width="300" height="46" fill="#fdecea" stroke="#b3261e"/>
+  <text x="30" y="350" font-weight="bold">refuse, exit 97</text>
+  <text x="30" y="367" font-size="11">names the run, the worktree and the resolved target</text>
+
+  <path d="M470 266 V300" stroke="#444" fill="none"/>
+  <text x="478" y="290" font-size="11">yes</text>
+  <rect x="370" y="300" width="200" height="36" fill="#eef7ee" stroke="#2e7d32"/>
+  <text x="380" y="323">exec the real git unchanged</text>
+
+  <text x="20" y="405" font-size="12" font-weight="bold">The four spellings a text parser kept missing, all refused at execution time</text>
+  <text x="20" y="426" font-size="12">env GIT_DIR=&lt;other&gt;/.git git reset --hard *  |  cd &lt;other&gt; &amp;&amp; git reset --hard *</text>
+  <text x="20" y="444" font-size="12">pushd &lt;other&gt; &amp;&amp; git reset --hard *  |  git -C &lt;other&gt; reset --hard *</text>
+  <text x="20" y="462" font-size="11">Each sets the invocation's environment or working directory, which the shim reads rather than parses.</text>
+</svg>

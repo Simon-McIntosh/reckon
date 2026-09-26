@@ -2200,6 +2200,223 @@ exit: 0</pre>
     <code>logs/head-hhms.txt</code>, <code>logs/negative-control-hhms.txt</code>,
     <code>logs/lint-hhms.txt</code>.</p>
   </section>
+  <section id="s2-git-shim">
+    <h2>&sect;2 follow-up &mdash; the git shim decides from the repository the real git resolves
+    <a class="anchor" href="#s2-git-shim">#</a></h2>
+
+    <p><strong>The defect it closes.</strong> The pre-tool-use git guard reads a command's
+    text, and two reviews kept finding shell spellings it does not model: an alias or a
+    leading <code>GIT_DIR</code> first (closed), then <code>env GIT_DIR=&lt;other&gt;/.git git
+    reset --hard</code>, <code>cd -</code> and <code>pushd &lt;other&gt;</code> (open, each
+    moving another checkout's HEAD). Parsing a shell language cannot be made complete, so
+    this closes the class at execution time instead.</p>
+
+    <p><strong>What landed</strong> (run <code>r-20260926T062814328352-git-shim-checks-the-resolved-repo</code>,
+    commit <code>fd521f3c</code>). <code>reckon/worker_shims/git</code> is a shell shim that
+    forwards to <code>reckon/worker_git_shim.py</code>, and
+    <code>reckon.crew.dispatch.launch_search_path</code> now puts that directory first on
+    every crew worker's path, inside an allocation or out of one, with the scheduler shims
+    following it only inside an allocation. Under <code>RECKON_RUN_ID</code> the module reads
+    the subcommand; if it is mutating it asks the real git which repository that invocation
+    resolves to &mdash; under the invocation's own environment, working directory and
+    <code>-C</code> &mdash; and refuses (exit 97) unless the invocation's git dir is the git dir of
+    the run's own worktree (read from the run's live pointer) and the work tree it resolves
+    lies inside that worktree. Otherwise it execs the real git unchanged, resolved with the
+    shim's own directory removed from <code>PATH</code>. A session with no run id is
+    untouched.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/git-shim-resolution.svg"
+           alt="Worker PATH order, the shim's decision from run id through subcommand to the resolved repository, and the four shell spellings it refuses" width="900"/>
+      <figcaption>The path order, the decision, and the four spellings a text parser kept
+      missing &mdash; all four refused because they only change the environment or the working
+      directory the shim reads.</figcaption>
+    </figure>
+
+    <table>
+      <caption>The measure: base <code>7f97afda</code>, first head <code>fd521f3c</code>,
+      review heads <code>9ab5e097</code> and <code>4aa785dc</code>, third review head
+      <code>9065ca47</code>, fourth review head <code>11e907b8</code>. Each arm ran in its own
+      tree so the <code>reckon</code> imported is the tree under test. Fifth review head
+      <code>51de190d</code>.</caption>
+      <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr><td>new shim suite, base tree (module absent)</td><td><code>1 error</code> at collection</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-red-at-base.txt</code></td></tr>
+        <tr><td>new shim suite at the first head</td><td><code>8 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code></td></tr>
+        <tr><td>the companions inside that same arm</td><td><code>17 of 25 passed</code> (25 = 8 new + 17 companions)</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code></td></tr>
+        <tr><td>companions (<code>test_worker_path_carries_shims</code>, <code>test_worker_git_guard</code>), base</td><td><code>17 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-base.txt</code></td></tr>
+        <tr><td>new shim suite at the first review head</td><td><code>10 passed</code> (<code>27</code> with the companions)</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review-head.txt</code></td></tr>
+        <tr><td>the two first-review tests against the pre-fix head</td><td><code>2 failed, 8 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review-red.txt</code></td></tr>
+        <tr><td>new shim suite at the second review head</td><td><code>15 passed</code> (<code>32</code> with the companions)</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review2-head.txt</code></td></tr>
+        <tr><td>the five second-review tests against the pre-fix head</td><td><code>4 failed, 11 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review2-red.txt</code></td></tr>
+        <tr><td>new shim suite at the third review head</td><td><code>23 passed</code> (<code>40</code> with the companions)</td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review3-head.txt</code></td></tr>
+        <tr><td>the third-review cases against the pre-fix head</td><td><code>7 failed, 16 passed</code></td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review3-red.txt</code></td></tr>
+        <tr><td>new shim suite at the fourth review head, with the companions</td><td><code>151 passed</code> (<code>134</code> of them the shim suite alone)</td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review4-head.txt</code></td></tr>
+        <tr><td>the fourth-review cases against the pre-fix head</td><td><code>20 failed, 114 passed</code></td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review4-red.txt</code></td></tr>
+        <tr><td>the verb-and-option sweep at <code>ab38cee8</code></td><td>every index-refreshing form reads <code>rc=0 write</code> through the shim; every off-allowlist form <code>rc=97 read</code></td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/measurement-git-shim-review4.txt</code></td></tr>
+        <tr><td>lint on complete trees</td><td><code>dispatch.py</code> <code>7 &rarr; 7</code>; both reviewed files <code>0 &rarr; 0, 0 &rarr; 0, 0 &rarr; 0</code> at the three review heads</td><td><code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim.txt</code></td></tr>
+        <tr><td>lint on complete trees, fourth review</td><td>both changed files <code>0 &rarr; 0</code>, both trees, format clean</td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/lint-git-shim-review4.txt</code></td></tr>
+        <tr><td>new shim suite at the fifth review head <code>51de190d</code></td><td><code>173 passed</code></td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review5-head.txt</code></td></tr>
+        <tr><td>the fifth-review cases against the pre-fix head, <code>4ec87830</code></td><td><code>42 failed, 131 passed</code>, no failure id added at this head</td><td><code>the same run directory, gate-git-shim-review5-red.txt</code></td></tr>
+        <tr><td>the abbreviated forms at the pre-fix head</td><td><code>describe --di --long</code> moved the foreign index and <code>log --outp=&lt;path&gt;</code> wrote the file, both forwarded <code>rc=0</code></td><td><code>the same run directory, gate-git-shim-review5-red.txt</code></td></tr>
+        <tr><td>control isolating the copied index</td><td><code>36 failed, 137 passed</code> with the isolated child run replaced by the plain forward, reverted <code>173 passed</code></td><td><code>the same run directory, index-isolation-control-git-shim-review5.txt</code></td></tr>
+        <tr><td>lint on complete trees, fifth review</td><td>both changed files <code>0 &rarr; 0</code>, both trees, format clean</td><td><code>the same run directory, lint-git-shim-review5.txt</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>exec the real git
+    without checking the resolved repository</em> &mdash; applied to a scratch copy of the head
+    tree (<code>main</code> returns <code>_forward</code> right after the mutating-verb test,
+    before <code>_run_worktree</code>), the five refusal cases fail and the three
+    forward/transparency cases pass (<code>5 failed, 3 passed</code>), and the same tree with
+    the mutation reverted is <code>8 passed</code>
+    (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-git-shim.txt</code>,
+    <code>negative-control-git-shim-reverted.txt</code>).</p>
+
+    <p><strong>A review closed two ways a verb still reached another checkout</strong>
+    (commit <code>9ab5e097</code>), each by a test that is red before the fix. A verb the
+    target repository's own config aliases to a writer was forwarded, because the test was a
+    deny-list of mutating names: <code>alias.ci=commit</code> plus <code>git ci --allow-empty
+    -m x</code> committed to a foreign checkout, and the expansion lives in the repository
+    rather than the argv, so nothing the shim read named it. The rule is inverted to an
+    allowlist &mdash; every verb is mutating unless it is a built-in reader or a
+    multi-purpose verb in a read form &mdash; so an alias is refused without being resolved.
+    Separately, <code>pointer_path</code> does not reduce its argument, so
+    <code>RECKON_RUN_ID=../escape</code> read a record outside the live directory whose
+    <code>worktree</code> field was trusted; a run id that is not a single safe path component
+    is now refused before the pointer is read. The declared negative control &mdash; <em>treat
+    only a named deny-list of verbs as mutating</em> &mdash; restores the alias bypass
+    (<code>1 failed, 9 passed</code> at
+    <code>docs/figures/a-worker-cannot-write-your-home/negative-control-alias-allowlist.txt</code>),
+    and the reverted tree is <code>10 passed</code>
+    (<code>negative-control-alias-allowlist-reverted.txt</code>). Lint on the two reviewed
+    files is <code>0 &rarr; 0</code> at the pre-fix and post-fix revisions
+    (<code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim-review.txt</code>).</p>
+
+    <p><strong>A second review closed three more ways past the shim</strong> (commit
+    <code>4aa785dc</code>), each by a test red before the fix. (1) An empty argument tail was
+    counted as a read form, so <code>git stash</code> &mdash; which pushes &mdash; was
+    forwarded and reverted a foreign checkout; a multi-purpose verb is now read-only only in
+    an explicit listing or reading form, with read actions held apart from their modifiers so
+    <code>config --local a.b value</code> is mutating while <code>config --local --list</code>
+    reads. (2) The refusal compared only the git dir, so <code>--git-dir
+    &lt;run&gt;/.git --work-tree &lt;other&gt;</code> &mdash; and the same through
+    <code>GIT_DIR</code>+<code>GIT_WORK_TREE</code> &mdash; wrote another directory's files;
+    both the git dir and the resolved work tree must now be the run's. (3)
+    <code>fsck --lost-found</code> writes into the target's git dir, so <code>fsck</code> is
+    off the built-in reader list. The declared negative control &mdash; <em>treat an empty
+    verb tail as a read form</em> &mdash; restores the bare-stash bypass
+    (<code>1 failed, 14 passed</code> at
+    <code>docs/figures/a-worker-cannot-write-your-home/negative-control-empty-tail.txt</code>),
+    and the reverted tree is <code>15 passed</code>
+    (<code>negative-control-empty-tail-reverted.txt</code>). Lint on the two changed files
+    stays <code>0 &rarr; 0</code>
+    (<code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim-review2.txt</code>).</p>
+
+    <p><strong>A third review closed two writes the shim still forwarded</strong> (commit
+    <code>9065ca47</code>), each by a test red before the fix. The round's gate, red-arm,
+    control and lint logs are kept under the run directory rather than in the figures
+    directory, so a review-round measurement does not contend for a directory another node's
+    evidence also writes. (1) An allowlisted read verb's arguments were never inspected, so a
+    writing option passed through: <code>git -C &lt;other&gt; log --output=&lt;other&gt;/f</code>
+    exits 0 and writes <code>f</code>, and the same holds for <code>show</code> and
+    <code>diff</code> and for a path in the home directory. Every forwarded invocation's
+    arguments are now checked for an option naming an output file whose head is
+    <code>--output</code> or <code>--output-directory</code> &mdash; joined or separated from
+    its value &mdash; and refused, naming the option. The short <code>-o</code> is deliberately
+    not matched: on this allowlist it means <code>--others</code> for <code>ls-files</code> and
+    <code>--only-matching</code> for <code>grep</code>, while the verbs where it does name an
+    output directory (<code>format-patch</code>, <code>archive</code>) are off the allowlist
+    and refused whole, as are the other file-writing forms checked (<code>diff
+    --output</code>, <code>bundle create</code>) and <code>fsck --lost-found</code>. (2) A
+    forwarded read could take the index lock:
+    <code>git status</code> against another checkout with a stale stat cache refreshed and
+    rewrote that checkout's index. The forward now execs the real git with
+    <code>GIT_OPTIONAL_LOCKS=0</code>, git's documented switch that keeps a read from taking an
+    optional lock, and the refusal message states that mechanism in place of the earlier claim
+    that reads pass everywhere untouched. The eight new cases are <code>7 failed, 16
+    passed</code> against <code>a370c5be</code> and green at a head of <code>40 passed</code>
+    (23 shim tests + 17 companions). The declared negative control &mdash; <em>exec the real git
+    without checking the resolved repository</em> &mdash; bypasses the resolved-repository
+    check (<code>9 failed, 14 passed</code>, reverted <code>23 passed</code>), and two further
+    controls isolate each new fix: <em>forward a read verb without the output-option
+    check</em> (<code>5 failed, 18 passed</code>) and <em>forward a read verb without disabling
+    optional locks</em> (<code>1 failed, 22 passed</code>). Lint on the two changed files stays
+    <code>0 &rarr; 0</code>.</p>
+
+    <p><strong>A fourth review closed the half of that class
+    <code>GIT_OPTIONAL_LOCKS</code> cannot reach</strong> (commit
+    <code>11e907b8</code>). <code>describe --dirty</code> aimed at another checkout through
+    the shim moved that checkout's index (<code>fbd5208a</code> &rarr;
+    <code>3f634244</code>), and <code>GIT_OPTIONAL_LOCKS=0</code> did not stop it: the
+    variable suppresses a lock a command can do without &mdash; which is why it covers
+    <code>status</code>, whose refresh is a cache update &mdash; while a form whose answer
+    is defined in terms of a refreshed index takes the index lock because it cannot compute
+    the answer without it, and writes the refresh before reporting. Two classes of reader
+    are now separated: one whose answer comes from the object store, which is forwarded, and
+    one that refreshes, which is resolved like a mutating verb &mdash; forwarded when the
+    invocation's own environment, <code>cwd</code> and <code>-C</code> resolve to this run's
+    worktree, refused otherwise with a message naming the form and this mechanism. The forms
+    matched are <code>describe</code> carrying <code>--dirty</code> (bare or
+    <code>=&lt;suffix&gt;</code>) or <code>--broken</code>, and every <code>diff</code> that
+    does not name <code>--cached</code>, <code>--staged</code> or <code>--no-index</code>
+    &mdash; those three answer from the object store and are forwarded.
+    <code>--broken</code> is refused conservatively, sharing the work-tree detection path,
+    since measurement against a repository holding a broken tag showed it answering without
+    moving the index. <code>diff-index</code> and <code>diff-files</code>, which write the
+    index in every form, were already off the allowlist and stay refused whole.</p>
+
+    <p><strong>And it is closed by a test, not by the instance.</strong> One parametrisation
+    runs every verb in both allowlisted sets &mdash; read from the module's own
+    <code>_READ_ONLY_VERBS</code> and <code>_READ_ACTIONS</code>, so a verb added to either
+    joins the test without an edit &mdash; plus every index-touching form named above, each
+    aimed at a checkout that is not this run's, with that checkout's stat cache left
+    deliberately stale in both directions (mtime an hour older, then an hour newer; content
+    unchanged), which is what makes git want to rewrite the index. The assertion is that the
+    target's <code>.git/index</code> bytes are identical afterwards and no new file appears
+    in it. The full verb-and-option sweep is recorded per-form in
+    <code>measurement-git-shim-review4.txt</code>, where for each command the table shows
+    what the real git did and what the shim did at the pre-fix head and at this head, and
+    <code>write</code>/<code>read</code>/<code>file</code> distinguishes a moved index from
+    a file written, so a refusal is distinguishable from a forward that wrote nothing: at
+    the pre-fix head every index-refreshing form reads <code>rc=0 write</code>; at this head
+    each reads <code>rc=97 read</code>. The new tests are <code>20 failed, 114 passed</code>
+    against <code>ab38cee8</code> and green at <code>134 passed</code> at this head,
+    including the companions. The declared negative control &mdash; <em>exec the real git
+    without checking the resolved repository</em> &mdash; bypasses the probe
+    (<code>28 failed, 106 passed</code>, reverted <code>134 passed</code>), and a second
+    control isolates this round's fix alone: <em>forward an index-refreshing read form
+    without the form check</em> (<code>19 failed, 115 passed</code>, reverted <code>134
+    passed</code>).</p>
+
+    <p><strong>A fifth review replaced the enumeration with a copy of the index</strong>
+    (commit <code>51de190d</code>). git resolves any unambiguous abbreviation of a long
+    option, so a check written against whole tokens forwarded the spellings that reached the
+    writes: <code>describe --di --long</code> moved a foreign checkout's index and
+    <code>log --outp=&lt;path&gt;</code> wrote the file <code>--output</code> is refused for,
+    each <code>rc=0</code> where the full spelling was refused. The fix stops depending on
+    spelling. A read that resolves to a repository other than this run's worktree runs the
+    real git as a child against a private copy of that repository's index, so an in-process
+    refresh writes the copy whichever spelling reached the form, and the copy is forwarded
+    with nothing set when the repository has no index &mdash; a repository whose index does
+    not exist would otherwise have git answer from an empty one. The fourth review's refusals
+    for <code>describe</code> and work-tree <code>diff</code> forms are dropped rather than
+    kept beside the copy: the copy is what closes the class, and a list of spellings is the
+    dependency that let the abbreviation through. The option refusal stays and is
+    prefix-aware &mdash; every prefix of every banned option from three characters up is
+    refused and named together with the option it abbreviates. The two controls: with the
+    isolated child run replaced by the plain forward and every other decision unchanged,
+    <code>36 failed, 137 passed</code>, reverted <code>173 passed</code>; with the guard
+    removed entirely, <code>76 failed, 97 passed</code>, reverted <code>173 passed</code>.
+    At the pre-fix head <code>4ec87830</code> the shipped suite reads <code>42 failed, 131
+    passed</code> and at this head <code>173 passed</code>, with no failure id added.</p>
+
+    <p><strong>Scope stated.</strong> This node delivers the shim, the PATH wiring and the
+    tests. Verifying the merged result belongs to a separately dispatched test node, and the
+    pre-tool-use guard stays as the early, readable refusal. The refusal message and the
+    decision are in <code>reckon/worker_git_shim.py</code>; the shim file itself contains no
+    decision.</p>
+  </section>
 </main>
 </body>
 </html>

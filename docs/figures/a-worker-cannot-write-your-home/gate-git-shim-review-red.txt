@@ -1,0 +1,88 @@
+# red-at-previous-head: the two new tests against 883a1bb7 (before the allowlist and the run-id check)
+# tree: /tmp/reckon-gitshim-review-red  (a git archive of 883a1bb7 with this run's test file copied in)
+# command: env -C /tmp/reckon-gitshim-review-red PYTHONPATH=/tmp/reckon-gitshim-review-red /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_git_shim_checks_the_resolved_repo.py
+# module.__file__: /tmp/reckon-gitshim-review-red/reckon/worker_git_shim.py
+........FF                                                               [100%]
+=================================== FAILURES ===================================
+___________ test_an_alias_in_the_target_repository_config_is_refused ___________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11288/test_an_alias_in_the_target_re0/home'), 'worktree': PosixPath(...ytest-11288/test_an_alias_in_the_target_re0/other'), 'first_worktree': '66581660a6a665afe2e08ffa08aecfc7f4d0d425', ...}
+
+    def test_an_alias_in_the_target_repository_config_is_refused(
+        repos: dict[str, Any],
+    ) -> None:
+        """A verb the target repository aliases to a writer is refused.
+    
+        The alias lives in the repository's own config, so the shim cannot see it in
+        the invocation's argv. The rule is an allowlist for that reason: a name that
+        is not a built-in reader is refused whether it expands to a reader or a
+        writer, because a deny-list would have to know the name in advance.
+        """
+        home, other = repos["home"], repos["other"]
+        configured = _git_run(["config", "alias.ci", "commit"], cwd=other, home=home)
+        assert configured.returncode == 0, configured.stderr
+        before = _head(other, home)
+        assert before != repos["first_other"]
+    
+        result = _shell(
+            f"git -C {other} ci --allow-empty -m bypass",
+            cwd=home,
+            home=home,
+        )
+    
+>       _assert_refused(result, repo=other, worktree=repos["worktree"])
+
+tests/test_git_shim_checks_the_resolved_repo.py:308: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11288/test_an_alias_in_the_target_re0/other ci --allow-empty -m bypass'], returncode=0, stdout='[master f889b54] bypass\n', stderr='')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11288/test_an_alias_in_the_target_re0/other')
+worktree = PosixPath('/tmp/pytest-of-mcintos/pytest-11288/test_an_alias_in_the_target_re0/worktree')
+
+    def _assert_refused(
+        result: subprocess.CompletedProcess[str], *, repo: Path, worktree: Path
+    ) -> None:
+        """A refusal exits with its own status and names run, worktree and target."""
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11288/test_an_alias_in_the_target_re0/other ci --allow-empty -m bypass'], returncode=0, stdout='[master f889b54] bypass\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:155: AssertionError
+___________ test_a_run_id_that_is_not_one_path_component_is_refused ____________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11288/test_a_run_id_that_is_not_one_0/home'), 'worktree': PosixPath(...ytest-11288/test_a_run_id_that_is_not_one_0/other'), 'first_worktree': '66581660a6a665afe2e08ffa08aecfc7f4d0d425', ...}
+
+    def test_a_run_id_that_is_not_one_path_component_is_refused(
+        repos: dict[str, Any],
+    ) -> None:
+        """A run id carrying a separator cannot name a pointer outside the live dir.
+    
+        The record a traversal reaches is made to point at the other checkout, so a
+        shim that trusts it forwards the mutation; one that requires a single safe
+        component refuses before reading it.
+        """
+        home, other = repos["home"], repos["other"]
+        escape = home / "crew" / "escape.json"
+        escape.write_text(json.dumps({"worktree": str(other)}), encoding="utf-8")
+        before = _head(other, home)
+        assert before != repos["first_other"]
+    
+        result = _shell(
+            f"git -C {other} reset --hard {repos['first_other']}",
+            cwd=home,
+            home=home,
+            run_id="../escape",
+        )
+    
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11288/test_a_run_id_that_is_not_one_0/other...et --hard 66581660a6a665afe2e08ffa08aecfc7f4d0d425'], returncode=0, stdout='HEAD is now at 6658166 first\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:334: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_an_alias_in_the_target_repository_config_is_refused
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_a_run_id_that_is_not_one_path_component_is_refused
+2 failed, 8 passed in 4.27s
+EXIT=1

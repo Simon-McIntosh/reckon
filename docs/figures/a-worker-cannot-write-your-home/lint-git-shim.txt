@@ -1,0 +1,10 @@
+# lint delta on complete trees (a git-archive extraction of each revision, so
+# isort sees the package rather than a hand-picked file set).
+# base tree /tmp/reckon-gitshim-base at 7f97afda ; head tree at fd521f3c
+# counts are `ruff check --no-cache -q --output-format=concise <path> | wc -l`
+dispatch.py                       base 7   head 7
+tests/test_worker_path_carries_shims.py   base 0   head 0
+reckon/worker_git_shim.py         base absent   head 0
+tests/test_git_shim_checks_the_resolved_repo.py   base absent   head 0
+# ruff format --check on the three changed files at head:
+3 files already formatted

@@ -2,9 +2,10 @@
 
 Fixture :class:`reckon.host.HostFacts` objects select both sides, so these cases
 never read the process's real cgroup or mount table.  The guarded behavior has
-two coupled surfaces: the effective launch ``PATH`` starts with the scheduler
+two coupled surfaces: the effective launch ``PATH`` starts with the worker
 shims, and the composed prompt states the measured host facts and durable-log
-location.  Outside an allocation, both additions are absent.
+location.  The git shim is first on the path in either placement; the scheduler
+shims, and the host line with them, are present only inside an allocation.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from reckon.crew.node import TaskNode
 from reckon.crew.prompts import compose_prompt
 from reckon.host import HostFacts
 from reckon.nested_launch import real_binary, shim_directory
+from reckon.worker_git_shim import worker_shim_directory
 
 dispatch_module = import_module("reckon.crew.dispatch")
 
@@ -108,8 +110,9 @@ def test_inside_allocation_launch_path_starts_with_the_shim_directory(
     searched = _search_path({"PATH": inherited})
 
     entries = searched.split(os.pathsep)
-    assert entries[0] == str(shim_directory())
-    assert entries[1:] == [inherited]
+    assert entries[0] == str(worker_shim_directory())
+    assert entries[1] == str(shim_directory())
+    assert entries[2:] == [inherited]
     assert real_binary("srun", shim_directory(), searched) == str(real_srun)
 
     plan = dispatch_module.resolve_launch_executable(
@@ -128,7 +131,7 @@ def test_inside_allocation_launch_path_starts_with_the_shim_directory(
     persisted = dispatch_module._persisted_worker_environment(
         plan.environment, facts=facts
     )
-    assert persisted["PATH"].split(os.pathsep)[0] == str(shim_directory())
+    assert persisted["PATH"].split(os.pathsep)[0] == str(worker_shim_directory())
     spec = dispatch_module._supervisor_spec(
         run_id="worker-path",
         run_directory=tmp_path / "run",
@@ -141,7 +144,7 @@ def test_inside_allocation_launch_path_starts_with_the_shim_directory(
         facts=facts,
     )
     assert spec["plan"]["environment"]["PATH"].split(os.pathsep)[0] == str(
-        shim_directory()
+        worker_shim_directory()
     )
 
 
@@ -193,12 +196,14 @@ def test_persisted_worker_environments_exclude_dispatcher_secrets(
     )
 
     assert spec["plan"]["environment"]["PATH"].split(os.pathsep)[0] == str(
-        shim_directory()
+        worker_shim_directory()
     )
     assert spec["plan"]["environment"]["PLAN_ONLY"] == "retained"
     assert SENTINEL not in spec["plan"]["environment"]
     assert set(spec["plan"]["environment"]) == {"PATH", "PLAN_ONLY"}
-    assert directive_environment["PATH"].split(os.pathsep)[0] == str(shim_directory())
+    assert directive_environment["PATH"].split(os.pathsep)[0] == str(
+        worker_shim_directory()
+    )
     assert SENTINEL not in directive_environment
     assert set(directive_environment) == {"PATH"}
 
@@ -217,7 +222,7 @@ def test_inside_allocation_prompt_names_the_host_and_storage_contract(
     assert f"logs a later reader needs go under {run_directory}" in prompt
 
 
-def test_outside_allocation_adds_neither_shims_nor_host_line(
+def test_outside_allocation_carries_the_git_shim_but_no_scheduler_shims(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     facts = _facts(inside=False)
@@ -253,10 +258,17 @@ def test_outside_allocation_adds_neither_shims_nor_host_line(
         facts=facts,
     )
 
-    assert searched == inherited
-    assert persisted == overlay
-    assert spec["plan"]["environment"] == overlay
-    assert dispatch_module._persisted_worker_environment({}, facts=facts) == {}
+    # Out of an allocation the git shim is still first on the path — it refuses a
+    # mutating verb aimed at another checkout, which is a hazard on any host —
+    # while the scheduler shims, which have no scheduler to refuse, are absent.
+    assert searched.split(os.pathsep)[0] == str(worker_shim_directory())
     assert str(shim_directory()) not in searched.split(os.pathsep)
+    assert persisted["PATH"] == searched
+    assert persisted["PLAN_ONLY"] == "retained"
+    assert spec["plan"]["environment"]["PATH"] == searched
+    assert spec["plan"]["environment"]["PLAN_ONLY"] == "retained"
+    assert set(dispatch_module._persisted_worker_environment({}, facts=facts)) == {
+        "PATH"
+    }
     assert "HOST — ALLOCATION" not in prompt
     assert "do not use srun, sbatch or salloc" not in prompt

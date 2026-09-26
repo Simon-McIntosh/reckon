@@ -1,0 +1,173 @@
+exec the real git without checking the resolved repository
+# negative control: a scratch copy of the head tree with the refusal bypassed
+# tree: /tmp/reckon-gitshim-nc-3017164  (mutation: reckon/worker_git_shim.py main returns _forward right after the mutating-verb test, before _run_worktree)
+# command: env -C /tmp/reckon-gitshim-nc-3017164 PYTHONPATH=/tmp/reckon-gitshim-nc-3017164 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_git_shim_checks_the_resolved_repo.py
+# module.__file__: /tmp/reckon-gitshim-nc-3017164/reckon/worker_git_shim.py
+FFFF...F                                                                 [100%]
+=================================== FAILURES ===================================
+__________ test_a_leading_git_dir_against_another_checkout_is_refused __________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_leading_git_dir_against0/home'), 'worktree': PosixPath(...ytest-11244/test_a_leading_git_dir_against0/other'), 'first_worktree': 'f0736c4eb39f373cced936364c85448f48ce9ebb', ...}
+
+    def test_a_leading_git_dir_against_another_checkout_is_refused(
+        repos: dict[str, Any],
+    ) -> None:
+        home, other = repos["home"], repos["other"]
+        before = _head(other, home)
+        assert before != repos["first_other"]
+    
+        result = _shell(
+            f"env GIT_DIR={other}/.git git reset --hard {repos['first_other']}",
+            cwd=other,
+            home=home,
+        )
+    
+>       _assert_refused(result, repo=other, worktree=repos["worktree"])
+
+tests/test_git_shim_checks_the_resolved_repo.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = CompletedProcess(args=['bash', '-c', 'env GIT_DIR=/tmp/pytest-of-mcintos/pytest-11244/test_a_leading_git_dir_against0/...et --hard f0736c4eb39f373cced936364c85448f48ce9ebb'], returncode=0, stdout='HEAD is now at f0736c4 first\n', stderr='')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_leading_git_dir_against0/other')
+worktree = PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_leading_git_dir_against0/worktree')
+
+    def _assert_refused(
+        result: subprocess.CompletedProcess[str], *, repo: Path, worktree: Path
+    ) -> None:
+        """A refusal exits with its own status and names run, worktree and target."""
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'env GIT_DIR=/tmp/pytest-of-mcintos/pytest-11244/test_a_leading_git_dir_against0/...et --hard f0736c4eb39f373cced936364c85448f48ce9ebb'], returncode=0, stdout='HEAD is now at f0736c4 first\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:155: AssertionError
+__________________ test_a_cd_into_another_checkout_is_refused __________________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_cd_into_another_checkou0/home'), 'worktree': PosixPath(...ytest-11244/test_a_cd_into_another_checkou0/other'), 'first_worktree': '4ce70c5aca4b9a8088d1e591744dd542b5247436', ...}
+
+    def test_a_cd_into_another_checkout_is_refused(repos: dict[str, Any]) -> None:
+        home, other = repos["home"], repos["other"]
+        before = _head(other, home)
+    
+        result = _shell(
+            f"cd {other} && git reset --hard {repos['first_other']}",
+            cwd=home,
+            home=home,
+        )
+    
+>       _assert_refused(result, repo=other, worktree=repos["worktree"])
+
+tests/test_git_shim_checks_the_resolved_repo.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = CompletedProcess(args=['bash', '-c', 'cd /tmp/pytest-of-mcintos/pytest-11244/test_a_cd_into_another_checkou0/other && ...et --hard 4ce70c5aca4b9a8088d1e591744dd542b5247436'], returncode=0, stdout='HEAD is now at 4ce70c5 first\n', stderr='')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_cd_into_another_checkou0/other')
+worktree = PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_cd_into_another_checkou0/worktree')
+
+    def _assert_refused(
+        result: subprocess.CompletedProcess[str], *, repo: Path, worktree: Path
+    ) -> None:
+        """A refusal exits with its own status and names run, worktree and target."""
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'cd /tmp/pytest-of-mcintos/pytest-11244/test_a_cd_into_another_checkou0/other && ...et --hard 4ce70c5aca4b9a8088d1e591744dd542b5247436'], returncode=0, stdout='HEAD is now at 4ce70c5 first\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:155: AssertionError
+________________ test_a_pushd_into_another_checkout_is_refused _________________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_pushd_into_another_chec0/home'), 'worktree': PosixPath(...ytest-11244/test_a_pushd_into_another_chec0/other'), 'first_worktree': '4ce70c5aca4b9a8088d1e591744dd542b5247436', ...}
+
+    def test_a_pushd_into_another_checkout_is_refused(repos: dict[str, Any]) -> None:
+        home, other = repos["home"], repos["other"]
+        before = _head(other, home)
+    
+        result = _shell(
+            f"pushd {other} >/dev/null && git reset --hard {repos['first_other']}",
+            cwd=home,
+            home=home,
+        )
+    
+>       _assert_refused(result, repo=other, worktree=repos["worktree"])
+
+tests/test_git_shim_checks_the_resolved_repo.py:203: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = CompletedProcess(args=['bash', '-c', 'pushd /tmp/pytest-of-mcintos/pytest-11244/test_a_pushd_into_another_chec0/other ...et --hard 4ce70c5aca4b9a8088d1e591744dd542b5247436'], returncode=0, stdout='HEAD is now at 4ce70c5 first\n', stderr='')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_pushd_into_another_chec0/other')
+worktree = PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_pushd_into_another_chec0/worktree')
+
+    def _assert_refused(
+        result: subprocess.CompletedProcess[str], *, repo: Path, worktree: Path
+    ) -> None:
+        """A refusal exits with its own status and names run, worktree and target."""
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'pushd /tmp/pytest-of-mcintos/pytest-11244/test_a_pushd_into_another_chec0/other ...et --hard 4ce70c5aca4b9a8088d1e591744dd542b5247436'], returncode=0, stdout='HEAD is now at 4ce70c5 first\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:155: AssertionError
+___________ test_a_plain_dash_c_against_another_checkout_is_refused ____________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_plain_dash_c_against_an0/home'), 'worktree': PosixPath(...ytest-11244/test_a_plain_dash_c_against_an0/other'), 'first_worktree': '4ce70c5aca4b9a8088d1e591744dd542b5247436', ...}
+
+    def test_a_plain_dash_c_against_another_checkout_is_refused(
+        repos: dict[str, Any],
+    ) -> None:
+        home, other = repos["home"], repos["other"]
+        before = _head(other, home)
+    
+        result = _shell(
+            f"git -C {other} reset --hard {repos['first_other']}",
+            cwd=home,
+            home=home,
+        )
+    
+>       _assert_refused(result, repo=other, worktree=repos["worktree"])
+
+tests/test_git_shim_checks_the_resolved_repo.py:219: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11244/test_a_plain_dash_c_against_an0/other...et --hard 4ce70c5aca4b9a8088d1e591744dd542b5247436'], returncode=0, stdout='HEAD is now at 4ce70c5 first\n', stderr='')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_plain_dash_c_against_an0/other')
+worktree = PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_plain_dash_c_against_an0/worktree')
+
+    def _assert_refused(
+        result: subprocess.CompletedProcess[str], *, repo: Path, worktree: Path
+    ) -> None:
+        """A refusal exits with its own status and names run, worktree and target."""
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11244/test_a_plain_dash_c_against_an0/other...et --hard 4ce70c5aca4b9a8088d1e591744dd542b5247436'], returncode=0, stdout='HEAD is now at 4ce70c5 first\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:155: AssertionError
+__________ test_a_run_id_with_no_pointer_refuses_rather_than_guessing __________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11244/test_a_run_id_with_no_pointer_0/home'), 'worktree': PosixPath(...ytest-11244/test_a_run_id_with_no_pointer_0/other'), 'first_worktree': 'af4fdad6ec9e3b0f72742151942faf9ee1b7f5d0', ...}
+
+    def test_a_run_id_with_no_pointer_refuses_rather_than_guessing(
+        repos: dict[str, Any],
+    ) -> None:
+        home, other = repos["home"], repos["other"]
+        before = _head(other, home)
+        (home / "crew" / "live" / f"{RUN_ID}.json").unlink()
+    
+        result = _shell(
+            f"git -C {other} reset --hard {repos['first_other']}", cwd=home, home=home
+        )
+    
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11244/test_a_run_id_with_no_pointer_0/other...et --hard af4fdad6ec9e3b0f72742151942faf9ee1b7f5d0'], returncode=0, stdout='HEAD is now at af4fdad first\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:281: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_a_leading_git_dir_against_another_checkout_is_refused
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_a_cd_into_another_checkout_is_refused
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_a_pushd_into_another_checkout_is_refused
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_a_plain_dash_c_against_another_checkout_is_refused
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_a_run_id_with_no_pointer_refuses_rather_than_guessing
+5 failed, 3 passed in 8.51s
+EXIT=1
