@@ -25,6 +25,9 @@ Two properties, and the second is what makes the first mean anything:
 
 Running this file directly reproduces the red log: its first line is the
 declared mutation, verbatim, and what follows is the observed refusal.
+Running it with ``main-checkout`` reproduces the second, independent red log:
+the mutation that deletes the write-roots guard for a main checkout, and the
+case's own assertion failing with the git directory among the writable binds.
 """
 
 from __future__ import annotations
@@ -33,6 +36,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from itertools import pairwise
 from pathlib import Path
 
 import pytest
@@ -42,6 +46,11 @@ from reckon import _backends
 DECLARED_MUTATION = (
     "leave the worktree git dir and object store out of the write roots as "
     "today; the fenced commit must fail with a read-only file system error"
+)
+
+MAIN_CHECKOUT_DECLARED_MUTATION = (
+    "delete the early return that excludes a main checkout git dir; the new "
+    "case must fail with that .git directory among the writable binds"
 )
 
 requires_bwrap = pytest.mark.skipif(
@@ -111,7 +120,17 @@ def _git_directory(worktree: Path) -> Path:
 
 
 def _common_objects(worktree: Path) -> Path:
+    """Return the shared object store, resolved against the worktree.
+
+    ``--git-common-dir`` is absolute for a linked worktree but a bare ``.git``
+    for a main checkout, so a relative answer is joined to the worktree before
+    resolving — the same rule the helper under test applies. Resolving it
+    against the process working directory instead would name the running
+    checkout's object store, which is a different repository.
+    """
     common = Path(_git(worktree, "rev-parse", "--git-common-dir").stdout.strip())
+    if not common.is_absolute():
+        common = worktree / common
     return (common / "objects").resolve()
 
 
@@ -134,6 +153,25 @@ def _make_repo(home: Path) -> tuple[Path, Path]:
     worktree.parent.mkdir(parents=True, exist_ok=True)
     _git(repo, "worktree", "add", "--detach", str(worktree), "HEAD")
     return repo, worktree
+
+
+def _make_main_checkout(home: Path) -> Path:
+    """Build a main checkout under a synthetic code root, with no linked worktree.
+
+    Its git directory *is* the repository's common directory, which is the shape
+    the write-roots helper must refuse: refs, index and objects of a main
+    checkout are exactly what the fence seals, so none of them may be re-opened
+    as a grant.
+    """
+    repo = home / "Code" / "zzmain"
+    repo.mkdir(parents=True)
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "fence-test@example.invalid")
+    _git(repo, "config", "user.name", "Fence Test")
+    (repo / "tracked.txt").write_text("base\n")
+    _git(repo, "add", "tracked.txt")
+    _git(repo, "commit", "-q", "-m", "base")
+    return repo
 
 
 def _argv(worktree: Path, repo: Path, home: Path) -> list[str]:
@@ -161,6 +199,67 @@ def _argv_without_git_roots(worktree: Path, repo: Path, home: Path) -> list[str]
 
 def _run(argv: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(argv, capture_output=True, text=True, check=False)
+
+
+def _writable_binds(argv: list[str]) -> list[str]:
+    """Return the destinations the fence re-binds writable, in argv order.
+
+    ``--dev-bind`` carries a destination token too, so the match is on the exact
+    ``--bind`` flag rather than a prefix.
+    """
+    return [destination for flag, destination in pairwise(argv) if flag == "--bind"]
+
+
+def _read_only_bind_destinations(argv: list[str]) -> list[str]:
+    return [destination for flag, destination in pairwise(argv) if flag == "--ro-bind"]
+
+
+def _assert_git_roots_not_writable(
+    argv: list[str], git_directory: Path, objects: Path
+) -> None:
+    """The write-roots guard's contract: neither git path is a writable bind."""
+    binds = _writable_binds(argv)
+    assert str(git_directory) not in binds, binds
+    assert str(objects) not in binds, binds
+
+
+def _git_roots_without_the_guard(worktree: Path) -> list[Path]:
+    """The declared mutation of the guard: its early return deleted.
+
+    A main checkout's git directory and the objects directory under its common
+    directory are then named explicitly, exactly as a linked worktree's would be.
+    """
+    return [_git_directory(worktree).resolve(), _common_objects(worktree)]
+
+
+def _argv_main_checkout_without_the_guard(repo: Path, home: Path) -> list[str]:
+    original = _backends.worktree_git_write_roots
+    _backends.worktree_git_write_roots = _git_roots_without_the_guard
+    try:
+        return _backends.fence_argv(["true"], worktree=repo, home=home)
+    finally:
+        _backends.worktree_git_write_roots = original
+
+
+def _main_checkout_negative_control_report(home: Path) -> list[str]:
+    repo = _make_main_checkout(home)
+    git_directory = _git_directory(repo).resolve()
+    objects = _common_objects(repo)
+    argv = _argv_main_checkout_without_the_guard(repo, home)
+    binds = _writable_binds(argv)
+    lines = [
+        f"git-directory={git_directory}",
+        f"objects-directory={objects}",
+        f"git-directory-among-writable-binds={str(git_directory) in binds}",
+        f"objects-among-writable-binds={str(objects) in binds}",
+    ]
+    try:
+        _assert_git_roots_not_writable(argv, git_directory, objects)
+    except AssertionError as error:
+        lines.append(f"case-assertion-failed: {error}")
+    else:
+        lines.append("case-assertion-passed: the declared mutation did not apply")
+    return lines
 
 
 @requires_bwrap
@@ -231,6 +330,64 @@ def test_the_negative_control_refuses_the_commit_without_the_git_roots(
     assert _rev(worktree) == before, out
 
 
+def test_a_main_checkout_worktree_grants_no_git_roots(tmp_path: Path) -> None:
+    """A worktree that is itself the main checkout re-opens no git metadata.
+
+    A main checkout's git directory and its common directory are the same path,
+    so the write-roots helper grants nothing for it: its refs, index and objects
+    must not appear among the fence's writable binds. The two cases above
+    compose a linked worktree, where the two directories differ and the guard is
+    never reached — this case is the one that pins it. It reads the composed argv
+    rather than executing the fence, because the guard's contract is a property
+    of the composition; the executed-fence experiment belongs to the
+    linked-worktree case above, where the grant is what lets a commit succeed.
+    """
+    home = tmp_path / "home"
+    repo = _make_main_checkout(home)
+    git_directory = _git_directory(repo).resolve()
+    objects = _common_objects(repo)
+
+    # The guard's precondition: for a main checkout the git directory is the
+    # common directory, so the helper has nothing to re-open.
+    common = Path(_git(repo, "rev-parse", "--git-common-dir").stdout.strip())
+    if not common.is_absolute():
+        common = repo / common
+    assert common.resolve() == git_directory
+
+    argv = _backends.fence_argv(["true"], worktree=repo, home=home)
+    # The checkout is a protected class the fence overlays read-only, which is
+    # why naming neither git path writable leaves both sealed.
+    assert str(repo.resolve()) in _read_only_bind_destinations(argv)
+    # The case: neither git path is among the writable re-binds. This is the
+    # assertion the declared mutation trips — the git directory appears here.
+    _assert_git_roots_not_writable(argv, git_directory, objects)
+    # And the helper itself grants nothing for a main checkout.
+    assert _backends.worktree_git_write_roots(repo) == []
+
+
+def test_the_main_checkout_negative_control_grants_the_git_dir(
+    tmp_path: Path,
+) -> None:
+    """The declared mutation, applied: the git directory becomes a writable bind.
+
+    With the early return deleted, the helper names the main checkout's git
+    directory and its objects, and the fence re-binds both. The case above fails
+    on exactly this, so its pass rests on the guard and not on a helper that
+    granted nothing for another reason.
+    """
+    home = tmp_path / "home"
+    repo = _make_main_checkout(home)
+    git_directory = _git_directory(repo).resolve()
+    objects = _common_objects(repo)
+
+    argv = _argv_main_checkout_without_the_guard(repo, home)
+    binds = _writable_binds(argv)
+    # The mutation applied: both paths are now among the writable binds, so the
+    # case above would fail on its first assertion.
+    assert str(git_directory) in binds, binds
+    assert str(objects) in binds, binds
+
+
 def _negative_control_report(home: Path) -> list[str]:
     repo, worktree = _make_repo(home)
     before = _rev(worktree)
@@ -243,10 +400,20 @@ def _negative_control_report(home: Path) -> list[str]:
     return lines
 
 
-if __name__ == "__main__":  # pragma: no cover - reproduces the red log
-    print(DECLARED_MUTATION)
+if __name__ == "__main__":  # pragma: no cover - reproduces the red logs
+    # ``main-checkout`` reproduces the red log of the guard that keeps a main
+    # checkout's git metadata out of the writable roots; the default reproduces
+    # the linked-worktree commit control above.
+    main_checkout = len(sys.argv) > 1 and sys.argv[1] == "main-checkout"
+    print(MAIN_CHECKOUT_DECLARED_MUTATION if main_checkout else DECLARED_MUTATION)
     with tempfile.TemporaryDirectory() as directory:
-        for line in _negative_control_report(Path(directory) / "home"):
+        home = Path(directory) / "home"
+        report = (
+            _main_checkout_negative_control_report
+            if main_checkout
+            else _negative_control_report
+        )
+        for line in report(home):
             print(line)
     if shutil.which(_backends.FENCE_BINARY) is None:
         print("bubblewrap is not installed", file=sys.stderr)
