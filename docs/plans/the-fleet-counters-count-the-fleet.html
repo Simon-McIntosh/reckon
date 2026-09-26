@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="82">
+<meta name="plan-version" content="83">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -320,6 +320,9 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260926T151240302370-review-of-producer-takes-new-code" data-who="reckon-build" data-when="2026-09-26T15:49:19.143Z">
     <div class="r-comment-body"><p>review stored at head e7c31ab7, total 93, two findings (staleness verdict surfaced nowhere; a fresh producer inherits a dead predecessor's started_at) returned to the node as a resume</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260926T170035930616-review-of-producer-takes-new-code" data-who="reckon-build" data-when="2026-09-26T17:51:58.088Z">
+    <div class="r-comment-body"><p>review stored at head 0d242ae3, total 88, three findings (printed remedy is not a valid command; the stale line corrupts crew follow --json; a three-of-three claim cites single-run logs) returned to the node as a resume</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-20260925-row-labels-and-alignment" data-who="reckon-build" data-when="2026-09-25T08:05:00Z">
     <div class="r-comment-body"><p>§6 and §7 come from the lead's 2026-09-25 review of the ticker. <code>a-monitor-row-reads-at-a-glance</code> (S22) is fully landed and covered neither issue. Both write <code>reckon/crew/ticker.py</code>, and ship in the same ticker node as §3–§5 once S21 releases <code>reckon/crew/recovery.py</code>.</p></div>
 </div>
@@ -378,7 +381,7 @@
     <div class="r-comment-body"><p>review of reason-room-geometry-lands-whole at 39f4c96f scored 88: a long state word keeps the arrow on one column at head; the landing record's base-revision history was false and is corrected beside it</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260926T151440645322-review-of-counter-cells-keep-their-counts-apart" data-who="reckon-build" data-when="2026-09-26T16:15:56.146Z">
-    <div class="r-comment-body"><p>review stored at head 8d1f9aab, total 93, two findings (stale _stats docstring; right-edge test derived from the renderer&#x27;s own constant); it missed that the run&#x27;s own base/head logs show ten added failures by id, so the node was resumed to keep fixed-width cells and restore those ten</p></div>
+    <div class="r-comment-body"><p>review stored at head 8d1f9aab, total 93, two findings (stale _stats docstring; right-edge test derived from the renderer's own constant); it missed that the run's own base/head logs show ten added failures by id, so the node was resumed to keep fixed-width cells and restore those ten</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-correction-watcher-seat-gate-record" data-who="s23-coord" data-when="2026-09-25T21:02:00Z">
     <div class="r-comment-body"><p><strong>Correction to the promotion record of r-20260925T164609522941-watcher-seat-survives-other-hosts.</strong> That promotion cited <code>gate-head-rerun.log</code> with exit status 0, under a gate command naming only <code>tests/test_watch_seat_across_hosts.py</code>. The log is in fact the node's full family run at head, which ends <code>11 failed, 219 passed, 2 skipped</code>. The accurate account: at base 9a9cb581 the same family is 16 failed (11 pre-existing, owned by other nodes, plus this node's 5 new tests red, per <code>gate-base-new-tests.log</code>). At head it is 11 failed, identical by id to the 11 pre-existing ones, so no failures were added and the 5 new tests are fixed. The verdict stands; the recorded exit status and command did not describe that log.</p></div>
