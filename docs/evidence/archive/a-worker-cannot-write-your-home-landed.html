@@ -1117,8 +1117,8 @@ exit: 0</pre>
     <table>
       <caption>The measure: base <code>7f97afda</code>, first head <code>fd521f3c</code>,
       review heads <code>9ab5e097</code> and <code>4aa785dc</code>, third review head
-      <code>9065ca47</code>. Each arm ran in its own tree so the <code>reckon</code> imported
-      is the tree under test.</caption>
+      <code>9065ca47</code>, fourth review head <code>11e907b8</code>. Each arm ran in its own
+      tree so the <code>reckon</code> imported is the tree under test.</caption>
       <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
       <tbody>
         <tr><td>new shim suite, base tree (module absent)</td><td><code>1 error</code> at collection</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-red-at-base.txt</code></td></tr>
@@ -1131,7 +1131,11 @@ exit: 0</pre>
         <tr><td>the five second-review tests against the pre-fix head</td><td><code>4 failed, 11 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review2-red.txt</code></td></tr>
         <tr><td>new shim suite at the third review head</td><td><code>23 passed</code> (<code>40</code> with the companions)</td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review3-head.txt</code></td></tr>
         <tr><td>the third-review cases against the pre-fix head</td><td><code>7 failed, 16 passed</code></td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review3-red.txt</code></td></tr>
+        <tr><td>new shim suite at the fourth review head, with the companions</td><td><code>151 passed</code> (<code>134</code> of them the shim suite alone)</td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review4-head.txt</code></td></tr>
+        <tr><td>the fourth-review cases against the pre-fix head</td><td><code>20 failed, 114 passed</code></td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review4-red.txt</code></td></tr>
+        <tr><td>the verb-and-option sweep at <code>ab38cee8</code></td><td>every index-refreshing form reads <code>rc=0 write</code> through the shim; every off-allowlist form <code>rc=97 read</code></td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/measurement-git-shim-review4.txt</code></td></tr>
         <tr><td>lint on complete trees</td><td><code>dispatch.py</code> <code>7 &rarr; 7</code>; both reviewed files <code>0 &rarr; 0, 0 &rarr; 0, 0 &rarr; 0</code> at the three review heads</td><td><code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim.txt</code></td></tr>
+        <tr><td>lint on complete trees, fourth review</td><td>both changed files <code>0 &rarr; 0</code>, both trees, format clean</td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/lint-git-shim-review4.txt</code></td></tr>
       </tbody>
     </table>
 
@@ -1214,6 +1218,51 @@ exit: 0</pre>
     check</em> (<code>5 failed, 18 passed</code>) and <em>forward a read verb without disabling
     optional locks</em> (<code>1 failed, 22 passed</code>). Lint on the two changed files stays
     <code>0 &rarr; 0</code>.</p>
+
+    <p><strong>A fourth review closed the half of that class
+    <code>GIT_OPTIONAL_LOCKS</code> cannot reach</strong> (commit
+    <code>11e907b8</code>). <code>describe --dirty</code> aimed at another checkout through
+    the shim moved that checkout's index (<code>fbd5208a</code> &rarr;
+    <code>3f634244</code>), and <code>GIT_OPTIONAL_LOCKS=0</code> did not stop it: the
+    variable suppresses a lock a command can do without &mdash; which is why it covers
+    <code>status</code>, whose refresh is a cache update &mdash; while a form whose answer
+    is defined in terms of a refreshed index takes the index lock because it cannot compute
+    the answer without it, and writes the refresh before reporting. Two classes of reader
+    are now separated: one whose answer comes from the object store, which is forwarded, and
+    one that refreshes, which is resolved like a mutating verb &mdash; forwarded when the
+    invocation's own environment, <code>cwd</code> and <code>-C</code> resolve to this run's
+    worktree, refused otherwise with a message naming the form and this mechanism. The forms
+    matched are <code>describe</code> carrying <code>--dirty</code> (bare or
+    <code>=&lt;suffix&gt;</code>) or <code>--broken</code>, and every <code>diff</code> that
+    does not name <code>--cached</code>, <code>--staged</code> or <code>--no-index</code>
+    &mdash; those three answer from the object store and are forwarded.
+    <code>--broken</code> is refused conservatively, sharing the work-tree detection path,
+    since measurement against a repository holding a broken tag showed it answering without
+    moving the index. <code>diff-index</code> and <code>diff-files</code>, which write the
+    index in every form, were already off the allowlist and stay refused whole.</p>
+
+    <p><strong>And it is closed by a test, not by the instance.</strong> One parametrisation
+    runs every verb in both allowlisted sets &mdash; read from the module's own
+    <code>_READ_ONLY_VERBS</code> and <code>_READ_ACTIONS</code>, so a verb added to either
+    joins the test without an edit &mdash; plus every index-touching form named above, each
+    aimed at a checkout that is not this run's, with that checkout's stat cache left
+    deliberately stale in both directions (mtime an hour older, then an hour newer; content
+    unchanged), which is what makes git want to rewrite the index. The assertion is that the
+    target's <code>.git/index</code> bytes are identical afterwards and no new file appears
+    in it. The full verb-and-option sweep is recorded per-form in
+    <code>measurement-git-shim-review4.txt</code>, where for each command the table shows
+    what the real git did and what the shim did at the pre-fix head and at this head, and
+    <code>write</code>/<code>read</code>/<code>file</code> distinguishes a moved index from
+    a file written, so a refusal is distinguishable from a forward that wrote nothing: at
+    the pre-fix head every index-refreshing form reads <code>rc=0 write</code>; at this head
+    each reads <code>rc=97 read</code>. The new tests are <code>20 failed, 114 passed</code>
+    against <code>ab38cee8</code> and green at <code>134 passed</code> at this head,
+    including the companions. The declared negative control &mdash; <em>exec the real git
+    without checking the resolved repository</em> &mdash; bypasses the probe
+    (<code>28 failed, 106 passed</code>, reverted <code>134 passed</code>), and a second
+    control isolates this round's fix alone: <em>forward an index-refreshing read form
+    without the form check</em> (<code>19 failed, 115 passed</code>, reverted <code>134
+    passed</code>).</p>
 
     <p><strong>Scope stated.</strong> This node delivers the shim, the PATH wiring and the
     tests. Verifying the merged result belongs to a separately dispatched test node, and the

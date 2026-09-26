@@ -777,6 +777,63 @@
         stays <code>0 &rarr; 0</code> on the two changed files at both revisions
         (<code>lint-git-shim-review3.txt</code>). Commit <code>9065ca47</code>.</p>
 
+        <p><strong>A fourth review closed the second half of that same class, and it is the
+        half <code>GIT_OPTIONAL_LOCKS</code> cannot reach.</strong> <code>describe --dirty</code>
+        aimed at another checkout through the shim moved that checkout's index
+        (<code>fbd5208a</code> &rarr; <code>3f634244</code>), and setting
+        <code>GIT_OPTIONAL_LOCKS=0</code> did not stop it. The distinction is what the lock is
+        <em>for</em>: git documents <code>GIT_OPTIONAL_LOCKS=0</code> as suppressing a lock the
+        command can do without &mdash; which is why it covers <code>status</code>, whose refresh
+        is a cache update &mdash; while a form whose <em>answer</em> is defined in terms of a
+        refreshed index (<code>describe --dirty</code>, a work-tree <code>diff</code>) takes the
+        index lock because it cannot compute the answer without it, and writes the refresh
+        before it reports. So these forms are now resolved the way a mutating verb is:
+        forwarded when the invocation's own environment, <code>cwd</code> and <code>-C</code>
+        resolve to this run's worktree, where the index written is the run's own, and refused
+        otherwise with a message naming the form and this mechanism. The forms matched are
+        <code>describe</code> carrying <code>--dirty</code> (both the bare and
+        <code>=&lt;suffix&gt;</code> spellings) or <code>--broken</code>, and every
+        <code>diff</code> that does not name <code>--cached</code>, <code>--staged</code> or
+        <code>--no-index</code> &mdash; those three answer from the object store and are
+        forwarded. <code>--broken</code> is refused conservatively: it shares the work-tree
+        detection path, and measurement against a repository holding a broken tag showed it
+        answering without moving the index. The two verbs that write the index in
+        <em>every</em> form, <code>diff-index</code> and <code>diff-files</code>, were already
+        off the read allowlist and stay refused whole.</p>
+
+        <p>The class is closed by a test rather than by the instance. One parametrisation runs
+        every verb in both allowlisted sets &mdash; read from the module's own
+        <code>_READ_ONLY_VERBS</code> and <code>_READ_ACTIONS</code>, so a verb added to either
+        joins the test without an edit &mdash; plus every index-touching form named above, each
+        aimed at a checkout that is not this run's, with that checkout's stat cache left
+        deliberately stale in both directions (mtime moved an hour older, then an hour newer,
+        content unchanged, which is what makes git want to rewrite the index). The assertion is
+        that the target's <code>.git/index</code> bytes are identical afterwards, that no new
+        file appears in it, and that nothing in it changed. The whole verb-and-option sweep is
+        recorded per-form in
+        <code>measurement-git-shim-review4.txt</code>: for each command, what the real git did
+        and what the shim did at the pre-fix head and at this head, where <code>write</code>
+        means the target's index bytes moved, <code>file</code> means a file appeared, and
+        <code>read</code> means neither &mdash; so the table distinguishes a refusal from a
+        forward that happened to write nothing. At the pre-fix head every index-refreshing form
+        reads <code>rc=0 write</code>; at this head each reads <code>rc=97 read</code>, refused
+        before anything is touched.</p>
+
+        <p>The round's evidence: the new tests are <code>20 failed, 114 passed</code> against
+        <code>ab38cee8</code> (<code>gate-git-shim-review4-red.txt</code>, the red arm being a
+        <code>git archive</code> of that head with this head's test file copied in), and green
+        at <code>151 passed</code> across the shim suite and its two companions at this head
+        (<code>gate-git-shim-review4-head.txt</code>). The declared negative control &mdash;
+        <em>exec the real git without checking the resolved repository</em> &mdash; bypasses the
+        probe (<code>28 failed, 106 passed</code> at
+        <code>negative-control-git-shim.txt</code>, reverted <code>134 passed</code>), and a
+        second control isolates this round's fix alone: <em>forward an index-refreshing read form
+        without the form check</em>, removing the call that classifies it
+        (<code>19 failed, 115 passed</code> at <code>negative-control-index-form.txt</code>,
+        reverted <code>134 passed</code>). Lint stays <code>0 &rarr; 0</code> on the two changed
+        files at both revisions (<code>lint-git-shim-review4.txt</code>).
+        Commit <code>11e907b8</code>.</p>
+
         <p><strong>Scope.</strong> This node delivers the shim, the PATH wiring and the tests.
         Verifying the merged result belongs to a separately dispatched test node, and the
         PreToolUse guard stays as the early, readable refusal. The shim file itself carries no
