@@ -1180,8 +1180,9 @@ exit: 0</pre>
     behaviour is added &mdash; <code>test_an_unfenced_launch_keeps_the_operators_own_home</code>
     &mdash; asserting that no harness-home variable is invented, no run home is created, and the
     argv names no fence, which is what "the operator home is kept" means for the launch. No
-    product code changed: <code>git diff 4b0ccd34 1854ee37</code> touches only
-    <code>tests/test_harness_home_carries_the_operator_config.py</code>.</p>
+    product code changed: <code>git diff 4b0ccd34 015ad804</code> touches, on the product side,
+    only <code>tests/test_harness_home_carries_the_operator_config.py</code> (the remaining paths
+    are this record, its figure and logs, and the plan's landing note).</p>
 
     <figure>
       <img src="/reckon/figures/a-worker-cannot-write-your-home/harness-home-carry-opt-in.svg"
@@ -1192,7 +1193,7 @@ exit: 0</pre>
     </figure>
 
     <p><strong>Measure.</strong> The whole file is <code>5 failed, 6 passed</code> at base
-    <code>4b0ccd34</code> and <code>12 passed</code> at head <code>1854ee37</code>, so this change
+    <code>4b0ccd34</code> and <code>12 passed</code> at head <code>015ad804</code>, so this change
     repairs all five named ids and adds none. The five named ids run together pass at head
     (<code>docs/figures/a-worker-cannot-write-your-home/gate-harness-home-carry-opt-in-head.txt</code>).
     The three files the gate names as neighbours &mdash;
@@ -1213,7 +1214,14 @@ exit: 0</pre>
     reverted; the committed file carries <code>fence=False</code> only in the new unfenced case and
     in the module's reproduction block.</p>
 
-    <p><strong>Commit.</strong> <code>1854ee37</code>. Evidence:
+    <p><strong>Lint and format delta.</strong> The touched test file carries no lint findings and is
+    formatted at base and at head; the change adds none. One format finding the change did
+    introduce &mdash; widening the resume case to <code>fence=True</code> shortened its
+    <code>_launch</code> call enough that ruff wanted it on one line &mdash; was repaired in
+    <code>e6151ba0</code> rather than left in the tree.
+
+    <p><strong>Commits.</strong> <code>1854ee37</code> (the test change), <code>e6151ba0</code>
+    (the format fix), <code>015ad804</code> (this record). Evidence:
     <code>docs/figures/a-worker-cannot-write-your-home/gate-harness-home-carry-opt-in-base.txt</code>,
     <code>gate-harness-home-carry-opt-in-head.txt</code>,
     <code>gate-harness-home-carry-opt-in-neighbours.txt</code>,
