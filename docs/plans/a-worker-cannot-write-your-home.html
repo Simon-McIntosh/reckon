@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="61">
+<meta name="plan-version" content="62">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
-<meta name="plan-impl" content="0.96">
+<meta name="plan-impl" content="0.97">
 </head>
 <body>
   <main class="plan-doc">
@@ -1197,6 +1197,12 @@
     <h4 class="r-fu-title">A resumed fenced run binds its own run directory, not only its manifest&#x27;s parent</h4>
     <div class="r-fu-body"><p>After 3464b851, dispatch hands the fence <code>run_dir(run_id)</code> as the run directory. <code>resume_plan</code> and <code>change_lane</code> in <code>reckon/crew/dispatch.py</code> instead pass the recorded manifest's parent. The two agree whenever the manifest lives in the run directory, which is the default. A node whose manifest is declared elsewhere, such as a report directory, gets its run directory bound at dispatch, but not on resume or lane change. A resumed worker then cannot write the gate logs it keeps there. The harness home is placed at the manifest's parent in <code>launch_plan</code>, so the home itself stays consistent. Only the separate run directory is lost. This was found by reading the merged code; nothing has failed on it yet. Done when <code>resume_plan</code> and <code>change_lane</code> pass <code>run_dir(record["run_id"])</code>. A test resumes a synthesised fenced run whose manifest lies outside its run directory, and asserts the argv binds both. The negative control passes the manifest parent, and the run-directory assertion must fail.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §2 resume-binds-the-run-directory</pre>
+    </article>
+<article class="r-fu" data-id="f-awcwyh-codex-pause-lifted" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home §3" data-resolved-at="2026-09-26T19:04:08+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">The codex pause is lifted: a fenced codex run has its own home, and its instructions reach the request</h4>
+    <div class="r-fu-body"><p>On 2026-09-26 the host layer's withholding of codex lanes from review routing was removed (dotfiles fb41bf5). The withholding existed because concurrent codex processes shared one <code>CODEX_HOME</code> and deleted each other's launcher directories. The controlled fenced probe r-20260926T184051491789 (review 91) recorded the following. <code>CODEX_HOME</code> lies under the run's own directory. Its <code>AGENTS.md</code> carries the git-safety rules. <code>auth.json</code> is bound read-only. Writes to the main checkout and to <code>~/.codex</code> are refused. The review asked for the direct observable that the instructions reach the request. That is the session rollout's line 5, a 108,028-character user message headed <q># AGENTS.md instructions for</q> that carries <q>Always banned</q>, separate from the dispatch prompt at line 8. The reckon project layer still excludes every codex lane from reviews, under the local-review rule, and that is unchanged.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §3</pre>
+    <p class="r-fu-outcome">Lifted at dotfiles fb41bf5 on the probe's evidence, with the rollout confirming AGENTS.md reaches the request. The review's second finding, that probe line 5 records the bare command but quotes a capture wrapper's output, is evidence wording only.</p>
     </article>
 </section>
 
