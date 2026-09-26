@@ -827,6 +827,53 @@
       not one of the three buckets or the waiting family. Review, integration, the merged
       gate and deployment are coordinator work, and the driving followup stays open.</p>
     </section>
+  <section id="s10-discard-releases-a-clean-worktree">
+      <h2>A discard releases the clean worktree its node would rerun in</h2>
+      <p>Measured on fleet compute node <code>98dci4-clu-2058</code> under allocation
+      <code>1277272</code>, at base <code>10749306946587e6ad0c9207fcd3806ec9bef636</code>.
+      A run that died at launch and was discarded left its worktree on disk although
+      the tree held nothing. A redispatch of the same node was then refused because
+      the worktree path already existed, and the coordinator removed the tree by
+      hand. Leaving the tree behind is safe for the fleet but blocks the node's own
+      rerun, and the two questions &mdash; what survives a discard, and whether a path is
+      free &mdash; had no shared answer.</p>
+      <figure>
+        <img src="/reckon/figures/a-crew-process-ends-with-its-owner/discard_releases_a_clean_worktree.svg"
+             alt="discard classifies the run's worktree; a clean integrated tree is removed, otherwise it is withheld with the audit's reason."/>
+        <figcaption>discard() reuses the release audit: a clean, integrated tree is
+        removed; a dirty, unintegrated or live-referenced tree survives and is
+        named with the audit's withheld reason.</figcaption>
+      </figure>
+      <p><strong>What changed.</strong> <code>discard()</code> in
+      <code>reckon/crew/promotion.py</code> releases the run's worktree through
+      <code>_release_run_workspace</code> &mdash; the same classifier and withheld reasons
+      <code>crew complete</code> already applies on release, not a second one. A tree
+      with an empty <code>git status --porcelain</code> whose head the integration
+      branch contains is removed with <code>git worktree remove</code>; a dirty or
+      unintegrated tree survives. Only the worktree fields are surfaced on the
+      discard result, because discard has already refused a run whose process is
+      alive. A release failure is caught and reported rather than allowed to
+      obscure the pointer removal that already succeeded.</p>
+      <table>
+        <thead><tr><th>Check</th><th>Measured result</th></tr></thead>
+        <tbody>
+          <tr><td>New module</td><td><code>tests/test_discard_releases_a_clean_worktree.py</code>: 4 passed. A clean integrated worktree is gone after discard and no longer named by <code>git worktree list</code>; a dirty worktree survives with the uncommitted-changes reason; a worktree carrying a commit the integration branch lacks survives with the not-reachable reason; every crew path resolves under the synthetic home.</td></tr>
+          <tr><td>Scoped gate</td><td>Base arm (two comparison files, revision 10749306 exported with <code>git archive</code>, module resolved from the scratch tree): <strong>54 passed</strong>, exit 0. Head (same two files at <code>c4684acf</code>): <strong>54 passed</strong>, exit 0. Added failures: <strong>0</strong>.</td></tr>
+          <tr><td>Declared negative control</td><td>Make <code>_remove_discarded_worktree</code> a no-op: the clean-worktree case fails <code>assert not worktree.exists()</code> on the surviving path (<strong>1 failed, 3 passed, exit 1</strong>).</td></tr>
+          <tr><td>Lint delta</td><td><code>ruff check --no-cache --output-format=concise</code> over the two changed paths: base 13 findings, head 12 at the head revision, none in the added region. <code>ruff format</code> changes an identical 40 lines at base and head, so the change adds no formatting hunk.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Receipts.</strong> Logs live under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T152959325320-discard-releases-a-clean-worktree/logs/</code>:
+      <code>gate.log</code>, <code>base-arm.log</code>, <code>head-arm.log</code> and
+      <code>negative-control.log</code>. The gate and arm headers name the revision, the
+      tree, the command, the resolved <code>module.__file__</code> and the working
+      directory; the red log's first line repeats the declared mutation verbatim.</p>
+      <p><strong>Remaining.</strong> Only a clean tree whose head the integration branch
+      already contains is released; anything holding work that exists nowhere else is
+      withheld. Review, integration, the merged gate and deployment are coordinator
+      work, and the driving followup stays open.</p>
+    </section>
   </main>
 </body>
 </html>
