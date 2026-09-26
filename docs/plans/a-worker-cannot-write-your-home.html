@@ -834,6 +834,53 @@
         files at both revisions (<code>lint-git-shim-review4.txt</code>).
         Commit <code>11e907b8</code>.</p>
 
+        <p><strong>A fifth review found the escape that enumerating spellings cannot reach, and
+        replaced the enumeration with a copy of the index.</strong> git resolves any unambiguous
+        abbreviation of a long option, and the form check above matched whole tokens:
+        <code>describe --di --long</code>, <code>describe --dirt</code> and
+        <code>describe --di=&lt;mark&gt;</code> were forwarded and moved a foreign checkout's
+        index, refused only in their full spellings, and the same gap applied to every refused
+        option &mdash; <code>log --outp=&lt;path&gt;</code> wrote the file
+        <code>--output</code> is refused for. So the refusals the fourth review added are gone,
+        and what replaces them does not depend on spelling at all. A read that resolves to a
+        repository other than this run's worktree is run with <code>GIT_INDEX_FILE</code> naming
+        a private copy of that repository's index
+        (<code>rev-parse --path-format=absolute --git-path index</code> answers the effective
+        path, which is the right one inside a linked worktree), and the copy is removed when git
+        returns &mdash; so an in-process refresh writes the copy whichever option spelling
+        reached the form. That case runs the real git as a child rather than replacing this
+        process with it, because the copy can only be removed once git has returned; the child's
+        exit status is returned and a terminating signal is re-raised on the shim. A repository
+        with no index file &mdash; bare, or never read from &mdash; is forwarded with nothing
+        set, because <code>GIT_INDEX_FILE</code> naming a file that does not exist would make
+        git answer from an empty index, a different answer rather than a safer one. The fourth
+        review's statement that these forms are &ldquo;refused otherwise&rdquo; no longer
+        describes the code: they are forwarded, and the target is protected by the copy. The
+        option refusal stays, because an output option names the file it writes and a copy
+        cannot help &mdash; and it is prefix-aware now: a written name of at least three
+        characters that a banned name starts with is refused as the option it abbreviates,
+        naming both.</p>
+
+        <p>The same two parametrisations carry the fix. Every prefix of every banned option,
+        from three characters to the full spelling, generated from the shim's own
+        <code>_OUTPUT_OPTIONS</code>, is aimed at another checkout with
+        <code>--output</code>'s file and asserted refused, so the write cannot land for any
+        spelling; and the index-refreshing forms &mdash; the abbreviated spellings among them
+        &mdash; are aimed at a checkout whose stat cache is stale in both directions and
+        asserted to leave its index bytes identical and no new file behind. A control proves the
+        copy is what holds that: with the isolated child run replaced by the plain forward and
+        every other decision unchanged, <code>36 failed, 137 passed</code>, reverted
+        <code>173 passed</code>. The round's evidence: the new tests are
+        <code>42 failed, 131 passed</code> against <code>4ec87830</code>
+        (<code>gate-git-shim-review5-red.txt</code>, a <code>git archive</code> of that head with
+        this head's test file copied in), and green at <code>173 passed</code> at this head
+        (<code>gate-git-shim-review5-head.txt</code>, which carries the base-versus-head
+        comparison by failure id: none added). The declared negative control &mdash; <em>exec
+        the real git without checking the resolved repository</em> &mdash; gives
+        <code>76 failed, 97 passed</code>, reverted <code>173 passed</code>. Lint stays
+        <code>0 &rarr; 0</code> on the two changed files at both revisions, both trees formatted
+        (<code>lint-git-shim-review5.txt</code>). Commit <code>51de190d</code>.</p>
+
         <p><strong>Scope.</strong> This node delivers the shim, the PATH wiring and the tests.
         Verifying the merged result belongs to a separately dispatched test node, and the
         PreToolUse guard stays as the early, readable refusal. The shim file itself carries no

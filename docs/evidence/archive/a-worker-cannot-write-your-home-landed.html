@@ -1118,7 +1118,8 @@ exit: 0</pre>
       <caption>The measure: base <code>7f97afda</code>, first head <code>fd521f3c</code>,
       review heads <code>9ab5e097</code> and <code>4aa785dc</code>, third review head
       <code>9065ca47</code>, fourth review head <code>11e907b8</code>. Each arm ran in its own
-      tree so the <code>reckon</code> imported is the tree under test.</caption>
+      tree so the <code>reckon</code> imported is the tree under test. Fifth review head
+      <code>51de190d</code>.</caption>
       <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
       <tbody>
         <tr><td>new shim suite, base tree (module absent)</td><td><code>1 error</code> at collection</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-red-at-base.txt</code></td></tr>
@@ -1136,6 +1137,11 @@ exit: 0</pre>
         <tr><td>the verb-and-option sweep at <code>ab38cee8</code></td><td>every index-refreshing form reads <code>rc=0 write</code> through the shim; every off-allowlist form <code>rc=97 read</code></td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/measurement-git-shim-review4.txt</code></td></tr>
         <tr><td>lint on complete trees</td><td><code>dispatch.py</code> <code>7 &rarr; 7</code>; both reviewed files <code>0 &rarr; 0, 0 &rarr; 0, 0 &rarr; 0</code> at the three review heads</td><td><code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim.txt</code></td></tr>
         <tr><td>lint on complete trees, fourth review</td><td>both changed files <code>0 &rarr; 0</code>, both trees, format clean</td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/lint-git-shim-review4.txt</code></td></tr>
+        <tr><td>new shim suite at the fifth review head <code>51de190d</code></td><td><code>173 passed</code></td><td><code>~/.config/reckon/crew/runs/r-20260926T062814328352-git-shim-checks-the-resolved-repo/gate-git-shim-review5-head.txt</code></td></tr>
+        <tr><td>the fifth-review cases against the pre-fix head, <code>4ec87830</code></td><td><code>42 failed, 131 passed</code>, no failure id added at this head</td><td><code>the same run directory, gate-git-shim-review5-red.txt</code></td></tr>
+        <tr><td>the abbreviated forms at the pre-fix head</td><td><code>describe --di --long</code> moved the foreign index and <code>log --outp=&lt;path&gt;</code> wrote the file, both forwarded <code>rc=0</code></td><td><code>the same run directory, gate-git-shim-review5-red.txt</code></td></tr>
+        <tr><td>control isolating the copied index</td><td><code>36 failed, 137 passed</code> with the isolated child run replaced by the plain forward, reverted <code>173 passed</code></td><td><code>the same run directory, index-isolation-control-git-shim-review5.txt</code></td></tr>
+        <tr><td>lint on complete trees, fifth review</td><td>both changed files <code>0 &rarr; 0</code>, both trees, format clean</td><td><code>the same run directory, lint-git-shim-review5.txt</code></td></tr>
       </tbody>
     </table>
 
@@ -1263,6 +1269,28 @@ exit: 0</pre>
     control isolates this round's fix alone: <em>forward an index-refreshing read form
     without the form check</em> (<code>19 failed, 115 passed</code>, reverted <code>134
     passed</code>).</p>
+
+    <p><strong>A fifth review replaced the enumeration with a copy of the index</strong>
+    (commit <code>51de190d</code>). git resolves any unambiguous abbreviation of a long
+    option, so a check written against whole tokens forwarded the spellings that reached the
+    writes: <code>describe --di --long</code> moved a foreign checkout's index and
+    <code>log --outp=&lt;path&gt;</code> wrote the file <code>--output</code> is refused for,
+    each <code>rc=0</code> where the full spelling was refused. The fix stops depending on
+    spelling. A read that resolves to a repository other than this run's worktree runs the
+    real git as a child against a private copy of that repository's index, so an in-process
+    refresh writes the copy whichever spelling reached the form, and the copy is forwarded
+    with nothing set when the repository has no index &mdash; a repository whose index does
+    not exist would otherwise have git answer from an empty one. The fourth review's refusals
+    for <code>describe</code> and work-tree <code>diff</code> forms are dropped rather than
+    kept beside the copy: the copy is what closes the class, and a list of spellings is the
+    dependency that let the abbreviation through. The option refusal stays and is
+    prefix-aware &mdash; every prefix of every banned option from three characters up is
+    refused and named together with the option it abbreviates. The two controls: with the
+    isolated child run replaced by the plain forward and every other decision unchanged,
+    <code>36 failed, 137 passed</code>, reverted <code>173 passed</code>; with the guard
+    removed entirely, <code>76 failed, 97 passed</code>, reverted <code>173 passed</code>.
+    At the pre-fix head <code>4ec87830</code> the shipped suite reads <code>42 failed, 131
+    passed</code> and at this head <code>173 passed</code>, with no failure id added.</p>
 
     <p><strong>Scope stated.</strong> This node delivers the shim, the PATH wiring and the
     tests. Verifying the merged result belongs to a separately dispatched test node, and the
