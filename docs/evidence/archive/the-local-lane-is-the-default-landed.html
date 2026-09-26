@@ -1086,6 +1086,131 @@ E  reckon.crew.ScopeConflict: write scope 'pkg/hot.py' conflicts with live claim
     <code>negative-control.log</code>. Timer durability and the refresh figure remain separate
     follow-on work.</p>
   </section>
+  <section id="role-digests">
+    <h2>&sect;9 &mdash; A worker launches with a role digest, not the whole global policy</h2>
+
+    <p><strong>The defect.</strong> Every worker on this workstation is served the whole
+    canonical policy, <code>~/.agents/AGENTS.md</code>, at 90,028 bytes
+    (~22,507 byte-derived tokens) &mdash; every project's rules and every role's
+    retrospective. A report or review worker, which writes no source and touches no
+    project gate, pays the same instruction cost as an implementation worker. Measured
+    across five recent review streams the first request is a median of 66,513 input
+    tokens, so the global policy is roughly a third of what a worker pays before its
+    first tool call.</p>
+
+    <p><strong>What landed.</strong> <code>reckon/crew/worker_digest.py</code> derives one
+    smaller file per role from the canonical file through an explicit section map. The
+    map names the canonical blocks each role keeps, by header text
+    (<code>SECTION_MAP</code>), and a reader can see what a role does <em>not</em> receive
+    as plainly as what it does. Blocks are emitted in canonical order, so a digest reads
+    as the source does and two runs over the same source produce the same bytes. The
+    generator never writes the canonical file; it reads it and writes only under
+    <code>reckon/crew/digests/</code>.</p>
+
+    <p><strong>A floor binds every role.</strong> A floor of rules is retained by all of
+    <code>report</code>, <code>review</code>, <code>implement</code>, <code>test</code>,
+    because a launch without them is not safe at any size: git safety, the commit and
+    delivery rules (explicit-path staging, a commit body, no AI attribution), the naming
+    checks, test execution, the environment rules, and the worker manifest contract. Each
+    is backed by a marker taken verbatim from the canonical file
+    (<code>REQUIRED_RULES</code>), and <code>check_rules</code> refuses a digest missing
+    one. The roles then differ by escalation: a review digest adds the fleet-monitor and
+    fail-open-guard blocks; an implementation digest adds the compute, IMAS,
+    bug-ownership and test-visibility blocks; a test digest adds the compute and
+    test-visibility blocks; a report digest adds the user-facing communication block.</p>
+
+    <p><strong>Measured 2026-09-25.</strong> Each digest is under the stated
+    <code>TOKEN_BOUND</code> of 15,000 and strictly below the source. The bound exists so
+    a future map edit that quietly re-adds the whole policy is refused when it is
+    generated, not discovered at launch.</p>
+
+    <table>
+      <caption>Digest size against the canonical policy, byte-derived tokens (four bytes per token).</caption>
+      <thead><tr><th>Role</th><th>Bytes</th><th>Tokens</th><th>Versus canonical (22,507)</th></tr></thead>
+      <tbody>
+        <tr><td><code>report</code></td><td>30,796</td><td>7,699</td><td>66% smaller</td></tr>
+        <tr><td><code>review</code></td><td>34,765</td><td>8,692</td><td>61% smaller</td></tr>
+        <tr><td><code>implement</code></td><td>41,333</td><td>10,334</td><td>54% smaller</td></tr>
+        <tr><td><code>test</code></td><td>36,239</td><td>9,060</td><td>60% smaller</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <img src="/reckon/figures/the-local-lane-is-the-default/digest-sizes.png" alt="Four horizontal bars, one per role, each well under half the height of the dashed line marking the canonical 22,507-token policy: report 7,699 tokens, review 8,692, implement 10,334 and test 9,060, all far below the dotted line marking the 15,000-token bound.">
+      <figcaption>Every role keeps well over half the policy's cost off the first request,
+      and the two roles that write no source save the most.</figcaption>
+    </figure>
+
+    <p><strong>Repair after review (2026-09-25).</strong> An independent review at
+    <code>09edcdc2</code> found three defects. The shared map retained the whole
+    <em>Commit Discipline</em> and <em>Branch Hygiene</em> blocks, so every digest told a
+    worker to push and to adopt the project's branch policy before another block said it
+    never pushes &mdash; coordinator-only delivery text in every worker digest. The
+    <code>implement</code> role alone lacked the <em>Test Visibility</em> block. And the
+    gate proved marker strings present without a per-role heading case or a case forbidding
+    coordinator content, so neither defect reddened a case. The map now withholds the
+    coordinator-only blocks and re-admits the worker-binding lines from five excerpts
+    (<code>EXCERPTS</code>): the ban table, the commit-message and authorship rules, the
+    check-only hook policy, the worktree rule, and the worker's own worktree and manifest
+    duties. <code>FORBIDDEN_CONTENT</code> names the
+    withheld delivery instructions (<em>Always commit and push</em>, <em>Always commit to
+    the project's primary branch</em>, and the coordinator's own lines from the parallel
+    section: <em>The orchestrator owns merges, pushes, plan/index state, and cleanup</em>,
+    the canonical dispatch-contract pointer, the session audits, and the
+    never-message-a-worker rule), <code>missing_headings</code> names a role's own
+    blocks, and <code>check_rules</code>, <code>check_headings</code> and
+    <code>check_bound</code> all run at generation, so a map edit that re-admits the whole
+    policy is refused when it is generated rather than discovered at launch. A second
+    review found the parallel section's coordinator lines still retained whole; it is now
+    a fifth excerpt that keeps only the worker's own duties — one worktree and one write
+    scope, commit locally and never push or merge, and write the manifest to the named
+    file.</p>
+
+    <p><strong>The negative control.</strong> The declared mutation is
+    <em>drop the git-safety block from the section map; the git-safety marker assertion
+    must fail</em>. The driver drops the git-safety keys from every role's map in
+    process, asserts the git-safety marker is gone from the generated digest, and then
+    runs the same assertion the gate uses; the run exits <code>1</code> with the
+    git-safety marker assertion as the failure
+    (<code>negative_control.log</code>, first line repeating the mutation verbatim). The
+    control refuses, so the floor is load-bearing rather than decorative; the git-safety
+    assertion is ordered first so the failure a reader sees is the one the mutation
+    names.</p>
+
+    <p>Three further arms cover the repairs. The declared mutation is <em>restore the whole
+    Commit Discipline chunk to the shared map; the no-coordinator-content case must fail
+    naming 'Always commit and push'</em>: the arm adds that header back to every role's
+    map, and the coordinator case fails with the marker named, exactly as the review
+    required. The second arm restores the whole <em>Parallel Agent Safety</em> block to
+    every role's map in place of its excerpt, and the coordinator case fails naming
+    <em>The orchestrator owns merges</em>. The third arm drops the <em>Test
+    Visibility</em> block from the <code>implement</code> map, and the per-role heading
+    case fails naming <code>## Test Visibility</code>. All four arms redden as declared.
+    Log: <code>negative_control_repair.log</code>.</p>
+
+    <p><strong>The gate.</strong> <code>tests/test_worker_digest.py</code> passes
+    <code>22</code> cases. They assert the floor against a synthesised policy (portable to
+    any host) and against the canonical file, assert each role's own headings and the
+    absence of coordinator content, assert order, determinism, the token bound, that a
+    digest is smaller than its source, that regeneration writes only under the named
+    directory, and that the canonical file is not written. One case compares the committed
+    digests against a fresh generation from the canonical file, so a digest that drifts
+    from the policy is caught rather than shipped. Against base <code>09edcdc2</code>, the
+    crew test files show the same four pre-existing failures
+    (<code>test_crew_lane_agnostic_placement</code>, <code>test_crew_monitor_output</code>,
+    head shows four failed and 1,051 passed, and each failing id is reproduced at base, so
+    this node adds none. Logs: <code>gate.log</code>,
+    <code>gate_crew_head_repair.log</code>, <code>gate_crew_base_repair.log</code>,
+    <code>negative_control.log</code>, <code>negative_control_repair.log</code>,
+    <code>figure_repair.log</code> under
+    <code>~/.config/reckon/crew/runs/r-20260925T121122479220-worker-digest-generator/</code>.</p>
+
+    <p><strong>Open.</strong> The digest is generated and committed but nothing loads it
+    yet: the dispatch option that passes a role's digest, MCP config and tool set to the
+    launch, the launch-flag expansion, and the per-role qualification run remain. A change
+    to the canonical file makes the committed digests stale, and the drift case names
+    <code>python -m reckon.crew.worker_digest</code> as the remedy.</p>
+  </section>
 </main>
 </body>
 </html>
