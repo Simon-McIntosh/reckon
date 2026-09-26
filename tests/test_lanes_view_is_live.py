@@ -151,17 +151,17 @@ def _inventory(root: Path) -> list[tuple[str, int, int]]:
     if not tree.exists():
         return findings
     for path in sorted(tree.rglob("*")):
-            try:
-                path_stat = path.stat()
-            except OSError:
-                continue
-            findings.append(
-                (
-                    str(path.relative_to(root)),
-                    path_stat.st_size,
-                    int(path_stat.st_mtime),
-                )
+        try:
+            path_stat = path.stat()
+        except OSError:
+            continue
+        findings.append(
+            (
+                str(path.relative_to(root)),
+                path_stat.st_size,
+                int(path_stat.st_mtime),
             )
+        )
     return findings
 
 
