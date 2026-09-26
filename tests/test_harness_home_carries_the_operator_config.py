@@ -171,7 +171,9 @@ def test_a_claude_run_home_carries_the_operator_settings_and_instructions(
     home = _operator_home(tmp_path)
     run = tmp_path / "run"
     run.mkdir()
-    plan = _launch(home, run, CLAUDE_BACKEND, fence=False)
+    # A run adopts its own harness home only when fenced, so a case asserting
+    # the carry states the fence it depends on rather than inheriting a default.
+    plan = _launch(home, run, CLAUDE_BACKEND, fence=True)
     harness = Path(plan.environment["CLAUDE_CONFIG_DIR"])
     assert harness == run / "harness"
 
@@ -217,7 +219,7 @@ def test_a_lane_that_declares_a_missing_file_seeds_without_it(tmp_path: Path):
             {"path": "CLAUDE.md"},
         ],
     }
-    plan = _launch(home, run, backend, fence=False)
+    plan = _launch(home, run, backend, fence=True)
     harness = Path(plan.environment["CLAUDE_CONFIG_DIR"])
     assert (harness / "settings.json").is_file()
     assert (harness / "CLAUDE.md").is_file()
@@ -234,7 +236,7 @@ def test_a_claude_resume_places_the_operator_transcript(tmp_path: Path):
     expected = (operator_transcript / f"{CLAUDE_SESSION}.jsonl").read_bytes()
 
     plan = _launch(
-        home, run, CLAUDE_BACKEND, fence=False, resume_session=CLAUDE_SESSION
+        home, run, CLAUDE_BACKEND, fence=True, resume_session=CLAUDE_SESSION
     )
     harness = Path(plan.environment["CLAUDE_CONFIG_DIR"])
     placed = harness / relative
@@ -267,7 +269,7 @@ def test_a_fresh_launch_copies_no_transcript(tmp_path: Path):
     home = _operator_home(tmp_path)
     run = tmp_path / "run"
     run.mkdir()
-    plan = _launch(home, run, CLAUDE_BACKEND, fence=False)
+    plan = _launch(home, run, CLAUDE_BACKEND, fence=True)
     harness = Path(plan.environment["CLAUDE_CONFIG_DIR"])
     assert not list(harness.rglob("*.jsonl"))
     assert not (harness / "projects").exists()
@@ -287,11 +289,29 @@ def test_an_existing_run_home_file_is_never_overwritten(tmp_path: Path):
     transcript = harness / "projects" / "-home-op-reckon" / f"{CLAUDE_SESSION}.jsonl"
     transcript.write_bytes(own_transcript)
 
-    _launch(home, run, CLAUDE_BACKEND, fence=False, resume_session=CLAUDE_SESSION)
+    _launch(home, run, CLAUDE_BACKEND, fence=True, resume_session=CLAUDE_SESSION)
 
     assert (harness / "settings.json").read_text() == own_settings
     assert (harness / "CLAUDE.md").read_text() == "# run's own\n"
     assert transcript.read_bytes() == own_transcript
+
+
+def test_an_unfenced_launch_keeps_the_operators_own_home(tmp_path: Path):
+    """Without the fence no per-run home is invented, so the operator's is kept.
+
+    The harness home is a fence artefact: only a fenced run adopts one. An
+    unfenced run keeps the operator's home, where the user hooks, user memory
+    and every session recorded before the run existed already live, so the
+    launch must invent no harness-home variable and create no run home.
+    """
+    home = _operator_home(tmp_path)
+    run = tmp_path / "run"
+    run.mkdir()
+    plan = _launch(home, run, CLAUDE_BACKEND, fence=False)
+
+    assert "CLAUDE_CONFIG_DIR" not in plan.environment
+    assert not (run / "harness").exists()
+    assert plan.argv[0] != _backends.FENCE_BINARY
 
 
 def test_the_operator_home_is_never_read_or_written(tmp_path: Path, monkeypatch):
@@ -325,7 +345,7 @@ def test_the_operator_home_is_never_read_or_written(tmp_path: Path, monkeypatch)
 
     run = tmp_path / "run"
     run.mkdir()
-    _launch(home, run, CLAUDE_BACKEND, fence=False, resume_session=CLAUDE_SESSION)
+    _launch(home, run, CLAUDE_BACKEND, fence=True, resume_session=CLAUDE_SESSION)
     _launch(home, run, CODEX_BACKEND, fence=True, resume_session=CODEX_SESSION)
 
     assert _metadata_snapshot(decoy) == decoy_before
