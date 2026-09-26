@@ -1038,6 +1038,49 @@ exit: 0</pre>
     pointer can never widen a write's reach. Lint on <code>tests/conftest.py</code> is
     clean at base and at head, the new test file is clean, and both are formatted.</p>
   </section>
+  <section id="harness-home-carries-the-operator-config">
+    <h2>&sect;2 &mdash; A fenced run carries the operator files its harness reads
+    <a class="anchor" href="#harness-home-carries-the-operator-config">#</a></h2>
+
+    <p><strong>The defect.</strong> With the fence on, a run's harness points at a home the
+    run owns (<code>CLAUDE_CONFIG_DIR</code> or <code>CODEX_HOME</code>), and
+    <code>seed_harness_home</code> created that home empty. A fenced claude or clive worker
+    therefore loaded none of the operator's hooks (the worker Stop hook and the PreToolUse
+    guards) and no user memory, and a resume could not find a session recorded in the
+    operator home before the run had its own. A fenced codex worker would likewise have lost
+    its instruction file and configuration. What a worker loads is decided by its harness,
+    not its model: clive runs the claude harness in front of several open-weight models, and
+    codex reads <code>AGENTS.md</code>, never <code>CLAUDE.md</code>.</p>
+
+    <p><strong>What landed</strong> (run <code>r-20260925T165045662374</code>, commit
+    <code>f01992d3</code>, merged at <code>80d55621</code>, review 87). Each backend's flight
+    entry may declare <code>harness_home_files</code>; the shipped defaults are per dialect,
+    and a backend's own entry replaces its dialect's. Operator files are read at seed time,
+    never copied into code; a file already in the run home is never overwritten, and the
+    operator home is never modified. A resume copies a session transcript or rollout that
+    exists only in the operator home into the run home at the same relative path.</p>
+
+    <table>
+      <caption>What each dialect's shipped declaration carries into a fenced run's home.</caption>
+      <thead><tr><th>Dialect</th><th>File</th><th>How it is carried</th><th>Why the harness needs it</th></tr></thead>
+      <tbody>
+        <tr><td>claude (claude, clive)</td><td><code>settings.json</code></td><td>filtered to the <code>hooks</code> key only: no credentials, env or permissions</td><td>the worker Stop hook and the PreToolUse guards</td></tr>
+        <tr><td>claude (claude, clive)</td><td><code>CLAUDE.md</code></td><td>operator content</td><td>user memory, which carries the global rules</td></tr>
+        <tr><td>codex</td><td><code>AGENTS.md</code></td><td>operator content</td><td>codex's instruction file</td></tr>
+        <tr><td>codex</td><td><code>config.toml</code></td><td>writable copy, because codex appends project trust entries</td><td>model, reasoning effort, context window</td></tr>
+        <tr><td>codex</td><td><code>rules/</code></td><td>operator content</td><td>codex's command execution policy</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Not yet in effect.</strong> Workers launch unfenced since <code>39fd7a28</code>
+    (<code>FENCE_WORKERS = False</code>), so an unfenced worker keeps the operator home and
+    this carry applies only once the fence is re-enabled. Re-enabling also needs a fenced
+    worker able to commit (<code>a-fenced-worker-can-commit</code>) and plan writes that stay
+    in the run's worktree (landed at <code>e562d32e</code>). The worker's gate was green, but it
+    could not commit under the fence; the coordinator committed its unchanged diff as
+    integration. This anchor was written by the coordinator at merge, because the review
+    found the node had not written one.</p>
+  </section>
 </main>
 </body>
 </html>
