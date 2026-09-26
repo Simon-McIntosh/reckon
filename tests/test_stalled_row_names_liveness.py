@@ -1,11 +1,12 @@
 """A stalled row says which of three process states the worker is in.
 
 Three situations land on the one word ``stalled`` and their remedies differ: a
-live worker in a long quiet step needs nothing, a worker a check on this host
-found dead needs a resume, and a worker whose liveness was never established
-needs the check a reader would otherwise run by hand. Measured 2026-09-22, four
-coordinators had to check the process and the stream by hand to tell them apart,
-and a check run by hand is the cost this row exists to remove.
+live worker in a long quiet step needs nothing, a worker something observed
+dead — a pid checked on this host, or the supervisor's exit record — needs a
+resume, and a worker whose liveness nothing established needs the check a
+reader would otherwise run by hand. Measured 2026-09-22, four coordinators had
+to check the process and the stream by hand to tell them apart, and a check run
+by hand is the cost this row exists to remove.
 
 Every row here is driven through the classifier and the published watch line:
 ``_watch_snapshot`` reduces the pointer, ``_watch_transition`` builds the event
@@ -28,6 +29,7 @@ own assertion, ``"alive" in line``.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import time
@@ -67,6 +69,7 @@ TRUNCATED_TAIL = '{"type":"assistant","message":{"content":[{"text":"half a rec'
 # would pass at a head that says nothing about the process at all.
 LIVE_RUN_ID = "r-quiet-held"
 GONE_RUN_ID = "r-quiet-vacant"
+RECORDED_RUN_ID = "r-quiet-released"
 UNRECORDED_RUN_ID = "r-quiet-unlogged"
 FOREIGN_RUN_ID = "r-quiet-earlier"
 
@@ -148,6 +151,31 @@ def _stub_pointer(
     return pointer, moment
 
 
+def _write_exit_record(run_id: str) -> None:
+    """The supervisor's own account of the worker's end, in the run directory.
+
+    Shaped as the supervisor writes it: the run it belongs to, the moment the
+    worker was seen to leave, and how much the worker had written by then. The
+    record survives a pointer nobody updates and a pid no other machine can
+    look up, which is what makes it the second route to an observed end
+    beside a pid this host checked.
+    """
+    directory = runs.run_dir(run_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / recovery.EXIT_RECORD_NAME).write_text(
+        json.dumps(
+            {
+                "run_id": run_id,
+                "worker_pid": None,
+                "launched_at": "2026-09-25T09:00:00Z",
+                "exited_at": "2026-09-25T09:30:00Z",
+                "stream_records_seen": 4,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def _render_stalled_row(pointer: dict, moment: float) -> tuple[dict, dict, str]:
     """The classifier's reading and the watch line a coordinator sees."""
     row = recovery.classify_pointer(
@@ -217,6 +245,34 @@ def test_a_stalled_row_names_a_gone_process(tmp_path: Path) -> None:
     assert row["liveness_proven"] is True
     assert "process gone" in line, line
     assert "alive" not in line, line
+    assert row["fleet_verdict"]["detail"].startswith("process gone, quiet "), row[
+        "detail"
+    ]
+    assert _named_minutes(line) == quiet // 60, line
+
+
+def test_a_stalled_row_names_a_recorded_exit(tmp_path: Path) -> None:
+    """The supervisor watched the worker leave, so the end is observed.
+
+    The exit record is a second route to the same word: it is the supervisor's
+    own account of the end rather than an inference from a missing process, and
+    it outlives both a pointer nobody updated and a pid no other machine can
+    look up. A row that read the record as an absent reading would send its
+    reader to the hand-check this row replaces, and would report a death
+    nowhere observed for the case where nothing at all was.
+    """
+    pointer, moment = _stub_pointer(tmp_path, RECORDED_RUN_ID, pid=None)
+    _write_exit_record(RECORDED_RUN_ID)
+    row, snapshot, line = _render_stalled_row(pointer, moment)
+    quiet = _fixture_quiet_seconds(pointer, moment)
+
+    assert quiet > STALL_SECONDS, quiet
+    assert row["process_alive"] is False
+    assert snapshot["process_alive"] is False
+    assert row["liveness_proven"] is False
+    assert row["exit_record"] is not None, row["exit_record"]
+    assert "process gone" in line, line
+    assert "liveness unknown" not in line, line
     assert row["fleet_verdict"]["detail"].startswith("process gone, quiet "), row[
         "detail"
     ]

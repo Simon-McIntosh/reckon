@@ -4870,20 +4870,25 @@ def _watch_verdict(
                 state = "stalled"
                 # The stall word covers three situations whose remedies
                 # differ: a live worker in a long quiet step needs nothing, a
-                # dead one needs a resume, and one whose liveness this host
-                # could not establish needs the check a reader would otherwise
-                # run by hand. Which one this is cannot be left to a colour or
-                # a glyph, so the row says it in words. Only a reading taken
-                # here may call the process gone — a stored answer carried
-                # because the launching host is another machine is not an
-                # observed death, and neither is no answer at all — so the
-                # row's own liveness_proven, not the stored value alone,
-                # decides between a death and an unproven reading. The quiet
-                # time is the row's own, in whole minutes, floored so the
-                # token never claims more silence than measured.
+                # dead one needs a resume, and one whose liveness nothing
+                # established needs the check a reader would otherwise run by
+                # hand. Which one this is cannot be left to a colour or a
+                # glyph, so the row says it in words. Death is claimed only
+                # where something observed it, and two things can: a pid
+                # checked on this host and found dead, which the row's own
+                # liveness_proven records, or the supervisor's exit record,
+                # which survives a pointer nobody updated and a pid no other
+                # machine can look up. A stored answer carried because the
+                # launching host is another machine is neither, and neither is
+                # no answer at all, so those read as unproven rather than as a
+                # death. The quiet time is the row's own, in whole minutes,
+                # floored so the token never claims more silence than measured.
                 if alive is True:
                     process_state = "alive"
-                elif alive is False and row.get("liveness_proven") is True:
+                elif alive is False and (
+                    row.get("liveness_proven") is True
+                    or row.get("exit_record") is not None
+                ):
                     process_state = "process gone"
                 else:
                     process_state = "liveness unknown"
