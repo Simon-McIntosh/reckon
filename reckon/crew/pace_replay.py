@@ -13,6 +13,7 @@ import json
 import math
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -28,7 +29,13 @@ __all__ = [
     "replay_project",
 ]
 
-_UNMEASURED = object()
+
+@dataclass(frozen=True, slots=True)
+class _UnmeasuredAllowance:
+    reason: str
+
+
+_UNMEASURED = _UnmeasuredAllowance("the seven-day clock was not observed")
 _UNVERIFIABLE = object()
 
 
@@ -100,7 +107,10 @@ def replay(
             pace_row,
             drain_lead_hours=drain_lead_hours,
         )
-        allowance_unmeasured = allowance_value is _UNMEASURED
+        allowance_unmeasured = isinstance(allowance_value, _UnmeasuredAllowance)
+        allowance_unmeasured_reason = (
+            allowance_value.reason if allowance_unmeasured else None
+        )
         expected_allowance = None if allowance_unmeasured else allowance_value
         recorded_allowance = pace_row.get("allowance")
         allowance_match = not allowance_unmeasured and _same_value(
@@ -119,6 +129,7 @@ def replay(
                 "recomputed_allowance": expected_allowance,
                 "allowance_match": allowance_match,
                 "allowance_unmeasured": allowance_unmeasured,
+                "allowance_unmeasured_reason": allowance_unmeasured_reason,
                 "hold": pace_row.get("hold"),
                 "recomputed_hold": expected_hold,
                 "hold_match": hold_match,
@@ -204,6 +215,10 @@ def render_report(report: Mapping[str, Any]) -> str:
             f"metered={counts['metered']} unknown={counts['unknown']} "
             f"total={counts['total']}"
         )
+    for row in report["rows"]:
+        reason = row.get("allowance_unmeasured_reason")
+        if reason:
+            lines.append(f"unmeasured {row['run_id']}: {reason}")
     mistuned = report["mistuned"]
     if mistuned["requested"]:
         verdict = "detected" if mistuned["detected"] else "not detected"
@@ -230,7 +245,7 @@ def _recomputed_allowance(
     row: Mapping[str, Any],
     *,
     drain_lead_hours: float | None,
-) -> dict[str, Any] | object:
+) -> dict[str, Any] | _UnmeasuredAllowance:
     """Recompute an allowance from the row's clocks through ``pace.py``."""
     clocks = row.get("clocks")
     if not isinstance(clocks, Mapping):
@@ -240,6 +255,8 @@ def _recomputed_allowance(
         raise TypeError("a pace row must carry a seven-day clock")
     if week.get("state") != "observed":
         return _UNMEASURED
+    if not isinstance(week.get("resets_at"), str) or not week["resets_at"].strip():
+        return _UnmeasuredAllowance("the seven-day clock has no reset stamp")
     recorded_at = _instant(row.get("recorded_at"))
     reset_at = _instant(week.get("resets_at"))
     elapsed_hours = max(

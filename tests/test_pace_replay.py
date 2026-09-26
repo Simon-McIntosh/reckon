@@ -262,6 +262,40 @@ def test_an_unobserved_week_clock_is_unmeasured_not_reproduced(committed_week):
     assert "1 unmeasured" in report["text"]
 
 
+def test_a_measured_week_without_reset_stamp_is_unmeasured(committed_week):
+    record = _row(
+        node="missing-reset",
+        role="implement",
+        backend="codex",
+        local=False,
+        utilisation=0.3,
+        elapsed=72.0,
+    )
+    record["pace"]["clocks"]["seven_day"]["resets_at"] = None
+    record["pace"]["allowance"] = None
+    _write_run(committed_week, record)
+
+    report = _replay_project(committed_week, "sample")
+
+    assert report["row_count"] == 4
+    assert report["allowances"]["unmeasured"] == 1
+    assert report["allowances"]["matched"] == 3
+    assert report["ok"] is False
+    missing = next(
+        row for row in report["rows"] if row["run_id"] == "run-missing-reset"
+    )
+    assert missing["allowance_unmeasured"] is True
+    assert missing["allowance_unmeasured_reason"] == (
+        "the seven-day clock has no reset stamp"
+    )
+    assert all(
+        row["allowance_match"]
+        for row in report["rows"]
+        if row["run_id"] != "run-missing-reset"
+    )
+    assert "no reset stamp" in report["text"]
+
+
 def test_a_hold_without_threshold_evidence_is_unverifiable(committed_week):
     record = _row(
         node="bare-hold",
