@@ -680,7 +680,8 @@ worker's own commit, which `reckon crew recover` reports as the run's next actio
       <code>1aad8e6e64ba13b27cf68f19f7c1bb98a98533f6</code> (the tip-heading and no-path coverage
       fixes), <code>5f1d5dd4a26fadf43b374615b946772d7ba6f870</code> (record corrections) and
       <code>bdb60d2bd66a1215a46e0c7fd133c181229d6eea</code> (formatting-only pass over the two
-      source files), in the worktree
+      source files) and <code>359b947bff09f0c9863bf88b76a2d79e80301ece</code> (the boundary-guard
+      exemption for declared shared paths), in the worktree
       <code>.reckon-worktrees/reckon-c8f839407e49/s22-coord/promotion-charged-its-own-net-churn</code>.
       Logs: <code>base-arm.log</code> and <code>head-arm.log</code> under
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T122110808769-promotion-charged-its-own-net-churn/</code>;
@@ -724,6 +725,24 @@ worker's own commit, which `reckon crew recover` reports as the run's next actio
       is now exercised by a case: one empty commit cited alone. The case asserts the refusal names
       that commit, that the ledger gains no row and that the live pointer survives. Deleting the
       check reddens that case and nothing else, recorded in the negative control below.</p>
+      <p><strong>(6) A declared shared path is not a boundary edit.</strong> The boundary guard
+      compares each dispatch-visible tree's persisted snapshot against a fresh one and charges
+      every newly-changed path under the run's declared roots — including the paths the project
+      publishes as shareable, so a promotion measured on 2026-09-26 was refused because a peer
+      worktree held <code>reckon/cli.py</code> uncommitted, a path dispatch deliberately admits as
+      a concurrent claim. The guard now resolves the shared-write list through the same helper the
+      accepted-path check reads, exempts exactly the files it names, and keeps the charged set per
+      path, so one shared claim cannot mask an unshared one beside it. Three cases: a peer dirty on
+      the declared shared path lets the promotion proceed, with the row recorded and the pointer
+      consumed; a peer dirty on the declared unshared path still refuses, naming the path and the
+      peer worktree, writing no row and keeping the pointer; a peer dirty on both charges only the
+      unshared path. The first and third fail at the pre-fix head <code>26ee556b</code> —
+      <strong>2 failed, 1 passed</strong>, EXIT=1, <code>guard-shared-at-26ee556b.log</code> — and
+      all three pass at the fixed head — <strong>3 passed, EXIT=0</strong>,
+      <code>guard-shared-post-fix.log</code>. The one-invocation gate over the measured files at
+      the committed code head is <strong>86 passed, 0 failed</strong> in 66.46s, EXIT=0,
+      <code>head-arm-359b947b.log</code>; all three logs sit beside the others under
+      <code>/home/ITER/mcintos/.cache/reckon-promotion-net-churn/</code>.</p>
       <p><strong>Negative control.</strong> Three mutants, each run against its target case alone
       and restored byte-identically afterwards (asserted in the log, healthy sha256
       <code>4ae52f3c1578cd74528c4564e98e0bc7bd8ba0de1a4407f37abd9a8241d50ed4</code> at
