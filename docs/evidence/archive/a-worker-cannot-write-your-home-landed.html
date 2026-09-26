@@ -1822,6 +1822,57 @@ exit: 0</pre>
     over the touched paths adds no finding (base 13, head 13, the same pre-existing set with line
     numbers shifted) and format is clean.</p>
 
+    <p><strong>Review repair: private from creation, and never wider than the destination.</strong>
+    The review found two defects in the merge. The run's copy was written with
+    <code>write_text</code> and narrowed afterwards by the shared mode helper, so it existed at the
+    umask mode (commonly <code>0644</code>) until a later <code>chmod</code>; and because that
+    helper copies the source's mode, a <code>0644</code> operator file re-widened an existing
+    <code>0600</code> run copy to <code>0644</code> on every seed. The payload is now written to a
+    sibling temporary opened <code>O_CREAT|O_EXCL|O_WRONLY</code> at <code>0600</code> and moved
+    onto the destination with <code>os.replace</code>, so the destination is only ever the private
+    inode or the file it replaces; the final mode is the narrower of <code>0600</code> and the
+    destination's own prior mode.</p>
+
+    <table>
+      <thead><tr><th>#</th><th>Check</th><th>Observed</th><th>PASS/FAIL</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>6</td>
+          <td>A <code>0644</code> source with a pre-existing <code>0600</code> destination leaves
+          the destination <code>0600</code>.</td>
+          <td>The destination stays <code>0600</code> and still gains <code>mcpServers</code>.
+          Red at base <code>89dada12</code> (the old merge re-widened it to <code>0644</code>).</td>
+          <td><strong>PASS.</strong></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>An existing <code>0644</code> destination is never left wider than
+          <code>0600</code>.</td>
+          <td>The destination is <code>0600</code> after seeding.</td>
+          <td><strong>PASS.</strong></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>The temporary moved onto the destination is <code>0600</code> at the instant before
+          the move.</td>
+          <td>A spy on <code>os.replace</code> observes exactly one move onto the destination, its
+          source at mode <code>0600</code>. Red at base <code>89dada12</code>, where no temporary
+          exists.</td>
+          <td><strong>PASS.</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Declared negative control (repair).</strong> <em>restore the chmod-after-write path
+    for the merged home file; the private-from-creation case must fail</em> &mdash; applied and
+    logged: <code>4 failed, 5 passed</code> with
+    <code>test_the_seeded_file_is_private_from_creation</code> among the failures
+    (<code>logs/negative-control-fix-hhms.txt</code>, first line the declared string verbatim).
+    Base <code>89dada12</code> with the previous merge implementation is
+    <code>2 failed, 28 passed</code>; head <code>3a1c0f5c</code> is <code>30 passed</code>. Lint
+    adds no finding (base 6, head 6 on the touched module) and format is clean
+    (<code>logs/lint-fix-hhms.txt</code>).</p>
+
     <p><strong>What this node does not claim.</strong> This gate measures only this node's own
     change. It does not verify the merged result &mdash; that belongs to a separately dispatched
     test node &mdash; and it does not re-run the fence composition tests.</p>

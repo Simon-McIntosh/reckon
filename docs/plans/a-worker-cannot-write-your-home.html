@@ -955,6 +955,27 @@
       figure <code>/reckon/figures/a-worker-cannot-write-your-home/harness-home-adjacent-carry.svg</code>.
       This gate measures only this node's own change; verifying the merged result belongs to a
       separately dispatched test node.</p>
+    <p><strong>Review repair: the merged copy is private from creation.</strong> The review found
+      two defects in the merge. The file was written with <code>write_text</code> and narrowed
+      afterwards by the shared <code>_copy_writable_mode</code>, so it existed at the umask mode
+      (commonly <code>0644</code>, group- and other-readable) until a later <code>chmod</code>;
+      and because that helper copies the source's mode, a <code>0644</code> operator file
+      re-widened an existing <code>0600</code> run copy to <code>0644</code> on every seed. The
+      payload is now written to a sibling temporary opened
+      <code>O_CREAT|O_EXCL|O_WRONLY</code> at <code>0600</code> and moved onto the destination
+      with <code>os.replace</code>, so the destination is only ever the private inode or the file
+      it replaces; the final mode is the narrower of <code>0600</code> and the destination's own
+      prior mode. Three cases are added: a <code>0644</code> source with a pre-existing
+      <code>0600</code> destination leaves it <code>0600</code>; an existing <code>0644</code>
+      destination is narrowed to <code>0600</code>; and a spy on <code>os.replace</code> asserts
+      the temporary is <code>0600</code> at the instant before it is moved. Base <code>89dada12</code>
+      with the previous merge implementation is <code>2 failed, 28 passed</code> (the two defect
+      cases red), head <code>3a1c0f5c</code> is <code>30 passed</code>. The declared negative
+      control &mdash; <em>restore the chmod-after-write path for the merged home file; the
+      private-from-creation case must fail</em> &mdash; is applied and logged:
+      <code>4 failed, 5 passed</code> with the private-from-creation case among them. Lint adds no
+      finding (base 6, head 6 on the touched module) and format is clean. Revision
+      <code>3a1c0f5c</code>.</p>
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host
