@@ -1981,6 +1981,35 @@ def seed_write_lock_namespace(home: str | Path | None = None) -> Path | None:
     return locks
 
 
+def create_declared_write_paths(paths: Iterable[str | Path]) -> None:
+    """Create the missing directories a declared write path's bind needs.
+
+    bubblewrap cannot bind a source path that does not exist, so a declared
+    write root whose directory has not been created yet aborts the launch with
+    ``Can't find source path`` before the worker starts at all. Each declared
+    path is created as a directory, with every missing parent, because the fence
+    binds the location a worker writes into rather than a single file the
+    launcher would have to invent; a declared root that already exists, as a
+    directory or as a file, is left exactly as it is.
+
+    Only the declared path's own parent chain is created. The nearest existing
+    ancestor is never bound in its place, so the grant stays exactly as wide as
+    declared, and a path whose parent is a regular file cannot be created at
+    all: that launch is refused by name rather than composed against a wider
+    ancestor the run does not own.
+    """
+    for raw in paths:
+        path = resolved_destination(raw)
+        if path.exists():
+            continue
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise BackendError(
+                f"cannot create the declared write path {path}: {exc}"
+            ) from exc
+
+
 def codex_auth_source(home: str | Path | None = None) -> Path | None:
     """Return the operator's codex login to bind read-only, or None.
 
@@ -2365,6 +2394,13 @@ def launch_plan(
     # cannot commit until those are granted writable; and its harness home does
     # not yet carry the operator's hooks or instruction files.
     if fence:
+        # bubblewrap cannot bind a source path that does not exist, so a
+        # declared write path whose directory has not been created yet aborts
+        # the launch before the worker starts. Create each declared path's own
+        # parent chain first and bind the path it names: the nearest existing
+        # ancestor is never bound in its place, so the grant is no wider than
+        # declared.
+        create_declared_write_paths(writable_directories)
         # The run's write roots are the caller's grants plus the lock directory
         # every plan write serialises through: a worker with a read-only lock
         # directory can write no plan at all, its own worktree copy included.
