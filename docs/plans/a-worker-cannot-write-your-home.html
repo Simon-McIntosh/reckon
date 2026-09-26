@@ -644,15 +644,19 @@
         id, is untouched, and with no readable live pointer it refuses rather than
         guessing.</p>
 
-        <p><strong>The git dir decides, not the work tree.</strong> A mutating verb's HEAD,
-        refs and index live in the git dir, so <code>--work-tree &lt;run&gt; --git-dir
-        &lt;other&gt;</code> is not the run's own repository and must not be allowed on a
-        toplevel match alone. The run-worktree probe drops every <code>GIT_*</code> variable,
-        so a <code>GIT_DIR</code> already in the worker's environment cannot make the run's
-        worktree report the foreign repository and make the comparison agree.</p>
+        <p><strong>The git dir and the work tree both have to agree.</strong> A mutating
+        verb's HEAD, refs and index live in the git dir; the files it writes live in the work
+        tree. So neither may be pointed elsewhere: <code>--work-tree &lt;run&gt; --git-dir
+        &lt;other&gt;</code> is not the run's repository, and <code>--git-dir
+        &lt;run&gt;/.git --work-tree &lt;other&gt;</code> is the run's own repository writing
+        another directory's files. An invocation is allowed only when its git dir is the run's
+        and the work tree it resolves lies inside the run's worktree. The run-worktree probe
+        drops every <code>GIT_*</code> variable, so a <code>GIT_DIR</code> already in the
+        worker's environment cannot make the run's worktree report the foreign repository and
+        make the comparison agree.</p>
 
         <p><strong>Measure.</strong> <code>tests/test_git_shim_checks_the_resolved_repo.py</code>
-        (10 passed at head) drives the real shim through a shell with its directory first on
+        (15 passed at head) drives the real shim through a shell with its directory first on
         <code>PATH</code>: an env-prefixed <code>GIT_DIR</code>, a <code>cd</code>, a
         <code>pushd</code> and a plain <code>-C</code> against another checkout are each
         refused and leave the other checkout's HEAD unchanged; the same verb inside the run
@@ -664,7 +668,7 @@
         green at the head (<code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code>).
         The companions &mdash; <code>tests/test_worker_path_carries_shims.py</code> and
         <code>tests/test_worker_git_guard.py</code> &mdash; are <code>17 passed</code> at base
-        and green within the head arm's <code>27 passed</code> (10 new + 17 companions), so this
+        and green within a head arm's <code>32 passed</code> (15 new + 17 companions), so this
         change adds no failures;
         <code>test_worker_path_carries_shims.py</code> is legitimately changed, because the
         node's whole point is the outside-allocation path, and each arm runs from its own
@@ -708,6 +712,31 @@
         Lint on the two reviewed files is <code>0 &rarr; 0</code> at both revisions
         (<code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim-review.txt</code>).
         Commit <code>9ab5e097</code>.</p>
+
+        <p><strong>A second review closed three more ways past the shim.</strong> Each is
+        proved by a test that is red before the fix (<code>4 failed, 11 passed</code> against
+        the pre-fix head at
+        <code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review2-red.txt</code>).
+        (1) <em>A bare multi-purpose verb was read-only.</em> An empty argument tail counted as
+        a read form, so <code>git stash</code> &mdash; which is <code>git stash push</code>
+        &mdash; was forwarded and reverted a foreign checkout. A multi-purpose verb is now
+        read-only only in an explicit listing or reading form, and the read actions are held
+        apart from the modifiers that qualify them, so <code>config --local a.b value</code>
+        is mutating while <code>config --local --list</code> reads. (2) <em>A work-tree
+        override escaped while the git dir matched.</em> The refusal compared only the git
+        dir, so <code>--git-dir &lt;run&gt;/.git --work-tree &lt;other&gt;</code> &mdash; and
+        the same through <code>GIT_DIR</code>+<code>GIT_WORK_TREE</code> &mdash; overwrote
+        another directory's files. Both the git dir and the resolved work tree are now
+        required to be the run's. (3) <code>fsck</code> was a built-in reader, but
+        <code>fsck --lost-found</code> writes into the target's git dir; it is off the list.
+        The declared negative control &mdash; <em>treat an empty verb tail as a read form</em>
+        &mdash; restores the bare-stash bypass (<code>1 failed, 14 passed</code> at
+        <code>docs/figures/a-worker-cannot-write-your-home/negative-control-empty-tail.txt</code>,
+        reverted <code>15 passed</code> at
+        <code>negative-control-empty-tail-reverted.txt</code>). Lint stays <code>0 &rarr;
+        0</code> on the two changed files
+        (<code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim-review2.txt</code>).
+        Commit <code>4aa785dc</code>.</p>
 
         <p><strong>Scope.</strong> This node delivers the shim, the PATH wiring and the tests.
         Verifying the merged result belongs to a separately dispatched test node, and the

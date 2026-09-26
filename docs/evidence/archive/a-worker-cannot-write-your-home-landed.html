@@ -1100,10 +1100,11 @@ exit: 0</pre>
     following it only inside an allocation. Under <code>RECKON_RUN_ID</code> the module reads
     the subcommand; if it is mutating it asks the real git which repository that invocation
     resolves to &mdash; under the invocation's own environment, working directory and
-    <code>-C</code> &mdash; and refuses (exit 97) unless the resolved git dir is the git dir of
-    the run's own worktree, read from the run's live pointer. Otherwise it execs the real git
-    unchanged, resolved with the shim's own directory removed from <code>PATH</code>. A
-    session with no run id is untouched.</p>
+    <code>-C</code> &mdash; and refuses (exit 97) unless the invocation's git dir is the git dir of
+    the run's own worktree (read from the run's live pointer) and the work tree it resolves
+    lies inside that worktree. Otherwise it execs the real git unchanged, resolved with the
+    shim's own directory removed from <code>PATH</code>. A session with no run id is
+    untouched.</p>
 
     <figure>
       <img src="/reckon/figures/a-worker-cannot-write-your-home/git-shim-resolution.svg"
@@ -1115,16 +1116,18 @@ exit: 0</pre>
 
     <table>
       <caption>The measure: base <code>7f97afda</code>, first head <code>fd521f3c</code>,
-      review head <code>9ab5e097</code>. Each arm ran in its own tree so the
-      <code>reckon</code> imported is the tree under test.</caption>
+      review heads <code>9ab5e097</code> and <code>4aa785dc</code>. Each arm ran in its own
+      tree so the <code>reckon</code> imported is the tree under test.</caption>
       <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
       <tbody>
         <tr><td>new shim suite, base tree (module absent)</td><td><code>1 error</code> at collection</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-red-at-base.txt</code></td></tr>
         <tr><td>new shim suite at the first head</td><td><code>8 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code></td></tr>
         <tr><td>the companions inside that same arm</td><td><code>17 of 25 passed</code> (25 = 8 new + 17 companions)</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-head.txt</code></td></tr>
         <tr><td>companions (<code>test_worker_path_carries_shims</code>, <code>test_worker_git_guard</code>), base</td><td><code>17 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-base.txt</code></td></tr>
-        <tr><td>new shim suite at the review head</td><td><code>10 passed</code> (<code>27</code> with the companions)</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review-head.txt</code></td></tr>
-        <tr><td>the two review tests against the pre-fix head</td><td><code>2 failed, 8 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review-red.txt</code></td></tr>
+        <tr><td>new shim suite at the first review head</td><td><code>10 passed</code> (<code>27</code> with the companions)</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review-head.txt</code></td></tr>
+        <tr><td>the two first-review tests against the pre-fix head</td><td><code>2 failed, 8 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review-red.txt</code></td></tr>
+        <tr><td>new shim suite at the second review head</td><td><code>15 passed</code> (<code>32</code> with the companions)</td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review2-head.txt</code></td></tr>
+        <tr><td>the five second-review tests against the pre-fix head</td><td><code>4 failed, 11 passed</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/gate-git-shim-review2-red.txt</code></td></tr>
         <tr><td>lint on complete trees</td><td><code>dispatch.py</code> <code>7 &rarr; 7</code>; both reviewed files <code>0 &rarr; 0</code></td><td><code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim.txt</code></td></tr>
       </tbody>
     </table>
@@ -1157,6 +1160,26 @@ exit: 0</pre>
     (<code>negative-control-alias-allowlist-reverted.txt</code>). Lint on the two reviewed
     files is <code>0 &rarr; 0</code> at the pre-fix and post-fix revisions
     (<code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim-review.txt</code>).</p>
+
+    <p><strong>A second review closed three more ways past the shim</strong> (commit
+    <code>4aa785dc</code>), each by a test red before the fix. (1) An empty argument tail was
+    counted as a read form, so <code>git stash</code> &mdash; which pushes &mdash; was
+    forwarded and reverted a foreign checkout; a multi-purpose verb is now read-only only in
+    an explicit listing or reading form, with read actions held apart from their modifiers so
+    <code>config --local a.b value</code> is mutating while <code>config --local --list</code>
+    reads. (2) The refusal compared only the git dir, so <code>--git-dir
+    &lt;run&gt;/.git --work-tree &lt;other&gt;</code> &mdash; and the same through
+    <code>GIT_DIR</code>+<code>GIT_WORK_TREE</code> &mdash; wrote another directory's files;
+    both the git dir and the resolved work tree must now be the run's. (3)
+    <code>fsck --lost-found</code> writes into the target's git dir, so <code>fsck</code> is
+    off the built-in reader list. The declared negative control &mdash; <em>treat an empty
+    verb tail as a read form</em> &mdash; restores the bare-stash bypass
+    (<code>1 failed, 14 passed</code> at
+    <code>docs/figures/a-worker-cannot-write-your-home/negative-control-empty-tail.txt</code>),
+    and the reverted tree is <code>15 passed</code>
+    (<code>negative-control-empty-tail-reverted.txt</code>). Lint on the two changed files
+    stays <code>0 &rarr; 0</code>
+    (<code>docs/figures/a-worker-cannot-write-your-home/lint-git-shim-review2.txt</code>).</p>
 
     <p><strong>Scope stated.</strong> This node delivers the shim, the PATH wiring and the
     tests. Verifying the merged result belongs to a separately dispatched test node, and the

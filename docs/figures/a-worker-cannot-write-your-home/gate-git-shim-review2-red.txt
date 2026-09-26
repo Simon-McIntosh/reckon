@@ -1,0 +1,154 @@
+# red-at-previous-head: the new tests against e2cc7472 (before the read-form, work-tree and fsck fixes)
+# tree: /tmp/reckon-gitshim-review2-red  (a git archive of e2cc7472 with this run's test file copied in)
+# command: env -C /tmp/reckon-gitshim-review2-red PYTHONPATH=/tmp/reckon-gitshim-review2-red /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_git_shim_checks_the_resolved_repo.py
+# module.__file__: /tmp/reckon-gitshim-review2-red/reckon/worker_git_shim.py
+..........F.FFF                                                          [100%]
+=================================== FAILURES ===================================
+____________ test_a_bare_stash_against_another_checkout_is_refused _____________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_a_bare_stash_against_anot0/home'), 'worktree': PosixPath(...ytest-11379/test_a_bare_stash_against_anot0/other'), 'first_worktree': '351fabc02d8375d65665daeb2dd727dc88a36650', ...}
+
+    def test_a_bare_stash_against_another_checkout_is_refused(
+        repos: dict[str, Any],
+    ) -> None:
+        """A multi-purpose verb is mutating bare: `git stash` pushes.
+    
+        Only an explicit listing or reading form is read-only, so a bare verb is
+        checked rather than forwarded. The other checkout is left dirty so the
+        forwarding arm would have stashed and reverted it.
+        """
+        home, other = repos["home"], repos["other"]
+        (other / "a.txt").write_text("dirty\n", encoding="utf-8")
+        before = _head(other, home)
+    
+        result = _shell(f"git -C {other} stash", cwd=home, home=home)
+    
+>       _assert_refused(result, repo=other, worktree=repos["worktree"])
+
+tests/test_git_shim_checks_the_resolved_repo.py:354: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11379/test_a_bare_stash_against_anot0/other stash'], returncode=0, stdout='Saved working directory and index state WIP on master: 31551f3 second\n', stderr='')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_a_bare_stash_against_anot0/other')
+worktree = PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_a_bare_stash_against_anot0/worktree')
+
+    def _assert_refused(
+        result: subprocess.CompletedProcess[str], *, repo: Path, worktree: Path
+    ) -> None:
+        """A refusal exits with its own status and names run, worktree and target."""
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11379/test_a_bare_stash_against_anot0/other stash'], returncode=0, stdout='Saved working directory and index state WIP on master: 31551f3 second\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:155: AssertionError
+__________________ test_a_work_tree_flag_override_is_refused ___________________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_a_work_tree_flag_override0/home'), 'worktree': PosixPath(...ytest-11379/test_a_work_tree_flag_override0/other'), 'first_worktree': '351fabc02d8375d65665daeb2dd727dc88a36650', ...}
+
+    def test_a_work_tree_flag_override_is_refused(repos: dict[str, Any]) -> None:
+        """The run's own git dir with a foreign work tree is refused.
+    
+        ``--git-dir`` naming the run's repository is not enough: ``--work-tree``
+        sends the write to another directory, so both must be checked.
+        """
+        home, worktree, other = repos["home"], repos["worktree"], repos["other"]
+        (other / "a.txt").write_text("keep me\n", encoding="utf-8")
+    
+        result = _shell(
+            f"git --git-dir {worktree}/.git --work-tree {other} reset --hard HEAD",
+            cwd=home,
+            home=home,
+        )
+    
+>       _assert_refused(result, repo=other, worktree=worktree)
+
+tests/test_git_shim_checks_the_resolved_repo.py:385: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = CompletedProcess(args=['bash', '-c', 'git --git-dir /tmp/pytest-of-mcintos/pytest-11379/test_a_work_tree_flag_override..._work_tree_flag_override0/other reset --hard HEAD'], returncode=0, stdout='HEAD is now at 31551f3 second\n', stderr='')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_a_work_tree_flag_override0/other')
+worktree = PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_a_work_tree_flag_override0/worktree')
+
+    def _assert_refused(
+        result: subprocess.CompletedProcess[str], *, repo: Path, worktree: Path
+    ) -> None:
+        """A refusal exits with its own status and names run, worktree and target."""
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'git --git-dir /tmp/pytest-of-mcintos/pytest-11379/test_a_work_tree_flag_override..._work_tree_flag_override0/other reset --hard HEAD'], returncode=0, stdout='HEAD is now at 31551f3 second\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:155: AssertionError
+___________________ test_a_work_tree_env_override_is_refused ___________________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_a_work_tree_env_override_0/home'), 'worktree': PosixPath(...ytest-11379/test_a_work_tree_env_override_0/other'), 'first_worktree': '4a4427f495ab75e864b03c4a3cf3e0f2be8dd23f', ...}
+
+    def test_a_work_tree_env_override_is_refused(repos: dict[str, Any]) -> None:
+        """The same escape through GIT_DIR + GIT_WORK_TREE is refused."""
+        home, worktree, other = repos["home"], repos["worktree"], repos["other"]
+        (other / "a.txt").write_text("keep me\n", encoding="utf-8")
+    
+        result = _shell(
+            f"env GIT_DIR={worktree}/.git GIT_WORK_TREE={other} git reset --hard HEAD",
+            cwd=home,
+            home=home,
+        )
+    
+>       _assert_refused(result, repo=other, worktree=worktree)
+
+tests/test_git_shim_checks_the_resolved_repo.py:400: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = CompletedProcess(args=['bash', '-c', 'env GIT_DIR=/tmp/pytest-of-mcintos/pytest-11379/test_a_work_tree_env_override_0/...k_tree_env_override_0/other git reset --hard HEAD'], returncode=0, stdout='HEAD is now at ee7d1bc second\n', stderr='')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_a_work_tree_env_override_0/other')
+worktree = PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_a_work_tree_env_override_0/worktree')
+
+    def _assert_refused(
+        result: subprocess.CompletedProcess[str], *, repo: Path, worktree: Path
+    ) -> None:
+        """A refusal exits with its own status and names run, worktree and target."""
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'env GIT_DIR=/tmp/pytest-of-mcintos/pytest-11379/test_a_work_tree_env_override_0/...k_tree_env_override_0/other git reset --hard HEAD'], returncode=0, stdout='HEAD is now at ee7d1bc second\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:155: AssertionError
+___________ test_fsck_lost_found_against_another_checkout_is_refused ___________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_fsck_lost_found_against_a0/home'), 'worktree': PosixPath(...ytest-11379/test_fsck_lost_found_against_a0/other'), 'first_worktree': '4a4427f495ab75e864b03c4a3cf3e0f2be8dd23f', ...}
+
+    def test_fsck_lost_found_against_another_checkout_is_refused(
+        repos: dict[str, Any],
+    ) -> None:
+        """`fsck --lost-found` writes into the target's git dir, so it is refused."""
+        home, other = repos["home"], repos["other"]
+    
+        result = _shell(f"git -C {other} fsck --lost-found", cwd=home, home=home)
+    
+>       _assert_refused(result, repo=other, worktree=repos["worktree"])
+
+tests/test_git_shim_checks_the_resolved_repo.py:412: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11379/test_fsck_lost_found_against_a0/other fsck --lost-found'], returncode=0, stdout='', stderr='')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_fsck_lost_found_against_a0/other')
+worktree = PosixPath('/tmp/pytest-of-mcintos/pytest-11379/test_fsck_lost_found_against_a0/worktree')
+
+    def _assert_refused(
+        result: subprocess.CompletedProcess[str], *, repo: Path, worktree: Path
+    ) -> None:
+        """A refusal exits with its own status and names run, worktree and target."""
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11379/test_fsck_lost_found_against_a0/other fsck --lost-found'], returncode=0, stdout='', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:155: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_a_bare_stash_against_another_checkout_is_refused
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_a_work_tree_flag_override_is_refused
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_a_work_tree_env_override_is_refused
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_fsck_lost_found_against_another_checkout_is_refused
+4 failed, 11 passed in 6.09s
+EXIT=1

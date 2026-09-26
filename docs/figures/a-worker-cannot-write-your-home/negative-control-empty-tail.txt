@@ -1,0 +1,50 @@
+treat an empty verb tail as a read form
+# negative control: a scratch copy of head 4aa785dc with _read_only_form's bare-tail
+#   guard reverted to True (reckon/worker_git_shim.py)
+# tree: /tmp/reckon-gitshim-review2-nc
+# command: env -C /tmp/reckon-gitshim-review2-nc PYTHONPATH=/tmp/reckon-gitshim-review2-nc /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_git_shim_checks_the_resolved_repo.py
+# module.__file__: /tmp/reckon-gitshim-review2-nc/reckon/worker_git_shim.py
+..........F....                                                          [100%]
+=================================== FAILURES ===================================
+____________ test_a_bare_stash_against_another_checkout_is_refused _____________
+
+repos = {'home': PosixPath('/tmp/pytest-of-mcintos/pytest-11381/test_a_bare_stash_against_anot0/home'), 'worktree': PosixPath(...ytest-11381/test_a_bare_stash_against_anot0/other'), 'first_worktree': 'a7bb8898a9476e6c2b0ad4600d74d8828ff4b3e7', ...}
+
+    def test_a_bare_stash_against_another_checkout_is_refused(
+        repos: dict[str, Any],
+    ) -> None:
+        """A multi-purpose verb is mutating bare: `git stash` pushes.
+    
+        Only an explicit listing or reading form is read-only, so a bare verb is
+        checked rather than forwarded. The other checkout is left dirty so the
+        forwarding arm would have stashed and reverted it.
+        """
+        home, other = repos["home"], repos["other"]
+        (other / "a.txt").write_text("dirty\n", encoding="utf-8")
+        before = _head(other, home)
+    
+        result = _shell(f"git -C {other} stash", cwd=home, home=home)
+    
+>       _assert_refused(result, repo=other, worktree=repos["worktree"])
+
+tests/test_git_shim_checks_the_resolved_repo.py:354: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11381/test_a_bare_stash_against_anot0/other stash'], returncode=0, stdout='Saved working directory and index state WIP on master: 244fb57 second\n', stderr='')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11381/test_a_bare_stash_against_anot0/other')
+worktree = PosixPath('/tmp/pytest-of-mcintos/pytest-11381/test_a_bare_stash_against_anot0/worktree')
+
+    def _assert_refused(
+        result: subprocess.CompletedProcess[str], *, repo: Path, worktree: Path
+    ) -> None:
+        """A refusal exits with its own status and names run, worktree and target."""
+>       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError: 
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['bash', '-c', 'git -C /tmp/pytest-of-mcintos/pytest-11381/test_a_bare_stash_against_anot0/other stash'], returncode=0, stdout='Saved working directory and index state WIP on master: 244fb57 second\n', stderr='').returncode
+
+tests/test_git_shim_checks_the_resolved_repo.py:155: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_git_shim_checks_the_resolved_repo.py::test_a_bare_stash_against_another_checkout_is_refused
+1 failed, 14 passed in 6.22s
+EXIT=1
