@@ -20,6 +20,27 @@ backends:
 # Per-backend rates are deliberately absent here. They are moving provider data,
 # so the host layer that declares a concrete backend also declares its rates.
 
+# The operator-home files a dialect's harness reads at startup, so a run's own
+# harness home carries the operator's hooks, instruction files and harness
+# configuration rather than a bare directory. Keyed by dialect because what a
+# worker loads is decided by its harness, not its model: the claude-shaped
+# harness reads CLAUDE.md and a settings.json holding its hooks, while a codex
+# harness reads AGENTS.md, its config.toml and its rules/ directory and never
+# CLAUDE.md. Each entry names a path relative to the operator's harness home
+# (``~/.claude`` for claude, ``~/.codex`` for codex) and an optional ``keys``
+# filter keeping only those top-level JSON keys. The files are read from the
+# operator's home at seed time and are never embedded here. A backend's own
+# ``harness_home_files`` entry replaces its dialect's default.
+harness_home_files:
+  claude:
+    - path: settings.json
+      keys: [hooks]
+    - path: CLAUDE.md
+  codex:
+    - path: AGENTS.md
+    - path: config.toml
+    - path: rules
+
 roles:
   # Committed ledger p75: 457s across 79 usable implement runs, rounded up.
   implement:

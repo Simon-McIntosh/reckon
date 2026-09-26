@@ -1770,11 +1770,12 @@ def dialect_for(backend: Mapping[str, Any]) -> Dialect:
 # session files, codex its configuration and session rollouts. Without a
 # per-run home the harness writes into the operator's own dot directory, which
 # the fence makes read-only — so the per-run home is what lets the fence be
-# switched on for real workers rather than only in the stub. The variable and
-# folder are named per dialect because the two harnesses disagree on both.
+# switched on for real workers rather than only in the stub. The variable,
+# the run folder and the operator folder are named per dialect because the two
+# harnesses disagree on all three.
 _HARNESS_HOME = {
-    "claude": ("CLAUDE_CONFIG_DIR", "harness"),
-    "codex": ("CODEX_HOME", "codex-home"),
+    "claude": ("CLAUDE_CONFIG_DIR", "harness", ".claude"),
+    "codex": ("CODEX_HOME", "codex-home", ".codex"),
 }
 
 # The codex credential bound read-only into a run's codex home. Bound rather
@@ -1801,17 +1802,144 @@ def harness_home(dialect_name: str, run_directory: str | Path) -> Path | None:
     return None if declared is None else Path(run_directory) / declared[1]
 
 
-def seed_harness_home(home: Path) -> None:
-    """Create a run's harness home with the minimum the launcher needs.
+def seed_harness_home(
+    home: Path,
+    *,
+    dialect_name: str,
+    operator_home: str | Path,
+    declaration: Iterable[Mapping[str, Any]] = (),
+    resume_session: str | None = None,
+) -> None:
+    """Create a run's harness home carrying what its harness reads there.
 
-    The minimum is the directory itself: each harness reads and writes a
-    configuration and session store beneath the folder its own variable names,
-    and neither requires a pre-written config to start. A credential is never
-    written here — the codex login is bound in read-only by the fence
-    (:func:`codex_auth_source`), so the run directory never holds a writable
+    A harness that starts in a bare directory loads neither the operator's
+    hooks nor their instruction files, so a fenced worker silently loses the
+    guards and the standing guidance the operator's own home declares — and a
+    codex worker loses everything, because codex reads ``AGENTS.md`` and never
+    ``CLAUDE.md``. The declaration is the operator-home file list the backend's
+    flight entry names (``harness_home_files``), each entry a path relative to
+    the operator's harness home plus an optional JSON key filter.
+
+    Three properties bound the copy, all read from the operator's home and
+    never written back. A file already in the run home is never overwritten, so
+    a resumed run keeps its own state. The operator home is never modified —
+    only read. And a credential is never copied: the codex login is bound
+    read-only by the fence (:func:`codex_auth_source`), and the declaration
+    below names no credential file, so the run directory never holds a writable
     copy of the operator's login.
+
+    A resumed run also needs the session's own transcript beside its home,
+    because the harness looks for it under the home its variable names; the
+    transcript is copied at the same relative path, and a fresh launch (no
+    session) copies none.
     """
     home.mkdir(parents=True, exist_ok=True)
+    declared = _HARNESS_HOME.get(dialect_name)
+    if declared is None:
+        return
+    source_home = Path(operator_home) / declared[2]
+    for entry in declaration or ():
+        relative = entry.get("path")
+        if not isinstance(relative, str) or not relative:
+            continue
+        source = source_home / relative
+        if not source.exists():
+            continue
+        _seed_harness_entry(source, home / relative, entry.get("keys"))
+    if resume_session:
+        _seed_harness_session(home, source_home, str(resume_session))
+
+
+def _seed_harness_entry(
+    source: Path, destination: Path, keys: Iterable[str] | None
+) -> None:
+    """Copy one declared operator file or directory into the run home.
+
+    A file already present is left untouched, so seeding is idempotent and a
+    resumed run never loses state it wrote itself. A filtered file is rewritten
+    from the operator's copy down to the named top-level JSON keys, which is how
+    ``settings.json`` ships its hooks without its credentials, environment or
+    permissions.
+    """
+    if destination.exists():
+        return
+    if source.is_dir():
+        _copy_tree_without_overwrite(source, destination)
+        return
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if keys is not None:
+        filtered = _filter_top_level_keys(source, keys)
+        if filtered is None:
+            return
+        destination.write_text(json.dumps(filtered, indent=2, sort_keys=True) + "\n")
+    else:
+        destination.write_bytes(source.read_bytes())
+    _copy_writable_mode(source, destination)
+
+
+def _filter_top_level_keys(source: Path, keys: Iterable[str]) -> dict[str, Any] | None:
+    """Return the operator file's JSON reduced to ``keys``, or None if unreadable.
+
+    A file that is not a readable JSON object seeds nothing rather than a
+    malformed settings file a harness might then refuse to start with.
+    """
+    try:
+        loaded = json.loads(source.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(loaded, Mapping):
+        return None
+    return {key: loaded[key] for key in keys if key in loaded}
+
+
+def _copy_tree_without_overwrite(source: Path, destination: Path) -> None:
+    """Copy a directory tree, creating every directory and no existing file."""
+    destination.mkdir(parents=True, exist_ok=True)
+    for path in sorted(source.rglob("*")):
+        relative = path.relative_to(source)
+        target = destination / relative
+        if path.is_dir():
+            target.mkdir(parents=True, exist_ok=True)
+        elif not target.exists():
+            target.write_bytes(path.read_bytes())
+            _copy_writable_mode(path, target)
+
+
+def _copy_writable_mode(source: Path, destination: Path) -> None:
+    """Grant the copied file the operator's own mode, forced writable.
+
+    The run home is the worker's own, so a file copied in from a read-only
+    operator home must still be writable there — the harness updates its own
+    configuration and the worker may too.
+    """
+    try:
+        mode = source.stat().st_mode & 0o777
+    except OSError:
+        return
+    destination.chmod(mode | 0o200)
+
+
+def _seed_harness_session(home: Path, source_home: Path, session_id: str) -> None:
+    """Copy a session's transcript from the operator home into the run home.
+
+    A resume names a session recorded in the operator's home, and the harness
+    looks for it under the home it was pointed at — the run's own — so a resume
+    without the transcript beside it reports no such conversation. The
+    transcript is copied at the same relative path so the harness's own lookup
+    finds it. Only a resume copies one: a fresh launch that copied a transcript
+    would resurrect a session nobody asked for.
+    """
+    if not session_id or not source_home.is_dir():
+        return
+    for path in sorted(source_home.rglob(f"*{session_id}*")):
+        if not path.is_file():
+            continue
+        destination = home / path.relative_to(source_home)
+        if destination.exists():
+            continue
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(path.read_bytes())
+        _copy_writable_mode(path, destination)
 
 
 def write_lock_directory(home: str | Path | None = None) -> Path:
@@ -2112,7 +2240,15 @@ def launch_plan(
     # none of them silently drops the hooks and orphans those sessions.
     adopts_harness_home = fence
     if harness is not None and adopts_harness_home:
-        seed_harness_home(harness)
+        from reckon.flight import harness_home_files
+
+        seed_harness_home(
+            harness,
+            dialect_name=dialect.name,
+            operator_home=fence_home if fence_home is not None else Path.home(),
+            declaration=harness_home_files(dialect.name, backend),
+            resume_session=resume_session,
+        )
         environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
     argv = dialect.argv(
         command=str(backend["command"]),

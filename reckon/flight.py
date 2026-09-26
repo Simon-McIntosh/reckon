@@ -112,6 +112,131 @@ def shipped_defaults_path() -> Path:
     return Path(__file__).resolve().parent / "schema" / "flight-defaults.yaml"
 
 
+# The operator-home files a dialect's harness reads at startup. reckon owns the
+# vocabulary — no provider-neutral schema names a file a harness loads — so the
+# declaration rides the resolved config as reckon-owned data rather than a
+# LinkML slot: it ships in the shipped defaults beside the rest of the flight
+# config, a backend's flight entry may replace its dialect's default, and the
+# copy handed to the schema validator has it removed (see :func:`_schema_view`).
+HARNESS_HOME_FILES = "harness_home_files"
+
+
+def shipped_harness_home_files() -> dict[str, list[dict[str, Any]]]:
+    """Return the per-dialect declaration the shipped defaults carry.
+
+    Read from the shipped layer alone rather than the merged config: the
+    defaults are the fallback for a backend that declares no override, so the
+    lookup is a dialect table, not a resolved routing value. A shipped file
+    missing the section, or a dialect absent from it, returns nothing and seeds
+    only the directory, which is exactly a harness that reads no operator file.
+    """
+    data = read_layer_file(shipped_defaults_path()) or {}
+    declared = data.get(HARNESS_HOME_FILES)
+    if not isinstance(declared, Mapping):
+        return {}
+    return {
+        str(dialect): [dict(entry) for entry in entries]
+        for dialect, entries in declared.items()
+        if isinstance(entries, Iterable) and not isinstance(entries, (str, bytes))
+    }
+
+
+def harness_home_files(
+    dialect_name: str, backend: Mapping[str, Any] | None = None
+) -> list[dict[str, Any]]:
+    """Return the operator-home files a dialect's harness reads at seed time.
+
+    A backend's own ``harness_home_files`` entry replaces its dialect's shipped
+    default outright — a lane that reads none declares an empty list — and a
+    backend declaring none inherits the dialect default. Entries are copied so a
+    caller cannot mutate the declaration it read, because the same declaration
+    is reused for every launch of the dialect.
+    """
+    if isinstance(backend, Mapping):
+        declared = backend.get(HARNESS_HOME_FILES)
+        if isinstance(declared, Iterable) and not isinstance(declared, (str, bytes)):
+            return [dict(entry) for entry in declared if isinstance(entry, Mapping)]
+    return [dict(entry) for entry in shipped_harness_home_files().get(dialect_name, [])]
+
+
+def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
+    """Return ``data`` with reckon-owned keys removed for schema validation.
+
+    The LinkML schema constrains the provider-neutral surface only, so the
+    reckon-owned ``harness_home_files`` declaration is removed from the copy the
+    model validates while the merge keeps it, so :func:`harness_home_files` can
+    read a backend's override from the resolved config.
+    :func:`_validate_harness_home_files` checks its shape separately.
+    """
+    cleaned = dict(data)
+    cleaned.pop(HARNESS_HOME_FILES, None)
+    backends = cleaned.get("backends")
+    if isinstance(backends, Mapping):
+        cleaned["backends"] = {
+            name: (
+                {
+                    key: value
+                    for key, value in entry.items()
+                    if key != HARNESS_HOME_FILES
+                }
+                if isinstance(entry, Mapping)
+                else entry
+            )
+            for name, entry in backends.items()
+        }
+    return cleaned
+
+
+def _validate_harness_home_entries(
+    declaration: Any, key_path: str, source: str | Path
+) -> None:
+    """Check one dialect's or one backend's entry list."""
+    if not isinstance(declaration, Iterable) or isinstance(declaration, (str, bytes)):
+        raise FlightConfigError(source, key_path, "must be a list of entries")
+    for index, entry in enumerate(declaration):
+        entry_path = f"{key_path}.{index}"
+        if not isinstance(entry, Mapping):
+            raise FlightConfigError(source, entry_path, "must be a mapping with a path")
+        path = entry.get("path")
+        if not isinstance(path, str) or not path:
+            raise FlightConfigError(source, entry_path, "must name a non-empty path")
+        keys = entry.get("keys")
+        if keys is not None and (
+            not isinstance(keys, Iterable)
+            or isinstance(keys, (str, bytes))
+            or not all(isinstance(key, str) for key in keys)
+        ):
+            raise FlightConfigError(
+                source, f"{entry_path}.keys", "must be a list of strings"
+            )
+
+
+def _validate_harness_home_files(data: Mapping[str, Any], source: str | Path) -> None:
+    """Schema-check the reckon-owned declaration because the model does not.
+
+    Malformed data here is a configuration error the same way an unknown key is:
+    an entry that is not a mapping, a missing or non-string path, or a ``keys``
+    that is not a list of strings would otherwise seed nothing and look like a
+    harness that reads no operator file. The shipped, top-level declaration is a
+    dialect map; a backend's own is the entry list itself.
+    """
+    top = data.get(HARNESS_HOME_FILES)
+    if top is not None:
+        if not isinstance(top, Mapping):
+            raise FlightConfigError(source, HARNESS_HOME_FILES, "must be a dialect map")
+        for dialect, entries in top.items():
+            _validate_harness_home_entries(
+                entries, f"{HARNESS_HOME_FILES}.{dialect}", source
+            )
+    for backend_name, backend in (data.get("backends") or {}).items():
+        if isinstance(backend, Mapping) and HARNESS_HOME_FILES in backend:
+            _validate_harness_home_entries(
+                backend[HARNESS_HOME_FILES],
+                f"backends.{backend_name}.{HARNESS_HOME_FILES}",
+                source,
+            )
+
+
 def schema_source_path() -> Path:
     """Path to the LinkML source the committed artifacts derive from."""
     return Path(__file__).resolve().parent / "schema" / "flight.yaml"
@@ -408,13 +533,15 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
     from reckon._flight_schema import FlightConfig
 
     try:
-        FlightConfig.model_validate(_inject_map_keys(data))
+        FlightConfig.model_validate(_inject_map_keys(_schema_view(data)))
     except ValidationError as exc:
         first = exc.errors()[0]
         key_path = ".".join(str(part) for part in first.get("loc", ()))
         raise FlightConfigError(
             source, key_path, first.get("msg", "is invalid")
         ) from exc
+
+    _validate_harness_home_files(data, source)
 
     for backend_name, backend in (data.get("backends") or {}).items():
         if not isinstance(backend, Mapping):
