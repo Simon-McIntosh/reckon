@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 </head>
 <body>
   <main class="plan-doc">
@@ -169,6 +169,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260926T0750-plan-review-dispatch-gate-report-only" data-who="plan-review-dispatch-gate" data-when="2026-09-26T07:50:00Z">
     <div class="r-comment-body"><p><b>Review changes and the lead decision landed: the gate ships report-only behind a flight key.</b> Three changes, all in commit <code>4cf5d6f35dc70910aa9737b07cc0addbc2d30268</code>. (1) The unanswered-findings branch in <code>require_plan_reviewed</code> had no case: a stored review carrying one finding no response answers is now refused, and the refusal names that finding. (2) A <code>--dry-run</code> against an unreviewed plan answered <code>plan-unavailable</code> while the launch path answered <code>plan-review-missing</code>, sending a diagnosing operator to the mounts; both paths now answer <code>plan-review-missing</code>. (3) Report-only is the shipped default, because almost no plan carries a stored review yet and the node that writes one is not built: a missing or unanswered review is recorded as a warning on the dispatch result and the dispatch proceeds, and <code>plan_review_gate: enforce</code> in a flight layer restores the refusal unchanged. <b>The key is checked in <code>reckon/flight.py</code>, not in the generated model:</b> the shipped defaults layer is schema-checked like every other layer and the generated <code>FlightConfig</code> sets <code>extra = "forbid"</code>, so naming the key in <code>reckon/schema/flight-defaults.yaml</code> alone raises <code>FlightConfigError</code> on every flight resolution until the LinkML source is regenerated — measured, not assumed. The key is therefore held out of the schema check and validated beside it, which leaves <code>reckon/_flight_schema.py</code> as its source produces it; the defaults layer names <code>report</code>. Gates: spec <code>tests/test_plan_review_gate.py</code> 17 passed, exit 0; compatibility gate at the repaired head 50 passed, exit 0 against the stated base <code>ea867750</code>'s 49 passed, exit 0 — zero added failures; a wider arm over flight, provenance, dry-run and dispatch-guard 122 passed, 2 skipped, exit 0; lint adds no finding on the five changed files against the base archive tree. Negative control <i>the branch that refuses a review whose finding no response answers is deleted, so such a review is admitted; the case asserting that the refusal names the open finding must then fail</i>: base arm 1 passed, head arm 1 failed with <code>DID NOT RAISE PlanReviewMissingError</code>, both arms naming revision, tree and command, in scratch trees exported from the same revision. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-dispatch-gate">§2 landed record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260926T075839396843-re-review-of-plan-review-dispatch-gate" data-who="reckon-build" data-when="2026-09-26T09:28:05.110Z">
+    <div class="r-comment-body"><p>review record stored and read by the coordinator (92; its launch-path finding is covered by launch-path-reports-plan-review-missing)</p></div>
 </div>
 </section>
 </main>
