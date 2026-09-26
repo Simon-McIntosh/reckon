@@ -80,6 +80,29 @@
         waits for live claims on both files to release.</li>
     </ol>
 
+    <div data-reckon="landing" data-node="path-classes-are-one-module" data-when="2026-09-26">
+      <h3>Landing record &mdash; the census path classifier is now a package module</h3>
+      <p>Commit <code>85af514b</code> adds <code>reckon/path_classes.py</code> porting the velocity
+      census's <code>file_class</code> and <code>path_class</code> under its six class names.
+      <code>path_class</code> carries the SPA override so a <code>.js</code>, <code>.jsx</code> or
+      <code>.css</code> path under <code>docs/ui/</code>, <code>docs/_ui/</code> or
+      <code>docs/_shared/</code> classes as <code>source</code>; the package imports nothing from
+      <code>docs/</code>. This is the single classifier the velocity view and the review-tier
+      runtime-source test both consume, per the reuse map's row for this section.</p>
+      <p><code>tests/test_path_classes.py</code> loads the census by file path and asserts the
+      fixture list's 26 paths class identically under both implementations, covering all six
+      census classes at least twice and holding a <code>.js</code>, <code>.jsx</code> and
+      <code>.css</code> path under each of the three SPA directories.</p>
+      <p><strong>Delivered.</strong> The gate runs at <code>85af514b</code> and
+      <code>tests/test_path_classes.py</code> passes (<strong>54 passed</strong>, exit 0). The
+      declared negative control deletes the SPA override; the nine
+      <code>test_path_class_matches_the_census</code> rows under the SPA directories and the
+      SPA-grid test then fail (<strong>10 failed, 44 passed</strong>, exit 1). Receipts under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T213015259298-path-classes-are-one-module/</code>:
+      <code>gate-test-path-classes.log</code> and <code>negative-control.log</code>. Full record:
+      <code>the-fleet-reports-its-velocity-landed.html#s2-path-classes-are-one-module</code>.</p>
+    </div>
+
     <h2 id="s3">§3 — Coordinator cost per landed node</h2>
     <p><strong>Deliverable.</strong> For each coordinator session named by a promoted run's
       <code>node_definition.coordinator.runtime_session_id</code>, the view reports the session's assistant responses,

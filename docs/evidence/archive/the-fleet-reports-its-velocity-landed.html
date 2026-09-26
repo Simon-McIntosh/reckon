@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-reports-its-velocity-landed">
+  <meta name="plan-title" content="The Fleet Reports Its Velocity &mdash; landed evidence">
+  <meta name="plan-summary" content="One path classifier in the package returns the same six line classes as the velocity census it was ported from.">
+  <meta name="plan-evidence-for" content="the-fleet-reports-its-velocity">
+  <meta name="plan-verifies" content="the-fleet-reports-its-velocity#s2">
+  <meta name="plan-commits" content="85af514b">
+  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py">
+  <meta name="plan-recorded-at" content="2026-09-26">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment">
+  <meta name="plan-tags" content="crew,velocity,measurement">
+  <title>The Fleet Reports Its Velocity &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>The Fleet Reports Its Velocity</h1>
+      <p class="lead">The path classifier the velocity view and the review tiers both need lives in the package, and its parity with the census it was ported from is asserted path by path.</p>
+    </header>
+  <section id="s2-path-classes-are-one-module">
+      <h2>&sect;2 &mdash; One path classifier in the package</h2>
+      <p>Commit <code>85af514b</code> adds <code>reckon/path_classes.py</code> with
+      <code>file_class</code> and <code>path_class</code> under the census's six class names
+      (<code>source</code>, <code>tests</code>, <code>plan_evidence_research_html</code>,
+      <code>figures</code>, <code>docs_state</code>, <code>other</code>). <code>path_class</code>
+      keeps the one override the classes cannot express: a <code>.js</code>, <code>.jsx</code> or
+      <code>.css</code> path under <code>docs/ui/</code>, <code>docs/_ui/</code> or
+      <code>docs/_shared/</code> is product code. The port is drawn from the reuse map at
+      <code>s25-reuse-map-review-and-velocity/reuse-map.md</code>, whose row for
+      <code>the-fleet-reports-its-velocity &sect;2</code> names
+      <code>census.py:79</code> <code>file_class</code> and <code>census.py:141</code>
+      <code>path_class</code> as the symbols to port once and import thereafter, so the velocity
+      view and the review-tier path test cannot drift into two copies.</p>
+      <p><code>tests/test_path_classes.py</code> loads the census by file path (the study script
+      is not a package module) and asserts both package functions return the census's own answer
+      for every path in one fixture list. The list is checked for coverage against
+      <code>census.CLASSES</code> rather than against a literal, and holds at least two paths per
+      class and a <code>.js</code>, <code>.jsx</code> and <code>.css</code> path under each of the
+      three SPA directories.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Fixture paths classified</td><td>26</td></tr>
+          <tr><td>Census classes covered</td><td>6 of 6, at least 2 paths each</td></tr>
+          <tr><td>Gate at <code>85af514b</code></td><td>54 passed, exit 0</td></tr>
+          <tr><td>Negative control</td><td>10 failed, 44 passed, exit 1</td></tr>
+        </tbody>
+      </table>
+      <p>The declared negative control deletes the SPA override from the port and the SPA rows
+      disagree with the census: the nine <code>test_path_class_matches_the_census</code> rows
+      under <code>docs/ui/</code>, <code>docs/_ui/</code> and <code>docs/_shared/</code> fail
+      beside the SPA-grid test, while the 44 remaining assertions pass. Log:
+      <code>negative-control.log</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
