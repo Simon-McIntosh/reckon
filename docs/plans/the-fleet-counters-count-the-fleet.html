@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="75">
+<meta name="plan-version" content="76">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -234,6 +234,11 @@
     <h4 class="r-fu-title">A watcher started without systemd keeps a log, so its death has a cause</h4>
     <div class="r-fu-body"><p>Measured 2026-09-26 on 98dci4-clu-2058. The node has no systemd user manager, so <code>crew watch --ensure</code> arms the reckon producer as a plain background process. That process's stdout and stderr are <code>/dev/null</code> (pid 2981414 checked through <code>/proc/&lt;pid&gt;/fd/1</code> and <code>/fd/2</code>). The previous producer stopped writing after 06:28:42Z, its seat read <code>{}</code> at 06:44:46Z, and nothing records why. The follower went silent for about 40 minutes, three workers' abandonment surfaced only as baseline inventory rows at 07:10Z, and the cause cannot be established.</p><p>When the ensure path arms a producer without a service manager, it sends that process's stdout and stderr, with timestamps, to a per-project log under the reckon logs directory (the same place the systemd units write, <code>watch-&lt;project&gt;.log</code>), size-bounded or rotated. The seat record names the log path, so a reader who finds a dead seat finds its last words.</p><p>Tests: an unmanaged arming writes its log file, and the seat record carries its path. A producer that raises leaves the traceback in that log. The real logs directory is untouched (synthetic home). Each red at base.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-unmanaged-producer-keeps-a-log</pre>
+    </article>
+<article class="r-fu" data-id="f-tfcctf-checkpoint-survives-deletion-and-producer-reloads" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">An idle follower rewrites a deleted checkpoint, and the producer takes new code</h4>
+    <div class="r-fu-body"><p>Two gaps, found 2026-09-26.</p><ul><li><strong>A deleted checkpoint stays deleted while idle.</strong> The review of follower-keeps-memory-and-idles-quietly (85) found that the write gate at <code>reckon/cli.py:2260</code> compares the place against the arming's own memory and never checks that the checkpoint file still exists. A checkpoint removed while the pane is idle is not rewritten until the place moves, so a reload in that window finds no record and loses the pane memory. The gate should also write when the file is missing.</li><li><strong>The producer does not take new code.</strong> The follower reloads onto new code, but the watch producer does not. The discard fix (2f1cfd17, merged 09:35) had no effect until the producer was restarted by hand at about 11:00; until then a discarded run still rendered as <code>→ promoted</code>. The producer should reload onto changed follower-side modules the way the follower does, behind the same content-hash and import check, or its seat should record the code revision it runs so a reader can see it is stale.</li></ul><p>Tests: an idle arming whose checkpoint is deleted rewrites it on the next poll. A producer whose modules change content re-executes onto the new image, or reports itself stale. Each red at base.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-checkpoint-survives-deletion-and-producer-reloads</pre>
     </article>
 </section>
 
