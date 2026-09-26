@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="orchestrator-crew-pattern-studies">
+  <meta name="plan-title" content="Orchestrator Crew Pattern Studies">
+  <meta name="plan-summary" content="Six measured studies behind the crew dispatch-pattern review: velocity, worker anatomy, coordinator cost, code depth and reuse, nova flapping and readiness.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,analysis,measurement">
+  <meta name="plan-standalone" content="A measurement plan whose output feeds the orchestrator-crew-pattern-review research record; the plans that act on its findings are created from that record.">
+  <title>Orchestrator Crew Pattern Studies | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Purpose, window and shared inputs</h2>
+    <p>The lead asked for a review of the background dispatch pattern — coordinators running
+      <code>/reckon-build</code> and dispatching workers through <code>reckon crew</code> to the local
+      lane (clive, deepseek-v4.1-flash) and the codex lanes — over the roughly two weeks it has run
+      at scale. The questions are whether it produces better work at a higher rate, where the
+      bottlenecks are, whether the system is too heavy, whether workers receive too much context,
+      whether nodes should be smaller, whether coordinators do too much or too little, and whether the
+      code it produces is deep, reused and small in interface or shallow and reimplemented. The lead
+      also suspects that recent local-lane work in <code>nova</code> (a Grad–Shafranov equilibrium
+      solver) has been <em>flapping</em>: rewriting the same code back and forth so that readiness has
+      gone backwards.</p>
+    <p>A survey of the five live coordinator sessions is held by the coordinator and is not a node.
+      The six sections below are the measured studies. Each writes one data directory and, where a
+      figure earns its place, one figure topic directory; the synthesis in §8 reads all six.</p>
+    <p><strong>Window.</strong> The study window is <code>2026-09-12T00:00:00Z</code> to the capture
+      instant <code>2026-09-26T10:00:00Z</code>. Every census filters to that closed interval so that
+      the growing ledgers and streams cannot move its counts after the fact. Where a study compares
+      against an earlier period it names that period explicitly.</p>
+    <p><strong>Shared inputs</strong> (all read-only; absolute paths):</p>
+    <ul>
+      <li>Committed run ledgers for the five mounted projects:
+        <code>/home/ITER/mcintos/Code/&lt;repo&gt;/docs/state/&lt;project&gt;/crew.json</code> and the
+        one-file-per-run records under <code>docs/state/&lt;project&gt;/runs/</code>, for reckon,
+        imas-ambix, nova, imas-efit and imas-codex. The run store
+        <code>/home/ITER/mcintos/.config/reckon/crew/run_store.db</code> (SQLite) indexes the same runs;
+        its <code>backend</code> column is empty on recent rows, so read the backend from the payload.</li>
+      <li>Run directories <code>/home/ITER/mcintos/.config/reckon/crew/runs/&lt;run-id&gt;/</code>:
+        <code>stream.jsonl</code>, <code>resume-N.jsonl</code>, <code>manifest.md</code>,
+        <code>stderr.log</code>. Two stream schemas exist (message-style and
+        <code>thread.started</code>-style); a parser must be proved on one known-healthy run of each
+        before any absence is reported.</li>
+      <li>Durable review records under <code>/home/ITER/mcintos/.config/reckon/crew/reviews/</code>.</li>
+      <li>Coordinator session transcripts under
+        <code>/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-&lt;repo&gt;/*.jsonl</code>;
+        a run record's <code>node_definition.coordinator.runtime_session_id</code> names the transcript
+        that dispatched it where it was recorded.</li>
+      <li>Git history of each repository's primary branch, read with <code>git -C &lt;repo&gt;</code>.</li>
+      <li>Prior instruments to reuse rather than rewrite: the burn census in
+        <code>/home/ITER/mcintos/.cache/burn-census/</code> and the review census script
+        <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/review_metrics.py</code>.</li>
+      <li>Baselines: <code>docs/research/crew-fleet-rox-review.html</code> (August 12–16),
+        <code>docs/research/dispatch-cost-measurement.html</code> (to September 4) and
+        <code>docs/research/review-node-utility.html</code> (September 25).</li>
+    </ul>
+    <p><strong>Execution.</strong> Workers run on the fleet allocation, where heavy work runs in
+      place. Keep each census to at most four concurrent processes, put temporary files in
+      <code>/tmp</code>, and never write to any repository other than the worker's own worktree. Every
+      data directory holds the census script, its output JSON, the log of one complete run, and a
+      short <code>findings.md</code> stating each headline figure with its denominator. Re-running the
+      script must reproduce the JSON byte for byte.</p>
+
+    <h2 id="s2">§2 — Velocity: the rate of implemented work</h2>
+    <p><strong>Deliverable.</strong> A velocity census of work landed through crew across all five
+      projects in the window, compared with the August baseline.</p>
+    <p><strong>Method.</strong> Join ledger records to primary-branch history. Report per project and
+      per day: promoted implement-class nodes (implement, documentation, test, cleanup) and review or
+      investigate nodes separately, split by lane (clive; codex family; claude family; native);
+      lines landed on the primary branch from <code>git log --first-parent --numstat</code>, split
+      into source, tests, plan/evidence/research HTML, figures, and <code>docs/state</code>; the count
+      of commits by class (product: feat, fix, refactor, perf, test; record: promote, release, record,
+      docs(plans), docs(evidence); merges). Report latency as dispatch-to-completion and
+      dispatch-to-promotion medians and p75, and attempts per landed node (resumes, redispatches,
+      and repair nodes whose lineage or node id points at an earlier node). Report the ratio of
+      record lines to product lines, the fraction of product lines deleted again within seven days
+      (so that durable velocity is distinguished from gross), and landed product lines per
+      worker-hour and per coordinator-hour of active dispatch. State the August figures the baseline
+      document reports beside each comparable figure rather than re-deriving them.</p>
+    <p><strong>Done when</strong> <code>docs/research/data/crew-pattern-review/velocity/velocity.json</code>
+      carries every figure above with its denominator, the census script beside it reproduces it,
+      <code>findings.md</code> states the headline figures, and one figure in
+      <code>docs/figures/crew-pattern-review-velocity/</code> plots durable product lines landed per
+      day by lane.</p>
+
+    <h2 id="s3">§3 — Worker anatomy: where turns and tokens go</h2>
+    <p><strong>Deliverable.</strong> A census of how crew workers spend their turns and context, by
+      lane and role, for runs dispatched in the window.</p>
+    <p><strong>Method.</strong> From run streams, per lane and role, report medians and p90 of:
+      first-request input tokens; assistant turns; turns before the first file edit; the share of tool
+      calls that read plan, evidence or research HTML, <code>AGENTS.md</code>, skill files or
+      manifests; the share of file edits by class (source, tests, plan/evidence/research HTML,
+      figures, manifest and reports); the share of wall time spent inside gate or test commands; and
+      the number of self-verification reads of files the worker itself just wrote. Report the sample
+      size per cell and stratify by node outcome (promoted passed, promoted not-run, blocked,
+      failed, discarded). Prove each stream parser on one named healthy run before relying on it.</p>
+    <p><strong>Done when</strong>
+      <code>docs/research/data/crew-pattern-review/worker-anatomy/anatomy.json</code> carries every
+      figure above with its sample size, the census script beside it reproduces it, and
+      <code>findings.md</code> states the headline figures including the share of worker effort spent
+      on record-keeping (plan, evidence, figures, manifest) against product code.</p>
+
+    <h2 id="s4">§4 — Coordinator overhead: the cost of each landed node</h2>
+    <p><strong>Deliverable.</strong> A census of what coordinators spend per landed node, from their
+      session transcripts, for the window.</p>
+    <p><strong>Method.</strong> Identify coordinator sessions from run records
+      (<code>node_definition.coordinator</code>) and their transcripts. Per session report: landed
+      nodes; coordinator assistant turns, input tokens and output tokens per landed node; the tool-call
+      mix by category (dispatch, crew reads and MCP views, git and merges, plan edits, reading worker
+      diffs and gate logs, follower notifications); dispatch refusals by error code and promotion
+      refusals by reason, with the coordinator turns between each refusal and the next successful
+      attempt; and hand-committed worker diffs. From each primary branch, count merges in the window
+      that touched <code>docs/plans</code> or <code>docs/evidence</code> and how many of them would
+      have conflicted, re-derived with <code>git merge-tree</code> on the recorded parents.</p>
+    <p><strong>Done when</strong>
+      <code>docs/research/data/crew-pattern-review/coordinator-overhead/overhead.json</code> carries
+      every figure above per session with totals, the census script beside it reproduces it, and
+      <code>findings.md</code> ranks the five largest coordinator costs per landed node with their
+      figures.</p>
+
+    <h2 id="s5">§5 — Code depth, interface width and reuse in reckon and nova</h2>
+    <p><strong>Deliverable.</strong> A structural assessment of the code the fleet has produced in
+      reckon and nova, judged against the lead's stated preference: deep modules behind small
+      interfaces, and no reimplementation of what already exists.</p>
+    <p><strong>Method.</strong> Take four weekly snapshots of each primary branch (the commit nearest
+      12:00Z on 2026-09-05, 09-12, 09-19 and 09-26), extracted with <code>git archive</code> into
+      <code>/tmp</code>. For <code>reckon/</code> (with <code>reckon/crew/</code> separately) and
+      <code>nova/</code>, report per snapshot: source and test lines, module count, public function
+      and class count, the function-length distribution, and for reckon the number of CLI commands,
+      CLI options, MCP views and dispatch refusal codes. Run a clone census — duplicate blocks of six
+      or more lines found by hashing normalised token windows — and report the clone share of source
+      lines. Build a reimplementation census: every helper concept implemented in three or more
+      places (for example ISO timestamp parsing, process liveness, atomic JSON writes, git subprocess
+      wrappers, stream parsing, plan HTML reads), with <code>file:line</code> for every copy. Report
+      pass-through functions (a body that only forwards its arguments) and modules whose public
+      surface is large relative to their lines.</p>
+    <p><strong>Done when</strong>
+      <code>docs/research/data/crew-pattern-review/code-depth/code-depth.json</code> carries every
+      figure above for all eight snapshots, the census script beside it reproduces it, and
+      <code>findings.md</code> ranks the ten highest-value consolidation candidates, each naming its
+      copies and one proposed single home, with the week-over-week trend in clone share and interface
+      width stated for each repository.</p>
+
+    <h2 id="s6">§6 — Nova: is recent work flapping?</h2>
+    <p><strong>Deliverable.</strong> A verdict, with evidence, on whether nova's recent history shows
+      flapping — the same code rewritten back and forth — and which lane and plan produced it.</p>
+    <p><strong>Method.</strong> Weekly from 2026-08-15 to 2026-09-26 on nova's primary branch, report
+      commits, lines added and removed under <code>nova/</code> and <code>tests/</code>, the share of
+      added lines deleted again within seven days, revert commits, and files and functions changed in
+      three or more distinct weeks. Detect oscillation directly: the same constant, default, signature
+      or test expectation set to a value and later set back. Attribute each commit to a crew run and
+      lane through nova's ledger (<code>/home/ITER/mcintos/Code/nova/docs/state/nova/crew.json</code>)
+      or its commit message, and state unattributed commits as such rather than guessing. Read the
+      worst episodes as code, not as counts.</p>
+    <p><strong>Done when</strong>
+      <code>docs/research/data/crew-pattern-review/nova-flapping/flapping.json</code> carries the
+      weekly figures and the per-commit attribution, the census script beside it reproduces it,
+      <code>findings.md</code> presents the five worst flapping episodes with commit shas, what
+      changed back and forth, and the lane and plan behind each swing, and it states a verdict on
+      whether flapping rose during the local-lane period with the figures that decide it.</p>
+
+    <h2 id="s7">§7 — Nova: readiness at weekly snapshots</h2>
+    <p><strong>Deliverable.</strong> A readiness trajectory for nova measured by running its own fast
+      test lane and lint at weekly commits.</p>
+    <p><strong>Method.</strong> For the primary-branch commit nearest 12:00Z on each Friday from
+      2026-08-22 to 2026-09-26, plus the current head, extract the tree with <code>git archive</code>
+      into <code>/tmp</code> — never a worktree of nova and never a write to nova. Run nova's default
+      fast lane (<code>pytest</code> with its configured <code>-m 'not slow'</code>) against the main
+      checkout's environment (<code>/home/ITER/mcintos/Code/nova/.venv/bin/python</code>, with
+      <code>PYTHONPATH</code> set to the extracted tree, no sync), with a per-test timeout of 120 s and
+      the same selection at every snapshot. Record collected, passed, failed, errored, skipped and
+      xfailed counts; errors caused by the present environment rather than the snapshot's code are
+      classified as such. Record ruff findings under nova's own configuration and counts of
+      <code>TODO</code>/<code>FIXME</code>, <code>xfail</code> and <code>skip</code> markers.</p>
+    <p><strong>Done when</strong>
+      <code>docs/research/data/crew-pattern-review/nova-readiness/readiness.json</code> carries every
+      count for every snapshot, each snapshot's complete pytest log is saved beside it, and
+      <code>findings.md</code> states the readiness trend with its figures.</p>
+
+    <h2 id="s8">§8 — Synthesis</h2>
+    <p>The coordinator combines the six studies with the survey into the research record
+      <code>orchestrator-crew-pattern-review</code> and creates the sequenced plans that act on it.
+      This section is the coordinator's and is not dispatched.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-ocps-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26">
+        <h4 class="r-fu-title">Run the six studies</h4>
+        <div class="r-fu-body"><p>Dispatch §2–§7 across the local and codex lanes and fold their outputs into the review.</p></div>
+        <pre class="r-fu-prompt">/reckon-build orchestrator-crew-pattern-studies</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
