@@ -440,14 +440,33 @@ def _run_worktree(run_id: str) -> tuple[str | None, str | None]:
     return (str(worktree) if worktree else None, str(project) if project else None)
 
 
+#: The remedy a run-scoped call to a granular mutator has. Those entry points
+#: take no ``checkout_path`` and the run's own project is exactly what the guard
+#: refuses, so the ``checkout_path``-or-own-project hint the registered entry
+#: point carries would point at two options neither of which can work here.
+_GUARDED_WRITE_HINT = (
+    "Record the change through the registered edit_plan tool, which redirects a "
+    "run-scoped write for the run's own project into the run's worktree. This "
+    "entry point takes no checkout_path and cannot write into the run's own "
+    "worktree."
+)
+
+
 def _run_scoped_refusal(
     run_id: str,
     project: str,
     slug: str,
     doc_type: str | None,
     detail: str,
+    *,
+    hint: str | None = None,
 ) -> dict[str, Any]:
-    """The structured refusal for a run-scoped write that must not proceed."""
+    """The structured refusal for a run-scoped write that must not proceed.
+
+    ``hint`` defaults to the registered entry point's remedy — pass
+    ``checkout_path``, or write only the run's own project. A caller whose entry
+    point cannot honour either must supply its own.
+    """
 
     target = _written_path(project, slug, None, doc_type)
     where = (
@@ -467,8 +486,12 @@ def _run_scoped_refusal(
         "slug": slug,
         "would_write": target,
         "hint": (
-            "Pass checkout_path explicitly to target a checkout, or write only "
-            "the plan this run's own project owns."
+            hint
+            if hint is not None
+            else (
+                "Pass checkout_path explicitly to target a checkout, or write "
+                "only the plan this run's own project owns."
+            )
         ),
     }
 
@@ -503,6 +526,75 @@ def _run_scoped_checkout(
             f"it is scoped to project {run_project!r}, not {project!r}",
         )
     return worktree, None
+
+
+def _run_scoped_read_root(project: str | None) -> str | None:
+    """The worktree a run-scoped plan read resolves to, or None for main.
+
+    A read differs from a write: a run may legitimately read another project's
+    plan, and the run's worktree holds no copy of it, so only the run's OWN
+    project is redirected. A run that cannot be resolved — no pointer, no
+    recorded worktree — reads the main checkout as before rather than failing,
+    because a read leaves nothing behind to lose.
+    """
+
+    if not project or project == "*":
+        return None
+    run_id = os.environ.get(RUN_ID_ENV)
+    if not run_id:
+        return None
+    worktree, run_project = _run_worktree(run_id)
+    if worktree is None or run_project != project:
+        return None
+    return worktree
+
+
+def _run_scoped_write_guard(
+    project: str,
+    slug: str,
+    doc_type: str | None = None,
+) -> dict[str, Any] | None:
+    """Refuse a run-scoped plan write that would resolve outside its worktree.
+
+    The registered write entry point redirects a run's own project into the
+    run's worktree. The granular plan mutators take no ``checkout_path``, so
+    their write would resolve to the mounts-registered main checkout — a path
+    outside the run's worktree — for the run's own project as much as for any
+    other. A run-scoped call is therefore refused here, naming the run and the
+    path it would have written, rather than returning ``ok``. A caller with no
+    run is unaffected.
+    """
+
+    run_id = os.environ.get(RUN_ID_ENV)
+    if not run_id:
+        return None
+    worktree, run_project = _run_worktree(run_id)
+    if worktree is None:
+        return _run_scoped_refusal(
+            run_id,
+            project,
+            slug,
+            doc_type,
+            "the run has no recorded worktree",
+            hint=_GUARDED_WRITE_HINT,
+        )
+    if run_project != project:
+        return _run_scoped_refusal(
+            run_id,
+            project,
+            slug,
+            doc_type,
+            f"it is scoped to project {run_project!r}, not {project!r}",
+            hint=_GUARDED_WRITE_HINT,
+        )
+    return _run_scoped_refusal(
+        run_id,
+        project,
+        slug,
+        doc_type,
+        "this entry point cannot write into the run's own worktree",
+        hint=_GUARDED_WRITE_HINT,
+    )
 
 
 def _document_path_hint(kwargs: Mapping[str, Any]) -> str | None:
@@ -671,6 +763,13 @@ def _read_plan(
       index/project config — including discovery mode and audit-adjacent rollups.
       Omit it (the default) to read the mounts-registered MAIN checkout.
     """
+    # A read made from inside a crew run belongs to that run's own worktree.
+    # With no explicit checkout_path, a read of the run's own project resolves
+    # there, so the worker reads its base revision rather than the coordinator's
+    # live copy. Reads of other projects, and callers with no run, are unchanged.
+    if checkout_path is None:
+        checkout_path = _run_scoped_read_root(project)
+
     if resource is not None or view is not None:
         return _read_plan_view(
             project=project,
@@ -1087,6 +1186,17 @@ def _read_plan_view(
     include_questions: bool,
 ) -> dict[str, Any]:
     """Route opt-in progressive reads without changing the legacy call path."""
+
+    # The run scope reaches a typed read too: a resource may name its project
+    # without a top-level project argument, so the read resolves the run's own
+    # worktree from whichever project the call names.
+    if checkout_path is None:
+        reading = project
+        if reading is None and isinstance(resource, Mapping):
+            reading = resource.get("project")
+        checkout_path = _run_scoped_read_root(
+            reading if isinstance(reading, str) else None
+        )
 
     selector: ResourceSelector | None = None
     try:
@@ -2054,6 +2164,9 @@ def _patch_plan(
 
     Returns { ok, project, slug, new_version } or a version_conflict error.
     """
+    refusal = _run_scoped_write_guard(project, slug)
+    if refusal is not None:
+        return refusal
     try:
         new_version = patch_plan(project, slug, patch, expected_version)
         return {
@@ -2080,6 +2193,9 @@ def _append_comment(
 
     comment shape: { id, who, when, body, quote? }
     """
+    refusal = _run_scoped_write_guard(project, slug)
+    if refusal is not None:
+        return refusal
     cur_data, cur_version = read_plan(project, slug)
     if expected_version != cur_version:
         return _conflict_response(
@@ -2133,6 +2249,9 @@ def _lock_decision(
     Locks the decision in place. To reopen a locked decision, use the
     /reckon-edit --reopen dissent flow described in AGENTS.md.
     """
+    refusal = _run_scoped_write_guard(project, slug)
+    if refusal is not None:
+        return refusal
     decision = {
         "choice": choice,
         "rationale": rationale,
@@ -2165,6 +2284,9 @@ def _append_followup(
     The prompt field is one ``/reckon-build`` invocation line; the plan owns all
     semantic guidance.
     """
+    refusal = _run_scoped_write_guard(project, slug)
+    if refusal is not None:
+        return refusal
     required = {"id", "written_by", "written_at", "title", "body", "prompt"}
     missing = required - set(followup.keys())
     if missing:
@@ -2198,6 +2320,9 @@ def _resolve_followup(
 
     Sets resolved_at, resolved_by, outcome on the followup with the given id.
     """
+    refusal = _run_scoped_write_guard(project, slug)
+    if refusal is not None:
+        return refusal
     updates = {
         "resolved_at": datetime.now(tz=timezone.utc).isoformat(timespec="seconds"),
         "resolved_by": by,
@@ -2232,6 +2357,9 @@ def _set_status(
     valid = {"active", "pending", "blocked", "shipped", "draft", "archived"}
     if status not in valid:
         return {"ok": False, "error": f"status must be one of {sorted(valid)}"}
+    refusal = _run_scoped_write_guard(project, slug)
+    if refusal is not None:
+        return refusal
     try:
         new_version = patch_plan(project, slug, {"status": status}, expected_version)
         return {
@@ -2253,6 +2381,9 @@ def _set_impl(
     """Update data.impl (implementation fraction, 0.0 to 1.0)."""
     if not 0.0 <= impl <= 1.0:
         return {"ok": False, "error": "impl must be between 0.0 and 1.0"}
+    refusal = _run_scoped_write_guard(project, slug)
+    if refusal is not None:
+        return refusal
     try:
         new_version = patch_plan(project, slug, {"impl": impl}, expected_version)
         return {
@@ -2296,6 +2427,9 @@ def _update_sprint(
     Use add_sprint_item / move_sprint_item to manage items[].
     Setting status "active" auto-updates active_sprint_id; "done" clears it.
     """
+    refusal = _run_scoped_write_guard(project, "index")
+    if refusal is not None:
+        return refusal
     forbidden = {"items", "id"}
     bad = forbidden & set(updates.keys())
     if bad:
@@ -2371,6 +2505,9 @@ def _add_sprint_item(
       { slug (required), why_now, capability, done_when, status }
     Duplicate slugs within the same sprint are rejected.
     """
+    refusal = _run_scoped_write_guard(project, "index")
+    if refusal is not None:
+        return refusal
     cur_data, cur_version = read_plan(project, "index")
     if expected_version != cur_version:
         return _conflict_response(
@@ -2431,6 +2568,9 @@ def _create_sprint(
 
     Returns { ok, project, sprint_id, new_version[, warning] } or a conflict.
     """
+    refusal = _run_scoped_write_guard(project, "index")
+    if refusal is not None:
+        return refusal
     valid_statuses = {"planned", "open", "active", "done"}
     if status not in valid_statuses:
         return {
@@ -2500,6 +2640,9 @@ def _move_sprint_item(
 
     Preserves any item metadata (why_now, capability, done_when, etc.).
     """
+    refusal = _run_scoped_write_guard(project, "index")
+    if refusal is not None:
+        return refusal
     cur_data, cur_version = read_plan(project, "index")
     if expected_version != cur_version:
         return _conflict_response(
@@ -3470,6 +3613,8 @@ def _roadmap_tool(
     selected_view = view
     if view is None and project != "*" and not project.startswith("graph:"):
         selected_view = "summary"
+    if checkout_path is None:
+        checkout_path = _run_scoped_read_root(project)
     return _roadmap(
         project,
         checkout_path=checkout_path,
@@ -4501,6 +4646,8 @@ def _audit_tool(
     selected_view = view
     if view is None and path is None and project is not None:
         selected_view = "summary"
+    if checkout_path is None:
+        checkout_path = _run_scoped_read_root(project)
     return _audit(
         project=project,
         checkout_path=checkout_path,

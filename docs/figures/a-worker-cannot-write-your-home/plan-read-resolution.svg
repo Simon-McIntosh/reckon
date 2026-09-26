@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" width="900" height="460" font-family="sans-serif" font-size="14">
+  <rect x="0" y="0" width="900" height="460" fill="#fbfbfb"/>
+  <text x="20" y="30" font-size="17" font-weight="bold">Where a crew run's plan call lands, no checkout_path given</text>
+
+  <!-- left column: the call -->
+  <rect x="20" y="60" width="220" height="360" fill="#eef3fb" stroke="#8aa6d0"/>
+  <text x="130" y="86" text-anchor="middle" font-weight="bold">MCP call in a run</text>
+  <text x="130" y="108" text-anchor="middle">RECKON_RUN_ID set</text>
+  <text x="130" y="130" text-anchor="middle">checkout_path = None</text>
+  <rect x="40" y="160" width="180" height="46" fill="#ffffff" stroke="#8aa6d0"/>
+  <text x="130" y="188" text-anchor="middle">read_plan / roadmap / audit</text>
+  <rect x="40" y="230" width="180" height="46" fill="#ffffff" stroke="#8aa6d0"/>
+  <text x="130" y="258" text-anchor="middle">granular plan mutator</text>
+
+  <!-- middle: resolution -->
+  <rect x="300" y="60" width="240" height="360" fill="#eef8ee" stroke="#7fb07f"/>
+  <text x="420" y="86" text-anchor="middle" font-weight="bold">run scope resolves</text>
+  <text x="420" y="120" text-anchor="middle">project == run's project?</text>
+  <text x="420" y="150" text-anchor="middle">read  → worktree root</text>
+  <text x="420" y="172" text-anchor="middle" font-size="12">(pointer's recorded worktree)</text>
+  <text x="420" y="230" text-anchor="middle">project != run's project</text>
+  <text x="420" y="252" text-anchor="middle" font-size="12">read → main (unchanged)</text>
+  <text x="420" y="300" text-anchor="middle">write via granular mutator</text>
+  <text x="420" y="322" text-anchor="middle" font-size="12">→ refused, names run and path</text>
+
+  <!-- right: outcomes -->
+  <rect x="600" y="60" width="280" height="360" fill="#fdf6ee" stroke="#d0a86a"/>
+  <text x="740" y="86" text-anchor="middle" font-weight="bold">lands on disk</text>
+  <rect x="620" y="150" width="240" height="40" fill="#ffffff" stroke="#7fb07f"/>
+  <text x="740" y="175" text-anchor="middle">the run's own worktree copy</text>
+  <rect x="620" y="236" width="240" height="40" fill="#ffffff" stroke="#d0a86a"/>
+  <text x="740" y="261" text-anchor="middle">the main checkout (reads only)</text>
+  <rect x="620" y="300" width="240" height="40" fill="#fbeaea" stroke="#c06060"/>
+  <text x="740" y="325" text-anchor="middle">nothing — run_scoped_write</text>
+
+  <line x1="240" y1="183" x2="300" y2="150" stroke="#666"/>
+  <line x1="240" y1="183" x2="300" y2="240" stroke="#666"/>
+  <line x1="240" y1="253" x2="300" y2="310" stroke="#666"/>
+  <line x1="540" y1="150" x2="620" y2="170" stroke="#666"/>
+  <line x1="540" y1="240" x2="620" y2="256" stroke="#666"/>
+  <line x1="540" y1="310" x2="620" y2="320" stroke="#666"/>
+</svg>

@@ -45,7 +45,7 @@
         nine commits in ten touched no code in the latest week; and 103 of 348 fleet-made figures misrepresent
         their physics (§8).</li>
       <li><strong>Weight.</strong> 49,000 words of binding instruction before a coordinator reads a plan; reckon
-        opened 60 plans and closed 9; half the fleet's promotions are reckon working on itself (§9).</li>
+        opened 58 plans in the fortnight and closed 7; half the fleet's promotions are reckon working on itself (§9).</li>
     </ul>
     <p>The remedy is to take ceremony away where it does not pay, not to add more: size review to risk, give each
       node its own record, refuse only defects, make a small change a small node, measure velocity continuously, give
@@ -217,7 +217,7 @@
         (<code>53d40c57</code>, 10:07Z).</figcaption>
     </figure>
 
-    <p><strong>The second week doubled the node count and landed less code.</strong> From 14 to 20 September
+    <p><strong>The second week raised the node count by three quarters and landed less code.</strong> From 14 to 20 September
       the fleet promoted 619 implementation-class and 211 review or investigate nodes (25% review) and landed
       85,685 source lines. From 21 to 26 September it promoted 640 and 833 (57% review) and landed 62,775
       source lines. Promotions rose 77%; source output fell 27%. The change of shape starts on the day the
@@ -348,8 +348,7 @@
       A day's forty merged code commits read against their briefs found eleven that met the brief in letter
       only (<a href="/reckon/research/brief-conformance-review">brief conformance</a>). The review's measured
       repair yield is one in eight for source and one in forty for documents. And the design-level defects this
-      review found — forty-four timestamp parsers, fourteen atomic writers, an interface that doubled in three
-      weeks (§7); 103 nova figures that misrepresent their physics (§8) — are exactly the kind that no per-node
+      review found — forty-four timestamp parsers, fourteen atomic writers, a reckon interface that grew 83% in three weeks (§7); 103 nova figures that misrepresent their physics (§8) — are exactly the kind that no per-node
       gate or per-diff review can see, because each node's diff is locally correct. The pattern verifies nodes;
       nothing in it owns the codebase. The plainest instance is nova: its default test command stopped at
       collection and ran no test from 29 August to at least 19 September, and nodes kept promoting throughout,
@@ -400,12 +399,10 @@
       <code>_parse_utc_timestamp</code>. Fourteen functions write JSON atomically, each with its own temporary
       naming, cleanup and fsync behaviour. Three enumerate a run's original and resumed streams, so billing and
       promotion can disagree about which attempts exist. Four byte-identical numeric decoders carry four
-      names. Clone share in the crew package rose from 5.5% to 7.1% while its code grew twofold, so duplicated
-      crew lines grew from 563 to 1,885. The ten ranked consolidation candidates, with every copy's
+      names. Clone share in the crew package rose from 5.5% to 7.1% while its code lines grew 2.6-fold (its source lines tripled), so duplicated crew lines grew from 563 to 1,885. The ten ranked consolidation candidates, with every copy's
       <code>file:line</code> and a proposed single home, are in the census findings.</p>
 
-    <p><strong>The dispatch pattern produces this, mechanically.</strong> Every copy above is private (a
-      leading underscore) and sits in the module the node was allowed to write. A worker holds exclusive write
+    <p><strong>The dispatch pattern produces this, mechanically.</strong> Almost every copy above is a helper inside the module the node was allowed to write, and most are private (a leading underscore). A worker holds exclusive write
       paths and is told not to touch anything else; when it needs a timestamp parser and the shared one is
       outside its fence — or does not exist yet — the cheapest compliant move is a private copy. Nothing
       downstream notices: the gate tests the node's behaviour, the review reads the node's diff, and neither
@@ -505,7 +502,7 @@
         <tr><td><code>reckon crew</code> subcommands / <code>dispatch</code> options / <code>complete</code> options</td><td>—</td><td>27 / 32 / 23</td></tr>
         <tr><td>Coded dispatch refusal families (exit codes 1–9 plus contract properties)</td><td>0 (5 Sep)</td><td>23</td></tr>
         <tr><td>reckon package source / test lines</td><td>20,164 / 12,296</td><td>89,711 / 173,549</td></tr>
-        <tr><td>reckon plans opened / closed in the preceding two weeks</td><td>—</td><td>60 / 9</td></tr>
+        <tr><td>reckon plans opened / closed in the preceding two weeks</td><td>—</td><td>58 / 7</td></tr>
       </tbody>
     </table>
     <p><strong>The protocol.</strong> A coordinator starts every session with about 49,000 words of binding
@@ -538,7 +535,7 @@
       persistent Claude memory, written by worker sessions rather than any coordinator. They were accurate, but the
       store is shared by every session in the repository, unreviewed, and outside version control — the property
       the global guardrails already warn about.</p>
-    <p><strong>The backlog.</strong> reckon opened 60 plans in the fortnight and closed 9; the four August weeks
+    <p><strong>The backlog.</strong> reckon opened 58 plans between 12 and 26 September and, as of the end of that window, had closed 7 of them (two more sit at impl 1.0 with an active status); the four August weeks
       closed about nine in ten of what they opened. 62 reckon plans are pending, most of them about the crew
       itself. A system whose largest customer is itself, and which answers every measured defect with another
       plan, will keep growing whether or not it gets better.</p>
@@ -548,7 +545,7 @@
       <dt>Does the pattern result in better work and higher throughput?</dt>
       <dd>Better-verified work, yes; better-designed work, no (§6, §7). Throughput in volume, yes — three times
         August's promotions per day — but each node takes four to five times as long to land, the second week
-        doubled its node count while landing 27% less source, and half the fleet's output is reckon building
+        raised its node count 77% while landing 27% less source, and half the fleet's output is reckon building
         reckon (§4).</dd>
 
       <dt>What are the bottlenecks?</dt>
@@ -559,7 +556,7 @@
 
       <dt>Have we designed a system that is too heavy?</dt>
       <dd>Yes. The coordinator's binding instructions tripled, the crew interface more than tripled, 44% of worker
-        edits are record-keeping, and reckon opens nearly seven plans for every one it closes (§9). Most of the weight
+        edits are record-keeping, and reckon opened eight plans for every one it closed in the fortnight (§9). Most of the weight
         is individually justified; the defect is that nothing ever removes any.</dd>
 
       <dt>Can we relax the need for a plan before a worker is dispatched?</dt>
@@ -622,7 +619,7 @@
         <tr><td>Exclusive scope with no shared-primitive home</td><td>44 timestamp parsers, 14 atomic writers, crew clone share 5.5% → 7.1%.</td></tr>
         <tr><td>Every lesson becomes a flag, a refusal or a paragraph</td><td>Crew public definitions +226% in three weeks; skill text 3×; 23 refusal families; 49,000 words before the first dispatch.</td></tr>
         <tr><td>Local lane driven at twice its width</td><td>Router gate 14 wide with 11–15 requests queued at every reading today; clive median 51 minutes to completion against codex's 23.</td></tr>
-        <tr><td>Opening plans faster than closing them</td><td>60 opened, 9 closed in the fortnight; 62 pending in reckon; 48% of the fleet's promotions are reckon working on itself.</td></tr>
+        <tr><td>Opening plans faster than closing them</td><td>58 opened, 7 closed in the fortnight; 62 pending in reckon; 48% of the fleet's promotions are reckon working on itself.</td></tr>
         <tr><td>Per-node gates only; nobody runs the project's suite</td><td>nova's default test command ran no test for four weeks (29 Aug to at least 19 Sep) while its nodes promoted on targeted gates; its full fast lane now takes hours.</td></tr>
         <tr><td>Follower replay on every re-arm</td><td>Each 29-minute re-arm replays the session's whole history as if new (observed at every re-arm in this session).</td></tr>
       </tbody>
@@ -637,9 +634,12 @@
       <thead><tr><th>Wave</th><th>Plan</th><th>What it changes</th><th>Its measure</th></tr></thead>
       <tbody>
         <tr><td>1 — urgent</td><td><a href="/reckon/plans/a-review-is-sized-to-its-risk">a-review-is-sized-to-its-risk</a></td>
-          <td>Review tier by node class (full, light, none); one repair per review round; a clean review promotes;
-            the reflex reviews a settled head once.</td>
-          <td>Review share ≤ 30% of promotions with no rise in seven-day deletion.</td></tr>
+          <td>Review tier derived from what a run changed (full, light, none); one repair per review round; a clean
+            review promotes itself; a reviewed run re-reviews only new runtime-source commits; and the project's own suite
+            becomes a standing gate at each wave close, so lighter per-node review never again coexists with a suite that
+            runs nothing.</td>
+          <td>Review share ≤ 30% of promotions with no rise in seven-day deletion; a non-collecting suite holds tier-none
+            promotions.</td></tr>
         <tr><td>1 — urgent</td><td><a href="/reckon/plans/a-landing-record-never-conflicts">a-landing-record-never-conflicts</a></td>
           <td>Each node's default scope is its own evidence fragment and figure directory; the record is assembled at
             read time and plan comments go through the versioned write path.</td>

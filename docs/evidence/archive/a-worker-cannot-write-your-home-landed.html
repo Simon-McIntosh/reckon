@@ -1386,6 +1386,161 @@ exit: 0</pre>
     <code>negative-control-harness-home-carry-opt-in.txt</code>, figure
     <code>/reckon/figures/a-worker-cannot-write-your-home/harness-home-carry-opt-in.svg</code>.</p>
   </section>
+
+
+  <section id="s2-plan-reads" data-reckon="section">
+    <h2>&sect;2 &mdash; A worker's plan reads come from its own worktree</h2>
+    <p><strong>Node:</strong> <code>plan-reads-stay-in-the-worktree</code>.</p>
+
+    <p><strong>What landed.</strong> A run's plan <em>reads</em> now resolve the
+    same run scope the write path already did. <code>read_plan</code>,
+    <code>read_plan_view</code>, <code>roadmap</code> and <code>audit</code> each
+    resolve a run-scoped checkout root when the caller names none: it reads
+    <code>RECKON_RUN_ID</code>, then that run's live pointer for its
+    <code>worktree</code> and <code>project</code>, and returns the recorded
+    worktree only when the run's project is the project being read. A read of a
+    project the run does not own, a caller passing <code>checkout_path</code>
+    explicitly, and a caller with no run at all all keep today's behaviour and
+    reach the mounts-registered main checkout. So a worker reads the base
+    revision its own tree holds rather than the coordinator's live state.</p>
+
+    <p><strong>Why the write guard is part of the same node.</strong> The seven
+    granular plan mutators (<code>_set_status</code>, <code>_set_impl</code>,
+    <code>_patch_plan</code>, <code>_lock_decision</code>,
+    <code>_append_followup</code>, <code>_resolve_followup</code>,
+    <code>_append_comment</code>) and the four sprint writers take no
+    <code>checkout_path</code>: their writers do not accept a root, so they cannot
+    be redirected into a worktree. With read scoping in place a run-scoped call
+    to one would resolve the run, find its own project, and then write to the main
+    checkout &mdash; a silently widened write. Each is therefore guarded: inside a
+    run, a call resolving to any project returns a structured refusal
+    (<code>error: run_scoped_write</code>) whose message names the run and the path
+    it would have written, rather than <code>ok</code>. The registered entry point
+    is unaffected; these mutators are unregistered and have no production caller,
+    so the guard is inert outside tests.</p>
+
+    <p><strong>The defect reproduces before the repair.</strong> At the base
+    revision <code>80d55621</code>, over the four declared files
+    (<code>tests/test_plan_reads_stay_in_the_worktree.py</code> plus
+    <code>test_plan_write_stays_in_the_worktree.py</code>,
+    <code>test_mcp_tools.py</code>, <code>test_edit_plan.py</code>):
+    <code>18 failed, 124 passed</code>. The eighteen failures are this node's own new
+    behaviour: the run-scoped read (<code>version</code> 0 where the worktree holds
+    1) and each of the three further read entry points returning the main
+    inventory; the cross-project refusal returning <code>ok: True</code>,
+    <code>new_version</code> 1; the own-project granular write &mdash; passed the
+    <em>main</em> checkout's version, the one an unguarded write would accept
+    &mdash; also <code>ok: True</code>, <code>new_version</code> 1, against main;
+    each of the eleven guarded writers on its own case; and the registered path's
+    own hint, which only exists once the guard's hint is distinguished from it.
+    Head, same selection: <code>142 passed</code>
+    (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/gate-plan-reads-base.txt</code>,
+    <code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/gate-plan-reads-head.txt</code>).</p>
+
+    <p><strong>Ambient identity still isolated.</strong> The gate was re-run at
+    head with <code>RECKON_RUN_ID</code> and <code>RECKON_MANIFEST</code> exported
+    into the invoking shell, as a worker's shell has them. Same selection:
+    <code>142 passed</code>, so the conftest fixture that clears the dispatch
+    identity for every test still holds with the new read scoping in place. The log
+    header now names the resolved git revision of the tree each arm measured, so the
+    figure is checkable rather than inferred
+    (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/gate-plan-reads-head-runid.txt</code>).</p>
+
+    <p><strong>Coverage added under review.</strong> A review found three of the
+    four scoped read entry points undriven, and no test of the case the write scope
+    exists for: a worker whose worktree copy is <em>unmodified</em>.
+    <code>_roadmap_tool</code>, <code>_audit_tool</code> and the typed-resource
+    branch of <code>_read_plan_view</code> each now have a test: a run-scoped call
+    reads the worktree while an explicit <code>checkout_path</code> call reads main,
+    and the two must disagree. The discriminator is a plan the worktree holds and
+    main does not, so the <em>count</em> separates the trees rather than one file's
+    content, and the explicit-main arm is the control that proves the assertion can
+    fail. The unmodified-copy test starts with the worktree plan byte-identical to
+    main's and asserts main is byte-identical after a run-scoped write &mdash; a copy
+    that has diverged would show which file was written whichever path resolved, so
+    only the identical pair proves the <em>path</em> was scoped. A second review
+    found the write-side tests complained only through <code>_set_status</code>,
+    so deleting the guard call at any of the other ten sites would have reddened
+    nothing: the refusal test is now parametrised over all eleven guarded writers
+    (<code>_patch_plan</code>, <code>_append_comment</code>,
+    <code>_lock_decision</code>, <code>_append_followup</code>,
+    <code>_resolve_followup</code>, <code>_set_status</code>,
+    <code>_set_impl</code>, <code>_update_sprint</code>,
+    <code>_add_sprint_item</code>, <code>_create_sprint</code>,
+    <code>_move_sprint_item</code>), each asserting the refusal and that the
+    whole main tree is byte-identical afterwards. One case per site is what makes
+    the wiring per-site evidence rather than a single sample.</p>
+
+    <p><strong>The guard names its own remedy.</strong> The refusal's hint
+    previously offered the registered entry point's two options &mdash; pass
+    <code>checkout_path</code>, or write only the run's own project &mdash; and
+    the guarded mutators can honour neither: they take no <code>checkout_path</code>,
+    and the run's own project is exactly what is refused. The guard now emits its
+    own hint, telling the caller to record through the registered
+    <code>edit_plan</code> tool, which redirects a run-scoped own-project write
+    into the run's worktree. The registered path's hint is unchanged, and a test
+    asserts both: the guarded refusal names <code>edit_plan</code>, and the
+    registered entry point's refusal still names <code>checkout_path</code>.</p>
+
+    <p><strong>The per-site guard is proven to discriminate.</strong> A mutation
+    arm removes the guard call under <code>_patch_plan</code> in a scratch copy of
+    the module and runs the node's test file against it:
+    <code>1 failed, 22 passed</code>, the single failure being that site's own
+    case (<code>_patch_plan</code> writes main and returns <code>ok: True</code>),
+    while every other guarded writer's case still passes. The same selection is
+    <code>23 passed</code> unmutated, so the arm is the guard call and nothing
+    else (<code>.../logs/mutation-plan-reads.txt</code>).</p>
+
+    <p><strong>The granular own-project refusal is deliberate, not a version
+    conflict.</strong> The review asked whether the own-project refusal was merely a
+    version conflict between the two copies. It is not: the test now passes the
+    version the <em>main checkout</em> holds, the <code>expected_version</code> an
+    unguarded write would have accepted. At base that call <em>succeeds</em> and
+    writes main (<code>ok: True</code>, <code>new_version</code> 1); at head it is
+    refused (<code>error: run_scoped_write</code>) with main's bytes and version
+    unchanged. A redirect is not available to these entry points:
+    <code>patch_plan</code>, <code>append_to_list</code>, <code>set_nested</code> and
+    <code>resolve_in_list</code> read and write with no checkout root, so a run's own
+    project could be reached only by widening the plan write to main. The registered
+    entry point accepts a root and lands in the worktree; here, where it cannot, the
+    write stops.</p>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>read a
+    run-scoped plan from the mounted main checkout when no checkout path is
+    given</em> &mdash; applied to a scratch copy of the module with
+    <code>_run_scoped_read_root</code>'s body replaced by <code>return None</code>,
+    the four read-resolution tests fail exactly there and the write tests pass, which
+    is what a read-side mutation should leave behind: <code>4 failed, 19 passed</code>.
+    The log's first line repeats the declared string verbatim
+    (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/negative-control-plan-reads.txt</code>).
+    Without the control, the green read tests would not be evidence that the read
+    resolution is what moved the read.</p>
+
+    <p><strong>Lint and format delta, measured against the base revision.</strong>
+    Over complete git-archive trees, counting finding lines only, <code>reckon/</code>
+    carries 231 ruff findings at base and 231 at head, and <code>reckon/mcp.py</code>
+    18 and 18, so the change adds none; the new test file is clean and both touched
+    files are formatted
+    (<code>~/.config/reckon/crew/runs/r-20260926T061932023997-plan-reads-stay-in-the-worktree/logs/lint-plan-reads.txt</code>).</p>
+
+    <p><strong>Paths changed.</strong> <code>reckon/mcp.py</code> (the read-root
+    resolver, the write guard, its own remedy hint, and its wiring into the read
+    entry points and the eleven granular mutators),
+    <code>tests/test_plan_reads_stay_in_the_worktree.py</code> (23 tests over a
+    synthetic main checkout, worktree, sibling project, mounts file and live
+    pointer), plus the gate logs, the mutation and negative-control logs, the lint
+    log and the figure. Commit <code>0871ec7b</code> implements the read scope;
+    <code>99d31ad1</code> adds the read-entry-point coverage; <code>99a24035</code>
+    lands the guard-hint distinction and the eleven-writer parametrisation.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/plan-read-resolution.svg"
+           alt="A run-scoped plan call with no checkout_path: a read for the run's own project resolves to the run's worktree, a read for another project resolves to the main checkout as before, and a granular plan write is refused with an out-of-scope error naming the run and the path.">
+      <figcaption>Reads follow the run scope; a granular write cannot, so it is
+      refused rather than redirected. The main checkout is read only, never
+      written, from inside a run.</figcaption>
+    </figure>
+  </section>
 </main>
 </body>
 </html>
