@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 470" width="940" height="470" role="img" aria-labelledby="title desc">
+  <title id="title">Both arming routes write the same per-project watch log</title>
+  <desc id="desc">The service route renders a systemd user unit whose StandardOutput and StandardError append to the project's watch log. The fallback route, taken when the user bus is unreachable or lingering is refused, sets RECKON_WATCH_LOG and starts the watcher as a plain background process; the watcher adopts that path when it takes its seat, points file descriptors 1 and 2 at it, and writes a timestamped, size-bounded log. Either way the seat record names the log path, so a reader who finds a dead seat finds the file that outlived it.</desc>
+  <style>
+    .box { fill: #f7f9fc; stroke: #3d5a80; stroke-width: 1.6; rx: 6; }
+    .box-alt { fill: #fdf6ec; stroke: #b07d3a; stroke-width: 1.6; rx: 6; }
+    .store { fill: #e8f5ec; stroke: #2f7a4a; stroke-width: 1.8; rx: 6; }
+    .h { font: 600 15px system-ui, sans-serif; fill: #1d2b3a; }
+    .t { font: 13px system-ui, sans-serif; fill: #2b3a4a; }
+    .m { font: 12px ui-monospace, monospace; fill: #3a4a5a; }
+    .s { font: 12px system-ui, sans-serif; fill: #5a6a7a; }
+    .lbl { font: 600 12px system-ui, sans-serif; fill: #6a7a8a; letter-spacing: 0.6px; }
+    .arrow { stroke: #3d5a80; stroke-width: 1.8; fill: none; marker-end: url(#head); }
+    .arrow-alt { stroke: #b07d3a; stroke-width: 1.8; fill: none; marker-end: url(#head-alt); }
+  </style>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3d5a80"/>
+    </marker>
+    <marker id="head-alt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b07d3a"/>
+    </marker>
+  </defs>
+
+  <text class="lbl" x="40" y="34">ROUTE A · THE USER SERVICE BUS ANSWERS</text>
+  <text class="lbl" x="40" y="236">ROUTE B · NO BUS, OR LINGERING REFUSED</text>
+
+  <rect class="box" x="40" y="46" width="250" height="112"/>
+  <text class="h" x="56" y="72">crew watch --ensure</text>
+  <text class="t" x="56" y="96">renders reckon-watch-&lt;project&gt;</text>
+  <text class="t" x="56" y="116">.service and starts it</text>
+  <text class="m" x="56" y="140">StandardOutput=append:&lt;log&gt;</text>
+
+  <rect class="box-alt" x="40" y="248" width="250" height="140"/>
+  <text class="h" x="56" y="274">crew watch --ensure</text>
+  <text class="t" x="56" y="298">falls back to a background</text>
+  <text class="t" x="56" y="318">process nobody supervises</text>
+  <text class="m" x="56" y="346">RECKON_WATCH_LOG=&lt;log&gt;</text>
+  <text class="t" x="56" y="370">set for the child it starts</text>
+
+  <rect class="box" x="370" y="46" width="230" height="112"/>
+  <text class="h" x="386" y="72">systemd user unit</text>
+  <text class="t" x="386" y="96">runs the watcher, appends</text>
+  <text class="t" x="386" y="116">its stdout and stderr</text>
+
+  <rect class="box-alt" x="370" y="248" width="230" height="140"/>
+  <text class="h" x="386" y="274">the watcher process</text>
+  <text class="t" x="386" y="298">takes its seat, then adopts</text>
+  <text class="t" x="386" y="318">the path it inherited:</text>
+  <text class="t" x="386" y="342">fds 1 and 2 pointed at it,</text>
+  <text class="t" x="386" y="362">so a traceback lands there</text>
+
+  <rect class="store" x="680" y="120" width="220" height="150"/>
+  <text class="h" x="696" y="148">&lt;config&gt;/logs/</text>
+  <text class="h" x="696" y="170">watch-&lt;unit&gt;.log</text>
+  <text class="t" x="696" y="196">one file per project</text>
+  <text class="t" x="696" y="216">timestamped lines</text>
+  <text class="t" x="696" y="236">rotated at 2 MiB</text>
+  <text class="s" x="696" y="258">the unit route already used it</text>
+
+  <path class="arrow" d="M 290 102 L 362 102"/>
+  <path class="arrow" d="M 600 102 L 674 140"/>
+  <path class="arrow-alt" d="M 290 318 L 362 318"/>
+  <path class="arrow-alt" d="M 600 318 L 674 200"/>
+
+  <rect class="box" x="370" y="418" width="530" height="40"/>
+  <text class="t" x="386" y="444">the seat record carries <tspan class="m">log_path</tspan>: a dead seat still names the file that explains it</text>
+  <path class="arrow" d="M 790 270 L 790 412"/>
+</svg>
