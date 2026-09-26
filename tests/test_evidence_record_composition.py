@@ -17,6 +17,7 @@ from reckon.evidence import compose_landed_record
 
 PROJECT = "proj"
 PLAN = "composed-plan"
+OTHER_PLAN = "other-plan"
 
 RECORD_BYTES = (
     b'<!doctype html>\n<html lang="en"><head>\n'
@@ -127,3 +128,108 @@ def test_records_with_no_fragments_compose_to_their_own_bytes() -> None:
             compose_landed_record(record_path, plan_slug, project=project)
             == record_path.read_bytes()
         ), record_path
+
+
+def _seed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    root = tmp_path / "repo"
+    docs = root / "docs"
+    (docs / "state" / PROJECT).mkdir(parents=True)
+    ledger.write(PROJECT, {"members": [], "runs": [], "holds": []}, 0, root=root)
+    return root, docs
+
+
+def _fragment(docs: Path, plan: str, node: str) -> Path:
+    fragment_dir = docs / "evidence" / "fragments" / plan
+    fragment_dir.mkdir(parents=True, exist_ok=True)
+    fragment = fragment_dir / f"{node}.html"
+    fragment.write_bytes(_fragment_bytes(node))
+    return fragment
+
+
+def _promote(root: Path, plan: str, node: str, run_id: str, completed_at: str) -> None:
+    ledger.append_run(
+        PROJECT,
+        ledger.build_record(
+            run_id=run_id,
+            plan=plan,
+            section="delivery",
+            node=node,
+            gate="passed",
+            completed_at=completed_at,
+            completed_at_source="provided",
+        ),
+        root=root,
+    )
+
+
+def _record(docs: Path, plan: str) -> Path:
+    archive = docs / "evidence" / "archive"
+    archive.mkdir(parents=True, exist_ok=True)
+    record_path = archive / f"{plan}-landed.html"
+    record_path.write_bytes(RECORD_BYTES)
+    return record_path
+
+
+def test_a_redispatched_node_contributes_its_fragment_once_at_its_earliest_promotion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, docs = _seed(tmp_path, monkeypatch)
+    _fragment(docs, PLAN, "dup-node")
+    _fragment(docs, PLAN, "mid-node")
+    _promote(root, PLAN, "dup-node", "run-dup-1", "2026-08-24T19:01:00Z")
+    _promote(root, PLAN, "mid-node", "run-mid", "2026-08-24T19:02:00Z")
+    _promote(root, PLAN, "dup-node", "run-dup-2", "2026-08-24T19:03:00Z")
+
+    composed = compose_landed_record(_record(docs, PLAN), PLAN, project=PROJECT)
+
+    # Earliest promotion places the redispatched node before the one promoted
+    # between its two promotions.
+    assert composed == RECORD_BYTES + b"".join(
+        _fragment_bytes(node) for node in ("dup-node", "mid-node")
+    )
+    # And exactly once: without the dedup the second promotion appends it again.
+    assert composed.count(b'data-node="dup-node"') == 1
+
+
+def test_another_plans_row_does_not_reorder_this_plans_fragments(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, docs = _seed(tmp_path, monkeypatch)
+    _fragment(docs, PLAN, "alpha-fragment")
+    _fragment(docs, PLAN, "beta-fragment")
+    _promote(root, PLAN, "beta-fragment", "run-beta", "2026-08-24T19:02:00Z")
+    _promote(root, PLAN, "alpha-fragment", "run-alpha", "2026-08-24T19:03:00Z")
+    # Another plan promotes a node of the same name earlier than this plan does.
+    _promote(root, OTHER_PLAN, "alpha-fragment", "run-other", "2026-08-24T19:01:00Z")
+
+    composed = compose_landed_record(_record(docs, PLAN), PLAN, project=PROJECT)
+
+    # This plan's own promotion order is beta then alpha; the other plan's row
+    # must not pull alpha forward. Removing the plan filter would compose
+    # alpha, beta instead.
+    assert composed == RECORD_BYTES + b"".join(
+        _fragment_bytes(node) for node in ("beta-fragment", "alpha-fragment")
+    )
+    assert composed != RECORD_BYTES + b"".join(
+        _fragment_bytes(node) for node in ("alpha-fragment", "beta-fragment")
+    )
+
+
+def test_a_fragment_with_no_promotion_composes_after_the_ledgered_ones(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, docs = _seed(tmp_path, monkeypatch)
+    _fragment(docs, PLAN, "beta-fragment")
+    _fragment(docs, PLAN, "alpha-fragment")
+    _fragment(docs, PLAN, "gamma-fragment")
+    _promote(root, PLAN, "beta-fragment", "run-beta", "2026-08-24T19:02:00Z")
+
+    composed = compose_landed_record(_record(docs, PLAN), PLAN, project=PROJECT)
+
+    # The ledgered fragment first, then the two merged-but-unpromoted ones in
+    # filename order, so nothing on disk is hidden.
+    assert composed == RECORD_BYTES + b"".join(
+        _fragment_bytes(node)
+        for node in ("beta-fragment", "alpha-fragment", "gamma-fragment")
+    )

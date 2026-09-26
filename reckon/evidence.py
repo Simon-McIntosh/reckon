@@ -423,10 +423,17 @@ def compose_landed_record(
     fragment and the composed record carries that node's latest fragment once,
     at its earliest promotion.
 
+    A fragment whose node has no row for this plan is composed after the
+    ledgered ones, in filename order. A coordinator merges a fragment before it
+    promotes the run, so between the merge and completion the fragment has no
+    recorded promotion; dropping it would hide merged evidence, and a run never
+    promoted would hide it for good. Only this plan's fragment directory is
+    read, so another plan's row cannot pull this plan's fragment in.
+
     The reader writes no file and never re-renders the document. A record with
-    no fragment directory, or a ledger naming no fragment that exists, composes
-    to the record's own bytes — so a record written before fragments existed is
-    returned byte-identical rather than rewritten.
+    no fragment directory, or a fragment directory holding no fragment that
+    exists, composes to the record's own bytes — so a record written before
+    fragments existed is returned byte-identical rather than rewritten.
 
     ``root`` names the checkout whose ledger holds the promotions; without it
     the checkout containing the record is used, which is where the fragments
@@ -448,6 +455,7 @@ def compose_landed_record(
             f"cannot read the ledger for project {project!r}: {exc}"
         ) from exc
 
+    ordered: list[Path] = []
     seen: set[str] = set()
     for row in rows:
         node = str(row.get("node") or "").strip()
@@ -456,7 +464,20 @@ def compose_landed_record(
         seen.add(node)
         fragment = fragment_dir / f"{node}.html"
         if fragment.is_file():
-            composed.extend(fragment.read_bytes())
+            ordered.append(fragment)
+
+    # Fragments merged before their run was promoted carry no recorded
+    # promotion, so they are composed after the ledgered ones rather than
+    # hidden. Filename order makes the result deterministic and independent of
+    # directory iteration order.
+    ordered.extend(
+        fragment
+        for fragment in sorted(fragment_dir.glob("*.html"))
+        if fragment.name[: -len(".html")] not in seen
+    )
+
+    for fragment in ordered:
+        composed.extend(fragment.read_bytes())
     return bytes(composed)
 
 
