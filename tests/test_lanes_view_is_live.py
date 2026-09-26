@@ -87,6 +87,30 @@ def _config(*, shelf_life_minutes: int = 1) -> dict[str, Any]:
     }
 
 
+def _pooled_config(*, shelf_life_minutes: int = 1) -> dict[str, Any]:
+    """Two declared pools, one command: the host's own codex arrangement.
+
+    Every codex-family lane on this workstation runs the same ``codex`` CLI
+    while declaring one of two budget groups, so the command's probe is read
+    once for lanes whose declared groups differ.
+    """
+    return {
+        "budget": {"evidence_shelf_life_minutes": shelf_life_minutes},
+        "backends": {
+            "shared": {
+                "launch": "cli",
+                "command": "codex",
+                "budget_group": "codex-sub",
+            },
+            "separate": {
+                "launch": "cli",
+                "command": "codex",
+                "budget_group": "spark-sub",
+            },
+        },
+    }
+
+
 def _real_config_home() -> Path:
     """The configuration home resolution lands in, before any test redirects it."""
     configured = os.environ.get("RECKON_HOME")
@@ -100,32 +124,34 @@ _REAL_CONFIG_HOME = _real_config_home()
 
 
 def _inventory(root: Path) -> list[tuple[str, int, int]]:
-    """The paths under ``root`` a lane composition could plausibly write.
+    """The composition-writable trees under ``root``, walked whole.
 
-    Every entry to depth two, plus the two subtrees a composition writes a
-    probe cache or a lane document into, walked whole so a modified file inside
-    one is caught as well as a new one.  The depth cap is what makes this
-    affordable beside every case: ``crew/runs`` holds this workstation's live
-    fleet records, thousands of files at the third level and below, and a
-    composition is handed its runs rather than reading them, so it has no path
-    into that tree to guard.
+    Only the two subtrees a composition writes a probe cache or a lane document
+    into are inventoried; a tree that does not exist yet contributes nothing,
+    so a write that creates one is caught as a mismatch as well as a modified
+    file inside one that already exists.  The rest of the configuration home is
+    deliberately out of scope: a fleet dispatch creates and removes run
+    directories and live pointers every few seconds, so an inventory reaching
+    ``crew/runs`` or ``crew/live`` would report a peer's dispatch as this
+    test's write.
     """
-    candidates: list[Path] = []
-    for child in sorted(root.glob("*")):
-        candidates.append(child)
-        if child.is_dir():
-            candidates.extend(sorted(child.glob("*")))
+    findings: list[tuple[str, int, int]] = []
     for subtree in _WRITE_REACHABLE_TREES:
         whole = root / subtree
-        if whole.exists():
-            candidates.extend(sorted(whole.rglob("*")))
-    findings: list[tuple[str, int, int]] = []
-    for path in sorted(set(candidates)):
-        try:
-            stat = path.stat()
-        except OSError:
+        if not whole.exists():
             continue
-        findings.append((str(path.relative_to(root)), stat.st_size, int(stat.st_mtime)))
+        for path in sorted(whole.rglob("*")):
+            try:
+                path_stat = path.stat()
+            except OSError:
+                continue
+            findings.append(
+                (
+                    str(path.relative_to(root)),
+                    path_stat.st_size,
+                    int(path_stat.st_mtime),
+                )
+            )
     return findings
 
 
@@ -135,8 +161,12 @@ def real_config_home_is_untouched(isolated_reckon_home: Path) -> None:
 
     Pointing ``RECKON_HOME`` at a temporary tree proves an isolated read.  The
     write is the direction that can make another session wrong, so the real
-    home is inventoried before and after every case and must come back
-    identical -- an isolated read does not prove an isolated write.
+    home's composition-writable subtrees are inventoried before and after every
+    case and must come back identical -- an isolated read does not prove an
+    isolated write.  Only those subtrees are walked: a fleet dispatch churns
+    run directories and live pointers constantly, so inventorying the whole
+    home would fail on a peer's dispatch, which no composition writes, and
+    accuse this test's own code of it.
     """
     assert _store._config_home() == isolated_reckon_home.resolve()
     before = _inventory(_REAL_CONFIG_HOME)
@@ -228,7 +258,15 @@ def test_an_ancient_receipt_yields_to_the_probe_for_every_lane_on_that_account()
         for window in shared.values()
     )
 
-    assert lanes["separate"]["probe_status"] == "unmatched"
+    # The lane's rows are the probe's rows now, so its probe fields agree with
+    # its source and its re-query: a row showing the probe's fresh figure while
+    # still reporting the probe unmatched would contradict itself, and the
+    # status must not describe the lane's replaced receipt either.
+    assert (
+        lanes["separate"]["probe_status"],
+        lanes["separate"]["quota_source"],
+        lanes["separate"]["requeried"],
+    ) == ("answered", "probe", True)
     # The re-queried lane reports the figure from the one read the probe gave
     # this composition: the pair is asserted together, because a re-query that
     # asked the probe again would show it here as a second invocation, and a
@@ -246,6 +284,47 @@ def test_an_ancient_receipt_yields_to_the_probe_for_every_lane_on_that_account()
         window["serving_state"] != mcp_views.STALE_SERVING_STATE
         for window in separate.values()
     )
+
+
+def test_a_command_declared_by_two_pools_still_answers_its_lanes_requery() -> None:
+    """A shared command answers its lanes' re-query; a second pool does not bar it.
+
+    This is the host's own arrangement: every codex-family lane runs the same
+    ``codex`` command while declaring one of two budget groups.  The ownership
+    test that governs adopting a matching probe cannot govern the re-query --
+    applied here it refuses the very probe the lane's command was read from, so
+    no stale lane of a shared command ever shows a fresh figure and every row
+    falls back to its old receipt.
+    """
+    composed_at = datetime(2030, 1, 1, tzinfo=UTC)
+    invocations = 0
+
+    def probe_reader(backend, settings):
+        nonlocal invocations
+        invocations += 1
+        return _probe_block()
+
+    lanes = _lanes(
+        _view(probe_reader, composed_at=composed_at, config=_pooled_config())
+    )
+
+    assert invocations == 1
+    assert (lanes["shared"]["budget_group"], lanes["separate"]["budget_group"]) == (
+        "codex-sub",
+        "spark-sub",
+    )
+    for lane in (lanes["shared"], lanes["separate"]):
+        assert (
+            lane["probe_status"],
+            lane["quota_source"],
+            lane["requeried"],
+        ) == ("answered", "probe", True)
+    shared_windows = _windows(lanes["shared"])
+    separate_windows = _windows(lanes["separate"])
+    assert shared_windows[LONG_WINDOW_MINUTES]["used_percent"] == 37
+    assert shared_windows[LONG_WINDOW_MINUTES]["used_percent"] != 22
+    assert separate_windows[LONG_WINDOW_MINUTES]["used_percent"] == 37
+    assert separate_windows[LONG_WINDOW_MINUTES]["used_percent"] != 43
 
 
 @pytest.mark.parametrize(

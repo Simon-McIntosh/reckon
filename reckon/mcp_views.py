@@ -266,36 +266,26 @@ def _own_lane_figure(readings: object) -> float | None:
     return min(keyed, key=lambda window: window[0])[1]
 
 
-def _lane_position(
-    readings: object,
-    observed_at: str | None,
-    *,
-    source: str,
-    composed_at: str,
-) -> staleness_module.Reading:
-    """Adapt one lane's own reading to the staleness reader's input.
+def _lane_position(observed_at: str | None) -> staleness_module.Reading:
+    """Adapt one lane's observation stamp to the staleness reader's input.
 
-    A lane reading several horizons is one reading to that reader: which
-    window the figure is taken from is not what decides whether the lane may
-    report it, so the binding horizon stands for the lane and the observation
-    stamp is what the reader ages.
+    The reader is asked one thing for this lane -- whether its reading is
+    inside its shelf life -- and the observation stamp is the whole of that
+    decision.  No figure and no serving state are composed here: the lane's own
+    figure is reported from its receipt rows, and where a re-query answers, the
+    figure and state shown are the probe adapter's, so anything else built at
+    this seam would be discarded unread.
     """
-    figure = _own_lane_figure(readings)
     return staleness_module.Reading(
-        used_percent=figure,
+        used_percent=None,
         observed_at=_parsed_observation(observed_at),
-        source=source,
-        serving_state=_serving_state(figure, observed_at, composed_at),
     )
 
 
 def _declared_probe_reading(
     probe: Mapping[str, Any] | None,
     *,
-    lane_group: str | None,
     command: str | None,
-    command_by_backend: Mapping[str, str | None],
-    group_by_backend: Mapping[str, str | None],
     composed_at: str,
 ) -> staleness_module.Probe:
     """Bind the lane's own probe to the staleness reader's seam.
@@ -303,20 +293,19 @@ def _declared_probe_reading(
     The answer is the reading this view already holds for the lane's command:
     one probe read serves every lane that declares it, so a re-query consults
     the probe the allocation read rather than asking it a second time inside
-    the composition.  A probe that did not answer, or whose reading belongs to
-    a pool this lane does not declare, is not this lane's to carry, and a
-    reading without a figure is no answer at all -- all three leave the lane
-    reporting its own reading as unresolved.
+    the composition.  The command is what ties the probe to the lane, so a
+    second declared pool on that same command does not disqualify it: the
+    figure a re-query reports is the one the lane's own command answered with,
+    and refusing it here would leave every lane of a shared command reporting
+    only its stale receipt.  A probe that did not answer, and a reading without
+    a figure, are no answer at all -- both leave the lane reporting its own
+    reading as unresolved.
     """
 
     def probe_reading() -> staleness_module.Reading | None:
         if command is None or not isinstance(probe, Mapping):
             return None
         if probe.get("status") != "answered":
-            return None
-        if not _probe_is_lane_owned(
-            command, lane_group, command_by_backend, group_by_backend
-        ):
             return None
         figure = _own_lane_figure(probe.get("quota_windows"))
         if figure is None:
@@ -928,18 +917,10 @@ def crew_lanes_view(
         requery_failed = False
         if isinstance(selected_readings, Mapping) and selected_readings:
             reported = staleness_module.resolve_configured_reading(
-                _lane_position(
-                    selected_readings,
-                    selected_observed_at,
-                    source=quota_source,
-                    composed_at=composition_time,
-                ),
+                _lane_position(selected_observed_at),
                 probe=_declared_probe_reading(
                     probe,
                     command=command,
-                    lane_group=lane_group,
-                    command_by_backend=command_by_backend,
-                    group_by_backend=group_by_backend,
                     composed_at=composition_time,
                 ),
                 config=config,
@@ -950,6 +931,14 @@ def crew_lanes_view(
                 if isinstance(probe, Mapping) and (
                     reported.serving_state != staleness_module.SERVING_STATE_UNKNOWN
                 ):
+                    # The probe's rows are now the lane's rows, so the lane's
+                    # probe fields travel with them: a row showing the probe's
+                    # fresh figures under the probe's source while still
+                    # reporting the probe unmatched would contradict itself,
+                    # and the stale row it replaces must not be described
+                    # either.
+                    probe_status = "answered"
+                    probe_detail = str(probe["detail"])
                     selected_readings = probe["quota_windows"]
                     selected_observed_at = str(probe["observed_at"])
                     quota_source = "probe"
