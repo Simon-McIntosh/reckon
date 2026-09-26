@@ -1403,6 +1403,12 @@
       <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s3-declared-sweep-removal-mutation">declared sweep removal</a>.</p>
     </div>
 
+    <div class="r-comment" data-section="s3" data-id="c-run-r-20260926T182624915954-review-counts-added-failures-by-id" data-who="crew-worker" data-when="2026-09-26">
+      <p><strong>A stored review now carries the failures its reviewed run added, read by id from the run's own gate logs.</strong> <code>reckon/crew/review.py</code> derives the pytest node ids reported <code>FAILED</code> or <code>ERROR</code> in the reviewed run's head gate log that the base gate log does not report — the files the manifest names under <code>baseline_suite.log_path</code> and <code>after_suite.log_path</code>, the same fields the promotion suite-delta check reads. The count and ids are stored on the review record (<code>added_failure_count</code>, <code>added_failure_ids</code>), and a nonzero count caps the stored <code>total</code> at <code>ADDED_FAILURES_TOTAL_CAP</code> (<code>REVIEW_MAX_SCORE // 4</code>). A run whose done-when or manifest retires every added id by name is left uncapped; a manifest naming no base or head log records the count as unmeasured — never zero — and does not cap.</p>
+      <p><strong>The count is a set difference over node ids, not a difference of two counts.</strong> A run that fixed one pre-existing failure while introducing another nets to zero by number and added a failing test by id. The declared negative control is that substitution: computing the count as head-count minus base-count turns the disjoint-ids case red (3 − 2 is 1, not 2).</p>
+      <p><strong>Measurement. Focused gate <code>tests/test_review_counts_added_failures.py</code>: 4 passed, exit 0</strong> at <code>9838365a</code>. An adjacent cohort of nine review test files plus the focused file measures 1 failed / 76 passed at base <code>2184a9f1</code> against 1 failed / 80 passed after, with an identical failure set — <strong>0 added failures</strong>; the one failure is pre-existing at the base. <code>reckon/crew/recovery.py</code> is untouched. Commits <code>bd575117</code>, <code>ab5e524b</code>, <code>9838365a</code>. Anchor: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#review-counts-added-failures-by-id">review-counts-added-failures-by-id</a>.</p>
+    </div>
+
     <h2 id="s4">§4 — A review that is quick enough to be reflexive</h2>
 
     <p>A review nobody waits for is as useless as one nobody asks for. The checklist in

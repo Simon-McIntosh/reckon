@@ -1551,6 +1551,72 @@
     an unnamed head. This node records the focused evidence only; merged-head
     verification belongs to its separately scoped gate.</p>
   </section>
+
+  <section id="review-counts-added-failures-by-id">
+    <h2>A stored review counts the failures its reviewed run added, by id</h2>
+    <p><code>reckon/crew/review.py</code> now derives, for a review it stores, the
+    pytest node ids reported <code>FAILED</code> or <code>ERROR</code> in the reviewed
+    run's head gate log that the base gate log does not report. The logs are the files
+    the reviewed manifest names under <code>baseline_suite.log_path</code> and
+    <code>after_suite.log_path</code> — the same fields the promotion suite-delta check
+    reads. The count and the ids land on the review record as
+    <code>added_failure_count</code> and <code>added_failure_ids</code>, and a nonzero
+    count caps the stored <code>total</code> at <code>ADDED_FAILURES_TOTAL_CAP</code>
+    (<code>REVIEW_MAX_SCORE // 4</code>), with the record stating the reason. A run
+    whose done-when or manifest retires every added id by name is left uncapped, and a
+    manifest naming no base or no head log records the count as unmeasured — never as
+    zero — and does not cap.</p>
+
+    <p><strong>The count is a set difference, not a difference of counts.</strong> A run
+    that fixed one pre-existing failure while introducing another nets to zero by
+    number and added a failing test by id; the two readings disagree exactly on the case
+    the count exists to catch. The negative control below is that substitution.</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>Base log</th><th>Head log</th><th>Stored count and total</th></tr></thead>
+      <tbody>
+        <tr><td>failures added</td><td>A, B</td><td>B, C, D</td><td>count 2, ids C and D, total capped</td></tr>
+        <tr><td>ids retired by name</td><td>A, B</td><td>B, C, D</td><td>count 2, total left at 90</td></tr>
+        <tr><td>no base log</td><td>—</td><td>B, C, D</td><td>count unmeasured (<code>None</code>), total left at 90</td></tr>
+        <tr><td>nothing added</td><td>A, B, C</td><td>B, C</td><td>count 0, total left at 90</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Focused gate.</strong> <code>tests/test_review_counts_added_failures.py</code>
+    reports <strong>4 passed, exit 0</strong> at revision <code>9838365a</code>. The gate
+    log's first line names the revision, tree and command; it is
+    <code>gate-added-failures.log</code> in the run directory.</p>
+
+    <p><strong>Declared negative control.</strong> In a scratch copy,
+    <code>added_failures_from_gate_logs</code> computes the count as the head log's
+    failure count minus the base log's, rather than the id set difference:</p>
+    <table>
+      <thead><tr><th>State</th><th>Focused test result</th><th>What it establishes</th></tr></thead>
+      <tbody>
+        <tr><td>Fixed tree, no mutation</td><td>4 passed; exit 0</td><td>The count is the id set difference.</td></tr>
+        <tr><td>Counted by number</td><td>1 failed; exit 1</td><td>3 − 2 is 1, not 2; the disjoint-ids case fails.</td></tr>
+      </tbody>
+    </table>
+    <p>The red log's first line repeats the declared mutation verbatim; it is
+    <code>negative-control-count-by-number.log</code> in the run directory. The
+    mutation was reverted byte-identical: <code>git hash-object</code> on
+    <code>reckon/crew/review.py</code> equals <code>HEAD:reckon/crew/review.py</code> at
+    <code>72978afb</code>.</p>
+
+    <p><strong>Adjacent review cohort, judged by delta.</strong> Nine review test files
+    plus the focused file, base <code>2184a9f1</code> against after <code>9838365a</code>:
+    <strong>1 failed / 76 passed</strong> becomes <strong>1 failed / 80 passed</strong>,
+    with an <strong>identical failure set — 0 added failures</strong>. The one failure,
+    <code>test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker</code>,
+    is pre-existing at the base revision. Receipts:
+    <code>review-cohort-base.log</code> and <code>review-cohort-after.log</code>.</p>
+
+    <p><strong>Scope.</strong> The relationship between the two logs and the ids is a set
+    difference, shown above as a table; no figure is used because the content is tabular
+    rather than spatial. <code>reckon/crew/recovery.py</code> is untouched. This node
+    measures its own change only; verifying the merged result belongs to a separately
+    dispatched test node.</p>
+  </section>
 </main>
 </body>
 </html>
