@@ -575,3 +575,51 @@ def test_the_follow_json_surface_carries_the_stale_producer(
     assert stale[0]["code_stamp"] == "0" * 64
     assert stale[0]["remedy"] == runs.watch_cycle_line(PROJECT)
     assert "runs older code" in stale[0]["line"]
+
+
+def test_the_follow_text_surface_prints_the_stale_producer_line(
+    isolated_home, monkeypatch
+) -> None:
+    """Text mode prints the line JSON mode routes as an object.
+
+    The stale-producer detection is delivered as an event so a JSON reader
+    receives one object per line. A text reader has no object to read, so the
+    event's own ``line`` is echoed for it; without that branch the pane goes
+    silent about a seat running older code than the follower, and the remedy an
+    operator needs is never shown. The two output modes are asserted against the
+    same planted stale seat, so neither can pass by measuring the other's path.
+    """
+    monkeypatch.setattr(runs, "producer_live", lambda project: True)
+    pid, pid_start, host = _self_identity()
+    _plant_seat_record(
+        PROJECT,
+        pid=pid,
+        pid_start_time=pid_start,
+        host=host,
+        started_at=runs._utc_now(),
+        code_stamp="0" * 64,
+        reckon_version=runs.__version__,
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "follow",
+            "--project",
+            PROJECT,
+            "--lifetime",
+            "1s",
+            "--no-color",
+            "--width",
+            "240",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    # Text mode emits the composed line, not a JSON object: the marker that
+    # only that branch prints is what this asserts.
+    assert "runs older code" in result.output, result.output
+    assert runs.watch_cycle_line(PROJECT) in result.output, result.output
+    # The control: this string is carried by the event the JSON branch emits, so
+    # it is absent from text mode and the assertion above is not vacuous.
+    assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT not in result.output, result.output

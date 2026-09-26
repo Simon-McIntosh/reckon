@@ -1088,9 +1088,19 @@ class _WatchStreamProducer:
     known: dict[str, dict[str, Any]]
     stall_window: str
     fleet_seen: bool = False
+    # Whether the last tick's read was deferred because the resolved config did
+    # not load. Held so the deferral is announced once per episode rather than
+    # on every retry, and cleared the moment a tick reads the config cleanly.
+    tick_deferred: bool = False
 
 
 _WATCH_STREAM_PRODUCERS: dict[str, _WatchStreamProducer] = {}
+
+# The line a producer prints when a tick's read cannot resolve the config. A
+# merge that lands a layer which does not validate is a transient state of the
+# file tree, so the tick is deferred and retried rather than allowed to end the
+# seat; the marker is what a reader greps the producer's log for.
+WATCH_TICK_DEFERRAL_MARKER = "reckon crew watch deferred its tick"
 
 
 def _watch_stream_snapshots(
@@ -1181,26 +1191,34 @@ def _stream_transition(
 
 
 def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) -> None:
-    """Append each fleet state transition once for the active producer."""
+    """Append each fleet state transition once for the active producer.
+
+    The tick's own read is fallible: composing a transition prices the run
+    against the resolved configuration, and a merge can leave a layer that does
+    not validate under a seat that is already armed. A config error is deferred
+    rather than fatal — one dim line names it, and the next tick retries — so a
+    file resolved a moment later costs one fleet observation, not the producer.
+    Nothing is committed until the whole tick succeeds, so a deferred tick
+    neither advances the fold's memory nor drops the transitions it owes.
+    """
     producer = _WATCH_STREAM_PRODUCERS.get(project)
     if producer is None:
         return
 
     from reckon.crew.recovery import _fleet_counts, fleet_transitions
+    from reckon.flight import FlightConfigError
 
     current = _watch_stream_snapshots(records, stall_window=producer.stall_window)
     if not current and not producer.fleet_seen:
         return
 
-    if not producer.fleet_seen:
-        producer.fleet_seen = True
-        producer.known = {
-            run_id: dict(snapshot) for run_id, snapshot in current.items()
-        }
-        counts = _fleet_counts(current)
-        _append_watch_lines(
-            producer.path,
-            (
+    try:
+        if not producer.fleet_seen:
+            baseline = {
+                run_id: dict(snapshot) for run_id, snapshot in current.items()
+            }
+            counts = _fleet_counts(current)
+            lines = [
                 _stream_transition(
                     project,
                     snapshot=snapshot,
@@ -1209,18 +1227,18 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
                     counts=counts,
                 )
                 for snapshot in current.values()
-            ),
-        )
-        return
+            ]
+            _append_watch_lines(producer.path, lines)
+            producer.fleet_seen = True
+            producer.known = baseline
+            producer.tick_deferred = False
+            return
 
-    # The same fold the seat's own ticker uses, so a follower reading the stream
-    # and a reader watching the seat's stdout cannot disagree about either the
-    # transitions or their counts.
-    folded, next_known = fleet_transitions(producer.known, current)
-    producer.known = next_known
-    _append_watch_lines(
-        producer.path,
-        (
+        # The same fold the seat's own ticker uses, so a follower reading the
+        # stream and a reader watching the seat's stdout cannot disagree about
+        # either the transitions or their counts.
+        folded, next_known = fleet_transitions(producer.known, current)
+        lines = [
             _stream_transition(
                 project,
                 snapshot=snapshot,
@@ -1229,8 +1247,33 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
                 counts=event_counts,
             )
             for snapshot, previous, state, event_counts in folded
-        ),
+        ]
+        _append_watch_lines(producer.path, lines)
+        producer.known = next_known
+        producer.tick_deferred = False
+    except FlightConfigError as exc:
+        if producer.tick_deferred:
+            return
+        producer.tick_deferred = True
+        _announce_watch_tick_deferral(exc)
+
+
+def _announce_watch_tick_deferral(exc: Exception) -> None:
+    """Say once, in the producer's own log, that a tick was deferred.
+
+    The producer's stdout is redirected to its log when it takes the seat, so a
+    line printed here lands where a reader looks for the seat's last words. It
+    is dimmed only on a terminal; a redirected log carries the bare text, which
+    is what a reader greps for.
+    """
+    line = (
+        f"{WATCH_TICK_DEFERRAL_MARKER}: the resolved config does not load "
+        f"({exc}); keeping the current image, retrying on the next tick"
     )
+    stream = sys.stdout
+    if stream.isatty():
+        line = f"\x1b[2m{line}\x1b[0m"
+    print(line, file=stream, flush=True)
 
 
 def watch_stream_cursor(
