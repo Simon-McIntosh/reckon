@@ -678,11 +678,15 @@ worker's own commit, which `reckon crew recover` reports as the run's next actio
       <code>c038b3e336280f7fc6e651939822a0d9349d7b43</code> (the net churn and the merges-only
       refusal), <code>afcfd48ec9e64994c9e6054175352f4b84a9acbe</code> (the landed record) and
       <code>1aad8e6e64ba13b27cf68f19f7c1bb98a98533f6</code> (the tip-heading and no-path coverage
-      fixes), in the worktree
+      fixes), <code>5f1d5dd4a26fadf43b374615b946772d7ba6f870</code> (record corrections) and
+      <code>bdb60d2bd66a1215a46e0c7fd133c181229d6eea</code> (formatting-only pass over the two
+      source files), in the worktree
       <code>.reckon-worktrees/reckon-c8f839407e49/s22-coord/promotion-charged-its-own-net-churn</code>.
       Logs: <code>base-arm.log</code> and <code>head-arm.log</code> under
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T122110808769-promotion-charged-its-own-net-churn/</code>;
-      <code>head-arm-2.log</code>, <code>probe-trailing-merge-at-afcfd48e.log</code> and the
+      <code>head-arm-2.log</code>, <code>head-arm-final.log</code>,
+      <code>head-arm-bdb60d2b.log</code> (the definitive one-invocation reading),
+      <code>probe-trailing-merge-at-afcfd48e.log</code> and the
       regenerated <code>negative-control.log</code> under
       <code>/home/ITER/mcintos/.cache/reckon-promotion-net-churn/</code>, because that run
       directory was mounted read-only at 17:37 on 2026-09-26 and could not be written. Each log's
@@ -722,8 +726,10 @@ worker's own commit, which `reckon crew recover` reports as the run's next actio
       check reddens that case and nothing else, recorded in the negative control below.</p>
       <p><strong>Negative control.</strong> Three mutants, each run against its target case alone
       and restored byte-identically afterwards (asserted in the log, healthy sha256
-      <code>a15259df4649a181dd7963ee0a14c166a7e0c2e05831e8754d5df88ac93306a1</code> at
-      <code>1aad8e6e</code>). (a) Restoring the per-commit summation makes the net-churn case fail
+      <code>4ae52f3c1578cd74528c4564e98e0bc7bd8ba0de1a4407f37abd9a8241d50ed4</code> at
+      <code>bdb60d2b</code>; the log from before the formatting pass, kept as
+      <code>negative-control-before-format-fix.log</code>, names the earlier healthy sha).
+      (a) Restoring the per-commit summation makes the net-churn case fail
       on its counts, <code>2 added / 1 removed</code> against the fixture's <code>1 added /
       0 removed</code>. (b) Restoring the merge skip with both refusals dropped makes the
       merges-only case fail <code>DID NOT RAISE CrewError</code>. (c) Dropping only the
