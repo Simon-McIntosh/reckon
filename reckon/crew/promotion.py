@@ -141,7 +141,9 @@ def _committed_scope(
     to the branch it came from — not to the run that merged it.
 
     The counts are one net diff over the run's own commits, restricted to the
-    paths those commits touched. Adding each commit's own numstat counts churn
+    paths those commits touched and headed at the run's last own commit, so a
+    trailing merge is not charged the content it resolved to. Adding each
+    commit's own numstat counts churn
     the run netted out for itself — a path rewritten across two cited commits
     contributes both revisions — so the row would describe the run's keystrokes
     rather than its effect.
@@ -202,7 +204,7 @@ def _committed_scope(
             "measures no path. Cite the commit(s) whose diff is the work, or "
             "pass --no-commit '<why>' when the run produced none"
         )
-    counts = scoped_diff_stat(cwd=cwd, base=f"{own[0]}^", head=commits[-1], paths=paths)
+    counts = scoped_diff_stat(cwd=cwd, base=f"{own[0]}^", head=own[-1], paths=paths)
     if not counts.get("available", True):
         return _CumulativeDiff(
             (),

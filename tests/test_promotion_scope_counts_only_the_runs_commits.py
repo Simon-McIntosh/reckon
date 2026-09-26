@@ -311,3 +311,90 @@ def test_abbreviated_citations_are_recorded_as_canonical_object_ids(
     assert [row["run_id"] for row in ledger.runs(PROJECT, root=repository)] == [run_id]
     assert not pointer_path(run_id).exists()
     _assert_real_home_carries_no_pointer(run_id)
+
+def test_a_trailing_merge_does_not_charge_the_content_it_brought(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The run's net diff is headed at its own last commit, not at its tip.
+
+    The run writes two lines, main rewrites the same path, and the merge that
+    follows resolves the conflict to main's three lines. The run's own churn is
+    its own commit's two added lines; heading the net diff at the run's tip
+    reads main's three instead, which reaches the row through the merge.
+    """
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = tmp_path / "trailing-merge-tree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(run_tree), "HEAD")
+    run_id = "r-trailing-merge"
+    _pointer(repository, run_tree, run_id, base, write_paths=("in_scope.txt",))
+    _assert_real_home_carries_no_pointer(run_id)
+
+    (run_tree / "in_scope.txt").write_text("seed\nalpha\nbeta\n", encoding="utf-8")
+    _git(run_tree, "add", "in_scope.txt")
+    _git(run_tree, "commit", "-q", "-m", "feat: two lines of the run's own")
+    own = _git(run_tree, "rev-parse", "HEAD")
+
+    (repository / "in_scope.txt").write_text(
+        "peer one\npeer two\npeer three\n", encoding="utf-8"
+    )
+    _git(repository, "add", "in_scope.txt")
+    _git(repository, "commit", "-q", "-m", "docs: a peer's rewrite of the path")
+
+    subprocess.run(
+        ["git", "merge", "main"],
+        cwd=run_tree,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    (run_tree / "in_scope.txt").write_text(
+        "peer one\npeer two\npeer three\n", encoding="utf-8"
+    )
+    _git(run_tree, "add", "in_scope.txt")
+    _git(run_tree, "commit", "-q", "--no-edit")
+    merge = _git(run_tree, "rev-parse", "HEAD")
+
+    stored = crew.complete(run_id, gate="passed", commits=[own, merge], root=repository)[
+        "record"
+    ]
+
+    own_churn = _numstat(repository, base, own, "in_scope.txt")
+    at_tip = _numstat(repository, base, merge, "in_scope.txt")
+    assert own_churn == {"added": 2, "removed": 0, "files": 1}
+    assert at_tip["added"] != own_churn["added"]
+    assert stored["changed_lines"] == own_churn
+    assert [row["run_id"] for row in ledger.runs(PROJECT, root=repository)] == [run_id]
+    assert not pointer_path(run_id).exists()
+    _assert_real_home_carries_no_pointer(run_id)
+
+def test_a_citation_list_that_changes_no_path_is_refused(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A commit that changes nothing measures no path, so it is refused.
+
+    The merge skip reaches the unmeasurable state by skipping; a citation list
+    can also reach it directly. Recording a row of zero added, zero removed and
+    zero files would put a measured-looking row in the ledger for a run whose
+    cited commits carry no work at all. The refusal names the commit, leaves no
+    row and keeps the pointer, so the run can be re-promoted from the commit
+    that does carry its work.
+    """
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = tmp_path / "empty-citation-tree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(run_tree), "HEAD")
+    run_id = "r-empty-citation"
+    _pointer(repository, run_tree, run_id, base, write_paths=("in_scope.txt",))
+    _assert_real_home_carries_no_pointer(run_id)
+
+    _git(run_tree, "commit", "-q", "--allow-empty", "-m", "chore: no diff at all")
+    empty = _git(run_tree, "rev-parse", "HEAD")
+    assert _git(repository, "diff", "--numstat", f"{empty}^", empty) == ""
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(run_id, gate="passed", commits=[empty], root=repository)
+
+    assert empty in str(refusal.value)
+    assert "measures no path" in str(refusal.value)
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+    _assert_real_home_carries_no_pointer(run_id)
