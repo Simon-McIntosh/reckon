@@ -345,10 +345,20 @@
       <p>Commit <code>1f9f4626f8bc86cdd3898ad1c391ef858650be2b</code> extends <code>_review_in_flight</code> in <code>reckon/crew/recovery.py</code>. Recognition consulted two facts: the reflex's recorded review dispatch, and a live pointer whose node id is exactly <code>review-of-</code> plus the source node. A review launched under a coordinator's own id carried neither, so a run with a live review of it kept reading <code>review-missing</code> and its coordinator was steered toward a duplicate review. Reported by the S21 coordinator on 2026-09-25: node <code>re-review-of-headroom-publishes-real-readings</code> was reviewing a run that kept reading <code>review-missing</code>.</p>
       <p>The third lookup matches any live review-role pointer whose declared write paths include one of the record paths the dispatch composes from the reviewed run &mdash; the plain store path and the <code>.at-&lt;head&gt;</code> path. Those paths name the reviewed run exactly, whatever the reviewer's node id is, so the run is recognised. The head-keyed path is composed beside the legacy one, and the obligations reader's own currency check still keys on the head, so a review of an older revision does not suppress <code>review-missing</code> for the current one.</p>
       <p>The composed review command selects its lane through <code>_review_lane_candidates</code>, the ordering the reflex already runs on, rather than printing the owning backend unconditionally. The owning lane leads when it is not excluded, the local lane prints as <code>--local</code>, and a backend named in <code>review_excluded_backends</code> is never named on any fallback: one rule, with no second copy of the ordering.</p>
-      <figure>
-        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/review-recognition-and-lane.svg" alt="Left: three lookups decide whether a scoring run already has a review in flight - the recorded dispatch, a review-of- node id, and a live review-role pointer whose declared write path names the run's record. Right: the printed command orders lanes owning, local, then the rest, and never names an excluded backend.">
-        <figcaption>Recognition and lane selection both read one composed authority: the record path the dispatch derives from the reviewed run, and the candidate ordering the reflex derives from the flight configuration.</figcaption>
-      </figure>
+      <p>A complete run with no review stored for its head reads <code>review-missing</code>; a review counts as in flight when any one of three lookups finds it:</p>
+      <ol>
+        <li>the reflex's recorded review dispatch, whose review run still holds a live pointer;</li>
+        <li>a live pointer whose node id is <code>review-of-</code> followed by the source node;</li>
+        <li>a live review-role pointer whose declared write paths name this run's record. The reviewing node's id need not be <code>review-of-</code> plus the source, which is the lookup added here.</li>
+      </ol>
+      <p>Any one match puts the run in flight, so it is not <code>review-missing</code>.</p>
+      <p>When the review is missing and the command is printed to be retyped, it names its lane in this order:</p>
+      <ol>
+        <li>first, the owning run's recorded backend &mdash; the review is of that run, so the lane is the owner's recorded choice;</li>
+        <li>then the locally served backend, named <code>--local</code> rather than <code>--backend</code> when it is chosen;</li>
+        <li>last, the remaining configured backends, in a stable alphabetical order.</li>
+      </ol>
+      <p>A backend the flight configuration excludes from review routing (<code>review_excluded_backends</code>) is never named, on any fallback. The printed command is <code>--backend &lt;lane&gt;</code>, or <code>--local</code> when none remains. Both halves read one source of truth: recognition uses the record path the dispatch composes from the reviewed run, and the lane uses the candidate ordering the reflex already runs on, so the command a reader retypes and the command the reflex executes select through the same rule rather than two.</p>
       <table>
         <thead><tr><th>Measure</th><th>Observed result</th><th>Receipt</th></tr></thead>
         <tbody>
@@ -362,6 +372,7 @@
       </table>
       <p><strong>The declared mutation was observed to fail.</strong> Judging recognition by the node id alone &mdash; the declared string is not shown here, see the log &mdash; the recognition case fails with the source run reading in flight as the empty string while a review of it is alive. That is the base module's behaviour, and the red log's first line repeats the declared mutation verbatim. Log: <code>runs/r-20260925T143848980698-review-in-flight-recognises-any-review-node/logs/negative-control-node-id-only.log</code>.</p>
       <p><strong>Scope retained, deliberately.</strong> The driving followup is not resolved and no terminal status is set: a worker knows its node landed, not whether the section closed. Evidence path: this section, <code>review-in-flight-by-record-path</code>.</p>
+      <p><strong>The figure became text.</strong> Commit <code>06bcb65ae4a894c7660126a6536f11e84d8e5e28</code> replaces the SVG this section embedded, which drew the same content as boxes of sentences, with the two ordered lists above, and does the same for its copy in the plan landing; the SVG is deleted from the figures directory. A scan of the repository for its filename finds it only inside the driving followup's own body, which names the file as the thing to delete: no page renders or resolves it. <code>reckon audit-doc</code> passes on this record and on the plan with zero errors and the same five findings as the base arm (one pre-long-line info on this record, four section-without-contract warnings on the plan). A twelve-claim content check reads every claim of the figure in the replacement lists and in the figure's own text, and reports 12 of 12 missing against a section that does not carry them. Receipts: <code>runs/r-20260926T103219167861-review-recognition-figure-as-text/logs/</code> (<code>audit-doc.log</code>, <code>audit-doc-base-arm.log</code>, <code>content-parity.log</code>).</p>
     </section>
 
 <section id="installer-runs-the-hook-with-reckons-python">
