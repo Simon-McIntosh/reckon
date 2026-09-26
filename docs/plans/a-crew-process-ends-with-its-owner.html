@@ -767,6 +767,40 @@
       recorded no commit and did not close the followup.</p>
     </div>
 
+    <div data-reckon="landing" data-node="complete-refuses-a-live-run" data-when="2026-09-26">
+      <h3>Landing record &mdash; promotion refuses a run whose own worker is still running</h3>
+      <p>Commit <code>dc47da0a</code> makes <code>crew complete</code> refuse a run whose
+      recorded worker process is alive <em>and</em> whose manifest status is not terminal. The
+      refusal fires before any store is written, names the live pid and the manifest status, and
+      leaves the pointer and the ledger untouched. A new <code>--waive-live-run REASON</code>
+      lets an operator land such a run anyway; the reason rides the promoted row as
+      <code>live_run_waiver</code> beside the pid and status it waived, so a deliberate promotion
+      of a live worker is distinguishable afterwards from the orphan this refusal prevents. A
+      waiver offered against a run with nothing to waive is itself refused.</p>
+      <p>The guard fires only on the conjunction the measured defect turned on. A run whose
+      process has exited, or whose manifest reads <code>complete</code>, <code>blocked</code> or
+      <code>failed</code>, promotes as before; a run whose manifest is absent or not fresh states
+      no status, so a live process with no manifest is left to the recovery arms rather than
+      judged here. The release step that signals a finished writer already keys on a fresh
+      terminal manifest, so the refusal and the release draw the same line on which live process
+      belongs to closed work.</p>
+      <p><strong>Delivered.</strong> <code>tests/test_complete_refuses_a_live_run.py</code> passes
+      (6 passed): the live, in-progress run is refused naming the pid and status with the pointer
+      kept and no row written; the same run promotes under a waiver and records the reason; a
+      dead process with a non-terminal manifest, a live process with a terminal manifest, and a
+      live process with no manifest all promote as before; and a waiver with no live worker is
+      refused. The live process is a stub the test starts and stops itself, under a synthetic
+      <code>RECKON_HOME</code> and repository. The named gate adds zero failures: base
+      <code>9fafad1f</code> runs <code>tests/test_crew_promotion.py</code> and
+      <code>tests/test_crew_promotion_scope.py</code> at <strong>76 passed</strong>, and at
+      <code>dc47da0a</code> the same two modules plus the new one reach <strong>82 passed</strong>.
+      The declared negative control removes the liveness check and the live in-progress case then
+      promotes, failing its refusal assertion (<code>DID NOT RAISE CrewError</code>, exit 1).
+      Full record: <code>a-crew-process-ends-with-its-owner-landed.html#s10-complete-refuses-a-live-run</code>;
+      decision figure:
+      <code>docs/figures/a-crew-process-ends-with-its-owner/complete_refuses_a_live_run.svg</code>.</p>
+    </div>
+
     <div data-reckon="landing" data-node="a-discard-never-reads-promoted" data-when="2026-09-25">
       <h3>Landing record &mdash; a departure is promoted only from a recorded ledger row</h3>
       <p>Commit <code>ddf4509f</code> makes the departure fold in
