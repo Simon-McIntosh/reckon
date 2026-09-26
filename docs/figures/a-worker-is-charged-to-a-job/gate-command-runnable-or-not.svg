@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" font-family="system-ui, sans-serif" font-size="13" fill="#22303c">
+  <rect x="0" y="0" width="960" height="600" fill="#ffffff"/>
+  <text x="24" y="30" font-size="15" font-weight="600">A recorded gate text is re-executed later, so it has to be a command</text>
+
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+      <path d="M0,0 L0,6.4 L8,3.2 z" fill="#5a6b7b"/>
+    </marker>
+  </defs>
+
+  <!-- panel 1: the promotion path -->
+  <text x="24" y="62" font-weight="600" fill="#3c4a58">the promotion path — crew complete</text>
+
+  <rect x="24" y="74" width="300" height="104" rx="6" fill="#f7f9fc" stroke="#3b4a63" stroke-width="1.5"/>
+  <text x="40" y="96" font-weight="600">the gate text recorded with the run</text>
+  <text x="40" y="118" font-family="ui-monospace, monospace" fill="#3c4a58">pytest -q -n 8 --timeout=300</text>
+  <text x="40" y="136" font-family="ui-monospace, monospace" fill="#c0392b">(the base-passing population of</text>
+  <text x="40" y="154" font-family="ui-monospace, monospace" fill="#c0392b">remeasure/measured-files.txt,</text>
+  <text x="40" y="172" font-family="ui-monospace, monospace" fill="#c0392b">listed in the log header)</text>
+
+  <path d="M324,126 L356,126" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="360" y="74" width="260" height="104" rx="6" fill="#fdf6e8" stroke="#9a7b2f" stroke-width="1.5"/>
+  <text x="376" y="96" font-weight="600">command, or a description?</text>
+  <text x="376" y="118" fill="#3c4a58">a shell cannot execute a text</text>
+  <text x="376" y="136" fill="#3c4a58">that names the check instead of</text>
+  <text x="376" y="154" fill="#3c4a58">running it, so the recorded text</text>
+  <text x="376" y="172" fill="#3c4a58">is scanned for three shapes</text>
+
+  <path d="M620,126 L680,126" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="684" y="74" width="252" height="104" rx="6" fill="#eef7ee" stroke="#2f6b34" stroke-width="1.5"/>
+  <text x="700" y="96" font-weight="600">recorded verbatim</text>
+  <text x="700" y="118" fill="#3c4a58">that text is what the integration</text>
+  <text x="700" y="136" fill="#3c4a58">re-run executes at the merged</text>
+  <text x="700" y="154" fill="#3c4a58">head, so it has to run as written</text>
+
+  <path d="M490,178 L490,192" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="300" y="196" width="360" height="44" rx="6" fill="#fdecea" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="314" y="214" font-family="ui-monospace, monospace" fill="#c0392b">&lt;the focused files&gt;</text>
+  <text x="314" y="232" font-size="12" fill="#3c4a58">angle-bracket placeholder</text>
+
+  <rect x="300" y="248" width="360" height="44" rx="6" fill="#fdecea" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="314" y="266" font-family="ui-monospace, monospace" fill="#c0392b">tests/a.py tests/b.py ...</text>
+  <text x="314" y="284" font-size="12" fill="#3c4a58">ellipsis standing for a file list</text>
+
+  <rect x="300" y="300" width="360" height="44" rx="6" fill="#fdecea" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="314" y="318" font-family="ui-monospace, monospace" fill="#c0392b">(…, listed in the log header)</text>
+  <text x="314" y="336" font-size="12" fill="#3c4a58">parenthetical prose selection</text>
+
+  <path d="M660,270 L672,270 L672,196 L680,196" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <path d="M660,270 L672,270 L672,322 L680,322" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="684" y="196" width="252" height="148" rx="6" fill="#eef7ee" stroke="#2f6b34" stroke-width="1.5"/>
+  <text x="700" y="218" font-weight="600">refused before anything is written</text>
+  <text x="700" y="240" fill="#3c4a58">CrewError names the class and</text>
+  <text x="700" y="258" fill="#3c4a58">the token; the run stays live and</text>
+  <text x="700" y="276" fill="#3c4a58">the ledger row is not written, so</text>
+  <text x="700" y="294" fill="#3c4a58">the text can be corrected rather</text>
+  <text x="700" y="312" fill="#3c4a58">than lost</text>
+
+  <!-- panel 2: the integration re-run -->
+  <text x="24" y="378" font-weight="600" fill="#3c4a58">the integration re-run — verify-gate, at the merged revision</text>
+
+  <rect x="24" y="390" width="300" height="76" rx="6" fill="#f7f9fc" stroke="#3b4a63" stroke-width="1.5"/>
+  <text x="40" y="412" font-weight="600">the command on the ledger row</text>
+  <text x="40" y="432" font-family="ui-monospace, monospace" fill="#3c4a58">sh -c &lt;recorded command&gt;</text>
+  <text x="40" y="452" fill="#3c4a58">run again at the integrated head</text>
+
+  <path d="M324,428 L356,428" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="360" y="390" width="260" height="76" rx="6" fill="#fdf6e8" stroke="#9a7b2f" stroke-width="1.5"/>
+  <text x="376" y="412" font-weight="600">could it run at all?</text>
+  <text x="376" y="432" fill="#3c4a58">a command that could not run and</text>
+  <text x="376" y="450" fill="#3c4a58">one that ran and failed differ</text>
+
+  <path d="M620,428 L648,428 L648,406 L680,406" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <path d="M620,428 L648,428 L648,486 L680,486" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <path d="M620,428 L648,428 L648,556 L680,556" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="684" y="380" width="252" height="52" rx="6" fill="#fdf6e8" stroke="#9a7b2f" stroke-width="1.5"/>
+  <text x="700" y="402" font-weight="600">not-run, with the reason</text>
+  <text x="700" y="420" font-size="12" fill="#3c4a58">no command stored, or a prose shape</text>
+
+  <rect x="684" y="460" width="252" height="52" rx="6" fill="#eef7ee" stroke="#2f6b34" stroke-width="1.5"/>
+  <text x="700" y="482" font-weight="600">ran, exit 0 — passed</text>
+  <text x="700" y="500" font-size="12" fill="#3c4a58">the merged head still satisfies the gate</text>
+
+  <rect x="684" y="530" width="252" height="52" rx="6" fill="#fdecea" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="700" y="552" font-weight="600">ran, exited non-zero — failed</text>
+  <text x="700" y="570" font-size="12" fill="#3c4a58">that finding is about the merge</text>
+
+  <text x="24" y="592" font-size="12" fill="#5a6b7b">Measured 2026-09-26: a text ending in a parenthetical prose selection executed as gibberish and was recorded as a failure the merge did not cause.</text>
+</svg>

@@ -166,6 +166,42 @@ mutation (read the harness from <code>argv[0]</code> again) reddens exactly thos
 case is a promotion rather than a unit case because the launch cases were green while the end-to-end path was
 broken, which is the shape this section now has a round trip for.</p>
 </div>
+
+<div class="r-note" data-reckon="landed" data-node="gate-command-must-be-runnable" data-when="2026-09-26">
+<p><strong>Outcome — a gate command that describes the check is refused, and the re-run reports a command that
+could not run separately from one that ran and failed.</strong> Commit <code>6619d4c5</code> in
+<code>reckon/crew/promotion.py</code>, with the recording option's own help text in <code>reckon/cli.py</code>. A
+promotion whose recorded gate text carries an angle-bracket placeholder, an ellipsis standing where a file list
+should be, or a parenthetical prose selection raises a <code>CrewError</code> naming the class and the token
+before anything is written, so the run stays live and its record can be corrected rather than lost; the
+integration re-run reports such a text as <code>not-run</code> with the class it read, while a command that ran
+and exited non-zero still reports <code>failed</code> with its exit status beside it. A supplied
+<code>--command</code> is judged by the same shape, because it replaces the stored text rather than exempting
+it. The shapes are spelled so a command that runs as written does not match: quoted parentheses, a subshell and
+a redirection are all untouched, and a case promotes an ordinary command as the positive control.</p>
+<p><strong>Gate, and the delta.</strong> <code>tests/test_crew_gate_command_is_runnable.py
+tests/test_crew_promotion.py</code> — <strong>61 passed, exit 0</strong> at the landed head in one invocation,
+against <strong>9 failed, 52 passed, exit 1</strong> on a scratch tree at base <code>99455576</code> carrying
+only the new case file. The failures are two groups and both are the absence of the repair: four
+<code>DID NOT RAISE CrewError</code> at the promotion and CLI entry points, and four
+<code>assert 'failed' == 'not-run'</code>, which is the invented failure itself, reproduced as a red — at base
+the recorded description executes through <code>sh -c</code>, pytest names a path that does not exist, and the
+non-zero exit is recorded as a gate failure attached to a clean node. The real case is the command recorded for
+run <code>r-20260926T095413623438</code>, kept verbatim in the case file. The new file's eleven cases are the
+whole delta and the fifty ids of <code>tests/test_crew_promotion.py</code> are green at both revisions, so no id
+fails newly. Ruff over the paths this commit touches: twelve findings at base and twelve at the landed head, the
+new file clean — zero added, and no whole-tree fixer was run.</p>
+<p><strong>The guard was shown to fire.</strong> Declared mutation: the shape branch removed from the re-run path
+only, with the promotion refusal left in place — the log's own header records both, so the red belongs to the
+half the mutation removes. It reddens exactly
+<code>test_the_re_run_reports_a_prose_command_as_not_run</code> with the diff <code>- not-run / + failed</code>.
+<strong>What is not here.</strong> The three shapes catch the forms measured rather than unrunnability in
+general, so a command whose file list is real but wrong still runs and its non-zero exit is still a real finding
+about the merge; and the measured files are the two this node names, not a whole-suite run. No plan state is
+touched: the driving followup stays open and no terminal status is set. The reproductions, the mutation, and the
+log names are in <a href="/reckon/evidence/archive/a-worker-is-charged-to-a-job-landed#gate-command-must-be-runnable">the
+landed evidence</a>.</p>
+</div>
 <h2 id="s2">§2 — Liveness and reaping follow the job, because a pid on another host is not a process</h2>
     <p>Every liveness answer in the crew reads a pid on the coordinator's own host. Under an allocation the
     worker's pid belongs to a compute node, so the existing reads become false in a specific and dangerous

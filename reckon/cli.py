@@ -4239,7 +4239,13 @@ def _ledger_module():
 @click.option(
     "--gate-command",
     default="",
-    help="The check a passing gate ran, e.g. the test command.",
+    help=(
+        "The check a passing gate ran, e.g. the test command. The integration "
+        "re-run executes it verbatim at the merged head, so it has to be the "
+        "command rather than a description of it: angle-bracket placeholders, "
+        "an ellipsis standing for a file list, and parenthetical prose "
+        "selections are refused at promotion."
+    ),
 )
 @click.option(
     "--gate-exit-status",
