@@ -335,14 +335,14 @@ def test_a_run_resumed_to_a_new_head_gets_one_review_and_a_second_sweep_none(
 
     assert len(fleet.launches) == 1, first
     assert len(first["dispatched"]) == 1
-    composed = fleet.launches[0].write_paths
+    brief = fleet.launches[0].stdin_text
     assert (
         str(review.review_path(PROJECT, SOURCE_RUN, reviewed_head_sha=new_head))
-        in composed
+        in brief
     )
     assert (
         str(review.review_path(PROJECT, SOURCE_RUN, reviewed_head_sha=old_head))
-        not in composed
+        not in brief
     )
 
     second = fleet.sweep()
@@ -360,9 +360,9 @@ def test_the_composed_done_when_names_the_added_failure_derivation(fleets) -> No
 
     assert len(result["dispatched"]) == 1
     assert len(fleet.launches) == 1
-    done_when = fleet.launches[0].done_when
-    assert SOURCE_RUN in done_when
-    assert "added_failure_count" in done_when
-    assert "added_failure_ids" in done_when
-    assert "baseline_suite" in done_when
-    assert "after_suite" in done_when
+    brief = fleet.launches[0].stdin_text
+    assert SOURCE_RUN in brief
+    assert "added_failure_count" in brief
+    assert "added_failure_ids" in brief
+    assert "baseline_suite" in brief
+    assert "after_suite" in brief
