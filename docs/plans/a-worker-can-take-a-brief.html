@@ -25,8 +25,8 @@
   <title>A Worker Can Take A Brief | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="6">
+<meta name="plan-modified" content="2026-09-27">
+<meta name="plan-version" content="7">
 <meta name="plan-commits" content="488d3e92,ba1fe43c,e4d70125,2ab372f0">
 <meta name="plan-impl" content="0.25">
 </head>
@@ -61,6 +61,20 @@
       <li>A brief dispatch missing <code>--done-when</code> is refused with <code>not-dispatchable</code>, exactly as a plan dispatch is.</li>
       <li>Passing both <code>--brief</code> and <code>--plan</code> is refused.</li>
       <li>The declared mutation, restoring the committed-plan check for a brief, is applied, and the brief test is observed to fail with <code>plan-unavailable</code>. The log is recorded.</li>
+    </ul>
+    <p><strong>What the code holds</strong> (the S25 reuse map, crew report <code>s25-reuse-map-dispatch-surface/reuse-map.md</code>, re-checked at <code>7ea22efb</code>). Nothing of §2 exists yet except the prompt slot §3 landed:</p>
+    <ul>
+      <li><code>compose_prompt(..., brief=...)</code> in <code>reckon/crew/prompts.py</code>: consume it as-is.</li>
+      <li>The seams to change:
+        <ul>
+          <li><code>--plan</code> is <code>required=True</code> on <code>crew dispatch</code> (<code>reckon/cli.py:1061</code>).</li>
+          <li><code>require_plan_section_visible</code> has one call site, inside <code>plan_dispatch</code> (<code>reckon/crew/dispatch.py:3102</code>). Skip it around that call site, not inside <code>reckon/crew/routing.py</code>, which another plan's node holds.</li>
+          <li><code>validate_node</code> fails <code>fully-specified</code> when no plan is named (<code>reckon/crew/node.py:1006</code>). A brief must satisfy it in place of a plan.</li>
+          <li><code>TaskNode</code> carries <code>plan</code> and <code>section</code> (<code>node.py:591–592</code>, <code>as_dict</code> at <code>:604</code>) and needs the brief's path and digest beside them.</li>
+          <li>The live pointer and the pre-launch claim (<code>_publish_launch_claim</code>) are assembled in <code>dispatch.py</code>, so the digest is recorded there.</li>
+        </ul>
+      </li>
+      <li>If a new public symbol appears, <code>tests/fixtures/crew-public-surface.txt</code> is its snapshot.</li>
     </ul>
 
     <h2 id="s3">&sect;3 &mdash; The prompt carries the brief where the plan section was</h2>
@@ -184,7 +198,7 @@
     <div class="r-comment-body"><p>reuse map for 4 dispatch-surface sections (brief §2, landing §2, refusal §2, §3); review 88/100 with two line-offset findings declined: the symbols are named correctly and the corrected lines (runs.py follower_state 2146, list_followers 2157; node.py TaskNode plan 591, section 592, as_dict 604) ride the brief §2 and refusal §3 dispatches</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260926T211958284067-review-of-s25-reuse-map-dispatch-surface" data-who="reckon-build" data-when="2026-09-26T21:55:28.868Z">
-    <div class="r-comment-body"><p>reviewed s25-reuse-map-dispatch-surface at 88/100: two line-offset findings in the map (runs.py follower_state/list_followers; node.py TaskNode fields), declined at the scout&#x27;s promotion with corrected lines carried to the implementing dispatches</p></div>
+    <div class="r-comment-body"><p>reviewed s25-reuse-map-dispatch-surface at 88/100: two line-offset findings in the map (runs.py follower_state/list_followers; node.py TaskNode fields), declined at the scout's promotion with corrected lines carried to the implementing dispatches</p></div>
 </div>
 </section>
   </main>
