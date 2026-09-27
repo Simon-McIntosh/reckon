@@ -20,13 +20,16 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;}">
   <meta name="plan-standalone" content="Changes the default write scope and the read path of the cumulative record; it consumes no other plan&#x27;s evidence, and the plans that author records keep working unchanged.">
   <title>A Landing Record Never Conflicts | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-27">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
+<meta name="plan-commits" content="a69f554f,5bb66c48,41bc0eea,380dcd14,cf9160ff">
+<meta name="plan-artifacts" content="reckon/evidence.py,tests/test_evidence_record_composition.py">
+<meta name="plan-impl" content="0.4">
 </head>
 <body>
   <main class="plan-doc">
@@ -93,11 +96,15 @@
     </figure>
 
     <h2 id="s4">§4 — Records without fragments are unchanged</h2>
-    <p><strong>Deliverable.</strong> Composing a record that has no fragments returns the record file's own bytes, so no
-      existing record is rewritten or re-rendered.</p>
-    <p><strong>Done when</strong> a test over the current tree asserts that, for every existing
-      <code>docs/evidence/*-landed.html</code> and <code>docs/evidence/archive/*-landed.html</code> with no fragments, the
-      composed bytes equal the file's bytes.</p>
+    <div class="section-landed" data-section="s4">
+      <p><span class="badge badge-shipped">&#10003; landed 2026-09-27</span></p>
+      <p class="landed-summary">Delivered by the §3 composer node, merged at <code>cf9160ff</code>
+        (<code>a69f554f</code> to <code>380dcd14</code>). <code>compose_landed_record</code> returns a record with no
+        fragments byte-identical to its file. The test iterates every <code>docs/evidence/*-landed.html</code> and
+        <code>docs/evidence/archive/*-landed.html</code>: all 127, none with fragments, compose identical.
+        <code>verify-gate</code> at <code>b59db12e</code> exits 0. The section as specified is at <code>98f3eb98</code>.
+        Full record: <a href="/reckon/evidence/archive/a-landing-record-never-conflicts-landed#s3">§3 landed</a>.</p>
+    </div>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -125,6 +132,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260926T233235041148-re-review-of-evidence-record-is-composed-at-read-time" data-who="reckon-build" data-when="2026-09-27T19:07:14.983Z">
     <div class="r-comment-body"><p>re-reviewed evidence-record-is-composed-at-read-time at 380dcd14: 99/100, no findings; the reviewed run was merged at cf9160ff and promoted</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260927T192000-composer-merged" data-who="reckon-build" data-when="2026-09-27T19:20:00Z">
+    <div class="r-comment-body">evidence-record-is-composed-at-read-time merged at cf9160ff; gate passed (6 passed); verify-gate at b59db12e exit 0; review 93 then 99 after one repair round. Section s3 stays open: the three readers (serve.py, mcp.py, doccheck.py) and promotion's versioned landing: write follow, then the six-commit merge-tree measure. Section s4 closed by the same node's identity case over 127 records.</div>
 </div>
 </section>
 </main>
