@@ -83,9 +83,13 @@ def checkpoint_path(project: str, session: str | None) -> Path:
 def stream_identity(path: str | Path) -> dict[str, Any]:
     """Describe a stream file well enough to recognise the same one again.
 
-    Device and inode together answer *replaced*: an append leaves both alone,
-    while a fresh file at the same path — a producer that rotated or was reset —
-    changes the inode. Size is carried beside them but is not part of identity,
+    The inode answers *replaced*: an append leaves it alone, while a fresh file
+    at the same path — a producer that rotated or was reset — gets a new one.
+    Device is recorded beside it but is not part of the answer: the stream lives
+    on a shared filesystem read from whichever host a session is placed on, and
+    the same file reports a different device from each client node there, so a
+    device that differs is the stream moving between hosts rather than a
+    different stream. Size is recorded too and is likewise not part of identity,
     because a stream grows as it is written and a size mismatch is not evidence
     of a different file; the caller compares the recorded offset against the
     current size to detect *truncated*.
@@ -117,11 +121,17 @@ def continues(record: Mapping[str, Any], path: str | Path) -> bool:
     """Whether a checkpoint can be continued against the stream at ``path``.
 
     Continuable means all of: the record names this same stream path, the file
-    at that path is the one the record was written against (same device and
-    inode), and the file has not been truncated below the recorded offset. Any
-    other case — a replaced file, a truncated one, a missing one — is the
-    caller's signal to fall back to state rather than seek to a byte offset that
-    no longer means what it did.
+    at that path is the one the record was written against (same inode), and the
+    file has not been truncated below the recorded offset. Any other case — a
+    replaced file, a truncated one, a missing one — is the caller's signal to
+    fall back to state rather than seek to a byte offset that no longer means
+    what it did.
+
+    The inode alone decides *same file*. Device is deliberately not compared:
+    the stream sits on a shared filesystem and the same file reports a different
+    device from each client host, so matching on it would report a stream that
+    never moved as replaced every time a follower is re-armed on another node,
+    and the arming would replay the whole stream instead of continuing it.
     """
     if str(record.get("stream_path") or "") != str(path):
         return False
@@ -135,7 +145,7 @@ def continues(record: Mapping[str, Any], path: str | Path) -> bool:
         current = stream_identity(path)
     except OSError:
         return False
-    if recorded.get("dev") != current["dev"] or recorded.get("ino") != current["ino"]:
+    if recorded.get("ino") != current["ino"]:
         return False
     try:
         size = Path(path).stat().st_size
