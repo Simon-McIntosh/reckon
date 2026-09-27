@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-refusal-is-about-the-work-landed">
+  <meta name="plan-title" content="A Refusal Is About The Work — landed evidence">
+  <meta name="plan-summary" content="The goal lint refuses placeholders and two-deliverable goals, not punctuation.">
+  <meta name="plan-evidence-for" content="a-refusal-is-about-the-work">
+  <meta name="plan-verifies" content="a-refusal-is-about-the-work#s2">
+  <meta name="plan-commits" content="601e51e5">
+  <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,docs/figures/a-refusal-is-about-the-work/goal-lint-decision.svg">
+  <meta name="plan-recorded-at" content="2026-09-27">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment">
+  <meta name="plan-tags" content="crew,contract-lint,refusals">
+  <title>A Refusal Is About The Work — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>A Refusal Is About The Work</h1>
+      <p class="lead">&sect;2 &mdash; the goal lint now refuses an unresolved placeholder or a goal that
+      genuinely is two deliverables, and no longer refuses the punctuation that joins one deliverable.
+      A goal joins two deliverables only when a separator opens a clause that carries its own action
+      verb.</p>
+    </header>
+
+    <figure>
+      <img src="/reckon/figures/a-refusal-is-about-the-work/goal-lint-decision.svg"
+           alt="Three questions the narrowed lint asks — an unresolved placeholder, a vague goal word, two deliverables — with the accepted and refused outcomes beside them.">
+      <figcaption>The narrowed lint in one view: the two goal-shaped questions that still fire, and
+      the rows that must survive.</figcaption>
+    </figure>
+
+    <section id="s2">
+      <h2>&sect;2 &mdash; The contract lint refuses placeholders and two deliverables, not punctuation</h2>
+      <p>Commit <code>601e51e5</code> <em>fix(crew): refuse placeholders and two-deliverable goals, not
+      punctuation</em> narrows <code>validate_node</code> in <code>reckon/crew/node.py</code>. A separator
+      &mdash; a semicolon, "then", "and", "&amp;" or "plus" &mdash; now opens a second deliverable only when
+      the clause that follows it begins with its own action verb, so a semicolon or "then" between the
+      parts of one deliverable, and one verb over several objects, stay one node. An angle-bracket
+      placeholder is refused outside a quoted string and outside a code span; the vague placeholder words
+      (TBD, TODO, FIXME, "figure out", "somehow", "as appropriate") are refused in the goal only, so a
+      done-when naming a marker to count is a measure rather than a gap. <code>validate_node</code> gained
+      an optional <code>execution_capable</code> input, defaulting to <code>None</code> so dispatch
+      behaviour is unchanged, which reuses <code>capability.assess_execution_fit</code> &mdash; the same
+      role-versus-measure comparison dispatch already applies &mdash; so a node is judged whole before any
+      run is created.</p>
+
+      <h3>Measured</h3>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Goal-lint tests at <code>601e51e5</code></td><td>8 passed, exit 0</td></tr>
+          <tr><td>Accepted rows (semicolon, "and then", quoted &lt;path&gt;, TODO-count fragment)</td><td>4, none refused single-goal or fully-specified</td></tr>
+          <tr><td>Refused rows still firing</td><td>3 of 3 (the property each names)</td></tr>
+          <tr><td><code>tests/test_crew.py</code> at base <code>98f3eb98</code></td><td>9 failed, 196 passed</td></tr>
+          <tr><td><code>tests/test_crew.py</code> at head <code>601e51e5</code></td><td>9 failed, 196 passed &mdash; zero added, zero cleared</td></tr>
+          <tr><td>Declared negative control</td><td>the semicolon accepted row fails <code>single-goal</code>, exit 1</td></tr>
+        </tbody>
+      </table>
+      <p>The refused rows are the property each names, not the goal text: the window-plan-currency-audit
+      done-when under <code>--role investigate</code> refuses <code>fully-specified</code> through the
+      reused execution-fit comparison, the dispatch-records-the-pace-row budget of 90m beyond a 60m fence
+      refuses <code>bounded</code>, and an authored goal <em>"write the census and update the plan"</em>
+      refuses <code>single-goal</code>. Each accepted row asserts about exactly the two goal-shaped
+      properties, so a measure or scope fault elsewhere in the fixture cannot stand in for a narrowing
+      that did not happen.</p>
+      <p>The declared negative control is applied to the committed HEAD and logged: restoring the
+      unconditional <code>;</code> deliverable separator in <code>reckon/crew/node.py</code> makes the
+      semicolon accepted row fail <code>single-goal</code> with the detail <em>"the goal joins
+      deliverables with ';'"</em>, while the remaining seven rows pass. The mutation is reverted and
+      <code>node.py</code> is verified byte-identical to <code>601e51e5</code> after the run.</p>
+      <p>The lint is not re-implemented on the dispatch path: <code>validate_node</code> with
+      <code>execution_capable</code> supplied calls the shared
+      <code>capability.assess_execution_fit</code>, whose seam the reuse map at
+      <code>reports/reckon/s25-coord/s25-reuse-map-dispatch-surface/reuse-map.md</code> records.</p>
+    </section>
+  </main>
+</body>
+</html>

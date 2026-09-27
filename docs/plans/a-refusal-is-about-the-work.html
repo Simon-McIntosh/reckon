@@ -77,6 +77,38 @@
       fragment quoted in §1 ("… and the counts of TODO-FIXME, xfail and skip markers …"), and the run store's refusals
       table holds no fuller copy. The row uses that fragment verbatim inside an otherwise complete done-when.</p>
 
+    <div class="r-note" data-reckon="landed" data-node="goal-lint-refuses-placeholders-not-punctuation" data-when="2026-09-27">
+    <p><strong>Outcome &mdash; the lint refuses placeholders and two deliverables, not punctuation.</strong>
+    Commit <code>601e51e5</code> <em>fix(crew): refuse placeholders and two-deliverable goals, not
+    punctuation</em> narrows <code>validate_node</code> in <code>reckon/crew/node.py</code>. A separator
+    &mdash; a semicolon, "then", "and", "&amp;" or "plus" &mdash; opens a second deliverable only when the
+    clause that follows it begins with its own action verb, so a semicolon or "then" joining parts of one
+    deliverable, and one verb over several objects, stay one node. An angle-bracket placeholder is refused
+    outside a quoted string and outside a code span; the vague placeholder words are refused in the goal
+    only, so a done-when naming a marker to count is a measure rather than a gap. <code>validate_node</code>
+    gained an optional <code>execution_capable</code> input, defaulting to <code>None</code> so dispatch is
+    unchanged, which reuses <code>capability.assess_execution_fit</code> rather than re-implementing the
+    role-versus-measure comparison.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li><strong>Eight goal-lint tests pass</strong> in
+      <code>tests/test_goal_contract_lint.py</code> at <code>601e51e5</code>: four accepted rows (a
+      semicolon, "and then", a quoted <code>&lt;path&gt;</code> runtime message, and the review's
+      TODO-count fragment verbatim) each keep both goal-shaped properties, and three refused rows still
+      fire the property each names &mdash; the window-plan-currency-audit measure under
+      <code>--role investigate</code> (<code>fully-specified</code>), the pace row's 90m budget beyond a
+      <span>60m</span> fence (<code>bounded</code>), and an authored two-deliverable goal
+      (<code>single-goal</code>).</li>
+      <li><strong>Zero added failures</strong> in <code>tests/test_crew.py</code> against base
+      <code>98f3eb98</code>: 9 failed and 196 passed at base, the same 9 failed and 196 passed at head.</li>
+      <li><strong>The declared negative control is executed and logged:</strong> restoring the
+      unconditional <code>;</code> separator makes the semicolon accepted row fail <code>single-goal</code>
+      while the other seven rows pass; the mutation is reverted and <code>node.py</code> verified
+      byte-identical to <code>601e51e5</code>.</li>
+    </ul>
+    <p>Evidence: <a href="/evidence/archive/a-refusal-is-about-the-work-landed">landed evidence record</a>.</p>
+    </div>
+
     <h2 id="s3">§3 — A session that armed a follower keeps dispatching</h2>
     <p><strong>Deliverable.</strong> When the dispatching session appears in the project watcher's released-followers
       list (it armed a follower that has since expired) and the watcher process is live, dispatch proceeds and prints a
