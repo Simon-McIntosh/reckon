@@ -20,13 +20,16 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
   <meta name="plan-standalone" content="Narrows the conditions under which existing refusals fire; it consumes no other plan&#x27;s evidence, and the discharge work in an-orchestrator-can-discharge-a-refusal proceeds beside it.">
   <title>A Refusal Is About The Work | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-27">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
+<meta name="plan-commits" content="601e51e5,74dc4774,3ff3237b">
+<meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
   <main class="plan-doc">
@@ -46,67 +49,17 @@
       concurrently because the two plans change different conditions.</p>
 
     <h2 id="s2">§2 — The contract lint refuses placeholders and two deliverables, not punctuation</h2>
-    <p><strong>Deliverable.</strong> In the goal and the done-when, the lint refuses an unresolved template placeholder:
-      an angle-bracket token such as <code>&lt;node&gt;</code> that appears outside a quoted string and outside a code
-      span, or a goal consisting only of a placeholder word. In the goal only, it refuses two deliverables: two clauses
-      each with its own action verb and its own object ("write the census and update the plan"). It no longer refuses a
-      semicolon, "and" or "then" that joins parts of one deliverable, one verb over several objects ("compare the base
-      and the head"), or any word — "TODO" included — inside a done-when or inside quoted text; a quoted
-      <code>&lt;path&gt;</code> is accepted.</p>
-    <p><strong>Done when</strong> a table-driven test holds these pinned fixtures and passes: accepted — a
-      single-deliverable goal with a semicolon, one with "and then", a goal quoting <code>&lt;path&gt;</code>, and this
-      review's refused done-when verbatim; refused — the two brief defects s22 reported, copied from s22's dispatch
-      record into the table as strings, and one authored two-deliverable goal. The refused side has three rows.</p>
-    <p><strong>Evidence inputs</strong> (s22-coord's dispatch record, relayed 2026-09-26). Neither of s22's two defects
-      was a goal-text split. Both are other <code>validate_node</code> properties, so their rows carry the role or budget
-      the refusal depended on and must still refuse after the lint is narrowed:</p>
-    <ul>
-      <li>Node <code>window-plan-currency-audit</code>, <code>--role investigate</code>. Its done-when ended with the
-        sentence "Read only: change no file outside the reports directory, and run no test suite beyond targeted pytest
-        selections needed to confirm a landed verdict." It was refused with "fully-specified: done-when matched execution
-        measure 'pytest selections', but role 'investigate' declares execution_capable false; correct the role or pass
-        an explicit execution override". It was redispatched as <code>r-20260926T085450107836</code>.</li>
-      <li>Node <code>dispatch-records-the-pace-row</code>, <code>--time-budget 90m</code>. It was refused with
-        "bounded: budget 90m exceeds the resolved fence 60m; split the work rather than overrun it". It was redispatched
-        at 60m as <code>r-20260926T095413623438</code>.</li>
-    </ul>
-    <p>The accepted side's "goal quoting <code>&lt;path&gt;</code>" row may use s22's one observed false positive, node
-      <code>accepted-shared-path-is-not-a-conflict</code>. Its done-when quoted the runtime message
-      "cannot accept &lt;path&gt;: live run &lt;peer&gt; claims &lt;claim&gt;" and was refused as "fully-specified:
-      '&lt;path&gt;' leaves the worker to infer intent". The review's own refused done-when survives only as the
-      fragment quoted in §1 ("… and the counts of TODO-FIXME, xfail and skip markers …"), and the run store's refusals
-      table holds no fuller copy. The row uses that fragment verbatim inside an otherwise complete done-when.</p>
-
-    <div class="r-note" data-reckon="landed" data-node="goal-lint-refuses-placeholders-not-punctuation" data-when="2026-09-27">
-    <p><strong>Outcome &mdash; the lint refuses placeholders and two deliverables, not punctuation.</strong>
-    Commit <code>601e51e5</code> <em>fix(crew): refuse placeholders and two-deliverable goals, not
-    punctuation</em> narrows <code>validate_node</code> in <code>reckon/crew/node.py</code>. A separator
-    &mdash; a semicolon, "then", "and", "&amp;" or "plus" &mdash; opens a second deliverable only when the
-    clause that follows it begins with its own action verb, so a semicolon or "then" joining parts of one
-    deliverable, and one verb over several objects, stay one node. An angle-bracket placeholder is refused
-    outside a quoted string and outside a code span; the vague placeholder words are refused in the goal
-    only, so a done-when naming a marker to count is a measure rather than a gap. <code>validate_node</code>
-    gained an optional <code>execution_capable</code> input, defaulting to <code>None</code> so dispatch is
-    unchanged, which reuses <code>capability.assess_execution_fit</code> rather than re-implementing the
-    role-versus-measure comparison.</p>
-    <h3>Measured</h3>
-    <ul>
-      <li><strong>Eight goal-lint tests pass</strong> in
-      <code>tests/test_goal_contract_lint.py</code> at <code>601e51e5</code>: four accepted rows (a
-      semicolon, "and then", a quoted <code>&lt;path&gt;</code> runtime message, and the review's
-      TODO-count fragment verbatim) each keep both goal-shaped properties, and three refused rows still
-      fire the property each names &mdash; the window-plan-currency-audit measure under
-      <code>--role investigate</code> (<code>fully-specified</code>), the pace row's 90m budget beyond a
-      <span>60m</span> fence (<code>bounded</code>), and an authored two-deliverable goal
-      (<code>single-goal</code>).</li>
-      <li><strong>Zero added failures</strong> in <code>tests/test_crew.py</code> against base
-      <code>98f3eb98</code>: 9 failed and 196 passed at base, the same 9 failed and 196 passed at head.</li>
-      <li><strong>The declared negative control is executed and logged:</strong> restoring the
-      unconditional <code>;</code> separator makes the semicolon accepted row fail <code>single-goal</code>
-      while the other seven rows pass; the mutation is reverted and <code>node.py</code> verified
-      byte-identical to <code>601e51e5</code>.</li>
-    </ul>
-    <p>Evidence: <a href="/evidence/archive/a-refusal-is-about-the-work-landed">landed evidence record</a>.</p>
+    <div class="section-landed" data-section="s2">
+      <p><span class="badge badge-shipped">&#10003; landed 2026-09-27</span></p>
+      <p class="landed-summary">Merged at <code>3ff3237b</code> (<code>601e51e5</code>, <code>74dc4774</code>).
+        <code>validate_node</code> now opens a second deliverable only where the next clause carries its own action
+        verb, refuses an angle-bracket placeholder outside quotes and code spans, and refuses the vague placeholder
+        words in the goal only. <code>tests/test_goal_contract_lint.py</code>: 8 passed, with 4 accepted rows and 3 refused
+        rows. The refused rows include s22's execution-fit and bounded defects, which still refuse. The declared
+        <code>;</code> control fails the semicolon row. <code>tests/test_crew.py</code> shows the same 9 failing ids at
+        base and head. <code>verify-gate</code> at <code>ed676da4</code> exits 0. Review 89/100, with its evidence
+        findings repaired. The section as specified is at <code>98f3eb98</code>. Full record:
+        <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed#s2">§2 landed</a>.</p>
     </div>
 
     <h2 id="s3">§3 — A session that armed a follower keeps dispatching</h2>
@@ -147,7 +100,10 @@
     <div class="r-comment-body"><p>reviewed goal-lint-refuses-placeholders-not-punctuation at 74dc4774: 89/100, three evidence-provenance findings (head suite log stamped at base, reuse map not cited, base arm tree unproven), returned to the node's session as one repair round</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260926T212558534712-goal-lint-refuses-placeholders-not-punctuation" data-who="reckon-build" data-when="2026-09-27T18:55:53.840Z">
-    <div class="r-comment-body"><p>contract lint refuses placeholders and two-deliverable goals, not punctuation; table test 8 passed with 4 accepted and 3 refused rows; &#x27;;&#x27; control fails the semicolon row; test_crew.py 9 identical failing ids at base and head; review 89/100, evidence findings repaired</p></div>
+    <div class="r-comment-body"><p>contract lint refuses placeholders and two-deliverable goals, not punctuation; table test 8 passed with 4 accepted and 3 refused rows; ';' control fails the semicolon row; test_crew.py 9 identical failing ids at base and head; review 89/100, evidence findings repaired</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260927T190000-s2-closed" data-who="reckon-build" data-when="2026-09-27T19:00:00Z">
+    <div class="r-comment-body">gate passed (tests/test_goal_contract_lint.py 8 passed); verify-gate at the integrated head ed676da4 exit 0, no finding; section s2 closed and collapsed. The driving followup f-araw-001 stays open for s3 and s4.</div>
 </div>
 </section>
 </main>
