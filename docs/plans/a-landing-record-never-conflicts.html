@@ -94,6 +94,26 @@
       <figcaption>Composition: the record's own bytes followed by its fragments in ledger promotion order, with the
         no-fragment identity case below the negative control.</figcaption>
     </figure>
+    <p><span class="badge badge-shipped">&#10003; landed 2026-09-27</span> <strong>readers through the composer</strong>
+      &mdash; the served record and the audited record now read through <code>compose_landed_record</code>. The
+      <code>reckon serve file route</code> for <code>docs/evidence/archive/&lt;plan&gt;-landed.html</code> (and the SPA's
+      fetch of it) returns the composed bytes, and its ETag is the digest of those bytes rather than the record's stat,
+      so a fragment landing after the record was written is seen on the next load instead of a <code>304</code> on stale
+      bytes. <code>audit_file</code> audits the composed text, so an error placed only in a fragment is reported. Both
+      readers fall back to the record's own bytes when the ledger or the record cannot be read, so an unreadable ledger
+      suppresses composition rather than the document, and a record with no fragments is served and audited
+      byte-identically. Three cases in <code>tests/test_readers_compose_the_record.py</code>: the served bytes and their
+      ETag moving when a fragment changes (including the <code>304</code> revalidation); <code>audit_file</code>
+      reporting a fragment-only <code>img-relative-src</code> error that the raw record's audit does not; and a
+      fragment-free record serving and auditing identically. Negative control: serving the record's own bytes without
+      composition makes the served-bytes case fail.
+      <a href="/reckon/evidence/archive/a-landing-record-never-conflicts-landed#s3">&sect;3 readers landed</a></p>
+    <figure class="plan-figure">
+      <img src="/reckon/figures/a-landing-record-never-conflicts/readers.svg"
+           alt="The serve file route and doccheck.audit_file both call compose_landed_record, which returns the record's bytes followed by its fragments; the file route tags the bytes with their digest, and each reader falls back to the record's own bytes when there is no fragment or the ledger cannot be read.">
+      <figcaption>Reader routing: one composer serves both the file route and the audit, with the raw record as the
+        fallback when there is nothing to compose.</figcaption>
+    </figure>
 
     <h2 id="s4">§4 — Records without fragments are unchanged</h2>
     <div class="section-landed" data-section="s4">

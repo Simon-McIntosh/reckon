@@ -27,6 +27,11 @@
       <li>Negative control: ordering fragments by filename instead of by ledger promotion order makes the three-fragment ordering case fail on both spellings.</li>
       <li>Composer only: the versioned <code>landing:</code> write and the SPA, <code>read_plan</code> and <code>audit-doc</code> readers remain for other nodes.</li>
     </ul>
+    <p><strong>Readers through the composer</strong> &mdash; the served record and the audited record read through <code>compose_landed_record</code>. The <code>reckon serve</code> file route for <code>docs/evidence/archive/&lt;plan&gt;-landed.html</code> returns the composed bytes with an ETag that is the digest of those bytes rather than the record's stat, so a fragment landing after the record was written is seen on the next load instead of a <code>304</code> on stale bytes. <code>reckon/doccheck.py audit_file</code> audits the file route's composed text, so a fragment-only audit error such as a relative <code>&lt;img src&gt;</code> is reported. Both readers fall back to the record's own bytes when the ledger or the record cannot be read, and a record with no fragments is served and audited byte-identically.</p>
+    <ul>
+      <li>3 tests in <code>tests/test_readers_compose_the_record.py</code> over a synthesised repository with one fragment and its ledger row: the served bytes equal the record then the fragment and the ETag moves when the fragment changes (the new tag revalidates with a <code>304</code>); <code>audit_file</code> reports a fragment-only <code>img-relative-src</code> error that the raw record's audit does not; and a record with no fragments is served and audited byte-identically to its own bytes.</li>
+      <li>Negative control: making <code>reckon/serve.py</code> serve the record file's own bytes without composition fails the served-bytes case (<code>logs/negative-control.log</code>).</li>
+    </ul>
   </section>
 
 </main>
