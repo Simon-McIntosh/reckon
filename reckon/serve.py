@@ -63,6 +63,7 @@ from urllib.request import urlopen
 
 from reckon import _backends, _plan_html, capabilities, crew, fleet_index, ledger
 from reckon._store import _config_home, _mounts_path, _state_root
+from reckon.evidence import EvidenceSynthesisError, compose_landed_record
 from reckon.figures import figure_rows
 from reckon.lifecycle import (
     effective_status,
@@ -2032,6 +2033,25 @@ def _resolve_plan_file(
     return resource.path if resource else None
 
 
+def _evidence_record_plan(target: Path) -> str | None:
+    """Return the plan slug when ``target`` is a cumulative evidence record.
+
+    A record is spelled ``docs/evidence/archive/<plan>-landed.html`` or
+    ``docs/evidence/<plan>-landed.html``; the fragment directory it composes
+    from sits beside both spellings. A path that is not one of those returns
+    None and is served as an ordinary file.
+    """
+
+    if not target.name.endswith("-landed.html"):
+        return None
+    parent = target.parent
+    if parent.name == "archive":
+        parent = parent.parent
+    if parent.name != "evidence":
+        return None
+    return target.name[: -len("-landed.html")]
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "reckon-docs/1.0"
     _host: str = "127.0.0.1"
@@ -2072,6 +2092,42 @@ class Handler(BaseHTTPRequestHandler):
             return
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("ETag", etag)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_evidence_record(self, target: Path, project: str, plan_slug: str) -> None:
+        """Serve a cumulative evidence record with its fragments composed in.
+
+        The record is its own bytes followed by each fragment in ledger
+        promotion order, so a fragment merged after the record was written is
+        seen on the next load. The ETag is derived from the composed bytes
+        rather than the record's stat, because the record file is unchanged
+        when only a fragment moves — a stat-derived tag would answer 304 and
+        leave the reader on stale bytes.
+        """
+
+        try:
+            body = compose_landed_record(target, plan_slug, project=project)
+        except (OSError, EvidenceSynthesisError):
+            # Fall back to the record's own bytes rather than failing the read:
+            # an unreadable ledger suppresses composition, not the document.
+            try:
+                body = target.read_bytes()
+            except OSError as e:
+                self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+                return
+        etag = f'"{hashlib.sha256(body).hexdigest()}"'
+        if etag in (self.headers.get("If-None-Match") or ""):
+            self.send_response(HTTPStatus.NOT_MODIFIED)
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/html")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-cache")
         self.send_header("ETag", etag)
@@ -2671,6 +2727,11 @@ class Handler(BaseHTTPRequestHandler):
                 target = html_target
         if not target.is_file():
             self._send(HTTPStatus.NOT_FOUND, b"not found")
+            return
+
+        record_plan = _evidence_record_plan(target)
+        if record_plan is not None:
+            self._send_evidence_record(target, project, record_plan)
             return
 
         ctype, _ = mimetypes.guess_type(str(target))
