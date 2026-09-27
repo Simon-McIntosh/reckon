@@ -2506,6 +2506,62 @@ detail         : ... conflicts with live claim ... held by run
     <code>measured-files-nine.txt</code>.</p>
   </section>
 
+  <section id="reflex-keys-on-reviewed-run-and-head">
+    <h2 id="reflex-keys-on-reviewed-run-and-head-h">&sect;23 &mdash; a standing review is recognised by the run and head it read</h2>
+    <p>Recorded 2026-09-27 by the node that repaired it, landed under commits
+    <code>8e967b0e</code> (the recognition key: <code>reckon/crew/recovery.py</code>) and
+    <code>f411b002</code> (its test file, reading the composed brief off the launch plan). The
+    reflex asked whether a review of a run already stood, and answered from the wrong key.</p>
+    <p><strong>The defect, in three measured shapes.</strong> A review hand-dispatched under a
+    coordinator's own node id ran beside the reflex's review of the same run, both granted the
+    identical review-store paths, because recognition compared the node id each dispatch minted and
+    the two ids differed. A review standing at an earlier revision kept a resumed run from ever
+    receiving its review at the new head, because recognition keyed once per run and never per
+    revision. And the composed done-when did not name the added-failure derivation the stored
+    record is read with, so a review dispatched blind to it cannot return the count the reader
+    expects.</p>
+    <p><strong>The change.</strong> The key is the pair &mdash; the reviewed run and the revision
+    the review read. The live arm scans pointers for a review of this run whose recorded read
+    covers this head, whatever node id the reviewer is called; the stored arm reads the record at
+    its head-keyed path, so a record for the same head stands and one for an older head does not.
+    A side that names no revision covers conservatively, because records predating the head-keyed
+    store carry no revision to refuse on. Recognised reviews dispatch nothing; a resumed run at a
+    new head is not covered and gets exactly one review, whose brief carries the head-keyed record
+    path it is to write.</p>
+    <table>
+      <thead><tr><th>arm</th><th>revision</th><th>files</th><th>result</th></tr></thead>
+      <tbody>
+        <tr><td>base (source at base, final test file)</td><td><code>99455576</code></td><td>the seven</td><td><strong>4 failed, 28 passed</strong>, exit 1 &mdash; two added red, two pre-existing</td></tr>
+        <tr><td>change head</td><td><code>f411b002</code></td><td>the seven</td><td><strong>2 failed, 30 passed</strong>, exit 1 &mdash; the two pre-existing ids only</td></tr>
+        <tr><td>change head, ids passing at base</td><td><code>f411b002</code></td><td>the seven</td><td><strong>30 passed, 2 deselected</strong>, exit 0</td></tr>
+      </tbody>
+    </table>
+    <p>Added failures by id: <strong>zero</strong>. The two red at the change are the two that
+    pre-exist this node in <code>tests/test_review_reflex_sweep.py</code>
+    (<code>test_a_refused_review_leaves_the_rest_of_the_wave_dispatched</code>,
+    <code>test_a_recorded_refusal_is_the_report_and_not_a_generator</code>), red at base as well,
+    and are left as follow-ons rather than absorbed here. Each arm's log names the revision, the
+    tree and the command on its first line; the base arm resolves through a scratch tree cut from
+    base and both arms print the module file they imported
+    (<code>/tmp/reflex-base-tree-rehost/reckon/crew/recovery.py</code> for the base arm, the
+    worktree's own file for the change arm).</p>
+    <p><strong>Negative control, declared before it ran:</strong> &ldquo;key the reflex's in-flight
+    recognition on node id again; the hand-dispatched re-review case must launch a duplicate and its
+    assertion fail&rdquo;. Run with the scan arm reverted to node-id comparison, the hand-dispatched
+    case launched
+    <code>r-20260927T185306495407-review-of-source-node</code> beside the review already standing
+    (<code>E&nbsp;Left contains one more item</code>) and failed, 1 failed, exit 1 &mdash; the
+    recorded incident's shape reproduced.</p>
+    <p><strong>Evidence on disk</strong>, under
+    <code>~/.config/reckon/crew/reports/reckon/s22-coord/reflex-keys-on-<wbr>reviewed-run-and-head/</code>:
+    <code>logs/base-gate-finaltests-rehost.log</code>, <code>logs/head-gate-final-rehost.log</code>,
+    <code>logs/head-gate-exit0-rehost.log</code>, <code>logs/negative-control.log</code> and
+    <code>logs/ruff-delta-rehost.log</code> (no new lint or format findings on the staged paths),
+    with the run's per-file counts in the manifest beside them.</p>
+    <p>Recognition key compared, at base and at the change:
+    <a href="/reckon/figures/crew-observability-truth/review-recognition-key.svg">the recognition key figure</a>.</p>
+  </section>
+
 </main>
 </body>
 </html>
