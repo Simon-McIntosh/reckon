@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import json
 import os
-import time
 from pathlib import Path
 
 import pytest
@@ -194,6 +193,6 @@ def test_an_arm_with_no_checkpoint_replays_no_transitions_and_no_peer_rows(
     assert all(event.get("event") != "transition" for event in emitted), (
         f"an arm with no place must not replay the stream's transitions; got {emitted!r}"
     )
-    assert all(
-        str(event.get("session") or "") != OTHER_SESSION for event in emitted
-    ), f"no row for a session this arm was not asked to follow; got {emitted!r}"
+    assert all(str(event.get("session") or "") != OTHER_SESSION for event in emitted), (
+        f"no row for a session this arm was not asked to follow; got {emitted!r}"
+    )
