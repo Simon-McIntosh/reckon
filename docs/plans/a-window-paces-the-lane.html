@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-27">
-<meta name="plan-version" content="109">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="110">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
-<meta name="plan-impl" content="0.7">
+<meta name="plan-impl" content="0.9">
 </head>
 <body>
   <main class="plan-doc">
@@ -1855,6 +1855,11 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <h4 class="r-fu-title">Land §4&#x27;s reserve at the refusal boundary, then one replay node for §6&#x27;s second clause and §8</h4>
     <div class="r-fu-body"><p>With the §9 row on the committed record, the two lanes the currency audit held behind it are ready. (1) §4: reserve.admit reaches the dispatch refusal boundary (reckon/crew/dispatch.py, reckon/crew/reserve.py, tests/test_reserve.py). (2) One node replaying a week of committed pace rows for §6's second clause and §8; its brief must name its new module and test file, as the audit review asked. Also carried: in tests/test_lanes_view_is_live.py every crew_lanes_view call injects a probe reader (:223, :574), so no case reaches the production cache writer the home guard watches (stale-reading re-review, 90).</p></div>
     <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §4</pre>
+    </article>
+<article class="r-fu" data-id="f-awpl-replay-guards-every-row-read" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-27" data-recommends-skill="/reckon-build a-window-paces-the-lane" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Route every row-sourced conversion in pace_replay through one guarded reader</h4>
+    <div class="r-fu-body"><p>Review of pace-rows-replay-the-week at d4eee48b (94): a non-numeric reading on an observed seven-day clock still takes the whole week's report down at the float() near reckon/crew/pace_replay.py:290. Three review rounds each fixed one site of the same class (a missing reset stamp, an unparseable reset stamp), so the repair must close the class: every float, int, timestamp parse and key access on a row field goes through one guarded reader that yields unmeasured with a reason. Prove it with a test that replaces each field of a producer-written pace row in turn with garbage (None, "x", [], {}, -1), with the field list generated from the producer's row, so a new field is covered automatically. It must fail at d4eee48b. The codex lane that carried the node is down on an auth refresh failure, so this runs on the local lane.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §8</pre>
     </article>
 </section>
 
