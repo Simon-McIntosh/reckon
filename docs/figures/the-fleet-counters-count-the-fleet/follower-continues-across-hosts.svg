@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14">
+  <rect width="900" height="470" fill="#ffffff"/>
+  <text x="30" y="34" font-size="17" font-weight="600" fill="#111">One stream file, read from two hosts of the same shared mount</text>
+  <text x="30" y="56" fill="#555">The inode is the mount's own and is identical on every client. The device number is handed out per client.</text>
+
+  <!-- stream file -->
+  <rect x="360" y="92" width="220" height="86" rx="8" fill="#f3f6fb" stroke="#8aa2c4" stroke-width="1.5"/>
+  <text x="470" y="118" text-anchor="middle" font-weight="600" fill="#22304a">stream.jsonl on GPFS</text>
+  <text x="470" y="140" text-anchor="middle" fill="#22304a">inode 4299543955</text>
+  <text x="470" y="160" text-anchor="middle" fill="#22304a">(the same inode everywhere)</text>
+
+  <!-- host A -->
+  <rect x="40" y="230" width="330" height="96" rx="8" fill="#eef7ee" stroke="#6fa96f" stroke-width="1.5"/>
+  <text x="60" y="256" font-weight="600" fill="#1d4a1d">Host A (clu-2058)</text>
+  <text x="60" y="280" fill="#1d4a1d">st_dev = 42</text>
+  <text x="60" y="302" fill="#1d4a1d">checkpoint written: {dev: 42, ino: 4299543955}</text>
+
+  <!-- host B -->
+  <rect x="530" y="230" width="330" height="96" rx="8" fill="#fdf3e8" stroke="#c99a5a" stroke-width="1.5"/>
+  <text x="550" y="256" font-weight="600" fill="#5a3c14">Host B (clu-2020), re-armed here</text>
+  <text x="550" y="280" fill="#5a3c14">st_dev = 44</text>
+  <text x="550" y="302" fill="#5a3c14">same file, same inode 4299543955</text>
+
+  <line x1="360" y1="135" x2="205" y2="228" stroke="#6fa96f" stroke-width="1.5"/>
+  <line x1="580" y1="135" x2="695" y2="228" stroke="#c99a5a" stroke-width="1.5"/>
+
+  <!-- comparison outcomes -->
+  <rect x="40" y="360" width="380" height="86" rx="8" fill="#fdeeee" stroke="#c46a6a" stroke-width="1.5"/>
+  <text x="60" y="384" font-weight="600" fill="#7a1f1f">Compared dev and ino</text>
+  <text x="60" y="406" fill="#7a1f1f">dev 42 ≠ 44 → "replaced stream"</text>
+  <text x="60" y="428" fill="#7a1f1f" fill-opacity="1">re-reads the whole stream: history as news</text>
+
+  <rect x="480" y="360" width="380" height="86" rx="8" fill="#eef7ee" stroke="#6fa96f" stroke-width="1.5"/>
+  <text x="500" y="384" font-weight="600" fill="#1d4a1d">Compared ino alone</text>
+  <text x="500" y="406" fill="#1d4a1d">4299543955 = 4299543955 → same stream</text>
+  <text x="500" y="428" fill="#1d4a1d">seeks the recorded offset: only the gap</text>
+
+  <line x1="205" y1="326" x2="230" y2="358" stroke="#c46a6a" stroke-width="1.5"/>
+  <line x1="695" y1="326" x2="670" y2="358" stroke="#6fa96f" stroke-width="1.5"/>
+</svg>
