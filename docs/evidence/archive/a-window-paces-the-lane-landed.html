@@ -307,6 +307,67 @@
     failed, 4 passed, and the empty-window pair is among the failures. The log's
     first line repeats that mutation verbatim, so a log that went red for any
     other reason would be refused.</p>
+
+    <h3>At the dispatch boundary, and an unreadable window is not an empty one</h3>
+
+    <p><strong>What landed.</strong> <code>dispatch()</code> composes the pace row once, before
+    anything is created, and reuses that same row on the run record, so the reading a caller is
+    refused against and the reading a later replay judges are one reading rather than two that could
+    disagree. A non-bookend dispatch is then judged against the reserved fraction by
+    <code>_refuse_against_the_bookend_reserve</code>, which reads the five-hour utilisation fraction
+    from that row and reuses the existing budget refusal family (D10), so the refusal-family census
+    is unmoved. A lane whose row declares no group is skipped: an absent wallet reports no reading
+    by construction rather than a reading that failed, and judging it would bar every unmetered lane
+    from implementation work.</p>
+
+    <p><strong>An unreadable window is not an empty one.</strong> A five-hour clock carrying no
+    utilisation is judged as unreadable rather than as zero: implementation is refused against the
+    reserved fraction &mdash; the refusal names the role, the fraction, and the lane and clock state
+    the resolver reported &mdash; and review and verify are admitted, because the reserve is never
+    withheld from a bookend. The verdict leaves <code>utilisation_pct</code> and
+    <code>projected_pct</code> unset rather than zero, because a zero written on this path reads
+    downstream as an observed empty window, which is the reading the branch exists to refuse. Before
+    this change a dispatch whose window nobody could read was admitted exactly as an empty window
+    was; the base arm below shows that state admitted.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/reserve-at-the-refusal-boundary.svg"
+           alt="Window utilisation from 0 to 100 percent: implementation admitted to 80, the reserve's band from 80 to 92 where the budget gate is silent, and the budget gate holding every dispatch from 92; a dashed marker at 85 names the dispatch pair, and a panel beside the axis states that an unreadable window is refused rather than read as empty.">
+      <figcaption>The reserve boundary against fill. Implementation reaches 80 percent; the
+      80&ndash;92 band is where the reserve refuses while the fixture's budget ceiling (92) is
+      silent; the marker at 85 percent is the state the dispatch pair is driven in. The unreadable
+      reading has no position on this axis, which is the point: it is refused rather than plotted at
+      zero.</figcaption>
+    </figure>
+
+    <p><strong>The measure.</strong> One invocation over <code>tests/test_reserve.py</code>,
+    <code>tests/test_dispatch_records_the_pace_row.py</code> and the three suites that exercise
+    dispatch refusals exits 0 with <strong>68 passed</strong> at <code>d0787e93</code>. At the base
+    revision the same selection runs <strong>5 failed, 63 passed</strong>: the five failures are
+    exactly the added assertions &mdash; the unreadable pair in the arithmetic, both bookend
+    parametrizations, and the two dispatch-level pairs &mdash; and the dispatch pair fails with
+    <em>DID NOT RAISE CrewError</em>, which is the call site the base does not have. The promotion
+    run over the ids that pass at base (the five deselected) exits 0 with <strong>63 passed</strong>.
+    Each dispatch case runs on a temporary crew home with the real config home asserted untouched,
+    and the review half of each pair is what shows the refusal is the reserve's rather than every
+    dispatch being refused.</p>
+
+    <p><strong>The negative control.</strong> The declared mutation &mdash; the four-line
+    reserve-check block deleted from the dispatch refusal path &mdash; was applied to a scratch copy
+    of the head tree; the dispatch pair reddens there, <strong>2 failed, 11 deselected</strong>, both
+    with <em>DID NOT RAISE CrewError</em>: with the call site gone, the unreadable implementation
+    dispatch is admitted as the base admitted it. The log's first line repeats the declared mutation
+    verbatim, and its header carries the diff (the four removed lines and nothing else).</p>
+
+    <p><strong>Logs.</strong>
+    <code>~/.config/reckon/crew/reports/reckon/s22-coord/reserve-reaches-the-refusal-boundary/</code>
+    holds <code>gate-head.log</code>, <code>gate-base.log</code>, <code>gate-promotion.log</code>
+    and <code>negative-control.log</code>; the arm driver is <code>arms.sh</code> beside them and
+    <code>scratch-trees.sh</code> rebuilds the two scratch trees the base and control arms measure
+    against. Each log's opening lines name the revision, the host and slurm job that produced it,
+    the tree, the command, the module under test as imported (<code>module.__file__</code>) and
+    the resolved working directory. The four logs were re-run on this run's compute node after an
+    earlier host failed; each reproduces the same verdict.</p>
   </section>
 
   <section id="s5b-requery">
