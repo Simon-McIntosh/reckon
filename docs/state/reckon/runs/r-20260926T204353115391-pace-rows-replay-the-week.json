@@ -1,0 +1,325 @@
+{
+  "agent": {
+    "alias": "luna5.6",
+    "backend": "codex-luna",
+    "effort": "xhigh",
+    "launch": "cli",
+    "model": "gpt-5.6-luna",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 5,
+  "attempt_kind": "resume",
+  "backend": "codex-luna",
+  "base_sha": "9945557624511d329211b5b573cdf77d38b02ac4",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "detail": "",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": null,
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 932,
+    "files": 5,
+    "removed": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "d711aee1e98feb0cbf5f5751189565ec90fddfee",
+    "b1bd3510160e6659073061510b612d257487cfdc",
+    "804247b4d3bdf2a04d622fa79fe3134b365f762c",
+    "560e74e2ff49ca50a375333e22f5988b8e9aca9c",
+    "ed7f90273b5bad6c8448c214de67ba5134a361fc",
+    "42a43bc0802d5ac9e5dd016935912494c13ba220",
+    "d5d26a7be5b4b93d8da6e1e0b5f6b0166d728006",
+    "e5076c563901857890b50e5381f96621a340381d",
+    "d4eee48b9869d5991f8736e9c4033a360cc33a2f"
+  ],
+  "completed_at": "2026-09-27T19:14:44Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-09-26T20:44:07Z",
+  "dispute_count": 0,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "timeout 120s env PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/pace-rows-replay-the-week /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_pace_replay.py tests/test_dispatch_records_the_pace_row.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T204353115391-pace-rows-replay-the-week/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.9,
+    "at_dispatch": 0.7,
+    "plan": "a-window-paces-the-lane",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "codex-luna",
+    "burn_multiple": 0.0,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "no projected exhaustion is available for 'codex-luna'; the burn projection needs a numeric utilisation bounded by a known window, and without one no horizon comparison is made",
+    "horizon_ends_at": "2026-09-26T21:43:56.669818+00:00",
+    "horizon_seconds": 3600,
+    "metered": true,
+    "observed_at": "2026-09-26T20:43:54Z",
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": "2026-10-03T18:41:35Z",
+    "seconds_until_reset": 597460,
+    "state": "quiet",
+    "utilisation_pct": 0.0
+  },
+  "lane_declaration": {
+    "backend": "codex-luna",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-09-26T20:43:54Z",
+    "read_at": "2026-09-26T20:43:56Z",
+    "resolved_backend": "codex-luna",
+    "utilisation_pct": 0.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-27T19:14:44Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "missing_rollout",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/pace-rows-replay-the-week/manifest.md",
+  "member": "disposable-r-20260926T204353115391-pace-rows-replay-the-week",
+  "negative_control": {
+    "declaration": "make the replay read the allowance stored on the row instead of recomputing it through pace.py; the mistuned drain_lead_hours case must no longer be flagged",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T204353115391-pace-rows-replay-the-week/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T204353115391-pace-rows-replay-the-week/negative-control.log",
+    "test_paths": [
+      "tests/test_pace_replay.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "pace-rows-replay-the-week",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 3873,
+          "cached_input_tokens": 719711,
+          "input_tokens": 723586,
+          "output_tokens": 1308,
+          "reasoning_output_tokens": 163,
+          "total_tokens": 724894,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "Spec: the N-rows node in the currency audit at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/window-plan-currency/window-plan-currency.md (lines 379-391), which serves section 6's second clause and section 8 of a-window-paces-the-lane. The pace row now lands on each committed run file under docs/state/reckon/runs/ (per project, one file per run) via ledger.build_record (merged at 24af8372). Done when, given a week of such committed rows in a synthesised temporary project, the new report reproduces each row's allowance and each hold decision by recomputation through reckon/crew/pace.py (the same code dispatch used, not a copy), prints the split by class of work, and flags a deliberately mistuned drain_lead_hours from the rows alone. The new module is reckon/crew/pace_replay.py and its test is tests/test_pace_replay.py. Name any CLI entry point you add in the manifest. It must not be written into cli.py by this node. Measured files: tests/test_pace_replay.py plus tests/test_dispatch_records_the_pace_row.py. Tests run under a temporary config home with the real config home asserted untouched. At least one added assertion fails at the dispatch base. Zero added failures against base over the measured files in ONE invocation. If they carry failures that also fail at base, also capture an exit-0 run over the ids that pass at base, with command and EXIT, as the promotion gate. Report ruff findings on the staged paths against the count at base.",
+    "estimated_hours": 2.0,
+    "goal": "A week of committed pace rows replays into the pace curve, the metered-versus-local split by class of work, and every hold decision, reading no stream.",
+    "id": "pace-rows-replay-the-week",
+    "lane_declaration": {
+      "backend": "codex-luna",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-09-26T20:43:54Z",
+      "read_at": "2026-09-26T20:43:56Z",
+      "resolved_backend": "codex-luna",
+      "utilisation_pct": 0.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/pace-rows-replay-the-week/manifest.md",
+    "negative_control": "make the replay read the allowance stored on the row instead of recomputing it through pace.py; the mistuned drain_lead_hours case must no longer be flagged",
+    "plan": "a-window-paces-the-lane",
+    "requested_backend": "codex-luna",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§8",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/pace_replay.py",
+      "tests/test_pace_replay.py",
+      "docs/evidence/archive/a-window-paces-the-lane-landed.html",
+      "docs/figures/a-window-paces-the-lane",
+      "docs/plans/a-window-paces-the-lane.html"
+    ]
+  },
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "pace": {
+    "allowance": {
+      "derived": 0.0379455723111947,
+      "drain_hours": 156.0,
+      "effective_limit": 0.0379455723111947,
+      "elapsed_hours": 53.08944253166668,
+      "group": "codex-sub",
+      "limited_by": "allowance",
+      "pace_multiple": 1.1,
+      "provider_ceiling": null,
+      "remaining_budget": 0.71,
+      "remaining_windows": 20.582111493666666,
+      "utilisation": 0.29
+    },
+    "bar": {
+      "bar": null,
+      "decided_by": null,
+      "margin": null,
+      "name": "pace-rows-replay-the-week",
+      "score": 0.6625,
+      "state": "unknown",
+      "verdict": null,
+      "window_fill": null
+    },
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": 25033.993114,
+        "observed_at": "2026-09-26T13:46:52+00:00",
+        "period": "seven_day",
+        "resets_at": "2026-10-01T15:38:44+00:00",
+        "state": "observed",
+        "utilisation": 0.29
+      }
+    },
+    "group": "codex-sub",
+    "hold": null,
+    "lane": "codex-luna",
+    "member": "codex-astra",
+    "node": "pace-rows-replay-the-week",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": null,
+    "recorded_at": "2026-09-26T20:44:05.993114+00:00",
+    "score": 0.6625,
+    "source": "recorded",
+    "state": "observed"
+  },
+  "plan": "a-window-paces-the-lane",
+  "plan_impl_at_dispatch": 0.7,
+  "promoted_revision": "d4eee48b9869d5991f8736e9c4033a360cc33a2f",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 19,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 94
+  },
+  "role": "implement",
+  "run_id": "r-20260926T204353115391-pace-rows-replay-the-week",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§8",
+  "session_harness": "codex",
+  "session_id": "01a0df76-5108-7d50-abf2-e3d19511cb7f",
+  "session_model": "gpt-5.6-luna",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": null,
+  "time_budget": "60m",
+  "tool_steps": 138.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 81037,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 5,
+    "ended_during": "working",
+    "exit_code": 1,
+    "exited_at": "2026-09-27T19:14:44Z",
+    "last_record_type": "turn.failed",
+    "launched_at": "2026-09-27T19:14:36Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260926T204353115391-pace-rows-replay-the-week",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 763,
+    "worker_pid": 1173350
+  },
+  "worker_seconds": null,
+  "worker_seconds_source": "stalled",
+  "worktree_retention": {
+    "classification": "retained-for-resume",
+    "retained_at": "2026-09-27T19:14:44Z",
+    "session_id": "01a0df76-5108-7d50-abf2-e3d19511cb7f",
+    "session_source": "stream",
+    "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/pace-rows-replay-the-week"
+  }
+}
