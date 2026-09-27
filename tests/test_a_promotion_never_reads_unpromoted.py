@@ -208,8 +208,8 @@ def test_a_promoted_run_reads_promoted_at_the_promote_boundary(
 # ── the departure routes that never earn the promoted word ──────────────────
 
 
-def _departure_word(run_id: str, snapshot: dict, *, recorded: bool) -> str:
-    """The word a fold gives a run that left the fleet with no pointer behind."""
+def _departure_word_for(run_id: str, snapshot: dict, *, recorded: bool) -> str:
+    """The word a fold gives a run when the caller supplies the ledger reader."""
 
     def recorded_ids() -> set[str]:
         return {run_id} if recorded else set()
@@ -222,8 +222,19 @@ def _departure_word(run_id: str, snapshot: dict, *, recorded: bool) -> str:
     return events[0][2]
 
 
+def _departure_word_from_ledger(run_id: str, snapshot: dict) -> str:
+    """The word a fold gives a run when the caller supplies no reader.
+
+    The fold must resolve its own reader from the departing run's project, so
+    the project's ledger — environment-resolved under the temporary home — is
+    what decides between a landing and a pointer that vanished.
+    """
+    events, _running = recovery.fleet_transitions({run_id: snapshot}, {})
+    return events[0][2]
+
+
 def _departing_snapshot(run_id: str, state: str = "dispatched") -> dict:
-    """A fleet row for a run about to leave, with no promotion behind it."""
+    """A fleet row for a run about to leave, naming only its own project."""
     return {
         "run_id": run_id,
         "project": PROJECT,
@@ -235,41 +246,86 @@ def _departing_snapshot(run_id: str, state: str = "dispatched") -> dict:
     }
 
 
-def test_a_refused_dispatch_never_reads_promoted(repository: Path) -> None:
-    """A dispatch refused at admission leaves no row, so it departs unpromoted."""
+def _record_project_run(run_id: str) -> None:
+    """Write a promoted run's row into the project's own ledger."""
+    row = ledger.run_path(PROJECT, run_id)
+    row.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(row, {"run_id": run_id, "project": PROJECT})
+
+
+def test_a_refused_dispatch_departs_withdrawn(repository: Path) -> None:
+    """A dispatch refused at admission leaves no row, so it departs withdrawn."""
     run_id = "r-20260926T133500000000-refused"
     snapshot = _departing_snapshot(run_id, state="abandoned")
 
     assert not ledger.run_path(PROJECT, run_id, repository).is_file()
-    assert _departure_word(run_id, snapshot, recorded=False) != "promoted"
+    assert _departure_word_for(run_id, snapshot, recorded=False) == "withdrawn"
 
 
-def test_a_vanished_reflex_review_never_reads_promoted(repository: Path) -> None:
-    """A review pointer that vanishes with no record departs without a promotion."""
+def test_a_vanished_reflex_review_departs_withdrawn(repository: Path) -> None:
+    """A review pointer that vanishes with no record departs withdrawn."""
     run_id = "r-20260926T133600000000-review-of-node-a"
     snapshot = _departing_snapshot(run_id, state="complete")
 
     assert not ledger.run_path(PROJECT, run_id, repository).is_file()
-    assert _departure_word(run_id, snapshot, recorded=False) != "promoted"
+    assert _departure_word_for(run_id, snapshot, recorded=False) == "withdrawn"
 
 
-def test_a_discard_never_reads_promoted(repository: Path, tmp_path: Path) -> None:
-    """A deliberate discard is named for what it was, never as a promotion."""
+def test_a_discard_departs_discarded(repository: Path, tmp_path: Path) -> None:
+    """A deliberate discard is named for what it was, never as a withdrawal."""
     run_id = "r-20260926T133700000000-discard"
     _write_completed_pointer(repository, tmp_path, run_id)
     snapshot = _snapshot(run_id)
 
     crew.discard(run_id)
 
-    assert _departure_word(run_id, snapshot, recorded=False) == "discarded"
+    assert _departure_word_for(run_id, snapshot, recorded=False) == "discarded"
 
 
-def test_the_departure_fold_states_promoted_only_for_a_recorded_row(
+def test_the_departure_control_states_promoted_only_for_a_recorded_row(
     repository: Path,
 ) -> None:
     """The control: the same fold reads promoted when the ledger records the run."""
     run_id = "r-20260926T133800000000-landed"
     snapshot = _departing_snapshot(run_id, state="complete")
 
-    assert _departure_word(run_id, snapshot, recorded=True) == "promoted"
-    assert _departure_word(run_id, snapshot, recorded=False) != "promoted"
+    assert _departure_word_for(run_id, snapshot, recorded=True) == "promoted"
+    assert _departure_word_for(run_id, snapshot, recorded=False) == "withdrawn"
+
+
+def test_the_fold_resolves_an_unsupplied_reader_from_the_project_ledger(
+    repository: Path, tmp_path: Path
+) -> None:
+    """No reader supplied: production resolves one from the run's own project.
+
+    The departing run's snapshot names only its project, so the fold must reach
+    that project's own ledger — environment-resolved under the temporary home —
+    to tell a landing from a pointer that vanished. Each departure word must
+    still be the exact one the section names.
+    """
+    landed = "r-20260926T133900000000-landed"
+    _record_project_run(landed)
+    assert (
+        _departure_word_from_ledger(
+            landed, _departing_snapshot(landed, state="complete")
+        )
+        == "promoted"
+    )
+
+    vanished = "r-20260926T134000000000-vanished"
+    assert (
+        _departure_word_from_ledger(
+            vanished, _departing_snapshot(vanished, state="abandoned")
+        )
+        == "withdrawn"
+    )
+
+    discarded = "r-20260926T134100000000-discarded"
+    _write_completed_pointer(repository, tmp_path, discarded)
+    crew.discard(discarded)
+    assert (
+        _departure_word_from_ledger(
+            discarded, _departing_snapshot(discarded, state="complete")
+        )
+        == "discarded"
+    )
