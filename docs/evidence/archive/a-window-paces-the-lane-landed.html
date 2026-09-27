@@ -2642,6 +2642,54 @@ both fields, so a layer setting them survives the <code>extra=&quot;forbid&quot;
         belongs to whoever next revises the record as a whole.</li>
       </ul>
     </section>
+
+    <section id="s9-replay">
+      <h2>&sect;9 &mdash; A week of pace rows replays without a stream</h2>
+
+      <p><strong>Landed 2026-09-26 (commits <code>d711aee1</code>, <code>b1bd3510</code> and
+      <code>560e74e2</code>).</strong> <code>reckon/crew/pace_replay.py</code> reads the committed
+      files under <code>docs/state/&lt;project&gt;/runs/</code> and selects records carrying a
+      <code>pace</code> row. It reconstructs elapsed weekly time from each row's recorded instant
+      and seven-day reset, delegates allowance recomputation to
+      <code>reckon.crew.pace.allowance_for_group</code>, validates the hold decision from the
+      evidence carried on the row, and counts local versus metered lanes by work class. It does not
+      open a stream, receipt, live pointer or configuration layer. A rendered report names the row
+      count, allowance and hold matches, the class split, and any moved rows for a candidate
+      <code>drain_lead_hours</code>.</p>
+
+      <table>
+        <caption>Replay evidence from a synthesised committed week.</caption>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Committed rows read</td><td><strong>3</strong>; a fourth run without a pace row was ignored</td></tr>
+          <tr><td>Allowance recomputation</td><td><strong>3/3 reproduced</strong> through <code>pace.py</code></td></tr>
+          <tr><td>Hold decisions</td><td><strong>3/3 reproduced</strong>, including one held row with threshold evidence</td></tr>
+          <tr><td>Work-class split</td><td><code>implement</code>: 1 local / 1 metered; <code>review</code>: 0 local / 1 metered</td></tr>
+          <tr><td>Mistuned lead</td><td>candidate 24.0 h against rows recorded at 12.0 h moved all 3 rows and was detected</td></tr>
+          <tr><td>Head gate</td><td><strong>12 passed, exit 0</strong> over both measured test files</td></tr>
+          <tr><td>Lint delta</td><td>0 Ruff findings and clean format on the two source/test paths</td></tr>
+        </tbody>
+      </table>
+
+      <figure>
+        <img src="/reckon/figures/a-window-paces-the-lane/pace-replay-flow.svg"
+             alt="Committed run files feed replay inputs, which send the recorded weekly clock and policy through pace.allowance_for_group and validate the row's hold evidence. The report emits the allowance curve, local-versus-metered split by work class, and hold decisions without opening a stream.">
+        <figcaption>The durable row is the only input: its owned derivation produces the curve,
+        class split and hold record that an independent reader can tune.</figcaption>
+      </figure>
+
+      <h3>Negative control</h3>
+      <blockquote><p>make the replay read the allowance stored on the row instead of recomputing it through pace.py; the mistuned drain_lead_hours case must no longer be flagged</p></blockquote>
+      <p>The mutation replaced the call to <code>pace.allowance_for_group</code> with the stored
+      allowance. The focused mistuned-lead assertion then failed with
+      <code>detected: false</code> and an empty mismatch list, proving the control would no longer
+      flag the deliberately changed lead. Its red log is
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T204353115391-pace-rows-replay-the-week/negative-control.log</code>.
+      The head gate log is
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T204353115391-pace-rows-replay-the-week/measured-head.log</code>;
+      the base arm records the expected <code>ModuleNotFoundError</code> because the new module is
+      absent at <code>99455576</code>.</p>
+    </section>
 </main>
 
 </body>
