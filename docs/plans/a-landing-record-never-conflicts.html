@@ -72,6 +72,25 @@
       fragment and its plan edit moved into a <code>landing:</code> line, merge onto their base <code>457bbec7</code> with
       zero conflicts under <code>docs/plans</code> and <code>docs/evidence</code> by <code>git merge-tree</code>, and the
       composed record contains all six anchors.</p>
+    <p><span class="badge badge-shipped">&#10003; landed 2026-09-26</span> <strong>compose_landed_record</strong>
+      &mdash; the composition function reads a record's own bytes and appends each fragment under
+      <code>docs/evidence/fragments/&lt;plan&gt;/</code> in the order the ledger records its promotion, resolving both
+      record spellings. A node promoted twice contributes its fragment once, at its earliest promotion; a row for
+      another plan never reorders this record; and a fragment merged before its run is promoted is composed after the
+      ledgered ones rather than hidden. It writes no file and never re-renders the document, so a record with no
+      fragments composes to its own bytes byte-for-byte. Six tests in
+      <code>tests/test_evidence_record_composition.py</code>: a synthesised repository whose promotion order is a
+      permutation of its filename order (both spellings), a redispatched node, another plan's same-named row, a merged
+      fragment with no promotion, and byte identity over every existing record with no fragments.
+      Composer only &mdash; the versioned <code>landing:</code> write and the SPA / <code>read_plan</code> /
+      <code>audit-doc</code> readers are not in this node's scope.
+      <a href="/reckon/evidence/archive/a-landing-record-never-conflicts-landed#s3">&sect;3 composition landed</a></p>
+    <figure class="plan-figure">
+      <img src="/reckon/figures/a-landing-record-never-conflicts/composition.svg"
+           alt="The record file's bytes plus fragments in ledger promotion order compose the returned bytes; a record with no fragments composes to its own bytes.">
+      <figcaption>Composition: the record's own bytes followed by its fragments in ledger promotion order, with the
+        no-fragment identity case below the negative control.</figcaption>
+    </figure>
 
     <h2 id="s4">§4 — Records without fragments are unchanged</h2>
     <p><strong>Deliverable.</strong> Composing a record that has no fragments returns the record file's own bytes, so no
