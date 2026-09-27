@@ -297,6 +297,69 @@ def _section_record_elements(soup: BeautifulSoup) -> list:
     ]
 
 
+_SECTION_RECORD_ATTRIBUTES = (
+    "data-id",
+    "data-effort-hours",
+    "data-attempts",
+    "data-status",
+    "data-links",
+)
+_RECORD_MARKER_RE = re.compile(r"""data-reckon\s*=\s*["']section["']""", re.IGNORECASE)
+
+
+def _record_field(record, name):
+    if hasattr(record, "get"):
+        return record.get(name)
+    return getattr(record, name, None)
+
+
+def derive_impl_from_sections(sections) -> float | None:
+    """impl from section effort: done over done plus remaining implementable.
+
+    Deferred sections sit outside the denominator, and a plan carrying no
+    record in scope derives nothing — the caller keeps the authored figure
+    rather than reporting a fabricated zero.
+    """
+    if not sections:
+        return None
+    done = 0.0
+    predicted = 0.0
+    for record in sections:
+        effort = _record_field(record, "effort_hours")
+        status = str(_record_field(record, "status") or "").lower()
+        try:
+            hours = float(effort)
+        except (TypeError, ValueError):
+            return None
+        if hours <= 0:
+            return None
+        if status == "done":
+            done += hours
+        elif status == "implementable":
+            predicted += hours
+        elif status != "deferred":
+            return None
+    total = done + predicted
+    if total <= 0:
+        return None
+    return done / total
+
+
+def _document_carries_records(html_text: str) -> bool:
+    """Whether the document declares record metadata, judged without parsing.
+
+    A gate rather than an approximation of the contract: a document carrying no
+    such marker cannot hold a record, and one that does is handed to the parsed
+    read so the figure the fast path reports is the figure the parser derived.
+    A record the parser would refuse yields no figure on either path.
+    """
+    if _RECORD_MARKER_RE.search(html_text or "") is None:
+        return False
+    return any(key in html_text for key in _SECTION_RECORD_ATTRIBUTES) or (
+        "data-capability-" in html_text
+    )
+
+
 def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]:
     """Validate explicitly opted-in metadata without changing legacy declarations."""
     records = []
@@ -390,6 +453,12 @@ def read_state(html_text: str) -> dict:
                 "object mapping section identities to classifications"
             )
     st["sections"] = _read_section_records(soup, st.get("section_declarations", {}))
+    derived = derive_impl_from_sections(st["sections"])
+    if derived is not None:
+        st["impl"] = derived
+        st["impl_source"] = "computed"
+    elif "impl" in st:
+        st["impl_source"] = "authored"
     capability = _capability_from_values(
         meta_values,
         prefix="plan-capability-",
@@ -1050,6 +1119,24 @@ def _splice_section(html_text: str, reckon_id: str, rendered: str) -> str:
     return html_text + "\n" + rendered
 
 
+def _impl_is_carried_by_records(state: dict, html_text: str) -> bool:
+    """Whether this plan carries its impl as section records around this write.
+
+    A state naming records carries it after the write, because the state is what
+    the writer regenerates record elements from. A document holding record
+    elements carries it before the write, and the state's ``impl`` is then the
+    figure those records derived: storing it would author a number the records
+    produced, and a document whose records are being removed would change beyond
+    its record spans. Only a plan record-less on both sides stores its impl as
+    meta, and that is settled by the parser's own selector — a text match would
+    also fire on prose that quotes the record syntax, and a plan documenting the
+    contract would then lose an authored write it must keep.
+    """
+    if state.get("sections"):
+        return True
+    return bool(_section_record_elements(BeautifulSoup(html_text or "", "html.parser")))
+
+
 def write_state(html_text: str, state: dict) -> str:
     """Regenerate the reckon-owned meta + sections from `state`.
 
@@ -1097,7 +1184,11 @@ def write_state(html_text: str, state: dict) -> str:
                 out = _remove_meta(out, meta_name)
         if "tier" not in state:
             out = _remove_meta(out, "plan-tier")
-    if "impl" in state:
+    # A plan carrying records holds its impl as records, so the writer leaves the
+    # meta alone there — on either side of the write, since regeneration must
+    # stay byte-stable whether the records are on disk or only in the state, and
+    # a derived figure must never be stored as the authored one.
+    if "impl" in state and not _impl_is_carried_by_records(state, html_text):
         out = _set_meta(out, "plan-impl", state["impl"])
     if "version" in state:
         out = _set_meta(out, "plan-version", int(state.get("version") or 0))
@@ -1267,6 +1358,24 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
             rec["capability"] = mapped
             rec["compatibility_warnings"] = [f"plan: {diagnostic}"]
     warnings = list(rec.get("compatibility_warnings") or [])
+    # The record contract is validated in one place only: a document carrying
+    # record metadata is read by the parser, so this path can never report a
+    # figure the parsed read refuses to produce.
+    if _document_carries_records(text):
+        try:
+            parsed_state = read_state(text)
+        except ValueError:
+            parsed_state = None
+        derived = (
+            None
+            if parsed_state is None
+            else derive_impl_from_sections(parsed_state.get("sections"))
+        )
+        if derived is not None:
+            rec["impl"] = derived
+            rec["impl_source"] = "computed"
+        elif "plan-impl" in metas:
+            rec["impl_source"] = "authored"
     authored_hours = "plan-effort-hours" in metas and "effort_hours" in rec
     legacy_effort = metas.get("plan-effort", "")
     if authored_hours:

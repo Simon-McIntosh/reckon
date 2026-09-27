@@ -292,6 +292,35 @@
     <p><strong>Done when.</strong> impl on a contract-carrying plan equals the computed ratio on read, a plan
     with a new section added shows impl fall by the predicted amount without any other write, the SPA labels the
     figure as computed, and the calibration column shows authored against measured effort per done section.</p>
+    <p><strong>Landed at 8e67f2bc (base bcca11f0).</strong> The ratio is computed on read from the
+    records on both read paths, so the parsed readers, the regression fast path, the roadmap and
+    <code>read_plan</code> report one figure; a state-mode <code>set impl</code> on a
+    contract-carrying plan is refused, naming the records as the source; deferred effort stays
+    outside the denominator and a plan with no record in scope still reads its authored value. The
+    stored <code>plan-impl</code> meta is left alone whenever records carry the figure on either
+    side of a write, which is what keeps regeneration byte-stable. Two items of this section's
+    done-when are still open — the SPA label and the calibration column — and the green gate, the
+    negative control and the append-only statement are in
+    <code>docs/evidence/archive/section-contract-and-computed-impl-landed.html</code>.</p>
+    <p><strong>Fast path repaired at ec53f8f6.</strong> The regex fast path had accepted a record
+    element the parsed read refuses — one carrying authored prose — so the roadmap and the discovery
+    rows derived a figure for a plan whose parsed state raises. The fast path no longer reads records
+    itself: it detects that a document declares record metadata and hands the document to
+    <code>read_state</code>, falling back to the authored value when the parser refuses, so a record
+    the parser would refuse yields no figure on either reader. The refusal is pinned by
+    <code>test_a_record_element_carrying_authored_prose_yields_no_computed_figure</code>, which
+    reddens the pre-repair head, and the measured arms with the corrected counts are in
+    <code>docs/evidence/archive/section-contract-and-computed-impl-landed.html</code>.</p>
+    <p><strong>Writer gate repaired at d206de34.</strong> The writer had asked a text heuristic
+    whether a plan carried records, so a state-mode <code>set impl</code> on a plan that merely
+    documents the record syntax in its own prose was silently dropped — the call reported success
+    while the file stayed byte-unchanged. The gate now reads the state's typed records and, for a
+    state naming none, the parsed document's own record selector: a documenting plan keeps its
+    authored figure writable, while a plan holding records, or being given them, keeps its
+    <code>plan-impl</code> meta untouched on either side of the write, so a derived figure is
+    never stored back as the authored one. The new case pins the documenting plan end to end and
+    reddens the pre-repair head; the measured arms are in
+    <code>docs/evidence/archive/section-contract-and-computed-impl-landed.html</code>.</p>
 
     <h2 id="s4">§4 — attempts is a tool-owned counter</h2>
     <p><code>reckon crew dispatch</code> increments the target section's attempts when it launches a node on it
