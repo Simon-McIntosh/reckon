@@ -115,26 +115,6 @@
       <a href="/reckon/evidence/archive/a-review-is-sized-to-its-risk-landed#s2">§2 evidence</a>.</p>
     </div>
 
-    <div class="r-note" data-reckon="landed" data-node="promotion-reads-the-review-tier" data-when="2026-09-28">
-    <p><strong>Node 2 landed — promotion reads the tier.</strong> Promotion resolves each run's tier before it reads
-      the review gate, so the refusal and the ledger row agree about which review the run owes. The tier's four
-      inputs are read from the run at the promoted head — its changed paths, their added-plus-deleted line count, the
-      specification level its node declares, and the capability risk its plan or section declares — and the light
-      ceiling comes from the resolved <code>review.tiers</code> flight key, not a literal in the module.
-      <code>_require_review_waiver</code> now reads the tier in place of the role check: a <code>none</code>-tier run
-      promotes with no stored review and its row carries the tier as the reason none exists, a <code>light</code>- or
-      <code>full</code>-tier run is refused until a review of the promoted head is stored, and a review run stays
-      exempt. A run whose own declarations measure no scope is granted the fuller review, so silence is not read as a
-      safe change. Commit <code>5c013063</code>; <code>tests/test_promotion_reads_the_review_tier.py</code> adds six
-      cases across the three tiers; <a href="/reckon/evidence/archive/a-review-is-sized-to-its-risk-landed#s2">§2
-      evidence</a>.</p>
-    <p>Ten pre-existing cases in <code>tests/test_review_gate_coverage.py</code> and
-      <code>tests/test_promotion_reads_the_matching_review.py</code> still assert the gate this node retires — that
-      <em>any</em> repository path change owes a review, whatever the path class — and so fail against the tier gate.
-      They sit outside this node's write scope and are recorded as a follow-on: they need their fixtures pointed at
-      runtime-source paths (and their empty-scope expectations settled) rather than the plan's §1 premise reversed.</p>
-    </div>
-
     <h2 id="s3">§3 — One repair per review round</h2>
     <p><strong>Deliverable.</strong> When a review carries findings, the reflex (and any coordinator acting on it)
       composes exactly one repair node for that review round, whose brief lists every finding and whose write scope is
