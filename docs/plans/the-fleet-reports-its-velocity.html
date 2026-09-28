@@ -176,18 +176,20 @@
         per-run quota cost over the trailing seven days, priced from each committed run record's own
         <code>lane_receipt.quota_windows</code> seven-day row. The per-run cost is read as a <em>flow</em>,
         not a stock: a receipt's seven-day figure is the level its reset window stood at when the run was
-        harvested, so the cost is the rise from the earliest to the latest priced receipt of one window over
-        the runs that produced it, summed per window &mdash; a window that reset inside the trailing week
-        contributes its own rise and never its level against the current window's. A window with fewer than
-        two priced receipts, or none that rose, is unmeasured, never zero runs and never infinite; the
-        quantisation caveat and the age of both inputs ride the figure. A wave whose projected cost &mdash;
+        harvested, so the cost is the rise from the earliest to the latest priced receipt of one window,
+        divided by the intervals that rise spans &mdash; <code>n</code> receipts bound <code>n - 1</code>
+        gaps of spend, the first receipt being the level the rise starts from &mdash; summed per window. A
+        window that reset inside the trailing week contributes its own rise and never its level against the
+        current window's. A window with fewer than two priced receipts, or none that rose, is unmeasured,
+        never zero runs and never infinite; the quantisation caveat and the age of both inputs ride the
+        figure. A wave whose projected cost &mdash;
         its node count times that mean &mdash; exceeds the remaining window is refused before a worktree
         exists, with the runs remaining and the reset time in the refusal text, and the node it would have
         admitted is held rather than dropped. The judgement extends <code>_group_bar</code> and
         <code>group_pace</code> rather than adding a second bar; membership is
         <code>budget_group.declared_groups</code> and the drain deadline is
-        <code>pace.drain_deadline</code>'s, neither restated. Gate: 205 passed across the ten budget and pace
-        files including the 13 new cases, exit 0; base arm 192 passed. The declared control &mdash; pricing a
+        <code>pace.drain_deadline</code>'s, neither restated. Gate: 206 passed across the ten budget and pace
+        files including the 14 new cases, exit 0; base arm 192 passed. The declared control &mdash; pricing a
         run at its receipt's level again &mdash; reddens the rising-receipts case (8 failed, exit 1). Full
         record:
         <a href="/reckon/evidence/archive/the-fleet-reports-its-velocity-landed#s4-quota-runway">§4 quota runway</a>.</p>
