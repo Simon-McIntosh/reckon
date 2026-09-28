@@ -83,6 +83,27 @@
     "reason": "a hardening followup of §8, which was already declared done; it closes f-awpl-replay-guards-every-row-read rather than a section",
     "verdict": "waived"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "bdada7e56f7ccbb304413bf6e2a43346f5fce800",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "integrated_revision": "bdada7e56f7ccbb304413bf6e2a43346f5fce800",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision bdada7e56f7c: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "env -C /home/ITER/mcintos/Code/reckon PYTHONPATH=/home/ITER/mcintos/Code/reckon /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_pace_replay.py tests/test_dispatch_records_the_pace_row.py",
+    "gate_command_source": "option",
+    "integrated_revision": "bdada7e56f7ccbb304413bf6e2a43346f5fce800",
+    "integrated_verdict": "failed",
+    "ran": true,
+    "reason": null,
+    "timed_out": false
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
