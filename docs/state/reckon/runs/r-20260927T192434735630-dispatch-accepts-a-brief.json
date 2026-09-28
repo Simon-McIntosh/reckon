@@ -1,0 +1,321 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 3,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "3f251453cb064dd19f185bd32301a7e0ee59e491",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 4863962,
+      "input_tokens_cumulative": 4863962,
+      "output_tokens": 24612,
+      "output_tokens_cumulative": 24612,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 804,
+    "files": 7,
+    "removed": 37
+  },
+  "commit_resolution": null,
+  "commits": [
+    "dcb66ac8eb5a3f0773b71c49498bcfef454fd683",
+    "9f6f58b3f6a1d8e1f2e673927ad7d09d1aa3a4bf",
+    "92b7eca79df01916fc61e7251036fc47a5869c2e",
+    "cea78e5eb9a3b8767d2f4a2fe199f94cff38c7ae"
+  ],
+  "completed_at": "2026-09-28T05:24:35.359Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-27T19:24:53Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_brief_dispatch.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T192434735630-dispatch-accepts-a-brief/logs/gate-repair.log"
+  },
+  "impl_move": {
+    "at_complete": 0.4,
+    "at_dispatch": 0.25,
+    "plan": "a-worker-can-take-a-brief",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-27T20:24:36.172326+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-27T19:24:36Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 9,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 10,
+    "mean_context": 131429,
+    "observed_at": "2026-09-27T19:24:27Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T05:24:35.359Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T192434735630-dispatch-accepts-a-brief/manifest.md",
+  "member": "disposable-r-20260927T192434735630-dispatch-accepts-a-brief",
+  "negative_control": {
+    "declaration": "restore the committed plan-section check for a brief dispatch in reckon/crew/dispatch.py; the brief test must then fail with plan-unavailable",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T192434735630-dispatch-accepts-a-brief/logs/negative-control-repair.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T192434735630-dispatch-accepts-a-brief/logs/negative-control-repair.log",
+    "test_paths": [
+      "tests/fixtures/crew-public-surface.txt",
+      "tests/test_brief_dispatch.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "dispatch-accepts-a-brief",
+  "node_definition": {
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1265,
+          "cached_input_tokens": 566408,
+          "input_tokens": 567675,
+          "output_tokens": 280,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 567955,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "tests/test_brief_dispatch.py dispatches with --brief naming a brief file and no --plan, once with --dry-run and once through a stub launcher, and asserts a live pointer carrying brief.sha256 and brief.path plus the brief copied under the run directory. The same test shows a brief dispatch missing --done-when refused as not-dispatchable exactly as a plan dispatch is, and --brief together with --plan refused. It passes at exit 0, and tests/test_brief_prompt.py and tests/test_crew_dispatch_guard.py show no failure absent at the base, each arm's log header printing its revision and reckon.__file__. The manifest cites the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-dispatch-surface/reuse-map.md for the seams the section names. The declared negative control is applied, the brief test is observed to fail with plan-unavailable, and that log's absolute path is in the manifest.",
+    "estimated_hours": null,
+    "goal": "Let reckon crew dispatch take a stored brief in place of a committed plan section",
+    "id": "dispatch-accepts-a-brief",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-27T19:24:36Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 9,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 10,
+      "mean_context": 131429,
+      "observed_at": "2026-09-27T19:24:27Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T192434735630-dispatch-accepts-a-brief/manifest.md",
+    "negative_control": "restore the committed plan-section check for a brief dispatch in reckon/crew/dispatch.py; the brief test must then fail with plan-unavailable",
+    "plan": "a-worker-can-take-a-brief",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/cli.py",
+      "reckon/crew/dispatch.py",
+      "reckon/crew/node.py",
+      "reckon/crew.py",
+      "tests/fixtures/crew-public-surface.txt",
+      "tests/test_brief_dispatch.py",
+      "docs/evidence/archive/a-worker-can-take-a-brief-landed.html",
+      "docs/figures/a-worker-can-take-a-brief",
+      "docs/plans/a-worker-can-take-a-brief.html"
+    ]
+  },
+  "orientation_input_tokens": 3209160.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "dispatch-accepts-a-brief",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-27T19:24:48.655585+00:00",
+    "score": 0.7375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-worker-can-take-a-brief",
+  "plan_impl_at_dispatch": 0.25,
+  "promoted_revision": "cea78e5eb9a3b8767d2f4a2fe199f94cff38c7ae",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 16,
+      "evidence": 18,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 91
+  },
+  "role": "implement",
+  "run_id": "r-20260927T192434735630-dispatch-accepts-a-brief",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "ddef7edf-294e-4fcd-a6af-ea184ab58015",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 9820525,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 569.65,
+    "generated_tokens": 51796,
+    "generation_seconds": 369.265,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 28.2,
+    "machine_seconds": 200.385,
+    "peak_input_tokens": 135548,
+    "tokens_per_second": 140.27,
+    "wall_tokens_per_second": 90.93
+  },
+  "time_budget": "60m",
+  "tool_steps": 118.0,
+  "unreconciled_override": null,
+  "wall_seconds": 35982,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 3,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T05:24:35Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T05:15:02Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260927T192434735630-dispatch-accepts-a-brief",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 13186,
+    "worker_pid": 3891877
+  },
+  "worker_seconds": 35952,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
