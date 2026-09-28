@@ -1336,6 +1336,23 @@ def record_gate_rerun_at_integrated_revision(
     }
 
 
+def _manifest_cites_a_commit(manifest: Mapping[str, Any]) -> bool:
+    """Whether a manifest's ``commits`` field cites at least one commit.
+
+    The field is free text a worker wrote, and a run with nothing to commit
+    writes a sentence that opens with the declaration word ``none`` — the shape
+    a review delivers. Such a line is not a citation, so it must not answer the
+    commit-for-changed-manifest guard's question: a manifest that names an
+    in-repository path needs the commit that contains it, and a declared absence
+    over one is a contradiction the guard must read as the missing commit it is.
+    An entry that names a commit is a citation; a declared absence is not, and
+    any other value counts as a citation, so an unrecognised spelling is refused
+    rather than silently dropped.
+    """
+    entries = [str(item).strip() for item in (manifest.get("commits") or ())]
+    return any(entry and not _declares_absent_commits(entry) for entry in entries)
+
+
 def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:
     """True when the manifest's changed_paths declare none in prose.
 
@@ -1414,7 +1431,10 @@ def _require_commit_for_changed_manifest(
     entirely outside it — a report-only or review run — to promote without a
     commit, which is its correct disposition. The chain answers the narrower
     question first: only once a path needs a commit does the absent ``commits``
-    field become the defect.
+    field become the defect. A ``commits`` line that declares its own absence
+    is not a citation, so it does not answer the question either: a run naming an
+    in-repository path while declaring it has no commit is the contradiction this
+    guard exists for, whatever role carried it.
     """
     manifest_present, fresh = _manifest_freshness(record)
     if not manifest_present or not fresh:
@@ -1429,7 +1449,7 @@ def _require_commit_for_changed_manifest(
         str(manifest.get("status") or "").strip().lower() != "complete"
         or not manifest.get("changed_paths")
         or _prose_changed_paths_name_no_paths(manifest)
-        or manifest.get("commits")
+        or _manifest_cites_a_commit(manifest)
         or not _changed_paths_inside_repository(manifest, record)
     ):
         return
