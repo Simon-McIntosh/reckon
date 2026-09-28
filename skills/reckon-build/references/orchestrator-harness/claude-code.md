@@ -175,8 +175,12 @@ stall or a failure included), and `unpromoted` is delivered work awaiting a gate
 They add up to the runs in flight, which is why none of them is called `live` —
 a pointer count in that position is read as work in progress and is not.
 
-Attaching opens with one line per live run, so the pane is never blank while
-work exists:
+The first arming for a session opens with one line per live run, so a reader
+attaching for the first time is never looking at a blank pane. A re-arm
+continues from where the previous arming stopped and prints only what moved
+since, so a re-arm with nothing new is silent — the runs it already showed are
+not replayed. To read the fleet as it stands at any moment, ask for it directly
+with `crew(view="live")` rather than re-arming:
 
 ```
 12:30:11  <model>/<effort>   hdg-cache-replay    → dispatched        2 working · 0 blocked · 0 unpromoted
