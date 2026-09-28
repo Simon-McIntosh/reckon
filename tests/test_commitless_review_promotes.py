@@ -35,6 +35,8 @@ RUN_IDS = (
     "r-20260928T100000000001-review-commitless",
     "r-20260928T100000000002-implement-commitless",
     "r-20260928T100000000003-review-in-repository-path",
+    "r-20260928T100000000004-review-commitless-comma",
+    "r-20260928T100000000005-implement-commitless-comma",
 )
 
 # The sentence a review writes when it has no repository change to cite, in the
@@ -42,6 +44,10 @@ RUN_IDS = (
 REVIEW_COMMITS_PROSE = (
     "none (review node; no repository change; the review is the deliverable)"
 )
+
+# The same declaration with a comma inside its parenthetical, which the manifest
+# parser splits into several entries.
+COMMA_COMMITS_PROSE = "none (review node, no repository change)"
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -162,14 +168,10 @@ def _promotes(repository: Path, run_id: str) -> dict:
     try:
         return crew.complete(run_id, gate="passed", root=repository)
     except crew.CrewError as refusal:  # pragma: no cover - reported, not swallowed
-        raise AssertionError(
-            f"run {run_id!r} was refused: {refusal}"
-        ) from refusal
+        raise AssertionError(f"run {run_id!r} was refused: {refusal}") from refusal
 
 
-def test_review_declaring_no_commits_promotes(
-    repository: Path, tmp_path: Path
-) -> None:
+def test_review_declaring_no_commits_promotes(repository: Path, tmp_path: Path) -> None:
     """A review's ``commits: none (...)`` is read as an empty list, not a citation."""
     run_id = RUN_IDS[0]
     delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
@@ -247,6 +249,64 @@ def test_a_non_implement_role_cannot_hide_a_change_behind_the_prose(
     )
 
     with pytest.raises(crew.CrewError, match="manifest field 'commits' is missing"):
+        crew.complete(run_id, gate="passed", root=repository)
+
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+def test_review_declaring_no_commits_with_a_comma_still_promotes(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A parenthetical comma does not split the declaration into citations.
+
+    The manifest parser splits ``commits:`` on commas, so this sentence arrives
+    as two entries and only the first opens with the declaration word. Read
+    entry by entry the tail would be refused as an unresolvable citation, which
+    is the hand edit this removes.
+    """
+    run_id = RUN_IDS[3]
+    delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
+    manifest = _manifest(
+        tmp_path,
+        run_id,
+        changed_paths=str(delivered),
+        commits=COMMA_COMMITS_PROSE,
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="review",
+        node_id=f"review-of-{PLAN}",
+    )
+
+    promoted = _promotes(repository, run_id)
+
+    assert promoted["record"]["commits"] == []
+    assert not pointer_path(run_id).exists()
+
+
+def test_implement_declaring_no_commits_with_a_comma_is_refused(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A role that commits gets no whole-field reading, so the split tail is refused."""
+    run_id = RUN_IDS[4]
+    manifest = _manifest(
+        tmp_path,
+        run_id,
+        changed_paths="candidate.txt",
+        commits=COMMA_COMMITS_PROSE,
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="implement",
+        node_id=f"build-{PLAN}",
+    )
+
+    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
         crew.complete(run_id, gate="passed", root=repository)
 
     assert pointer_path(run_id).is_file()

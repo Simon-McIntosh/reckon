@@ -438,6 +438,48 @@ def _declares_absent_commits(entry: str) -> bool:
     return head in _MANIFEST_NOTHING
 
 
+# Roles whose run carries no repository work to commit: a review delivers a
+# report and an investigation delivers findings, so a ``commits:`` line that
+# declares an absence is the honest answer and ``none`` is the word for it.
+_COMMITLESS_ROLES: frozenset[str] = frozenset({"review", "investigate"})
+
+
+def _commits_field_declares_absence(
+    manifest: Mapping[str, Any], record: Mapping[str, Any]
+) -> bool:
+    """Whether a commitless run's whole ``commits`` field declares an absence.
+
+    A report-only node writes one sentence into the field — ``commits: none
+    (review node; no repository change; the manifest is the deliverable)``. The
+    manifest parser splits the field on commas, so the same sentence with a
+    comma inside its parenthetical — ``none (review node, no repository
+    change)`` — arrives as several entries, and only the first opens with the
+    declaration word. Read entry by entry, the split tail looks like an
+    unresolvable citation and the line has to be blanked by hand, which is the
+    symptom this recognition exists to remove.
+
+    The field is one value the node wrote, so the declaration is read from its
+    first token across the whole value, before any entry is treated as a
+    citation. The reading is given only to a role that carries no repository
+    work: for a role that commits, the same field is read entry by entry, so a
+    role that could cite a revision still has every fragment resolved and still
+    refused when it names nothing.
+    """
+    from reckon.crew.recovery import _pointer_role
+
+    if _pointer_role(record) not in _COMMITLESS_ROLES:
+        return False
+    entries = [
+        str(entry).strip()
+        for entry in (manifest.get("commits") or ())
+        if str(entry).strip()
+    ]
+    if not entries:
+        return False
+    opening = entries[0].split("(", 1)[0].split()
+    return bool(opening) and opening[0].lower() in _MANIFEST_NOTHING
+
+
 def _unresolved_citations(root: Path, entries: Iterable[str]) -> list[str]:
     """The cited identifiers that resolve to no object in the given store.
 
@@ -538,6 +580,7 @@ def _require_gate_evidence(
     declared = [
         str(sha).strip() for sha in (delivered.get("commits") or []) if str(sha).strip()
     ]
+    declared_absent = _commits_field_declares_absence(delivered, record)
 
     presented = [str(sha).strip() for sha in commits if str(sha).strip()]
     if presented:
@@ -585,7 +628,7 @@ def _require_gate_evidence(
     # nothing is the defect this refusal exists for, so it is raised under the
     # citation's own name before the commitless guard below can answer with the
     # broader complaint that no commit was cited at all.
-    unresolved = _unresolved_citations(tree, declared)
+    unresolved = [] if declared_absent else _unresolved_citations(tree, declared)
     if unresolved:
         raise CrewError(
             f"run {run_id!r} cites "
@@ -605,11 +648,15 @@ def _require_gate_evidence(
     # neither a revision nor an omission, and matching a literal "none"
     # would refuse it. Resolving instead of pattern-matching cannot make
     # that mistake.
-    stated = [
-        candidate
-        for candidate in declared
-        if candidate and _commit_resolves_in(tree, candidate)
-    ]
+    stated = (
+        []
+        if declared_absent
+        else [
+            candidate
+            for candidate in declared
+            if candidate and _commit_resolves_in(tree, candidate)
+        ]
+    )
     if stated:
         raise CrewError(
             f"run {run_id!r} has a passing gate and cites no commit, but its "
@@ -1336,7 +1383,9 @@ def record_gate_rerun_at_integrated_revision(
     }
 
 
-def _manifest_cites_a_commit(manifest: Mapping[str, Any]) -> bool:
+def _manifest_cites_a_commit(
+    manifest: Mapping[str, Any], record: Mapping[str, Any]
+) -> bool:
     """Whether a manifest's ``commits`` field cites at least one commit.
 
     The field is free text a worker wrote, and a run with nothing to commit
@@ -1347,8 +1396,12 @@ def _manifest_cites_a_commit(manifest: Mapping[str, Any]) -> bool:
     over one is a contradiction the guard must read as the missing commit it is.
     An entry that names a commit is a citation; a declared absence is not, and
     any other value counts as a citation, so an unrecognised spelling is refused
-    rather than silently dropped.
+    rather than silently dropped. A commitless role's whole-field declaration is
+    honoured first, so a sentence whose commas split it into several entries is
+    still read as the single absence it is rather than as a citation list.
     """
+    if _commits_field_declares_absence(manifest, record):
+        return False
     entries = [str(item).strip() for item in (manifest.get("commits") or ())]
     return any(entry and not _declares_absent_commits(entry) for entry in entries)
 
@@ -1449,7 +1502,7 @@ def _require_commit_for_changed_manifest(
         str(manifest.get("status") or "").strip().lower() != "complete"
         or not manifest.get("changed_paths")
         or _prose_changed_paths_name_no_paths(manifest)
-        or _manifest_cites_a_commit(manifest)
+        or _manifest_cites_a_commit(manifest, record)
         or not _changed_paths_inside_repository(manifest, record)
     ):
         return
