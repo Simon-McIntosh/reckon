@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 620" width="1020" height="620" role="img"
+     aria-label="Two lanes. Lane one: commits 98ac4ced and e7b5051d gave each run its own file and made append create it, so a failed landing's rollback drops that file and the receipt names it; three ids turned green. Lane two: commit 3d02a02f made load read committed run files and order them by completion, so a row is no longer at its append position; one id turned green.">
+  <style>
+    .t { font-family: system-ui, -apple-system, Segoe UI, sans-serif; fill: #1f2933; }
+    .h { font-size: 19px; font-weight: 600; }
+    .s { font-size: 13px; fill: #52606d; }
+    .col { font-size: 12px; font-weight: 600; fill: #7b8794; letter-spacing: 0.06em; }
+    .c { font-size: 13.5px; font-weight: 600; }
+    .d { font-size: 12.5px; fill: #3e4c59; }
+    .id { font-size: 12.5px; }
+    .meta { font-size: 12.5px; fill: #52606d; }
+    .flow { stroke: #9aa5b1; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .lane { fill: #f5f7fa; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9aa5b1"/>
+    </marker>
+  </defs>
+
+  <text class="t h" x="40" y="38">Four red ids, and the change that moved the contract each asserts</text>
+  <text class="t s" x="40" y="60">base ba1a26e4 (four ids failed) &#183; head d9999ede (three test files green, 27 passed) &#183; tests/ only: nothing under reckon/ was modified</text>
+
+  <text class="t col" x="40" y="96">THE COMMIT THAT MOVED IT</text>
+  <text class="t col" x="420" y="96">WHAT THE CODE DOES AT HEAD</text>
+  <text class="t col" x="740" y="96">ID TURNED GREEN</text>
+
+  <!-- Lane A: the row lives in its own file -->
+  <rect class="lane" x="30" y="108" width="960" height="196" rx="8"/>
+
+  <rect x="40" y="122" width="350" height="60" rx="6" fill="#ffffff" stroke="#cbd2d9"/>
+  <text class="t c" x="54" y="144">98ac4ced</text>
+  <text class="t d" x="54" y="163">each run's row is written to its own file under</text>
+  <text class="t d" x="54" y="178">the ledger's runs/ directory</text>
+
+  <rect x="40" y="196" width="350" height="60" rx="6" fill="#ffffff" stroke="#cbd2d9"/>
+  <text class="t c" x="54" y="218">e7b5051d</text>
+  <text class="t d" x="54" y="237">append_run creates that file exclusively and</text>
+  <text class="t d" x="54" y="252">returns its path, not the aggregate ledger's</text>
+
+  <path class="flow" d="M 390 152 C 404 152 404 190 418 194"/>
+  <path class="flow" d="M 390 226 C 404 226 404 214 418 210"/>
+
+  <rect x="420" y="120" width="300" height="146" rx="6" fill="#ffffff" stroke="#2b8a6b" stroke-width="1.4"/>
+  <text class="t d" x="434" y="144">a failed landing's rollback drops the run file</text>
+  <text class="t d" x="434" y="162">it wrote, so the appended row leaves the</text>
+  <text class="t d" x="434" y="180">working tree with it; the receipt names that</text>
+  <text class="t d" x="434" y="198">file as the rolled-back store and says to</text>
+  <text class="t d" x="434" y="216">re-promote. A restore git refuses preserves</text>
+  <text class="t d" x="434" y="234">only a path HEAD already carries, so the</text>
+  <text class="t d" x="434" y="252">second case seeds the run file into HEAD.</text>
+
+  <path class="flow" d="M 720 160 C 732 160 732 152 744 152"/>
+  <path class="flow" d="M 720 191 C 732 191 732 198 744 198"/>
+  <path class="flow" d="M 720 222 C 732 222 732 244 744 244"/>
+
+  <rect x="744" y="130" width="236" height="44" rx="6" fill="#e8f4ef" stroke="#2b8a6b"/>
+  <text class="t id" x="756" y="149">test_receipt_names_the_rolled_back_row.py</text>
+  <text class="t id" x="756" y="166">::...receipt_names_re_promotion_as_the_recovery</text>
+
+  <rect x="744" y="180" width="236" height="44" rx="6" fill="#e8f4ef" stroke="#2b8a6b"/>
+  <text class="t id" x="756" y="199">test_receipt_names_the_rolled_back_row.py</text>
+  <text class="t id" x="756" y="216">::...keeps_the_do_not_re_promote_wording</text>
+
+  <rect x="744" y="230" width="236" height="44" rx="6" fill="#e8f4ef" stroke="#2b8a6b"/>
+  <text class="t id" x="756" y="249">test_rollback_asks_head.py</text>
+  <text class="t id" x="756" y="266">::test_failure_after_append_names_the_row_state[stage]</text>
+
+  <!-- Lane B: read order -->
+  <rect class="lane" x="30" y="320" width="960" height="150" rx="8"/>
+
+  <rect x="40" y="334" width="350" height="60" rx="6" fill="#ffffff" stroke="#cbd2d9"/>
+  <text class="t c" x="54" y="356">3d02a02f</text>
+  <text class="t d" x="54" y="375">load() reads committed run files and orders</text>
+  <text class="t d" x="54" y="390">rows by completion stamp, run id breaking ties</text>
+
+  <path class="flow" d="M 390 364 C 404 364 404 364 418 364"/>
+
+  <rect x="420" y="334" width="300" height="60" rx="6" fill="#ffffff" stroke="#2b8a6b" stroke-width="1.4"/>
+  <text class="t d" x="434" y="357">ledger.runs() is no longer append order:</text>
+  <text class="t d" x="434" y="375">stored[8] is pass-3, not rejected-0</text>
+
+  <path class="flow" d="M 720 364 C 732 364 732 364 744 364"/>
+
+  <rect x="744" y="338" width="236" height="52" rx="6" fill="#e8f4ef" stroke="#2b8a6b"/>
+  <text class="t id" x="756" y="359">test_failure_classification.py</text>
+  <text class="t id" x="756" y="376">::test_worker_pass_rate_uses_only_</text>
+  <text class="t id" x="756" y="390">work_rejected_failures</text>
+
+  <!-- Gate strip -->
+  <rect x="30" y="490" width="960" height="104" rx="8" fill="#fff8e6" stroke="#c99700"/>
+  <text class="t c" x="46" y="516">Gate: the three files at base and at head, each arm one log with its own EXIT line</text>
+  <text class="t d" x="46" y="540">base: 4 failed, 23 passed, EXIT=1 &#8212; only the named ids (2 + 1 + 1) &#183; head: 27 passed, EXIT=0 &#8212; zero failing ids, none added</text>
+  <text class="t d" x="46" y="562">asserts per edited function, base &#8594; head: 9 &#8594; 11 &#183; 5 &#8594; 5 &#183; 14 &#8594; 14 &#183; 6 &#8594; 6 &#8212; no assertion deleted</text>
+  <text class="t d" x="46" y="584">negative control: one edited assertion reverted to its base form in a scratch head &#8594; that test fails (1 failed, 2 passed, EXIT=1)</text>
+</svg>
