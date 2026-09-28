@@ -445,9 +445,9 @@ def _declares_absent_commits(entry: str) -> bool:
 _COMMITLESS_ROLES: frozenset[str] = frozenset({"review", "investigate"})
 
 # What may follow an absence word for the word to stand alone: the end of the
-# value, whitespace, or a separator a node writes before its prose. A letter or
-# digit after the letters means a longer word that merely begins with them.
-_ABSENCE_BOUNDARY = r"(?:\s|$|[,;:—\-()])"
+# value, or any character that is not a letter, digit or underscore. A word
+# character after the letters means a longer word that merely begins with them.
+_ABSENCE_BOUNDARY = r"(?!\w)"
 
 _FIELD_LINE = re.compile(r"^([A-Za-z_][\w-]*)\s*:\s*(.*)$")
 
@@ -475,10 +475,12 @@ def _raw_manifest_field(text: str, key: str) -> str | None:
 def _opens_with_an_absence_word(value: str) -> bool:
     """Whether a raw field value opens with an absence word and then a boundary.
 
-    The word must stand alone — followed by the end of the value, whitespace, or
-    a separator (comma, semicolon, colon, dash, em dash, opening parenthesis).
-    ``nonesuch`` begins with the letters of ``none`` but is a different word, so
-    it is not a declaration and is read as the citation it looks like.
+    The word must stand alone — followed by the end of the value or by any
+    character that is not a letter, digit or underscore, so sentence punctuation
+    such as a full stop, an en dash, a slash or a closing parenthesis ends the
+    word exactly as the end of the value does. ``nonesuch`` begins with the
+    letters of ``none`` but continues with a letter, so it is a different word,
+    not a declaration, and is read as the citation it looks like.
     """
     stripped = value.strip()
     return any(

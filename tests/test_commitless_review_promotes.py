@@ -42,6 +42,11 @@ RUN_IDS = (
     "r-20260928T100000000008-review-dash-absence",
     "r-20260928T100000000009-implement-comma-absence",
     "r-20260928T100000000010-review-not-a-declaration",
+    "r-20260928T100000000011-review-full-stop-absence",
+    "r-20260928T100000000012-review-en-dash-absence",
+    "r-20260928T100000000013-review-slash-absence",
+    "r-20260928T100000000014-review-close-paren-absence",
+    "r-20260928T100000000015-implement-full-stop-absence",
 )
 
 # The sentence a review writes when it has no repository change to cite, in the
@@ -61,6 +66,20 @@ BARE_ABSENCE_SHAPES = (
     ("r-20260928T100000000006-review-comma-absence", "none, no repository change"),
     ("r-20260928T100000000007-review-semicolon-absence", "none; review only"),
     ("r-20260928T100000000008-review-dash-absence", "none - review only"),
+)
+
+# Sentence punctuation after the declaration word: a full stop, an en dash, a
+# slash and a closing parenthesis each end the word, so the value declares an
+# absence and promotes. The word must stand alone, and any character that is
+# not a letter, digit or underscore ends it.
+PUNCTUATION_ABSENCE_SHAPES = (
+    ("r-20260928T100000000011-review-full-stop-absence", "none. review only"),
+    (
+        "r-20260928T100000000012-review-en-dash-absence",
+        "none " + chr(0x2013) + " review only",
+    ),
+    ("r-20260928T100000000013-review-slash-absence", "none/review only"),
+    ("r-20260928T100000000014-review-close-paren-absence", "none) review only"),
 )
 
 
@@ -407,6 +426,64 @@ def test_a_word_that_only_begins_with_an_absence_word_is_not_a_declaration(
         manifest,
         role="review",
         node_id=f"review-of-{PLAN}",
+    )
+
+    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
+        crew.complete(run_id, gate="passed", root=repository)
+
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+@pytest.mark.parametrize(("run_id", "commits_text"), PUNCTUATION_ABSENCE_SHAPES)
+def test_sentence_punctuation_after_the_absence_word_promotes_on_a_review(
+    repository: Path, tmp_path: Path, run_id: str, commits_text: str
+) -> None:
+    """Any non-word character ends the absence word, so the shape promotes.
+
+    The declaration word must stand alone, and a letter, digit or underscore is
+    what would extend it into a different word. A full stop, an en dash, a slash
+    and a closing parenthesis are none of those, so each ends the word and the
+    value declares the absence it opens with.
+    """
+    delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
+    manifest = _manifest(
+        tmp_path,
+        run_id,
+        changed_paths=str(delivered),
+        commits=commits_text,
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="review",
+        node_id=f"review-of-{PLAN}",
+    )
+
+    promoted = _promotes(repository, run_id)
+
+    assert promoted["record"]["commits"] == []
+    assert not pointer_path(run_id).exists()
+
+
+def test_an_implement_run_refuses_a_full_stop_after_the_absence_word(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The punctuation rule is the commitless reading; a committing role keeps citations."""
+    run_id = RUN_IDS[14]
+    manifest = _manifest(
+        tmp_path,
+        run_id,
+        changed_paths="candidate.txt",
+        commits="none. no repository change",
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="implement",
+        node_id=f"build-{PLAN}",
     )
 
     with pytest.raises(crew.CrewError, match="does not resolve to an object"):
