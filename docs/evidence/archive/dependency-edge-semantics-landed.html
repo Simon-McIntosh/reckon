@@ -881,41 +881,45 @@
     <code>ca54e0b7</code> carries the change.</p>
 
     <p><strong>Arms, measured.</strong> The gate is <code>tests/test_roadmap.py</code> plus
-    <code>tests/test_schema.py</code>. At head it reads <strong>3 failed / 1665 passed</strong>
-    (<code>logs/after-suite.log</code>); at the base revision, with the four changed files restored,
-    <strong>3 failed / 1661 passed</strong> (<code>logs/baseline-suite.log</code>). Both arms fail the
+    <code>tests/test_schema.py</code>. At head it reads <strong>3 failed / 1666 passed</strong>
+    (<code>logs/after-suite.log</code>, <code>EXIT=1</code>); at the base revision, over a scratch export
+    of the base tree, <strong>3 failed / 1661 passed</strong> (<code>logs/baseline-suite.log</code>,
+    <code>EXIT=1</code>). Both arms fail the
     same three pre-existing ids — <code>test_canonical_dump_equals_read_state[full]</code>,
     <code>test_cross_project_conformance[imas-ambix:dsv41-flash-four-card-throughput-landed]</code>,
     <code>test_cross_project_conformance[reckon:orchestrator-crew-pattern-studies-landed]</code> — so
     <strong>zero added failing ids</strong> and the node's cases contribute
-    <strong>+4 passes</strong> (two roadmap, two schema), the old count being clean at the base because
+    <strong>+5 passes</strong> (two roadmap, three schema), the old count being clean at the base because
     the cases are new. A first base arm was taken from a bare archive with no <code>.git</code> and read
     a fourth, spurious failure — the evidence-citation case resolves sha citations against mounted
-    project repositories — so the arm was retaken from a copy of the worktree carrying the base
-    revisions, which reads the same three ids as head.</p>
+    project repositories — so the arm was retaken with the git directory reachable, which reads the same
+    three ids as head. The round-trip case alone at head is <strong>3 passed</strong>,
+    <code>EXIT=0</code> (<code>logs/round-trip-case.log</code>).</p>
 
     <p><strong>Declared negative control.</strong> Its first line is the declared string verbatim:
     <code>ignore the decision's sections list in a scratch copy of roadmap.py; the unscoped section s2
-    must drop out of the ready set</code>. In that copy <code>_plan_decision_sections</code> returns
-    <code>None</code> unconditionally, so the scoped decision lands in the plan-level set again. The
+    must drop out of the ready set</code>. In that copy the two lines that read the decision's sections —
+    the row's own list, then the reader's mapping — are replaced with <code>scoped = None</code>, so the
+    mapping reaches no decision row and the scoped decision lands in the plan-level set again. The
     scoped case fails first, at <code>assert False is True</code> on <code>row["ready"] is True</code> —
     the plan is back in whole-plan blocking and <code>s2</code> is out of the unscoped ready set, which
     is the regression the scoping exists to prevent — while the unscoped case still passes, because
     ignoring scoping cannot change a plan that declares none. <strong>1 failed / 1 passed</strong>,
-    log <code>logs/negative-control.log</code>.</p>
+    <code>EXIT=1</code>, log <code>logs/negative-control.log</code>.</p>
 
-    <p><strong>Not landed, and known.</strong> The element's write path.
-    <code>reckon/_plan_html.py</code> rebuilds the decisions section from a fixed eight-key record in
-    <code>_render_decisions</code> and writes only the four <code>data-*</code> attributes it knows, so
-    a state write drops a <code>data-sections</code> list; <code>read_state</code>'s decisions loop does
-    not carry it either, and <code>docs/_shared/plan.schema.json</code> needs regenerating once the
-    typed model carries the field. Both files sit outside this node's declared write scope. A verified
-    patch is staged at <code>scope-extension.patch</code> in the run directory
-    (<code>r-20260928T124215588759-section-scoped-decision-blocks</code>), proved in a scratch tree:
-    <code>read_state</code> carries the list, <code>write_state(html, read_state(html))</code>
-    round-trips, the typed <code>canonical_dump</code>/<code>to_html</code> round-trips, and the
-    round-trip case passes there (<code>3 passed</code>). The reader and the roadmap behaviour above are
-    reusable unchanged on resume; only the write half remains.</p>
+    <p><strong>The write path.</strong> The scoping survives a state write.
+    <code>reckon/_plan_html.py</code>'s <code>read_state</code> carries the list off each decision
+    element and <code>_render_decisions</code> writes it back only when non-empty, so an unscoped plan's
+    rendered output is byte-identical to before and a scoped one keeps the attribute across
+    <code>write_state(html, read_state(html))</code>. The typed model carries the field
+    (<code>Decision.sections</code>) and <code>docs/_shared/plan.schema.json</code> is regenerated from
+    the model rather than by hand — <code>sha256 2fb63d75…b75b5</code>, a second regeneration from the
+    same model byte-identical (<code>cmp</code> clean). A round-trip case holds the two ends together,
+    and wiring the reader into the write path exposed one defect in this node's own roadmap code: a
+    scoped decision reached the section-universe build through the inventory row as well as the plan
+    file, where a row whose declarations cannot be read gave <code>None</code> to <code>set()</code>; the
+    read now defaults to empty there, and the arm was retaken after that fix. Commit
+    <code>90e54494</code> carries the write path.</p>
 
     <figure>
       <img src="/reckon/figures/dependency-edge-semantics/decision-scoped-to-its-sections.svg"
@@ -926,7 +930,7 @@
       whether the decision names its sections decides which of them wait and whether the plan does.</figcaption>
     </figure>
 
-    <p>Commit in the node: <code>ca54e0b7</code>. Section closure and the driving followup remain with
+    <p>Commits in the node: <code>ca54e0b7</code>, <code>b4ad8f33</code>, <code>90e54494</code>. Section closure and the driving followup remain with
     the coordinator.</p>
   </section>
 
