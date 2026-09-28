@@ -46,6 +46,12 @@ INFRA_DIRS = frozenset(
         ".reckon",
     }
 )
+#: A node's landing record is written as its own fragment under
+#: ``evidence/fragments/<plan>/<node>.html`` and composed into that plan's
+#: cumulative record at read time. A fragment is not a typed resource in its own
+#: right, so every discovery walk passes over the subtree rather than refusing a
+#: path shape the typed roots reserve for their own documents.
+EVIDENCE_FRAGMENTS_SUBTREE = ("evidence", "fragments")
 NON_RESOURCE_FILES = frozenset(
     {
         "index.html",
@@ -213,10 +219,18 @@ def canonical_href(
     )
 
 
+def _is_evidence_fragment(relative_path: PurePosixPath) -> bool:
+    """Report whether a path is a plan's evidence fragment rather than a resource."""
+    parts = relative_path.parts
+    return parts[:2] == EVIDENCE_FRAGMENTS_SUBTREE
+
+
 def _path_context(relative_path: PurePosixPath) -> tuple[str | None, bool, bool]:
     parts = relative_path.parts
     if not parts:
         return None, False, True
+    if _is_evidence_fragment(relative_path):
+        return None, False, False
     typed = ROOT_TYPES.get(parts[0])
     if typed is not None and not (
         len(parts) == 2 or (len(parts) == 3 and parts[1] == "archive")
@@ -254,6 +268,8 @@ def identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | No
     if path.name in NON_RESOURCE_FILES:
         return None
     if any(part in INFRA_DIRS for part in relative.parts[:-1]):
+        return None
+    if _is_evidence_fragment(relative):
         return None
 
     location_type, archived, legacy = _path_context(relative)
@@ -466,6 +482,8 @@ def _scan_resources(
 ) -> list[Resource]:
     resources: list[Resource] = []
     for path in sorted(docs_dir.rglob("*.html")):
+        if _is_evidence_fragment(PurePosixPath(path.relative_to(docs_dir).as_posix())):
+            continue
         try:
             resource = identify_resource(docs_dir, path, project)
         except ResourceCollision:
@@ -773,6 +791,8 @@ def _load_prior_manifest(docs_dir: Path, project: str) -> dict:
 def _migration_candidates(docs_dir: Path, project: str) -> list[Resource]:
     resources: list[Resource] = []
     for path in sorted(docs_dir.rglob("*.html")):
+        if _is_evidence_fragment(PurePosixPath(path.relative_to(docs_dir).as_posix())):
+            continue
         typed = _typed_migration_resource(docs_dir, path, project)
         if typed is not None:
             resources.append(typed)
@@ -998,6 +1018,8 @@ def migrate_typed_layout(docs_dir: Path, project: str) -> dict:
     }
     for path in sorted(docs_dir.rglob("*.html")):
         relative = PurePosixPath(path.relative_to(docs_dir).as_posix())
+        if _is_evidence_fragment(relative):
+            continue
         _contained_path(docs_dir, relative, label="migration document")
         destination = moves.get(relative, relative)
         _contained_path(docs_dir, destination, label="migration document destination")
