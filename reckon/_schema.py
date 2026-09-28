@@ -55,7 +55,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Container, Mapping
 from html import unescape
 from pathlib import Path
 from typing import Any
@@ -361,6 +361,51 @@ def is_section_identity(value: Any) -> bool:
     return bool(_RESOURCE_SEGMENT_RE.fullmatch(str(value or "").strip()))
 
 
+#: Attribute on a decision element naming the sections that decision governs.
+DECISION_SECTIONS_ATTRIBUTE = "data-sections"
+
+_DECISION_ELEMENT_RE = re.compile(
+    r"<[a-z][\w:-]*\b(?P<attrs>[^>]*\bclass\s*=\s*[\"'][^\"']*\br-dec(?=[\s\"'])[^\"']*[\"'][^>]*)>",
+    re.IGNORECASE,
+)
+_ELEMENT_ATTRIBUTE_RE = re.compile(r"""([:\w-]+)\s*=\s*["']([^"']*)["']""")
+
+
+def decision_sections(html_text: str) -> dict[str, list[str]] | None:
+    """Return a plan's decision→sections mapping, or ``None``.
+
+    A decision that governs part of a plan names those sections on its own
+    element (``data-sections="s3,s4"`` on ``.r-dec``); readiness then holds
+    only the named sections while their siblings stay dispatchable. A decision
+    that names no sections keeps governing the whole plan — the behaviour every
+    decision had before — so ``None`` means no decision on this plan scopes
+    itself rather than no opinion.
+
+    The mapping is keyed by the decision's ``data-key``, the same key parsed
+    state carries it under. Identities are read as authored and nothing here
+    validates them against the plan: a decision scoped to a section that does
+    not exist is reported by :func:`decision_section_refusals` rather than
+    dropped, because a decision that silently governs nothing is worse than one
+    that is visibly mis-scoped.
+    """
+
+    scoped: dict[str, list[str]] = {}
+    for element in _DECISION_ELEMENT_RE.finditer(html_text or ""):
+        attributes = {
+            name.strip().lower(): unescape(value)
+            for name, value in _ELEMENT_ATTRIBUTE_RE.findall(element.group("attrs"))
+        }
+        key = attributes.get("data-key", "").strip()
+        sections = [
+            part.strip()
+            for part in attributes.get(DECISION_SECTIONS_ATTRIBUTE, "").split(",")
+            if part.strip()
+        ]
+        if key and sections:
+            scoped[key] = sections
+    return scoped or None
+
+
 def section_depends_on(html_text: str) -> dict[str, Any] | None:
     """Return a plan's section-scoped dependency mapping, or ``None``.
 
@@ -532,6 +577,82 @@ def section_dependency_refusals(
     return refusals
 
 
+def decision_section_refusals(
+    mapping: Mapping[str, Any] | None,
+    declared: Container[str],
+) -> list[dict[str, Any]]:
+    """Refusals for a decision naming a section its own plan does not declare.
+
+    A scoped decision is a wait on the sections it names, so a section that does
+    not exist is a wait that can never be satisfied: the decision would read as
+    a frozen anchor while holding nothing at all, and its siblings would stay
+    dispatchable for no stated reason. ``missing-decision-section`` is the code
+    that defect earns, matching the ``missing-dependency-section`` code a staged
+    dependency ref earns for the same shape. An identity that fails the shared
+    segment grammar is refused as ``invalid-decision-sections`` and skipped,
+    while the entries beside it are still read; a value that is not a list is
+    refused the same way rather than read as no scoping.
+
+    ``declared`` is the plan's authored section identities, supplied by the
+    caller so one authored record defines them instead of this module inventing
+    a second answer. Each row names the decision, the offending section, the
+    finding code the caller should raise, and the reason: a scoped decision
+    nobody can resolve must be reported, never silently dropped from a blocker
+    list.
+    """
+
+    refusals: list[dict[str, Any]] = []
+
+    def refuse(code: str, decision: str, section: str, message: str) -> None:
+        refusals.append(
+            {
+                "code": code,
+                "decision": decision,
+                "section": section,
+                "message": message,
+            }
+        )
+
+    for raw_decision, raw_sections in (mapping or {}).items():
+        decision = str(raw_decision or "").strip()
+        sections = [raw_sections] if isinstance(raw_sections, str) else raw_sections
+        if not isinstance(sections, list):
+            refuse(
+                "invalid-decision-sections",
+                decision,
+                "",
+                (
+                    f"decision_sections[{decision!r}]: sections must be a list of "
+                    "section identities"
+                ),
+            )
+            continue
+        for raw_section in sections:
+            section = str(raw_section or "").strip()
+            if not is_section_identity(section):
+                refuse(
+                    "invalid-decision-sections",
+                    decision,
+                    section,
+                    (
+                        "decision_sections: section identities must match "
+                        f"{_RESOURCE_SEGMENT_RE.pattern}; got {raw_section!r}"
+                    ),
+                )
+                continue
+            if section not in declared:
+                refuse(
+                    "missing-decision-section",
+                    decision,
+                    section,
+                    (
+                        f"decision_sections[{decision!r}]: names no section "
+                        f"{section!r} this plan declares"
+                    ),
+                )
+    return refusals
+
+
 def resolve_plan_ref(
     ref: str,
     owning_project: str,
@@ -674,6 +795,7 @@ class Decision(BaseModel):
     choices: list[str] = Field(default_factory=list)
     option_labels: dict[str, str] = Field(default_factory=dict)
     choice: str = ""  # "" == open; an option value OR free text
+    sections: list[str] = Field(default_factory=list)
     rationale: str = ""
     when: str = ""
     by: str = ""

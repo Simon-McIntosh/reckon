@@ -560,6 +560,44 @@
       Section closure and the driving followup remain for the coordinator.</p>
     </aside>
 
+    <aside id="decision-scoped-to-its-sections">
+      <h3>A decision can name the sections it governs</h3>
+      <p>An open decision held its whole plan, so one unanswered question about a late rung kept every
+      other section of that plan out of the ready set — the whole-plan shape §2 and §8 removed for
+      dependency edges, still in place for decisions. A decision now names the sections it governs in
+      its own markup (<code>data-sections="s3,s4"</code> on the decision element); readiness holds
+      exactly those sections and names the decision in each of them, their siblings stay in
+      <code>ready_sections</code>, and the plan stays in <code>ready_now</code>. A decision that names
+      no sections keeps blocking the whole plan, byte-identical to before, and a plan that authored no
+      scoping reports no <code>section_readiness</code> at all.</p>
+      <p><strong>Gate:</strong> tests/test_roadmap.py plus tests/test_schema.py reads
+      <strong>3 failed / 1666 passed</strong> at head against <strong>3 failed / 1661 passed</strong> at
+      the base revision, the same three pre-existing ids in both arms, so
+      <strong>zero added failing ids</strong> and <strong>+5 passes</strong> from the node's own cases.
+      <strong>Declared negative control:</strong> ignoring the decision's sections list in a scratch copy
+      of <code>roadmap.py</code> fails the scoped case first — the plan back in whole-plan blocking with
+      <code>s2</code> out of the ready set — while the unscoped case still passes, with the declared
+      string as the red log's first line.</p>
+      <p><strong>Write path:</strong> the scoping round-trips. <code>read_state</code> carries the list
+      off the decision element, <code>_render_decisions</code> writes it back only when non-empty — so an
+      unscoped plan's rendered output is byte-identical to before — the typed model carries the field,
+      and the published schema is regenerated from the model rather than by hand. A round-trip case holds
+      the two together, and wiring the reader into the write path exposed one defect in this node's own
+      roadmap code: a scoped decision reached the section-universe build through the inventory row as
+      well as the plan file, where a row with no readable declarations gave <code>None</code> to
+      <code>set()</code>. The read now defaults to empty in that build.</p>
+      <figure>
+        <img src="/reckon/figures/dependency-edge-semantics/decision-scoped-to-its-sections.svg"
+             alt="Two panels over the same plan and the same open decision: left, the decision names no
+                  sections and all three sections wait with the plan blocked; right, the decision names
+                  s3 and s4, those two carry the wait, s2 stays ready and the plan stays in the ready set">
+        <figcaption>The plan, the sections and the question are identical in both panels; only whether
+        the decision names its sections decides which of them wait.</figcaption>
+      </figure>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#decision-scoped-to-its-sections">mechanism, both arms, negative control, the write path and figure</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
+    </aside>
+
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
       Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout

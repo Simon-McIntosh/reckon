@@ -573,6 +573,11 @@ def read_state(html_text: str) -> dict:
             "rationale": _txt(dec.select_one(".r-dec-rat")),
             "when": dec.get("data-when", "") or "",
             "by": dec.get("data-by", "") or "",
+            "sections": [
+                section.strip()
+                for section in (dec.get("data-sections") or "").split(",")
+                if section.strip()
+            ],
         }
     st["decisions"] = decisions
 
@@ -845,9 +850,12 @@ def _render_decisions(decisions: dict) -> str:
             if d.get("rationale")
             else '<p class="r-dec-rat"></p>\n    '
         )
+        sections = ",".join(d.get("sections") or [])
+        sections_attr = f' data-sections="{_esc(sections)}"' if sections else ""
         rows.append(
             f'<div class="r-dec" data-key="{_esc(key)}" data-choice="{_esc(d.get("choice"))}"'
-            f' data-by="{_esc(d.get("by"))}" data-when="{_esc(d.get("when"))}">\n    '
+            f' data-by="{_esc(d.get("by"))}" data-when="{_esc(d.get("when"))}"'
+            f"{sections_attr}>\n    "
             f'<p class="r-dec-q">{_esc(d.get("title") or key)}</p>\n    '
             f"{ctx}{opts_block}{rat}</div>"
         )

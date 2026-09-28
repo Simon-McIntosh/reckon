@@ -9,7 +9,7 @@
   <meta name="plan-title" content="Edges That Mean What They Say — Execution Record">
   <meta name="plan-summary" content="Execution evidence for §2 and §3: a staged dependency ref blocks only the section it names, leaving the containing plan dispatchable with a wiring finding for an absent anchor; reckon audit reports a followup whose recommended skill names a terminal plan in another mounted project, naming both the holding plan and the foreign target; and the soft after edge (§7) orders the ready set, annotates the targets it is sequenced behind, and never blocks.">
   <meta name="plan-evidence-for" content="dependency-edge-semantics">
-  <meta name="plan-verifies" content="dependency-edge-semantics#s2,dependency-edge-semantics#s3,dependency-edge-semantics#s7">
+  <meta name="plan-verifies" content="dependency-edge-semantics#s2,dependency-edge-semantics#s3,dependency-edge-semantics#s7,dependency-edge-semantics#s8">
   <meta name="plan-tags" content="reckon-tooling">
   <title>Edges That Mean What They Say — Execution Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -841,6 +841,96 @@
     </figure>
 
     <p>Commit in the node: <code>7865ebda</code>. Section closure and the driving followup remain with
+    the coordinator.</p>
+  </section>
+
+  <section id="decision-scoped-to-its-sections">
+    <h2>A decision can name the sections it governs</h2>
+
+    <p><strong>Reproduction at the base revision.</strong> Readiness in
+    <code>reckon/roadmap.py</code> derives from the plan's <em>open decisions</em> as one set: every open
+    decision holds the whole plan, whichever sections it is about. So a plan carrying one open question
+    about a late rung reports <code>ready: false</code>, an empty <code>ready_now</code>, and no
+    <code>section_readiness</code> at all — the plan-level shape this record's earlier sections removed
+    for dependency edges, left in place for decisions. The plan-level consumed set also fed the
+    <code>resolve_graph_target</code> blocked endpoints and the derived status, so the whole-plan hold
+    propagated to every reader. The negative control below reproduces that behaviour directly, by
+    disabling the reader in a scratch copy: the scoped decision returns to the plan-level set and the
+    plan's unscoped section leaves the ready set.</p>
+
+    <p><strong>The change.</strong> A decision element carries an optional sections list in its own
+    markup — <code>data-sections="s3,s4"</code> on the <code>r-dec</code> element — and two readers
+    consume it. <code>_schema.decision_sections</code> parses the plan's HTML into a
+    decision-key→sections mapping, normalising attribute case and unescaping values, and returns
+    <code>None</code> when no decision names any section, so an unscoped plan reads exactly as before.
+    <code>_schema.decision_section_refusals</code> refuses a section identity the plan does not declare
+    (<code>missing-decision-section</code>) and a malformed list
+    (<code>invalid-decision-sections</code>), by the same grammar the section-dependency refusals use.
+    In <code>roadmap.py</code>, <code>_plan_decision_sections</code> reads the mapping from the row or
+    the plan file (the <code>_plan_section_deps</code> shape), <code>_decision_rows</code> attaches
+    <code>sections</code> to a row only when non-empty, and the new
+    <code>plan_level_decisions</code> splits the consumed set from the reported set: readiness and the
+    derived status consume only open decisions with no <code>sections</code>, while
+    <code>unsettled_decisions</code> keeps reporting every open one, scoped or not. The section-readiness
+    emission adds each scoped open decision to the <code>blockers</code> of the sections it names,
+    naming the decision key — so <code>s3</code> and <code>s4</code> are held with
+    <code>transport</code> as their blocker while <code>s2</code> stays in <code>ready_sections</code>
+    and the plan stays in <code>ready_now</code>. A plan that authored no scoping emits no
+    <code>section_readiness</code>, no <code>ready_sections</code> and no <code>sections</code> key,
+    byte-identical to the base output, which is why no existing equality assertion moves. Commit
+    <code>ca54e0b7</code> carries the change.</p>
+
+    <p><strong>Arms, measured.</strong> The gate is <code>tests/test_roadmap.py</code> plus
+    <code>tests/test_schema.py</code>. At head it reads <strong>3 failed / 1666 passed</strong>
+    (<code>logs/after-suite.log</code>, <code>EXIT=1</code>); at the base revision, over a scratch export
+    of the base tree, <strong>3 failed / 1661 passed</strong> (<code>logs/baseline-suite.log</code>,
+    <code>EXIT=1</code>). Both arms fail the
+    same three pre-existing ids — <code>test_canonical_dump_equals_read_state[full]</code>,
+    <code>test_cross_project_conformance[imas-ambix:dsv41-flash-four-card-throughput-landed]</code>,
+    <code>test_cross_project_conformance[reckon:orchestrator-crew-pattern-studies-landed]</code> — so
+    <strong>zero added failing ids</strong> and the node's cases contribute
+    <strong>+5 passes</strong> (two roadmap, three schema), the old count being clean at the base because
+    the cases are new. A first base arm was taken from a bare archive with no <code>.git</code> and read
+    a fourth, spurious failure — the evidence-citation case resolves sha citations against mounted
+    project repositories — so the arm was retaken with the git directory reachable, which reads the same
+    three ids as head. The round-trip case alone at head is <strong>3 passed</strong>,
+    <code>EXIT=0</code> (<code>logs/round-trip-case.log</code>).</p>
+
+    <p><strong>Declared negative control.</strong> Its first line is the declared string verbatim:
+    <code>ignore the decision's sections list in a scratch copy of roadmap.py; the unscoped section s2
+    must drop out of the ready set</code>. In that copy the two lines that read the decision's sections —
+    the row's own list, then the reader's mapping — are replaced with <code>scoped = None</code>, so the
+    mapping reaches no decision row and the scoped decision lands in the plan-level set again. The
+    scoped case fails first, at <code>assert False is True</code> on <code>row["ready"] is True</code> —
+    the plan is back in whole-plan blocking and <code>s2</code> is out of the unscoped ready set, which
+    is the regression the scoping exists to prevent — while the unscoped case still passes, because
+    ignoring scoping cannot change a plan that declares none. <strong>1 failed / 1 passed</strong>,
+    <code>EXIT=1</code>, log <code>logs/negative-control.log</code>.</p>
+
+    <p><strong>The write path.</strong> The scoping survives a state write.
+    <code>reckon/_plan_html.py</code>'s <code>read_state</code> carries the list off each decision
+    element and <code>_render_decisions</code> writes it back only when non-empty, so an unscoped plan's
+    rendered output is byte-identical to before and a scoped one keeps the attribute across
+    <code>write_state(html, read_state(html))</code>. The typed model carries the field
+    (<code>Decision.sections</code>) and <code>docs/_shared/plan.schema.json</code> is regenerated from
+    the model rather than by hand — <code>sha256 2fb63d75…b75b5</code>, a second regeneration from the
+    same model byte-identical (<code>cmp</code> clean). A round-trip case holds the two ends together,
+    and wiring the reader into the write path exposed one defect in this node's own roadmap code: a
+    scoped decision reached the section-universe build through the inventory row as well as the plan
+    file, where a row whose declarations cannot be read gave <code>None</code> to <code>set()</code>; the
+    read now defaults to empty there, and the arm was retaken after that fix. Commit
+    <code>90e54494</code> carries the write path.</p>
+
+    <figure>
+      <img src="/reckon/figures/dependency-edge-semantics/decision-scoped-to-its-sections.svg"
+           alt="Two panels over the same plan and the same open decision: left, the decision names no
+                sections and all three sections wait with the plan blocked; right, the decision names
+                s3 and s4, those two carry the wait, s2 stays ready and the plan stays in the ready set">
+      <figcaption>The plan, its sections and the open question are identical in both panels; only
+      whether the decision names its sections decides which of them wait and whether the plan does.</figcaption>
+    </figure>
+
+    <p>Commits in the node: <code>ca54e0b7</code>, <code>b4ad8f33</code>, <code>90e54494</code>. Section closure and the driving followup remain with
     the coordinator.</p>
   </section>
 
