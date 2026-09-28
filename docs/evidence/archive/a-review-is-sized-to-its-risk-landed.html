@@ -60,6 +60,48 @@
         section. Gate re-run at <code>c45e7bac</code>: 103 passing across <code>tests/test_review_tiers.py</code>
         and <code>tests/test_flight.py</code>, exit 0.</li>
     </ul>
+    <h3>Promotion reads the tier in place of the role check</h3>
+    <p>Promotion now resolves each run's tier <em>before</em> it reads the review gate, so the refusal and the
+      ledger row agree about which review the run owes. The four inputs are read from the run itself at the
+      promoted head — its changed paths and their added-plus-deleted line count, the specification level its node
+      declares, and the capability risk its plan or section declares — and the light ceiling comes from the
+      resolved <code>review.tiers</code> flight key rather than a literal in the module. The gate reads that tier
+      in place of the role check: a <code>none</code>-tier run promotes with no stored review and records the tier
+      on its row as the reason none exists, a <code>light</code>- or <code>full</code>-tier run is refused until a
+      review of the promoted head is stored, and a review run stays exempt. A run whose own declarations measure no
+      scope at all is granted the <em>fuller</em> run — silence about what changed is not evidence that what
+      changed was safe — so the resolver never reads an empty path list as a run that touched no runtime source.</p>
+    <figure>
+      <a href="/reckon/figures/a-review-is-sized-to-its-risk/promotion-review-gate.svg">the review gate before and
+        after</a>
+      <figcaption>Left: the gate that read the role name, where an implement run was always gated and any other
+        role was gated the moment it wrote a tracked path — a test file, a plan, a figure. Right: the gate that
+        reads the run's tier, so a run that changed no runtime source promotes with the tier on its row as the
+        reason no review exists. Below: the tier's four inputs and the resolver's precedence.</figcaption>
+    </figure>
+    <ul>
+      <li>Commit <code>5c013063</code>; <code>tests/test_promotion_reads_the_review_tier.py</code> adds six cases in
+        a synthesised repository — a tests-only run promoting unreviewed with <code>review_tier=none</code>, a
+        small runtime-source run at spec level <code>exact</code> refused then promoted as <code>light</code>, a
+        large runtime-source run refused as <code>full</code>, an elevated plan risk forcing <code>full</code> on a
+        small diff, an open specification level forcing <code>full</code>, and a run declaring no scope refused
+        rather than read as <code>none</code>.</li>
+      <li>Base and head arms, each header naming its revision, tree and imported module: at the base revision
+        <code>fb747528</code> (committed tree, extracted to a scratch tree) the thirteen pre-existing review and
+        promotion files are <strong>157 passed, exit 0</strong>; at the changed revision the same set plus the new
+        file is <strong>153 passed, 10 failed, exit 1</strong> (<code>runs/…-promotion-reads-the-review-tier/gate-base.log</code>,
+        <code>gate-head.log</code>).</li>
+      <li>Negative control executed and logged: restoring the role check in
+        <code>_require_review_waiver</code> in place of the tier makes the tests-only run be refused rather than
+        promote (<code>runs/…-promotion-reads-the-review-tier/negative-control.log</code>, first line the declared
+        mutation, <code>EXIT=1</code>).</li>
+      <li>The ten head-arm failures are all the same superseded premise — the old gate fired on <em>any</em>
+        repository path change; the tier gate fires only on runtime source, which is the change §1 asks for
+        ("stops reviewing documentation, evidence and measurement nodes"). They sit in
+        <code>tests/test_review_gate_coverage.py</code> and <code>tests/test_promotion_reads_the_matching_review.py</code>,
+        which the node's write scope does not cover; they are recorded as a follow-on with their ids rather than
+        repaired here.</li>
+    </ul>
   </section>
 
 </main>
