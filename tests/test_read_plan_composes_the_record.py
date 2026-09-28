@@ -371,6 +371,29 @@ def test_the_read_plan_tool_serves_a_record_with_no_fragments(
     assert "warnings" not in result
 
 
+def test_the_read_plan_tool_refuses_a_section_argument_on_a_record(
+    repository: Path,
+) -> None:
+    """A record is served whole; asking it for one of its sections is refused."""
+
+    result = _read_plan_tool(
+        project=PROJECT,
+        resource={
+            "project": PROJECT,
+            "type": "evidence",
+            "id": f"{COMPOSED_PLAN}-landed",
+            "archived": True,
+        },
+        checkout_path=str(repository),
+        view="section",
+        section="s3",
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "section_not_applicable"
+    assert "served whole" in result["message"]
+
+
 def _served_bytes(repository: Path, resource_id: str) -> bytes:
     server = serve.ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
