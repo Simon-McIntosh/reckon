@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _plan_html, _store, crew
+from reckon import _plan_html, _store, crew, ledger
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "proj"
@@ -257,6 +257,37 @@ def test_a_repairs_target_not_yet_promoted_is_refused(
         _dispatch_one(repository, tmp_path, "repairs-inflight", repairs=live)
 
     assert "is not yet promoted" in str(refusal.value)
+
+
+def test_an_unreadable_ledger_refuses_with_the_ledger_reason(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A damaged ledger is not proof the named run is absent.
+
+    The target may well be promoted in a ledger whose history cannot be read,
+    so refusing it as an unknown run would state a cause the check never
+    established. The refusal names the ledger and the read's own error instead.
+    """
+    _provision_fleet_script(repository)
+    damaged = ledger.ledger_path(PROJECT, root=repository)
+    damaged.parent.mkdir(parents=True, exist_ok=True)
+    damaged.write_text(
+        '<<<<<<< HEAD\n{"runs": [\n=======\n{}\n>>>>>>> repair\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(crew.CrewError) as refusal:
+        _dispatch_one(
+            repository,
+            tmp_path,
+            "repairs-damaged-ledger",
+            repairs="r-20260918T092500000000-maybe-present",
+        )
+
+    message = str(refusal.value)
+    assert "could not be read" in message
+    assert str(damaged) in message
+    assert "names no run" not in message
 
 
 def test_a_repairs_target_from_another_project_is_refused(

@@ -4117,7 +4117,10 @@ def _require_repairs_target(
     bookkeeping it inherits exists only for a run that has landed. An unknown
     run, a run still in flight, and a run from another project are three
     distinct mistakes, refused separately so the caller reads which one it made
-    rather than a generic rejection.
+    rather than a generic rejection. A ledger that cannot be read is a fourth:
+    the target may well be promoted in it, so refusing it as an unknown run
+    would state a cause the check never established. That refusal names the
+    ledger and the error the read reported.
     """
     target = str(repairs or "").strip()
     if not target:
@@ -4126,9 +4129,15 @@ def _require_repairs_target(
     if _SAFE_ID.fullmatch(target):
         try:
             data, _version = ledger.load(project, root=root)
-        except ledger.LedgerError:
-            data = None
-        if data is not None and any(
+        except (ledger.LedgerError, _store.CorruptEnvelopeError) as exc:
+            raise CrewError(
+                f"--repairs {target!r} cannot be checked: the ledger at "
+                f"{ledger.ledger_path(project, root)} could not be read ({exc}); "
+                "a ledger whose history cannot be read is not proof the run is "
+                "absent, so repair the ledger before dispatching a repair "
+                "against it"
+            ) from exc
+        if any(
             isinstance(row, Mapping) and str(row.get("run_id")) == target
             for row in data.get("runs", [])
         ):
