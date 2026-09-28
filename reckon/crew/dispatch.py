@@ -7,6 +7,7 @@ import ctypes
 import dataclasses
 import errno
 import fcntl
+import hashlib
 import json
 import os
 import re
@@ -1099,6 +1100,7 @@ def _publish_launch_claim(
     launch: str,
     agent: Mapping[str, Any],
     session_id: str | None,
+    brief: Mapping[str, str] | None = None,
 ) -> None:
     """Write this run's live pointer as a claim, before its launch is composed.
 
@@ -1137,6 +1139,8 @@ def _publish_launch_claim(
         "created_at": _utc_now(),
         "phase": "starting",
     }
+    if brief is not None:
+        record["brief"] = brief
     _write_json(pointer_path(run_id), record)
 
 
@@ -1989,6 +1993,7 @@ class DispatchPlan:
                 None if self.lane_reading is None else dict(self.lane_reading)
             ),
             "node": self.node.as_dict(),
+            "brief": _brief_record(self.node),
             "requested_backend": self.requested_backend,
             "run_id": self.run_id,
             "sandbox": {
@@ -2869,6 +2874,68 @@ def _fence_write_roots(
     )
 
 
+def _brief_digest(source: str | Path) -> str:
+    """Return the sha256 of a brief's stored bytes.
+
+    The digest joins a promoted row to the exact text its worker read, so it is
+    taken over the file's bytes rather than a parsed form: a brief is its own
+    authority text, and its spelling is part of what the worker was told. A
+    brief that cannot be read is refused here, where the caller still has the
+    path it named, rather than inside the worker.
+    """
+    path = Path(source).expanduser()
+    try:
+        data = path.read_bytes()
+    except OSError as exc:
+        raise CrewError(f"the brief {source!r} is not readable: {exc}") from exc
+    return hashlib.sha256(data).hexdigest()
+
+
+def _store_brief(directory: Path, source: str) -> Path:
+    """Copy a brief into the run directory and return the stored path.
+
+    The brief is durable authority, so its copy lives beside the run's own
+    record — under the configuration home, never inside the worktree — and the
+    pointer names that copy, because the source path a coordinator handed in
+    may be a scratch file no later reader can open. The suffix is kept so the
+    stored file reads as the document it was.
+    """
+    destination = directory / f"brief{Path(source).suffix or '.md'}"
+    try:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(Path(source).expanduser(), destination)
+    except OSError as exc:
+        raise CrewError(f"the brief {source!r} could not be stored: {exc}") from exc
+    return destination
+
+
+def _brief_record(node: TaskNode) -> dict[str, str] | None:
+    """Return the pointer's brief block, or None for a plan-carried node."""
+    if not node.brief.strip():
+        return None
+    return {
+        "sha256": node.brief_sha256,
+        "path": node.brief_path or node.brief,
+        "source_path": node.brief,
+    }
+
+
+def _brief_text(node: TaskNode) -> str:
+    """Return the brief text the composed prompt carries verbatim.
+
+    The stored copy is read when dispatch has made one, so the prompt and the
+    bytes the pointer names are the same document even if the source moved
+    between the digest and the composition.
+    """
+    if not node.brief.strip():
+        return ""
+    source = node.brief_path or node.brief
+    try:
+        return Path(source).expanduser().read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CrewError(f"the brief {node.brief!r} is not readable: {exc}") from exc
+
+
 def plan_dispatch(
     *,
     node: TaskNode,
@@ -3099,35 +3166,48 @@ def plan_dispatch(
                 node, project=project, authority=resolved_authority
             )
         _require_write_paths_in_authority(node, resolved_authority)
-        plan_commit = require_plan_section_visible(
-            node=node,
-            project=project,
-            repo=repo,
-            base=base,
-            authority=resolved_authority,
-        )
-        review_warning = require_plan_reviewed(
-            node=node,
-            project=project,
-            repo=repo,
-            authority=resolved_authority,
-            allow_unreviewed=allow_unreviewed_plan,
-            enforce=flight.plan_review_gate_enforces(config),
-        )
-        if review_warning is not None:
-            warnings.append(review_warning)
-        resolved_authority["plan"] = {
-            **resolved_authority["plan"],
-            "base_sha": plan_commit,
-        }
-        overlap_warning = _done_when_plan_overlap_warning(
-            node=node,
-            project=project,
-            authority=resolved_authority,
-            plan_commit=plan_commit,
-        )
-        if overlap_warning is not None:
-            warnings.append(overlap_warning)
+        if node.brief.strip():
+            # A brief names no committed plan section, so the gates that join a
+            # node to a base blob and a stored review have nothing to read and
+            # are skipped around their call sites rather than inside the shared
+            # gate. The brief's digest is taken here, where the dry run reaches
+            # it too, so a validating caller sees the same digest a launch
+            # would record.
+            node.brief_sha256 = _brief_digest(node.brief)
+            resolved_authority["plan"] = {
+                **resolved_authority["plan"],
+                "base_sha": "",
+            }
+        else:
+            plan_commit = require_plan_section_visible(
+                node=node,
+                project=project,
+                repo=repo,
+                base=base,
+                authority=resolved_authority,
+            )
+            review_warning = require_plan_reviewed(
+                node=node,
+                project=project,
+                repo=repo,
+                authority=resolved_authority,
+                allow_unreviewed=allow_unreviewed_plan,
+                enforce=flight.plan_review_gate_enforces(config),
+            )
+            if review_warning is not None:
+                warnings.append(review_warning)
+            resolved_authority["plan"] = {
+                **resolved_authority["plan"],
+                "base_sha": plan_commit,
+            }
+            overlap_warning = _done_when_plan_overlap_warning(
+                node=node,
+                project=project,
+                authority=resolved_authority,
+                plan_commit=plan_commit,
+            )
+            if overlap_warning is not None:
+                warnings.append(overlap_warning)
         sandbox_write_roots, sandbox_findings = _sandbox_reachability(
             node,
             backend=backend,
@@ -3334,6 +3414,9 @@ def shadow_source(
         goal=str(definition["goal"]),
         plan=str(definition["plan"]),
         section=str(definition.get("section") or ""),
+        brief=str(definition.get("brief") or ""),
+        brief_sha256=str(definition.get("brief_sha256") or ""),
+        brief_path=str(definition.get("brief_path") or ""),
         role=str(definition.get("role") or primary.get("role") or "implement"),
         spec_level=str(definition.get("spec_level") or primary.get("spec_level") or ""),
         done_when=str(definition["done_when"]),
@@ -3936,6 +4019,14 @@ def dispatch(
     launch_kind = resolution.launch
     run_id = resolution.run_id
     directory = run_dir(run_id)
+    # A brief is authority text, so its durable copy is taken with the run's id
+    # rather than at launch: a later reader opening the pointer finds the same
+    # bytes the worker read, and a refusal below unwinds the directory that
+    # holds them. The digest was taken in plan_dispatch, where the dry run
+    # reaches it too.
+    if node.brief.strip():
+        node.brief_path = str(_store_brief(directory, node.brief))
+    brief = _brief_record(node)
     # The declared paths are this run's from the moment its id exists, so the
     # claim goes out here, before the refusals, reads and watcher arming below,
     # any of which can take seconds. A dispatch that published only once the
@@ -3963,6 +4054,7 @@ def dispatch(
             launch=launch_kind,
             agent=agent,
             session_id=None,
+            brief=brief,
         )
     with _claim_released_on_refusal(run_id, claim_published):
         # A backend at its declared concurrency ceiling refuses a new dispatch
@@ -4184,6 +4276,7 @@ def dispatch(
             },
             peer_channel_path=str(_channel_root(run_id)),
             host_line=_worker_host_line(dispatch_host, directory),
+            brief=_brief_text(node),
         )
         if shadow_lineage:
             prompt += (
@@ -4244,6 +4337,7 @@ def dispatch(
             "wave": wave_id,
             "coordinator": coordinator,
             "node": node_definition,
+            "brief": brief,
             "role": node.role,
             "backend": backend_name,
             "requested_backend": resolution.requested_backend,
@@ -7073,6 +7167,9 @@ def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
         goal=str(data.get("goal") or ""),
         plan=str(data.get("plan") or ""),
         section=str(data.get("section") or ""),
+        brief=str(data.get("brief") or ""),
+        brief_sha256=str(data.get("brief_sha256") or ""),
+        brief_path=str(data.get("brief_path") or ""),
         role=str(data.get("role") or record.get("role") or "implement"),
         spec_level=str(data.get("spec_level") or ""),
         done_when=str(data.get("done_when") or ""),
