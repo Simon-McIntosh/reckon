@@ -77,6 +77,106 @@
       <li>If a new public symbol appears, <code>tests/fixtures/crew-public-surface.txt</code> is its snapshot.</li>
     </ul>
 
+    <h3 id="s2-landed">Landed &mdash; node <code>dispatch-accepts-a-brief</code></h3>
+    <p>
+      Commit <code>dcb66ac8</code> on the base revision <code>3f251453</code> makes
+      <code>crew dispatch</code> take <code>--brief &lt;file&gt;</code> as the node's authority in
+      place of <code>--plan</code>/<code>--section</code>. The two carriers are mutually exclusive
+      at the CLI, and <code>--plan</code> is no longer a required option. <code>TaskNode</code>
+      carries <code>brief</code>, <code>brief_sha256</code> and <code>brief_path</code> beside
+      <code>plan</code> and <code>section</code>, and <code>validate_node</code>'s
+      <code>fully-specified</code> property is satisfied by either a plan or a brief. In
+      <code>plan_dispatch</code> the brief branch takes the digest and skips the committed-section
+      and plan-review gates around their call sites; in <code>dispatch</code> the brief is copied
+      under the run directory and its digest and stored path are written to the live pointer and the
+      pre-launch claim. The brief text is passed to <code>compose_prompt(..., brief=...)</code>, so
+      the worker's task-authority slot carries it verbatim. Scope claims, the write-path authority
+      check, the fences and the watcher requirement all still run.
+    </p>
+    <img src="/reckon/figures/a-worker-can-take-a-brief/brief-dispatch-flow.svg" alt="A stored brief is digested in the side-effect-free resolution step, copied into the run directory by the launching step, and named on the live pointer by digest and path; the composed prompt carries the brief text verbatim, while the same refusals a plan dispatch carries apply unchanged.">
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Gate <code>tests/test_brief_dispatch.py</code></td>
+          <td><strong>7 passed</strong>, exit 0 (<code>92b7eca7</code>, base
+          <code>3f251453</code>)</td>
+        </tr>
+        <tr>
+          <td>Regression arm <code>tests/test_brief_prompt.py</code></td>
+          <td><strong>13 passed</strong>, exit 0; the same file passes at the base revision</td>
+        </tr>
+        <tr>
+          <td>Regression arm <code>tests/test_crew_dispatch_guard.py</code></td>
+          <td><strong>14 passed</strong>, exit 0; the same file passes at the base revision</td>
+        </tr>
+        <tr>
+          <td>Declared negative control &mdash; restore the committed plan-section check for a brief
+          dispatch</td>
+          <td>the brief gate fails <strong>2 of 4</strong> with
+          <code>error: plan-unavailable</code> at exit 1; the source is restored and confirmed
+          identical</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Landing record and evidence anchor:
+      <code>docs/evidence/archive/a-worker-can-take-a-brief-landed.html</code>, which also holds the
+      as-executed gate logs' absolute paths. This gate measures this node's own change; verifying
+      the merged result belongs to a separately dispatched test node.
+    </p>
+    <p>
+      <strong>Repair.</strong> Independent review of the first landing found three behaviours.
+      Commit <code>92b7eca7</code> repairs each, and each was reproduced before its repair: every
+      repaired test was run against its own reverted fix and observed to fail.
+    </p>
+    <ul>
+      <li>
+        <strong>The digest read the source path, not the stored copy.</strong> A lane change
+        rebuilds the node from the live pointer and re-resolves it, so once the coordinator's
+        scratch file was gone the run refused with <em>the brief is not readable</em> — the exact
+        case the copy exists to survive. The digest is now taken from the run's own copy whenever
+        dispatch has made one, falling back to the source only at first dispatch.
+      </li>
+      <li>
+        <strong>Nothing asserted the brief reached the composed prompt.</strong> An empty brief at
+        composition would have left the gate green while the worker read no authority. A test now
+        reads the written prompt and requires the brief text present and the plan pointer absent.
+      </li>
+      <li>
+        <strong><code>--section</code> was accepted beside <code>--brief</code> and silently
+        discarded.</strong> The mutual-exclusion check named only <code>--plan</code>. A section
+        with a brief is now refused beside the plan case.
+      </li>
+    </ul>
+    <table>
+      <thead><tr><th>Measure at <code>92b7eca7</code></th><th>Result</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Gate <code>tests/test_brief_dispatch.py</code> (seven tests)</td>
+          <td><strong>7 passed</strong>, exit 0</td>
+        </tr>
+        <tr>
+          <td>Regression arm <code>tests/test_crew_dispatch_guard.py</code></td>
+          <td><strong>14 passed</strong>, exit 0</td>
+        </tr>
+        <tr>
+          <td>Declared negative control &mdash; restore the committed plan-section check</td>
+          <td><strong>4 of 7</strong> fail with <code>plan-unavailable</code>, exit 1; source
+          restored byte-identical</td>
+        </tr>
+        <tr>
+          <td>Each repaired test against its own reverted fix</td>
+          <td>dropping the section check fails the refusal case; reading the source path fails with
+          <em>the brief is not readable</em>; composing an empty brief fails the prompt case</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The repair commit precedes the record commit because the gate logs name the head they
+      measured, and that head could not be written into this record before it existed.
+    </p>
+
     <h2 id="s3">&sect;3 &mdash; The prompt carries the brief where the plan section was</h2>
     <p><code>reckon/crew/prompts.py</code> composes the worker prompt from the brief text in place of the plan-section read instruction. The prompt keeps every other part of the contract: fences, manifest shape and the landing rule. For a brief run, the landing record goes to the run directory, not to a plan.</p>
     <p><strong>Done when:</strong></p>

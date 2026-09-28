@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" role="img" aria-labelledby="title desc">
+  <title id="title">A stored brief replaces the committed plan section through dispatch</title>
+  <desc id="desc">A stored brief file is digested in the side-effect-free resolution step, copied into the run directory by the launching step, and named on the live pointer by digest and path. The composed prompt carries the brief text verbatim. The refusals a plan dispatch carries — a missing done-when, a stated second authority — apply unchanged.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="#315c72"/>
+    </marker>
+    <style>
+      .box { fill: #f7fbfc; stroke: #315c72; stroke-width: 2; }
+      .accent { fill: #e8f2f4; stroke: #315c72; stroke-width: 2; }
+      .output { fill: #fff8e8; stroke: #9a6b16; stroke-width: 2; }
+      .refuse { fill: #fdf1f1; stroke: #9a3535; stroke-width: 2; }
+      .label { fill: #173042; font: 600 17px sans-serif; }
+      .small { fill: #315c72; font: 14px sans-serif; }
+      .bad { fill: #9a3535; font: 14px sans-serif; }
+      .line { fill: none; stroke: #315c72; stroke-width: 2; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="960" height="440" fill="#ffffff"/>
+
+  <rect class="box" x="24" y="40" width="196" height="118" rx="5"/>
+  <text class="label" x="44" y="72">Stored brief</text>
+  <text class="small" x="44" y="98">brief.md on disk —</text>
+  <text class="small" x="44" y="121">the node's authority;</text>
+  <text class="small" x="44" y="144">no plan, no section</text>
+
+  <rect class="accent" x="256" y="34" width="232" height="130" rx="5"/>
+  <text class="label" x="276" y="66">plan_dispatch</text>
+  <text class="small" x="276" y="92">no side effects —</text>
+  <text class="small" x="276" y="115">digest = sha256(brief)</text>
+  <text class="small" x="276" y="138">committed-section and</text>
+  <text class="small" x="276" y="158">review gates skipped</text>
+
+  <rect class="accent" x="524" y="34" width="220" height="130" rx="5"/>
+  <text class="label" x="544" y="66">dispatch</text>
+  <text class="small" x="544" y="92">side effects —</text>
+  <text class="small" x="544" y="115">brief copied under the</text>
+  <text class="small" x="544" y="138">run dir:</text>
+  <text class="small" x="544" y="158">runs/&lt;run_id&gt;/brief.md</text>
+
+  <rect class="output" x="780" y="34" width="156" height="130" rx="5"/>
+  <text class="label" x="798" y="66">live pointer</text>
+  <text class="small" x="798" y="92">brief.sha256</text>
+  <text class="small" x="798" y="115">brief.path</text>
+  <text class="small" x="798" y="138">brief.source_path</text>
+
+  <path class="line" d="M220 99 L256 99"/>
+  <path class="line" d="M488 99 L524 99"/>
+  <path class="line" d="M744 99 L780 99"/>
+
+  <rect class="box" x="524" y="248" width="220" height="96" rx="5"/>
+  <text class="label" x="544" y="280">Composed prompt</text>
+  <text class="small" x="544" y="306">brief text verbatim in</text>
+  <text class="small" x="544" y="329">the task-authority slot</text>
+
+  <path class="line" d="M634 164 L634 248"/>
+
+  <rect class="refuse" x="24" y="248" width="456" height="150" rx="5"/>
+  <text class="label" x="44" y="280">Refused, exactly as for a plan dispatch</text>
+  <text class="bad" x="44" y="308">--brief with --plan → --brief and --plan are mutually exclusive</text>
+  <text class="bad" x="44" y="332">no --done-when → not-dispatchable</text>
+  <text class="bad" x="44" y="356">neither plan nor brief → fully-specified fails</text>
+  <text class="small" x="44" y="382">scope claims, fences and the review reflex apply unchanged</text>
+</svg>

@@ -615,13 +615,20 @@ class TaskNode:
     The node carries no plan prose. ``plan`` and ``section`` point at the live
     plan, which owns context, decisions, evidence inputs and constraints; the
     node adds only what cannot live there — this run's scope, budget, measure
-    and delivery path.
+    and delivery path. A node may instead carry a ``brief``: a stored text file
+    served as its semantic authority with no committed plan behind it. The
+    brief's digest and its stored copy are filled by dispatch, so ``brief``
+    alone is what a caller sets and ``brief_sha256``/``brief_path`` record what
+    the worker actually read.
     """
 
     id: str
     goal: str
     plan: str
     section: str = ""
+    brief: str = ""
+    brief_sha256: str = ""
+    brief_path: str = ""
     role: str = "implement"
     spec_level: str = ""
     done_when: str = ""
@@ -636,6 +643,9 @@ class TaskNode:
     def as_dict(self) -> dict[str, Any]:
         """Return the node as sorted JSON-ready data."""
         return {
+            "brief": self.brief,
+            "brief_path": self.brief_path,
+            "brief_sha256": self.brief_sha256,
             "done_when": self.done_when,
             "goal": self.goal,
             "id": self.id,
@@ -1035,8 +1045,11 @@ def validate_node(
                 "split it into one node per deliverable",
             )
 
-    if not node.plan.strip():
-        fail("fully-specified", "no plan is named as the semantic authority")
+    if not node.plan.strip() and not node.brief.strip():
+        fail(
+            "fully-specified",
+            "no plan or brief is named as the semantic authority",
+        )
     combined = f"{goal} {node.done_when}"
     deferred = _DECISION_DEFERRED.search(combined)
     unspecified = _placeholder_gap(goal, node.done_when) or (

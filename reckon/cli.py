@@ -1164,7 +1164,16 @@ def crew_preflight(
 
 @crew.command(name="dispatch")
 @click.option("--project", required=True, help="Project owning the plan.")
-@click.option("--plan", "plan_slug", required=True, help="Plan slug the node serves.")
+@click.option("--plan", "plan_slug", default="", help="Plan slug the node serves.")
+@click.option(
+    "--brief",
+    "brief_path",
+    default="",
+    help=(
+        "Path to a stored brief serving as the node's authority in place of a "
+        "committed plan section; mutually exclusive with --plan."
+    ),
+)
 @click.option("--section", default="", help="Plan section the node implements.")
 @click.option("--role", default="implement", show_default=True, help="Routing role.")
 @click.option(
@@ -1305,6 +1314,7 @@ def crew_preflight(
 def crew_dispatch(
     project,
     plan_slug,
+    brief_path,
     section,
     role,
     backend,
@@ -1345,6 +1355,16 @@ def crew_dispatch(
     crew_module, flight_module = _crew_modules()
     from reckon.crew.node import PlanReviewMissingError
 
+    if brief_path and plan_slug:
+        raise click.UsageError(
+            "--brief and --plan are mutually exclusive; pass exactly one authority"
+        )
+    if brief_path and section:
+        raise click.UsageError(
+            "--brief and --section are mutually exclusive; a brief names no "
+            "committed plan section"
+        )
+
     config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
     flight_backend_override = _flight_default_backend_override(
         flight_module, config, overrides
@@ -1370,6 +1390,7 @@ def crew_dispatch(
         goal=goal,
         plan=plan_slug,
         section=section,
+        brief=str(brief_path) if brief_path else "",
         role=role,
         spec_level=spec_level or "",
         negative_control=negative_control or "",
