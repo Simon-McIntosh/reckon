@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 </head>
 <body>
   <main class="plan-doc">
@@ -103,6 +103,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260928T215415651449-review-of-classify-rules-in-the-other-references" data-who="reckon-build" data-when="2026-09-28T22:21:45.111Z">
     <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T205719503443-classify-rules-in-the-other-references.at-4cce86f006c712596d71253c84ed9803378f89f7.json — 12148 bytes, parsed by the production reader with total 85 over the five dimensions, and byte-identical to the legacy un-keyed copy r-20260928T205719503443-classify-rules-in-the-other-references.json beside it</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260928T222425016867-review-of-classify-rules-in-sprint-orchestration" data-who="reckon-build" data-when="2026-09-28T23:11:16.624Z">
+    <div class="r-comment-body"><p>Independent review of r-20260928T205701106926-classify-rules-in-sprint-orchestration at its repair head 74a17bc4f3e3c673641c4af381d9e82cba592233 (base 7c25dee788bd668dfbfd36624f8ec590e9dba129): status parsed, all five dimensions scored in 0..20 (goal_fidelity 16, evidence 16, scope_discipline 20, durability 15, fit 18, total 85), six of six checklist items present, two findings. The findings: the remedies row at fragment line 49 pairs the rule &quot;manifest schema refuses unknown status&quot; with tests/test_manifest_measurement_keys_declared.py::test_a_mapping_body_under_either_key_is_refused_with_the_shape_message, which carries status: complete and drives the mapping-body shape refusal, so it stays green if the unknown-status refusal at reckon/crew/reports.py:711 is removed — the firing tests are tests/test_manifest_parse_format.py:352 and :418, and the pairing was directed by the repair brief with both affected classification rows (L295, L427) left as keep; and the fragment header at line 27 dates all cited enforcement tests to 7c25dee7 while three of the 17 gate logs carry rev=b90891fd in their own first line (the delta is the node&#x27;s own docs commit, so the code under test is identical). added_failure_count is unmeasured rather than zero: the reviewed manifest names no baseline_suite or after_suite gate log, matching the store&#x27;s read-back semantics.</p></div>
 </div>
 </section>
 </main>
