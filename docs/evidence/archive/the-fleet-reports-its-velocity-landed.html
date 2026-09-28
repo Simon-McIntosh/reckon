@@ -108,6 +108,60 @@
       then reads 19 additions against the fixture's 9 and fails. Logs:
       <code>parity-check.log</code> and <code>negative-control.log</code>.</p>
     </section>
+  <section id="s3-coordinator-cost-per-landed-node">
+      <h2>&sect;3 &mdash; Coordinator cost per landed node</h2>
+      <p>Commits <code>e2fc9f03</code> and <code>280d7fa9</code> extend
+      <code>reckon/velocity.py</code> with a <code>coordinator_cost</code> section. Each landed
+      node names its coordinator's runtime session, so nodes are grouped by the session that
+      directed them; the section then divides that session's assistant responses, logical input,
+      separately reported cache-read share and output tokens by the nodes it landed in the window.
+      Runs whose node carries no runtime session id enter an explicit unattributed bucket. The
+      transcript accounting is ported from the review's census and the module imports nothing from
+      <code>docs/</code>.</p>
+      <p><strong>Done when (recorded measurement).</strong> The section was run in place on this
+      node at the module revision <code>43e971d3</code> over the window
+      <code>2026-09-12T00:00:00Z</code> to <code>2026-09-26T10:00:00Z</code> and every per-session
+      figure compared with <code>overhead.json</code>: <strong>40 of 49 comparable sessions within
+      1%</strong> (45 field checks outside tolerance across the remaining nine).</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-reports-its-velocity/coordinator-cost-per-landed-node.png"
+          alt="Input tokens per landed node for each coordinator session, marker area proportional to assistant responses and colour to the cache-read share, beside a histogram of the cache-read share">
+        <figcaption>Input tokens per landed node against the nodes a session landed, and the
+        cache-read share of that input.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Census</th><th>Section</th></tr></thead>
+        <tbody>
+          <tr><td>Sessions</td><td>52</td><td>49 (zero-landed rows omitted)</td></tr>
+          <tr><td>Sessions with a transcript</td><td>38</td><td>37</td></tr>
+          <tr><td>Landed nodes</td><td>2182</td><td>2199</td></tr>
+          <tr><td>Landed nodes with a transcript</td><td>1789</td><td>1806</td></tr>
+          <tr><td>Assistant responses</td><td>38699</td><td>&mdash;</td></tr>
+          <tr><td>Input tokens</td><td>20,375,175,527</td><td>&mdash;</td></tr>
+          <tr><td>Cache read (reported separately)</td><td>20,179,819,699</td><td>&mdash;</td></tr>
+          <tr><td>Output tokens</td><td>28,029,284</td><td>&mdash;</td></tr>
+          <tr><td>Gate at <code>280d7fa9</code></td><td>11 passed, exit 0</td><td>&mdash;</td></tr>
+          <tr><td>Negative control</td><td>2 failed, 4 passed, exit 1</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Sessions outside tolerance (nine).</strong> Three census sessions land zero nodes
+      and are absent from the section by design &mdash; it lists only sessions that landed at least
+      one. Six differ in landed count: <code>6bd9bb1d</code> 63/64, <code>74b53aa2</code> 40/41,
+      <code>7d3382d5</code> 14/15, <code>98f13dbe</code> 68/69 and <code>9a2a0944</code> 27/28 miss
+      one node each, and <code>8fac263d</code> reports 266 against 244. The denominator is the
+      in-window promote commit alone; the census admits additionally a landing recorded only by a
+      transcript promotion receipt or a committed promotion marker, which the committed ledger
+      cannot reconstruct, and for <code>8fac263d</code> a recovered ledger clock attributes 22
+      further nodes to the session. Both directions are recorded rather than smoothed: the section
+      never invents a landing the ledger does not carry, and never folds a cache read into the
+      uncached input figure.</p>
+      <p><code>tests/test_velocity_coordinator_cost.py</code> builds its transcripts and run rows
+      under <code>tmp_path</code>. It asserts the repeated-response dedupe, the cache-read share as
+      its own figure, the per-landed-node division, the unattributed bucket, that a session with no
+      transcript reports null rather than zero, and that the measurement entry point runs without a
+      transcript root. Logs: <code>measurement.log</code>, <code>negative_control.log</code>,
+      <code>tests.log</code>.</p>
+    </section>
   </main>
 </body>
 </html>

@@ -153,6 +153,51 @@
     <p><strong>Done when</strong> over the pinned window the per-session figures agree within 1% with
       <code>docs/research/data/crew-pattern-review/coordinator-overhead/overhead.json</code>.</p>
 
+    <div data-reckon="landing" data-node="coordinator-cost-per-landed-node" data-when="2026-09-28">
+      <h3>Landing record &mdash; coordinator cost per landed node</h3>
+      <p>Commits <code>e2fc9f03</code> and <code>280d7fa9</code> extend
+      <code>reckon/velocity.py</code> with a <code>coordinator_cost</code> section: each landed
+      node's <code>node_definition.coordinator.runtime_session_id</code> groups it under the
+      session that directed it, and the section divides that session's assistant responses, logical
+      input, separately reported cache-read share and output tokens by the nodes it landed in the
+      window. A run with no runtime session id enters an explicit unattributed bucket keyed by
+      project and recorded label. The transcript accounting is ported from the review's census
+      (<code>docs/research/data/crew-pattern-review/coordinator-overhead/census.py</code>) and the
+      module still imports nothing from <code>docs/</code>.</p>
+      <p><strong>Done when (recorded measurement).</strong> Run in place on this node at the module
+      revision <code>43e971d3</code> over the pinned window <code>2026-09-12T00:00:00Z</code> to
+      <code>2026-09-26T10:00:00Z</code>, and every per-session figure compared with
+      <code>overhead.json</code>: <strong>40 of 49 comparable sessions within 1%</strong> (45 field
+      checks outside tolerance). The census carries 52 sessions (38 with
+      a transcript, 14 without); three of them land zero nodes and
+      are absent from the section, which lists only sessions that landed at least one. Of the 49
+      compared, six differ in landed count: five by a single node, and one by 22. The section's
+      landed denominator is the in-window promote commit alone (2199 against the census's
+      2182), because the census admits a landings set the ledger alone cannot
+      reconstruct: a promotion recorded only by a transcript receipt or a committed marker, and for
+      one session a recovered ledger clock that attributes 22 further nodes to it. Every row outside
+      tolerance is named in the evidence record rather than smoothed.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-reports-its-velocity/coordinator-cost-per-landed-node.png"
+          alt="Input tokens per landed node for each coordinator session, marker area proportional to assistant responses and colour to the cache-read share, beside a histogram of the cache-read share">
+        <figcaption>Input tokens per landed node against the nodes a session landed, and the
+        cache-read share of that input.</figcaption>
+      </figure>
+      <p><strong>Committed tests.</strong> <code>tests/test_velocity_coordinator_cost.py</code>
+      synthesises its transcripts and run rows under <code>tmp_path</code> and passes at exit 0
+      (<strong>11 passed</strong> across it and the existing view test). The declared negative
+      control folds cache-read tokens into the uncached input figure; the cache-read separation
+      test then reads the share as zero and fails (<strong>2 failed, 4 passed</strong>, exit 1).
+      The transcript root defaults to nothing in the measurement entry point, so the suite never
+      reads the live transcript store.</p>
+      <p>Receipts under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T191523670440-coordinator-cost-per-landed-node/</code>:
+      <code>measure_coordinator_cost.py</code>, <code>measurement.log</code>,
+      <code>negative_control.log</code>, <code>tests.log</code>. Full record:
+      <code>the-fleet-reports-its-velocity-landed.html#s3-coordinator-cost-per-landed-node</code>.</p>
+    </div>
+
+
     <h2 id="s4">§4 — Quota runway and session hygiene</h2>
     <p><strong>Deliverable.</strong> Before each wave, the preflight reports for each metered budget group and role the
       runs remaining before the weekly reset, from the mean quota cost per run over the trailing seven days, and refuses
