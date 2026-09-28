@@ -1100,6 +1100,36 @@
     whose name must match its contents, and a presented citation that must be refused rather than filtered
     &mdash; are carried in the followup rather than folded in here, because each is a separate property and this
     section owns one.</p>
+    <p><strong>Landed 2026-09-28 at <code>1e18eb08</code> over <code>reckon/crew/promotion.py</code> and the new
+    <code>tests/test_control_gate_checks_facts.py</code>.</strong> The gate reads the two facts and never compares
+    the declaration with the log's text. The exit fact comes from the log's terminal <code>EXIT=&lt;n&gt;</code>
+    record, or, for a capture that carries no record, from the failing count a runner's own summary states; a log
+    stating neither is refused. The added-failure fact is the log's canonical failing test ids minus the baseline's
+    <code>failure_ids</code>, where a log enumerating no id falls back to the count it states against the baseline's.
+    The verdict row carries the decoded facts (<code>control_exit_status</code>, <code>control_failure_ids</code>,
+    <code>control_failure_count</code>, <code>baseline_failure_ids</code>, <code>added_failure_ids</code>) and the
+    declaration beside the resolved log path, so the human comparison is available where the decision is read.
+    Measured: the four cases fail at the base revision (4 failed, exit 1) and pass at head (4 passed, exit 0); the
+    declared mutation &sect;20 names, the verbatim substring admission restored in a scratch copy, reds all four with
+    the mutation verbatim on the red log's first line. One collision comes with the decision and travels in the
+    followup rather than being folded in: two existing fixtures build fact-identical control logs
+    (<code>&lt;one line of prose&gt;</code> then <code>1 failed</code>, no exit record, no failing ids) and assert
+    opposite verdicts &mdash; one wants <code>matched</code> without a waiver, the other <code>waived</code>, which
+    only a refusal reaches &mdash; so at most one can be green under any gate that reads facts. The four pre-existing
+    expectations that pin the removed rule, with the repair each needs, are enumerated in
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s20">&sect;20 landed</a>.</p>
+    <figure>
+      <img src="/reckon/figures/crew-runtime-positive-controls/control-gate-facts.svg"
+        alt="The control's log is read for two facts. Fact one, that the run failed: a terminal EXIT record other
+        than zero, or, with no record, a runner summary stating a failing count; a log whose run exited zero is
+        refused however its first line reads. Fact two, that something broke: at least one canonically-identified
+        test the log marks FAILED is absent from the baseline's failure ids, and an empty added set is refused. A
+        control surviving both is admitted with the verdict matched, and its log text is never compared with the
+        declaration, which stays on the node record and is printed beside the log path for the reader.">
+      <figcaption>The two facts and the three outcomes. The refusals are the two the old comparison could not make
+      reliably: a pasted declaration over a green run, and a control that failed only what the baseline already
+      failed.</figcaption>
+    </figure>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>

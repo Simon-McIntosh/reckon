@@ -1697,6 +1697,62 @@ nothing has been launched</code></pre>
       (<code>test_crew_surface</code>'s expected surface) is unaffected by this change because no new name is
       registered in <code>reckon/crew.py</code>'s export list.</p>
     </section>
+    <section id="s20">
+      <h2>&sect;20 &mdash; A control is judged by what it did, not by how it was worded</h2>
+      <p>The declared negative control was admitted by testing whether the declaration appeared verbatim in the
+      cited log's text. That admits a log whose first line repeats the declaration while its run exited zero, and it
+      refused every sound control whose wording differed, which is why the comparison had refused controls and
+      caught none. Replaced by the two facts a run leaves behind, in
+      <code>_require_declared_negative_control</code> (<code>reckon/crew/promotion.py</code>): the run exited
+      non-zero, and its failure set contains at least one test the baseline does not fail.</p>
+      <p><strong>The facts, as implemented.</strong> Exit status is the log's terminal <code>EXIT=&lt;n&gt;</code>
+      record; a capture carrying no record is read from the failing count a runner summary states &mdash; a log
+      stating neither is refused, since its wording cannot stand in for its run's status. The added-failure set is
+      the log's canonical failing test ids (read through <code>review.py</code>'s
+      <code>_pytest_failure_ids</code> and <code>canonical_node_id</code>) minus the baseline
+      <code>failure_ids</code> the manifest records; a log enumerating no id falls back to the count it states
+      against the baseline's, where more failing tests than the baseline records still entails an added one. The
+      declaration stays on the node record and on the verdict row beside the resolved log path, which is where the
+      human comparison &mdash; <em>is this the right mutation</em> &mdash; now happens.</p>
+      <p><strong>Cases.</strong> <code>tests/test_control_gate_checks_facts.py</code>: a run that exits zero is
+      refused; a control whose added-failure set is empty is refused; a control that exits non-zero and adds a
+      failure is admitted although its declaration shares no words with its log; a log whose wording matches while
+      its run exited zero is refused.</p>
+      <p><strong>Arms.</strong> Base revision <code>1983f22812f3a68dc3a09eb414ead7e9eb245fa3</code>:
+      <strong>4 failed, exit 1</strong>. Head: <strong>4 passed, exit 0</strong>. Mutation arm &mdash; the verbatim
+      substring admission spliced back from the base file over this node's module &mdash; <strong>4 failed, exit
+      1</strong>, its log carrying the declared mutation verbatim on line one. The mutation is applied in scratch
+      trees under <code>/tmp</code>, never in the worktree. Logs: <code>base-arm-new-file.log</code>,
+      <code>head-gate.log</code>, <code>negative-control-mutation.log</code>, <code>mutation-applied.txt</code>,
+      under the run directory <code>r-20260928T060540883209-the-control-gate-checks-facts-not-words/logs/</code>.</p>
+      <p><strong>The collision, proved rather than asserted.</strong> Two fixtures in
+      <code>tests/test_negative_control_waiver.py</code> build fact-identical logs &mdash; one line of prose followed
+      by <code>1 failed</code>, no exit record, no failing id &mdash; and assert opposite verdicts:
+      <code>test_matching_control_records_matched_without_waiver</code> wants <code>matched</code> from a
+      waiver-free promotion, while <code>test_reasoned_waiver_promotes_and_persists_control_evidence</code> wants
+      <code>waived</code>, a verdict only a refusal reaches. No gate that reads facts can satisfy both;
+      <code>collision-proof.log</code> prints the equal fact tuples. The head population of the seven existing
+      files that exercise the gate is <strong>49 passed, 4 failed</strong> &mdash; the four below and nothing else.</p>
+      <p><strong>Pre-existing expectations that pin the removed rule</strong>, by id, with the repair each needs:</p>
+      <ul>
+        <li><code>test_negative_control_waiver.py::test_mismatch_without_waiver_still_refuses</code> &mdash; its
+        fixture log needs an <code>EXIT=1</code> record or enumerated <code>FAILED</code> ids for the refusal it
+        asserts to be the facts' refusal; the <code>"does not name it"</code> assertion belongs to the removed
+        rule.</li>
+        <li><code>test_negative_control_waiver.py::test_reasoned_waiver_promotes_and_persists_control_evidence</code>
+        and <code>::test_python_entry_point_persists_the_same_waiver</code> &mdash; the pair colliding with
+        <code>test_matching_control_records_matched_without_waiver</code>; one side of the pair must move to a log
+        whose facts refuse (an <code>EXIT=0</code> capture, say) for the waiver to have something to waive.</li>
+        <li><code>test_crew_negative_control_header.py::test_the_refusal_states_the_first_line_requirement</code>
+        &mdash; its log failed for another reason with no baseline recorded, which the new gate admits on its facts;
+        the case needs a log that exits zero, or a baseline observation containing the one <code>FAILED</code> id
+        its log names.</li>
+      </ul>
+      <p><strong>Verification.</strong> Head gate from the worktree with
+      <code>PYTHONPATH=$PWD</code> and the repository interpreter: 4 passed, exit 0. Lint delta against the base
+      revision: zero (13 findings at base and head on <code>promotion.py</code>). Figure:
+      <a href="/reckon/figures/crew-runtime-positive-controls/control-gate-facts.svg">control-gate-facts.svg</a>.</p>
+    </section>
   </main>
 </body>
 </html>
