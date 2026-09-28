@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="420" viewBox="0 0 860 420" font-family="ui-sans-serif, system-ui, sans-serif">
+  <style>
+    .box { fill: #f7f7f9; stroke: #4b5563; stroke-width: 1.5; rx: 6; }
+    .sealed { fill: #fdecec; stroke: #b91c1c; }
+    .open { fill: #e8f6ec; stroke: #15803d; stroke-width: 2.5; }
+    .run { fill: #eef2ff; stroke: #3730a3; }
+    .lbl { font-size: 13px; fill: #111827; }
+    .mono { font-family: ui-monospace, monospace; font-size: 12px; fill: #111827; }
+    .note { font-size: 12px; fill: #374151; }
+    .arrow { stroke: #15803d; stroke-width: 2.5; fill: none; }
+  </style>
+  <defs>
+    <marker id="green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L9,3 L0,6 z" fill="#15803d"/>
+    </marker>
+    <marker id="grey" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L9,3 L0,6 z" fill="#6b7280"/>
+    </marker>
+  </defs>
+
+  <text class="lbl" x="40" y="34" font-size="16" font-weight="600">Operator home &#8212; sealed except the one login file</text>
+  <rect class="box sealed" x="40" y="60" width="300" height="150"/>
+  <text class="mono" x="58" y="86">~/.codex/</text>
+  <text class="note" x="58" y="106">--ro-bind overlay (whole directory)</text>
+  <rect x="70" y="122" width="250" height="34" fill="#ffffff" stroke="#b91c1c"/>
+  <text class="mono" x="84" y="144">config.toml</text>
+  <text class="note" x="250" y="144">sealed</text>
+  <rect class="open" x="70" y="166" width="250" height="34"/>
+  <text class="mono" x="84" y="188">auth.json</text>
+  <text class="note" x="205" y="188">--bind (rw)</text>
+
+  <text class="lbl" x="520" y="34" font-size="16" font-weight="600">Run directory</text>
+  <rect class="box run" x="520" y="60" width="300" height="150"/>
+  <text class="mono" x="538" y="86">&lt;run&gt;/codex-home/</text>
+  <text class="note" x="538" y="106">CODEX_HOME for the fenced run</text>
+  <rect class="box" x="550" y="122" width="250" height="34"/>
+  <text class="mono" x="564" y="144">(no copy of the login)</text>
+  <rect class="open" x="550" y="166" width="250" height="34"/>
+  <text class="mono" x="564" y="188">auth.json</text>
+  <text class="note" x="690" y="188">bound, not copied</text>
+
+  <path d="M 320 183 C 400 183 440 183 545 183" stroke="#15803d" stroke-width="2.5" fill="none" marker-end="url(#green)"/>
+  <text class="note" x="352" y="172" fill="#15803d">single-file rw bind</text>
+
+  <text class="lbl" x="40" y="262" font-size="15" font-weight="600">Why read-write</text>
+  <text class="note" x="40" y="286">codex rewrites auth.json in place on a token refresh:</text>
+  <text class="mono" x="40" y="308">open("auth.json", O_WRONLY|O_CREAT|O_TRUNC, 0600)  &#8594; write_all()  &#8594; same inode</text>
+  <text class="note" x="40" y="330">No temp file and no rename, so a single-file bubblewrap --bind carries the refreshed login back.</text>
+  <text class="note" x="40" y="352">A read-only bind rotated the token server-side and then dropped it, burning the single-use refresh</text>
+  <text class="note" x="40" y="372">token &#8212; the next refresh found it spent. Measured on 2026-09-28, codex-cli 0.155.1:</text>
+  <text class="mono" x="40" y="394">open(".../.codex/auth.json", O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE|O_CLOEXEC, 0600) = 10</text>
+</svg>
