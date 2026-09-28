@@ -540,6 +540,25 @@
       <p><strong>Scope retained:</strong> the review-lane selection, the collapse rule, the digest, the collapse kinds and the hook script are unchanged; ruff <code>check</code> and <code>format --check</code> are clean on the two changed paths (<code>reckon/crew/obligations.py</code>, <code>tests/test_obligations_do_not_mislead.py</code>). Verification at the merged head belongs to a separately dispatched test node.</p>
       <p><strong>Committed in this worktree.</strong> Unlike the two preceding sections, this node's git directory was writable: <code>4a4c0836</code> carries the fix and the new test module, and <code>1484d366</code> applies ruff format to that module. The plan's landed record and this evidence section are in the commit that follows.</p>
     </section>
+    <section id="obligations-view-test-one-clock">
+      <h2>The obligations view test is pinned to one clock instant</h2>
+      <p><strong>The failure, reproduced at the dispatch base.</strong> At <code>ccfd3d36</code>, <code>tests/test_mcp_crew_obligations.py</code> runs 1 failed, 1 passed. The failing test is <code>test_obligations_view_returns_the_derived_items_unchanged</code>, at <code>assert result["obligations"] == derived["obligations"]</code> (line 168). The diff is one field on one duty: <code>review-ready</code> reads <code>age_seconds</code> 241 in the view's payload against 240 in the fixture's, everything else equal.</p>
+      <p><strong>The cause is a live clock, not a divergence.</strong> The view is a thin dispatcher: <code>reckon/mcp.py:3789</code> returns <code>**reckon.crew.obligations.obligations(project, session)</code> unchanged inside the ok envelope. The derivation ages each duty from a wall clock: the classifier measures a run's age as <code>int(moment - manifest_mtime)</code> where <code>moment = recovery._utc_seconds()</code> (<code>reckon/crew/recovery.py:3531</code>, used at <code>:3800</code>). The fixture derives once to build its expectation and the view derives again when it is read, so a second elapsing between the two reads moves the same duty's age by one and the equality cannot hold whenever the pair straddles a whole-second boundary. The test asserted that two independent recomputations of a moving value agree, which is a property of timing, not of the code.</p>
+      <p><strong>The repair, test-side.</strong> Commit <code>8b53b16f</code> pins both clock boundaries &mdash; <code>reckon.crew.obligations._utc_now</code> and <code>reckon.crew.recovery._utc_seconds</code>, each already the module's patchable observation instant &mdash; to one value, and stamps the seeded manifest mtimes from that same value. The derivation still runs end to end through <code>recovery.classify_pointer</code>; only the clock is fixed, so the equality the test asserts becomes a fact of the code.</p>
+      <table>
+        <thead>
+          <tr><th>arm</th><th>tree</th><th>result</th><th>log</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>reproduction, base</td><td>worktree at <code>ccfd3d36</code></td><td>1 failed, 1 passed, exit 1</td><td><code>runs/r-20260927T193051771417-obligations-view-test-matches-the-derivation/logs/base-reproduction.log</code></td></tr>
+          <tr><td>head arm</td><td>this worktree, repaired test</td><td>11 passed, exit 0</td><td><code>runs/r-20260927T193051771417-obligations-view-test-matches-the-derivation/logs/head-arm.log</code></td></tr>
+          <tr><td>base arm (both files)</td><td>base test file restored in place</td><td>1 failed, 10 passed, exit 1</td><td><code>runs/r-20260927T193051771417-obligations-view-test-matches-the-derivation/logs/base-arm.log</code></td></tr>
+        </tbody>
+      </table>
+      <p><strong>Regressions add no failure.</strong> The head and base arms run the same two files, <code>tests/test_mcp_crew_obligations.py</code> and <code>tests/test_crew_obligations.py</code>. The base arm's single failure is the same test by id as the dispatch-base reproduction; the head arm is green. Zero added failures by id. The repaired file also passed five consecutive runs, so the result is deterministic rather than lucky.</p>
+      <p><strong>The declared mutation was observed to fail.</strong> Restoring the base test file &mdash; reverting the clock pin and the mtime stamp &mdash; reds <code>test_obligations_view_returns_the_derived_items_unchanged</code> exactly as on main, 1 failed, 1 passed, exit 1. The red log's first line repeats the declared mutation verbatim.</p>
+      <p><strong>Environment.</strong> The fixture resolves every crew directory &mdash; the configuration home, the mounts file, the pointer store, the review store &mdash; to a pytest temp path, and asserts the home-resolved configuration path is untouched after the read. Ruff <code>check</code> and <code>format --check</code> are clean on the changed path. Verification at the merged head belongs to a separately dispatched test node.</p>
+    </section>
   </main>
 </body>
 </html>
