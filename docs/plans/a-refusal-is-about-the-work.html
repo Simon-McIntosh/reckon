@@ -20,14 +20,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <meta name="plan-standalone" content="Narrows the conditions under which existing refusals fire; it consumes no other plan&#x27;s evidence, and the discharge work in an-orchestrator-can-discharge-a-refusal proceeds beside it.">
   <title>A Refusal Is About The Work | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="14">
-<meta name="plan-commits" content="601e51e5,74dc4774,3ff3237b,ee6fb313,fafbbe1f,5ad7eae0,27b4def6">
+<meta name="plan-version" content="15">
+<meta name="plan-commits" content="601e51e5,74dc4774,3ff3237b,ee6fb313,fafbbe1f,5ad7eae0,27b4def6,956f91dd,d78ae0f3,5cb0fc39">
 <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,reckon/crew/dispatch.py,reckon/crew/runs.py,tests/test_expired_follower_keeps_dispatching.py">
 <meta name="plan-impl" content="0.33">
 </head>
@@ -97,16 +97,15 @@
       release gate.</p>
 
     <h2 id="s5">§5 — A hyphenated noun is not a second action</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> The narrowed lint (§2, merged at <code>3ff3237b</code>) opens a second deliverable when the clause after a separator begins with an action verb. It reads a hyphenated compound whose first token is an action verb as that verb. On 2026-09-28 it refused the goal "Narrow promotion's impl-move, outcome and verify-gate refusals to the run they judge" as two deliverables, because <code>verify-gate</code> starts with <code>verify</code>. That is a form refusal of the kind this plan removes.</p><p><strong>Deliverable.</strong> In <code>reckon/crew/node.py</code>, a token joined by a hyphen to a following word is not read as an action verb opening a clause. A clause that genuinely begins with an action verb still splits.</p><p><strong>Done when</strong> <code>tests/test_goal_contract_lint.py</code> gains an accepted row carrying that goal verbatim and a refused row whose second clause begins with a bare action verb, and the declared negative control (treating the hyphenated token as its first word again) fails the accepted row.</p>
-
+<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
     <div class="section-landed" data-section="s5">
-      <p><em>Worker record &mdash; the section close is the coordinator's.</em> Commit <code>956f91dd</code>
-      reads the leading token of a clause whole, so a hyphenated compound is not read as its first word's
-      verb. <code>tests/test_goal_contract_lint.py</code> carries the goal s5 quotes, verbatim, as an
-      accepted row and a refused row opening on a bare action verb: 10 passed, exit 0. The declared
-      negative control restores the first-word reading and the accepted row fails <code>single-goal</code>.
-      Full record: <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed#s5">&sect;5 landed</a>.</p>
+      <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span></p>
+      <p class="landed-summary">Merged at <code>5cb0fc39</code> (<code>956f91dd</code>, <code>d78ae0f3</code>). The contract lint
+        reads the token after a separator whole, so a hyphenated compound such as <code>verify-gate</code> is the noun the
+        author wrote rather than an action verb opening a second deliverable. A clause that begins with a bare action verb
+        still splits. The goal that tripped it is pinned verbatim as an accepted row: 10 passed, and restoring the first-word
+        match fails that row. Review 98 with zero added failures. Full record:
+        <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed">evidence record</a>.</p>
     </div>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -144,6 +143,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260928T120000-s3-reopened" data-who="reckon-build" data-when="2026-09-28T12:00:00Z">
     <div class="r-comment-body">Reopened. The re-review at 5ad7eae0 (91) found the section's own dry-run measure unmet through the command: reckon/cli.py's dry-run branch passes no session or watch_required to plan_dispatch. One node remains, on reckon/cli.py, which queues behind promotion-bookkeeping-follows-the-run, which holds that file. The section's status was reopened by a direct edit of its record and declaration, because edit_plan has no op that reopens a done section.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260928T120500-s5-closed" data-who="reckon-build" data-when="2026-09-28T12:05:00Z">
+    <div class="r-comment-body">hyphenated-noun-is-not-an-action merged at 5cb0fc39; the lint reads the leading token whole, so verify-gate no longer opens a second deliverable; 10 passed; review 98 with zero added failures. Section s5 closed.</div>
 </div>
 </section>
 </main>
