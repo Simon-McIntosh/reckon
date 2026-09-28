@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <meta name="plan-standalone" content="Narrows the conditions under which existing refusals fire; it consumes no other plan&#x27;s evidence, and the discharge work in an-orchestrator-can-discharge-a-refusal proceeds beside it.">
   <title>A Refusal Is About The Work | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="14">
 <meta name="plan-commits" content="601e51e5,74dc4774,3ff3237b,ee6fb313,fafbbe1f,5ad7eae0,27b4def6">
 <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,reckon/crew/dispatch.py,reckon/crew/runs.py,tests/test_expired_follower_keeps_dispatching.py">
 <meta name="plan-impl" content="0.33">
@@ -63,16 +63,22 @@
     </div>
 
     <h2 id="s3">§3 — A session that armed a follower keeps dispatching</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
     <div class="section-landed" data-section="s3">
-      <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span></p>
-      <p class="landed-summary">Merged at <code>27b4def6</code> (<code>ee6fb313</code>, <code>fafbbe1f</code>, <code>5ad7eae0</code>).
-        When a session's follower registration was released and the project watcher is live, dispatch now proceeds with
-        a warning that carries the exact re-arm command. A session that never registered is still refused, and the dry run
-        reports the same outcome. <code>tests/test_expired_follower_keeps_dispatching.py</code> passes, and treating a
-        released registration as never-registered refuses the released case. Review 90, carried forward over a
-        newline-only repair. The section as specified is at <code>98f3eb98</code>. Full record:
+      <p><span class="badge">reopened 2026-09-28: one node remains</span></p>
+      <p class="landed-summary">First node merged at <code>27b4def6</code> (<code>ee6fb313</code>, <code>fafbbe1f</code>,
+        <code>5ad7eae0</code>). When a session's follower registration was released and the project watcher is live,
+        dispatch now proceeds with a warning that carries the exact re-arm command. A session that never registered is still
+        refused. <code>plan_dispatch</code> gives the same judgement, which <code>tests/test_expired_follower_keeps_dispatching.py</code>
+        passes, and treating a released registration as never-registered refuses the released case. Reviews 90, then 91
+        at <code>5ad7eae0</code>. Full record:
         <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed#s3">§3 landed</a>.</p>
+      <p><strong>Remaining.</strong> The re-review at <code>5ad7eae0</code> found that the command's dry-run branch in
+        <code>reckon/cli.py</code> calls <code>plan_dispatch</code> with no session and no <code>watch_required</code>, so
+        <code>reckon crew dispatch --dry-run</code> reaches no admission judgement. This section's done-when, that a dry run
+        shows the same outcome for each case, is therefore unmet through the command. One node passes both from the CLI
+        and measures the released and never-registered cases through <code>reckon crew dispatch --dry-run</code> itself,
+        with a base arm taken at a revision where its test files exist.</p>
     </div>
 
     <h2 id="s4">§4 — Bookkeeping follows the run</h2>
@@ -125,7 +131,10 @@
     <div class="r-comment-body"><p>a session whose follower registration was released keeps dispatching with a re-arm warning; never-registered still refused; dry run matches; 6 passed; released-as-never control refuses the released case; review 90 carried forward over a newline repair</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T112519598949-review-of-expired-follower-keeps-dispatching" data-who="reckon-build" data-when="2026-09-28T11:55:21.722Z">
-    <div class="r-comment-body"><p>re-reviewed expired-follower-keeps-dispatching at 5ad7eae0: 91/100, confirming the carried-forward review; found that reckon crew dispatch --dry-run in reckon/cli.py passes no session or watch_required to plan_dispatch, so section 3&#x27;s dry-run measure is unmet through the CLI, and that the base-arm gate log was stamped with the base while measuring the pre-commit tree; section 3 is reopened for a CLI follow-on node</p></div>
+    <div class="r-comment-body"><p>re-reviewed expired-follower-keeps-dispatching at 5ad7eae0: 91/100, confirming the carried-forward review; found that reckon crew dispatch --dry-run in reckon/cli.py passes no session or watch_required to plan_dispatch, so section 3's dry-run measure is unmet through the CLI, and that the base-arm gate log was stamped with the base while measuring the pre-commit tree; section 3 is reopened for a CLI follow-on node</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260928T120000-s3-reopened" data-who="reckon-build" data-when="2026-09-28T12:00:00Z">
+    <div class="r-comment-body">Reopened. The re-review at 5ad7eae0 (91) found the section's own dry-run measure unmet through the command: reckon/cli.py's dry-run branch passes no session or watch_required to plan_dispatch. One node remains, on reckon/cli.py, which queues behind promotion-bookkeeping-follows-the-run, which holds that file. The section's status was reopened by a direct edit of its record and declaration, because edit_plan has no op that reopens a done section.</div>
 </div>
 </section>
 </main>
