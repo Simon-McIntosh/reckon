@@ -817,6 +817,76 @@ def _promoted_worker_exit(run_id: str) -> dict[str, Any] | None:
 
 _PRESERVED_GATE_LOG_NAME = "gate.log"
 
+# The re-run's own capture, written beside the preserved gate log rather than
+# over it: one file records what the worker's gate did at its base, the other
+# what the replay of it did at the integrated tree, and a reader comparing the
+# two must be able to open both.
+_REPLAY_GATE_LOG_NAME = "verify-gate.log"
+
+
+def _replay_log_header(
+    *,
+    replay_command: str,
+    checkout: Path,
+    checkout_revision: str,
+    integrated_revision: str,
+    rewritten_roots: Sequence[str] = (),
+) -> list[str]:
+    """The header lines a re-run log opens with, in the gate log's own shape.
+
+    The header is what makes the log self-describing for a reader who has only
+    the file: which revision was measured, in which tree, and the exact text
+    the shell was handed — which differs from the stored command whenever a
+    recorded worktree root was rewritten.
+    """
+    lines = [
+        (
+            f"# replayed revision: {checkout_revision or 'unknown'} "
+            f"(integrated {integrated_revision or 'unknown'})"
+        ),
+        f"# cwd of the replay: {checkout}",
+        f"# command: {replay_command}",
+    ]
+    lines.extend(
+        f"# worktree root rewritten: {root} -> {checkout}" for root in rewritten_roots
+    )
+    return lines
+
+
+def _write_replay_log(
+    log_path: str | Path | None,
+    *,
+    header: Sequence[str],
+    output: str,
+    exit_status: int | None,
+) -> Path | None:
+    """Write a re-run's captured output under the run directory, or None.
+
+    The text lands in the capture convention the fleet's gate logs use — header
+    lines, the command's own output, and a terminal ``EXIT=<n>`` record — so
+    the gate-log readers parse a re-run exactly as they parse the log it was
+    replayed from. A re-run killed by the bound has no status to record, so no
+    ``EXIT=`` line is written and the absence is the fact.
+
+    Best-effort, like the cited-log preservation beside it: a log that cannot
+    be written leaves the verdict untouched and reports no path.
+    """
+    if log_path is None:
+        return None
+    path = Path(log_path).expanduser()
+    parts = [str(line) for line in header]
+    body = str(output or "").rstrip("\n")
+    if body.strip():
+        parts.append(body)
+    if exit_status is not None:
+        parts.append(f"EXIT={exit_status}")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(parts) + "\n", encoding="utf-8")
+    except OSError:
+        return None
+    return path
+
 
 def _preserve_cited_gate_log(
     run_id: str,
@@ -1033,6 +1103,7 @@ def _merged_gate_finding(
     integrated_revision: str,
     exit_status: int | None,
     reason: str | None,
+    failure_ids: Sequence[str] = (),
 ) -> dict[str, Any] | None:
     """The divergence a merge-time re-run exists to surface, or None.
 
@@ -1044,10 +1115,16 @@ def _merged_gate_finding(
     (failed, or a re-run that could not establish a pass) is surfaced, because
     a base-green gate the merged tree does not re-confirm is the silent gap
     this mechanism exists to close.
+
+    ``failure_ids`` are the failing tests the replay's own log enumerated. They
+    are carried beside the verdict when the log named any, so the coordinator
+    the finding reaches can act on the divergence without reopening the log;
+    an empty sequence writes no key, because a re-run whose output named no
+    test id measured no id rather than a zero.
     """
     if base_verdict != "passed" or integrated_verdict == "passed":
         return None
-    return {
+    finding: dict[str, Any] = {
         "base_verdict": "passed",
         "integrated_verdict": integrated_verdict,
         "integrated_revision": integrated_revision,
@@ -1063,6 +1140,79 @@ def _merged_gate_finding(
             "accepted"
         ),
     }
+    if failure_ids:
+        finding["failure_ids"] = list(failure_ids)
+    return finding
+
+
+def _recorded_worktree_roots(row: Mapping[str, Any]) -> tuple[str, ...]:
+    """The worker worktree roots a promoted row records, in the order written.
+
+    Promotion releases the run's worktree but keeps the audit of what it
+    released, so ``release.worktree_audit.worktrees[].path`` is the durable
+    record of the directory a stored gate command was authored against. A row
+    written before the audit existed carries no path at all, and a top-level
+    ``worktree`` is read too so either shape reaches the rewrite.
+    """
+    roots: list[str] = []
+
+    def add(value: Any) -> None:
+        text = str(value or "").strip()
+        if text and text not in roots:
+            roots.append(text)
+
+    release = row.get("release")
+    audit = release.get("worktree_audit") if isinstance(release, Mapping) else None
+    if isinstance(audit, Mapping):
+        for entry in audit.get("worktrees") or ():
+            if isinstance(entry, Mapping):
+                add(entry.get("path"))
+    add(row.get("worktree"))
+    return tuple(roots)
+
+
+def _rewrite_worktree_roots(
+    command: str,
+    *,
+    roots: Sequence[str | Path],
+    checkout: Path,
+) -> tuple[str, tuple[str, ...]]:
+    """Rewrite recorded worker worktree roots in a command to the checkout.
+
+    A stored gate command routinely pins the worker's own worktree: ``env -C
+    <worktree>`` decides where the gate runs, and its test files are named by
+    absolute path under that tree. Promotion releases the worktree, so a
+    replay of the recorded text either cannot start — ``env`` reports a removed
+    directory with status 125, which a reader takes for the gate failing — or,
+    while the tree survives, measures a stale copy of the repository instead of
+    the tree that ships. Both are the wrong tree, so every recorded root is
+    rewritten to the checkout being replayed.
+
+    A match is taken only at a whole path segment: the character after the root
+    must end the token or be a separator, so a root that is a string prefix of
+    a longer path is left alone. A root that already resolves to the checkout
+    is skipped, so a re-run against the tree the gate ran in is byte-identical
+    to the recorded text. Returns the command to execute beside the roots the
+    rewrite actually replaced.
+    """
+    rewritten: list[str] = []
+    text = str(command or "")
+    checkout_text = str(checkout)
+    for raw in roots:
+        candidate = str(raw or "").strip().rstrip("/")
+        if not candidate:
+            continue
+        try:
+            already = Path(candidate).resolve() == checkout
+        except (OSError, RuntimeError, ValueError):
+            already = False
+        if already:
+            continue
+        pattern = re.compile(re.escape(candidate) + r"(?=$|[/\s'\"])")
+        text, replacements = pattern.subn(checkout_text, text)
+        if replacements:
+            rewritten.append(candidate)
+    return text, tuple(rewritten)
 
 
 def rerun_gate_at_integrated_revision(
@@ -1074,6 +1224,8 @@ def rerun_gate_at_integrated_revision(
     timeout_seconds: float = 300.0,
     command: str | None = None,
     changed_paths: Sequence[str] | None = None,
+    worktree_roots: Sequence[str | Path] = (),
+    replay_log_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Re-run one gate against the tree that ships, and compare its verdict.
 
@@ -1107,6 +1259,24 @@ def rerun_gate_at_integrated_revision(
     node's own gate, and can do so on a run that stored none. The report names
     the command actually executed and whether it came from the option or the
     stored row, so a reader can tell a supplied command from the recorded one.
+
+    A recorded command routinely pins the worker's own worktree — ``env -C
+    <worktree>`` decides where the gate runs and its test files are named by
+    absolute path under that tree — and promotion releases that worktree, so
+    replaying the text verbatim either cannot start (``env`` reports a removed
+    directory with status 125, which a reader takes for the gate failing) or
+    measures a stale copy of the repository instead of the tree that ships.
+    Each root in ``worktree_roots`` is therefore rewritten to the checkout
+    being replayed before the command executes, and ``worktree_roots_rewritten``
+    names the ones the rewrite replaced.
+
+    The re-run's own output is kept when ``replay_log_path`` is given: the
+    command that ran, the captured stdout and stderr, and the exit status go to
+    that path under a header naming the revision, the tree, and the command,
+    and ``log_path`` cites the file the text landed in. A replay whose output
+    was discarded could only be read as an exit status — measured 2026-09-28, a
+    replayed gate recorded exit 1 and neither the failing test ids nor the
+    runner's stderr survived anywhere.
     """
     base = str(base_verdict).strip().lower()
     if base not in ledger.GATE_VERDICTS:
@@ -1146,9 +1316,12 @@ def rerun_gate_at_integrated_revision(
         "ran": False,
         "exit_status": None,
         "timed_out": False,
+        "log_path": None,
+        "worktree_roots_rewritten": [],
         "reason": None,
         "finding": None,
     }
+    replay_text: str | None = None
     prose = gate_command_prose(command)
     if not command:
         reason = "no gate command is stored to re-run"
@@ -1197,23 +1370,52 @@ def rerun_gate_at_integrated_revision(
         )
     else:
         reason = None
+        checkout_root = Path(repository).expanduser().resolve()
+        replayed, rewritten_roots = _rewrite_worktree_roots(
+            command, roots=worktree_roots, checkout=checkout_root
+        )
+        report["worktree_roots_rewritten"] = list(rewritten_roots)
+        header = _replay_log_header(
+            replay_command=replayed,
+            checkout=checkout_root,
+            checkout_revision=report["checkout_revision"],
+            integrated_revision=report["integrated_revision"],
+            rewritten_roots=rewritten_roots,
+        )
         try:
             result = subprocess.run(
-                ["sh", "-c", command],
+                ["sh", "-c", replayed],
                 cwd=str(repository),
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
                 check=False,
                 timeout=timeout_seconds,
             )
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as expired:
             report.update(ran=True, timed_out=True)
+            partial = expired.output if isinstance(expired.output, str) else ""
+            written = _write_replay_log(
+                replay_log_path, header=header, output=partial, exit_status=None
+            )
+            if written is not None:
+                report["log_path"] = str(written)
+            replay_text = partial
         else:
             report["ran"] = True
             report["exit_status"] = result.returncode
             report["integrated_verdict"] = (
                 "passed" if result.returncode == 0 else "failed"
             )
+            replay_text = result.stdout or ""
+            written = _write_replay_log(
+                replay_log_path,
+                header=header,
+                output=replay_text,
+                exit_status=result.returncode,
+            )
+            if written is not None:
+                report["log_path"] = str(written)
     if reason is not None:
         report["reason"] = reason
     elif report["timed_out"]:
@@ -1226,6 +1428,9 @@ def rerun_gate_at_integrated_revision(
         integrated_revision=report["integrated_revision"],
         exit_status=report["exit_status"],
         reason=report["reason"],
+        failure_ids=tuple(sorted(_control_failure_ids(replay_text)))
+        if replay_text
+        else (),
     )
     return report
 
@@ -1256,7 +1461,13 @@ def record_gate_rerun_at_integrated_revision(
     re-run, so a coordinator can measure a suite wider than the node's own
     gate — or measure a run that stored no gate command at all — against the
     merged head. The report records which command ran and whether it came from
-    the option or the stored row.
+    the option or the stored row. A stored command that pins the worker's
+    released worktree has that root rewritten to the checkout being replayed,
+    so a gate that ran correctly in its worker's tree is not recorded as
+    failing here because the directory it named is gone. The re-run's captured
+    output is written under this run's directory beside the preserved gate log
+    and its path is recorded on the report, so a failure carries the text that
+    explains it rather than only an exit status.
     """
     checkout = Path(repository).expanduser().resolve()
     ledger_root = root if root is not None else checkout
@@ -1289,6 +1500,8 @@ def record_gate_rerun_at_integrated_revision(
         timeout_seconds=timeout_seconds,
         command=command,
         changed_paths=_cited_changed_paths(checkout, row.get("commits")),
+        worktree_roots=_recorded_worktree_roots(row),
+        replay_log_path=run_dir(run_id) / _REPLAY_GATE_LOG_NAME,
     )
     record_path = ledger.run_path(project, run_id, ledger_root)
     if record_path.is_file():
