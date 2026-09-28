@@ -21,6 +21,7 @@ DECLARATION = "removing the guard turns the fixture red"
 PARAPHRASE = "bypassing the guard produced the expected assertion failure"
 REASON = "the control ran the declared mutation and described it in other words"
 RUN_ID = "r-20260921T060500000000-control"
+CONTROL_FAILURE = "tests/test_guard.py::test_the_guard_refuses"
 
 
 def _prepare(
@@ -30,11 +31,22 @@ def _prepare(
     log_text: str = PARAPHRASE,
     declaration: str = DECLARATION,
     writes_test: bool = True,
+    run_facts: bool = False,
 ) -> Path:
     _write_complete_pointer(repository, tmp_path, RUN_ID)
     _store_complete_review(RUN_ID)
     red_log = tmp_path / "control.log"
-    red_log.write_text(log_text + "\n1 failed\n", encoding="utf-8")
+    # The facts admission is decided on: a failing test id and a non-zero exit
+    # record. The wording is a label for the reader, so the fixtures that
+    # assert admission carry the facts and the ones that assert a refusal on
+    # the facts' absence do not.
+    lines = [log_text]
+    if run_facts:
+        lines.append(f"FAILED {CONTROL_FAILURE} - AssertionError: no refusal")
+    lines.append("1 failed")
+    if run_facts:
+        lines.append("EXIT=1")
+    red_log.write_text("\n".join(lines) + "\n", encoding="utf-8")
     record = read_pointer(RUN_ID)
     record["node"]["write_paths"] = ["tests/test_guard.py"] if writes_test else []
     record["node"]["negative_control"] = declaration
@@ -92,7 +104,10 @@ def test_mismatch_without_waiver_still_refuses(
     _prepare(repository, tmp_path)
     result = _complete_cli(repository, tmp_path)
     assert result.exit_code == 1
-    assert "does not name it" in result.output
+    # This fixture's log carries no exit record and no failing test id, so the
+    # gate refuses it on the facts it cannot read; the declaration's wording is
+    # no longer compared, so this asserts the missing fact, not a mismatch.
+    assert "records no EXIT status" in result.output
     assert "--waive-negative-control REASON" in result.output
     _assert_not_promoted(repository)
 
@@ -119,7 +134,9 @@ def test_reasoned_waiver_promotes_and_persists_control_evidence(
 def test_matching_control_records_matched_without_waiver(
     repository: Path, tmp_path: Path
 ) -> None:
-    _prepare(repository, tmp_path, log_text=DECLARATION)
+    # Admission is decided by the run's facts, so this fixture's log carries
+    # the exit record and the failing test id the gate reads.
+    _prepare(repository, tmp_path, log_text=DECLARATION, run_facts=True)
     result = _complete_cli(repository, tmp_path)
     assert result.exit_code == 0, result.output
     control = _row(repository, RUN_ID)["negative_control"]
@@ -133,10 +150,14 @@ def test_matching_control_records_matched_without_waiver(
 def test_waiver_without_control_match_refusal_is_refused(
     repository: Path, tmp_path: Path, case: str
 ) -> None:
+    # The "matched" case needs a log that carries the facts admission reads:
+    # the declaration's wording alone matches nothing, and a waiver is refused
+    # precisely when the control matched rather than being refused.
     _prepare(
         repository,
         tmp_path,
         log_text=DECLARATION if case == "matched" else PARAPHRASE,
+        run_facts=case == "matched",
         declaration={"no-declaration": "", "none": "none: no applicable mutation"}.get(
             case, DECLARATION
         ),

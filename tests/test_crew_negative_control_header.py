@@ -1,20 +1,16 @@
-"""The red log's naming convention is stated where a worker reads it.
+"""The red log's requirements are stated where a worker reads it.
 
-Promotion matches the declared mutation against the red log's content, so a
-genuine red run that does not name the mutation is refused as a failure for some
-other reason. Three nodes answered that requirement three different ways — one
-wrote a ``MUTATION`` header, one wrote ``MUTATION DECLARED``, one wrote neither
-and was refused until it was resumed — because enforcement existed and the
-convention was nowhere a worker reads. Two surfaces now state it: the manifest
-template's gloss beside ``negative_control_log``, which a worker is handed
-before it starts, and the promotion refusal itself, which a worker meets when the
-match fails and which has to say what it wants rather than only what is missing.
-Both say the log's first line repeats the declared mutation verbatim.
+A declared mutation is discharged by the log its run produced: promotion reads
+the run's facts from that log — a non-zero terminal ``EXIT=<n>`` record and at
+least one failing test id — and refuses a log that carries neither, however it
+is worded. A refusal therefore has to say what it wants rather than only that
+something is missing, because a worker meets it when the run is over and the
+log cannot be rewritten from the mutation's description alone.
 
-Each case makes the guarded thing happen and is reddened by the sentence it
-measures being absent; the red log that mutation produced is kept beside the
-green one under the node's report directory, its own first line repeating the
-declared mutation verbatim — which is the convention being documented.
+The manifest template's gloss beside ``negative_control_log`` states, before
+the run, that the log's first line repeats the declared mutation verbatim; that
+line is the log's label for a human reader. What admission reads is the run's
+facts, and the refusal names the fact it found absent.
 """
 
 from __future__ import annotations
@@ -82,13 +78,13 @@ def test_the_emitted_template_states_the_first_line_requirement() -> None:
     assert "declared mutation" in gloss
 
 
-# ── The refusal a worker meets when the match fails ────────────────────────
+# ── The refusal a worker meets when the facts are missing ──────────────────
 
 
-def test_the_refusal_states_the_first_line_requirement(
+def test_the_refusal_states_the_fact_it_found_absent(
     repository: Path, tmp_path: Path
 ) -> None:
-    """The guarded thing happens: a red log that failed for another reason."""
+    """The guarded thing happens: a log whose run left no exit record."""
     run_id = "r-20260919T120000000000-node-a"
     mutation = "removing the guard turns the fixture red"
     red = tmp_path / "other_failure.log"
@@ -119,6 +115,7 @@ def test_the_refusal_states_the_first_line_requirement(
     # The detail that was already there survives: which declaration, which log.
     assert mutation in message
     assert str(red) in message
-    # And the refusal now says what it wants, not only what is missing.
-    assert "first line" in message
-    assert "verbatim" in message
+    # The refusal states the fact it read and found absent — this log carries
+    # no exit record — instead of the first-line wording, which admission no
+    # longer compares.
+    assert "records no EXIT status" in message
