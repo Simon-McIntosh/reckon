@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="15">
-<meta name="plan-commits" content="a69f554f,5bb66c48,41bc0eea,380dcd14,cf9160ff,32d932b2,53ceb356,cc44c453,65f5a378,3157768e,8602efcf,16ca61e7,d85fba28,6cdc5b8d">
-<meta name="plan-artifacts" content="reckon/evidence.py,tests/test_evidence_record_composition.py,reckon/serve.py,reckon/doccheck.py,tests/test_readers_compose_the_record.py,reckon/mcp.py,tests/test_read_plan_composes_the_record.py">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="16">
+<meta name="plan-commits" content="a69f554f,5bb66c48,41bc0eea,380dcd14,cf9160ff,32d932b2,53ceb356,cc44c453,65f5a378,3157768e,8602efcf,16ca61e7,d85fba28,6cdc5b8d,65c03d26,18719f5d,d41e0231">
+<meta name="plan-artifacts" content="reckon/evidence.py,tests/test_evidence_record_composition.py,reckon/serve.py,reckon/doccheck.py,tests/test_readers_compose_the_record.py,reckon/mcp.py,tests/test_read_plan_composes_the_record.py,reckon/crew/promotion.py,tests/test_promotion_writes_the_landing_line.py">
+<meta name="plan-impl" content="0.63">
 </head>
 <body>
   <main class="plan-doc">
@@ -226,7 +226,10 @@
     <div class="r-comment-body"><p>re-reviewed read-plan-reads-the-composed-record at d85fba28: 94/100, zero added failures; the prose suite arms finding declined as bookkeeping, and the unproven read_plan warning delivery went to a follow-on node in section 3</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260928T102500-promotion-versioned-landing" data-who="reckon-build" data-when="2026-09-28T10:25:00Z">
-    <div class="r-comment-body"><p>promotion's publish of a run's landing line: promotion reads the run's manifest and, when it declares a <code>landing:</code> line, writes that line as the node section's comment through the versioned plan write (<code>_declared_manifest_landing</code> &#8594; <code>_record_landing_comment</code> &#8594; <code>_store.read_plan</code>/<code>write_plan</code> with the <code>VersionConflict</code> retry), so the record reaches the plan as an ordinary versioned edit and never through a git merge of the plan HTML. A run whose manifest declares no landing line keeps today's behaviour, including the worker-authored deferral. Three cases in <code>tests/test_promotion_writes_the_landing_line.py</code>: the landing line lands as a comment with the plan version bumped; a run without one is unchanged; a concurrent plan edit between read and write is retried, not lost. 23 passing with the neighbouring landing-store modules, <code>test_landing_comment_authorship.py</code> 5 passing; the landing-line case is observed to leave no comment under the declared mutation. Evidence anchor: <code>docs/evidence/archive/a-landing-record-never-conflicts-landed.html</code></p></div>
+    <div class="r-comment-body"><p>promotion's publish of a run's landing line: promotion reads the run's manifest and, when it declares a <code>landing:</code> line, writes that line as the node section's comment through the versioned plan write (<code>_declared_manifest_landing</code> → <code>_record_landing_comment</code> → <code>_store.read_plan</code>/<code>write_plan</code> with the <code>VersionConflict</code> retry), so the record reaches the plan as an ordinary versioned edit and never through a git merge of the plan HTML. A run whose manifest declares no landing line keeps today's behaviour, including the worker-authored deferral. Three cases in <code>tests/test_promotion_writes_the_landing_line.py</code>: the landing line lands as a comment with the plan version bumped; a run without one is unchanged; a concurrent plan edit between read and write is retried, not lost. 23 passing with the neighbouring landing-store modules, <code>test_landing_comment_authorship.py</code> 5 passing; the landing-line case is observed to leave no comment under the declared mutation. Evidence anchor: <code>docs/evidence/archive/a-landing-record-never-conflicts-landed.html</code></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260928T112000-landing-line-merged" data-who="reckon-build" data-when="2026-09-28T11:20:00Z">
+    <div class="r-comment-body">promotion-writes-the-landing-line merged at d41e0231; a manifest landing: line now reaches the plan section as a versioned edit, with a concurrent edit retried; 23 passed; review 92, one bookkeeping finding (map not cited by path) declined. Merging it conflicted in this plan's cumulative evidence record: two nodes appended anchors at the same place, the conflict this plan removes. It was resolved in a scratch worktree as the union of both anchors. Section 2 (default fragment scopes) can now go, because the promotion side that turns a worker's landing: line into the plan comment is on main. s3 keeps two nodes: the read_plan warning (running) and the six-commit merge-tree measure.</div>
 </div>
 </section>
 </main>
