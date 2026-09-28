@@ -384,6 +384,38 @@ same parser — is met by the positive control above, and the archaeology that e
 finding is in the data's <code>argv_note</code>. A follow-up may wish to make the resumed session id
 a durable field on the run record so the argv clause becomes checkable.</p>
 </div>
+
+<div class="r-note" data-reckon="landed" data-node="state-the-burn-after-the-fix" data-when="2026-09-28">
+<p><strong>Outcome — the after figure is zero over 75 codex dispatches, and the zero is
+censored.</strong> The same census, restricted to run ids whose timestamps fall after
+<code>2026-09-23T10:40:20Z</code> — the committer time of <code>adbb6067</code>, the commit that
+keyed reuse to the run's own task — pairs <strong>75 codex dispatches</strong> to a task in a
+rollout, and every one is <code>fresh</code>: <strong>zero same-task resumes and zero cross-task
+resumes</strong>, inherited total 0. No session was inherited at all in the window, so this reads as
+the stopgap rather than as the rule's selectivity: §7 has <code>session_reuse</code> off, and the one
+live codex pointer at census time reports <code>session_reuse_capable: false</code>. The zero
+becomes the §7 falsifier reading only once reuse is on, at the ≥50-dispatch population §7 names.</p>
+<p><strong>The before window, re-read by the same instrument.</strong> 2,933 paired dispatches
+(1,785 fresh, 1,114 cross-task, 18 same-task, 16 prior-run-unknown; inherited 146,847,735) against
+the recorded 3,274. The drop is absent run directories, not a changed parser: the two runs share
+the fresh median to five tokens (<strong>41,002</strong> now against 40,997 recorded), and the
+recorded positive control reproduces with the same run and shape. Figure:
+<img src="/reckon/figures/new-work-gets-a-new-worker/reuse-classes-before-after.png" alt="Two bar charts, before and after the task-keyed rule. Before: 1,785 fresh, 18 same-task resumes, 1,114 cross-task resumes, 16 prior-run-unknown over 2,933 paired dispatches. After: 75 fresh, zero same-task and zero cross-task over 75."></p>
+<p><strong>Positive control, named and re-read.</strong>
+<code>r-20260909T124530581873-n-swcr-observe-the-missing-validation</code> opens at 378,921 tokens
+against a fresh median of 41,002 for an inherited figure of <strong>337,919</strong> (recorded
+337,924; the difference is the median moving five tokens). The parser reports zero for every fresh
+run and a non-zero inheritance here, so the window's zero comes from the fleet rather than from the
+instrument.</p>
+<p><strong>Gate and the declared negative control.</strong> Gate:
+<code>tests/test_resume_burn_after_the_fix.py</code>, three checks over the committed census file
+alone. With the control run's <code>inherited_tokens</code> set to 0 in a copy of the file, the
+positive-control check fails (1 failed / 2 passed, exit 1); unmutated, 3 passed (exit 0). Data:
+<code>docs/research/data/codex-resume-burn-after.json</code> (56 KB); census and log paths in the
+run record. Anchor:
+<a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed#codex-resume-burn-after">codex
+resume burn, after</a>.</p>
+</div>
     </section>
 
     <section id="s7" data-reckon="section">
