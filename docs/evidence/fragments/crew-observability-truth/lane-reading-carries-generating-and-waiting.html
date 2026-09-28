@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="lane-reading-carries-generating-and-waiting">
+  <meta name="plan-title" content="Lane reading carries the lane's counts and its achieved rate">
+  <meta name="plan-summary" content="The advisory carry a dispatch rides on now names the lane's generating and waiting populations and the rate it achieved, with the rate's own vintage and denominator, and withholds an unpublished figure as unknown rather than zero.">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>Lane reading carries the lane's counts and its achieved rate | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-09-28</p>
+      <h1>Lane reading carries the lane's counts and its achieved rate</h1>
+      <p class="lead">
+        The advisory carry a dispatch rides on described the lane's window but not its
+        work: it published a headroom, a binding constraint, a mean context and a stamp,
+        and nothing about how much the lane was doing. A coordinator weighing two lanes
+        had to open the lane document a second time, which is exactly the compensation
+        the carry exists to remove. The carry now resolves the lane's own counts and its
+        achieved rate in the same single consult, and every figure it cannot resolve is
+        withheld as <code>unknown</code> rather than resolved to zero.
+      </p>
+    </header>
+
+    <h2 id="gap">&sect;1 &mdash; What the carry could not say</h2>
+    <p>
+      At the base revision the carried reading resolved four figures from the document:
+      <code>headroom</code>, <code>binding_observed</code>, <code>mean_context</code> and
+      <code>observed_at</code>, plus its own <code>state</code>, <code>age_seconds</code>
+      and <code>detail</code>. The base gate test asserts exactly that set
+      (<code>tests/test_lane_reading_at_dispatch.py::test_payload_carries_the_four_reading_fields_from_the_lane_document</code>),
+      so the four-field shape is the recorded starting point rather than an impression.
+      The live lane document read by this node on 2026-09-28T15:16:33Z published
+      <code>running: 7</code>, <code>waiting: 0</code> and no throughput block at all:
+      a dispatcher reading only the carry could not tell that lane from an idle one.
+    </p>
+
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/lane-reading-carries-generating-and-waiting/lane_reading_resolution.svg"
+           alt="Diagram: the lane document is read once by the dispatch consult, which resolves generating, waiting and the throughput block into the carried lane_reading; unpublished keys branch to unknown rather than zero, per field"
+           style="max-width:100%">
+      <figcaption>One consult, three new figures. The upper panel is the resolution path;
+      the lower panel is the same document with one key missing, where the withheld figure
+      is carried as <code>unknown</code> while its neighbours stay measured. The live
+      figures shown are the document's own at 2026-09-28T15:16:33Z.</figcaption>
+    </figure>
+
+    <h2 id="shape">&sect;2 &mdash; What the carry resolves now</h2>
+    <p>
+      <code>reckon/crew/dispatch.py</code> at <code>e6cf69e4</code> adds three keys to the
+      fresh carry and a helper per concern. Resolution is per field, so a document that
+      omits one figure still carries the others.
+    </p>
+    <table>
+      <thead><tr><th>Carried key</th><th>Resolved from</th><th>When the document is silent</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>generating</code></td>
+          <td>the document's <code>generating</code>, else its <code>running</code> &mdash; the lane's current publication names its generating population <code>running</code></td>
+          <td><code>unknown</code>, never <code>0</code></td>
+        </tr>
+        <tr>
+          <td><code>waiting</code></td>
+          <td>the document's <code>waiting</code></td>
+          <td><code>unknown</code>, never <code>0</code></td>
+        </tr>
+        <tr>
+          <td><code>throughput</code></td>
+          <td>the document's <code>throughput</code> block: <code>mean_tokens_per_second</code>, <code>aggregate_tokens_per_second</code> and the <code>runs</code> they were divided by, stamped by the block's own <code>observed_at</code> when readable and by the reading's stamp otherwise</td>
+          <td>a block with <code>state: "unknown"</code>, all three figures <code>unknown</code>, and a <code>detail</code> naming why the rate was not measured</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The counts stay apart on purpose: a lane serving seven requests while three queue is
+      not a lane serving ten, and the two figures are what let a coordinator choose a lane
+      that is finishing work over one that is accumulating a queue. The rate travels with
+      its vintage and its denominator because either alone misleads &mdash; <code>1.44</code>
+      tokens per second means nothing without the window it was achieved over, and the age
+      says whether that window is still the lane's present. A rate is dated by its own
+      stamp when the block carries one, so a rate sampled earlier in the window is not
+      carried as if it were as fresh as the counts beside it.
+    </p>
+    <p>
+      Existing semantics are untouched. Whole-carry collapse still happens only for
+      document-level defects &mdash; no document, one that will not parse, an unintelligible
+      <code>observed_at</code>, or a reading past its stated shelf life &mdash; and the
+      top-level <code>detail</code> still stays empty when the pre-existing figures resolve,
+      so a healthy reading is not made to look degraded by the new keys. On the live
+      document above the carry reads <code>generating: 7</code>, <code>waiting: 0</code>
+      and <code>throughput.state: "unknown"</code> with the explanatory detail, which is
+      the forward-compatible path: the lane begins publishing a rate and the carry picks it
+      up with no further change.
+    </p>
+
+    <h2 id="evidence">&sect;3 &mdash; What the arms measured</h2>
+    <p>
+      The gate ran in scratch trees against a stated revision each, so the module under
+      test is proven to be the tree's own (<code>module.__file__</code> and the resolved
+      <code>cwd</code> are recorded on each log's header lines) rather than whichever
+      source the shared environment happens to serve. Targets were the new file plus every
+      existing file that exercises <code>lane_reading</code>:
+      <code>tests/test_lane_reading_carries_counts.py</code>,
+      <code>tests/test_lane_reading_at_dispatch.py</code>,
+      <code>tests/test_lane_readers_share_the_gate_aware_headroom.py</code>,
+      <code>tests/test_lane_advisory_on_dispatch.py</code>,
+      <code>tests/test_backend_reference_contract.py</code>,
+      <code>tests/test_flight_portfolio.py</code>.
+    </p>
+    <table>
+      <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>base</td>
+          <td><code>687c8cbf</code></td>
+          <td><code>6 failed, 39 passed</code>, EXIT=1 &mdash; the three new cases fail with <code>KeyError</code> because the fields are absent at base, alongside three pre-existing failures in <code>test_lane_advisory_on_dispatch.py</code></td>
+          <td><code>logs/baseline_suite.log</code></td>
+        </tr>
+        <tr>
+          <td>after</td>
+          <td><code>e6cf69e4</code></td>
+          <td><code>3 failed, 42 passed</code>, EXIT=1 &mdash; the three new cases pass; the three failures are the identical pre-existing ids, so <strong>zero added failing ids</strong> against base</td>
+          <td><code>logs/after_suite.log</code></td>
+        </tr>
+        <tr>
+          <td>negative control</td>
+          <td><code>e6cf69e4</code> minus the three new carry fields, in a scratch copy</td>
+          <td><code>1 failed in 1.64s</code>, EXIT=1 &mdash; the known-counts case fails when the fields are dropped, so the case is measuring the carry rather than passing for its own reasons</td>
+          <td><code>logs/negative_control.log</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The new cases are three: the known-counts case (a document publishing
+      <code>running: 7</code>, <code>waiting: 3</code> and a throughput block must arrive
+      as two distinct counts and a measured rate carrying all three figures, the rate's own
+      stamp and its age, with the rate older than the reading it rides in); the withheld
+      case (a document that omits <code>waiting</code> must carry it as
+      <code>unknown</code> and never <code>0</code>, while the published count is still
+      carried); and the undated-rate case (a throughput block with no stamp of its own is
+      dated by the reading that carried it). The test writes its lane document into a
+      temporary config home and never reads or writes the real lane document or the real
+      <code>~/.config/reckon</code>.
+    </p>
+
+    <h2 id="boundaries">&sect;4 &mdash; Boundaries and open items</h2>
+    <ul>
+      <li>
+        <strong>A difficulty in the existing suite, not this node's change.</strong> Three
+        cases in <code>tests/test_lane_advisory_on_dispatch.py</code>
+        (<code>test_a_promoted_row_carries_the_advisory_and_the_lane_fields</code>,
+        <code>test_advice_taken_and_advice_declined_are_told_apart_from_the_rows</code>,
+        <code>test_a_run_with_no_advisory_promotes_with_no_advisory_key</code>) fail
+        identically at base and at head with <code>FileNotFoundError</code> for the
+        fixture's <code>docs/state/advisory-project/crew.json</code> &mdash; the promotion
+        path never writes the ledger the assertion reads. Identical ids in both arms, so
+        they are recorded as a follow-on rather than triaged here; the promotion surface
+        belongs to a concurrent node.
+      </li>
+      <li>
+        <strong>The rate is only as good as the publication.</strong> The lane's current
+        document publishes no <code>throughput</code> block, so the live carry reports the
+        rate as unknown with the reason named. The reader is complete and exercised by the
+        test; what remains is for the lane to publish the figures, which is outside this
+        node's write scope.
+      </li>
+      <li>
+        <strong>Files.</strong> <code>reckon/crew/dispatch.py</code> (the carry),
+        <code>tests/test_lane_reading_carries_counts.py</code> (the gate), this fragment
+        and its figure. No other path was written.
+      </li>
+    </ul>
+
+    <h2 id="outcome">&sect;5 &mdash; Outcome</h2>
+    <p>
+      Commit <code>e6cf69e4</code> carries the change: <code>_GENERATING_KEYS</code>
+      (<code>generating</code>, else <code>running</code>), <code>_WAITING_KEYS</code>, the
+      throughput block reader with its own age and denominator, and the per-field
+      withholding that keeps an unpublished figure out of the carry as anything other than
+      <code>unknown</code>. The gate is green for this change: three new cases pass at
+      head, all three fail at base, and the negative control drops the fields and watches
+      the known-counts case fail.
+    </p>
+  </main>
+</body>
+</html>
