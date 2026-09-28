@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-evidence-for" content="a-stalled-row-says-whether-the-worker-lives">
+  <title>The crew directory row reads the derived phase — landing record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The crew directory row reads the derived phase</h1>
+  <p>The classifier and the live view derive a run's phase from the run's own newest stream, so a
+  worker that has been thinking and editing for an hour reads <code>working</code> rather than the
+  pre-spawn label its launcher wrote. The directory row still copied the pointer's stored phase, and
+  the CLI verb and the MCP directory view both render that row — so one live run read as
+  <code>working</code> in one surface and <code>starting</code> in another, and the two surfaces had
+  agreed before the derivation landed.</p>
+
+  <section id="landed">
+    <h2>What landed</h2>
+    <ul>
+      <li><code>reckon/crew/directory.py:84</code> — the row's <code>phase</code> is the
+      classifier's phase, which <code>_run_row</code> already computes at line 70 for the row's
+      <code>classification</code> and <code>process_alive</code> (<code>reckon/crew/directory.py:65</code>).
+      The stored pointer field remains as the fallback, so a record the derivation cannot speak to
+      keeps the label its launcher wrote rather than an empty word.</li>
+      <li><code>tests/test_directory_row_reads_the_derived_phase.py</code> — two cases: a live
+      pointer whose stored phase is <code>starting</code> and whose stream carries one assistant
+      record reads <code>working</code> in the row, read through the MCP directory view and through
+      <code>reckon crew directory</code>; a stream holding only system records keeps
+      <code>starting</code>.</li>
+      <li><code>tests/test_working_reads_working_at_once.py:283</code> — the mtime comparison in the
+      resume-stream case is replaced by an assertion naming the stream the derivation selects.</li>
+    </ul>
+    <p>Commit <code>b36b019b</code>. Paths changed: <code>reckon/crew/directory.py</code>,
+    <code>tests/test_directory_row_reads_the_derived_phase.py</code>,
+    <code>tests/test_working_reads_working_at_once.py</code>, this fragment and the figure beside it.</p>
+  </section>
+
+  <section id="defect">
+    <h2>The recorded defect, reproduced at the base revision</h2>
+    <p>At <code>5d895105</code>, with the new case added and nothing else changed, the row reports the
+    pointer's label while the run's own stream supports the other word:</p>
+    <pre><code>E       AssertionError: {'run_id': 'r-directory-assistant', 'node': 'r-directory-assistant', …}
+E       assert 'starting' == 'working'
+E         - working
+E         + starting
+
+tests/test_directory_row_reads_the_derived_phase.py:175: AssertionError
+1 failed, 1 passed in 2.20s
+EXIT=1</code></pre>
+    <p>The case cannot be satisfied by the pointer: the same case asserts
+    <code>runs.read_pointer(run_id)["phase"] == "starting"</code> while the worker lives, and the
+    pointer is never folded by <code>observe</code>, so the word the row reports has to come from the
+    run's stream or from nowhere. The second case — the stream holding no assistant turn — passes at
+    both revisions, which is what a fallback arm should do.</p>
+  </section>
+
+  <section id="derivation">
+    <h2>One derivation, three surfaces</h2>
+    <figure>
+      <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/directory-row-reads-the-derived-phase/row-reads-the-derived-phase.svg"
+           alt="The run's pointer, holding the label starting, and its newest stream, holding a system record then an assistant record, both feed one derivation, classify_pointer, which reports working when the newest stream holds an assistant record and otherwise keeps the stored label. The classifier row and the live view read that derivation and report phase working. The directory row reported phase starting before the change, from the stored label, and reports phase working after it. Where no stream holds an assistant record every surface keeps the stored label.">
+      <figcaption>The row's phase comes from the run's own record; the pointer's label is the
+      fallback the derivation returns where no stream supports an advance.</figcaption>
+    </figure>
+    <p>The change is a call, not a second derivation: the row reads the value
+    <code>classify_pointer</code> already returns for the record it is building, so the directory
+    cannot drift from the classifier by re-implementing the rule. The three surfaces that describe
+    one live run now answer with one word.</p>
+  </section>
+
+  <section id="gate">
+    <h2>The gate at three revisions</h2>
+    <table>
+      <thead>
+        <tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>base — the derivation replaced by the stored-phase copy, in a scratch tree</td>
+          <td><code>5d895105</code></td>
+          <td>1 failed, 12 passed — <code>EXIT=1</code></td>
+          <td><code>logs/baseline-suite.log</code></td>
+        </tr>
+        <tr>
+          <td>change</td>
+          <td><code>b36b019b</code></td>
+          <td>13 passed — <code>EXIT=0</code></td>
+          <td><code>logs/after-suite.log</code></td>
+        </tr>
+        <tr>
+          <td>scratch copy, stored-phase copy restored</td>
+          <td><code>b36b019b</code> + mutation</td>
+          <td>1 failed, 1 passed — <code>EXIT=1</code></td>
+          <td><code>logs/negative-control-restore-stored-phase.log</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The gate is the new module plus <code>test_working_reads_working_at_once.py</code> plus
+    <code>test_crew_directory.py</code>. Those two modules are the only test files that read the
+    directory view, and the new module covers the change. The base arm's failing set is exactly the
+    new module's assistant-record case, so my change adds no failing id to any existing file and the
+    base arm needs no failure attribution. Each log opens with its revision, its tree, and the
+    absolute path the imported <code>reckon.crew.directory</code> resolved to, so a green log cannot
+    be describing another checkout; every log ends with an <code>EXIT=</code> line. The logs live
+    under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T204215455574-directory-row-reads-the-derived-phase/logs/</code>.</p>
+  </section>
+
+  <section id="negative-control">
+    <h2>The negative control</h2>
+    <p>A scratch copy of the tree carries the stored-phase copy in <code>directory.py</code> with the
+    head's tests, and the assistant-record directory case fails against it while the fallback case
+    passes — the same shape the base arm shows. The scratch copy's <code>reckon/</code> package is
+    byte-identical to <code>5d895105</code> (checked with <code>git show 5d895105:reckon/crew/directory.py
+    | diff -</code>), so the red is the recorded defect rather than a stale copy, and one earlier run
+    of that arm is discarded in favour of this one: the first scratch tree omitted
+    <code>skills/</code> and failed an unrelated case that reads a skill file by path, which the
+    instrument caused, not the revision.</p>
+    <pre><code>FAILED tests/test_directory_row_reads_the_derived_phase.py::test_an_assistant_record_makes_the_directory_row_read_working
+1 failed, 1 passed in 1.28s
+EXIT=1</code></pre>
+  </section>
+
+  <section id="mtime">
+    <h2>The assertion that guarded nothing</h2>
+    <p>The resume-stream case asserted <code>resume.stat().st_mtime &gt;= stream.stat().st_mtime</code> —
+    two files the case itself had just written, so no change to the code under test could fail it.
+    It is replaced by an assertion naming the file the derivation actually reads, with the pointer's
+    own stream aged back so that choice is established rather than left to the reader's mtime
+    tie-break (which is by path, and would pick <code>stream.jsonl</code> on a tie, hiding the
+    record):</p>
+    <pre><code>found = recovery._record_newest_stream(pointer)
+assert found is not None and found[0] == resume, found
+assert not recovery._stream_holds_assistant_record(stream), stream</code></pre>
+    <p>The second line states why the case discriminates at all: the launch stream holds no assistant
+    record, so a reader that opened that file would report the run as still starting. The transition
+    assertion beside it is unchanged and remains the behavioural guard.</p>
+  </section>
+
+  <section id="isolation">
+    <h2>The cases stand their world up in a temporary config home</h2>
+    <p>The fixture points <code>RECKON_HOME</code> at a directory inside the case's own
+    <code>tmp_path</code> and asserts the resolved crew home is inside it before and after the case,
+    so nothing here reads or writes the operator's <code>~/.config/reckon</code>. The CLI case reads
+    its row by running <code>reckon crew directory --run &lt;id&gt;</code> through
+    <code>CliRunner</code>, which resolves the same temporary home — a CLI that reached the real home
+    would find no such live run and fail the row lookup rather than pass on a stale row.</p>
+  </section>
+ </main>
+</body>
+</html>

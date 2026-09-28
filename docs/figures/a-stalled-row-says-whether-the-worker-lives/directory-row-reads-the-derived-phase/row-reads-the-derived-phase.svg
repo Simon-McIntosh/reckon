@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="412" viewBox="0 0 1060 412" role="img" aria-labelledby="title desc">
+  <title id="title">One derivation feeds three row surfaces</title>
+  <desc id="desc">The run's pointer holds the label starting and its newest stream holds a system record and an assistant record. Both feed one derivation, classify_pointer, which reports working when the newest stream holds an assistant record and otherwise keeps the stored label. The classifier row and the live view already read that derivation. The directory row read the pointer's stored label instead before this change, showing starting, and reads the same derivation now, showing working. Where no stream holds an assistant record every surface keeps the stored label.</desc>
+  <defs>
+    <style>
+      .edge { fill: none; stroke: #52647a; stroke-width: 2.5; }
+      .bus { fill: none; stroke: #52647a; stroke-width: 2; }
+      .box { fill: #ffffff; stroke: #b9c3cf; stroke-width: 2; }
+      .derived { stroke: #0ca30c; stroke-width: 2.5; }
+      .flat { stroke: #8a4b12; stroke-width: 2.5; }
+      .caption { fill: #172333; font: 700 21px system-ui, sans-serif; }
+      .header { fill: #52647a; font: 600 14px system-ui, sans-serif; }
+      .label { fill: #172333; font: 600 16px system-ui, sans-serif; }
+      .state { font: 700 16px system-ui, sans-serif; }
+      .detail { fill: #34465b; font: 14px system-ui, sans-serif; }
+      .code { fill: #172333; font: 600 15px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    </style>
+  </defs>
+
+  <text class="caption" x="36" y="30">The directory row reads the one derivation the other surfaces read</text>
+
+  <text class="header" x="40" y="64">the run&#8217;s own evidence</text>
+  <text class="header" x="330" y="64">one derivation</text>
+  <text class="header" x="700" y="64">the rows that render it</text>
+
+  <rect class="box" x="40" y="80" width="210" height="64" rx="10"/>
+  <text class="label" x="56" y="108">pointer.phase</text>
+  <text class="detail" x="56" y="130">&#8220;starting&#8221; &#8212; the launcher&#8217;s label</text>
+
+  <rect class="box" x="40" y="160" width="210" height="80" rx="10"/>
+  <text class="label" x="56" y="188">newest stream</text>
+  <text class="detail" x="56" y="210">system, then</text>
+  <text class="detail" x="56" y="230" fill="#006300">an assistant record</text>
+
+  <rect class="box derived" x="330" y="80" width="250" height="160" rx="12"/>
+  <text class="code" x="347" y="110">classify_pointer(record)</text>
+  <line class="bus" x1="347" y1="126" x2="563" y2="126"/>
+  <text class="detail" x="347" y="150">newest stream holds an</text>
+  <text class="detail" x="347" y="170">assistant record</text>
+  <text class="state" x="347" y="196" fill="#006300">&#8594; working</text>
+  <text class="detail" x="347" y="220" fill="#52647a">no such record &#8594; the label stands</text>
+
+  <path class="edge" d="M250 112 L300 112 L300 150 L330 150"/>
+  <path class="edge" d="M250 200 L300 200 L300 172 L330 172"/>
+
+  <path class="bus" d="M580 160 L640 160"/>
+  <path class="bus" d="M640 104 L640 320"/>
+  <path class="bus" d="M640 104 L700 104"/>
+  <path class="bus" d="M640 176 L700 176"/>
+  <path class="bus" d="M640 248 L700 248"/>
+  <path class="bus" d="M640 320 L700 320"/>
+
+  <rect class="box" x="700" y="76" width="324" height="56" rx="10"/>
+  <text class="label" x="716" y="110">classifier row</text>
+  <text class="state" x="1008" y="110" fill="#006300" text-anchor="end">phase working</text>
+
+  <rect class="box" x="700" y="148" width="324" height="56" rx="10"/>
+  <text class="label" x="716" y="182">live view</text>
+  <text class="state" x="1008" y="182" fill="#006300" text-anchor="end">phase working</text>
+
+  <rect class="box flat" x="700" y="220" width="324" height="56" rx="10"/>
+  <text class="label" x="716" y="254">directory row, before</text>
+  <text class="state" x="1008" y="254" fill="#8a4b12" text-anchor="end">phase starting</text>
+
+  <rect class="box derived" x="700" y="292" width="324" height="56" rx="10"/>
+  <text class="label" x="716" y="326">directory row, after</text>
+  <text class="state" x="1008" y="326" fill="#006300" text-anchor="end">phase working</text>
+
+  <text class="detail" x="36" y="392">The stored label is the fallback, not the source: a run whose newest stream holds no assistant record reads the same</text>
+  <text class="detail" x="36" y="410">in every surface above, so the derivation adds a word only where the run&#8217;s own record supports it.</text>
+</svg>
