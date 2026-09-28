@@ -25,9 +25,11 @@ name the target repository's own configuration aliases to a mutating verb, would
 be forwarded unexamined — so every verb is treated as mutating unless it is on
 the read-only allowlist below, and an alias, whose name is by definition not a
 built-in read-only verb, is refused without being resolved. A forwarded
-invocation replaces this process with the real git resolved with the shim's own
-directory removed from ``PATH``, so the shim never finds itself, and the exit
-status and signals are the real tool's.
+invocation replaces this process with the real git, and the exit status and
+signals are the real tool's. The real git is the first ``git`` on ``PATH`` that
+is not a reckon shim, found through :mod:`reckon.shim_lookup`: dropping only this
+shim's own directory would let it resolve to the shim of another checkout on the
+same ``PATH``, and two shims asking each other form an unbounded chain.
 
 A read verb aimed at some other repository is a separate problem from a
 mutating one: it changes no ref, but some reads refresh the stat cache and
@@ -57,6 +59,8 @@ import sys
 import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
+
+from reckon.shim_lookup import deeper, depth_refusal, real_executable
 
 # The environment key dispatch exports into every worker. Its presence marks
 # the caller as a run-scoped worker rather than a coordinator.
@@ -225,21 +229,14 @@ def worker_shim_directory() -> Path:
 
 
 def real_git(shim_dir: Path, path: str) -> str | None:
-    """The real ``git`` on ``path`` with the shim's own directory removed.
+    """The real ``git`` on ``path``: never this shim, and never another one.
 
-    Removing the shim's directory is what stops the shim exec'ing itself: the
-    lookup is by resolved directory, so a ``PATH`` entry reaching the shim
-    directory through a symlink is dropped too.
+    The shim's own directory is dropped by resolved path, and any other
+    candidate that is a reckon shim is skipped wherever it sits, because the
+    main checkout, a worktree and a base-revision copy each carry a shim
+    directory and more than one can reach the same ``PATH``.
     """
-    skipped = os.path.realpath(str(shim_dir))
-    kept = [
-        entry
-        for entry in str(path).split(os.pathsep)
-        if entry and os.path.realpath(entry) != skipped
-    ]
-    if not kept:
-        return None
-    return shutil.which("git", path=os.pathsep.join(kept))
+    return real_executable("git", path, skipped=[shim_dir])
 
 
 def _split_verb(argv: Sequence[str]) -> tuple[list[str], str, list[str]]:
@@ -608,6 +605,13 @@ def main(
     refusal, the missing-binary and the isolated-child cases.
     """
     env = os.environ if environ is None else environ
+    refusal = depth_refusal("git", env)
+    if refusal is not None:
+        print(refusal, file=sys.stderr)
+        return REFUSAL_STATUS
+    # Everything this invocation runs, the forwarded git and every probe,
+    # carries the nesting count one higher.
+    env = deeper(env)
     shim_dir = worker_shim_directory()
     found = real_git(shim_dir, str(env.get("PATH") or os.defpath))
     if found is None:

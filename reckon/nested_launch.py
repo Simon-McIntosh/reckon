@@ -19,21 +19,22 @@ is refused with status 97 unless one of two things holds:
   launch names the one step it wants instead of inheriting the task count.
 
 Outside the allocation, and for every argv that is not refused, the shim
-forwards to the real binary with the argv unchanged. The real binary is looked
-up on ``PATH`` with the shim's own directory removed, so the shim never execs
-itself. Nothing here runs a scheduler command, guesses a corrected command
+forwards to the real binary with the argv unchanged. The real binary is the
+first one on ``PATH`` that is not a reckon shim (:mod:`reckon.shim_lookup`), so
+the shim never execs itself or the shim of another checkout on the same
+``PATH``. Nothing here runs a scheduler command, guesses a corrected command
 line, or launches anything itself.
 """
 
 from __future__ import annotations
 
 import os
-import shutil
 import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from reckon.host import HostFacts, host_facts
+from reckon.shim_lookup import deeper, depth_refusal, real_executable
 
 # The status a refusal exits with. Distinct from the codes used by the real
 # scheduler tools so a caller can tell a refusal from a launch failure.
@@ -145,21 +146,14 @@ def refusal_message(tool: str, facts: HostFacts) -> str:
 
 
 def real_binary(tool: str, shim_dir: Path, path: str) -> str | None:
-    """The real ``tool`` on ``path`` with the shim's own directory removed.
+    """The real ``tool`` on ``path``: never this shim, and never another one.
 
-    Removing the shim's directory is what stops the shim exec'ing itself: the
-    lookup is by resolved directory, so a ``PATH`` entry that reaches the shim
-    directory through a symlink is dropped too.
+    The shim's own directory is dropped by resolved path, and any other
+    candidate that is a reckon shim is skipped wherever it sits. Dropping only
+    the own directory lets two checkouts' shims on one ``PATH`` exec each other
+    in a loop that never reaches the scheduler.
     """
-    skipped = os.path.realpath(str(shim_dir))
-    kept = [
-        entry
-        for entry in str(path).split(os.pathsep)
-        if entry and os.path.realpath(entry) != skipped
-    ]
-    if not kept:
-        return None
-    return shutil.which(tool, path=os.pathsep.join(kept))
+    return real_executable(tool, path, skipped=[shim_dir])
 
 
 def shim_directory() -> Path:
@@ -177,6 +171,10 @@ def main(
     and the missing-binary cases only; a forwarded launch does not come back.
     """
     env = os.environ if environ is None else environ
+    refusal = depth_refusal(tool, env)
+    if refusal is not None:
+        print(refusal, file=sys.stderr)
+        return REFUSAL_STATUS
     facts = host_facts(environ=env)
     if refuses_implicit_launch(tool, argv, facts, env):
         print(refusal_message(tool, facts), file=sys.stderr)
@@ -190,6 +188,6 @@ def main(
         return MISSING_BINARY_STATUS
     # The argv is already split and the binary is resolved by absolute path;
     # there is no shell to route through, and exec is what forwards signals and
-    # the exit status unchanged.
-    os.execv(found, [tool, *argv])  # noqa: S606
-    raise AssertionError("os.execv returned; a forwarded launch cannot continue.")
+    # the exit status unchanged. The nesting count goes one higher with it.
+    os.execve(found, [tool, *argv], deeper(env))  # noqa: S606
+    raise AssertionError("os.execve returned; a forwarded launch cannot continue.")

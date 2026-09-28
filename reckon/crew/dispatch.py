@@ -5059,7 +5059,15 @@ def launch_search_path(
     run's worktree, which is a hazard wherever the worker runs. The scheduler
     shims follow it only inside an allocation, because there is no scheduler
     out of one to refuse.
+
+    An inherited entry holding a reckon shim for any of those tools is dropped,
+    whichever checkout it belongs to. A dispatch from a worktree or a copy of
+    reckon inherits the main checkout's shims from the worker it runs in, and
+    two checkouts' shims on one path resolve to each other rather than to the
+    real tool.
     """
+    from reckon.shim_lookup import holds_shim
+
     merged = {**os.environ, **(environment or {})}
     inherited = str(merged.get("PATH") or os.defpath)
     placement = _current_host_facts() if facts is None else facts
@@ -5067,12 +5075,25 @@ def launch_search_path(
     if placement.in_allocation:
         directories.append(str(_worker_shim_directory()))
     resolved = {os.path.realpath(directory) for directory in directories}
+    shimmed = sorted(
+        {name for directory in directories for name in _shim_names(directory)}
+    )
     inherited_entries = [
         entry
         for entry in inherited.split(os.pathsep)
-        if entry and os.path.realpath(entry) not in resolved
+        if entry
+        and os.path.realpath(entry) not in resolved
+        and not holds_shim(entry, shimmed)
     ]
     return os.pathsep.join([*directories, *inherited_entries])
+
+
+def _shim_names(directory: str) -> list[str]:
+    """The tool names the shim directory stands in for."""
+    try:
+        return [entry.name for entry in os.scandir(directory) if entry.is_file()]
+    except OSError:
+        return []
 
 
 def _persisted_worker_environment(

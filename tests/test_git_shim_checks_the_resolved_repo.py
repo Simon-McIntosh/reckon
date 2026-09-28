@@ -21,7 +21,6 @@ from __future__ import annotations
 import json
 import os
 import shlex
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -29,6 +28,7 @@ from typing import Any
 
 import pytest
 
+from reckon.shim_lookup import real_executable
 from reckon.worker_git_shim import (
     _OUTPUT_OPTIONS,
     _READ_ACTIONS,
@@ -59,15 +59,16 @@ _BANNED_OPTION_PREFIXES: list[tuple[str, str]] = [
 
 
 def _real_git() -> str:
-    """The real git, with the shim's own directory dropped from the search."""
-    shim_dir = os.path.realpath(str(SHIM.parent))
-    kept = [
-        entry
-        for entry in os.environ.get("PATH", "").split(os.pathsep)
-        if entry and os.path.realpath(entry) != shim_dir
-    ]
-    found = shutil.which("git", path=os.pathsep.join(kept))
-    assert found, "no real git on PATH outside the shim directory"
+    """The real git, skipping every reckon shim on the inherited ``PATH``.
+
+    Inside a crew worker the inherited ``PATH`` starts with the main checkout's
+    shim, and this file may run from a worktree or a copy whose shim is a
+    different directory. Dropping only this copy's directory would take the
+    main checkout's shim for the real git and put both shims on the fixture
+    ``PATH``, where they resolve to each other.
+    """
+    found = real_executable("git", os.environ.get("PATH", ""))
+    assert found, "no real git on PATH that is not a reckon shim"
     return found
 
 

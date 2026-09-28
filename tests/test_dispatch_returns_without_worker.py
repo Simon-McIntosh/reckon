@@ -52,6 +52,7 @@ import reckon
 from reckon._store import _config_home
 from reckon.crew import promotion
 from reckon.crew.node import CrewError
+from reckon.shim_lookup import real_executable
 
 # The package the cases exercise, resolved from the interpreter running them
 # rather than from the repository path, because the gate also runs against a
@@ -293,8 +294,12 @@ exec "$RECKON_SHIM_GIT" "$@"
 
 
 def _real_git() -> str:
-    """Return the real git's absolute path, resolved before any shim exists."""
-    found = shutil.which("git")
+    """Return the real git's absolute path, never a reckon shim.
+
+    Inside a crew worker the first ``git`` on ``PATH`` is the main checkout's
+    shim, which is not the binary this fixture means to time.
+    """
+    found = real_executable("git", os.environ.get("PATH", ""))
     assert found, "git is not on PATH, so the worktrees cannot be built"
     return found
 
