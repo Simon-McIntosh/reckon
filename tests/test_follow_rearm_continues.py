@@ -473,15 +473,18 @@ def _fleet_lines(lines: list[str]) -> list[str]:
     ]
 
 
-def test_a_rearm_replays_the_history_in_one_write(home, follow_lines) -> None:
-    """A re-arm restores the pane: the rows in order, in a single write.
+def test_a_rearm_bursts_the_history_only_to_a_terminal_and_in_one_write(
+    home, follow_lines, monkeypatch
+) -> None:
+    """A pipe is handed no burst at all; a terminal gets it whole, in one write.
 
-    Order and the single write are asserted together because they are one
-    property: the reader is handed its whole view as one event, and the rows
-    inside it are the ones it last saw, oldest first, under their own clocks.
-    The write is located as the one line carrying a newline, so a header or a
-    separator appearing above or below the rows is a second event rather than
-    part of this one.
+    A pipe has no scrollback to restore, so the stored rows are not its to
+    receive: handing them over would make rows the reader already acted on
+    arrive again as transitions. Only a terminal is handed the burst, and it
+    receives the whole of it as a single write — the rows in order, oldest
+    first, under one frame line naming them as earlier history. Order and the
+    single write are asserted together because they are one property: the reader
+    is handed its whole view as one event.
     """
     _two_live_runs(home)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
@@ -492,6 +495,16 @@ def test_a_rearm_replays_the_history_in_one_write(home, follow_lines) -> None:
         assert len(stored) == 2, stored
         follow_lines.clear()
 
+        # A pipe: no burst at all.
+        _run_follow()
+        pipe_writes = [line for line in follow_lines if "\n" in line]
+        assert pipe_writes == [], (
+            f"a re-arm to a pipe writes no history burst; got {pipe_writes!r}"
+        )
+
+        # A terminal: the whole replay in one write, under one frame line.
+        follow_lines.clear()
+        monkeypatch.setattr(cli, "_follow_replay_visible", lambda: True)
         _run_follow()
 
     writes = [line for line in follow_lines if "\n" in line]
@@ -499,20 +512,28 @@ def test_a_rearm_replays_the_history_in_one_write(home, follow_lines) -> None:
         f"the whole replay is one write, so exactly one multi-row line reaches "
         f"the reader; got {writes!r}"
     )
-    assert writes[0] == "\n".join(row["text"] for row in stored), (
-        f"the replayed rows are the stored ones, in the order they were drawn, "
-        f"under their own bytes; got {writes[0]!r}"
+    parts = writes[0].split("\n")
+    assert parts[0] == cli._HISTORY_FRAME.format(count=len(stored)), (
+        f"the burst opens with one frame line naming its row count; got {parts[0]!r}"
+    )
+    assert parts[1:] == [row["text"] for row in stored], (
+        f"the rows under the frame are the stored ones, in the order they were "
+        f"drawn, under their own bytes; got {parts[1:]!r}"
     )
 
 
-def test_a_replay_emits_no_banner_line(home, follow_lines) -> None:
-    """A replay is its rows and nothing else: no header, no separator.
+def test_a_terminal_replay_carries_one_frame_line_and_a_pipe_carries_none(
+    home, follow_lines, monkeypatch
+) -> None:
+    """The frame line is the terminal's, and it appears exactly once.
 
-    A banner above the restored rows and a separator below them each cost a
-    line of furniture on every re-arm while telling the reader only what the
-    rows' own clocks and their chaining already say. The replay must carry the
-    rows alone, so the check is that neither mark appears anywhere in what a
-    re-arm writes — measured on the follower's own output, not on the composer.
+    The restored rows carry their own clocks and chain as the split they were
+    drawn under, so the frame line above them is the one mark that names them as
+    earlier history — a reader skimming the pane cannot tell a restored row from
+    a fresh one by its time alone. A terminal gets that frame exactly once, and
+    a separator below the rows would be a second piece of furniture saying what
+    the rows already say. A pipe gets no frame and no burst, because it has no
+    pane for a frame to explain.
     """
     _two_live_runs(home)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
@@ -523,20 +544,29 @@ def test_a_replay_emits_no_banner_line(home, follow_lines) -> None:
         assert stored, "the baseline leaves rows to replay"
         follow_lines.clear()
 
+        # A pipe: no frame line, and no burst for a frame to head.
+        _run_follow()
+        assert not [line for line in follow_lines if HISTORY_HEADER in line], (
+            f"a re-arm to a pipe carries no frame line; got {follow_lines!r}"
+        )
+        assert not [line for line in follow_lines if "\n" in line], (
+            f"a re-arm to a pipe carries no burst; got {follow_lines!r}"
+        )
+
+        # A terminal: the frame line, exactly once.
+        follow_lines.clear()
+        monkeypatch.setattr(cli, "_follow_replay_visible", lambda: True)
         _run_follow()
 
-    assert any("\n" in line for line in follow_lines), (
-        f"the re-arm replayed nothing, so the check would be vacuous; "
-        f"got {follow_lines!r}"
+    frames = [line for line in follow_lines if HISTORY_HEADER in line]
+    assert len(frames) == 1, (
+        f"a terminal replay carries exactly one frame line; got {frames!r}"
     )
-    bannered = [
-        line
-        for line in follow_lines
-        if HISTORY_HEADER in line or HISTORY_SEPARATOR in line
-    ]
-    assert bannered == [], (
-        f"a replay carries its rows alone, with no header above them and no "
-        f"separator below; got {bannered!r}"
+    assert frames[0].split("\n")[0] == cli._HISTORY_FRAME.format(count=len(stored)), (
+        f"the frame line names the rows below it; got {frames[0]!r}"
+    )
+    assert not [line for line in follow_lines if HISTORY_SEPARATOR in line], (
+        f"no separator follows the rows; got {follow_lines!r}"
     )
 
 
@@ -561,8 +591,13 @@ def test_a_first_arming_replays_no_history(home, follow_lines) -> None:
     )
 
 
-def test_a_rearm_with_nothing_new_replays_only_the_history(home, follow_lines) -> None:
-    """The replayed pane is the whole view when the stream has not moved."""
+def test_a_pipe_rearm_with_nothing_new_emits_no_rows(home, follow_lines) -> None:
+    """A continuation with nothing new is silent to a pipe, not a replay.
+
+    Nothing moved while the follower was away, so there is no gap to deliver.
+    The stored rows are the pane's, and a pipe has no pane: it is handed none of
+    them, so the second arming draws nothing at all — no burst and no fresh row.
+    """
     _two_live_runs(home)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
@@ -571,14 +606,15 @@ def test_a_rearm_with_nothing_new_replays_only_the_history(home, follow_lines) -
         follow_lines.clear()
         _run_follow()
 
-    writes = [line for line in follow_lines if "\n" in line]
-    assert len(writes) == 1, (
-        f"a re-arm with no intervening transition replays the stored rows in "
-        f"one write and draws nothing fresh; got {follow_lines!r}"
+    assert not [line for line in follow_lines if "\n" in line], (
+        f"a non-TTY re-arm with nothing new writes no burst; got {follow_lines!r}"
+    )
+    assert _fleet_lines(follow_lines) == [], (
+        f"a non-TTY re-arm with nothing new emits zero rows; got {follow_lines!r}"
     )
     fresh = [line for line in follow_lines if "\n" not in line]
     assert all("follower end" in line for line in fresh), (
-        f"the only single-row lines are the follower's own end marker; got {fresh!r}"
+        f"the only single-line output is the follower's own end marker; got {fresh!r}"
     )
 
 
