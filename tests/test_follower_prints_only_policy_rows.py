@@ -462,3 +462,44 @@ def test_a_row_the_policy_held_is_not_remembered_as_delivered(home) -> None:
         assert "stalled" in [
             event["to_state"] for event in rearmed if event["run_id"] == RUN_A
         ], rearmed
+
+
+def test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows(home) -> None:
+    """A re-derived baseline is fed through the row path, so a known row is silent.
+
+    A resume carries the states the pane last drew. When its checkpoint no longer
+    names this stream, the arming re-derives the fleet baseline rather than
+    continuing from a place that does not name the file — and that baseline is
+    fed through the same row path the pane reads, so a run the pane already
+    shows at its current state must not be announced a second time. The run the
+    resume does not name is genuinely new, so it reaches the pane: an arming
+    that printed nothing at all cannot pass this.
+    """
+    _live_runs(home, RUN_A, RUN_B)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+        # Read the state the fleet's own baseline carries, rather than writing
+        # the literal here, so the expectation comes from the same fixture the
+        # follower reads.
+        first = _arm()
+        states = {event["run_id"]: event["to_state"] for event in first}
+        assert set(states) == {RUN_A, RUN_B}, first
+
+        # The pane this image replaces already shows RUN_A at its current
+        # state. The recorded stream does not name this file, so the arming
+        # re-derives the baseline instead of continuing.
+        resumed = _arm(
+            resume={
+                "stream_path": f"{stream_path}.replaced",
+                "offset": 0,
+                "reported": {RUN_A: states[RUN_A]},
+            }
+        )
+        by_run = {event["run_id"]: event for event in resumed}
+        assert RUN_A not in by_run, resumed
+        assert RUN_B in by_run, resumed
+        # The row that did reach the pane came from the re-derived baseline, so
+        # the arming took the baseline branch rather than a continuation.
+        assert by_run[RUN_B]["event"] == "baseline", resumed
