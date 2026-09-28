@@ -70,6 +70,20 @@
       that has never registered a follower with the watcher.</p>
     <p><strong>Done when</strong> two tests pass — the expired-follower case proceeds with the attach command in its
       warning, and the never-registered case is refused — and a dry run shows the same outcome for each.</p>
+    <div class="section-landed" data-section="s3">
+      <p><span class="badge">&#8987; landed 2026-09-28, awaiting verification</span></p>
+      <p class="landed-summary">At <code>ee6fb313</code>, a session whose follower registration was
+        released keeps dispatching while the watcher process is live, and the run record carries a
+        warning naming the exact attach command to re-arm; a session that never registered a follower is
+        still refused. <code>_follower_liveness</code> now reports the released-versus-never distinction
+        and <code>_watcher_delivery_admission</code> is the one judgement both
+        <code>dispatch</code> and the dry-run <code>plan_dispatch</code> call.
+        <code>tests/test_expired_follower_keeps_dispatching.py</code> and
+        <code>tests/test_crew_dispatch_watcher_required.py</code>: 6 passed, exit 0; the declared
+        negative control makes the released case refuse. Not closed here — verification and the
+        section's state are the coordinator's. Full record:
+        <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed#s3">§3 landed</a>.</p>
+    </div>
 
     <h2 id="s4">§4 — Bookkeeping follows the run</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>

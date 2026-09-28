@@ -2055,6 +2055,9 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
         return {
             "registered": False,
             "live": False,
+            # No registration file at all: the session never armed a follower,
+            # which is not the same as a release and must not be treated as one.
+            "released": False,
             "not_live_because": "no registration remains",
             "delivery": None,
             "follower": {},
@@ -2134,6 +2137,12 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
     return {
         "registered": registered,
         "live": live,
+        # A registration file that exists while its advisory lock is free is a
+        # follower that was armed and has since expired; a path that was never
+        # created is a session that never armed one. Both read as not
+        # registered, so a release keeps a record of its own — the file the
+        # release left behind — and this is the flag that tells them apart.
+        "released": bool(record) and not registered,
         "not_live_because": reason,
         "delivery": delivery,
         "delivery_recorded": str(record.get("delivery") or "unknown"),
@@ -2283,6 +2292,10 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
         "watcher": dict(registration),
         "session": session,
         "session_attached": attached,
+        # Whether this session armed a follower that has since been released,
+        # as distinct from one it never armed. Only the released case may keep
+        # dispatching on the strength of a live watcher process.
+        "session_follower_released": bool(delivery and delivery["released"]),
         "follower": {} if delivery is None else delivery["follower"],
     }
 
