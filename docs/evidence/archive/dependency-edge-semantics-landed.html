@@ -634,6 +634,77 @@
     the coordinator.</p>
   </section>
 
+  <h2 id="source-section-depends">§8 — A dependency's source can be a section, not a whole plan</h2>
+
+    <p>Honouring the target anchor still left the <em>source</em> of a wait as the whole plan, so a
+    section waiting on foreign work held every sibling section out of the ready set — the shape the
+    nova coordinator could only record as a comment. A plan may now declare a
+    <code>section_depends_on</code> mapping beside its section declarations: source section id to a
+    list of refs in the <code>depends_on</code> grammar. It is authored as a
+    <code>plan-section-depends-on</code> meta holding JSON and read beside the parsed state, the same
+    precedent as <code>plan-standalone</code> and <code>plan-section-declarations</code>;
+    <code>reckon/_schema.py</code> owns the reader and its refusals — a malformed section id or ref is
+    refused as <code>invalid-section-dependency</code>, and a ref naming a section the target plan
+    does not declare as <code>missing-dependency-section</code>, the code the staged
+    <code>depends_on</code> path already emits. <code>reckon/roadmap.py</code> turns each entry into a
+    section-scoped edge row (<code>ref</code>, <code>source_section</code>, <code>stage</code>,
+    <code>scope</code>, <code>project</code>, <code>slug</code>, <code>found</code>,
+    <code>status</code>, <code>section_found</code>, <code>satisfied</code>) and keys the blocker merge
+    by the <em>waiting</em> section, so the plan keeps its readiness and only the section split
+    changes. A ref whose target plan resolves but whose section does not holds its waiting section and
+    is refused rather than silently satisfied; a ref whose target plan does not resolve holds its
+    waiting section and earns the same <code>dangling-hard-dependency</code> finding the whole-plan
+    path reports. Plans without the mapping block exactly as before.</p>
+
+    <figure>
+      <img src="/reckon/figures/dependency-edge-semantics/source-section-edge.svg"
+           alt="Two panels over the same wait: without the mapping plan-a reports blocked and its
+                sibling section s2 is held too; with section_depends_on only s5 is held and plan-a
+                stays dispatchable.">
+      <figcaption>The wait itself is identical in both panels; only the source it is charged to
+      differs, and that is what decides whether s2 is dispatchable.</figcaption>
+    </figure>
+
+    <p><strong>Base arm.</strong> The node's own tests against the base revision
+    (<code>git archive</code> of <code>056012ae</code> with the head test files copied in): the roadmap
+    case fails at base with <code>tests/test_roadmap.py::test_section_scoped_mapping_waits_without_hiding_its_siblings</code>
+    raising <code>KeyError: 'ready_sections'</code> — <code>1 failed, 1 passed</code> with the
+    no-mapping control passing, which is correct: whole-plan blocking is the base behaviour it
+    asserts — and the schema half cannot be collected at base at all
+    (<code>ImportError: cannot import name 'section_depends_on'</code>). Log:
+    <code>gate-base-arm.txt</code>.</p>
+
+    <p><strong>Gate, both arms.</strong> Head, from the worktree that carries the change:
+    <strong>3 failed, 1653 passed</strong>. Base, re-measured in a <code>git archive</code> export with
+    a provenance header: <strong>4 failed, 1648 passed</strong>. All three head failures are in the
+    base's failure set — <code>test_canonical_dump_equals_read_state[full]</code> (a mounted-project
+    schema dump) and two <code>test_cross_project_conformance</code> params (unresolved shas in other
+    projects' evidence records) — so there are <strong>zero added failure ids</strong>. The fourth base
+    failure, <code>test_well_formed_evidence_record_with_resolving_shas_is_quiet</code>, fails only
+    because the base arm ran from an export with no <code>.git</code> for its <code>git rev-parse
+    HEAD</code>; it passes at head, the same artefact the §7 record above describes. Logs:
+    <code>gate-head.txt</code>, <code>gate-base-revision.txt</code>. The node's new cases build two
+    synthesised plans in a temporary docs directory and read no mounted project.</p>
+
+    <p><strong>Declared negative control.</strong> Executed as declared, on a scratch copy of the head
+    with one mutation — <code>if blocker.get("source_section"): continue</code> in the roadmap's
+    blocker merge, dropping the mapping from the computation while leaving the rows in place. The
+    ready-set case failed first, at <code>assert ['s2', 's5'] == ['s2']</code>: the held section leaked
+    back into the ready set, and the red log's first line is the declared string. The mutation script
+    and the <code>diff -u</code> showing it is the only change are in
+    <code>negative-control.diff.note</code>. Logs: <code>negative-control-red.txt</code>,
+    <code>mutate-drop-mapping.py</code>, <code>run-negative-control.sh</code>.</p>
+
+    <p><strong>Follow-on outside this node's write scope.</strong> Publishing the mapping through
+    <code>read_plan</code>'s own <code>deps</code> payload lives in <code>reckon/mcp.py</code>,
+    owned by a concurrent node and outside this node's paths. The refs already resolve through the
+    shared grammar (<code>parse_plan_ref</code> and the existing <code>[project:]slug[#stage]</code>
+    row shape), so surfacing the mapping to that reader is a small follow-up, not a behaviour gap in
+    the roadmap.</p>
+
+    <p>Commit in the node: <code>2f870c2b</code>. Section closure and the driving followup remain with
+    the coordinator.</p>
+
   </main>
 </body>
 </html>

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" role="img"
+     aria-labelledby="t d" font-family="system-ui, sans-serif">
+  <title id="t">One authored wait, charged to the whole plan or to the section that declared it</title>
+  <desc id="d">Two panels over the same wait, plan-a section 5 waiting on plan-b section 3.
+  Without the mapping the wait is charged to plan-a as a whole, so its section 2 — which waits
+  on nothing — is held out of the ready set too. With section_depends_on naming s5 as the
+  waiting section, only s5 is held and plan-a stays dispatchable with s2 ready.</desc>
+  <defs>
+    <marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a2b2b"/>
+    </marker>
+    <marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6b36"/>
+    </marker>
+  </defs>
+  <rect width="900" height="380" fill="#ffffff"/>
+  <text x="450" y="32" text-anchor="middle" font-size="19" font-weight="600" fill="#1b1b1f">One authored wait, charged to the whole plan or to the section that declared it</text>
+  <text x="450" y="54" text-anchor="middle" font-size="13" fill="#5b5b66">same plan-a, same ref plan-b#s3, same plan-b section 3 still open — only the source of the wait differs</text>
+
+  <!-- panel 1: the source is the whole plan -->
+  <g>
+    <rect x="24" y="72" width="400" height="226" rx="10" fill="#fdf2f2" stroke="#e0b4b4"/>
+    <text x="224" y="98" text-anchor="middle" font-size="15" font-weight="600" fill="#8a2b2b" font-family="ui-monospace, monospace">source = the whole plan</text>
+    <rect x="44" y="112" width="208" height="158" rx="10" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="60" y="134" font-size="13" font-weight="600" fill="#33333a" font-family="ui-monospace, monospace">plan-a</text>
+    <rect x="60" y="144" width="176" height="34" rx="6" fill="#f4f4f6" stroke="#c9c9d1"/>
+    <text x="68" y="165" font-size="11.5" fill="#5b5b66">s2 — no wait of its own</text>
+    <rect x="60" y="186" width="176" height="34" rx="6" fill="#fdf2f2" stroke="#e0b4b4"/>
+    <text x="68" y="207" font-size="11.5" fill="#8a2b2b">s5 — waits on plan-b#s3</text>
+    <rect x="60" y="232" width="176" height="24" rx="12" fill="#8a2b2b"/>
+    <text x="148" y="248" text-anchor="middle" font-size="11.5" fill="#ffffff">held with the whole plan</text>
+    <rect x="292" y="150" width="116" height="78" rx="10" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="304" y="172" font-size="12.5" font-weight="600" fill="#33333a" font-family="ui-monospace, monospace">plan-b</text>
+    <line x1="236" y1="203" x2="284" y2="196" stroke="#8a2b2b" stroke-width="2" marker-end="url(#red)"/>
+    <rect x="302" y="182" width="96" height="26" rx="6" fill="#fdf2f2" stroke="#e0b4b4"/>
+    <text x="350" y="199" text-anchor="middle" font-size="11" fill="#8a2b2b">s3 — open</text>
+    <text x="224" y="320" text-anchor="middle" font-size="12" fill="#5b5b66">s2 is dispatchable work, yet the plan reports blocked</text>
+  </g>
+
+  <!-- panel 2: the source is the named section -->
+  <g>
+    <rect x="476" y="72" width="400" height="226" rx="10" fill="#f2f8f2" stroke="#a9cba9"/>
+    <text x="676" y="98" text-anchor="middle" font-size="15" font-weight="600" fill="#2f6b36" font-family="ui-monospace, monospace">source = the named section</text>
+    <rect x="496" y="112" width="208" height="158" rx="10" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="512" y="134" font-size="13" font-weight="600" fill="#33333a" font-family="ui-monospace, monospace">plan-a</text>
+    <rect x="512" y="144" width="176" height="34" rx="6" fill="#eef7ee" stroke="#a9cba9"/>
+    <text x="520" y="165" font-size="11.5" fill="#2f6b36">s2 — ready, dispatchable</text>
+    <rect x="512" y="186" width="176" height="34" rx="6" fill="#fdf2f2" stroke="#e0b4b4"/>
+    <text x="520" y="207" font-size="11.5" fill="#8a2b2b">s5 — waits on plan-b#s3</text>
+    <rect x="512" y="232" width="176" height="24" rx="12" fill="#2f6b36"/>
+    <text x="600" y="248" text-anchor="middle" font-size="11.5" fill="#ffffff">plan stays dispatchable</text>
+    <rect x="744" y="150" width="116" height="78" rx="10" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="756" y="172" font-size="12.5" font-weight="600" fill="#33333a" font-family="ui-monospace, monospace">plan-b</text>
+    <line x1="688" y1="203" x2="736" y2="196" stroke="#8a2b2b" stroke-width="2" marker-end="url(#red)"/>
+    <rect x="754" y="182" width="96" height="26" rx="6" fill="#fdf2f2" stroke="#e0b4b4"/>
+    <text x="802" y="199" text-anchor="middle" font-size="11" fill="#8a2b2b">s3 — open</text>
+    <text x="676" y="320" text-anchor="middle" font-size="12" fill="#5b5b66">only s5 is held; siblings stay in the ready set</text>
+  </g>
+
+  <text x="450" y="358" text-anchor="middle" font-size="13" fill="#33333a" font-family="ui-monospace, monospace">section_depends_on = {"s5": ["plan-b#s3"]}</text>
+</svg>

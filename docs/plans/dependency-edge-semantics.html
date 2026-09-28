@@ -413,6 +413,71 @@
       Section closure and the driving followup remain for the coordinator.</p>
     </aside>
 
+    <h2 id="s8">§8 — A dependency's source can be a section, not a whole plan</h2>
+    <p>
+      §2 taught blocking to honour the <em>target</em> anchor: an unmet prerequisite holds the section
+      it names rather than the plan that carries it. The <em>source</em> of the wait was still always
+      the whole plan, so a rung waiting on foreign work could not be recorded without idling the rungs
+      beneath it — a real portfolio shape, carried today as a comment no tool can read.
+    </p>
+    <p>
+      A plan may now declare a <code>section_depends_on</code> mapping beside its section
+      declarations: source section id to a list of refs in the <code>depends_on</code> grammar
+      (<code>[project:]slug[#stage]</code>). The mapping names the one section that waits, so the
+      roadmap holds that section and leaves its siblings in the ready set; the plan keeps its own
+      readiness instead of collapsing to blocked. A ref whose target plan declares no such section is
+      refused with a finding, and a plan that declares no mapping blocks exactly as before.
+    </p>
+    <p><em>Done when:</em> a synthesised plan whose section waits on another plan's open section is
+      listed dispatchable with that section held and its siblings ready, asserted by test in both
+      directions, and the mapping round-trips through the plan HTML.</p>
+
+    <aside id="source-section-depends">
+      <p><strong>Worker implementation, 2026-09-28:</strong> the mapping is read from a
+      <code>plan-section-depends-on</code> meta holding JSON — read beside the parsed state rather than
+      through it, following the same precedent as <code>plan-standalone</code> and
+      <code>plan-section-declarations</code> — and resolved with the existing ref parser, so the
+      grammar is not restated. <code>reckon/_schema.py</code> gains
+      <code>section_depends_on(html_text)</code> and its refusal set
+      (<code>invalid-section-dependency</code> for a malformed section id or ref,
+      <code>missing-dependency-section</code> for a ref naming a section the target plan does not
+      declare — the code the staged <code>depends_on</code> path already emits);
+      <code>reckon/roadmap.py</code> turns each row into a section-scoped edge the blocker merge keys
+      by the <em>waiting</em> section. Each row lands in <code>section_depends_on</code> on the
+      dependency row that plan already reports, carrying the same <code>scope</code>,
+      <code>project</code>, <code>slug</code>, <code>stage</code> and <code>found</code> fields the
+      whole-plan rows carry. Whole-plan
+      <code>depends_on</code>, readiness and terminal transitions are untouched: a section with a
+      section-scoped wait stays out of <code>plan_dependency_blockers</code>, so only the section split
+      changes. Commit <code>2f870c2b</code> carries the change. <em>Deviation, reported as such:</em> publishing the mapping through <code>read_plan</code>'s
+      own <code>deps</code> payload requires editing <code>reckon/mcp.py</code>, outside this node's
+      write scope and owned by a concurrent node; the refs resolve here through the existing grammar,
+      and the surfacing is recorded as a follow-on.</p>
+      <p><strong>Gate:</strong> at the worktree revision this record's commit carries (base
+      <code>056012ae</code> plus the node's change),
+      <code>pytest tests/test_roadmap.py tests/test_schema.py</code> reads <strong>3 failed / 1653
+      passed</strong>; the base revision reads <strong>4 failed / 1648 passed</strong>, and all three
+      head failures are in the base's failure set (a mounted-project schema dump plus two
+      cross-project conformance refs in other projects' evidence records) — <strong>zero added failure
+      ids, one removed</strong>. The base arm of the node's own tests is logged: the roadmap case fails
+      at base with <code>KeyError: 'ready_sections'</code> and the schema half cannot be collected
+      there (<code>ImportError: cannot import name 'section_depends_on'</code>).</p>
+      <p><strong>Declared negative control:</strong> dropping the mapping from the roadmap's blocker
+      computation in a scratch copy fails the ready-set case first —
+      <code>assert ['s2', 's5'] == ['s2']</code>, the held section leaking back into the ready set —
+      with the declared string as the red log's first line.</p>
+      <figure>
+        <img src="/reckon/figures/dependency-edge-semantics/source-section-edge.svg"
+             alt="Two panels over the same wait: without the mapping plan-a reports blocked and its
+                  sibling section s2 is held too; with section_depends_on only s5 is held and plan-a
+                  stays dispatchable.">
+        <figcaption>The wait itself is identical in both panels; only the source it is charged to
+        differs, and that is what decides whether s2 is dispatchable.</figcaption>
+      </figure>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#source-section-depends">mechanism, base/head arms, negative control and figure</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
+    </aside>
+
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
       Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout
