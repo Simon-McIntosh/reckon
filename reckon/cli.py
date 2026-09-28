@@ -1559,13 +1559,19 @@ def crew_dispatch(
         )
         raise click.exceptions.Exit(6) from exc
     except crew_module.ScopeConflict as exc:
+        # The refused call's own run id is not on the refusal: it is minted
+        # inside the dispatch and released with the claim, so reporting it here
+        # would name a run that does not exist. The live run holding the path is
+        # the claim's own, and is named as such.
         _emit(
             {
                 "ok": False,
                 "error": "scope-conflict",
                 "detail": str(exc),
-                "run_id": exc.run_id,
-                "node": exc.node_id,
+                "run_id": None,
+                "node": node_id,
+                "conflicting_run_id": exc.run_id,
+                "conflicting_node_id": exc.node_id,
                 "candidate_path": exc.candidate_path,
                 "claimed_path": exc.claimed_path,
             },
