@@ -1515,6 +1515,11 @@ def build_record(
     record.setdefault("execution_fit", None)
     record.setdefault("attempt_kind", None)
     record.setdefault("attempt", None)
+    # The review tier is written onto the row by promotion, after the record is
+    # built, so a row assembled without it carries no tier rather than failing
+    # to declare one. The key is always present so the declared schema and the
+    # emitted row cannot drift.
+    record.setdefault("review_tier", None)
     if duration_measurement_state(record) == "missing":
         reason = (
             "wall_clock_unavailable_at_promotion"
