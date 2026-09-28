@@ -967,6 +967,51 @@ def _ensure_watch_producer(
         return watch_state(project, session=session)
 
 
+def _released_follower_warning(dispatch_watch: Mapping[str, Any]) -> str:
+    """Name the released registration and the command that re-arms it.
+
+    The text carries the paste-ready attach command verbatim, because a warning
+    that only says delivery stopped leaves the operator to reconstruct the one
+    command that restores it.
+    """
+    attach = str(dispatch_watch.get("attach_line") or "").strip()
+    return (
+        "this session armed a follower whose registration was released, so this "
+        "run's completion will not wake it; re-arm delivery with "
+        f"`{attach}`"
+    )
+
+
+def _watcher_delivery_admission(
+    project: str,
+    dispatch_watch: Mapping[str, Any],
+    *,
+    session: str,
+    launch_kind: str,
+) -> str | None:
+    """Decide whether a session's delivery admits the dispatch.
+
+    Three cases, and the whole point is that they are told apart. An attached
+    session needs nothing. A session that never registered a follower with the
+    watcher is refused — it would launch work whose completion nothing wakes it
+    for, and a live watcher process feeds other sessions, not this one. A
+    session whose registration was released — it armed a follower that has
+    since expired — is admitted while the watcher process is live, and handed
+    the re-arm warning: the project is still watched, and the run's own record
+    keeps the delivery it was missing visible to a later reader.
+
+    Returns the warning line when a released session proceeds, and ``None``
+    when the session is attached or the launch kind carries no delivery.
+    Raises :class:`WatcherRequired` for a session with no registration to
+    release.
+    """
+    if launch_kind != "cli" or dispatch_watch.get("session_attached"):
+        return None
+    if not dispatch_watch.get("session_follower_released"):
+        raise WatcherRequired(project, dispatch_watch, session=session)
+    return _released_follower_warning(dispatch_watch)
+
+
 @dataclass(frozen=True)
 class _RepositoryScopeClaim:
     """One live claim resolved to the repository that contains its path.
@@ -3004,6 +3049,9 @@ def plan_dispatch(
     declared_backend: str | None = None,
     member: str = "",
     allow_unreviewed_plan: bool = False,
+    session: str = "",
+    watch_required: bool = False,
+    watch_override: bool = False,
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
@@ -3372,6 +3420,26 @@ def plan_dispatch(
                 disregarded=resolution.warnings,
             )
     resolution.sandbox_write_roots = sandbox_write_roots
+    # A dry run must reach the verdict a real dispatch reaches, so the watcher
+    # gate is evaluated here too when the caller asks for it. It reads the
+    # watcher state and never starts a producer — arming is the real dispatch's
+    # effect, and a validating caller must not leave one behind. An attached
+    # session passes, a released one is warned and proceeds, and one that never
+    # registered a follower is refused, exactly as the launching path decides.
+    if watch_required and not watch_override and session and str(launch_kind) == "cli":
+        preview = watch_state(project, session=session)
+        # Only a live watcher settles the delivery question; without a producer
+        # the real dispatch may still arm one, so a validating caller leaves the
+        # verdict to the launch rather than reporting a refusal it cannot know.
+        if preview["watcher_live"]:
+            admission = _watcher_delivery_admission(
+                project,
+                preview,
+                session=session,
+                launch_kind=str(launch_kind),
+            )
+            if admission:
+                resolution.warnings.append(admission)
     return resolution
 
 
@@ -4275,6 +4343,7 @@ def dispatch(
             }
 
         dispatch_watch = watch_state(project, session=session)
+        released_follower_warning: str | None = None
         if watch_required and not watch_override and watch_arming_suppressed():
             # Opting in is the caller's act. An environment that forbids arming
             # turns the requirement into the recorded waiver below rather than
@@ -4291,9 +4360,14 @@ def dispatch(
                 raise WatcherRequired(project, dispatch_watch)
             # A producer exists now. Whether this session hears what it writes is a
             # separate fact, and the only one that decides if the finished run gets
-            # noticed, so it is checked before a worktree exists.
-            if launch_kind == "cli" and not dispatch_watch["session_attached"]:
-                raise WatcherRequired(project, dispatch_watch, session=session)
+            # noticed, so it is checked before a worktree exists. A released
+            # registration proceeds with a re-arm warning rather than a refusal.
+            released_follower_warning = _watcher_delivery_admission(
+                project,
+                dispatch_watch,
+                session=session,
+                launch_kind=launch_kind,
+            )
         watcher_waiver = (
             {
                 "requested": True,
@@ -4492,6 +4566,11 @@ def dispatch(
                 *resolution.warnings,
                 *budget_warnings,
                 *disregarded_claims,
+                *(
+                    [released_follower_warning]
+                    if released_follower_warning
+                    else []
+                ),
             ],
             "lineage": lineage,
             "unreconciled_override": waiver,
@@ -4503,6 +4582,7 @@ def dispatch(
                 "watcher_live": False,
                 "session": session,
                 "session_attached": False,
+                "session_follower_released": False,
                 "watcher": {},
             },
         }
