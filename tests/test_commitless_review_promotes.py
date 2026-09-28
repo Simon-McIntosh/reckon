@@ -37,6 +37,11 @@ RUN_IDS = (
     "r-20260928T100000000003-review-in-repository-path",
     "r-20260928T100000000004-review-commitless-comma",
     "r-20260928T100000000005-implement-commitless-comma",
+    "r-20260928T100000000006-review-comma-absence",
+    "r-20260928T100000000007-review-semicolon-absence",
+    "r-20260928T100000000008-review-dash-absence",
+    "r-20260928T100000000009-implement-comma-absence",
+    "r-20260928T100000000010-review-not-a-declaration",
 )
 
 # The sentence a review writes when it has no repository change to cite, in the
@@ -48,6 +53,15 @@ REVIEW_COMMITS_PROSE = (
 # The same declaration with a comma inside its parenthetical, which the manifest
 # parser splits into several entries.
 COMMA_COMMITS_PROSE = "none (review node, no repository change)"
+
+# A declaration word followed by a separator and prose, with no parenthetical.
+# The parser empties the bare word ``none``, so a field of this shape loses its
+# declaration before anything reads the parsed entries.
+BARE_ABSENCE_SHAPES = (
+    ("r-20260928T100000000006-review-comma-absence", "none, no repository change"),
+    ("r-20260928T100000000007-review-semicolon-absence", "none; review only"),
+    ("r-20260928T100000000008-review-dash-absence", "none - review only"),
+)
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -304,6 +318,95 @@ def test_implement_declaring_no_commits_with_a_comma_is_refused(
         manifest,
         role="implement",
         node_id=f"build-{PLAN}",
+    )
+
+    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
+        crew.complete(run_id, gate="passed", root=repository)
+
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+@pytest.mark.parametrize(("run_id", "commits_text"), BARE_ABSENCE_SHAPES)
+def test_a_bare_absence_shape_promotes_on_a_review(
+    repository: Path, tmp_path: Path, run_id: str, commits_text: str
+) -> None:
+    """A value opening with an absence word then any separator declares absence.
+
+    The list reader empties a field holding only ``none``, so ``none, no
+    repository change`` arrives as ``['no repository change']`` — the declaration
+    gone. It is read from the raw field the node wrote, so the shape promotes
+    without the hand edit.
+    """
+    delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
+    manifest = _manifest(
+        tmp_path,
+        run_id,
+        changed_paths=str(delivered),
+        commits=commits_text,
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="review",
+        node_id=f"review-of-{PLAN}",
+    )
+
+    promoted = _promotes(repository, run_id)
+
+    assert promoted["record"]["commits"] == []
+    assert not pointer_path(run_id).exists()
+
+
+def test_an_implement_run_refuses_a_bare_absence_shape(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The bare declaration word is not a whole-field absence for a committing role."""
+    run_id = RUN_IDS[8]
+    manifest = _manifest(
+        tmp_path,
+        run_id,
+        changed_paths="candidate.txt",
+        commits="none, no repository change",
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="implement",
+        node_id=f"build-{PLAN}",
+    )
+
+    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
+        crew.complete(run_id, gate="passed", root=repository)
+
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+def test_a_word_that_only_begins_with_an_absence_word_is_not_a_declaration(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A longer word is a citation attempt, not a declared absence.
+
+    ``nonesuch`` begins with the letters of ``none``; the absence word must
+    stand alone, so this is refused as the unresolvable citation it is.
+    """
+    run_id = RUN_IDS[9]
+    delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
+    manifest = _manifest(
+        tmp_path,
+        run_id,
+        changed_paths=str(delivered),
+        commits="nonesuch, prose",
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="review",
+        node_id=f"review-of-{PLAN}",
     )
 
     with pytest.raises(crew.CrewError, match="does not resolve to an object"):
