@@ -5420,6 +5420,79 @@ def _persisted_worker_environment(
     return persisted
 
 
+# A worker's scratch lives and dies with its run. The host's temp root is
+# node-local and shared by every session on the machine, so a run that writes
+# there unattended leaves entries nothing owns and nothing removes. Each run is
+# therefore handed a private directory beneath a reckon-owned root, named for
+# its run id, and pointed at it by TMPDIR; promotion and discard remove that
+# directory, so what a run wrote there goes with the run. Only the directory
+# named for the run's own id is ever removed, so a sibling run's scratch is
+# never in reach.
+WORKER_SCRATCH_ROOT_ENV = "RECKON_WORKER_SCRATCH_ROOT"
+WORKER_SCRATCH_ROOT_NAME = "reckon-crew-scratch"
+
+
+def worker_scratch_root() -> Path:
+    """The node-local root every run's scratch directory sits beneath.
+
+    ``RECKON_WORKER_SCRATCH_ROOT`` overrides it, so a test can synthesise a root
+    without writing to the host's real temp directory and a caller can place the
+    whole fleet's scratch somewhere it would rather own.
+    """
+    override = os.environ.get(WORKER_SCRATCH_ROOT_ENV)
+    if override:
+        return Path(override)
+    return Path(tempfile.gettempdir()) / WORKER_SCRATCH_ROOT_NAME
+
+
+def worker_scratch_dir(run_id: str) -> Path:
+    """The scratch directory one run owns, named for its run id."""
+    return worker_scratch_root() / str(run_id)
+
+
+def ensure_worker_scratch(run_id: str) -> Path:
+    """Create the run's scratch directory if it is absent and return it."""
+    path = worker_scratch_dir(run_id)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def remove_worker_scratch(run_id: str) -> dict[str, Any]:
+    """Remove one run's scratch directory, printing what it removed.
+
+    The path removed is always ``<scratch root>/<run id>``, so a directory a
+    different run owns can never be reached here even if a record named it —
+    the sibling that must survive a discard is outside this function's reach by
+    construction. An absent directory is reported rather than raised: a run
+    whose scratch was already reclaimed has nothing left to remove.
+    """
+    result: dict[str, Any] = {
+        "scratch_removed": False,
+        "scratch_path": None,
+        "scratch_withheld": "",
+    }
+    name = str(run_id or "").strip()
+    # A run id is a single path component. Anything that would climb out of the
+    # scratch root — a separator, a parent reference — names no scratch
+    # directory this function may remove, so it is withheld rather than joined.
+    if not name or Path(name).name != name:
+        result["scratch_withheld"] = "run id names no scratch directory"
+        return result
+    path = worker_scratch_dir(name)
+    result["scratch_path"] = str(path)
+    if not path.is_dir():
+        result["scratch_withheld"] = "scratch directory is no longer present"
+        return result
+    try:
+        shutil.rmtree(path)
+    except OSError as exc:
+        result["scratch_withheld"] = f"could not remove scratch directory — {exc}"
+        return result
+    result["scratch_removed"] = True
+    print(f"removed worker scratch directory {path}")
+    return result
+
+
 def _worker_runtime_environment(
     environment: Mapping[str, str] | None,
     *,
@@ -5438,6 +5511,8 @@ def _worker_runtime_environment(
             "RECKON_ATTEMPT_STARTED_AT": attempt_started_at,
         }
     )
+    if run_id:
+        runtime["TMPDIR"] = str(ensure_worker_scratch(run_id))
     if claude_headers:
         inherited = str(
             runtime.get("ANTHROPIC_CUSTOM_HEADERS")
