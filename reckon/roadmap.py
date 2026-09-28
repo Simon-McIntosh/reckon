@@ -19,6 +19,7 @@ from reckon._schema import (
     GATE_TRANSITIONS,
     GRAPH_HANDLE_GRAMMAR,
     LEGACY_EFFORT_HOURS,
+    decision_sections,
     is_graph_handle,
     is_section_identity,
     parse_plan_ref,
@@ -192,6 +193,49 @@ def _plan_section_deps(
     return memoized("section_depends_on", path, read_mapping)
 
 
+def _plan_decision_sections(
+    plan: Mapping[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> Mapping[str, Any] | None:
+    """Read a plan's decision→sections mapping, from the row or its file.
+
+    A composition carries the mapping only once a composed inventory row has
+    been given it; until then the scoping lives in the authored markup alone, so
+    the file is the fallback — the same rule the section classification and the
+    section-scoped edges follow, judged against the same docs tree the row was
+    inventoried from. ``None`` means no decision on this plan scopes itself,
+    which is the whole-plan behaviour every decision had before.
+    """
+
+    mapping = plan.get("decision_sections")
+    if isinstance(mapping, Mapping):
+        return mapping
+    if docs_dir is None:
+        docs_dir = _load_mounts().get(project)
+    if docs_dir is None:
+        return None
+    try:
+        resource = resolve_resource(
+            docs_dir, project, slug, "plan", include_archived=False
+        )
+    except Exception:  # noqa: BLE001 — a resolution error is "no declaration"
+        return None
+    path = getattr(resource, "path", None)
+    if path is None:
+        return None
+
+    def read_mapping() -> dict[str, Any]:
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return {}
+        return dict(decision_sections(text) or {})
+
+    return memoized("decision_sections", path, read_mapping)
+
+
 def _effort_hours(plan: dict[str, Any]) -> float:
     explicit = plan.get("effort_hours")
     if explicit is not None:
@@ -354,8 +398,19 @@ def _dispatchability(plan: dict[str, Any]) -> tuple[bool, list[str]]:
     return not missing, missing
 
 
-def _decision_rows(plan: dict[str, Any]) -> list[dict[str, Any]]:
-    """Return decisions with an explicit readiness state for roadmap consumers."""
+def _decision_rows(
+    plan: dict[str, Any],
+    sections_map: Mapping[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Return decisions with an explicit readiness state for roadmap consumers.
+
+    ``sections_map`` names the decisions that scope themselves to the sections
+    they govern. A scoped decision is reported like any other — its row carries
+    the ``sections`` it holds — but it holds only those, so the plan's other
+    sections stay dispatchable. It lives on the caller's side because the
+    scoping is authored markup, which a composed row may not carry yet; see
+    :func:`_plan_decision_sections`.
+    """
 
     raw_decisions = plan.get("decisions") or []
     if isinstance(raw_decisions, dict):
@@ -382,6 +437,14 @@ def _decision_rows(plan: dict[str, Any]) -> list[dict[str, Any]]:
         ]
         if transition_gates and not choice:
             status = "gated"
+        scoped = decision.get("sections")
+        if not isinstance(scoped, list):
+            scoped = (sections_map or {}).get(key)
+        sections = (
+            [str(part).strip() for part in scoped if str(part or "").strip()]
+            if isinstance(scoped, list)
+            else []
+        )
         rows.append(
             {
                 "kind": "decision",
@@ -391,6 +454,7 @@ def _decision_rows(plan: dict[str, Any]) -> list[dict[str, Any]]:
                 "status": status,
                 "choice": choice,
                 "rationale": rationale,
+                **({"sections": sections} if sections else {}),
                 **(
                     {
                         "transition": "decision-lockable",
@@ -406,14 +470,41 @@ def _decision_rows(plan: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
-def unsettled_decisions(plan: dict[str, Any]) -> list[dict[str, Any]]:
+def unsettled_decisions(
+    plan: dict[str, Any],
+    sections_map: Mapping[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     """Decisions awaiting a choice, whether open or held by a transition edge.
 
     A gated decision is held rather than blocking: readiness consumes only the
-    open rows, while a reported set keeps both so the edge stays visible.
+    open rows, while a reported set keeps both so the edge stays visible. A
+    decision scoped to named sections is held the same way — reported in full,
+    consumed by readiness only for the sections it names.
     """
 
-    return [row for row in _decision_rows(plan) if row["status"] in ("open", "gated")]
+    return [
+        row
+        for row in _decision_rows(plan, sections_map)
+        if row["status"] in ("open", "gated")
+    ]
+
+
+def plan_level_decisions(
+    decisions: list[dict[str, Any]], statuses: tuple[str, ...] = ("open",)
+) -> list[dict[str, Any]]:
+    """Decisions holding the whole plan rather than the sections they name.
+
+    An unscoped decision is a wait with nowhere else to land, so the plan waits
+    on it. A scoped one names its sections, and those sections carry the wait
+    instead: the plan's other sections stay dispatchable, which is the whole
+    point of scoping a decision rather than leaving it whole-plan.
+    """
+
+    return [
+        row
+        for row in decisions
+        if row["status"] in statuses and not row.get("sections")
+    ]
 
 
 def _authorisation_age(
@@ -1324,9 +1415,15 @@ def resolve_graph_target(
         plan = plans[key]
         if _status(plan) in COMPLETED_STATUSES:
             continue
-        decisions = _decision_rows(plan)
-        open_decisions = [row for row in decisions if row["status"] == "open"]
-        decision_blocker_rows.extend(unsettled_decisions(plan))
+        graph_project, graph_slug = key
+        graph_sections_map = _plan_decision_sections(
+            plan, None, graph_project, graph_slug
+        )
+        decisions = _decision_rows(plan, graph_sections_map)
+        # A decision scoped to sections holds those sections, not the plan, so
+        # only an unscoped open decision keeps this member out of the ready set.
+        open_decisions = plan_level_decisions(decisions)
+        decision_blocker_rows.extend(unsettled_decisions(plan, graph_sections_map))
         closure_blocker_rows.extend(closure_blockers(plan))
         dependencies_complete = all(
             _status(plans[dependency]) in COMPLETED_STATUSES
@@ -2135,10 +2232,16 @@ def _build_roadmap(
             if isinstance(row, dict) and row.get("kind") == "held"
         ]
         gate_blockers = unpassed_gate_blockers(execution_gates(plan))
-        decisions = _decision_rows(plan)
+        decision_sections_map = _plan_decision_sections(plan, docs_dir, project, slug)
+        decisions = _decision_rows(plan, decision_sections_map)
         open_decisions = [
             decision for decision in decisions if decision["status"] == "open"
         ]
+        # A decision scoped to named sections holds those sections instead of
+        # the plan, so readiness and the derived status consume only the open
+        # decisions with nowhere else to land. The reported sets keep every open
+        # row so the scoped wait stays visible on the sections it governs.
+        plan_holding_decisions = plan_level_decisions(decisions)
         # A gated decision is held by a transition edge: unsettled, so it stays
         # reported, but the edge never blocks the plan's own execution.
         decision_blockers = [
@@ -2173,7 +2276,7 @@ def _build_roadmap(
             and not explicit_blockers
             and not held_blockers
             and not gate_blockers
-            and not open_decisions
+            and not plan_holding_decisions
             and slug not in cycle_members
         )
         is_blocked = bool(
@@ -2181,7 +2284,7 @@ def _build_roadmap(
             or explicit_blockers
             or held_blockers
             or gate_blockers
-            or open_decisions
+            or plan_holding_decisions
             or slug in cycle_members
         )
         readiness = "ready" if is_ready else "blocked" if is_blocked else "deferred"
@@ -2211,7 +2314,7 @@ def _build_roadmap(
                     *explicit_blockers,
                     *held_blockers,
                     *gate_blockers,
-                    *open_decisions,
+                    *plan_holding_decisions,
                 ],
             ),
             "sprint": plan_sprint,
@@ -2256,7 +2359,17 @@ def _build_roadmap(
         mapped_edges = [
             row for row in dependency_rows.get(slug, []) if row.get("source_section")
         ]
-        if section_dependency_blockers or mapped_edges:
+        # A decision that names the sections it governs holds those sections
+        # rather than the plan: the row keeps the decision in its reported
+        # blockers, and the sections it names carry the wait in row form so a
+        # reader sees why the section is not dispatchable.
+        decision_section_blockers: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for decision in decisions:
+            if decision["status"] != "open":
+                continue
+            for section in decision.get("sections") or []:
+                decision_section_blockers[section].append(decision)
+        if section_dependency_blockers or mapped_edges or decision_section_blockers:
             # A staging anchor holds the source plan's section of the same
             # identity; the mapping names its waiting section outright, so every
             # section-scoped edge keys its blockers by the section that waits.
@@ -2264,7 +2377,20 @@ def _build_roadmap(
             for blocker in section_dependency_blockers:
                 waiting = str(blocker.get("source_section") or blocker.get("stage"))
                 section_blockers[waiting].append(blocker)
-            sections = sorted(plan_section_anchors(plan) | set(section_blockers))
+            for section, holding in decision_section_blockers.items():
+                section_blockers[section].extend(holding)
+            sections = sorted(
+                plan_section_anchors(plan)
+                | set(section_blockers)
+                # A scoped decision's sections are the ones a reader most needs
+                # to see, and they need not carry a gate or a comment anchor of
+                # their own, so the plan's authored declarations name them too.
+                | (
+                    set(_plan_declarations(plan, docs_dir, project, slug))
+                    if decision_section_blockers
+                    else set()
+                )
+            )
             row["section_readiness"] = [
                 {
                     "section": section,

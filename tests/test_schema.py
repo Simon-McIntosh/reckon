@@ -38,6 +38,8 @@ from reckon._schema import (
     IndexData,
     IndexState,
     PlanState,
+    decision_section_refusals,
+    decision_sections,
     gen_json_schema,
     is_section_identity,
     schema_path,
@@ -392,6 +394,47 @@ def test_section_declarations_reject_invalid_write_values():
 
     with pytest.raises(ValueError, match="section_declarations"):
         state.validate_for_write()
+
+
+def _plan_with_scoped_decision(sections: str) -> str:
+    """FULL_PLAN's open decision, scoped to the sections it governs."""
+
+    return FULL_PLAN.replace(
+        '<div class="r-dec" data-key="open-one" data-choice=""'
+        ' data-by="" data-when="">',
+        '<div class="r-dec" data-key="open-one" data-choice=""'
+        f' data-by="" data-when="" data-sections="{sections}">',
+        1,
+    )
+
+
+def test_decision_sections_read_the_scoping_from_the_decision_element():
+    """A decision names the sections it governs on its own element."""
+
+    assert decision_sections(FULL_PLAN) is None
+    scoped = decision_sections(_plan_with_scoped_decision("s1,s2")) or {}
+    assert scoped == {"open-one": ["s1", "s2"]}
+    # A decision that names no sections is absent from the mapping rather than
+    # present with an empty list: it keeps governing the whole plan, which is a
+    # different state from governing none of it.
+    assert "locked-one" not in scoped
+    assert decision_sections("<p>no decisions here</p>") is None
+
+
+def test_decision_sections_refuse_a_section_the_plan_does_not_declare():
+    """A scoped decision naming no declared section is refused by name."""
+
+    declared = {"s1", "s2"}
+    assert decision_section_refusals({"open-one": ["s1", "s2"]}, declared) == []
+
+    refusals = decision_section_refusals(
+        {"open-one": ["s1", "s9"], "hazarded": "not a section!"}, declared
+    )
+    assert [(row["code"], row["decision"], row["section"]) for row in refusals] == [
+        ("missing-decision-section", "open-one", "s9"),
+        ("invalid-decision-sections", "hazarded", "not a section!"),
+    ]
+    assert "names no section 's9' this plan declares" in refusals[0]["message"]
 
 
 def test_section_dependency_mapping_survives_a_state_write():

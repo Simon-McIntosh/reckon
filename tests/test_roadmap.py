@@ -563,6 +563,117 @@ def test_plans_without_decisions_keep_existing_readiness() -> None:
     }
 
 
+def _decided_plan_document(
+    slug: str,
+    *,
+    decisions: list[tuple[str, list[str]]],
+) -> str:
+    """A plan whose decisions name the sections they govern in their own markup.
+
+    The sections list lives on the decision element, so the file is the only
+    record of the scoping — the same shape a plan the SPA authors has, and the
+    reason these cases build a docs tree instead of a plan dict.
+    """
+
+    declarations = dict.fromkeys(("s2", "s3", "s4"), "implementable")
+    rows = ""
+    for key, sections in decisions:
+        scoping = f' data-sections="{",".join(sections)}"' if sections else ""
+        rows += (
+            f'<div class="r-dec" data-key="{key}" data-choice="" data-by="" '
+            f'data-when=""{scoping}>'
+            f'<p class="r-dec-q">{key}: which way?</p></div>'
+        )
+    return (
+        "<!doctype html><html><head>"
+        '<meta name="docs-project" content="sample">'
+        '<meta name="reckon-type" content="plan">'
+        f'<meta name="plan-slug" content="{slug}">'
+        '<meta name="plan-status" content="active">'
+        '<meta name="plan-effort" content="M">'
+        '<meta name="plan-section-declarations" content="'
+        f'{escape(json.dumps(declarations), quote=True)}">'
+        f"<title>{slug}</title></head><body>"
+        '<main class="plan-doc">'
+        '<section data-reckon="gates">'
+        '<div class="r-gate" data-id="evidence" data-status="closed" '
+        'data-verdict="passed"></div>'
+        '<div class="r-gate" data-id="s2-evidence" data-section="s2" '
+        'data-status="closed" data-verdict="passed"></div></section>'
+        '<section data-reckon="decisions" id="decisions" class="r-decisions">'
+        "<h2>Decisions</h2>"
+        f"{rows}</section>"
+        '<section data-reckon="followups">'
+        '<article class="r-fu" data-id="next" data-status="open">'
+        '<h4 class="r-fu-title">Continue</h4><div class="r-fu-body"></div>'
+        '<pre class="r-fu-prompt">/reckon-build work</pre>'
+        "</article></section></main></body></html>"
+    )
+
+
+def _discovered_decided_roadmap(
+    tmp_path: Path, slug: str, *, decisions: list[tuple[str, list[str]]]
+) -> tuple[dict, dict]:
+    docs = tmp_path / "docs"
+    (docs / "plans").mkdir(parents=True, exist_ok=True)
+    (docs / "plans" / f"{slug}.html").write_text(
+        _decided_plan_document(slug, decisions=decisions), encoding="utf-8"
+    )
+    discovered = discover_plans(docs, "sample", tmp_path / "state")
+    result = build_roadmap(
+        "sample",
+        discovered["inventory"],
+        discovered["sprints"],
+        active_sprint_id=discovered["active_sprint_id"],
+        project_manifest=discovered,
+        review={},
+        docs_dir=docs,
+    )
+    row = next(item for item in result["pending_work"] if item["slug"] == slug)
+    return result, row
+
+
+def test_decision_scoped_to_sections_holds_only_those_sections(tmp_path: Path) -> None:
+    result, row = _discovered_decided_roadmap(
+        tmp_path, "deciding", decisions=[("transport", ["s3", "s4"])]
+    )
+
+    # The decision governs two sections, so those two wait and the plan itself
+    # does not: s2 stays dispatchable and the whole plan stays in the ready set.
+    assert row["ready"] is True
+    assert row["effective_status"] == "active"
+    assert [item["slug"] for item in result["ready_now"]] == ["deciding"]
+    assert row["ready_sections"] == ["s2"]
+    assert row["blocked_sections"] == ["s3", "s4"]
+
+    readiness = {entry["section"]: entry for entry in row["section_readiness"]}
+    assert readiness["s2"] == {"section": "s2", "ready": True, "blockers": []}
+    for section in ("s3", "s4"):
+        assert readiness[section]["ready"] is False
+        assert [blocker["id"] for blocker in readiness[section]["blockers"]] == [
+            "transport"
+        ]
+
+    assert [blocker["id"] for blocker in row["decision_blockers"]] == ["transport"]
+    assert row["decision_blockers"][0]["sections"] == ["s3", "s4"]
+
+
+def test_unscoped_open_decision_keeps_blocking_the_whole_plan(tmp_path: Path) -> None:
+    result, row = _discovered_decided_roadmap(
+        tmp_path, "deciding", decisions=[("transport", [])]
+    )
+
+    assert row["ready"] is False
+    assert row["readiness"] == "blocked"
+    assert [item["slug"] for item in result["ready_now"]] == []
+    assert row["decision_blockers"][0]["id"] == "transport"
+    assert "sections" not in row["decision_blockers"][0]
+    # Nothing is section-scoped, so the plan reports no per-section readiness at
+    # all — exactly the whole-plan behaviour it had before decisions could scope.
+    assert "section_readiness" not in row
+    assert "ready_sections" not in row
+
+
 def test_schedule_readiness_uses_the_configured_open_sprint_window() -> None:
     inventory = [
         _plan("earliest", sprint="first"),
