@@ -1,0 +1,20 @@
+#!/bin/bash
+# fleet-shell — an interactive shell inside the fleet allocation.
+#
+# Resolves the fleet job from the record fleet-supervisor publishes and opens a
+# pty step in it, so `ssh -t iter fleet-shell` (or a `Host fleet` alias whose
+# RemoteCommand is this script) lands on the fleet node inside the job. An ssh
+# straight to the node would land outside the job's cgroup, escaping both its
+# limits and its cleanup.
+set -uo pipefail
+
+rec="$HOME/.local/state/fleet/record.json"
+id=$(sed -n 's/.*"job_id": *"\([0-9]*\)".*/\1/p' "$rec" 2>/dev/null)
+state=$(squeue -h -j "${id:-0}" -o '%T' 2>/dev/null)
+if [ -z "$id" ] || [ "$state" != RUNNING ]; then
+    echo "fleet-shell: no running fleet (record: ${id:-none}, state: ${state:-absent}); run cx to hold one" >&2
+    exit 1
+fi
+RT=$(sed -n 's/.*"runtime_dir": *"\([^"]*\)".*/\1/p' "$rec")
+TMPDIR=/tmp exec srun --overlap --pty --jobid="$id" --job-name=fleet-shell \
+    env XDG_RUNTIME_DIR="$RT" ZELLIJ_SOCKET_DIR="$RT/zellij" TMPDIR=/tmp bash -l

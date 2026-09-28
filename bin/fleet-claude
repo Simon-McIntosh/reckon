@@ -1,0 +1,97 @@
+#!/bin/bash
+# fleet-claude [claude arguments] — run a Claude Code session on the fleet node.
+#
+# Used as the command of an agent pane inside a fleet zellij session, and by
+# the fleet shell's `claude` function.
+#
+# Two modes, chosen by FLEET_SESSION_STEPS:
+#
+#   0 (default)  Claude runs directly in the pane, under the allocation's batch
+#                step. A worker the session dispatches detaches into that same
+#                batch step and outlives the session. This is the safe mode while
+#                a worker's launch still happens from inside the session.
+#
+#   1            Claude runs as its own SLURM step. When the session ends, SLURM
+#                removes every process it started, detached or not, so nothing a
+#                session forgets can outlive it. That includes any worker whose
+#                srun client lives in the session's step, so this mode waits until
+#                every worker is launched through the fleet supervisor's spawn
+#                request rather than from the session. When it is, make 1 the
+#                default.
+#
+# A pane comes back as the same conversation after the fleet restarts.
+# When the allocation is requeued onto another node, the new zellij servers
+# resurrect each pane from the command line its Claude process was running.
+# So every interactive session is started with an explicit conversation id,
+# and Claude runs under the program name fleet-claude: the recorded command
+# is `fleet-claude --session-id <id>` and the resurrection comes back here.
+# Claude refuses `--session-id` for a conversation that already exists ("is
+# already in use"), so an id whose transcript exists is turned into
+# `--resume <id>`. A command that already names a conversation, or a
+# non-interactive one, is passed through unchanged.
+set -euo pipefail
+
+: "${SLURM_JOB_ID:?fleet-claude runs inside the fleet allocation}"
+# A Claude identity inherited from whoever started the pane would make this
+# session a child of it; the new session sets its own.
+for v in $(compgen -e | grep -E '^(CLAUDE|CLAUDECODE)'); do unset "$v"; done
+
+transcript_exists() {
+    compgen -G "$HOME/.claude/projects/*/$1.jsonl" >/dev/null
+}
+
+args=()
+session_id=""
+names_conversation=0
+interactive=1
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --session-id)
+            session_id="${2:-}"; shift 2 || shift; continue ;;
+        --session-id=*)
+            session_id="${1#--session-id=}"; shift; continue ;;
+        -r|--resume|--resume=*|-c|--continue|--fork-session)
+            names_conversation=1 ;;
+        -p|--print|-h|--help|-v|--version)
+            interactive=0 ;;
+    esac
+    args+=("$1")
+    shift
+done
+
+if [ -n "$session_id" ]; then
+    if transcript_exists "$session_id"; then
+        args=(--resume "$session_id" "${args[@]}")
+    else
+        args=(--session-id "$session_id" "${args[@]}")
+    fi
+elif [ "$names_conversation" = 0 ] && [ "$interactive" = 1 ]; then
+    session_id=$(cat /proc/sys/kernel/random/uuid)
+    args=(--session-id "$session_id" "${args[@]}")
+fi
+
+# Record which conversation each pane holds, so a restart that loses the
+# panes can still be mapped back by hand.
+if [ -n "$session_id" ]; then
+    state="$HOME/.local/state/fleet"
+    mkdir -p "$state"
+    printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "${ZELLIJ_SESSION_NAME:--}" \
+        "${ZELLIJ_PANE_ID:--}" "$PWD" "$session_id" >> "$state/sessions.tsv" || true
+fi
+
+# A spawn loop in anything a session starts grows until the node runs out of
+# memory; slurmd then stops answering, SLURM declares the node failed, and
+# every session on it dies. Twice on this fleet about 7,500 leaked Python
+# processes did exactly that. A ceiling on this user's task count makes the
+# loop's fork fail first, while the node still answers. It is a soft limit,
+# inherited by everything the session starts, and sits well above a full
+# fleet's roughly 2,500 tasks.
+ulimit -Su "${FLEET_NPROC:-6000}" 2>/dev/null || true
+
+if [ "${FLEET_SESSION_STEPS:-0}" = 1 ]; then
+    step="claude-${ZELLIJ_SESSION_NAME:-pane}-${ZELLIJ_PANE_ID:-0}"
+    exec srun --overlap --pty --jobid="$SLURM_JOB_ID" --job-name="$step" --export=ALL \
+        claude ${args[@]+"${args[@]}"}
+fi
+real=$(type -P claude)
+exec -a fleet-claude "$real" ${args[@]+"${args[@]}"}
