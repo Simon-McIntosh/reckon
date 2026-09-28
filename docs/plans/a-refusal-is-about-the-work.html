@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-commits" content="601e51e5,74dc4774,3ff3237b,ee6fb313,fafbbe1f,5ad7eae0,27b4def6,956f91dd,d78ae0f3,5cb0fc39">
 <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,reckon/crew/dispatch.py,reckon/crew/runs.py,tests/test_expired_follower_keeps_dispatching.py">
 <meta name="plan-impl" content="0.33">
@@ -208,6 +208,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260928T191412481065" data-who="s25-coord" data-when="2026-09-28T19:15:00.000Z">
     <div class="r-comment-body"><p>dispatch-declares-the-run-it-repairs merged at 4c046fbf: reckon crew dispatch --repairs RUN_ID declares the promoted run a node repairs, refuses an unknown, unpromoted or foreign run and an unreadable ledger each with its own cause, and promotion exempts a repairs record from the impl move as it does resume and redispatch. Review 94, carried forward over the ledger-refusal fix; 223 passed at the tree merged with current main. Section 4 done.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260928T175645048110-dispatch-declares-the-run-it-repairs" data-who="reckon-build" data-when="2026-09-28T19:10:52.026Z">
+    <div class="r-comment-body"><p>§4 — `reckon crew dispatch` gains `--repairs RUN_ID`; the named run must be a promoted run of the project&#x27;s own ledger and an unknown run, a run not yet promoted, a run from another project, or an unreadable ledger is refused before launch with its own reason named; the declaration is recorded as `repairs: RUN_ID` beside `attempt_kind`, and `reckon/crew/promotion.py` reads it through the existing corrective-attempt check so the promotion records `impl_move` as exempt (reason `corrective-run:repairs:&lt;run_id&gt;`) with no `--no-impl-change`; the node&#x27;s evidence fragment is docs/evidence/fragments/a-refusal-is-about-the-work/dispatch-declares-the-run-it-repairs.html</p></div>
 </div>
 </section>
 </main>
