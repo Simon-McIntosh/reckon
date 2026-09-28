@@ -89,6 +89,7 @@
         <tr><td>§22</td><td><a href="#widen-reaches-a-blocked-manifest">widen-reaches-a-blocked-manifest</a></td><td>bd10fb72</td><td>run outcome</td></tr>
         <tr><td>§22</td><td><a href="#widen-refuses-a-running-worker">widen-refuses-a-running-worker</a></td><td>184fbbed</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#a-refusal-at-admission-is-named">a-refusal-at-admission-is-named</a></td><td>1f519333</td><td>run outcome</td></tr>
+        <tr><td>§3</td><td><a href="#harness-home-anchored-to-the-run-directory">harness-home-anchored-to-the-run-directory</a></td><td>38e24e80</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -2706,6 +2707,63 @@ detail         : ... conflicts with live claim ... held by run
       total of 79 with durability at 5 passes at base and is a row at the change, until one of
       the two dispositions answers it.
       </figcaption>
+    </figure>
+  <section id="harness-home-anchored-to-the-run-directory">
+    <h3>harness-home-anchored-to-the-run-directory &mdash; commit <code>38e24e80</code></h3>
+    <p><strong>What landed.</strong> A run's harness home is anchored to an absolute run directory
+    or to nothing. Before the change an empty manifest path &mdash; the shape a fenced resume
+    composes when its record recorded none &mdash; became the composing process's working
+    directory, so the home was created beside that process and the variable the worker received
+    named a relative path the harness resolved against its own working directory: the worktree it
+    was dispatched to. Merged worktrees were left carrying an untracked <code>harness/</code> or
+    <code>codex-home/</code> at their root, and the collector read every one of them as dirty. No
+    home, no variable, nothing created, and the anchoring is unchanged for a live run, whose
+    manifest path is absolute.</p>
+    <p><strong>The caller, named as file:line.</strong> <code>crew resume_plan</code> composes
+    <code>manifest_path=str(record.get("manifest_path") or "")</code> at
+    <code>reckon/crew/dispatch.py:7267</code>; <code>launch_plan</code> took the parent of that
+    empty string at <code>reckon/_backends.py:2624</code>, which is <code>Path(".")</code>, and
+    <code>harness_home</code> returned the relative <code>harness</code>/<code>codex-home</code>
+    from it. Which callers reach it was established by a spy installed over
+    <code>harness_home</code> and <code>seed_harness_home</code> as a pytest plugin and run
+    across the suite, not by reading: exactly four events, two callers, one per dialect &mdash;
+    <code>tests/test_backend_reconstruction_settings.py::test_a_resumed_plan_carries_the_recorded_model_and_effort</code>
+    (claude, stack through <code>dispatch.py:7267</code>) and
+    <code>tests/test_budget.py::test_a_stuck_worker_check_does_not_claim_a_scheduled_resumption</code>
+    (codex). The corruption is visible independently in the sibling nodes' base-arm suite copies,
+    which carry <code>harness/</code> and <code>codex-home/</code> at their roots.</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Revision</th><th>Files</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>baseline gate</td><td><code>ff0818f6</code></td><td>the ten files exercising the harness home</td><td><strong>123 passed</strong>, exit 0</td></tr>
+        <tr><td>after gate</td><td><code>38e24e80</code></td><td>the same ten plus the new test</td><td><strong>127 passed</strong>, exit 0, no added failing ids</td></tr>
+        <tr><td>new test</td><td>head</td><td><code>tests/test_harness_home_is_not_in_the_worktree.py</code></td><td><strong>4 passed</strong></td></tr>
+        <tr><td>negative control</td><td><code>ff0818f6</code>, scratch copy</td><td>the new test</td><td>the two dialect cases <strong>fail</strong> with <code>the worktree carries ['harness']</code>, exit 1, declared string verbatim on the log's first line</td></tr>
+      </tbody>
+    </table>
+    <p><strong>What the new test composes and what it refuses.</strong> Both dialects are composed
+    from inside their own worktree &mdash; the way a worker stands in it, which is the condition
+    that made a relative home land there &mdash; with two manifest shapes a caller without a
+    manifest path hands over: the empty string and a bare relative name. Each case requires the
+    worktree to still be empty and the variable to be absent, and the last case requires an
+    absolute manifest under the run directory to anchor the home there. Every case runs against
+    synthetic operator, run and decoy homes; <code>RECKON_HOME</code> is removed and
+    <code>Path.home</code> is pointed at a decoy, so neither reads nor writes the real
+    <code>~/.config/reckon</code>, which is live with the fleet's own runs and cannot be
+    snapshotted without measuring the environment rather than the code.</p>
+    <p><strong>Recorded and not repaired</strong>, both outside the node's declared write scope:
+    the same empty manifest path also reaches <code>fence_argv</code> at
+    <code>reckon/_backends.py:2532</code>, where <code>Path("").parent</code> resolves to the
+    composing process's directory and is offered to the fence as a writable root; and the dispatch
+    layer already knows the run directory (<code>run_dir(run_id)</code>) it could name instead of
+    the empty string, which would give such a resume a home under its run rather than none.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/harness-home-anchoring.svg"
+           alt="Two lanes. At base, a record carrying no manifest path is composed to the parent of the empty string, which is the process working directory; the harness home resolves to the relative folder harness; seeding creates it beside the composing process and the worker, standing in its worktree, resolves the relative variable against the worktree, leaving an untracked harness/ there that the collector reads as dirty. At the change, the same caller with the same empty manifest path anchors nothing: no home is seeded, no variable is invented, and the worktree stays empty."
+           style="max-width:760px;width:100%">
+      <figcaption>An unanchored manifest path made the worktree the home's location. A home now
+      exists only under an absolute run directory; a live run's manifest path is absolute, so
+      only the resume shape moved.</figcaption>
     </figure>
   </section>
 
