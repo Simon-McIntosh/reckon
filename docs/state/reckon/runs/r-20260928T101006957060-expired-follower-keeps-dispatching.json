@@ -1,0 +1,403 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "bd231eff5e9a20879e5a8ea54094cfd46ffe79c0",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 1815100,
+      "input_tokens_cumulative": 1815100,
+      "output_tokens": 6100,
+      "output_tokens_cumulative": 6100,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 494,
+    "files": 6,
+    "removed": 3
+  },
+  "commit_resolution": null,
+  "commits": [
+    "ee6fb31390ddf608ad0bdfb667e41cee367be30e",
+    "fafbbe1f8ac8ef3e51bdb7747957183baddc8c79",
+    "5ad7eae0bc8eb5e01aa2c222c89b45b5a3fbb620"
+  ],
+  "completed_at": "2026-09-28T11:24:22.178Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T10:10:24Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_follow_observes_other_sessions.py::test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three",
+    "/tmp/base-arm-full",
+    "reckon/cli.py's"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_expired_follower_keeps_dispatching.py tests/test_crew_dispatch_watcher_required.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101006957060-expired-follower-keeps-dispatching/gate-repair-5ad7eae0.log"
+  },
+  "impl_move": {
+    "at_complete": 0.375,
+    "at_dispatch": 0.33,
+    "plan": "a-refusal-is-about-the-work",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T11:00:08.391709+00:00",
+    "horizon_seconds": 3000,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T10:10:08Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 30,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 2,
+    "mean_context": 104000,
+    "observed_at": "2026-09-28T10:09:38Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T11:24:22.178Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101006957060-expired-follower-keeps-dispatching/manifest.md",
+  "member": "disposable-r-20260928T101006957060-expired-follower-keeps-dispatching",
+  "negative_control": {
+    "declaration": "treat a released follower registration as never-registered in reckon/crew/dispatch.py; the released-follower case must then be refused",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101006957060-expired-follower-keeps-dispatching/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101006957060-expired-follower-keeps-dispatching/negative-control.log",
+    "test_paths": [
+      "tests/test_crew_dispatch_watcher_required.py",
+      "tests/test_expired_follower_keeps_dispatching.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "expired-follower-keeps-dispatching",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2004,
+          "cached_input_tokens": 837053,
+          "input_tokens": 839059,
+          "output_tokens": 285,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 839344,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "When the dispatching session's follower registration was released (reckon/crew/runs.py _follower_liveness already tells a released registration from one that never existed) and the project watcher is live, reckon/crew/dispatch.py proceeds instead of raising WatcherRequired, and the payload carries a warning whose text contains the exact attach command to re-arm. A session that never registered a follower is still refused. The dry-run path, plan_dispatch, reports the same outcome for each case; at HEAD it never evaluates the watcher. tests/test_expired_follower_keeps_dispatching.py passes at exit 0 with the released case proceeding (the attach command in its warning) and the never-registered case refused, each through a real dispatch and through --dry-run. tests/test_crew_dispatch_watcher_required.py passes. The manifest cites the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-dispatch-surface/reuse-map.md for the watcher seams, re-derived at its own base. The declared negative control is applied, the released case is observed to be refused, and that log's absolute path is in the manifest.",
+    "estimated_hours": null,
+    "goal": "Let a session whose follower expired keep dispatching with a re-arm warning",
+    "id": "expired-follower-keeps-dispatching",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T10:10:08Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 30,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 2,
+      "mean_context": 104000,
+      "observed_at": "2026-09-28T10:09:38Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101006957060-expired-follower-keeps-dispatching/manifest.md",
+    "negative_control": "treat a released follower registration as never-registered in reckon/crew/dispatch.py; the released-follower case must then be refused",
+    "plan": "a-refusal-is-about-the-work",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "guided",
+    "time_budget": "50m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/dispatch.py",
+      "reckon/crew/runs.py",
+      "tests/test_expired_follower_keeps_dispatching.py",
+      "tests/test_crew_dispatch_watcher_required.py",
+      "docs/evidence/archive/a-refusal-is-about-the-work-landed.html",
+      "docs/figures/a-refusal-is-about-the-work",
+      "docs/plans/a-refusal-is-about-the-work.html"
+    ]
+  },
+  "orientation_input_tokens": 2887253.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "expired-follower-keeps-dispatching",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T10:10:14.300060+00:00",
+    "score": 0.7375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-refusal-is-about-the-work",
+  "plan_impl_at_dispatch": 0.33,
+  "promoted_revision": "5ad7eae0bc8eb5e01aa2c222c89b45b5a3fbb620",
+  "resume_waiver": null,
+  "review": null,
+  "review_waiver": {
+    "reason": "the independent review scored 90 at fafbbe1f; the one commit after it (5ad7eae0) only adds the trailing newline that review asked for, with no behaviour change, and the gate re-ran green at 6 passed; the review carries forward"
+  },
+  "role": "implement",
+  "run_id": "r-20260928T101006957060-expired-follower-keeps-dispatching",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "30ee532e-c2c0-4552-8fd7-f4bb370e36c9",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 20413295,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 238.742,
+    "generated_tokens": 82586,
+    "generation_seconds": 209.161,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 24.6,
+    "machine_seconds": 29.581,
+    "peak_input_tokens": 118195,
+    "tokens_per_second": 394.84,
+    "wall_tokens_per_second": 345.92
+  },
+  "time_budget": "50m",
+  "tool_steps": 159.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": true,
+        "budget_overrun_seconds": 3835,
+        "budget_seconds": 3600,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "working",
+        "elapsed_seconds": 7435,
+        "exit_record": {
+          "attempt": 3,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-28T07:56:18Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-28T05:52:42Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260927T191523670440-coordinator-cost-per-landed-node",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 36036,
+          "worker_pid": 4015809
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 8031,
+        "log_fresh": false,
+        "manifest_commits": [
+          "e2fc9f03 feat(velocity): attribute coordinator session cost per landed node",
+          "30fe8845 fix(velocity): carry each session's own attribution into its row",
+          "280d7fa9 style(velocity): format the coordinator-cost additions",
+          "43e971d3 docs(figures): plot coordinator cost per landed node",
+          "be18adb4 docs(plans): record the coordinator cost per landed node",
+          "90959463 fix(velocity): count a landed node by the census's own rule",
+          "118b06ba fix(velocity): read a promotion receipt by the census's own rule",
+          "0b61cc5d docs(plans): record the coordinator cost comparison at parity",
+          "e6b344f3 docs(plans): name the receipt-rule commit in the landing record"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "526297cc2526602e21682e64eba7cc5299d2e635a1617fd649199591c823e256",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T191523670440-coordinator-cost-per-landed-node/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan the-fleet-reports-its-velocity --section '§3' --role review --spec-level exact --node review-of-coordinator-cost-per-landed-node --goal 'attach an independent review to run r-20260927T191523670440-coordinator-cost-per-landed-node' --done-when 'the review for r-20260927T191523670440-coordinator-cost-per-landed-node stores a parsed record scoring all 5 dimensions in the range 0..20, carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260927T191523670440-coordinator-cost-per-landed-node.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260927T191523670440-coordinator-cost-per-landed-node.at-e6b344f3bbcc8a3e830e88f61f7ec9b5736b1c0c.json --time-budget 60m --session s25-coord --allow-unreconciled-runs --local",
+        "node": "coordinator-cost-per-landed-node",
+        "phase": "working",
+        "plan": "the-fleet-reports-its-velocity",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260927T191523670440-coordinator-cost-per-landed-node",
+        "session": "s25-coord",
+        "terminal_age_seconds": 8178,
+        "terminal_at": "2026-09-28T07:53:52Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/coordinator-cost-per-landed-node"
+      }
+    ]
+  },
+  "wall_seconds": 4438,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T11:24:22Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T11:20:20Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T101006957060-expired-follower-keeps-dispatching",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 14284,
+    "worker_pid": 1066832
+  },
+  "worker_seconds": 4408,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
