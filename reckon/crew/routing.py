@@ -16,6 +16,12 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 from reckon import _backends, _plan_html, agent_context, capabilities, flight, ledger
 from reckon.calibration import calibration_configuration_key
+from reckon.capability import (
+    CAPABILITY_CLASSES,
+    REQUIREMENT_LEVELS,
+    _effective_request,
+    _rank,
+)
 
 from reckon.crew.node import (
     CrewError,
@@ -76,11 +82,29 @@ def _role_overlay(
     return overlay, level_overlay
 
 
+def _capability_overlay(
+    overlay: Mapping[str, Any], capability_class: str
+) -> Mapping[str, Any]:
+    """Return the role overlay selected by a node's effective capability class.
+
+    A class the role declares nothing for applies no overlay, so the raise is
+    additive: it can only move a node whose class has routing declared for it.
+    """
+    if not capability_class:
+        return {}
+    by_class = overlay.get("by_capability_class") or {}
+    if not isinstance(by_class, Mapping):
+        return {}
+    selected = by_class.get(capability_class) or {}
+    return selected if isinstance(selected, Mapping) else {}
+
+
 def _effective_backend(
     config: Mapping[str, Any],
     backend_name: str,
     overlay: Mapping[str, Any],
     level_overlay: Mapping[str, Any],
+    class_overlay: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Merge a role's overlay onto one named backend's own settings."""
     backends = config.get("backends") or {}
@@ -92,10 +116,14 @@ def _effective_backend(
         )
     effective = dict(backend)
     for key, value in overlay.items():
-        if key in ("name", "backend", "by_spec_level"):
+        if key in ("name", "backend", "by_spec_level", "by_capability_class"):
             continue
         effective[key] = value
     for key, value in level_overlay.items():
+        if key == "backend":
+            continue
+        effective[key] = value
+    for key, value in (class_overlay or {}).items():
         if key == "backend":
             continue
         effective[key] = value
@@ -103,17 +131,25 @@ def _effective_backend(
 
 
 def resolve_role(
-    config: Mapping[str, Any], role: str, spec_level: str = ""
+    config: Mapping[str, Any],
+    role: str,
+    spec_level: str = "",
+    *,
+    capability_class: str = "",
 ) -> tuple[str, dict[str, Any]]:
     """Resolve a role to its backend name and the effective backend settings.
 
     A role overlays only the keys it names; everything else falls through to the
     backend it dispatches to. That is what lets a review role drop to a
-    read-only tier without restating a backend.
+    read-only tier without restating a backend. A named capability class
+    applies its own overlay last, so the class a node resolves at outranks the
+    specification level that would otherwise have selected its lane.
     """
     overlay, level_overlay = _role_overlay(config, role, spec_level)
+    class_overlay = _capability_overlay(overlay, capability_class)
     backend_name = (
-        level_overlay.get("backend")
+        class_overlay.get("backend")
+        or level_overlay.get("backend")
         or overlay.get("backend")
         or config.get("default_backend")
     )
@@ -123,7 +159,7 @@ def resolve_role(
         )
     try:
         effective = _effective_backend(
-            config, str(backend_name), overlay, level_overlay
+            config, str(backend_name), overlay, level_overlay, class_overlay
         )
     except CrewError as exc:
         raise CrewError(
@@ -133,17 +169,154 @@ def resolve_role(
 
 
 def resolve_role_override(
-    config: Mapping[str, Any], role: str, spec_level: str, backend_name: str
+    config: Mapping[str, Any],
+    role: str,
+    spec_level: str,
+    backend_name: str,
+    *,
+    capability_class: str = "",
 ) -> tuple[str, dict[str, Any]]:
     """Resolve a role's settings against an explicitly named backend.
 
     Used to re-resolve a role onto a budget fallback: the role's own overlay
     (an effort or sandbox override, say) still applies, only the concrete
-    backend it lands on changes.
+    backend it lands on changes. The named backend wins over any capability
+    class overlay, because the caller has already chosen a lane.
     """
     overlay, level_overlay = _role_overlay(config, role, spec_level)
-    effective = _effective_backend(config, backend_name, overlay, level_overlay)
+    class_overlay = _capability_overlay(overlay, capability_class)
+    effective = _effective_backend(
+        config, backend_name, overlay, level_overlay, class_overlay
+    )
     return str(backend_name), effective
+
+
+def _section_record_id(section: str) -> str:
+    """Return the plan record id a node's section name addresses."""
+    requested = re.sub(r"\s+", " ", str(section or "").strip()).casefold()
+    numbered = re.fullmatch(r"§\s*([A-Za-z0-9._-]+)", requested)
+    if numbered:
+        return f"s{numbered.group(1)}"
+    return requested.removeprefix("#")
+
+
+def _section_record(plan_path: str | Path, section: str) -> Mapping[str, Any]:
+    """Return the typed record for one plan section, or an empty mapping."""
+    wanted = _section_record_id(section)
+    if not wanted:
+        return {}
+    state = _plan_html.read_state_file(Path(plan_path))
+    for record in state.get("sections") or ():
+        if not isinstance(record, Mapping):
+            continue
+        if _section_record_id(str(record.get("id") or "")) == wanted:
+            return record
+    return {}
+
+
+def capability_raise(
+    config: Mapping[str, Any],
+    *,
+    attempts: int | None,
+    capability: Mapping[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Return the raise a section's attempt count triggers, or None.
+
+    The raise is one-way: each level it names moves a node up only, so a
+    section that already declared more than the rule asks for records no move
+    and stays on the lane its own capability selected. A config with no rule,
+    or a threshold no count has reached, raises nothing.
+    """
+    rule = config.get("capability_raise") or {}
+    if not isinstance(rule, Mapping):
+        return None
+    threshold = rule.get("attempts_threshold")
+    if isinstance(threshold, bool) or not isinstance(threshold, int) or threshold < 1:
+        return None
+    if attempts is None or attempts < threshold:
+        return None
+    before = _effective_request(capability or {})
+    after = _effective_request(capability or {})
+    changes: list[dict[str, Any]] = []
+    raised_class = str(rule.get("raised_class") or "")
+    if raised_class and _rank(raised_class, CAPABILITY_CLASSES) > _rank(
+        str(after["class"]), CAPABILITY_CLASSES
+    ):
+        changes.append({"field": "class", "from": after["class"], "to": raised_class})
+        after["class"] = raised_class
+    for field in ("reasoning", "verification"):
+        wanted = str(rule.get(f"raised_{field}") or "")
+        levels = REQUIREMENT_LEVELS[field]
+        current = str(after["requirements"].get(field) or "")
+        if wanted and _rank(wanted, levels) > _rank(current, levels):
+            changes.append({"field": field, "from": current or None, "to": wanted})
+            after["requirements"][field] = wanted
+    return {
+        "attempts": attempts,
+        "threshold": threshold,
+        "before": before,
+        "after": after,
+        "changes": changes,
+    }
+
+
+def resolve_section_routing(
+    config: Mapping[str, Any],
+    *,
+    node: TaskNode,
+    plan_path: str | Path,
+) -> dict[str, Any]:
+    """Resolve a node's routing at the capability its section's attempts earn.
+
+    The plan's typed section record is the authority for both the capability
+    the work declares and the attempts it has cost, so a section that keeps
+    costing attempts lands on a stronger class's lane through the same config
+    that routes every other node, and the returned summary says which count
+    caused it. Nothing moved records no raise.
+    """
+    record = _section_record(plan_path, node.section)
+    attempts = record.get("attempts")
+    if isinstance(attempts, bool) or not isinstance(attempts, int):
+        attempts = None
+    declared = record.get("capability")
+    if not isinstance(declared, Mapping):
+        declared = None
+    raise_record = capability_raise(config, attempts=attempts, capability=declared)
+    effective = (
+        raise_record["after"]
+        if raise_record is not None
+        else _effective_request(declared or {})
+    )
+    backend_name, backend = resolve_role(
+        config,
+        node.role,
+        node.spec_level,
+        capability_class=str(effective.get("class") or ""),
+    )
+    label = str(node.section or "section")
+    if raise_record is None:
+        summary = f"{label}: capability {effective['class']}; backend {backend_name}"
+    else:
+        moves = ", ".join(
+            f"{change['field']} {change['from']}→{change['to']}"
+            for change in raise_record["changes"]
+        )
+        detail = f"raised {moves}" if moves else f"already at {effective['class']}"
+        summary = (
+            f"{label} attempt {attempts} reached the raise threshold "
+            f"{raise_record['threshold']}: {detail}; backend {backend_name}"
+        )
+    return {
+        "role": node.role,
+        "spec_level": node.spec_level,
+        "section": node.section,
+        "attempts": attempts,
+        "capability": effective,
+        "backend": backend_name,
+        "backend_settings": backend,
+        "raise": raise_record,
+        "summary": summary,
+    }
 
 
 def resolve_budget_fallback(

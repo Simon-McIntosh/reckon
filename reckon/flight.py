@@ -39,6 +39,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from reckon import capability
 from reckon._store import _config_home
 
 # Layer names, lowest precedence first. The order is the merge order.
@@ -743,9 +744,11 @@ def _validate_resolved(config: Mapping[str, Any], sources: str) -> None:
                 f"names backend '{backend_name}', which no layer defines "
                 f"(defined backends: {known})",
             )
-        by_spec_level = role.get("by_spec_level") or {}
-        if isinstance(by_spec_level, Mapping):
-            for level, overlay in by_spec_level.items():
+        for level_map in ("by_spec_level", "by_capability_class"):
+            declared = role.get(level_map) or {}
+            if not isinstance(declared, Mapping):
+                continue
+            for level, overlay in declared.items():
                 if not isinstance(overlay, Mapping):
                     continue
                 overlay_backend = overlay.get("backend")
@@ -753,7 +756,7 @@ def _validate_resolved(config: Mapping[str, Any], sources: str) -> None:
                     known = ", ".join(sorted(backends)) or "none"
                     raise FlightConfigError(
                         sources,
-                        f"roles.{role_name}.by_spec_level.{level}.backend",
+                        f"roles.{role_name}.{level_map}.{level}.backend",
                         f"names backend '{overlay_backend}', which no layer defines "
                         f"(defined backends: {known})",
                     )
@@ -776,6 +779,22 @@ def _validate_resolved(config: Mapping[str, Any], sources: str) -> None:
                 "a read-only sandbox is reserved for roles explicitly declared "
                 "non-execution-capable",
             )
+    capability_raise = config.get("capability_raise")
+    if isinstance(capability_raise, Mapping):
+        vocabulary = {
+            "raised_class": capability.CAPABILITY_CLASSES,
+            "raised_reasoning": capability.REASONING_LEVELS,
+            "raised_verification": capability.VERIFICATION_LEVELS,
+        }
+        for field_name, declared in vocabulary.items():
+            value = capability_raise.get(field_name)
+            if value and str(value) not in declared:
+                raise FlightConfigError(
+                    sources,
+                    f"capability_raise.{field_name}",
+                    f"names {value!r}, which the capability vocabulary does not "
+                    f"declare (declared: {', '.join(declared)})",
+                )
 
 
 # ── Merge and provenance ────────────────────────────────────────────────────

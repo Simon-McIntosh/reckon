@@ -9,12 +9,12 @@
   <meta name="plan-title" content="Wiring is asserted at creation — landed evidence">
   <meta name="plan-summary" content="An implementable plan that declares no depends_on, no blocks, no informs and no gate is refused at the write boundary and reported by the audit and the roadmap, unless it declares plan-standalone with a one-sentence reason. One predicate serves all three readers; the create and edit skills carry the three-question checklist the author fills from the sprint's plan list.">
   <meta name="plan-evidence-for" content="reckon:section-contract-and-computed-impl">
-  <meta name="plan-verifies" content="reckon:section-contract-and-computed-impl#s6,reckon:section-contract-and-computed-impl#s7">
+  <meta name="plan-verifies" content="reckon:section-contract-and-computed-impl#s5,reckon:section-contract-and-computed-impl#s6,reckon:section-contract-and-computed-impl#s7">
   <meta name="plan-recorded-at" content="2026-09-19">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktree; assertions run with the main checkout's interpreter and PYTHONPATH pointed at the worktree, --no-sync throughout; the nova measurement is a read-only pass over /home/ITER/mcintos/Code/nova/docs.">
-  <meta name="plan-commits" content="5ded9147b7b24344b10789449a069d3a097a801a,e87e5e3ac16007fc52fe62f2dc396eda6bf08601">
-  <meta name="plan-artifacts" content="reckon/_schema.py,reckon/doccheck.py,reckon/mcp.py,reckon/roadmap.py,skills/reckon-create/SKILL.md,skills/reckon-edit/SKILL.md,tests/test_doccheck_unwired_plan.py,tests/test_roadmap_unwired_plan.py,docs/figures/unwired-plan-rule/decision-flow.png">
+  <meta name="plan-commits" content="5ded9147b7b24344b10789449a069d3a097a801a,e87e5e3ac16007fc52fe62f2dc396eda6bf08601,c23de2217efe30f9b7772b90862163f365710a48,48128dc094fe6148346262ca8ff49660931255f9,11d097c4991547188004fd65a88a2b7eaba91d3d">
+  <meta name="plan-artifacts" content="reckon/_schema.py,reckon/doccheck.py,reckon/mcp.py,reckon/roadmap.py,skills/reckon-create/SKILL.md,skills/reckon-edit/SKILL.md,tests/test_doccheck_unwired_plan.py,tests/test_roadmap_unwired_plan.py,docs/figures/unwired-plan-rule/decision-flow.png,reckon/crew/routing.py,reckon/flight.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,tests/test_section_attempts_capability.py,docs/figures/section-contract-and-computed-impl/attempts-raise-the-class.svg">
   <title>Wiring is asserted at creation — landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -858,8 +858,9 @@ Use edit_plan mode=state. Example: {"op": "append", "target": "sections", "item"
     <h3>Artifacts and integrity</h3>
     <p>The durable run directory is
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122936016435-a-record-attaches-to-an-existing-section/</code>.
-    This anchor and the plan's landing prose are append-only; on the plan, declarations, status,
-    implementation fraction, version and modified date are unchanged, and the version-stamping
+    This anchor and the plan's landing prose were written append-only when they landed; on the
+    plan, declarations, status, implementation fraction, version and modified date are unchanged,
+    and the version-stamping
     <code>edit_plan</code> route was not used for the documents. Section closure, the driving
     followup and the merged-head verification remain with the coordinator.</p>
   </section>
@@ -1005,6 +1006,119 @@ Use edit_plan mode=state. Example: {"op": "append", "target": "sections", "item"
     than a bare result. The counts in the earlier table remain the record of the content they
     measured, which carried one case fewer; read that table with the head it names,
     <code>ec53f8f6</code>, and this one for the repaired head.</p>
+  </section>
+
+  <section id="attempts-raise-the-class">
+    <h2>&sect;5 &mdash; A section's attempt count raises the class, and the payload names it</h2>
+    <p><strong>Measured 2026-09-27.</strong> Commit
+    <code>c23de2217efe30f9b7772b90862163f365710a48</code>. Flight config declares
+    <code>capability_raise</code> (threshold 3, class orchestrator, reasoning deep, verification
+    strict) in <code>reckon/schema/flight.yaml</code> and its shipped default in
+    <code>reckon/schema/flight-defaults.yaml</code>; a role's <code>by_capability_class</code>
+    overlay carries the backend each class reaches. The generated
+    <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code> come
+    only from <code>scripts/regen_flight_schema.py</code>, never hand-edited: review found the
+    committed copies carrying an overlay description the source had already replaced, so both
+    were regenerated from the committed source and committed at <code>11d097c4</code>, where a
+    fresh generator run reproduces them byte-for-byte (<code>git diff --exit-code</code> clean;
+    <code>regen-idempotence.log</code>). <code>resolve_section_routing</code> in
+    <code>reckon/crew/routing.py</code> reads
+    the section's own typed record and returns the raise it applied (class, reasoning and
+    verification, upward only), the count that caused it, and the backend the raised class resolves
+    to. The raise fires on the record alone, so a fixture carries a seeded count: the writer that
+    increments attempts belongs to another section.</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Fixture record</th><th>Observed</th></tr></thead>
+      <tbody>
+        <tr><td>raised</td><td>attempts 3; general / standard / standard</td><td>backend
+        <code>raised-lane</code>, settings <code>effort: raised-effort</code>; capability
+        orchestrator / deep / strict; summary carries the raise, the count 3 and the backend
+        name</td></tr>
+        <tr><td>unraised</td><td>the same record at attempts 2</td><td><code>section-lane</code>, no class overlay settings present; summary carries no raise, no class and no threshold digit</td></tr>
+        <tr><td>above the rule</td><td>attempts 4; orchestrator / deep / strict</td><td>no move recorded, summary says <em>already at orchestrator</em> naming the count 4</td></tr>
+        <tr><td>partially below</td><td>attempts 3; orchestrator / standard / standard</td><td>reasoning and verification move, the class does not; <code>raised-lane</code></td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/attempts-raise-the-class.svg"
+           alt="A plan section's record supplies attempts and the declared capability. At attempts 2 the node resolves at its declared class on the role's own backend and the summary names no raise. At attempts 3 the configured threshold raises the class to orchestrator with deep reasoning and strict verification, the class overlay selects the raised backend, and the summary names the rule and the count that caused it.">
+      <figcaption>The attempt count picks the class, the class picks the lane, and the returned
+      summary carries the count so the coordinator reads <em>third attempt, raised</em> rather
+      than inferring it. The rule is upward only.</figcaption>
+    </figure>
+    <h3>The added file fails at the base, by assertion and by schema</h3>
+    <p>At base <code>9945557624511d329211b5b573cdf77d38b02ac4</code> the new file reads
+    <strong>6 failed</strong> in 0.74&nbsp;s (<code>measured-gate-base-new-file.log</code>). The
+    failures are the substance, not collection: the shipped-defaults case fails
+    <code>assert None == 3</code> on <code>rule.get("attempts_threshold")</code>, and the fixture
+    arms fail with base pydantic refusing <code>roles.implement.by_capability_class</code> as an
+    extra input. At the head the same file passes <strong>6 in 1.74&nbsp;s</strong>
+    (<code>added-file-head.log</code>).</p>
+    <h3>The declared negative control</h3>
+    <p>The control named in advance was: <em>remove the raise rule; the attempts-3 arm must resolve
+    unraised and its assertion fail</em>. Applied to an archive of <code>c23de221</code> with the
+    <code>capability_raise</code> block removed from the shipped defaults (the test deliberately
+    does not declare the threshold itself, so removing the shipped rule is the mutation), the
+    attempts-3 record resolves <code>section-lane</code> and the case fails on
+    <em>assert 'section-lane' == 'raised-lane'</em> — 1 failed in 0.51&nbsp;s. The log's first line
+    is the declared string verbatim, and the removal step printed the rule it removed, so the
+    mutation is witnessed rather than assumed. The control log is
+    <code>negative-control.log</code> in the evidence log directory below.</p>
+    <h3>The delta against base, and what it does not cover</h3>
+    <p>The measured set is the 47 test files that import the changed modules, run as one
+    invocation per revision with the schema generators on PATH; each arm's header names its host,
+    revision, module and working directory (<code>measured-gate-head.log</code>,
+    <code>measured-gate-base.log</code>). The head arm reads <strong>23 failed, 788 passed,
+    1 skipped, 6 errors</strong> in 427.20&nbsp;s; the base arm over the same files reads
+    <strong>23 failed, 782 passed, 1 skipped</strong> in 441.22&nbsp;s. Twenty-two ids fail at
+    both revisions. The single head-only failure, the dispatch-watch case, re-run alone fails at
+    the base as well (7.37&nbsp;s against 7.79&nbsp;s at the head) on a rendezvous timeout inside
+    the test's own controlled sleeper, so it is not added by this change. The six head-only errors
+    are <code>tests/test_split_existing_runs.py</code> fixtures that fingerprint the workstation's
+    own crew tree while peer sessions were writing to it; re-run alone the same file passes 8/8 in
+    8.89&nbsp;s. The one base-only id fails in the base arm's scratch archive because the archive
+    carries no <code>.git</code>, so its in-tree <code>git status</code> exits 128; re-run at the
+    head it passes in 3.00&nbsp;s. So no id failing at the head is added by this change, and the
+    change's own addition is the added file: 6 failed at the base, 6 passed at the head. A
+    residual is stated rather than hidden: the base arm runs from an archive without git metadata,
+    so "fails at base" there is not by itself a claim about the base code.</p>
+    <p>Lint is unchanged on the changed modules &mdash; 12 pre-existing findings in
+    <code>reckon/crew/routing.py</code> and 7 in <code>reckon/flight.py</code> before and after,
+    zero in the added test file, and the three hand-written staged Python files pass the
+    formatter's check. The generated <code>reckon/_flight_schema.py</code> is never reformatted,
+    because the byte-identity guard compares it with fresh generator output.</p>
+    <h3>What this landing does not close</h3>
+    <p>The live dispatch call sites still resolve without the class, because
+    <code>reckon/crew/dispatch.py</code> is claimed by a concurrent node; the raise is reachable
+    through <code>resolve_section_routing</code> and the wiring is a follow-on. The writer that
+    increments a section's attempts is the sibling section's work; the fixtures here seed the count
+    instead. Section closure, the driving followup and the merged-head verification remain with the
+    coordinator.</p>
+    <h3>Corrections 2026-09-27</h3>
+    <p>Review found two defects in the first landing record. First, the committed generated
+    artefacts carried an overlay description the source had already replaced &mdash; they were
+    regenerated before that description was edited and committed after it, so the earlier
+    "regenerated in the same commit" claim was wrong. They were regenerated from the committed
+    source and committed at <code>11d097c4</code>, and a second generator run reproduces them
+    byte-for-byte. Second, the delta was first evidenced by a head log that recorded an earlier
+    uncommitted run; it is now evidenced by the matched pair of one-invocation runs at the
+    committed head and at the base, cited above. The correction commits touch only the two
+    generated artefacts and these two documents.</p>
+    <h3>Artifacts and integrity</h3>
+    <p>The evidence logs for this section are in
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/capability-raises-with-section-attempts/logs/</code>:
+    <code>measured-files.txt</code> (the 47 files of the measured set),
+    <code>measured-gate-head.log</code> and <code>measured-gate-base.log</code> (the matched
+    pair), <code>measured-gate-base-new-file.log</code> and <code>added-file-head.log</code> (the
+    added file at each revision), <code>negative-control.log</code>,
+    <code>isolation-checks.log</code>, <code>regen-flight-schema.log</code> (the regeneration
+    that corrected the stale artefacts, with the diff it made) and
+    <code>regen-idempotence.log</code> (the second generator run, <code>git diff --exit-code</code>
+    clean). The section's first measurement ran on a compute node that failed (SLURM NODE_FAIL);
+    every log cited here was re-run on the replacement host, and the earlier run-directory logs
+    are superseded. On the plan, declarations, followups, status, implementation fraction, version
+    and modified date are unchanged, and the version-stamping <code>edit_plan</code> route was not
+    used for the documents.</p>
   </section>
 </main>
 </body>

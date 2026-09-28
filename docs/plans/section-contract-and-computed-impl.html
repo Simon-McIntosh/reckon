@@ -343,6 +343,47 @@
     maps to in the test flight config, the summary states the raise, and a section at attempts 2 resolves
     unchanged.</p>
 
+    <p><strong>Landed 2026-09-27</strong> at <code>c23de221</code>. Flight config declares
+    <code>capability_raise</code> in <code>reckon/schema/flight.yaml</code> with its default in
+    <code>reckon/schema/flight-defaults.yaml</code> (<code>attempts_threshold</code> 3,
+    <code>raised_class</code> orchestrator, <code>raised_reasoning</code> deep,
+    <code>raised_verification</code> strict), and a role gains <code>by_capability_class</code> overlays, so
+    the raise steers the capability class and the class picks the backend — never a named model. The generated
+    <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code> come only from
+    <code>scripts/regen_flight_schema.py</code>, never hand-edited; review found the committed copies carrying
+    an overlay description the source had since replaced, so both were regenerated from the committed source
+    at <code>11d097c4</code>, where a fresh generator run reproduces them byte-for-byte
+    (<code>git diff --exit-code</code> clean). <code>resolve_section_routing</code> in
+    <code>reckon/crew/routing.py</code> reads the section's own typed record and returns the raise it applied,
+    the count that caused it, and the backend the raised class resolves to; the raise is upward only, and a
+    record already above the rule records no move. The entry point is exercised by
+    <code>tests/test_section_attempts_capability.py</code> (6 cases, fixtures resolved from a temporary host
+    layer and the shipped default threshold), which also asserts the real config home's
+    <code>flight.yaml</code> identity is unchanged across the run.</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Fixture</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>raised</td><td>record at attempts 3, declared class general / standard / standard</td><td><code>raised-lane</code>, capability orchestrator / deep / strict, summary names the raise and the count</td></tr>
+        <tr><td>unraised</td><td>the same record at attempts 2</td><td><code>section-lane</code>, capability general / standard / standard, summary names nothing</td></tr>
+        <tr><td>already above</td><td>record at attempts 4, class orchestrator / deep / strict</td><td>no move recorded, summary says <em>already at orchestrator</em></td></tr>
+      </tbody>
+    </table>
+    <p>The added file fails at base <code>99455576</code> — assertions and schema validation, not collection:
+    <code>assert None == 3</code> on the shipped defaults, and base pydantic refusing
+    <code>roles.implement.by_capability_class</code> as an extra input. The declared negative control
+    (<em>remove the raise rule; the attempts-3 arm must resolve unraised and its assertion fail</em>) was
+    executed against an archive of this commit with the rule removed from the shipped defaults: the
+    attempts-3 record resolved <code>section-lane</code> and the case failed on
+    <code>assert 'section-lane' == 'raised-lane'</code>, the declared string its log's first line. Over the
+    measured set — the 47 test files that import the changed modules, one invocation per revision with the
+    schema generators on PATH — nothing fails at the head that the change caused: 22 ids fail at both
+    revisions, the one head-only id also fails at base when re-run alone (a rendezvous timeout in the test's
+    own sleeper, at both revisions), the six head-only teardown errors come from a fixture fingerprinting the
+    workstation's live crew tree while peer sessions wrote to it — re-run alone the file passes 8/8 — and the
+    change's own addition is the six cases passing at the head and failing at base. The live dispatch call
+    sites still resolve without the class — <code>reckon/crew/dispatch.py</code> is claimed by a concurrent
+    node — so wiring <code>resolve_section_routing</code> into them is a follow-on.</p>
+
     <h2 id="s6">§6 — Section-level dependency refs are documented, audited and used</h2>
     <p><code>parse_plan_ref</code> already parses <code>[project:]slug[#stage]</code> and the roadmap already
     resolves a stage against the target's sections with a wiring finding when the stage is missing; gates carry
