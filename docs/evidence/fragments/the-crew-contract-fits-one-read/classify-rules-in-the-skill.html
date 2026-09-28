@@ -1,0 +1,1691 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-crew-contract-fits-one-read">
+  <meta name="plan-verifies" content="reckon:the-crew-contract-fits-one-read#s2">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-28">
+  <meta name="evidence-commit" content="7c25dee7">
+  <title>Classify every binding rule in skills/reckon-build/SKILL.md | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="classify-rules-in-the-skill">
+  <h2>Classify every binding rule in skills/reckon-build/SKILL.md</h2>
+  <p>Read at main HEAD <code>7c25dee788bd</code>. The file holds <strong>550</strong> prose
+  sentences. A binding sentence states a rule a coordinator or worker must follow — it contains
+  or implies <em>must</em>, <em>never</em>, <em>always</em>, <em>refuse</em>, or an imperative.
+  A keyword-and-imperative filter yields <strong>197</strong> candidates;
+  <strong>15</strong> are structural headings or one-word fragments rather than
+  rule-stating sentences and are excluded, leaving <strong>182</strong> rows. Of those,
+  <strong>23</strong> are enforced by code — each names the refusal or check and a test
+  that drives the guarded action far enough to make it fire, run in the foreground with the log
+  cited under <code>logs/</code> — <strong>20</strong> restate a surviving row, and
+  <strong>139</strong> are prose rules with no code refusal at this boundary. The
+  &ldquo;wanted?&rdquo; column is <em>proposed</em> here; the lead confirms it before the
+  rewrite. No skill file or source file was edited.</p>
+
+  <figure>
+    <img src="/reckon/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/dispositions.svg"
+         alt="Bar chart of binding-sentence dispositions: keep 136, merge 23, delete as enforced 24.">
+    <figcaption>Disposition of the 182 binding sentences in
+    <code>skills/reckon-build/SKILL.md</code>.</figcaption>
+  </figure>
+
+  <table class="outcomes">
+    <thead>
+      <tr><th>#</th><th>Rule (file:line at main HEAD)</th><th>Enforced by kind</th>
+      <th>Test that fires it</th><th>Wanted?</th><th>Disposition</th><th>Reason</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>Use `plan:&lt;slug&gt;` or `sprint:&lt;id&gt;` only to disambiguate unusual identifiers.<br><span class="loc">skills/reckon-build/SKILL.md:28</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>On a single-plan target without a section, you MUST:<br><span class="loc">skills/reckon-build/SKILL.md:40</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Read the complete plan HTML and classify every section<br><span class="loc">skills/reckon-build/SKILL.md:41</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Identify ALL implementable sections (not deferred/blocked/done)<br><span class="loc">skills/reckon-build/SKILL.md:42</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Delegate them all — sequentially for dependent sections, in a parallel fleet for independent ones<br><span class="loc">skills/reckon-build/SKILL.md:43</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Promote each landed node and write its plan state in the same beat, then continue<br><span class="loc">skills/reckon-build/SKILL.md:44</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>Stop only when all implementable sections are done OR you hit a hard prerequisite blocker<br><span class="loc">skills/reckon-build/SKILL.md:45</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td>Use `roadmap(project, sprint=&lt;id&gt;)` for a sprint and `roadmap(project=&quot;graph:&lt;handle&gt;&quot;, view=&quot;raw&quot;)` for a graph target as the canonical plan-level graph.<br><span class="loc">skills/reckon-build/SKILL.md:53</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td>Do not rebuild plan dependency order from repeated discovery calls.<br><span class="loc">skills/reckon-build/SKILL.md:53</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td>Add section-level and file-conflict edges only after the tool returns no error-level wiring findings.<br><span class="loc">skills/reckon-build/SKILL.md:53</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>11</td>
+        <td>The coordinator MUST NOT implement, investigate implementation details beyond scoping/review, edit product/source/test files, execute tests or operational pipelines, or repair worker code.<br><span class="loc">skills/reckon-build/SKILL.md:67</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>12</td>
+        <td>A small plan is not an exception. Even one node needs worktree isolation, independent review, a manifest, and a ledger record; node count changes fleet size, never whether work is delegated.<br><span class="loc">skills/reckon-build/SKILL.md:75</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>13</td>
+        <td>Member scarcity never qualifies — every dispatch gets a disposable worker, so a busy roster means the wave waits for a member to finish.<br><span class="loc">skills/reckon-build/SKILL.md:75</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>14</td>
+        <td>State the exception and its context cost before implementing, and prefer pausing the node.<br><span class="loc">skills/reckon-build/SKILL.md:75</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>15</td>
+        <td>The flag selects the backend named by `local_backend` and refuses when it is unset.<br><span class="loc">skills/reckon-build/SKILL.md:130</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>16</td>
+        <td>All targets delegate what it describes and coordinate the outcomes; the modes differ in the scope they resolve, never in who does the work.<br><span class="loc">skills/reckon-build/SKILL.md:143</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>17</td>
+        <td>Do not implement items marked &quot;deferred&quot;, &quot;post-v1&quot;, or behind an unmet trigger.<br><span class="loc">skills/reckon-build/SKILL.md:143</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>18</td>
+        <td>Write path: use `edit_plan` to record outcomes atomically:<br><span class="loc">skills/reckon-build/SKILL.md:150</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>19</td>
+        <td>Always pass `view`. A single-project `roadmap` without one returns the lossless legacy report, which at a real project&#x27;s size cannot be returned at all.<br><span class="loc">skills/reckon-build/SKILL.md:161</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>20</td>
+        <td>Prefer the tool.<br><span class="loc">skills/reckon-build/SKILL.md:164</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>21</td>
+        <td>`git -C /path/to/repo log …` — never `cd /path/to/repo &amp;&amp; git log …`<br><span class="loc">skills/reckon-build/SKILL.md:175</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>22</td>
+        <td>`grep -rn &quot;&lt;pat&gt;&quot; src/ tests/` — never `grep -rn &quot;&lt;pat&gt;&quot; .` from a repo root, which walks `.env`.<br><span class="loc">skills/reckon-build/SKILL.md:176</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>23</td>
+        <td>`--include=*.py` does not help: it constrains what is reported, not what the classifier must prove about the walk.<br><span class="loc">skills/reckon-build/SKILL.md:176</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>24</td>
+        <td>The remedy is always the command form, never a wider permission.<br><span class="loc">skills/reckon-build/SKILL.md:180</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: `grep -rn &quot;&lt;pat&gt;&quot; src/ tests/` — never `grep -rn</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>25</td>
+        <td>Read the full PENDING scope before ANY dispatch — not the whole sprint. On a single-plan target, read the complete plan.<br><span class="loc">skills/reckon-build/SKILL.md:186</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>26</td>
+        <td>Read a completed plan only when a pending plan depends on it, and then only for the contract it provides — its landed-summary and locked decisions, not its run history.<br><span class="loc">skills/reckon-build/SKILL.md:193</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>27</td>
+        <td>Never implement one section and stop unless there is a hard blocker.<br><span class="loc">skills/reckon-build/SKILL.md:204</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>28</td>
+        <td>A missing handle or an open non-deferred decision is a refusal.<br><span class="loc">skills/reckon-build/SKILL.md:206</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>29</td>
+        <td>Inline is the reported exception of §All targets are coordinator-only, never the default for small work.<br><span class="loc">skills/reckon-build/SKILL.md:213</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>30</td>
+        <td>Verify every worker by reading what it produced, not by trusting its gate. Run the cheap untrust checks of §5b first — manifest mtime against dispatch time, `commits:` against the worktree&#x27;s `rev-parse HEAD`, a clean `status --porcelain`, `git show --stat &lt;sha&gt;` against declared scope, and the gate log actually existing and agreeing with the `tests:` line.<br><span class="loc">skills/reckon-build/SKILL.md:214</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>31</td>
+        <td>The portable dispatch contract is mandatory. `reckon crew dispatch` composes it.<br><span class="loc">skills/reckon-build/SKILL.md:216</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>32</td>
+        <td>Read and embed the reference contract only when hand-composing a delegation Reckon did not prepare.<br><span class="loc">skills/reckon-build/SKILL.md:216</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: The portable dispatch contract is mandatory. `re</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>33</td>
+        <td>Update the plan at every node landing. Immediately after EACH `reckon crew complete`, the orchestrator merges the worker&#x27;s committed record — reading it, editing or appending to it as needed — then calls `edit_plan` once with the advanced `impl` and the shared index additions.<br><span class="loc">skills/reckon-build/SKILL.md:219</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>34</td>
+        <td>Dispatch of an unrelated ready node may continue; it does not wait on this plan-write beat.<br><span class="loc">skills/reckon-build/SKILL.md:219</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>35</td>
+        <td>Collapse the evergreen section only when its final node lands; never wait for section closure to record earlier nodes.<br><span class="loc">skills/reckon-build/SKILL.md:219</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>36</td>
+        <td>One cumulative evidence record and a followup are required. Default to `docs/evidence/archive/&lt;slug&gt;-landed.html`, carrying `reckon-type=evidence` and `plan-evidence-for=&lt;slug&gt;`, with one stable anchor per material result.<br><span class="loc">skills/reckon-build/SKILL.md:227</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>37</td>
+        <td>Update that record after each landing.<br><span class="loc">skills/reckon-build/SKILL.md:227</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>38</td>
+        <td>Do not create a file per section, commit, test wave, or one-line outcome.<br><span class="loc">skills/reckon-build/SKILL.md:227</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>39</td>
+        <td>Collapse the evergreen when a section ships. Replace the section body with a 2-4 line landed-summary + link to the matching anchor in the cumulative evidence HTML.<br><span class="loc">skills/reckon-build/SKILL.md:234</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>40</td>
+        <td>No plan-state drift. Plan and sprint state must reflect reality at the end of every turn.<br><span class="loc">skills/reckon-build/SKILL.md:237</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>41</td>
+        <td>Cleanup is mandatory and conservative. Remove a worktree only after it is clean and its commit is reachable from the integrated primary branch.<br><span class="loc">skills/reckon-build/SKILL.md:239</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>42</td>
+        <td>Never force-remove unmerged or dirty worktrees.<br><span class="loc">skills/reckon-build/SKILL.md:239</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>43</td>
+        <td>Do not execute a malformed graph. Invalid, dangling, non-executable, inactive, contradictory, cyclic, sprint-order, or membership findings are wiring repairs, not scientific blockers and not override prompts.<br><span class="loc">skills/reckon-build/SKILL.md:240</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>44</td>
+        <td>Write the §7c drain ledger before any closing report: every row disposed as `folded` (with its node id), `authority-required`, `dissent-reopen`, `foreign-owner`, or `context-exhausted` (with its figure).<br><span class="loc">skills/reckon-build/SKILL.md:243</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>45</td>
+        <td>A deliberate pointer remainder must be recorded by `reckon crew drain --project &lt;project&gt; --leave &lt;run-id&gt;=&lt;disposition&gt;` using only `handed-off` or `still-working`; the latter expires when the run turns terminal.<br><span class="loc">skills/reckon-build/SKILL.md:243</span></td>
+        <td>reckon/crew/recovery.py drain + dispatch unreconciled-runs (exit 6)</td>
+        <td class="t">tests/test_closure_fence_agreement.py::test_dispatch_refuses_only_the_unreconciled_subset</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>46</td>
+        <td>Never set a plan to `shipped` or `done` while a foldable followup is open.<br><span class="loc">skills/reckon-build/SKILL.md:243</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>47</td>
+        <td>With it armed you do not need a shell to find out what your fleet is doing, and a shell must never be used as a wake-up: no `sleep`, no poll loop, no backgrounded command whose purpose is to wait, and nothing re-run on a timer to see whether a run finished.<br><span class="loc">skills/reckon-build/SKILL.md:260</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>48</td>
+        <td>Read fleet state through `crew(project, view=&quot;live&quot;)` at turn time rather than by shelling out, and let the follower decide when that turn happens.<br><span class="loc">skills/reckon-build/SKILL.md:279</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>49</td>
+        <td>Repair error-level `roadmap.wiring_findings` before classifying a prerequisite, and never ask the user to override a relationship Reckon identifies as malformed.<br><span class="loc">skills/reckon-build/SKILL.md:288</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>50</td>
+        <td>Call `roadmap(project)` first and match the argument against exact sprint ids before any other treatment; a token no live endpoint claims as its graph handle remains a single-plan target.<br><span class="loc">skills/reckon-build/SKILL.md:297</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>51</td>
+        <td>This step is NON-NEGOTIABLE.<br><span class="loc">skills/reckon-build/SKILL.md:306</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>52</td>
+        <td>Do not skip it.<br><span class="loc">skills/reckon-build/SKILL.md:306</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: This step is NON-NEGOTIABLE.</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>53</td>
+        <td>Do not begin implementation until it is complete.<br><span class="loc">skills/reckon-build/SKILL.md:306</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: This step is NON-NEGOTIABLE.</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>54</td>
+        <td>Call `roadmap(project)` first.<br><span class="loc">skills/reckon-build/SKILL.md:308</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>55</td>
+        <td>Resolve every error-level wiring finding before implementation.<br><span class="loc">skills/reckon-build/SKILL.md:308</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: Repair error-level `roadmap.wiring_findings` bef</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>56</td>
+        <td>Read the COMPLETE HTML from disk (`cat docs/plans/&lt;slug&gt;.html`) and do not proceed until you have read every `&lt;h2&gt;` section, all decision and followup items (locked, open, and resolved), the `plan-depends-on` meta tag, and any `Trigger:` subsections or deferral markers.<br><span class="loc">skills/reckon-build/SKILL.md:319</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>57</td>
+        <td>Currency audit and prior-art reconnaissance — MANDATORY<br><span class="loc">skills/reckon-build/SKILL.md:325</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>58</td>
+        <td>The scout is an ordinary investigate-role node — never a harness-native background agent and never inline.<br><span class="loc">skills/reckon-build/SKILL.md:327</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>59</td>
+        <td>Build a complete audit before implementing anything:<br><span class="loc">skills/reckon-build/SKILL.md:336</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>60</td>
+        <td>Report a complete audit before dispatching a single worker:<br><span class="loc">skills/reckon-build/SKILL.md:346</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>61</td>
+        <td>Persist that DAG-build classification before dispatch with one version-safe `edit_plan` write to `section_declarations`, mapping every authored section id to `implementable`, `deferred`, or `done`.<br><span class="loc">skills/reckon-build/SKILL.md:354</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>62</td>
+        <td>Re-read the plan and require the field to match the complete audit.<br><span class="loc">skills/reckon-build/SKILL.md:354</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: Persist that DAG-build classification before dis</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>63</td>
+        <td>This declaration establishes the executable denominator; omitting it means the remainder is unknown, never zero.<br><span class="loc">skills/reckon-build/SKILL.md:354</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: Persist that DAG-build classification before dis</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>64</td>
+        <td>List exclusive write paths per item.<br><span class="loc">skills/reckon-build/SKILL.md:362</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>65</td>
+        <td>Never dispatch two workers that write the same file.<br><span class="loc">skills/reckon-build/SKILL.md:364</span></td>
+        <td>reckon/crew/claims.py live claim registry consulted by dispatch (exit 7)</td>
+        <td class="t">tests/test_scope_refusal_names_its_claimant.py::test_a_refusal_names_the_claimant_apart_from_the_refused_call</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>66</td>
+        <td>A worker that thrashes is almost always executing a malformed task. Check well-formedness before dispatch, not after; that leaves the escape hatch handling only the genuine residual.<br><span class="loc">skills/reckon-build/SKILL.md:368</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>67</td>
+        <td>A node that fails is reshaped or split — never dispatched in the hope that the worker will work it out.<br><span class="loc">skills/reckon-build/SKILL.md:368</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>68</td>
+        <td>All eight must hold:<br><span class="loc">skills/reckon-build/SKILL.md:373</span></td>
+        <td>reckon/crew/node.py + dispatch.py node-contract validation (not-dispatchable, exit 2)</td>
+        <td class="t">tests/test_brief_dispatch.py::test_a_brief_dispatch_without_a_done_when_is_refused_as_not_dispatchable</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>69</td>
+        <td>Closed — no decision from outside the node is needed; a required-but-unlocked decision means a decision node precedes it.<br><span class="loc">skills/reckon-build/SKILL.md:381</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>70</td>
+        <td>Specification level declared — `--spec-level` is one of `exact`, `guided`, or `open`; undeclared work is refused because it cannot enter a calibration slice.<br><span class="loc">skills/reckon-build/SKILL.md:389</span></td>
+        <td>reckon/crew/node.py + dispatch.py node-contract validation (not-dispatchable, exit 2)</td>
+        <td class="t">tests/test_brief_dispatch.py::test_a_brief_dispatch_without_a_done_when_is_refused_as_not_dispatchable</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>71</td>
+        <td>Check every node before it enters the ready queue:<br><span class="loc">skills/reckon-build/SKILL.md:393</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: All eight must hold:</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>72</td>
+        <td>Dispatch uses these process exit codes.<br><span class="loc">skills/reckon-build/SKILL.md:407</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>73</td>
+        <td>Treat a refusal as an instruction to repair the request, not as a worker failure:<br><span class="loc">skills/reckon-build/SKILL.md:407</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>74</td>
+        <td>| `competence-refusal` | 5 | Route the node to a backend meeting the reported capability requirements. |<br><span class="loc">skills/reckon-build/SKILL.md:417</span></td>
+        <td>reckon/crew/dispatch.py competence refusal (exit 5)</td>
+        <td class="t">tests/test_execution_fit.py::test_execution_measure_requires_a_capable_role_or_recorded_override</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>75</td>
+        <td>| `unreconciled-runs` | 6 | Run each reported reconciliation command, or use `--allow-unreconciled-runs` when the backlog must deliberately remain; the waiver is recorded on the new run. |<br><span class="loc">skills/reckon-build/SKILL.md:418</span></td>
+        <td>reckon/crew/recovery.py drain + dispatch unreconciled-runs (exit 6)</td>
+        <td class="t">tests/test_closure_fence_agreement.py::test_dispatch_refuses_only_the_unreconciled_subset</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>76</td>
+        <td>| `watcher-required` | 8 | No watcher this session can rely on — either the project has no live watcher process or this session has no delivering follower, and the refusal names which.<br><span class="loc">skills/reckon-build/SKILL.md:420</span></td>
+        <td>reckon/crew/dispatch.py WatcherRequired (exit 8)</td>
+        <td class="t">tests/test_crew_dispatch_watcher_required.py::test_dispatch_refuses_a_follower_when_no_watcher_process_exists</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>77</td>
+        <td>Use `--no-watch` only for a synchronous one-off whose waiver belongs on the run. |<br><span class="loc">skills/reckon-build/SKILL.md:420</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: | `watcher-required` | 8 | No watcher this sessi</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>78</td>
+        <td>Every refusal answers with a JSON document on stdout carrying `error` and `detail`, including the ones with no code of their own, which exit 1 as `dispatch-refused`.<br><span class="loc">skills/reckon-build/SKILL.md:423</span></td>
+        <td>reckon/crew/refusals.py format_refusal emitted by reckon/cli.py</td>
+        <td class="t">tests/test_crew_refusal_visibility.py</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>79</td>
+        <td>Read that document rather than inferring a refusal from an empty stream — several dispatches chained in one shell command leave only the last exit status behind.<br><span class="loc">skills/reckon-build/SKILL.md:423</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: Every refusal answers with a JSON document on st</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>80</td>
+        <td>Commit the plan before dispatching; `plan-unavailable` names the missing or changed section.<br><span class="loc">skills/reckon-build/SKILL.md:431</span></td>
+        <td>reckon/crew/node.py + dispatch.py node-contract validation (not-dispatchable, exit 2)</td>
+        <td class="t">tests/test_brief_dispatch.py::test_a_brief_dispatch_without_a_done_when_is_refused_as_not_dispatchable</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>81</td>
+        <td>This beat is the design, not an obstacle in front of it. The plan is the passing surface: the worker reads its section from its own worktree at the base revision, so anything a worker must know has to be committed there rather than copied into the handoff.<br><span class="loc">skills/reckon-build/SKILL.md:431</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>82</td>
+        <td>Action-bearing `and`, `&amp;`, or `plus` clauses are refused for the same reason.<br><span class="loc">skills/reckon-build/SKILL.md:445</span></td>
+        <td>reckon/crew/node.py + dispatch.py node-contract validation (not-dispatchable, exit 2)</td>
+        <td class="t">tests/test_brief_dispatch.py::test_a_brief_dispatch_without_a_done_when_is_refused_as_not_dispatchable</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>83</td>
+        <td>Read `references/worker-protocol.md` only when hand-composing a delegation Reckon did not prepare.<br><span class="loc">skills/reckon-build/SKILL.md:452</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>84</td>
+        <td>The flag resolves `local_backend` as that dispatch&#x27;s default and refuses when it is unset; role overlays still apply.<br><span class="loc">skills/reckon-build/SKILL.md:458</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>85</td>
+        <td>Context-fit refusal now rejects a node exceeding the lane&#x27;s window before a worktree exists, naming the estimate, the window and the shortfall, rather than the node dying mid-run.<br><span class="loc">skills/reckon-build/SKILL.md:463</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>86</td>
+        <td>Check that the configured local backend resolves before dispatching:<br><span class="loc">skills/reckon-build/SKILL.md:481</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>87</td>
+        <td>A worker is graded on the measure. Every goal claim must emit evidence in the done-when; state removals as a negative measurement; and require the declared mutation, named failure, and recorded log in that measure.<br><span class="loc">skills/reckon-build/SKILL.md:488</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>88</td>
+        <td>Keep nodes narrow enough that their evidence and context are independently reviewable.<br><span class="loc">skills/reckon-build/SKILL.md:488</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>89</td>
+        <td>Treat a published lane capacity as advisory.<br><span class="loc">skills/reckon-build/SKILL.md:490</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>90</td>
+        <td>Dispatch ensures one live `reckon crew watch --project P` producer before it creates a worktree, reusing a kernel-backed seat or starting one detached, so ending the dispatching process does not orphan it.<br><span class="loc">skills/reckon-build/SKILL.md:501</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>91</td>
+        <td>That producer is not your wake-up. A seat is project-global and delivery is session-local, so a CLI-launching dispatch is refused until this session has a live follower of its own: arm the payload&#x27;s `attach_line` — `reckon crew follow --project P --session S` — through the per-line notification primitive named in `references/orchestrator-harness/&lt;harness&gt;.md`.<br><span class="loc">skills/reckon-build/SKILL.md:501</span></td>
+        <td>reckon/crew/dispatch.py WatcherRequired (exit 8)</td>
+        <td class="t">tests/test_crew_dispatch_watcher_required.py::test_dispatch_refuses_a_follower_when_no_watcher_process_exists</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>92</td>
+        <td>Dispatch refuses containing or contained path claims before creating a worktree and names the owning run.<br><span class="loc">skills/reckon-build/SKILL.md:526</span></td>
+        <td>reckon/crew/claims.py live claim registry consulted by dispatch (exit 7)</td>
+        <td class="t">tests/test_scope_refusal_names_its_claimant.py::test_a_refusal_names_the_claimant_apart_from_the_refused_call</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>93</td>
+        <td>`--peer &lt;other-node&gt;=&lt;their-paths&gt;` is optional: use it only to supplement peers that do not yet have a live pointer, never as the source of the live claim registry.<br><span class="loc">skills/reckon-build/SKILL.md:526</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>94</td>
+        <td>Branch once, on the returned `launch` kind, and never on anything else:<br><span class="loc">skills/reckon-build/SKILL.md:532</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>95</td>
+        <td>Adding a harness never adds a third case.<br><span class="loc">skills/reckon-build/SKILL.md:549</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>96</td>
+        <td>Do not read backend flags into a prompt: per-backend translation is compiled code, which is what makes drift between execution paths impossible to express.<br><span class="loc">skills/reckon-build/SKILL.md:549</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>97</td>
+        <td>A worker&#x27;s gate ran against the base its worktree branched from, so a contract that landed after that base never bound it. The run is legitimately green, the merge turns the primary branch red, and nothing between the two looked at the tree that ships.<br><span class="loc">skills/reckon-build/SKILL.md:553</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>98</td>
+        <td>It refuses to execute against any tree that is not the integrated revision, because a run there verifies the wrong tree, and reports `not-run` rather than `passed` when the command is absent or exceeds its bound.<br><span class="loc">skills/reckon-build/SKILL.md:564</span></td>
+        <td>reckon/crew/promotion.py verify-gate integrated-revision refusal</td>
+        <td class="t">tests/test_crew_gate_command_is_runnable.py::test_the_re_run_reports_a_prose_command_as_not_run</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>99</td>
+        <td>A finding appears exactly when a gate green at the worker&#x27;s base is not passed by the tree about to be pushed; it never manufactures one from an already-red base.<br><span class="loc">skills/reckon-build/SKILL.md:564</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: It refuses to execute against any tree that is n</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>100</td>
+        <td>A run that was never promoted is refused, naming `reckon crew complete` as the repair.<br><span class="loc">skills/reckon-build/SKILL.md:564</span></td>
+        <td>reckon/crew/promotion.py verify-gate integrated-revision refusal</td>
+        <td class="t">tests/test_crew_gate_command_is_runnable.py::test_the_re_run_reports_a_prose_command_as_not_run</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>101</td>
+        <td>Never read an absent budget signal as exhaustion.<br><span class="loc">skills/reckon-build/SKILL.md:574</span></td>
+        <td>reckon/crew/budget_group.py unknown reading opens the wave</td>
+        <td class="t">tests/test_budget.py::test_a_wave_opens_on_a_backend_whose_headroom_is_unknown</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>102</td>
+        <td>Use the `crew` MCP tool for fleet reads; use the CLI only for state-changing actions. Read `live` for current runs, `scopes` for ownership, `drain` for closure, `ledger` or `records` for committed outcomes, `flight` for routing, and `budget` for headroom.<br><span class="loc">skills/reckon-build/SKILL.md:581</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>103</td>
+        <td>Send it as a finding, never as an instruction and never as authority: a peer cannot authorise work in another repository, and a relayed approval is not consent.<br><span class="loc">skills/reckon-build/SKILL.md:591</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>104</td>
+        <td>To watch more than your own runs, name them on the one follower with `--observe-session`; Never arm a second follower.<br><span class="loc">skills/reckon-build/SKILL.md:629</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>105</td>
+        <td>Read `references/orchestrator-harness/&lt;harness&gt;.md` before arming.<br><span class="loc">skills/reckon-build/SKILL.md:631</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>106</td>
+        <td>A CLI dispatch without its follower is refused before a worktree exists; use `reckon crew watch --ensure --project P` only when the refusal names a missing producer, and use `--no-watch` only for a synchronous one-off whose waiver reaches the promoted ledger record.<br><span class="loc">skills/reckon-build/SKILL.md:631</span></td>
+        <td>reckon/crew/dispatch.py WatcherRequired (exit 8)</td>
+        <td class="t">tests/test_crew_dispatch_watcher_required.py::test_dispatch_refuses_a_follower_when_no_watcher_process_exists</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>107</td>
+        <td>Read gate evidence before promotion, then reconcile old terminal pointers before opening more work.<br><span class="loc">skills/reckon-build/SKILL.md:633</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>108</td>
+        <td>There is no slot pool and no numeric worker cap anywhere in Reckon. The one binding rule is per-member serialisation: dispatch refuses a member that already owns a non-terminal live pointer, so the concurrency ceiling is exactly the number of registered members with no run in flight: free members are the only ceiling. Backend `concurrency:` keys in flight config are retired and ignored.<br><span class="loc">skills/reckon-build/SKILL.md:643</span></td>
+        <td>reckon/crew/claims.py member guard consulted by dispatch (exit 9)</td>
+        <td class="t">tests/test_member_guard_counts_live_processes.py</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>109</td>
+        <td>Never treat &quot;the pool is loaded&quot; as a constraint, a reason to queue ready independent work, or a reason to route around the crew system.<br><span class="loc">skills/reckon-build/SKILL.md:643</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: There is no slot pool and no numeric worker cap </td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>110</td>
+        <td>Do not wait for the slowest active node.<br><span class="loc">skills/reckon-build/SKILL.md:658</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>111</td>
+        <td>This table is advisory. It shapes the active fleet; it never decides whether to delegate.<br><span class="loc">skills/reckon-build/SKILL.md:665</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>112</td>
+        <td>Apply explicit prompt routing; otherwise choose and record the runtime override from the declared specification level.<br><span class="loc">skills/reckon-build/SKILL.md:674</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>113</td>
+        <td>Use `references/effort-routing.md` for effort and `references/lane-routing.md` for named-lane choice, refusal conditions, and selection evidence.<br><span class="loc">skills/reckon-build/SKILL.md:674</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>114</td>
+        <td>Read the resolved `gates.enforce` setting through `crew(project, view=&quot;flight&quot;)`; strict enforcement refuses a closed gate, while advisory enforcement records a warning.<br><span class="loc">skills/reckon-build/SKILL.md:679</span></td>
+        <td>reckon/serve.py + reckon/crew/plan_review.py closure gate on plan writes</td>
+        <td class="t">tests/test_closure_gates.py::test_refused_terminal_write; tests/test_closure_gates.py::test_ops_and_patch_boundaries_refuse_terminal_transition</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>115</td>
+        <td>Under strict enforcement, refuse to dispatch work behind the gate until its measure has produced evidence. A gate is a measure to demonstrate, not a threshold to tune around: when it fails, downstream work stays visibly closed and the negative result stays on the page.<br><span class="loc">skills/reckon-build/SKILL.md:679</span></td>
+        <td>reckon/serve.py + reckon/crew/plan_review.py closure gate on plan writes</td>
+        <td class="t">tests/test_closure_gates.py::test_refused_terminal_write; tests/test_closure_gates.py::test_ops_and_patch_boundaries_refuse_terminal_transition</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>116</td>
+        <td>Name the gate that closes the current wave in the dispatch summary&#x27;s `WHEN` axis, so it is stated before the work starts rather than after.<br><span class="loc">skills/reckon-build/SKILL.md:689</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>117</td>
+        <td>It is never a wave that proceeds anyway.<br><span class="loc">skills/reckon-build/SKILL.md:692</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: Under strict enforcement, refuse to dispatch wor</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>118</td>
+        <td>Authored here and nowhere else. Before opening a wave, run the pre-flight and refuse to open it on a backend whose headroom is spent:<br><span class="loc">skills/reckon-build/SKILL.md:699</span></td>
+        <td>reckon/crew/hold.py + dispatch.py budget hold (exit 3)</td>
+        <td class="t">tests/test_budget.py::test_an_exhausted_backend_holds_the_wave_without_creating_a_worktree</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>119</td>
+        <td>Unknown never holds. A backend publishing no headroom reads `unknown` and the wave opens — absence of a signal is not evidence of exhaustion.<br><span class="loc">skills/reckon-build/SKILL.md:716</span></td>
+        <td>reckon/crew/budget_group.py unknown reading opens the wave</td>
+        <td class="t">tests/test_budget.py::test_a_wave_opens_on_a_backend_whose_headroom_is_unknown</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>120</td>
+        <td>A hold is never silent. Report it on the four axes below with occasion `hold`: what is held, why — with the figure — how it recovers, when it lifts.<br><span class="loc">skills/reckon-build/SKILL.md:718</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>121</td>
+        <td>Where no such capability exists, report the reset time and stop — degraded, not broken, never a reason to dispatch into the quota anyway.<br><span class="loc">skills/reckon-build/SKILL.md:725</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>122</td>
+        <td>Before the closing summary, refuse to end the session while any queue row is foldable or any live pointer is unreconciled. Run the followup drain of §7c, then call `crew(project, view=&quot;drain&quot;)`, write both figures into the ledger, and read it back:<br><span class="loc">skills/reckon-build/SKILL.md:738</span></td>
+        <td>reckon/crew/recovery.py drain + dispatch unreconciled-runs (exit 6)</td>
+        <td class="t">tests/test_closure_fence_agreement.py::test_dispatch_refuses_only_the_unreconciled_subset</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>123</td>
+        <td>`context-exhausted` is the one disposition that ends a session with foldable work outstanding, and it must carry its figure (§7c).<br><span class="loc">skills/reckon-build/SKILL.md:747</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>124</td>
+        <td>Report the fence on the four axes of §4e with occasion `close`.<br><span class="loc">skills/reckon-build/SKILL.md:756</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>125</td>
+        <td>Here a wave is a reporting snapshot of the active fleet, never a wait-for-everyone barrier.<br><span class="loc">skills/reckon-build/SKILL.md:762</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>126</td>
+        <td>Verify each finished worker before integration or releasing a dependent node: read its manifest, confirm its commit and clean worktree, compare `git show --stat` with declared scope, open the named gate log, then read the diff by anomaly.<br><span class="loc">skills/reckon-build/SKILL.md:787</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>127</td>
+        <td>Fold final stream state with `reckon crew observe --run &lt;id&gt;` and promote only with `reckon crew complete --run &lt;id&gt; --gate &lt;verdict&gt; --commit &lt;sha&gt;` after the evidence is coherent.<br><span class="loc">skills/reckon-build/SKILL.md:787</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>128</td>
+        <td>Workers author their own landing record in the same beat — &quot;Append your landing record to your own section of the plan and your evidence anchor to the cumulative evidence record; both live in this worktree and both go into your final commit.&quot; The shared-state ban narrows with it: &quot;Never mutate the shared project index, sprint state, or a plan other than the one you are landing against.<br><span class="loc">skills/reckon-build/SKILL.md:787</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>129</td>
+        <td>Do not edit the plan-version or plan-modified meta lines: every worker touching them makes every merge conflict there.&quot; Two limits hold even though the worker authors its own record, and both are about what it can see rather than about merge mechanics: it must not resolve its own driving followup and must not set a terminal status, because only the coordinator observes the other nodes — a worker knows its node landed, not whether the section closed.<br><span class="loc">skills/reckon-build/SKILL.md:787</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>130</td>
+        <td>Dispatch a test worker and audit its compact result manifest before releasing a dependent node: the implementing worker&#x27;s own gate is not independent evidence.<br><span class="loc">skills/reckon-build/SKILL.md:789</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>131</td>
+        <td>A provider refusal or an idle worker without a report is not automatically a failed implementation: inspect its recorded deliverables and resume or request them before redispatching.<br><span class="loc">skills/reckon-build/SKILL.md:794</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>132</td>
+        <td>Read what the worker produced — the gate is not the evidence<br><span class="loc">skills/reckon-build/SKILL.md:799</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>133</td>
+        <td>Run the cheap checks in yield-per-second order before reading any code, then read the diff by anomaly at a depth set by blast radius × mechanicalness.<br><span class="loc">skills/reckon-build/SKILL.md:801</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: Verify every worker by reading what it produced,</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>134</td>
+        <td>Do not wait until a section is done. The cumulative evidence anchor is a living record: immediately after every node landing, verify the worker&#x27;s own anchor came in with its merge and append only what the worker could not state — the gate verdict and the negative findings.<br><span class="loc">skills/reckon-build/SKILL.md:807</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: Update the plan at every node landing. Immediate</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>135</td>
+        <td>Never transcribe the worker&#x27;s record afresh while the evidence is fresh.<br><span class="loc">skills/reckon-build/SKILL.md:807</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>136</td>
+        <td>Uses `reckon-type=evidence`; execution evidence never masquerades as a plan and never lives under `docs/plans/archive/`<br><span class="loc">skills/reckon-build/SKILL.md:815</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>137</td>
+        <td>`&lt;meta name=&quot;plan-evidence-for&quot; content=&quot;&lt;slug&gt;&quot;&gt;` is MANDATORY — the plan -&gt; generated-evidence back-link.<br><span class="loc">skills/reckon-build/SKILL.md:817</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>138</td>
+        <td>Add `plan-verifies` (`slug#section`) when the record verifies a specific section, and `plan-informs` ONLY for plans the record additionally feeds.<br><span class="loc">skills/reckon-build/SKILL.md:817</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>139</td>
+        <td>Figures and representation follow `reckon-create` hard-rule 8, which is binding here too: figures only where a spatial/plotted/sequential relationship is clearer visually (no image quota), minimal ink with the erase test, and never an image of what is naturally an HTML `&lt;table&gt;`.<br><span class="loc">skills/reckon-build/SKILL.md:827</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>140</td>
+        <td>Worker prompts for doc-producing tasks MUST carry this representation-selection rule, not a demand to produce an image.<br><span class="loc">skills/reckon-build/SKILL.md:827</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>141</td>
+        <td>Do not accumulate shipped sections.<br><span class="loc">skills/reckon-build/SKILL.md:836</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: Collapse the evergreen when a section ships. Rep</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>142</td>
+        <td>Rules for the landed summary: 2-4 lines — what was built (past tense), the quantitative result (&quot;landed §2&quot; without its numbers is not a summary), artifact paths, evidence link + SHAs; `✓ landed YYYY-MM-DD` badge (`.badge-shipped`) on the header; original prose moves to the cumulative evidence anchor; HTML, never markdown.<br><span class="loc">skills/reckon-build/SKILL.md:849</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>143</td>
+        <td>Read that record and may edit or append to it — never write from the manifest a record the worker is required to author.<br><span class="loc">skills/reckon-build/SKILL.md:861</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>144</td>
+        <td>That single state write carries the commit and gate measure alongside `impl`; a moved percentage is never the only new information.<br><span class="loc">skills/reckon-build/SKILL.md:895</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>145</td>
+        <td>Preserve the manifest&#x27;s exact measure and artifact paths rather than replacing them with “passed”.<br><span class="loc">skills/reckon-build/SKILL.md:895</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>146</td>
+        <td>The cumulative evidence record receives the worker&#x27;s anchor with its merge; edit or append to it in the same beat, never re-write what the worker authored.<br><span class="loc">skills/reckon-build/SKILL.md:895</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: Read that record and may edit or append to it — </td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>147</td>
+        <td>Set it on EVERY node landing — the server does NOT compute it; you MUST set it.<br><span class="loc">skills/reckon-build/SKILL.md:901</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>148</td>
+        <td>Same-plan follow-on work becomes a section, never a followup. Before setting a terminal status, add discovered work that belongs to this plan to the evergreen as a concrete section, add its executable nodes to the DAG, and keep the plan active.<br><span class="loc">skills/reckon-build/SKILL.md:912</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>149</td>
+        <td>| against a closed sprint | the advancing sprint — never back-filled |<br><span class="loc">skills/reckon-build/SKILL.md:938</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>150</td>
+        <td>The one legitimate followup on a completed plan is a pointer, never the work. Its body names the plan that carries the work and says nothing that would have to be executed from where it sits.<br><span class="loc">skills/reckon-build/SKILL.md:941</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>151</td>
+        <td>Move a plan between sprints only with its prerequisites — moving a prerequisite behind its successor is a sprint-order inversion and a failed rebalance.<br><span class="loc">skills/reckon-build/SKILL.md:958</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>152</td>
+        <td>Work never ends without naming what comes next — and the chain has three ends, not one.<br><span class="loc">skills/reckon-build/SKILL.md:966</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>153</td>
+        <td>Close all three; a chain that closes only at plan level leaves the other two dangling.<br><span class="loc">skills/reckon-build/SKILL.md:966</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>154</td>
+        <td>Classify every `follow_ons` entry before writing it.<br><span class="loc">skills/reckon-build/SKILL.md:976</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>155</td>
+        <td>Never feed same-plan work blindly into `crew.followup_ops_from_manifest`: author it as a section and add its nodes to the live DAG.<br><span class="loc">skills/reckon-build/SKILL.md:976</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: Same-plan follow-on work becomes a section, neve</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>156</td>
+        <td>The plan altitude is enforced at the write boundary. A writeback that lands a plan — one that resolves a followup or sets a terminal status — is refused unless an open followup still carries the chain or a resolved outcome records in words that the chain closes (`&quot;done — no followup&quot;`).<br><span class="loc">skills/reckon-build/SKILL.md:982</span></td>
+        <td>reckon/crew/promotion.py plan-altitude chain check at the write boundary</td>
+        <td class="t">tests/test_continuation.py::test_a_landing_with_no_continuation_is_refused</td>
+        <td>yes</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
+      </tr>
+      <tr>
+        <td>157</td>
+        <td>Do not work around the refusal: it is telling you the session was about to end silently.<br><span class="loc">skills/reckon-build/SKILL.md:982</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: The plan altitude is enforced at the write bound</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>158</td>
+        <td>Report the sprint altitude at close from `feeds_sprints` rather than from memory: it is derived, so it cannot go stale the way a written list would, and a sprint that feeds nothing says so instead of staying silent.<br><span class="loc">skills/reckon-build/SKILL.md:988</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>159</td>
+        <td>`authority-required` — it requires authority the orchestrator does not hold: spend, an outward-facing effect, or an irreversible action;<br><span class="loc">skills/reckon-build/SKILL.md:1004</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>160</td>
+        <td>`foreign-owner` — the work belongs to a different plan or repository, whose own lifecycle must surface it.<br><span class="loc">skills/reckon-build/SKILL.md:1008</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>161</td>
+        <td>An exempt open followup must record which exemption it claims and the concrete authority, decision, owning plan, or repository that makes the exemption true.<br><span class="loc">skills/reckon-build/SKILL.md:1011</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>162</td>
+        <td>Do not invent a fourth category such as inconvenience, worker capacity, or ordinary unfinished work.<br><span class="loc">skills/reckon-build/SKILL.md:1011</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>163</td>
+        <td>A legitimate, common handoff, but reportable, not silent: it must carry a figure — remaining context or token headroom, or the backend hold from §4c — and it applies to the SESSION, never to an item.<br><span class="loc">skills/reckon-build/SKILL.md:1019</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>164</td>
+        <td>Do not invent a sixth category — not inconvenience, worker capacity, a &quot;different kind of work&quot;, or ordinary unfinished work.<br><span class="loc">skills/reckon-build/SKILL.md:1025</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>165</td>
+        <td>Write it into the landing beat&#x27;s plan comment or the cumulative evidence record, so it is committed rather than conversational.<br><span class="loc">skills/reckon-build/SKILL.md:1050</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>166</td>
+        <td>Both zeroes are the termination condition. `foldable-remaining` is checked against the followup rows; `unreconciled-runs` comes from `crew(project, view=&quot;drain&quot;)`, never from memory.<br><span class="loc">skills/reckon-build/SKILL.md:1057</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>167</td>
+        <td>Record deliberate pointers first with `reckon crew drain --project &lt;project&gt; --leave &lt;run-id&gt;=handed-off|still-working`.<br><span class="loc">skills/reckon-build/SKILL.md:1057</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>168</td>
+        <td>Fold depth is expected, and carries no stopping authority<br><span class="loc">skills/reckon-build/SKILL.md:1068</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>169</td>
+        <td>Do not count layers and do not budget them — a ten-layer chain converging on a one-line fix is healthy, and the deepest layers are usually the cheapest and highest-leverage.<br><span class="loc">skills/reckon-build/SKILL.md:1079</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into: Fold depth is expected, and carries no stopping </td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>170</td>
+        <td>Re-run `roadmap(project, sprint=&lt;id&gt;)` at closure and require an empty ready set and no error-level wiring findings before setting the sprint done.<br><span class="loc">skills/reckon-build/SKILL.md:1105</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>171</td>
+        <td>Record the final shipped-of-total, critical path, average width, repositories reached, and schedule override count in the endpoint plan&#x27;s cumulative evidence.<br><span class="loc">skills/reckon-build/SKILL.md:1111</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>172</td>
+        <td>Validate HTML integrity yourself — `uv run --project ~/Code/reckon reckon audit-doc docs/plans/&lt;slug&gt;.html` must report no ERRORs before committing.<br><span class="loc">skills/reckon-build/SKILL.md:1119</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>173</td>
+        <td>Surface follow-on work to the user — MANDATORY final-report format<br><span class="loc">skills/reckon-build/SKILL.md:1132</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>174</td>
+        <td>Followup ids (`f-&lt;...&gt;`) are internal plan-state keys — NEVER the primary way follow-on work is presented to the user.<br><span class="loc">skills/reckon-build/SKILL.md:1134</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>175</td>
+        <td>Every session that ends with open follow-on work MUST close its final report with a &quot;Next up&quot; block that names each follow-on by PLAN + SECTION/RUNG (the human handles), and gives a fenced, paste-ready prompt so switching to a fresh session is seamless:<br><span class="loc">skills/reckon-build/SKILL.md:1134</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>176</td>
+        <td>Every entry must trace to a ledger row disposed `authority-required`, `dissent-reopen`, `foreign-owner`, or `context-exhausted`; an entry tracing to a `folded` row, or to no row, means the session stopped early and the block is the evidence.<br><span class="loc">skills/reckon-build/SKILL.md:1149</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>177</td>
+        <td>The plan owns all guidance, so never append a parenthetical brief or pasted wall.<br><span class="loc">skills/reckon-build/SKILL.md:1164</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>178</td>
+        <td>&quot;tracked as f-tps-03&quot;), and always AFTER the plan/section name — the id is for plan audits, the name is for humans.<br><span class="loc">skills/reckon-build/SKILL.md:1166</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>179</td>
+        <td>Internal worker dispatches reference that plan and add only the runtime safety fields required by `references/sprint-orchestration.md`; they do not copy the plan into the handoff.<br><span class="loc">skills/reckon-build/SKILL.md:1180</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>180</td>
+        <td>(`references/worker-backends.md` is maintainer documentation of the translation internals; an orchestrator never needs it.)<br><span class="loc">skills/reckon-build/SKILL.md:1187</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>181</td>
+        <td>Use `scripts/worktree_fleet.py` for deterministic worktree creation, inspection, and cleanup.<br><span class="loc">skills/reckon-build/SKILL.md:1205</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+      <tr>
+        <td>182</td>
+        <td>Workers never mutate shared Reckon state; the orchestrator records followups, evidence, plan progress, sprint item outcomes, and sprint closure after integration.<br><span class="loc">skills/reckon-build/SKILL.md:1205</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule with no code refusal at this boundary</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+</main>
+</body>
+</html>
