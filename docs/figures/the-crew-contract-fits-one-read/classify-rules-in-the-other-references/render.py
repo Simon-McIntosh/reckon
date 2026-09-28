@@ -23,6 +23,25 @@ FIGURE_NAME = "sentences-binding-enforced.svg"
 
 HEAD_SHA = "7c25dee788bd668dfbfd36624f8ec590e9dba129"
 
+RUN_ID = "r-20260928T205719503443-classify-rules-in-the-other-references"
+RUN_DIR = f"/home/ITER/mcintos/.config/reckon/crew/runs/{RUN_ID}"
+
+
+def enforced_test_count() -> int:
+    ids = {r["t"] for r in ROWS if r["t"] not in ("", "-")}
+    return len(ids)
+
+
+def enforced_test_summary() -> str:
+    """The enforced-gate log's own verdict line, read rather than transcribed."""
+    log = Path(RUN_DIR) / "gate-enforced.log"
+    if not log.exists():
+        return "the gate log was not readable at render time"
+    lines = [ln.strip() for ln in log.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    verdict = next((ln for ln in reversed(lines) if " passed" in ln or " failed" in ln), "")
+    exit_line = next((ln for ln in reversed(lines) if ln.startswith("EXIT=")), "")
+    return f"{verdict} ({exit_line})" if verdict else "the gate log carried no verdict line"
+
 FILES = [
     "conditional-guidance.md",
     "effort-routing.md",
@@ -65,6 +84,61 @@ def rows_for(name: str) -> list[dict]:
 
 def enforced(row: dict) -> bool:
     return bool(row["t"]) and row["t"] != "-"
+
+
+def wider_gate_lines() -> list[str]:
+    log = Path(RUN_DIR) / "gate-classify-rules.log"
+    if not log.exists():
+        return []
+    return log.read_text(encoding="utf-8").splitlines()
+
+
+def wider_gate_summary() -> str:
+    """pytest's own summary line, never a comment appended around it."""
+    lines = [ln.strip() for ln in wider_gate_lines() if ln.strip() and not ln.lstrip().startswith("#")]
+    return next((ln for ln in reversed(lines) if " passed" in ln), "the gate log carried no verdict line")
+
+
+def wider_gate_failures() -> str:
+    """Recount the log's failure ids per test file, so the labels and the ids
+    cannot disagree: they are both read from the same lines."""
+    ids = [ln.split(None, 1)[1].strip() for ln in wider_gate_lines() if ln.startswith("FAILED ")]
+    counts: dict[str, int] = {}
+    for node_id in ids:
+        path = node_id.split("::")[0]
+        counts[path] = counts.get(path, 0) + 1
+    return ", ".join(f"{path} {n}" for path, n in sorted(counts.items())) + f"; {len(ids)} in total"
+
+
+DEMOTION_NOTES = (
+    "Not marked enforced: the row cited a test module rather than a test",
+    "Not marked enforced: no refusal or check in the tree could be named",
+    "Not marked enforced: the cited test names neither the enforced symbol nor a refusal",
+    "Not marked enforced: enforcement is real but no symbol was identified",
+)
+
+
+def enforced_survey() -> str:
+    """Count the rows by why they are not enforced, derived from the rows."""
+    counts = {note: 0 for note in DEMOTION_NOTES}
+    never = 0
+    for row in ROWS:
+        if enforced(row):
+            continue
+        note = next((n for n in DEMOTION_NOTES if n in row["y"]), None)
+        if note is None:
+            never += 1
+        else:
+            counts[note] += 1
+    shape = {
+        DEMOTION_NOTES[0]: "whose citation named a module rather than a test",
+        DEMOTION_NOTES[1]: "for which no refusal or check in the tree could be named",
+        DEMOTION_NOTES[2]: "whose cited test names neither the enforced symbol nor a refusal",
+        DEMOTION_NOTES[3]: "where the enforcement is real but no symbol was identified for it",
+    }
+    parts = [f"{never} that never cited a test"]
+    parts += [f"{n} {shape[note]}" for note, n in counts.items() if n]
+    return ", ".join(parts)
 
 
 def build_figure() -> str:
@@ -170,10 +244,18 @@ def build_fragment(figure_rel: str) -> str:
         "figure directory: it strips fenced code blocks and headings, normalises table pipes and list "
         "markers, then splits on sentence-final punctuation. Row lines are the line number of the first "
         "line of the sentence.</p>",
-        "    <p>A row is marked <strong>enforced</strong> only where a test drives the guarded action far "
-        "enough to make the refusal or check fire; the test is named in the row and the focused gate that "
-        "ran it is cited under <em>Evidence</em>. A rule whose guard no test exercises is not enforced, "
-        "however clearly the code implements it.</p>",
+        "    <p>A row is marked <strong>enforced</strong> only where all three hold: the enforcing code is "
+        "named as <code>file:symbol</code> and that symbol exists in that file at the read revision; a "
+        "single test is named; and that test's body makes the refusal or check fire, naming the enforced "
+        "symbol or a refusal. Every cited file, symbol and test was resolved against the tree, never "
+        "recalled and never produced by string substitution, and every cited test was run in the "
+        "foreground at that revision. Where any of the three is missing the row is <em>keep</em> and its "
+        "reason says which half failed.</p>",
+        "",
+        f"    <p>That bar is deliberately strict, and {sum(1 for r in ROWS if enforced(r))} of the "
+        f"{len(ROWS)} rows clear it. The rest divide as {enforced_survey()}. A rule can be enforced in "
+        "code and still land here: the row records the mechanism, and the reason records that no test "
+        "shows the guard firing.</p>",
         "",
         '    <figure>',
         f'      <img src="{esc(figure_rel)}" alt="Bar chart per reference file: sentences, binding rows, and binding rows already enforced by code with a firing test">',
@@ -238,20 +320,29 @@ def build_fragment(figure_rel: str) -> str:
         '    <h2 id="evidence">Evidence</h2>',
         "    <p>Nothing in the nine reference files or in the code was edited by this node. The rows are "
         "classification only.</p>",
-        "    <p>The focused gate that ran the cited tests is at the run directory "
-        "<code>gate-classify-rules.log</code>: it collected 576 tests, 556 passed and 20 failed in "
-        "1016.11s. All 20 failures sit in <code>test_crew.py</code>, <code>test_backends.py</code> and "
-        "<code>test_recovery_state_typing.py</code> and are unrelated to the two documentation paths this "
-        "node wrote; they are recorded with their ids in the manifest's "
-        "<code>failure_attribution</code> and <code>follow_ons</code> fields rather than repaired here. "
-        "The log's own <code># command:</code> header line carries an unexpanded placeholder, and the "
-        "collected set it names is reconstructed beside the log in <code>gate-focused-set.txt</code>.</p>",
-        "    <p>No rule is marked enforced on the strength of the code alone. Every cited test file and "
-        "test function was checked to exist; rows whose citation did not resolve were demoted to "
-        "not-enforced. <code>tests/test_skill_contracts.py</code> and "
-        "<code>tests/test_backend_reference_contract.py</code> assert a document's wording rather than a "
-        "run-time refusal, and rows citing them are recorded as enforcing a document claim, not a guard "
-        "that fires.</p>",
+        f"    <p>This fragment is the deliverable of crew run "
+        f"<code>{esc(RUN_ID)}</code>, node <code>classify-rules-in-the-other-references</code>.</p>",
+        "",
+        "    <p>Two foreground logs, both under this run's directory "
+        f"<code>{esc(RUN_DIR)}</code>:</p>",
+        "    <ul>",
+        f"      <li><code>{esc(RUN_DIR)}/gate-enforced.log</code> — the driving tests of every enforced "
+        f"row, run in the foreground. {enforced_test_count()} test ids from "
+        "<code>gate-enforced-set.txt</code>; the log's header names the run id, the revision, the tree, "
+        "the resolved <code>module.__file__</code> and the full command line, and its own verdict line "
+        f"reads <code>{esc(enforced_test_summary())}</code>. A test that failed here would not have been "
+        "allowed to carry an enforced row.</li>",
+        f"      <li><code>{esc(RUN_DIR)}/gate-classify-rules.log</code> — the wider gate. Its own summary "
+        f"line reads <code>{esc(wider_gate_summary())}</code>, and its failure ids recount per file as "
+        f"{esc(wider_gate_failures())} — matching the ids listed in the manifest's "
+        "<code>failure_attribution</code>. All of them are outside this node's write scope, which is "
+        "documentation only, and the node ran at main HEAD "
+        f"<code>{esc(HEAD_SHA)}</code> with no source file modified. This log's own "
+        "<code># command:</code> header carries an unexpanded placeholder; the files it collected are "
+        "beside it in <code>gate-focused-set.txt</code>.</li>",
+        "    </ul>",
+        "",
+        f"    <p>The run record for this revision is at {esc(RUN_DIR)}/manifest.md.</p>",
         "",
         "  </main>",
         "</body>",
