@@ -1832,9 +1832,16 @@ def _follow_selects(
     how it recovered is worse than none, because it hides the all-clear the
     very same reader is waiting for, and a filter matching nothing is
     indistinguishable from a follower that never started.
+
+    A line an older producer wrote names neither a session nor a run, so it is
+    attributable to no fleet in particular. Only a fleet-wide reader — one with
+    no session and no named runs — can claim it. A follower that has scoped
+    itself must not: handing a scoped follower an unattributable row is how a
+    session received another session's history as though it were its own, which
+    is the leak the ``--session`` and ``--run`` filters exist to close.
     """
     if event.get("legacy"):
-        return True
+        return session is None and not run_ids
     owner = str(event.get("session") or "")
     if session is not None and owner and owner != session and owner not in observed:
         return False
@@ -2872,20 +2879,42 @@ def _follow_row_stamp(event: Mapping[str, Any]) -> float:
     return time.time()
 
 
+def _follow_replay_visible() -> bool:
+    """Whether this follower's reader is watching a live pane, not a pipe.
+
+    A re-arm restores the pane a reader has been watching, so the rows land
+    above whatever the terminal still shows. A pipe has no scrollback: the
+    host's line-batching Monitor is one, and every line it carries is news to
+    the transcript it feeds. Handing that reader the history makes rows it has
+    already acted on arrive again as transitions, which is the replay this
+    removes. Only a terminal is handed the history burst.
+    """
+    try:
+        return bool(sys.stdout.isatty())
+    except (AttributeError, ValueError):
+        return False
+
+
+_HISTORY_FRAME = "── history · {count} rows ──"
+
+
 def _follow_history_burst(rows, *, dim=_dim_history_line) -> str:
     """Compose a re-arm's history replay as one string, to be written once.
 
     One string rather than one write per row: a consumer that batches the stream
     into notifications then sees the whole replay as a single event.
 
-    The rows carry their own timestamps, which is all the continuity a reader
-    needs, so the replay is framed by nothing: the ``history`` header and the
-    ``re-armed`` separator that once framed it each cost a line of furniture on
-    every re-arm and said only what the rows' own clocks already say.
+    The rows carry their own timestamps, but a clock alone does not say a row
+    is *old*: a reader skimming the pane cannot tell a restored row from a
+    fresh one by its time. So the replay opens with one dim frame line that
+    names it as earlier history, and every row under it reads as something the
+    pane has already shown. The line is furniture only for the reader that
+    needs it: this composer is reached only when a terminal is watching.
     """
     if not rows:
         return ""
-    return "\n".join(dim(row["text"]) for row in rows)
+    frame = dim(_HISTORY_FRAME.format(count=len(rows)))
+    return "\n".join([frame, *(dim(row["text"]) for row in rows)])
 
 
 # The themes the ticker paints. Named here rather than imported because
@@ -3197,12 +3226,19 @@ def crew_follow(
                     )
                 continue
             if event.get("event") == FOLLOWER_RESUME_EVENT:
-                # A re-arm, before any fresh row: replay the pane exactly as the
-                # reader last saw it, in one write so a Monitor shows the whole
-                # view as a single event, then let the live rows follow.
+                # A re-arm, before any fresh row: restore the pane exactly as
+                # the reader last saw it, in one write so the whole view lands
+                # as a single event, then let the live rows follow.
+                #
+                # Only a terminal is handed the history. A pipe reader — the
+                # host's line-batching Monitor is one — has no scrollback to
+                # fill and would read the restored rows as fresh transitions,
+                # which is precisely the replay this removes. When there is a
+                # terminal, the burst opens under one dim frame line that names
+                # it as earlier history, so a restored row is never acted on.
                 if json_output:
                     _emit({"ok": True, **event}, pretty)
-                elif session is not None:
+                elif session is not None and _follow_replay_visible():
                     restored = history_module.cap_history(
                         history_module.read_history(project, session),
                         now=time.time(),
