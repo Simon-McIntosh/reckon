@@ -13,7 +13,7 @@
   <meta name="plan-recorded-at" content="2026-09-28">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux compute node 98dci4-clu-2018 (SLURM job 1277272); a detached worktree with the main checkout's environment reached through PYTHONPATH and pytest -p no:cacheprovider; base and negative-control arms run in scratch archive trees under TMPDIR; the negative-control mutation applied to promotion.py and restored, verified byte-identical against the committed head; suite run to a log file, EXIT captured">
-  <meta name="plan-commits" content="c710b880">
+  <meta name="plan-commits" content="c710b880,abfef36e">
   <meta name="plan-artifacts" content="reckon/cli.py,reckon/crew/dispatch.py,reckon/crew/promotion.py,tests/test_dispatch_declares_the_run_it_repairs.py,docs/figures/a-refusal-is-about-the-work/dispatch-declares-the-run-it-repairs/declaration-decision.svg">
   <title>A dispatch declares the promoted run it repairs — node evidence | reckon</title>
   <meta name="plan-tags" content="crew,dispatch,promotion,refusals">
@@ -77,6 +77,13 @@
     <code>corrective-run:repairs:RUN_ID</code>. <code>reckon/cli.py</code> adds
     the <code>--repairs</code> option and forwards it to both
     <code>plan_dispatch</code> and <code>dispatch</code>.</p>
+    <p>The admission check reads this project's ledger, and a ledger whose
+    history cannot be read is a fourth refusal of its own: the target may well
+    be promoted in it, so the dispatch is refused with the ledger path and the
+    read's error rather than presented as an unknown run. <code>CorruptEnvelopeError</code>
+    &mdash; the form a merge-conflict marker takes &mdash; is caught alongside
+    <code>LedgerError</code>, because both are a history the check could not
+    establish.</p>
 
     <h3>Evidence</h3>
     <ul>
@@ -98,6 +105,14 @@
       refuses with <em>"is not yet promoted"</em>; a live pointer owned by another
       project refuses with <em>"belongs to project"</em> and names that project.
       None creates a run.</li>
+      <li><strong>An unreadable ledger refuses with its own reason.</strong>
+      <code>test_an_unreadable_ledger_refuses_with_the_ledger_reason</code>
+      writes a conflict marker over the project's ledger and asserts the refusal
+      names the ledger path and the read error and does <em>not</em> carry the
+      unknown-run text. Against the delivered head
+      (<code>c34d88cc</code>) the same case fails, because the read failure was
+      reduced to an absent ledger and the target was refused as an unknown run;
+      the log is named below.</li>
       <li><strong>A dispatch with no declaration is unchanged.</strong>
       <code>test_a_dispatch_with_no_repairs_is_still_refused_when_the_impl_did_not_move</code>
       promotes a run whose plan impl did not move and is refused, naming
@@ -114,8 +129,9 @@
     <table>
       <thead><tr><th>Measure</th><th>Result</th></tr></thead>
       <tbody>
-        <tr><td>Head arm &mdash; the node's file and the two sibling files at <code>c710b880</code></td><td>34 passed, exit&nbsp;0</td></tr>
+        <tr><td>Head arm &mdash; the node's file and the two sibling files at <code>abfef36e</code></td><td>35 passed, exit&nbsp;0</td></tr>
         <tr><td>Base arm &mdash; the same three files over the pre-change tree at <code>9e727bd0</code>, run in a scratch archive tree</td><td>4 failed, 30 passed, exit&nbsp;1 &mdash; all four new cases fail on <code>TypeError: dispatch() got an unexpected keyword argument 'repairs'</code>, the two sibling files pass</td></tr>
+        <tr><td>The unreadable-ledger case at the delivered head <code>c34d88cc</code>, in a scratch copy with the tests directory carried alongside</td><td>1 failed, 5 passed, exit&nbsp;1 &mdash; the new case fails on <code>reckon._store.CorruptEnvelopeError</code> escaping where the ledger reason is required</td></tr>
         <tr><td>Declared negative control</td><td><code>test_a_repairs_dispatch_records_the_field_and_promotes_exempt</code> fails, exit&nbsp;1 &mdash; the exempt case refused with <em>"impl did not move: 0.6 at dispatch and 0.6 at completion"</em>, the other four cases pass</td></tr>
         <tr><td>Ruff on the changed paths, by delta against the base</td><td>check baseline 25, after 22 &mdash; none added; <code>format --check</code> baseline 4, after 4 &mdash; clean</td></tr>
         <tr><td><code>reckon/crew/promotion.py</code> after the negative-control revert</td><td>byte-identical to <code>c710b880</code> (<code>git diff</code> empty on the tracked tree)</td></tr>
@@ -123,8 +139,8 @@
     </table>
     <p>The base arm carries the new test file into a scratch archive of the
     base revision, so the same four cases are measured on both arms and the only
-    difference is the change under test. The head arm runs at the committed head.
-    Both log headers print the revision and the imported
+    difference is the change under test. The head arm is rerun at each committed
+    head. Every log header prints the revision and the imported
     <code>reckon.__file__</code>, and the negative-control log prints
     <code>c710b880-mutated-no-repairs-branch</code> with its scratch-tree module
     path, so a reader can tell which tree each arm resolved through.</p>
@@ -135,8 +151,9 @@
     &mdash; while the four admission cases stay green, which shows the exemption
     is the declaration and not the fixture. The mutation is reverted and
     <code>promotion.py</code> is verified byte-identical to the committed head
-    before the final commit. The three arm logs are
-    <code>logs/head-arm.txt</code>, <code>logs/base-arm.txt</code> and
+    before the final commit. The arm logs are
+    <code>logs/head-arm.txt</code>, <code>logs/base-arm.txt</code>,
+    <code>logs/new-case-at-delivered-head.txt</code> and
     <code>logs/negative-control.txt</code> in the run's own directory.</p>
   </section>
 </main>
