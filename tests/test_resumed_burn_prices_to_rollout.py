@@ -259,3 +259,30 @@ def test_a_stream_without_a_thread_identity_is_its_own_thread(tmp_path: Path) ->
 
     assert result.measured_stream_count == 2
     assert result.total_charged_tokens == sum(_charged(reading) for reading in readings)
+
+
+def test_an_unmeasured_prior_attempt_leaves_the_interval_unknown() -> None:
+    """A prior reading that cannot be measured is not read as a zero baseline.
+
+    The per-attempt delta subtracts the previous attempt's cumulative, so an
+    unmeasured prior has no value to subtract. Treating it as zero would charge
+    the whole cumulative to this attempt, which is the same overcount the thread
+    fold removes; the interval is unknown, and the cumulative is still reported.
+    """
+    from reckon import ledger
+
+    previous = {"budget": {"tokens": {"input_tokens_cumulative": "unmeasured"}}}
+    measured = ledger.per_run_budget({"tokens": {"input_tokens": 5_000}}, previous)
+
+    assert measured["tokens"]["input_tokens"] == "unknown"
+    assert measured["tokens"]["input_tokens_cumulative"] == 5_000
+
+
+def test_an_absent_prior_attempt_is_still_a_zero_baseline() -> None:
+    """A first attempt has no predecessor, so its whole cumulative is its own."""
+    from reckon import ledger
+
+    measured = ledger.per_run_budget({"tokens": {"input_tokens": 5_000}})
+
+    assert measured["tokens"]["input_tokens"] == 5_000
+    assert measured["tokens"]["input_tokens_cumulative"] == 5_000

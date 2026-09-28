@@ -1820,8 +1820,17 @@ def per_run_budget(
             measured_tokens[name] = value
             continue
         cumulative_name = f"{name}_cumulative"
+        prior_has = cumulative_name in prior_tokens or name in prior_tokens
         prior_value = prior_tokens.get(cumulative_name, prior_tokens.get(name, 0))
         if not isinstance(prior_value, (int, float)) or isinstance(prior_value, bool):
+            if prior_has:
+                # The prior attempt's reading exists but cannot be measured, so
+                # this attempt's share of the thread's cumulative is unknown.
+                # Subtracting a zero would present the whole cumulative as this
+                # attempt's own work, which is the overcount the fold removes.
+                measured_tokens[name] = "unknown"
+                measured_tokens[cumulative_name] = value
+                continue
             prior_value = 0
         measured_tokens[name] = max(0, value - prior_value)
         measured_tokens[cumulative_name] = value
@@ -1830,10 +1839,19 @@ def per_run_budget(
 
     cost = result.get("cost_usd")
     if isinstance(cost, (int, float)) and not isinstance(cost, bool):
+        prior_cost_has = (
+            "cost_usd_cumulative" in prior_budget or "cost_usd" in prior_budget
+        )
         prior_cost = prior_budget.get(
             "cost_usd_cumulative", prior_budget.get("cost_usd", 0)
         )
         if not isinstance(prior_cost, (int, float)) or isinstance(prior_cost, bool):
+            if prior_cost_has:
+                # Same as the token counters: an unreadable prior reading makes
+                # this attempt's share unknown rather than equal to the total.
+                result["cost_usd"] = "unknown"
+                result["cost_usd_cumulative"] = cost
+                return result
             prior_cost = 0
         result["cost_usd"] = max(0.0, cost - prior_cost)
         result["cost_usd_cumulative"] = cost
