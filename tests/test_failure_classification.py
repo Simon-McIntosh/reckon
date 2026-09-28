@@ -79,7 +79,11 @@ def test_worker_pass_rate_uses_only_work_rejected_failures(tmp_path: Path) -> No
     stored = ledger.runs("proj", root=root)
     report = ledger.summary("proj", root=root)["worker_gate"]
 
-    assert stored[8]["failure_classification"] == "work-rejected"
+    # Each run is stored in its own file and read back in completion order,
+    # which is not the order the records were appended in, so the row is
+    # found by its run id rather than by its position.
+    by_id = {str(row.get("run_id") or ""): row for row in stored}
+    assert by_id["rejected-0"]["failure_classification"] == "work-rejected"
     assert report["passed"] == 8
     assert report["work_rejected"] == 2
     assert report["pass_rate"] == 0.8

@@ -141,11 +141,13 @@ def test_failure_after_append_names_the_row_state(repository, monkeypatch, failu
     """The receipt names the state the append's row is in after the failure.
 
     The rollback decides that state, so the expectation is derived from the
-    recorded git trace rather than listed per parameter: whichever way the
-    restore ran decides whether the appended row left the ledger with it, and
-    the wording that follows must be the one that matches. A parameter whose
-    restore was refused keeps a row a reader can still open; one whose restore
-    succeeded left a row the operator has to re-promote to recover.
+    recorded git trace rather than listed per parameter: a restore that ran
+    reverts the row, and a restore git refused reverts it too unless HEAD
+    already carried the file it was written to — the row lives in its own run
+    file, so a refused restore drops a file HEAD never held. The wording that
+    follows must be the one that matches. A parameter whose row survived keeps
+    a row a reader can still open; one whose row was reverted left a row the
+    operator has to re-promote to recover.
     """
     run_id = _pointer(repository)
     real_append = ledger.append_run
@@ -203,12 +205,29 @@ def test_failure_after_append_names_the_row_state(repository, monkeypatch, failu
     assert isinstance(caught.value, promotion.CrewError)
     assert caught.value.__cause__ is not None
 
-    # The rollback's own recorded outcome decides the case. A parameter that
-    # never reached a rollback (its commit landed before the injected failure)
-    # records no restore call and keeps the row the commit wrote.
+    # The rollback's own recorded outcome decides the case. The row lives in
+    # its own run file, so a restore git refused still reverts the row when
+    # HEAD never carried that file: the rollback drops it from the index and
+    # the working tree instead. A parameter that never reached a rollback (its
+    # commit landed before the injected failure) records no restore call and
+    # keeps the row the commit wrote.
     restore_codes = {code for verb, code in calls if verb == "restore"}
     assert len(restore_codes) <= 1, f"mixed restore outcomes: {calls}"
-    rolled_back = restore_codes == {0}
+    if restore_codes == {0}:
+        rolled_back = True
+    elif restore_codes:
+        relative = ledger.run_path("sample", run_id, repository).relative_to(
+            repository
+        )
+        carried = subprocess.run(
+            ["git", "-C", str(repository), "cat-file", "-e", f"HEAD:{relative}"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        rolled_back = carried.returncode != 0
+    else:
+        rolled_back = False
 
     message = str(caught.value)
     rows = [
