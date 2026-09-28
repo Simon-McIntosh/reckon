@@ -514,6 +514,14 @@ _REPO_PATH_ANCHOR = "tests"
 # left whole rather than reduced onto the anchor.
 _CWD_COMPONENTS = ("", ".", "..")
 
+# The directory name the repository occupies. An arm invoked from a directory
+# above the repository prints its summary lines with this component first
+# (``reckon/tests/x.py``) where the arm run at the repository root printed
+# ``tests/x.py``, and the two name one test. The name is read from this
+# module's own location rather than written down, because a checkout sits under
+# whatever directory it was created in — a worktree under the node's.
+_REPO_DIRECTORY_NAME = Path(__file__).resolve().parents[2].name
+
 
 def canonical_node_id(node_id: str) -> str:
     """Return a pytest node id in the repository-relative form the count compares.
@@ -526,22 +534,28 @@ def canonical_node_id(node_id: str) -> str:
     verbatim, one test reads as two, and a run that added nothing reads as
     having added failures — which caps its total below the promotion floor.
 
-    Only a spelling written from a working directory is reduced, because only
-    there is the part above the anchor the working directory's contribution
-    rather than part of the path. Such a path — absolute, or opening with ``.``
-    or ``..`` — keeps the sub-path from its last ``tests`` component onward. A
-    plain relative spelling is kept whole: reducing it would merge a package's
-    own ``pkg/tests/x.py`` into ``tests/x.py``, and an addition under one would
-    read as one the other already had. Separators are normalised to ``/`` in
-    every case. The ``::`` segments and parametrisation brackets are returned
-    untouched, because they are what tells apart two tests sharing a file. An
-    id carrying no ``tests`` component cannot be resolved against the
-    repository and is kept verbatim: it is still compared, under the spelling
-    its own log used, rather than dropped from the difference.
+    Two prefixes are the working directory's contribution rather than part of
+    the path, and both are removed. A path opening with an absolute or dot
+    component keeps the sub-path from its last ``tests`` component onward,
+    because everything above the anchor there came from where the command ran.
+    A path opening with the repository's own directory name has that one
+    component removed, which is what an arm invoked from the repository's
+    parent printed. Any other plain relative spelling is kept whole: reducing
+    it would merge a package's own ``pkg/tests/x.py`` into ``tests/x.py``, and
+    an addition under one would read as one the other already had. Separators
+    are normalised to ``/`` in every case. The ``::`` segments and
+    parametrisation brackets are returned untouched, because they are what
+    tells apart two tests sharing a file. An id carrying no ``tests`` component
+    cannot be resolved against the repository and is kept verbatim: it is still
+    compared, under the spelling its own log used, rather than dropped from the
+    difference.
     """
     path, separator, segments = node_id.partition("::")
     path = path.replace("\\", "/")
     components = path.split("/")
+    if len(components) > 1 and components[0] == _REPO_DIRECTORY_NAME:
+        components = components[1:]
+        path = "/".join(components)
     if components[0] in _CWD_COMPONENTS:
         for index in range(len(components) - 1, -1, -1):
             if components[index] == _REPO_PATH_ANCHOR:
@@ -676,6 +690,12 @@ def _manifest_prose(manifest_text: str) -> str:
 # segments and parametrisation brackets inside an id survive untouched.
 _PROSE_EDGE_CHARS = "`'\"()<>{};,:.!?*|"
 
+# The separators a retirement sentence writes between ids. A manifest retiring
+# several ids groups them as the manifest's own list fields do: comma
+# separated, with or without a space. Splitting on whitespace alone leaves such
+# a group as one token that names no id and retires neither of them.
+_PROSE_TOKEN_SPLIT_RE = re.compile(r"[,\s]+")
+
 
 def _prose_id_token(raw: str) -> str | None:
     """Return the node id a prose token carries, or ``None`` when it carries none.
@@ -703,12 +723,14 @@ def _retires_id(text: str, test_id: str) -> bool:
     knows it. A manifest that spells the id with the working-directory prefix the
     gate log printed must still retire it, and both sides therefore reduce
     through :func:`canonical_node_id`. Each token is compared as a whole, so a
-    shorter id is not retired by a longer one that contains it.
+    shorter id is not retired by a longer one that contains it. The sentence is
+    split on the separators a manifest's own list fields use, so a single
+    sentence retiring several ids retires each of them.
     """
     if not text or not test_id:
         return False
     target = canonical_node_id(test_id)
-    for raw in text.split():
+    for raw in _PROSE_TOKEN_SPLIT_RE.split(text):
         token = _prose_id_token(raw)
         if token is not None and canonical_node_id(token) == target:
             return True

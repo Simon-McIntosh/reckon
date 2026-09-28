@@ -185,6 +185,33 @@ def test_a_working_directory_prefix_reduces_but_a_nested_one_does_not() -> None:
     assert review_module.canonical_node_id(NESTED) == NESTED
 
 
+def test_a_path_opening_with_the_repository_directory_name_reduces() -> None:
+    """An arm run from the repository's parent names the repository directory first.
+
+    The component records where the command ran, not part of the path: the base
+    log's ``tests/test_gate.py::test_alpha`` is the same test, and comparing the
+    two spellings verbatim reports it added. A first component that is part of
+    the repository-relative path — a package's own ``pkg/tests/…`` — is not
+    this case and stays distinct, which the assertion on NESTED below pins. The
+    name is read from the module rather than written down because a worktree
+    sits under its node's name; in the main checkout it is ``reckon``, so the
+    spelling there is ``reckon/tests/test_gate.py::test_alpha``.
+    """
+    spelled = f"{review_module._REPO_DIRECTORY_NAME}/{RELATIVE}"
+    nested_spelled = f"{review_module._REPO_DIRECTORY_NAME}/{NESTED}"
+
+    assert review_module.canonical_node_id(spelled) == RELATIVE
+    assert review_module.canonical_node_id(nested_spelled) == NESTED
+
+    count, added = _count([RELATIVE], [spelled])
+
+    assert count == 0, (
+        "both logs name the same test; the head arm's own directory prefix is "
+        "where it ran, not a different test, and counting it caps the total"
+    )
+    assert added == []
+
+
 def test_retirement_prose_spelling_a_shifted_prefix_retires_the_canonical_id() -> None:
     """A manifest names an added id as the manifest knows it, and still retires it.
 
@@ -211,6 +238,38 @@ def test_retirement_prose_spelling_a_shifted_prefix_retires_the_canonical_id() -
     assert annotated["total"] == TOTAL, (
         "the manifest retired the added id by name, so the total must not be "
         "capped below the added-failures cap"
+    )
+    assert "not capped" in annotated["added_failures_note"]
+
+
+def test_a_comma_joined_retirement_sentence_retires_the_ids_it_names() -> None:
+    """A retirement sentence grouping ids as a manifest list field does retires each.
+
+    Manifests write id lists comma separated and retire them the same way, so a
+    sentence naming two ids as ``a,b`` retires both. Splitting the sentence on
+    whitespace alone leaves the pair as one token that names no id at all, and
+    both then count as unretired additions, capping the total below the
+    promotion floor.
+    """
+    first = "tests/test_added.py::test_added"
+    second = "tests/test_other.py::test_other"
+
+    annotated = review_module.annotate_added_failures(
+        {"total": TOTAL},
+        base_text=_log(),
+        head_text=_log(first, second),
+        retirement_text=(
+            f"the suite is green apart from {first},{second}, retired by name"
+        ),
+    )
+
+    assert annotated["added_failure_count"] == 2
+    assert annotated["added_failure_ids"] == [first, second], (
+        "each id is counted, in the canonical form the logs reduce to"
+    )
+    assert annotated["total"] == TOTAL, (
+        "the sentence retired both ids by name, so neither is an unretired "
+        "addition and the total must not be capped"
     )
     assert "not capped" in annotated["added_failures_note"]
 
