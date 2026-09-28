@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="A worker killed mid-turn is a row on the snapshot that sees it die, not fifteen minutes later.">
   <meta name="plan-evidence-for" content="a-stalled-row-says-whether-the-worker-lives">
   <meta name="plan-verifies" content="a-stalled-row-says-whether-the-worker-lives#s2">
-  <meta name="plan-commits" content="8b759fa0,c5b2e184,8be6a8af,2fd5f559,8236dcc3,b09db857,e1e31482">
-  <meta name="plan-artifacts" content="tests/test_watch_reports_death_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png,tests/test_death_row_reads_any_final_record.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/tail_window_reads.png,tests/test_stalled_row_names_liveness.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/stalled_row_process_state.png,tests/test_resume_offer_needs_a_dead_process.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/resume_offer_waits.png">
+  <meta name="plan-commits" content="8b759fa0,c5b2e184,8be6a8af,2fd5f559,8236dcc3,b09db857,e1e31482,aaefa377">
+  <meta name="plan-artifacts" content="tests/test_watch_reports_death_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png,tests/test_death_row_reads_any_final_record.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/tail_window_reads.png,tests/test_stalled_row_names_liveness.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/stalled_row_process_state.png,tests/test_resume_offer_needs_a_dead_process.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/resume_offer_waits.png,tests/test_unreadable_names_its_word.py">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -238,6 +238,46 @@
       transition the events log persists and <code>format_watch_transition</code> at 208 columns, so
       each case fails if it stops reaching the arm under test rather than passing vacuously, and the
       run ids are neutral for the same reason the liveness file's are.</p>
+    </section>
+
+    <section id="s5">
+      <h2>&sect;5 &mdash; An unreadable manifest names the word it could not read</h2>
+      <p><strong>Landed</strong> (<code>aaefa377</code>). The emission existed and was unpinned. The
+      arm at <code>reckon/crew/recovery.py:4282</code> fires when the manifest is present, the process
+      is gone, and the reader has refused the file &mdash; and the refusal it carries is not a
+      paraphrase: the parser's own error names the rejected word (<code>status "ready-for-review" is
+      not a recognised manifest status</code>), the classifier persists that text into the row's
+      <code>detail</code>, and the ticker composes the pane's reason from <code>detail</code>. A
+      manifest whose word is inside <code>NON_TERMINAL_MANIFEST_STATUSES</code> cannot reach that arm
+      at all, which is what keeps every live worker's own <code>in-progress</code> out of it, and
+      while the process lives the refusal is carried on the row as an absence of a verdict
+      (<code>unwritten</code>, <code>resume</code>) with the refused word on
+      <code>manifest_error</code>, so nothing is emitted.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>status: ready-for-review</code> beside a gone process (the manifest is written between the two observations)</td><td>one transition, <code>abandoned</code> &rarr; <code>unreadable</code>; classification <code>unreadable</code>; recovery <code>repair</code>; reason contains <code>ready-for-review</code></td></tr>
+          <tr><td><code>status: in-progress</code> beside a live process</td><td>no transition &mdash; the stream holds the baseline alone; the row reads <code>running</code> with the word taken (<code>manifest_status</code> = <code>in-progress</code>)</td></tr>
+          <tr><td><code>status: ready-for-review</code> beside a live process</td><td>no transition; the row reads <code>running</code>, recovery classification <code>unwritten</code>, recovery <code>resume</code>, the refused word carried on <code>manifest_error</code></td></tr>
+          <tr><td>Unreadable arm deleted from a copy of the head (the declared mutation, line range 4282&ndash;4305)</td><td>1 failed, 2 passed &mdash; the first case fails with the stream holding <code>[('baseline', None, 'abandoned')]</code>, so no transition was emitted for the word the mutated reader can no longer read</td></tr>
+          <tr><td>Gate at the delivered head</td><td>3 passed, exit 0; the log header probes all three module paths to the worktree, so the tree under test is the tree that shipped</td></tr>
+          <tr><td>Real config home during the cases</td><td>fingerprinted before the environment moves and asserted unchanged after each case</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Negative control, executed and logged.</strong> The declared mutation deletes the
+      unreadable arm at <code>reckon/crew/recovery.py:4282</code>, and the first case must then fail
+      with no transition emitted. Applied to a throwaway copy of the head with the delivered case file
+      present and nothing else changed, the copy answers the import first (probed before the run), the
+      first case fails at its own single-transition assertion &mdash; the message printing the
+      stream's whole contents as <code>[('baseline', None, 'abandoned')]</code> &mdash; and the two
+      live cases still pass. The log's first line is the declared mutation verbatim, read from the
+      case module's own constant so the declaration and the log cannot drift.</p>
+      <p>The live cases are the two that must not be lost, and each is asserted on the row it read
+      rather than on an absence alone: the file was present, its word was taken or refused by name,
+      and the process table answered alive. The first case's baseline is asserted before the manifest
+      is written &mdash; the run reads <code>abandoned</code>, liveness proven, no manifest on disk
+      &mdash; which is what makes the arrival of the file, and nothing else, the change the
+      transition reports.</p>
     </section>
 
     <section id="verification">
