@@ -84,6 +84,27 @@
     "plan": "a-stalled-row-says-whether-the-worker-lives",
     "verdict": "moved"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "503fd144fd12160afbb730a7c3d2888853fdeba0",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "integrated_revision": "503fd144fd12160afbb730a7c3d2888853fdeba0",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 503fd144fd12: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "env -C /home/ITER/mcintos/Code/reckon PYTHONPATH=/home/ITER/mcintos/Code/reckon /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ended_turn_is_a_row_at_once.py tests/test_unreadable_names_its_word.py tests/test_ticker_reads_cleanly.py tests/test_a_live_run_never_reads_dead.py tests/test_watch_reports_death_at_once.py",
+    "gate_command_source": "option",
+    "integrated_revision": "503fd144fd12160afbb730a7c3d2888853fdeba0",
+    "integrated_verdict": "failed",
+    "ran": true,
+    "reason": null,
+    "timed_out": false
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
