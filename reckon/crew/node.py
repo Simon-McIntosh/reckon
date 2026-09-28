@@ -184,12 +184,16 @@ def _deliverable_conjunction(goal: str) -> str | None:
     action verb. Otherwise it joins parts of the one deliverable, which is
     where a semicolon between two objects and one verb over several objects
     both belong.
+
+    The leading token is read whole, so a hyphenated compound whose first word
+    happens to be an action verb ("verify-gate", "run-book") is the noun the
+    author wrote rather than that verb opening a clause.
     """
     lowered = f" {goal.lower()} "
     for candidate in _DELIVERABLE_CONJUNCTIONS:
         for remainder in lowered.split(candidate)[1:]:
-            first_word = re.match(r"\s*([a-z]+)", remainder)
-            if first_word and first_word.group(1) in _DELIVERABLE_ACTIONS:
+            first_token = re.match(r"\s*([a-z][a-z0-9-]*)", remainder)
+            if first_token and first_token.group(1) in _DELIVERABLE_ACTIONS:
                 return candidate
     return None
 

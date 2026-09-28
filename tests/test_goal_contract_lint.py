@@ -2,10 +2,12 @@
 
 A goal joins two deliverables only when a separator opens a clause that carries
 its own action verb; a semicolon or "then" between the parts of one deliverable
-stays one node. A placeholder survives only as an angle-bracket token outside a
-quoted string or a code span, or as a whole goal that is nothing but a vague
-word. The rows below pin both halves: four accepted goals that must survive, and
-three refusals that name a real defect and must still fire.
+stays one node. That leading token is read whole, so a hyphenated compound
+("verify-gate") is the noun the author wrote rather than the verb it begins
+with. A placeholder survives only as an angle-bracket token outside a quoted
+string or a code span, or as a whole goal that is nothing but a truly vague
+word. The rows below pin both halves: accepted goals that must survive, and
+refusals that name a real defect and must still fire.
 """
 
 from __future__ import annotations
@@ -100,6 +102,10 @@ ACCEPTED_GOALS = (
             )
         },
     },
+    {
+        "what": "a hyphenated compound beginning a clause is not an action verb",
+        "goal": "Narrow promotion's impl-move, outcome and verify-gate refusals to the run they judge",
+    },
 )
 
 
@@ -124,6 +130,11 @@ REFUSED_ROWS = (
     {
         "what": "two deliverables joined by a conjunction",
         "goal": "write the census and update the plan",
+        "property": "single-goal",
+    },
+    {
+        "what": "a second clause opening on a bare action verb still splits",
+        "goal": "narrow the goal lint; verify the node validator",
         "property": "single-goal",
     },
 )
