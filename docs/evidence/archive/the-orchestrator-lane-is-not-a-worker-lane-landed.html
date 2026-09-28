@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-orchestrator-lane-is-not-a-worker-lane-landed">
+  <meta name="plan-title" content="The Orchestrator Lane Is Not A Worker Lane — landed evidence">
+  <meta name="plan-summary" content="The local lane's mid-turn death rate at the review reflex's effort is stated from the runs' own streams; the after-rate waits on the repair.">
+  <meta name="plan-evidence-for" content="the-orchestrator-lane-is-not-a-worker-lane">
+  <meta name="plan-verifies" content="the-orchestrator-lane-is-not-a-worker-lane#s4">
+  <meta name="plan-commits" content="41074252,50da2f08">
+  <meta name="plan-artifacts" content="docs/research/data/local-lane-deaths.json,tests/test_the_local_lane_death_rate_is_stated.py,docs/research/local-lane-death-rate.html,docs/figures/the-orchestrator-lane-is-not-a-worker-lane/deaths-per-day-by-role.png">
+  <meta name="plan-recorded-at" content="2026-09-28">
+  <meta name="plan-verdict" content="qualified">
+  <meta name="plan-environment" content="reckon project virtual environment, node-local scan of the crew run streams">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <title>The Orchestrator Lane Is Not A Worker Lane — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>§4 — the lane they were escaping is measured</h1>
+      <p class="lead">Three in ten review attempts on the locally served lane end with no
+      result record, read from the attempts' own streams rather than from any rollup.</p>
+    </header>
+
+    <section id="s4">
+      <h2>&sect;4 &mdash; The before-rate at the review reflex's effort</h2>
+      <p>Commit <code>41074252</code> lands the measurement and its gate; <code>50da2f08</code>
+      lands the research page and its figure. The classification is read from each attempt
+      stream's own terminal shape: the harness writes a top-level <code>result</code> record
+      when a turn ends, so a stream whose last record is anything else, for a run whose
+      process is gone, is an attempt that died mid-turn.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tr><td>Window</td><td>2026-09-02T13:32Z &rarr; 2026-09-28T06:12Z</td></tr>
+        <tr><td>Local-lane run directories</td><td>2474 of 6276 scanned</td></tr>
+        <tr><td>Attempts on the local lane</td><td>3340</td></tr>
+        <tr><td>Review-role attempts</td><td>1059</td></tr>
+        <tr><td>Deaths at the review reflex's effort</td><td>297 (28.05%)</td></tr>
+        <tr><td>Deaths, all roles</td><td>485</td></tr>
+        <tr><td>Implement at <code>high</code>, for comparison</td><td>153 of 1809 (8.5%)</td></tr>
+        <tr><td>Trailing seven days</td><td>225 of 708 review attempts (31.8%)</td></tr>
+      </table>
+      <p>The rate is not decaying on its own: the trailing seven days are higher than the
+      whole window, and the heaviest day in the corpus is 2026-09-25 with 72 review deaths.</p>
+    </section>
+
+    <section id="controls">
+      <h2>Both directions on one run</h2>
+      <p>A census of deaths is only as good as its reader's ability to see the other outcome.
+      The first classifier here read <strong>3335 of 3336</strong> attempts as dead, because
+      the harness writes the <code>result</code> record with <code>duration_api_ms</code>
+      first and the pattern match was anchored on the record's opening bytes. The committed
+      file therefore carries a run that died and a later attempt of the same run that
+      completed, and the gate requires both.</p>
+      <table>
+        <thead><tr><th>Control</th><th>Stream</th><th>Result record</th><th>Classification</th></tr></thead>
+        <tr>
+          <td><code>r-20260928T044354744785-review-of-reflex-keys-on-reviewed-run-and-head</code></td>
+          <td><code>stream.jsonl</code></td><td>absent</td>
+          <td>dead — SIGTERM, ended during <em>working</em></td>
+        </tr>
+        <tr>
+          <td>the same run</td><td><code>resume-1.jsonl</code></td><td>present</td>
+          <td>completed</td>
+        </tr>
+      </table>
+    </section>
+
+    <section id="negative-control">
+      <h2>Negative control</h2>
+      <p>The gate was shown to refuse the defect it exists to catch. Removing the positive
+      control's entry from the before block turns it red: <code>pytest</code> exits 1 with
+      two failures, both <code>KeyError: 'positive_control'</code>, from
+      <code>test_the_positive_control_is_present_and_classified_as_a_death</code> and the
+      completion-control assertion that reads the same block. The unchanged file passes 5 of
+      5. The red log is <code>negative-control.log</code> in this node's run directory.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <p><code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest
+      -p no:cacheprovider -q tests/test_the_local_lane_death_rate_is_stated.py</code> exits 0
+      with 5 passed. The test reads only the committed JSON, so it cannot pass against a
+      measurement that is not in the file.</p>
+      <p><strong>Verdict: qualified.</strong> The before block is delivered and gated. The
+      after block is not produced and is not claimed: the repair it would measure lives in
+      <em>a-review-dies-where-nobody-is-looking</em> §9, which is declared
+      <code>implementable</code> and whose driving followup is open, so no post-repair window
+      exists in the corpus. Until it does, the fence this evidence feeds warns and records
+      rather than refusing.</p>
+    </section>
+  </main>
+</body>
+</html>
