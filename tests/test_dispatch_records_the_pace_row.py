@@ -42,6 +42,7 @@ from reckon.crew import bar as bar_module
 from reckon.crew import pace as pace_module
 from reckon.crew import runs
 from reckon.crew.dispatch import WATCH_ARMING_ENV
+from reckon.crew.node import CrewError
 
 # This workstation's own crew home. No case may write under it: every case
 # redirects the home through RECKON_HOME and the fixture proves nothing leaked.
@@ -590,6 +591,33 @@ def test_a_sequence_of_rows_replays_the_week_without_a_stream(host):
     derived = [row["allowance"]["derived"] for row in rows]
     assert derived == sorted(derived, reverse=True), derived
     assert derived[0] > derived[-1], derived
+
+
+def test_the_reserve_refuses_a_non_bookend_against_the_rows_own_window(host):
+    """A withheld fraction refuses a non-bookend at every utilisation.
+
+    The reserve is a property of the role and the configured fraction rather
+    than of the window's state, so the ceiling a non-bookend dispatch may reach
+    is the window's ceiling less the fraction, from the start of the window.
+    The reading the refusal judges is the five-hour clock of the row the
+    dispatch composed before refusing — the same row the record would have
+    carried — so the decision a caller is refused against and the decision a
+    later replay reads are one reading rather than two that could disagree.
+    """
+    _plant_receipt(host, "r-seed-alpha", backend="alpha", five=85.0, week=45.0)
+
+    with pytest.raises(CrewError) as refused:
+        _dispatch(host, "reserve", _open_node(host.config_home, "reserve"))
+
+    reason = str(refused.value)
+    # 20% is the declared floor withheld when no flight key names one, so an
+    # investigate dispatch reaches 80% rather than the 100% window ceiling.
+    assert "keeps 20% for review and verify roles" in reason, reason
+    assert "reaches 80%" in reason, reason
+    # The figure judged is the row's own five-hour clock, not the week's: the
+    # same receipt puts the week at 45%, which is inside every ceiling here.
+    assert "utilisation 85%" in reason, reason
+    assert "45%" not in reason, reason
 
 
 def test_a_held_lane_is_recorded_with_the_evidence_that_held_it(host):
