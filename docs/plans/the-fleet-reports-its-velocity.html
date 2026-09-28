@@ -240,6 +240,9 @@
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260928T105911753846-work-in-progress-is-visible" data-who="reckon-build" data-when="2026-09-28T12:37:10.048Z">
     <div class="r-comment-body"><p>plan census in reckon/velocity.py: opened, closed and pending per project and ISO week plus the cohort reading; 58 opened and 7 closed at 23eb2545; 22 passed; review 90 carried forward; merged at c474a3c8</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-20260928T142300-run-store-queries-by-backend" data-who="reckon-build" data-modified="" data-modified-at="">
+    <div class="r-comment-body"><p>the run store carries the backend as a query column: "backend" is added to QUERY_KEYS in reckon/run_store.py, the single declaration that drives the runs table, so the column, its index, the insert extraction and the migration backfill all derive from that one name and no second writer is added in dispatch or promotion. A copy of the shared config-home store, opened through this change, went from 6211 to 26 NULL-backend rows of 6233 (6185 backfilled from payloads); the live store is opened by neither the tests nor the measurement. Head gate tests/test_run_store_backend_query.py + tests/test_run_store.py 30 passed at exit 0; base arm 2 failed 28 passed at exit 1; the declared control removing backend from QUERY_KEYS reddens the legacy-store backfill case, 2 failed at exit 1. Evidence: docs/evidence/archive/the-fleet-reports-its-velocity-landed.html §4. Section s4 awaits coordinator closure: the driving followup is not resolved and no terminal status is set by the worker.</p></div>
+</div>
 </section>
 </main>
 </body>

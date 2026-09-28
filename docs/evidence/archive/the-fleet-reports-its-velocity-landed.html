@@ -9,10 +9,10 @@
   <meta name="plan-title" content="The Fleet Reports Its Velocity &mdash; landed evidence">
   <meta name="plan-summary" content="One path classifier in the package returns the same six line classes as the velocity census it was ported from.">
   <meta name="plan-evidence-for" content="the-fleet-reports-its-velocity">
-  <meta name="plan-verifies" content="the-fleet-reports-its-velocity#s2,the-fleet-reports-its-velocity#s5">
-  <meta name="plan-commits" content="85af514b,4d79a470,fe33dbf6">
-  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_work_in_progress.py">
-  <meta name="plan-recorded-at" content="2026-09-27">
+  <meta name="plan-verifies" content="the-fleet-reports-its-velocity#s2,the-fleet-reports-its-velocity#s4,the-fleet-reports-its-velocity#s5">
+  <meta name="plan-commits" content="85af514b,4d79a470,fe33dbf6,e26df29e">
+  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_work_in_progress.py,reckon/run_store.py,tests/test_run_store_backend_query.py">
+  <meta name="plan-recorded-at" content="2026-09-28">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
   <meta name="plan-tags" content="crew,velocity,measurement">
@@ -165,6 +165,51 @@
       the pre-repair receipt rule is restored, which is recorded as the second declared negative
       control. Logs: <code>measurement3.log</code>, <code>tests4.log</code>,
       <code>negative_control4.log</code>, <code>negative_control_receipts2.log</code>.</p>
+    </section>
+  <section id="s4-the-run-store-carries-the-backend">
+      <h2>&sect;4 &mdash; The run store carries the backend as a query column</h2>
+      <p>Commit <code>e26df29e</code> adds <code>"backend"</code> to
+      <code>QUERY_KEYS</code> in <code>reckon/run_store.py</code>, the one declaration that drives
+      the <code>runs</code> table. The column, its index, the insert extraction and the migration
+      backfill all derive from that single name, so no second writer is added in dispatch or
+      promotion and the change already repairs the history a new writer could not reach. The
+      earlier shared store carried a <code>backend</code> column from a ten-column shape while
+      nothing extracted the key at insert, so the column held NULL on every recent row and the
+      value lived only in each row's payload; adding the name makes <code>_migrate_runs</code>
+      fill it from the payload on open.</p>
+      <p><strong>Done when (recorded measurement).</strong> A copy of the shared config-home
+      store was taken with a filesystem copy and then opened through this change: the
+      NULL-backfill count fell from <strong>6211 to 26 of 6233 rows</strong>, so
+      <strong>6185 rows</strong> were repaired from their payloads. The 26 rows left NULL are
+      rows whose payload also carries no backend. The live store is opened by neither the tests
+      nor the measurement &mdash; only the copy is opened, and the measurement logs the module
+      path it imported.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-reports-its-velocity/backend-query-column.png"
+          alt="Left: the QUERY_KEYS declaration fanning out to the runs.backend column, the idx_runs_backend index, the insert extraction and the migration backfill. Right: NULL backend column rows before the copy is opened at 6211 and after at 26.">
+        <figcaption>One declaration drives the column, its index, the insert and the backfill;
+        opening a copy of the shared store backfilled 6185 of 6211 NULL rows.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Head at <code>e26df29e</code> (both test files)</td><td>30 passed, exit 0</td></tr>
+          <tr><td>Base arm (base revision, new test copied in)</td><td>2 failed, 28 passed, exit 1</td></tr>
+          <tr><td>Negative control (backend removed from <code>QUERY_KEYS</code>)</td><td>2 failed, exit 1</td></tr>
+        </tbody>
+      </table>
+      <p><code>tests/test_run_store_backend_query.py</code> opens two stores under
+      <code>tmp_path</code>. The fresh store asserts the <code>backend</code> column exists, is
+      indexed (<code>idx_runs_backend</code>), is filled from the record by the insert, and is
+      used by the query planner (<code>EXPLAIN QUERY PLAN</code> on
+      <code>WHERE backend = ?</code> names the index). The legacy store is built in the shape the
+      shared store carried &mdash; a <code>backend</code> column holding NULL beside the narrow
+      columns and a payload that carries the value. Opening it asserts the column is backfilled
+      from the payload, the index is created, and the row is findable by backend. With
+      <code>backend</code> removed from <code>QUERY_KEYS</code> the legacy case fails, and both
+      new tests fail against the base revision. Logs: <code>head_gate.log</code>,
+      <code>base_gate.log</code>, <code>negative_control.log</code>,
+      <code>measurement.log</code>.</p>
     </section>
   <section id="s5-work-in-progress-is-visible">
       <h2>&sect;5 &mdash; Work in progress is visible</h2>
