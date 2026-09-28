@@ -1729,11 +1729,16 @@ nothing has been launched</code></pre>
       seven-file population is <strong>53 passed, exit 0</strong> (<code>base-population-a4525840.log</code>), and
       the case file against that gate is <strong>7 failed, exit 1</strong> (<code>base-arm-new-file.log</code>).
       Head <code>3cff187d</code>: the eight files are <strong>60 passed, exit 0</strong>
-      (<code>head-gate-population.log</code>), so no failing id is added to the base's. Origin/main advanced to
-      <code>1e520954</code> during the attempt &mdash; commits touching <code>reckon/cli.py</code>,
-      <code>reckon/crew/ticker.py</code>, a new follower test and state files, none of the gate's module or its
-      seven tests &mdash; and the population arm re-measured there is <strong>53 passed, exit 0</strong>
-      (<code>base-population-1e520954.log</code>). Mutation arm &mdash; the
+      (<code>head-gate-population.log</code>), so no failing id is added to the base's. Origin/main advanced twice during the
+      attempt &mdash; <code>1e520954</code> and then <code>27b4def6</code>, the second touching
+      <code>promotion.py</code> itself &mdash; and the population arm is green at each head measured:
+      <strong>53 passed, exit 0</strong> at <code>1e520954</code> (<code>base-population-1e520954.log</code>) and
+      at <code>27b4def6</code> (<code>base-population-27b4def6.log</code>). A plain merge of this branch with
+      <code>27b4def6</code> conflicts, because main reverted the earlier landing; resolved per file in a scratch
+      tree, with the base the revert left as the preimage and main's current files as the other side, every code
+      path merges clean and the eight files pass there: <strong>60 passed, exit 0</strong>
+      (<code>resolved-27b4def6-gate.log</code>, merge receipts in <code>resolved-27b4def6-apply.txt</code>).
+      Mutation arm &mdash; the
       verbatim substring admission spliced back from the base file over this node's module &mdash; <strong>7
       failed</strong> on the case file and <strong>9 failed, 51 passed</strong> on the eight files, exit 1
       (<code>negative-control-mutation.log</code>, its line one the declared mutation; the splice diff and syntax
