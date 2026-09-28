@@ -915,9 +915,7 @@ NOISE_PAIRS: dict[tuple[Any, Any], tuple[tuple[str, str], float]] = {
 
 # A noise pair's resolution on its own carries no duty: the opener already told
 # the reader the run left, and this side only closes it.
-NOISE_RESOLUTIONS = frozenset(
-    resolution for resolution, _ in NOISE_PAIRS.values()
-)
+NOISE_RESOLUTIONS = frozenset(resolution for resolution, _ in NOISE_PAIRS.values())
 
 
 def transition_class(from_state: Any, to_state: Any) -> str:
@@ -965,16 +963,12 @@ class RowPolicy:
     def _release_expired(self, now: float, out: list[Mapping[str, Any]]) -> None:
         """Print every opener whose hold window has passed uncompleted."""
         for run_id in [
-            run_id
-            for run_id, (deadline, _) in self._held.items()
-            if deadline <= now
+            run_id for run_id, (deadline, _) in self._held.items() if deadline <= now
         ]:
             _, opener = self._held.pop(run_id)
             out.append(opener)
 
-    def feed(
-        self, event: Mapping[str, Any], *, now: float
-    ) -> list[Mapping[str, Any]]:
+    def feed(self, event: Mapping[str, Any], *, now: float) -> list[Mapping[str, Any]]:
         """Take one delivered row and return the rows that should print for it."""
         out: list[Mapping[str, Any]] = []
         self._release_expired(now, out)
