@@ -27,6 +27,7 @@ a harness and nothing reaches a network.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -72,6 +73,24 @@ def _real_home_gains_no_pointer():
         else set()
     )
     assert not after - before, "this module wrote a live pointer into the real home"
+
+
+@pytest.fixture(autouse=True)
+def _resolvable_backend_command(tmp_path, monkeypatch):
+    """Put a stub backend command on PATH so no case needs the host's own.
+
+    Only the admitted case reaches launch composition — a refusal is raised
+    before any launch is composed — but a module that resolved the backend's
+    command from the host would pass or fail on what that host happens to have
+    installed. The stub is never executed: the launcher is substituted, so
+    nothing spawns a harness.
+    """
+    directory = tmp_path / "stub-bin"
+    directory.mkdir()
+    stub = directory / "codex"
+    stub.write_text("#!/bin/sh\nexit 0\n")
+    stub.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{directory}{os.pathsep}{os.environ.get('PATH', '')}")
 
 
 # A placement that declares no requirement, so the placement-requirement check
