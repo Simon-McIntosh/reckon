@@ -4566,6 +4566,11 @@ def dispatch(
             "worktree": worktree["path"],
             "base": worktree["base"],
             "base_sha": worktree["base_sha"],
+            # The directory this run's scratch was created at, recorded at
+            # dispatch so the promotion or discard that later removes it removes
+            # exactly that path rather than re-deriving it under a root that may
+            # have moved.
+            "scratch": str(worker_scratch_dir(run_id)),
             # The authored implementation fraction at dispatch, so promotion can refuse a passing
             # implement landing whose plan did not move. An unreadable value
             # stays absent, which exempts the run rather than recording a false
@@ -5430,6 +5435,13 @@ def _persisted_worker_environment(
 # never in reach.
 WORKER_SCRATCH_ROOT_ENV = "RECKON_WORKER_SCRATCH_ROOT"
 WORKER_SCRATCH_ROOT_NAME = "reckon-crew-scratch"
+# The node's own tmp, pinned rather than taken from TMPDIR, the way the fleet
+# supervisor pins the runtime sockets it owns: the allocator may point TMPDIR at
+# shared storage, and a scratch root that followed TMPDIR would then place every
+# run's scratch on GPFS and — worse — resolve differently in the dispatcher and
+# in the promotion or discard that later removes it, so the removal would miss
+# and the directory would leak.
+WORKER_SCRATCH_ROOT_DEFAULT = "/tmp"  # noqa: S108 - the node's own tmp, never shared
 
 
 def worker_scratch_root() -> Path:
@@ -5437,12 +5449,17 @@ def worker_scratch_root() -> Path:
 
     ``RECKON_WORKER_SCRATCH_ROOT`` overrides it, so a test can synthesise a root
     without writing to the host's real temp directory and a caller can place the
-    whole fleet's scratch somewhere it would rather own.
+    whole fleet's scratch somewhere it would rather own. Without an override the
+    root is pinned to the node's own tmp rather than read from ``TMPDIR``: a
+    shared-storage ``TMPDIR`` would otherwise move every run's scratch onto GPFS,
+    and a ``TMPDIR`` that differs between the dispatcher and the promotion or
+    discard that removes the directory would make each resolve a different root,
+    so the removal would report the directory absent and leak it.
     """
     override = os.environ.get(WORKER_SCRATCH_ROOT_ENV)
     if override:
         return Path(override)
-    return Path(tempfile.gettempdir()) / WORKER_SCRATCH_ROOT_NAME
+    return Path(WORKER_SCRATCH_ROOT_DEFAULT) / WORKER_SCRATCH_ROOT_NAME
 
 
 def worker_scratch_dir(run_id: str) -> Path:
@@ -5457,29 +5474,52 @@ def ensure_worker_scratch(run_id: str) -> Path:
     return path
 
 
-def remove_worker_scratch(run_id: str) -> dict[str, Any]:
+def remove_worker_scratch(
+    run_id: str, *, recorded_path: str | os.PathLike[str] | None = None
+) -> dict[str, Any]:
     """Remove one run's scratch directory, printing what it removed.
 
-    The path removed is always ``<scratch root>/<run id>``, so a directory a
-    different run owns can never be reached here even if a record named it —
-    the sibling that must survive a discard is outside this function's reach by
-    construction. An absent directory is reported rather than raised: a run
-    whose scratch was already reclaimed has nothing left to remove.
+    The path removed is ``<scratch root>/<run id>`` by default, or the
+    ``recorded_path`` a dispatch recorded when it created the directory — the
+    directory a later promotion or discard must remove is exactly the one that
+    was made, so it is read from the record rather than re-derived from a run id
+    whose root could have moved. Either way the path is refused unless it is a
+    direct child of the scratch root and names a well-formed run id, so a
+    directory a different run owns, or the scratch root itself, is never in
+    reach. An absent directory is reported rather than raised: a run whose
+    scratch was already reclaimed has nothing left to remove.
     """
     result: dict[str, Any] = {
         "scratch_removed": False,
-        "scratch_path": None,
+        "scratch_path": str(recorded_path) if recorded_path else None,
         "scratch_withheld": "",
     }
     name = str(run_id or "").strip()
-    # A run id is a single path component. Anything that would climb out of the
-    # scratch root — a separator, a parent reference — names no scratch
-    # directory this function may remove, so it is withheld rather than joined.
-    if not name or Path(name).name != name:
+    # A run id is a single path component and is never a parent reference. A
+    # separator, an absolute path, or a bare "." / ".." names no scratch
+    # directory this function may remove, so it is withheld rather than joined:
+    # ".." would otherwise resolve to the temp directory itself and be removed.
+    if not name or name in {".", ".."} or Path(name).name != name:
         result["scratch_withheld"] = "run id names no scratch directory"
         return result
-    path = worker_scratch_dir(name)
+    root = worker_scratch_root()
+    path = Path(recorded_path) if recorded_path else root / name
     result["scratch_path"] = str(path)
+    # The invariant the guard above exists to hold: the directory removed is a
+    # direct child of the scratch root and is not the root itself. Asserted on
+    # the resolved paths because a recorded path may traverse a symlink, and a
+    # resolved parent equal to the resolved root is the only shape that removes
+    # exactly one run's directory.
+    resolved_root = root.resolve()
+    try:
+        resolved_path = path.resolve()
+    except OSError:
+        resolved_path = path
+    if resolved_path == resolved_root or resolved_path.parent != resolved_root:
+        result["scratch_withheld"] = (
+            "scratch path is not a directory under the scratch root"
+        )
+        return result
     if not path.is_dir():
         result["scratch_withheld"] = "scratch directory is no longer present"
         return result

@@ -151,6 +151,7 @@ def _pointer(
             "role": "implement",
             "created_at": "2026-09-28T14:00:00Z",
             "base_sha": base_sha,
+            "scratch": str(dispatch.worker_scratch_dir(run_id)),
             "manifest_path": "/nonexistent/manifest.md",
             "pid": None,
             "pid_start_time": None,
@@ -177,7 +178,7 @@ def _apply_negative_control(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         promotion,
         "remove_worker_scratch",
-        lambda _run_id: {
+        lambda _run_id, **_kwargs: {
             "scratch_removed": False,
             "scratch_path": None,
             "scratch_withheld": "scratch left in place by the negative control",
@@ -286,6 +287,125 @@ def test_the_real_scratch_root_is_untouched(
     assert not scratch_root.joinpath(run_id).exists()
 
 
+def test_a_malformed_run_id_removes_nothing(scratch_root: Path, tmp_path: Path) -> None:
+    """A run id that names no scratch directory is withheld, the root intact."""
+    root = dispatch.worker_scratch_root()
+    sibling = _plant_scratch("r-20260928T140500000000-scratch-survivor")
+    marker = tmp_path / "outside.txt"
+    marker.write_text("outside the scratch root\n", encoding="utf-8")
+
+    # ".." resolves to the root's parent and "" to the root itself; both would
+    # be removed by an rmtree that trusted Path(name).name == name.
+    for bad in ("..", ".", "a/b", "/abs", ""):
+        outcome = dispatch.remove_worker_scratch(bad)
+        assert outcome["scratch_removed"] is False, bad
+        assert outcome["scratch_withheld"], bad
+
+    assert root.is_dir(), "the scratch root must survive"
+    assert scratch_root.parent.is_dir(), "the root's parent must survive"
+    assert sibling.is_dir(), "a well-formed sibling run's scratch must survive"
+    assert marker.is_file(), "a file outside the root must survive"
+
+
+def test_the_scratch_root_is_pinned_against_a_shared_tmpdir(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A shared-storage TMPDIR does not move the root; only the override does."""
+    monkeypatch.delenv(dispatch.WORKER_SCRATCH_ROOT_ENV, raising=False)
+    # The pinned root is the declared node-local default, not whatever TMPDIR
+    # says: the root is asserted against the module's own constant rather than a
+    # second literal, so it stays in step with the source that defines it.
+    pinned = (
+        Path(dispatch.WORKER_SCRATCH_ROOT_DEFAULT) / dispatch.WORKER_SCRATCH_ROOT_NAME
+    )
+    monkeypatch.setenv("TMPDIR", "/gpfs/scratch/shared-tmp")
+    assert dispatch.worker_scratch_root() == pinned
+    assert not str(dispatch.worker_scratch_root()).startswith("/gpfs")
+    monkeypatch.delenv("TMPDIR", raising=False)
+    assert dispatch.worker_scratch_root() == pinned
+
+
+def test_promotion_removes_the_scratch_recorded_at_dispatch(
+    scratch_root: Path,
+    repository: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The recorded directory is removed though the promoter's TMPDIR differs."""
+    run_id = "r-20260928T140600000000-scratch-tmpdir"
+    worktree = _worktree(repository, tmp_path, "tmpdir")
+    _pointer(run_id, repository=repository, worktree=worktree)
+    scratch = _plant_scratch(run_id)
+    # The dispatcher ran under one TMPDIR and the promoter under another; the
+    # root is pinned, and the path removed is the one dispatch recorded, so the
+    # divergence cannot make the removal miss and leak the directory.
+    monkeypatch.setenv("TMPDIR", "/gpfs/scratch/shared-tmp")
+
+    promoted = crew.complete(
+        run_id,
+        gate="passed",
+        outcome="scratch removal across a TMPDIR change",
+        completed_at="2026-09-28T14:05:00Z",
+        root=repository,
+    )
+
+    release = promoted["release"]
+    assert release["scratch_removed"] is True
+    assert release["scratch_path"] == str(scratch)
+    assert not scratch.exists()
+    assert f"removed worker scratch directory {scratch}" in capsys.readouterr().out
+
+
+def _raise_audit(*_args: object, **_kwargs: object) -> object:
+    raise RuntimeError("worktree audit refused")
+
+
+def test_the_promotion_release_fallback_reports_the_scratch(
+    scratch_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A release step that raises still removes and reports the scratch."""
+    run_id = "r-20260928T140650000000-scratch-promote-raises"
+    scratch = _plant_scratch(run_id)
+    record = {
+        "run_id": run_id,
+        "scratch": str(scratch),
+        "worktree": str(tmp_path / "absent"),
+        "repo": str(tmp_path),
+        "pid": None,
+    }
+    monkeypatch.setattr(promotion, "_worktree_audit", _raise_audit)
+
+    release = promotion._release_after_promotion(run_id, record, gate="passed")
+
+    assert "scratch_removed" in release
+    assert release["scratch_removed"] is True
+    assert release["scratch_path"] == str(scratch)
+    assert not scratch.exists()
+
+
+def test_the_discard_release_fallback_reports_the_scratch(
+    scratch_root: Path,
+    repository: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A release that raises on discard still reports the scratch outcome."""
+    run_id = "r-20260928T140700000000-scratch-discard-raises"
+    worktree = _worktree(repository, tmp_path, "discard-raises")
+    _pointer(run_id, repository=repository, worktree=worktree, launch="cli")
+    scratch = _plant_scratch(run_id)
+    monkeypatch.setattr(promotion, "_worktree_audit", _raise_audit)
+
+    result = crew.discard(run_id)
+
+    assert result["scratch_removed"] is True
+    assert result["scratch_path"] == str(scratch)
+    assert not scratch.exists()
+    assert f"removed worker scratch directory {scratch}" in capsys.readouterr().out
+
+
 # ── The negative control ────────────────────────────────────────────────────
 
 
@@ -297,7 +417,7 @@ def _observed_after(scratch_root: Path, tmp_path: Path) -> list[str]:
     original = promotion.remove_worker_scratch
     # The declared mutation, applied directly: every removal becomes a no-op, so
     # the directory the measure expects gone is left in place.
-    promotion.remove_worker_scratch = lambda _run_id: {
+    promotion.remove_worker_scratch = lambda _run_id, **_kwargs: {
         "scratch_removed": False,
         "scratch_path": None,
         "scratch_withheld": "scratch left in place by the negative control",

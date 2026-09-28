@@ -3514,6 +3514,29 @@ def _worktree_audit(
     }
 
 
+def _release_scratch_when_release_raised(record: Mapping[str, Any]) -> dict[str, Any]:
+    """The scratch outcome when the rest of a release step raised.
+
+    Scratch removal does not depend on the worktree, the process or the
+    repository, so it is attempted even when the surrounding release raised:
+    leaving the directory to leak because a git command failed is the very
+    outcome this release step exists to prevent. A release that raises must
+    still tell a reader, because a result carrying no scratch field cannot
+    distinguish a directory that was removed from one that was left behind.
+    The fallback never raises: it reports the reason instead.
+    """
+    try:
+        return remove_worker_scratch(
+            str(record.get("run_id") or ""), recorded_path=record.get("scratch")
+        )
+    except Exception as exc:  # noqa: BLE001 - the fallback must itself never raise
+        return {
+            "scratch_removed": False,
+            "scratch_path": str(record.get("scratch") or "") or None,
+            "scratch_withheld": f"scratch removal raised in the release fallback: {exc}",
+        }
+
+
 def _release_run_workspace(
     record: Mapping[str, Any],
     retention: Mapping[str, str] | None = None,
@@ -3619,7 +3642,11 @@ def _release_run_workspace(
     # whatever the worktree verdict: scratch is node-local and ephemeral by
     # design, and a run that kept its scratch after its worktree was withheld
     # would leak the very entries this step exists to reclaim.
-    result.update(remove_worker_scratch(str(record.get("run_id") or "")))
+    result.update(
+        remove_worker_scratch(
+            str(record.get("run_id") or ""), recorded_path=record.get("scratch")
+        )
+    )
     return result
 
 
@@ -3654,21 +3681,25 @@ def _release_after_promotion(
                 ),
             )
         except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
-            return {
+            fallback = {
                 "worktree_released": False,
                 "process_signalled": False,
                 "worktree_withheld": f"run {run_id!r} release step raised: {exc}",
             }
+            fallback.update(_release_scratch_when_release_raised(record))
+            return fallback
     try:
         return _release_run_workspace(
             record, retention, process_already_ended=process_already_ended
         )
     except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
-        return {
+        fallback = {
             "worktree_released": False,
             "process_signalled": False,
             "worktree_withheld": f"run {run_id!r} release step raised: {exc}",
         }
+        fallback.update(_release_scratch_when_release_raised(record))
+        return fallback
 
 
 def _update_run_record(
@@ -5141,12 +5172,14 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
     try:
         release = _release_run_workspace(record)
     except Exception as exc:  # noqa: BLE001 - the pointer is already gone
-        return {
+        fallback = {
             "worktree_released": False,
             "worktree_withheld": (
                 f"run {record.get('run_id')!r} release step raised: {exc}"
             ),
         }
+        fallback.update(_release_scratch_when_release_raised(record))
+        return fallback
     return {
         key: release[key]
         for key in (
