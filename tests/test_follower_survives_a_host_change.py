@@ -187,9 +187,33 @@ def test_an_arm_with_no_checkpoint_replays_no_transitions_and_no_peer_rows(
         )
         crew.list_live(project=PROJECT)
         assert not follow_checkpoint.exists(PROJECT, SESSION)
+        # The fleet as it stands, read the way the arming itself reads it. The
+        # row the arm delivers must be this run's reading and nothing else.
+        expected_state = next(
+            str(row.get("to_state") or "")
+            for row in runs.watch_stream_cursor(PROJECT)["baseline"]
+            if row.get("run_id") == RUN_MINE
+        )
 
         emitted = _arm()
 
+    # The count comes first: the shape checks below are ``all(...)`` over the
+    # delivered rows, and an empty list satisfies every one of them, so without
+    # this a follower that suppressed its baseline would pass vacuously.
+    assert len(emitted) == 1, (
+        f"a first arm emits exactly the one baseline row its own run owns; "
+        f"got {emitted!r}"
+    )
+    (baseline,) = emitted
+    assert baseline.get("event") == "baseline", baseline
+    assert baseline.get("run_id") == RUN_MINE, baseline
+    assert baseline.get("session") == SESSION, baseline
+    assert baseline.get("from_state") is None, (
+        f"a baseline row carries no previous state; got {baseline!r}"
+    )
+    assert baseline.get("to_state") == expected_state, (
+        f"the baseline must carry the fleet's own reading for its run; got {baseline!r}"
+    )
     assert all(event.get("event") != "transition" for event in emitted), (
         f"an arm with no place must not replay the stream's transitions; got {emitted!r}"
     )
