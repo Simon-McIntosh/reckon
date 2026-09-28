@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="115">
+<meta name="plan-version" content="116">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -498,7 +498,7 @@
     <div class="r-comment-body"><p>re-review of rearm-shows-nothing-twice at 394ee488: 90, 0 added failures; the durability finding is resolved (the new test passes with RECKON_FOLLOWER_OWNER naming a dead pid), and the out-of-scope writes are gone; one finding, a stale section comment in tests/test_follow_rearm_continues.py, is followup f-tfcctf-rearm-test-comment-matches-the-code</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260928T152724236012-review-of-rearm-test-comment-matches-the-code" data-who="reckon-build" data-when="2026-09-28T16:08:15.736Z">
-    <div class="r-comment-body"><p>independent review of r-20260928T144802071342-rearm-test-comment-matches-the-code stored parsed and complete at reviews/reckon/r-20260928T144802071342-rearm-test-comment-matches-the-code.at-55c1cc0d2096511c795aac089b282b105aa12340.json — total 84, five dimensions scored 19/18/19/12/16, zero added failures by id over the reviewed run&#x27;s own two gate logs, one finding at tests/test_follow_rearm_continues.py:452 (the closing clause&#x27;s pronoun)</p></div>
+    <div class="r-comment-body"><p>independent review of r-20260928T144802071342-rearm-test-comment-matches-the-code stored parsed and complete at reviews/reckon/r-20260928T144802071342-rearm-test-comment-matches-the-code.at-55c1cc0d2096511c795aac089b282b105aa12340.json — total 84, five dimensions scored 19/18/19/12/16, zero added failures by id over the reviewed run's own two gate logs, one finding at tests/test_follow_rearm_continues.py:452 (the closing clause's pronoun)</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260925-row-labels-and-alignment" data-who="reckon-build" data-when="2026-09-25T08:05:00Z">
     <div class="r-comment-body"><p>§6 and §7 come from the lead's 2026-09-25 review of the ticker. <code>a-monitor-row-reads-at-a-glance</code> (S22) is fully landed and covered neither issue. Both write <code>reckon/crew/ticker.py</code>, and ship in the same ticker node as §3–§5 once S21 releases <code>reckon/crew/recovery.py</code>.</p></div>
@@ -544,6 +544,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260928T144658725827-resume-baseline-feed-is-tested" data-who="reckon-build" data-when="2026-09-28T15:28:39.952Z">
     <div class="r-comment-body"><p>The resume baseline branch is now covered: an arming whose checkpoint no longer names the stream re-derives the baseline, the run the pane already shows stays silent, and a run the resume does not name still reaches the pane (test_follower_prints_only_policy_rows.py::test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows, commit be8ffe939; declared pass-through mutation on the resume baseline feed site turns it red)</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20260928T152931720548-review-of-resume-baseline-feed-is-tested" data-who="reckon-build" data-when="2026-09-28T16:13:19.418Z">
+    <div class="r-comment-body"><p>review of run r-20260928T144658725827-resume-baseline-feed-is-tested at head 8fd9d1e4 scored 94 (goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 19), 0 findings and 0 added failures by id; the new test at tests/test_follower_prints_only_policy_rows.py:466 was independently shown to drive the resume baseline feed site at reckon/cli.py:2688 and to fail (1 failed, 18 deselected) when that site yields each event unfed, and the reviewed diff touches only that test file plus its fragment and figure</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T130204463138-ticker-row-is-one-aligned-transition" data-who="reckon-build" data-when="2026-09-25T13:46:08Z">
     <div class="r-comment-body"><p>each ticker row is one transition, from → to on an aligned arrow with fixed columns on both sides, chained per run on the pane's last shown state, with no action word; 266 passed; review 86, whose three findings (stale width comment at ticker.py:339, a test assertion that cannot fail, and a wrong rendered-case count in the evidence) go to the next ticker node</p></div>
