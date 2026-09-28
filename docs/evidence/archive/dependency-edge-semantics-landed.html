@@ -774,6 +774,76 @@
     back in <code>blocking</code>, and the red log's first line is the declared string. Log:
     <code>negative-control.log</code>.</p>
 
+  <section id="unreadable-section-mapping">
+    <h2>A whole unreadable value for the section-dependency mapping is refused by name</h2>
+
+    <p><strong>Reproduction at the dispatch base (<code>e6a86550</code>).</strong>
+    <code>section_depends_on</code> returns <code>None</code> for a
+    <code>plan-section-depends-on</code> value that is not valid JSON, and for valid JSON that is not an
+    object — the same <code>None</code> it returns when the meta is absent. <code>None</code> is the
+    reader's way of saying "this plan declares no edge", so the two cases are indistinguishable to every
+    consumer and each declared wait disappears with no finding: the roadmap reports no section-scoped
+    edge and no wiring finding, and the plan's blocking is whatever the whole-plan <code>depends_on</code>
+    says. A malformed <em>entry</em> inside a well-formed object was already refused by name; only the
+    whole value was silent. Log: <code>logs/repro-at-head.txt</code>.</p>
+
+    <p><strong>The change.</strong> The reader no longer returns <code>None</code> for a value it cannot
+    use. It returns a one-entry mapping carrying the defect under a key that is not a section identity —
+    <code>&lt;plan-section-depends-on&gt;</code>, which the declared segment grammar
+    (<code>^[A-Za-z0-9][A-Za-z0-9._-]*$</code>) can never produce, so no real section can collide with
+    it — with a message naming the meta and the malformation ("content is not valid JSON: …", "content
+    must be a JSON object mapping section identities to plan refs; got list"). The refusal set reports
+    that entry as <code>invalid-section-dependency</code> through the same path a malformed entry takes,
+    and both edge builders (<code>roadmap._section_scoped_edges</code>,
+    <code>mcp._section_dependency_rows</code>) already gate on the identity grammar, so the carrier is
+    skipped: no phantom section key enters <code>section_readiness</code>, the plan is not held, and the
+    mapping is never read as an empty declaration. Absent meta and empty content still read as no
+    declaration, unchanged. Commit <code>7865ebda</code> carries the change.</p>
+
+    <p><strong>Arms, measured.</strong> Both cases fail at the base revision
+    (<code>2 failed</code>), each at <code>assert None</code> on the returned mapping, with the base
+    tree's own resolved module and cwd in the log header (<code>logs/base-two-cases.txt</code>). The
+    gate over <code>tests/test_schema.py tests/test_roadmap.py</code> reads <strong>3 failed / 1659
+    passed</strong> at the base revision and <strong>3 failed / 1661 passed</strong> at head
+    (<code>logs/gate-base.txt</code>, <code>logs/gate-head.txt</code>), the same three pre-existing
+    failure ids (<code>test_canonical_dump_equals_read_state[full]</code> and two
+    <code>test_cross_project_conformance</code> params) — zero added. The base arm is a
+    <code>git archive</code> export of the base revision with its own test files and a provenance
+    header; because the export carries no <code>.git</code> of its own, that arm's git discovery is
+    pointed at the node worktree's git dir, and the cohort's git calls are read-only
+    (<code>rev-parse</code>, <code>cat-file</code>), so the content under test is the base revision's.
+    The node's cases build synthesised plan documents and read no mounted project.</p>
+
+    <p><strong>End-to-end probe.</strong> A probe through <code>build_roadmap</code> over a synthesised
+    docs tree reads the malformed and non-object arms as a <code>wiring_findings</code> row
+    (<code>invalid-section-dependency</code>, message naming the meta and malformation) against
+    <code>plan-a</code>, with no phantom readiness keys and the plan still dispatchable; the same probe's
+    valid-mapping and malformed-entry arms show the channel live in both directions —
+    <code>section_readiness</code> and edges for the valid arm, a named refusal for the entry arm — so
+    the malformed arms' report is not a dead channel. Log:
+    <code>logs/probe-roadmap-reader.txt</code>.</p>
+
+    <p><strong>Declared negative control.</strong> Executed as declared, on a scratch copy of the node
+    tree with the reader's two malformed-value branches reverted to the silent <code>None</code> return
+    (mutation asserted against its anchor, and the copy's module resolved in the log header): the
+    invalid-JSON case fails, <code>2 failed</code> in the cohort, and the red log's first line is the
+    declared string. Log: <code>logs/negative-control-red.txt</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/dependency-edge-semantics/malformed-section-mapping.svg"
+           alt="Two panels over the same malformed value: before, the reader returns None and every
+                declared wait is gone with nothing reported; after, the mapping carries the defect
+                under one non-section key and section_dependency_refusals reports it as
+                invalid-section-dependency, naming the meta and the malformation.">
+      <figcaption>Both values declare a wait on <code>plan-b#s3</code>; only the reader's handling of a
+      value it cannot parse as an object differs, and that decides whether the defect is reported or
+      silently reads as no declaration at all.</figcaption>
+    </figure>
+
+    <p>Commit in the node: <code>7865ebda</code>. Section closure and the driving followup remain with
+    the coordinator.</p>
+  </section>
+
   </main>
 </body>
 </html>

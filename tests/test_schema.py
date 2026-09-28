@@ -39,6 +39,7 @@ from reckon._schema import (
     IndexState,
     PlanState,
     gen_json_schema,
+    is_section_identity,
     schema_path,
     section_dependency_refusals,
     section_depends_on,
@@ -455,6 +456,48 @@ def test_section_dependency_refuses_a_ref_naming_no_target_section():
     assert refusals[0]["section"] == "s5"
     assert refusals[0]["ref"] == "plan-b#gone"
     assert "names no section 'gone'" in refusals[0]["message"]
+
+
+def test_invalid_json_in_the_section_mapping_is_refused_by_name():
+    """A value no reader can parse is reported, never read as no declaration."""
+    html = SPARSE_PLAN.replace(
+        "</head>",
+        '<meta name="plan-section-depends-on" content='
+        "'{&quot;s5&quot;: [&quot;plan-b#s3&quot;,]'>\n</head>",
+        1,
+    )
+
+    mapping = section_depends_on(html)
+
+    assert mapping, "a malformed value must not read as an absent declaration"
+    assert not any(is_section_identity(key) for key in mapping)
+
+    refusals = section_dependency_refusals(mapping, lambda project, slug: None)
+    assert len(refusals) == 1
+    assert refusals[0]["code"] == "invalid-section-dependency"
+    assert "plan-section-depends-on" in refusals[0]["message"]
+    assert "not valid JSON" in refusals[0]["message"]
+
+
+def test_a_section_mapping_that_is_not_an_object_is_refused_by_name():
+    """Valid JSON that is not an object is malformed the same way, by name."""
+    html = SPARSE_PLAN.replace(
+        "</head>",
+        '<meta name="plan-section-depends-on" content='
+        "'[&quot;plan-b#s3&quot;]'>\n</head>",
+        1,
+    )
+
+    mapping = section_depends_on(html)
+
+    assert mapping, "a JSON list must not read as an absent declaration"
+    assert not any(is_section_identity(key) for key in mapping)
+
+    refusals = section_dependency_refusals(mapping, lambda project, slug: None)
+    assert len(refusals) == 1
+    assert refusals[0]["code"] == "invalid-section-dependency"
+    assert "plan-section-depends-on" in refusals[0]["message"]
+    assert "got list" in refusals[0]["message"]
 
 
 def test_validate_for_write_rejects_milestone_placeholder():
