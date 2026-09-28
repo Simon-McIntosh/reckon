@@ -253,6 +253,22 @@
   <p>The figure <a href="/reckon/figures/the-fleet-counters-count-the-fleet/config-error-costs-a-tick.svg">a config error costs a follower one tick, not the stream</a> draws both routes through one poll. Evidence is anchored in the <a href="/reckon/evidence/archive/the-fleet-counters-count-the-fleet-landed.html#follower-survives-a-config-change">cumulative record</a>. Neither <code>recovery.py</code> nor <code>runs.py</code> is edited. The worker does not resolve the driving followup or change terminal plan state.</p>
 </article>
 
+    <article id="follower-survives-a-host-change-landing">
+  <h3>A follower continues the stream when the host under it changes</h3>
+  <p>Landed in commit <code>0867a75e</code>, with the new test file tidied in <code>68723fdb</code>. A follower's durable checkpoint recorded the stream's device and inode together and treated a mismatch in either as a replaced stream. The stream lives on the shared filesystem and is read from whichever client node a session is placed on, and that filesystem hands each client its own device number for the same mount: the same file reports <code>dev 42</code> on one node and <code>dev 44</code> on another, with the inode — the mount's own — unchanged. So a follower re-armed on a different host read its own stream as replaced, fell back to re-reading the whole file from its start, and delivered every historical transition as fresh news, including rows for sessions the arming was never asked to follow. Re-arming every thirty minutes is the documented way to keep a follower alive, so the defect fired on every host change.</p>
+  <p>Identity is now decided by inode alone. A genuinely replaced stream still gets a new inode and still falls back to state, as does a truncated one; the device stays in the record for a reader but no longer decides. The session filter and the no-place fallback were already correct on every path, so the node verifies them with a regression test rather than reworking working code: an arm with no checkpoint derives its rows from the fleet as it stands, replays no transition, and emits no row for another session.</p>
+  <table>
+    <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>Declared negative control: compare dev and ino as today; the host-change case must fail</td><td>1 failed as required</td><td><code>control-dev-and-ino.log</code>, whose first line repeats the declaration verbatim. Run against the base revision's own <code>continues()</code> in a scratch tree; <code>test_a_checkpoint_with_a_foreign_device_number_still_continues</code> fails, the record's device differing from the file's.</td></tr>
+      <tr><td>The three new tests at head</td><td>3 passed</td><td><code>gate.log</code></td></tr>
+      <tr><td>The three new tests at the base revision</td><td>1 failed, 2 passed</td><td>Only the host-change test is red at base — the red named above — so the tests pin the defect and nothing else.</td></tr>
+      <tr><td><code>test_follow_rearm_continues.py</code> and <code>test_follower_keeps_memory.py</code>, base against head</td><td>22 passed on both arms</td><td><code>base_suite.log</code>, <code>after_suite.log</code>. Zero added failures by id.</td></tr>
+    </tbody>
+  </table>
+  <p>The figure <a href="/reckon/figures/the-fleet-counters-count-the-fleet/follower-continues-across-hosts.svg">one stream file, read from two hosts of the same shared mount</a> shows the same inode under two device numbers and the two comparison outcomes. Evidence is anchored in the <a href="/reckon/evidence/archive/the-fleet-counters-count-the-fleet-landed.html#follower-survives-a-host-change">cumulative record</a>. The worker does not resolve the driving followup or change terminal plan state.</p>
+</article>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-counter-census-landed" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
