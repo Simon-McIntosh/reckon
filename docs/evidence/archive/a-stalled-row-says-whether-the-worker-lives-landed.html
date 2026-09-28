@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="A worker killed mid-turn is a row on the snapshot that sees it die, not fifteen minutes later.">
   <meta name="plan-evidence-for" content="a-stalled-row-says-whether-the-worker-lives">
   <meta name="plan-verifies" content="a-stalled-row-says-whether-the-worker-lives#s2">
-  <meta name="plan-commits" content="8b759fa0,c5b2e184,8be6a8af,2fd5f559,8236dcc3,b09db857,e1e31482,aaefa377">
-  <meta name="plan-artifacts" content="tests/test_watch_reports_death_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png,tests/test_death_row_reads_any_final_record.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/tail_window_reads.png,tests/test_stalled_row_names_liveness.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/stalled_row_process_state.png,tests/test_resume_offer_needs_a_dead_process.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/resume_offer_waits.png,tests/test_unreadable_names_its_word.py">
+  <meta name="plan-commits" content="8b759fa0,c5b2e184,8be6a8af,2fd5f559,8236dcc3,b09db857,e1e31482,aaefa377,183e1f7e,7eccce89">
+  <meta name="plan-artifacts" content="tests/test_watch_reports_death_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png,tests/test_death_row_reads_any_final_record.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/tail_window_reads.png,tests/test_stalled_row_names_liveness.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/stalled_row_process_state.png,tests/test_resume_offer_needs_a_dead_process.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/resume_offer_waits.png,tests/test_unreadable_names_its_word.py,tests/test_ended_turn_is_a_row_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/ended_turn_readings.png">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -278,6 +278,56 @@
       is written &mdash; the run reads <code>abandoned</code>, liveness proven, no manifest on disk
       &mdash; which is what makes the arrival of the file, and nothing else, the change the
       transition reports.</p>
+    </section>
+
+    <section id="s8">
+      <h2>&sect;8 &mdash; A turn that ended without a manifest is a row at once</h2>
+      <p><strong>Landed</strong> (<code>183e1f7e</code>). The emission existed and was unpinned, and
+      the row it produced named the end without saying which end it was. The branch of
+      <code>_watch_verdict</code> in <code>reckon/crew/recovery.py</code> fires when the process
+      table says the worker is gone, the manifest's word is not terminal, and the stream's last
+      complete record is a <code>result</code> record: the turn ran to its own conclusion, so the row
+      moves to <code>blocked</code> as <code>ended-without-manifest</code> carrying the
+      <code>resume</code> verb, on the snapshot that observes the end rather than on the one that has
+      waited out the window. Its reason is composed in the reducer, and it now opens with the
+      section's own words: <code>turn ended: the worker's process exited after a successful result
+      record and no terminal manifest followed; the run is resumable rather than stalled</code>.
+      Opening is what carries it &mdash; the ticker cuts the pane's clause from the head of
+      <code>detail</code> through <code>_first_clause</code>, so a reader who sees only the first
+      clause still learns which end this was and which action follows from it.</p>
+      <figure>
+        <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/ended_turn_readings.png" alt="Top: a timeline from the instant the turn ended with a result record — the delivered reader reports the row on the very next snapshot, while the base revision says nothing until 901 s of quiet and then names the quiet time rather than the end. Bottom: the arms the reader tries on a dead, non-terminal pointer, in order — a manifest word outside the vocabulary reads unreadable and repair, a result stream tail reads turn ended and resume, any other tail reads interrupted and redispatch — with the declared mutation shown deleting the turn-ended arm, so a result tail falls to the death reading.">
+        <figcaption>The row appears on the snapshot that sees the process end, and which reading it
+        carries is decided by two observations: the manifest's word, then the stream's last record.
+        The death reading stays for every tail that is not a conclusion, so the two ends keep
+        different remedies.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>A gone process, a manifest reading <code>in-progress</code>, and a stream whose last record is <code>result</code></td><td>one transition, <code>working</code> &rarr; <code>blocked</code>; classification <code>ended-without-manifest</code>; recovery <code>resume</code>; the reason contains <code>turn ended</code>; the quiet time is 300 s against the 900 s window and the reason carries neither the quiet-time clause nor the death's stream-tail clause</td></tr>
+          <tr><td>The same run whose stream ends in an <code>assistant</code> record instead</td><td>classification <code>interrupted</code>; recovery <code>redispatch</code>; the reason names the record the death interrupted and does not contain <code>turn ended</code></td></tr>
+          <tr><td>The same run with a manifest word outside <code>MANIFEST_STATUSES</code></td><td>classification <code>unreadable</code>; recovery <code>repair</code>; the refused word named on <code>manifest_error</code>; not the ended-turn reading</td></tr>
+          <tr><td>The case file at the node's base revision (<code>9a7b5386</code>), carried as delivered</td><td>2 failed, 1 passed &mdash; both failures on the missing words, the first printing the base reason verbatim; the precedence case, which asserts a classification rather than a reason, passes there as it does at the head</td></tr>
+          <tr><td>The turn-ended branch deleted from a throwaway copy of the head (the declared mutation)</td><td>red as declared &mdash; the first case fails with no ended-turn transition emitted, the run falling to <code>('transition', 'working', 'blocked', 'interrupted', &hellip; the turn did not end)</code>, and the paired control fails with it</td></tr>
+          <tr><td>Gate at the delivered head: <code>tests/test_ended_turn_is_a_row_at_once.py</code> with the &sect;5 file</td><td>6 passed in 0.90 s, exit 0; the log header probes <code>reckon</code> and <code>reckon.crew.recovery</code> to the worktree, so the tree under test is the tree that shipped</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Negative control, executed and logged.</strong> The declared mutation deletes the
+      turn-ended branch at <code>reckon/crew/recovery.py</code> beside the death arm, so the death
+      reading becomes the statement the branch falls through to &mdash; a reader that never composed
+      the ended-turn reading rather than one that stopped at a syntax error. Applied to a throwaway
+      copy of the head with the delivered case file present and nothing else changed, the copy
+      answers the import first (probed before the run), the first case fails with the stream holding
+      the fallback death reading and no ended-turn transition, and the precedence case passes
+      untouched. The log's first line is the declared mutation verbatim, read from the case module's
+      own constant so the declaration and the log cannot drift.</p>
+      <p>The first case's baseline is the positive control for the row it asserts: a live worker
+      behind a non-terminal manifest reads <code>working</code> with <code>process_alive</code>
+      true, so the transition below it is the end the next snapshot observed rather than a state the
+      run arrived in. The second case reads one run twice with only the stream's tail changed, so
+      neither arm can pass by a reader that reports no end at all. Every fixture's clock is aged
+      past the reader's transient windows, so no case depends on the instant it runs.</p>
     </section>
 
     <section id="verification">

@@ -405,6 +405,42 @@
     precedence in &sect;2. The
     write paths are <code>reckon/crew/recovery.py</code> and that test.</p>
 
+    <h3 id="s8-landed">Landed &mdash; node <code>name-the-ended-turn-in-its-reason</code></h3>
+    <p><strong>Landed</strong> (<code>183e1f7e</code>). The emission existed and was unpinned, and
+    the row it produced named the end without saying which end it was. The branch of
+    <code>_watch_verdict</code> in <code>reckon/crew/recovery.py</code> fires when the process table
+    says the worker is gone, the manifest's word is not terminal, and the stream's last complete
+    record is a <code>result</code> record: the turn ran to its own conclusion, so the row moves to
+    <code>blocked</code> as <code>ended-without-manifest</code> carrying the <code>resume</code>
+    verb, on the snapshot that observes the end rather than on the one that has waited out the
+    window. Its reason is composed in the reducer, and it now opens with the section's own words:
+    <code>turn ended: the worker's process exited after a successful result record and no terminal
+    manifest followed; the run is resumable rather than stalled</code>. Opening is what carries it
+    &mdash; the ticker cuts the pane's clause from the head of <code>detail</code> through
+    <code>_first_clause</code>, so a reader who sees only the first clause still learns which end
+    this was and which action follows from it. Everything the row said today is kept: the result
+    record that concluded the turn, the missing terminal manifest, and the remedy.</p>
+    <p><strong>Evidence:</strong> three cases in
+    <code>tests/test_ended_turn_is_a_row_at_once.py</code> (3 passed, exit 0 at the delivered head),
+    the completed set with <code>tests/test_unreadable_names_its_word.py</code> green at the same
+    time (6 passed, exit 0). The first builds the run alive &mdash; the baseline it asserts is a
+    working row whose <code>process_alive</code> is true &mdash; then kills the worker between two
+    snapshots with the stream minutes quiet against the fifteen-minute window, and requires exactly
+    one row, <code>working</code> &rarr; <code>blocked</code>, classification
+    <code>ended-without-manifest</code>, recovery <code>resume</code>, whose reason contains
+    <code>turn ended</code> and neither the quiet-time clause nor the death's stream-tail clause.
+    The second reads one run twice, changing only the stream's last record, so the arms control each
+    other: the <code>result</code> tail is the ended turn, and the <code>assistant</code> tail must
+    stay the death reading (<code>interrupted</code>, <code>redispatch</code>) that names the record
+    the death interrupted. The third gives the same run a manifest whose word is outside
+    <code>MANIFEST_STATUSES</code> and requires the classification <code>unreadable</code> with the
+    <code>repair</code> verb &mdash; the precedence &sect;5 owns &mdash; asserted as a
+    classification rather than as reason text. At the node's base revision the same file reads 2
+    failed, 1 passed, both failures on the missing words, which is what makes the head's pass a
+    change rather than a restatement of what the reader already said. Measurements in
+    <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#s8">&sect;8
+    of the landed evidence record</a>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-asrswtwl-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
