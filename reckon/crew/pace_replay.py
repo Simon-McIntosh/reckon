@@ -103,8 +103,9 @@ def replay(
     records = [dict(row) for row in rows]
     for record in records:
         pace_row = _pace_row(record)
+        evidence = _read_row(pace_row)
         allowance_value = _recomputed_allowance(
-            pace_row,
+            evidence,
             drain_lead_hours=drain_lead_hours,
         )
         allowance_unmeasured = isinstance(allowance_value, _UnmeasuredAllowance)
@@ -241,53 +242,316 @@ def _pace_row(record: Mapping[str, Any]) -> Mapping[str, Any]:
     raise ValueError("a replay row must carry a pace mapping")
 
 
+# The kinds a field of a pace row is read as.  A trailing ``?`` admits a null as
+# a value of its own -- "no hold fired", "nothing to say" -- while an unmarked
+# kind that is absent, null or blank is a row that cannot be measured.
+_TEXT = "text"
+_NUMBER = "number"
+_INSTANT = "instant"
+_OBJECT = "object"
+_BOOLEAN = "boolean"
+_OBSERVED = "observed"
+
+_CLOCK_PERIODS: tuple[str, ...] = ("five_hour", "seven_day")
+
+# The shape a replay reads a pace row in: every path this module converts or
+# dereferences, and the fields it does not derive from as well.  Reading the row
+# whole is deliberate.  The row is one record of one decision, so a damaged field
+# anywhere in it leaves the row unmeasured rather than half-read, and a field a
+# later version of this module starts to use cannot arrive unguarded.  The order
+# is the order a reader hears about failures in, so the reported reason names the
+# field that actually stopped the reading.
+_ROW_FIELDS: tuple[tuple[tuple[str, ...], str, str, str], ...] = (
+    (
+        ("recorded_at",),
+        _INSTANT,
+        "the pace row recorded_at stamp",
+        "the pace row has no recorded instant",
+    ),
+    (
+        ("policy",),
+        _OBJECT,
+        "the recorded pace policy",
+        "the pace row carries no policy",
+    ),
+    (
+        ("policy", "drain_lead_hours"),
+        _NUMBER,
+        "the recorded drain_lead_hours",
+        "the pace row's policy names no drain_lead_hours",
+    ),
+    (
+        ("policy", "pace_multiple"),
+        _NUMBER,
+        "the recorded pace_multiple",
+        "the pace row's policy names no pace_multiple",
+    ),
+    (
+        ("group",),
+        _TEXT,
+        "the pace row's budget group",
+        "the pace row carries no budget group",
+    ),
+    (("lane",), _TEXT, "the pace row's lane", "the pace row names no lane"),
+    (("node",), _TEXT, "the pace row's node", "the pace row names no node"),
+    (
+        ("score",),
+        _NUMBER,
+        "the recorded open-endedness score",
+        "the pace row carries no score",
+    ),
+    (
+        ("state",),
+        _TEXT,
+        "the pace row's pace state",
+        "the pace row carries no pace state",
+    ),
+    (
+        ("source",),
+        _TEXT,
+        "the pace row's window source",
+        "the pace row carries no window source",
+    ),
+    (
+        ("member",),
+        _TEXT,
+        "the pace row's wallet member",
+        "the pace row carries no wallet member",
+    ),
+    (
+        ("allowance",),
+        _OBJECT,
+        "the recorded allowance",
+        "the pace row records no allowance",
+    ),
+    (("bar",), _OBJECT, "the recorded bar", "the pace row records no bar"),
+    (("hold",), _OBJECT + "?", "the recorded hold", "the pace row carries no hold"),
+    (
+        ("reason",),
+        _TEXT + "?",
+        "the pace row's reason",
+        "the pace row carries no reason",
+    ),
+)
+
+# The figures one metered clock is read as: required of an observed clock, and
+# admitted as null otherwise, because an unobserved clock reports absence rather
+# than a position.  Each carries the words a reader is given for it.
+_CLOCK_FIGURES: tuple[tuple[str, str, str], ...] = (
+    ("utilisation", _NUMBER, "utilisation"),
+    ("observed_at", _INSTANT, "observation stamp"),
+    ("resets_at", _INSTANT, "reset stamp"),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class _RowEvidence:
+    """The figures a replay derives from, read once through the guarded reader.
+
+    The derivation consumes values the reader has already passed rather than
+    reaching back into the row, so the shape that was checked is the shape that
+    is used.
+    """
+
+    recorded_at: datetime
+    reset_at: datetime
+    utilisation: float
+    group: str
+    lead_hours: float
+    pace_multiple: float
+
+
+def _read(
+    row: Any,
+    path: tuple[str, ...],
+    kind: str,
+    *,
+    label: str,
+    missing: str,
+) -> Any | _UnmeasuredAllowance:
+    """Read one pace-row field, or say why it cannot be read as measured.
+
+    This is the one door every row-sourced value in this module comes through: a
+    figure is a float here or the row is unmeasured, a stamp is a datetime here
+    or the row is unmeasured, and a mapping is indexed only after it has come
+    through.  The reader never coerces a value it cannot read and never returns
+    half of one.  A damaged field yields an unmeasured row carrying that field's
+    reason, because a week's report that dies on one bad row tells its reader
+    nothing, and a report that silently drops the row tells them less.
+    """
+    value: Any = row
+    for key in path:
+        if not isinstance(value, Mapping) or key not in value:
+            return _UnmeasuredAllowance(missing)
+        value = value[key]
+    nullable = kind.endswith("?")
+    bare = kind[:-1] if nullable else kind
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return None if nullable else _UnmeasuredAllowance(missing)
+    if bare == _TEXT:
+        if not isinstance(value, str):
+            return _UnmeasuredAllowance(f"{label} is not text: {value!r}")
+        return value.strip()
+    if bare == _NUMBER:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return _UnmeasuredAllowance(f"{label} is not a number: {value!r}")
+        figure = float(value)
+        if not math.isfinite(figure) or figure < 0.0:
+            return _UnmeasuredAllowance(f"{label} is not a usable figure: {value!r}")
+        return figure
+    if bare == _INSTANT:
+        if not isinstance(value, str):
+            return _UnmeasuredAllowance(f"{label} is not an instant: {value!r}")
+        text = value.strip()
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        try:
+            moment = datetime.fromisoformat(text)
+        except ValueError:
+            return _UnmeasuredAllowance(f"{label} is not a valid instant: {value!r}")
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=UTC)
+        return moment.astimezone(UTC)
+    if bare == _OBJECT:
+        if not isinstance(value, Mapping) or not value:
+            return _UnmeasuredAllowance(f"{label} is not an object carrying evidence")
+        return value
+    if bare == _BOOLEAN:
+        if not isinstance(value, bool):
+            return _UnmeasuredAllowance(f"{label} is not a boolean: {value!r}")
+        return value
+    raise ValueError(f"{kind!r} is not a kind this reader knows")
+
+
+def _read_clock(row: Any, period: str) -> dict[str, Any] | _UnmeasuredAllowance:
+    """Read one metered clock, requiring its figures of an observed one only."""
+    named = period.replace("_", "-")
+    container = _read(
+        row,
+        ("clocks", period),
+        _OBJECT,
+        label=f"the {named} clock",
+        missing=f"the pace row carries no {named} clock",
+    )
+    if isinstance(container, _UnmeasuredAllowance):
+        return container
+    clock: dict[str, Any] = {}
+    for name in ("state", "period"):
+        value = _read(
+            row,
+            ("clocks", period, name),
+            _TEXT,
+            label=f"the {named} clock {name}",
+            missing=f"the pace row carries no {named} clock {name}",
+        )
+        if isinstance(value, _UnmeasuredAllowance):
+            return value
+        clock[name] = value
+    for name, kind, said in _CLOCK_FIGURES:
+        required = kind if clock["state"] == _OBSERVED else kind + "?"
+        value = _read(
+            row,
+            ("clocks", period, name),
+            required,
+            label=f"the {named} clock {name}",
+            missing=f"the {named} clock has no {said}",
+        )
+        if isinstance(value, _UnmeasuredAllowance):
+            return value
+        clock[name] = value
+    age = _read(
+        row,
+        ("clocks", period, "age_seconds"),
+        _NUMBER + "?",
+        label=f"the {named} clock age",
+        missing=f"the {named} clock carries no age",
+    )
+    if isinstance(age, _UnmeasuredAllowance):
+        return age
+    clock["age_seconds"] = age
+    return clock
+
+
+def _read_row(row: Mapping[str, Any]) -> _RowEvidence | _UnmeasuredAllowance:
+    """Read a whole pace row through the guarded reader, first failure first."""
+    containers = (
+        (("clocks",), "the pace row's clocks", "the pace row carries no clocks"),
+        (
+            ("clocks", "seven_day"),
+            "the pace row's seven-day clock",
+            "the pace row carries no seven-day clock",
+        ),
+    )
+    for path, label, missing in containers:
+        container = _read(row, path, _OBJECT, label=label, missing=missing)
+        if isinstance(container, _UnmeasuredAllowance):
+            return container
+    clock_state = _read(
+        row,
+        ("clocks", "seven_day", "state"),
+        _TEXT,
+        label="the seven-day clock state",
+        missing="the seven-day clock carries no state",
+    )
+    if isinstance(clock_state, _UnmeasuredAllowance):
+        return clock_state
+    if clock_state != _OBSERVED:
+        return _UNMEASURED
+    clocks: dict[str, Any] = {}
+    for period in _CLOCK_PERIODS:
+        clock = _read_clock(row, period)
+        if isinstance(clock, _UnmeasuredAllowance):
+            return clock
+        clocks[period] = clock
+    values: dict[tuple[str, ...], Any] = {}
+    for path, kind, label, missing in _ROW_FIELDS:
+        value = _read(row, path, kind, label=label, missing=missing)
+        if isinstance(value, _UnmeasuredAllowance):
+            return value
+        values[path] = value
+    if isinstance(values[("hold",)], Mapping):
+        # A hold that fired records the decision it made; a row that reports a
+        # hold without one is a row whose decision cannot be read back.
+        decision = _read(
+            row,
+            ("hold", "held"),
+            _BOOLEAN,
+            label="the recorded hold decision",
+            missing="the recorded hold carries no decision",
+        )
+        if isinstance(decision, _UnmeasuredAllowance):
+            return decision
+    return _RowEvidence(
+        recorded_at=values[("recorded_at",)],
+        reset_at=clocks["seven_day"]["resets_at"],
+        utilisation=clocks["seven_day"]["utilisation"],
+        group=values[("group",)],
+        lead_hours=values[("policy", "drain_lead_hours")],
+        pace_multiple=values[("policy", "pace_multiple")],
+    )
+
+
 def _recomputed_allowance(
-    row: Mapping[str, Any],
+    evidence: _RowEvidence | _UnmeasuredAllowance,
     *,
     drain_lead_hours: float | None,
 ) -> dict[str, Any] | _UnmeasuredAllowance:
     """Recompute an allowance from the row's clocks through ``pace.py``."""
-    clocks = row.get("clocks")
-    if not isinstance(clocks, Mapping):
-        raise TypeError("a pace row must carry clocks")
-    week = clocks.get("seven_day")
-    if not isinstance(week, Mapping):
-        raise TypeError("a pace row must carry a seven-day clock")
-    if week.get("state") != "observed":
-        return _UNMEASURED
-    recorded_at = _instant_or_unmeasured(
-        row.get("recorded_at"),
-        label="the pace row recorded_at stamp",
-        missing_reason="the pace row has no recorded instant",
-    )
-    if isinstance(recorded_at, _UnmeasuredAllowance):
-        return recorded_at
-    reset_at = _instant_or_unmeasured(
-        week.get("resets_at"),
-        label="the seven-day clock reset stamp",
-        missing_reason="the seven-day clock has no reset stamp",
-    )
-    if isinstance(reset_at, _UnmeasuredAllowance):
-        return reset_at
+    if isinstance(evidence, _UnmeasuredAllowance):
+        return evidence
     elapsed_hours = max(
         0.0,
-        pace_module.WEEK_HOURS - (reset_at - recorded_at).total_seconds() / 3600.0,
+        pace_module.WEEK_HOURS
+        - (evidence.reset_at - evidence.recorded_at).total_seconds() / 3600.0,
     )
-    policy = row.get("policy")
-    if not isinstance(policy, Mapping):
-        raise TypeError("a pace row must carry policy")
-    lead = (
-        float(drain_lead_hours)
-        if drain_lead_hours is not None
-        else float(policy["drain_lead_hours"])
-    )
+    lead = evidence.lead_hours if drain_lead_hours is None else drain_lead_hours
     pace = pace_module.PacePolicy(
         drain_lead_hours=lead,
-        pace_multiple=float(policy["pace_multiple"]),
+        pace_multiple=evidence.pace_multiple,
     )
     reading = pace_module.GroupReading(
-        group=str(row.get("group") or ""),
-        utilisation=float(week["utilisation"]),
+        group=evidence.group,
+        utilisation=evidence.utilisation,
         elapsed_hours=elapsed_hours,
     )
     return pace_module.allowance_for_group(reading, pace=pace).as_dict()
@@ -295,30 +559,62 @@ def _recomputed_allowance(
 
 def _hold_decision(row: Mapping[str, Any]) -> dict[str, Any] | object:
     """Reconstruct the hold verdict from the evidence carried by the row."""
-    hold = row.get("hold")
-    if hold is None:
-        return {"held": False, "backend": None}
+    hold = _read(row, ("hold",), _OBJECT + "?", label="the recorded hold", missing="")
     if not isinstance(hold, Mapping):
-        raise TypeError("a pace row hold must be an object or null")
-    state = hold.get("state")
-    threshold = hold.get("effective_ceiling_pct")
-    utilisation = state.get("utilisation_pct") if isinstance(state, Mapping) else None
-    threshold_value = _number(threshold)
-    utilisation_value = _number(utilisation)
-    if threshold_value is None or utilisation_value is None:
+        return {"held": False, "backend": None}
+    threshold = _read(
+        row,
+        ("hold", "effective_ceiling_pct"),
+        _NUMBER + "?",
+        label="the recorded hold ceiling",
+        missing="the recorded hold names no ceiling",
+    )
+    utilisation = _read(
+        row,
+        ("hold", "state", "utilisation_pct"),
+        _NUMBER + "?",
+        label="the recorded hold utilisation",
+        missing="the recorded hold names no utilisation",
+    )
+    backend = _read(
+        row,
+        ("hold", "backend"),
+        _TEXT + "?",
+        label="the recorded hold backend",
+        missing="the recorded hold names no backend",
+    )
+    if (
+        not isinstance(threshold, float)
+        or not isinstance(utilisation, float)
+        or isinstance(backend, _UnmeasuredAllowance)
+    ):
         return _UNVERIFIABLE
-    held = utilisation_value >= threshold_value
-    return {"held": held, "backend": hold.get("backend")}
+    return {"held": utilisation >= threshold, "backend": backend}
 
 
 def _recorded_hold_decision(row: Mapping[str, Any]) -> dict[str, Any]:
     """Extract only the decision fields, leaving explanatory evidence intact."""
-    hold = row.get("hold")
-    if hold is None:
-        return {"held": False, "backend": None}
+    hold = _read(row, ("hold",), _OBJECT + "?", label="the recorded hold", missing="")
     if not isinstance(hold, Mapping):
         return {"held": False, "backend": None}
-    return {"held": bool(hold.get("held")), "backend": hold.get("backend")}
+    held = _read(
+        row,
+        ("hold", "held"),
+        _BOOLEAN + "?",
+        label="the recorded hold decision",
+        missing="the recorded hold carries no decision",
+    )
+    backend = _read(
+        row,
+        ("hold", "backend"),
+        _TEXT + "?",
+        label="the recorded hold backend",
+        missing="the recorded hold names no backend",
+    )
+    return {
+        "held": held is True,
+        "backend": None if isinstance(backend, _UnmeasuredAllowance) else backend,
+    }
 
 
 def _mistuned_summary(
@@ -335,7 +631,7 @@ def _mistuned_summary(
     ]
     return {
         "requested": candidate is not None,
-        "candidate": None if candidate is None else float(candidate),
+        "candidate": candidate,
         "detected": bool(mismatches),
         "mismatches": mismatches,
     }
@@ -345,29 +641,69 @@ def _work_class(record: Mapping[str, Any], row: Mapping[str, Any]) -> str:
     """Find the stable work class carried by a run record."""
     for source in (record, row):
         for key in ("work_class", "class", "role"):
-            value = source.get(key)
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-    definition = record.get("node_definition")
+            value = _read(
+                source,
+                (key,),
+                _TEXT + "?",
+                label=f"the recorded {key}",
+                missing=f"the record names no {key}",
+            )
+            if isinstance(value, str) and value:
+                return value
+    definition = _read(
+        record,
+        ("node_definition",),
+        _OBJECT + "?",
+        label="the record's node definition",
+        missing="the record names no node definition",
+    )
     if isinstance(definition, Mapping):
-        value = definition.get("role") or definition.get("work_class")
-        if isinstance(value, str) and value.strip():
-            return value.strip()
+        for key in ("role", "work_class"):
+            value = _read(
+                definition,
+                (key,),
+                _TEXT + "?",
+                label=f"the node definition's {key}",
+                missing=f"the node definition names no {key}",
+            )
+            if isinstance(value, str) and value:
+                return value
     return "unknown"
 
 
 def _lane_kind(record: Mapping[str, Any], row: Mapping[str, Any]) -> str:
     """Classify a row as local or metered using the recorded lane identity."""
     for source in (record, row):
-        value = source.get("lane_kind")
-        if isinstance(value, str) and value.strip().lower() in {"local", "metered"}:
-            return value.strip().lower()
-    if record.get("local") is True or row.get("local") is True:
-        return "local"
-    backend = str(record.get("backend") or row.get("lane") or "").strip()
-    if not backend:
-        return "unknown"
-    return "local" if ledger.is_unmetered_backend(backend) else "metered"
+        kind = _read(
+            source,
+            ("lane_kind",),
+            _TEXT + "?",
+            label="the recorded lane kind",
+            missing="the record names no lane kind",
+        )
+        if isinstance(kind, str) and kind.lower() in {"local", "metered"}:
+            return kind.lower()
+    for source in (record, row):
+        local = _read(
+            source,
+            ("local",),
+            _BOOLEAN + "?",
+            label="the recorded local flag",
+            missing="the record carries no local flag",
+        )
+        if local is True:
+            return "local"
+    for source, key in ((record, "backend"), (row, "lane")):
+        lane = _read(
+            source,
+            (key,),
+            _TEXT + "?",
+            label=f"the recorded {key}",
+            missing=f"the record names no {key}",
+        )
+        if isinstance(lane, str) and lane:
+            return "local" if ledger.is_unmetered_backend(lane) else "metered"
+    return "unknown"
 
 
 def _same_value(left: Any, right: Any) -> bool:
@@ -387,38 +723,5 @@ def _same_value(left: Any, right: Any) -> bool:
         and isinstance(right, (int, float))
         and not isinstance(right, bool)
     ):
-        return math.isclose(float(left), float(right), rel_tol=1e-9, abs_tol=1e-12)
+        return math.isclose(left, right, rel_tol=1e-9, abs_tol=1e-12)
     return left == right
-
-
-def _number(value: Any) -> float | None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    return float(value)
-
-
-def _instant_or_unmeasured(
-    value: Any,
-    *,
-    label: str,
-    missing_reason: str,
-) -> datetime | _UnmeasuredAllowance:
-    """Turn an invalid clock instant into row-local unmeasured evidence."""
-    try:
-        return _instant(value)
-    except (TypeError, ValueError) as exc:
-        if value is None or (isinstance(value, str) and not value.strip()):
-            return _UnmeasuredAllowance(missing_reason)
-        return _UnmeasuredAllowance(f"{label} is not a valid instant: {exc}")
-
-
-def _instant(value: Any) -> datetime:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"a pace row needs an ISO instant, not {value!r}")
-    text = value.strip()
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    parsed = datetime.fromisoformat(text)
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
-    return parsed.astimezone(UTC)
