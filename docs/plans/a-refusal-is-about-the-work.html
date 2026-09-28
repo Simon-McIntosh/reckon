@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <meta name="plan-standalone" content="Narrows the conditions under which existing refusals fire; it consumes no other plan&#x27;s evidence, and the discharge work in an-orchestrator-can-discharge-a-refusal proceeds beside it.">
   <title>A Refusal Is About The Work | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-27">
-<meta name="plan-version" content="5">
+<meta name="plan-modified" content="2026-09-28">
+<meta name="plan-version" content="6">
 <meta name="plan-commits" content="601e51e5,74dc4774,3ff3237b">
 <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py">
 <meta name="plan-impl" content="0.33">
@@ -83,6 +83,10 @@
       uses of <code>--no-impl-change</code> on corrective runs and <code>--outcome</code> on review runs, against the
       counts in the coordinator-overhead census; the target is zero, reported as a follow-up measure rather than a
       release gate.</p>
+
+    <h2 id="s5">§5 — A hyphenated noun is not a second action</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> The narrowed lint (§2, merged at <code>3ff3237b</code>) opens a second deliverable when the clause after a separator begins with an action verb. It reads a hyphenated compound whose first token is an action verb as that verb. On 2026-09-28 it refused the goal "Narrow promotion's impl-move, outcome and verify-gate refusals to the run they judge" as two deliverables, because <code>verify-gate</code> starts with <code>verify</code>. That is a form refusal of the kind this plan removes.</p><p><strong>Deliverable.</strong> In <code>reckon/crew/node.py</code>, a token joined by a hyphen to a following word is not read as an action verb opening a clause. A clause that genuinely begins with an action verb still splits.</p><p><strong>Done when</strong> <code>tests/test_goal_contract_lint.py</code> gains an accepted row carrying that goal verbatim and a refused row whose second clause begins with a bare action verb, and the declared negative control (treating the hyphenated token as its first word again) fails the accepted row.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
