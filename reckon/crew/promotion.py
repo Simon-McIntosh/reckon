@@ -1985,6 +1985,24 @@ def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
     return [str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()]
 
 
+def _declared_manifest_landing(record: Mapping[str, Any]) -> str:
+    """The ``landing:`` line a run's durable manifest declares, if any.
+
+    A run records its landing in this line rather than editing the plan, so
+    promotion can land it through the plan's own versioned write instead of
+    depending on a merge of the plan HTML. A manifest that cannot be read
+    yields no landing line, which keeps every other run on the existing path.
+    """
+    manifest_path = str(record.get("manifest_path") or "")
+    if not manifest_path:
+        return ""
+    try:
+        declared = parse_manifest(Path(manifest_path).read_text(encoding="utf-8"))
+    except (OSError, KeyError, ValueError):
+        return ""
+    return str(declared.get("landing") or "").strip()
+
+
 def _worker_authored_landing_record(
     *,
     tree: Path,
@@ -2028,22 +2046,33 @@ def _record_landing_comment(
     root: str | Path | None,
     worker_tree: Path | None = None,
     worker_commits: Iterable[str] = (),
+    landing: str = "",
 ) -> dict[str, Any]:
     """Append one idempotent section comment for a promoted run.
+
+    A run whose manifest declares a ``landing:`` line lands that line as the
+    comment body through the versioned write below, so its record reaches the
+    plan as an ordinary versioned edit and never depends on a git merge of the
+    plan HTML. The worker-authored deferral then does not apply: a worker that
+    writes a ``landing:`` line does not edit the plan, so there is no
+    merge-borne duplicate for promotion to leave alone.
 
     When the run's own worker already wrote the landing record — under this
     same run-derived comment id, in its own committed plan — nothing is
     appended, so promotion leaves the plan file untouched and the merge that
     brings the worker's record in does not collide on the duplicate id.
     """
+    landing = str(landing).strip()
     narrative = str(narrative).strip()
-    if not narrative or not plan:
+    body_text = landing or narrative
+    if not body_text or not plan:
         return {"recorded": False, "reason": "empty_narrative"}
     comment_id = f"c-run-{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
     anchor = _section_anchor(section)
-    desired_body = f"<p>{html.escape(narrative)}</p>"
+    desired_body = f"<p>{html.escape(body_text)}</p>"
     worker_recorded = bool(
-        worker_tree
+        not landing
+        and worker_tree
         and _worker_authored_landing_record(
             tree=worker_tree,
             commits=worker_commits,
@@ -4259,6 +4288,7 @@ def _complete_locked(
                     root=ledger_root,
                     worker_tree=tree,
                     worker_commits=_declared_manifest_commits(record),
+                    landing=_declared_manifest_landing(record),
                 )
             )
             _commit_landing_writes(
@@ -4675,6 +4705,7 @@ def _complete_locked(
             root=ledger_root,
             worker_tree=tree,
             worker_commits=commit_list or _declared_manifest_commits(record),
+            landing=_declared_manifest_landing(record),
         )
     )
     # The narrative the comment recorded lives in the plan, so the row carries
