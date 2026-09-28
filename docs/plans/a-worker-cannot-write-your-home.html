@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="69">
+<meta name="plan-version" content="70">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.98">
@@ -1717,6 +1717,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260928T0725-codex-login-read-write-landed" data-who="s21-coord" data-when="2026-09-28T07:25:00Z">
     <div class="r-comment-body"><p>The codex login read-write bind landed on reckon main as merge <code>3fbd6562</code> (commits <code>cc795a18</code>, <code>806059ec</code>, <code>e0e6aa9f</code>), promoted with review 91 and 0 added failures. The negative control matched. Its measure: codex-cli 0.155.1 rewrites <code>auth.json</code> in place, on the same inode with <code>O_WRONLY|O_TRUNC</code> and no rename. This was measured against a synthetic copy; the operator's real login was never touched, and was last written on 2026-09-17. The operator chose this bind over copying the login, and must log codex in again before fenced codex runs resume.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260928T063231222971-review-of-fenced-codex-can-persist-its-login" data-who="reckon-build" data-when="2026-09-28T07:33:26.322Z">
+    <div class="r-comment-body"><p>review of fenced-codex-can-persist-its-login at e0e6aa9f: 91, 0 added failures; findings: prose regression result instead of baseline/after suite objects, new-test.log lacks a revision header, and nothing asserts what a fenced run can do to the now-writable operator login (followup f-awcwyh-codex-login-truncation-is-asserted)</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T122925465818-s19-internals-consumers-survey" data-who="reckon-ship" data-when="2026-09-24T12:38:14.943Z">
     <div class="r-comment-body"><p>eight consumer rows that read reckon internals directly; ranked top five: worktree_fleet re-implements pointer classification, reckon-sync fallback writes mounts.json, lane.json read by hand with no crew verb, inline pointer read in the recovery recipe, hand manifest repair</p></div>
