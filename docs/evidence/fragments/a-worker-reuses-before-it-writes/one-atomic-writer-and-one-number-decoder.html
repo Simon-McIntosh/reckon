@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-title" content="One atomic writer and one numeric decoder">
+  <meta name="plan-summary" content="One atomic JSON writer beside the envelope writer, one bool-rejecting numeric decoder, their behaviours fixed by test, and the 14 writer / 4 decoder migration inventory with the durability and locking each caller must keep.">
+  <meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-verdict" content="qualified">
+  <title>One atomic writer and one numeric decoder &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>One atomic writer and one numeric decoder &mdash; evidence</h1>
+  <p><code>reckon/_store.py</code> gains <code>write_json_atomically</code> beside its envelope writer, and a new module <code>reckon/_observations.py</code> provides <code>optional_number</code>. Their behaviour is fixed by <code>tests/test_one_atomic_writer_and_number_decoder.py</code> before any caller migrates. The manifest lists the fourteen atomic-JSON writers and the four numeric-decoder bodies found at main HEAD, each with the durability and locking its migration must keep. No caller is migrated in this node.</p>
+
+  <figure>
+    <img src="/reckon/figures/a-worker-reuses-before-it-writes/one-atomic-writer-and-one-number-decoder/writer-attributes.svg" alt="A row per writer at head with columns for temporary naming, cleanup on failure, fsync and locking; of the fourteen existing copies seven clean up, three flush with fsync and one locks.">
+    <figcaption>What the fourteen existing atomic JSON writers differ on. The new primitive concentrates the safe set &mdash; unique sibling temporary, removal on failure, fsync on by default &mdash; while each caller's migration keeps the extra guarantee it already carries.</figcaption>
+  </figure>
+
+  <section id="behaviour">
+    <h2>The behaviour the tests fix</h2>
+    <ul>
+      <li><strong>No stray temporary.</strong> A write whose serialisation raises leaves the destination byte-for-byte as it was and no sibling temporary behind: the scratch directory holds the target and nothing else.</li>
+      <li><strong>No interleaving.</strong> Two threads each write a 4,000-element payload forty times; every read observes one whole payload, never a blend, and the file is readable throughout.</li>
+      <li><strong>The flush is under the caller's control.</strong> <code>fsync</code> is called once by default and never when the caller passes <code>fsync=False</code>.</li>
+      <li><strong>The decoder refuses the flag.</strong> <code>optional_number</code> returns <code>None</code> for <code>True</code>, <code>False</code>, a string, <code>None</code>, a list and a dict, and a <code>float</code> for an <code>int</code> and a <code>float</code>. The bool case is the point: <code>True</code> is an <code>int</code> subclass and would otherwise decode to <code>1.0</code>, leaving a flag and a measurement indistinguishable.</li>
+    </ul>
+    <p><strong>Reuse, not a copy.</strong> The envelope writer's temporary-write-and-rename step is factored into <code>_write_through_sibling_temporary</code>; <code>write_json_atomically</code> calls that same helper rather than repeating the atomic move. The envelope writer's own body shrinks to building the envelope and handing a renderer to the helper, so the two cannot drift apart.</p>
+    <p><strong>Evidence arms.</strong> Base arm at <code>a928b6be</code>: the primitives are absent, so collection fails &mdash; <code>ModuleNotFoundError: No module named 'reckon._observations'</code>, exit 2 (<code>base-arm.log</code>). Head arm at the committed head <code>c24a4e3c</code>: 43 passed across this node's test file and the existing store test file, exit 0 (<code>head-arm.log</code>), the log's header naming the revision, the tree, the command and the served <code>module.__file__</code>.</p>
+    <p><strong>Negative control.</strong> The declared mutation &mdash; drop the temporary-file removal on failure &mdash; leaves the failed write's sibling <code>.record.json.*.tmp</code> behind, so the no-stray-temporary case fails on the stray-file assertion: 1 failed, exit 1 (<code>negative-control.log</code>, whose first line repeats the declared string verbatim). The mutation was confined to a scratch copy at <code>/tmp/red-arm-atomic-writer</code>; the committed tree keeps the removal.</p>
+  </section>
+
+  <section id="inventory">
+    <h2>The fourteen writers, and what each migration must keep</h2>
+    <p>Found by AST over the code-depth census's list (<code>docs/research/data/crew-pattern-review/code-depth/findings.md</code>, copies at census commit <code>056c08e0</code>), re-grounded per <code>def</code> at main HEAD <code>a928b6be</code>. The census pins its line numbers at the older commit; the symbol names below are what <code>git grep</code> resolves today. Three copies flush with <code>fsync</code>, seven clean up their temporary on failure, and one takes a lock &mdash; each row is a durability or concurrency guarantee the migration must carry forward, and none may be silently dropped.</p>
+    <ul>
+      <li><code>reckon/_store.py:_write_json_envelope</code> &mdash; the envelope writer itself: unique sibling temporary through <code>_write_through_sibling_temporary</code>, removal on failure, <code>fsync</code> on by default, and the in-process <code>_json_envelope_lock(path)</code>. This is the writer <code>write_json_atomically</code> now shares a rename step with.</li>
+      <li><code>reckon/capabilities.py:rebuild_capabilities</code> &mdash; fixed sibling <code>&lt;name&gt;.tmp</code> written with <code>write_text</code>, no cleanup, no <code>fsync</code>, no lock.</li>
+      <li><code>reckon/crew/dispatch.py:_supervisor_write</code> &mdash; unique <code>NamedTemporaryFile</code>, <code>unlink</code> in <code>finally</code>, <strong><code>fsync</code> before rename</strong>, no lock.</li>
+      <li><code>reckon/crew/fleet_supervisor.py:_write_json</code> &mdash; <code>mkstemp</code> sibling with a unique name, <code>unlink</code> on failure, no <code>fsync</code>, no lock.</li>
+      <li><code>reckon/crew/paid_lanes.py:write_document_atomically</code> &mdash; unique <code>NamedTemporaryFile</code>, removes the pending path on failure, no <code>fsync</code>, no lock.</li>
+      <li><code>reckon/crew/placement.py:publish_reservation</code> &mdash; pid-named sibling <code>&lt;name&gt;.&lt;pid&gt;.tmp</code>, no cleanup on failure, no <code>fsync</code>, no lock.</li>
+      <li><code>reckon/crew/plan_review.py:store_plan_review</code> &mdash; fixed sibling <code>.&lt;name&gt;.tmp</code>, no cleanup, no <code>fsync</code>, no lock.</li>
+      <li><code>reckon/crew/resumption.py:_write_lane_probe_cache</code> &mdash; pid-named sibling, no cleanup, no <code>fsync</code>, no lock.</li>
+      <li><code>reckon/crew/review.py:store_review</code> &mdash; delegates to <code>reckon/crew/review.py:_write_record</code>, a fixed sibling <code>.&lt;name&gt;.tmp</code> with no cleanup, no <code>fsync</code>, no lock.</li>
+      <li><code>reckon/crew/runs.py:_write_json</code> &mdash; unique <code>NamedTemporaryFile</code>, <code>unlink</code> in <code>finally</code>, <strong><code>fsync</code> before rename</strong>, no lock.</li>
+      <li><code>reckon/resources.py:migrate_typed_layout</code> &mdash; a <code>mkdtemp</code> staging directory with <code>rmtree</code> in <code>finally</code>; no <code>fsync</code>, no lock. It moves non-JSON files too, so it is not replaced wholesale.</li>
+      <li><code>reckon/serve.py:_store_git_creation_cache</code> &mdash; unique <code>NamedTemporaryFile</code>, <code>unlink()</code> in <code>finally</code>, no <code>fsync</code>, no lock.</li>
+      <li><code>reckon/serve.py:_store_git_last_modified_cache</code> &mdash; same shape as the creation-cache writer: <code>unlink()</code> in <code>finally</code>, no <code>fsync</code>, no lock.</li>
+      <li><code>reckon/serve.py:Handler._handle_post</code> &mdash; fixed sibling <code>&lt;out_file&gt;.json.tmp</code>, no cleanup, no <code>fsync</code>, no lock.</li>
+    </ul>
+    <p>Two of the fourteen &mdash; <code>migrate_typed_layout</code> and <code>Handler._handle_post</code> &mdash; mix the JSON write into a larger operation (a layout move, an HTTP response write). Each is a caller the primitive can be introduced into without changing the surrounding operation.</p>
+  </section>
+
+  <section id="decoders">
+    <h2>The four decoder bodies</h2>
+    <p>Four differently named functions carry exactly the same body at HEAD: reject <code>bool</code> and anything that is not an <code>int</code> or <code>float</code>, otherwise return <code>float(value)</code>. <code>reckon/_observations.py:optional_number</code> is their one home; each caller keeps only the name its local vocabulary expects.</p>
+    <ul>
+      <li><code>reckon/_backends.py:_number</code> &mdash; also feeds <code>_seconds</code>, which rounds the result; the rounding stays at the caller.</li>
+      <li><code>reckon/crew/carryover_census.py:_measured</code> &mdash; feeds <code>_median</code> over the non-<code>None</code> values.</li>
+      <li><code>reckon/crew/hold.py:_as_number</code> &mdash; the hold age read from a lane document.</li>
+      <li><code>reckon/crew/window_reading.py:_numeric</code> &mdash; a window reading's own numeric field.</li>
+    </ul>
+    <p>No caller is migrated here. Each migration is a one-line import swap that keeps the caller's name, so it can proceed independently of the others.</p>
+  </section>
+
+  <section id="scope">
+    <h2>What this node did and did not do</h2>
+    <p>Landed: <code>reckon/_store.py</code> (the shared helper and <code>write_json_atomically</code>), <code>reckon/_observations.py</code>, and <code>tests/test_one_atomic_writer_and_number_decoder.py</code>. Not landed here: any caller migration, and the mutation of the fourteen writers and four decoders onto the new primitives. That is the handoff the inventory above supports, and it is what the follow-on nodes carry. This node's gate measures only its own change; verifying the merged result belongs to a separately dispatched test node.</p>
+  </section>
+ </main>
+</body>
+</html>
