@@ -15,16 +15,20 @@
   <h1>A sub-floor disposition is written by a command</h1>
   <p>A coordinator retires a sub-floor review dimension through <code>reckon crew dispose</code>
   instead of editing the review store by hand. The command writes one entry through
-  <code>record_dimension_disposition</code>, and every refusal is the store's own — so an
-  unknown dimension, a kind outside the closed set, a fold naming no node and an exemption
-  carrying no reason all exit non-zero with nothing written and the obligation row standing.</p>
+  <code>record_dimension_disposition</code>, into the very file the obligations list reads the
+  review from, and every refusal is the store's own — so an unknown dimension, a kind outside
+  the closed set, a fold naming no node, an exemption carrying no reason, a fold carrying a
+  reason and an exemption naming a node all exit non-zero with nothing written and the
+  obligation row standing.</p>
 
   <section id="landed">
     <h2>What landed</h2>
     <ul>
       <li><code>reckon/cli.py</code> — a <code>crew dispose</code> subcommand taking
       <code>--project</code>, <code>--run</code>, <code>--dimension</code>, <code>--kind</code>,
-      and whichever of <code>--node</code> / <code>--reason</code> the kind requires. It writes
+      and whichever of <code>--node</code> / <code>--reason</code> the kind requires. It resolves
+      the reviewed head and selects the stored record through the reader's own calls
+      (<code>recovery.select_review_for_head</code>), writes
       through <code>review.record_dimension_disposition</code> and re-reads the stored record for the
       receipt, so the reply repeats what the store now holds rather than what the call intended
       (<code>reckon/cli.py:3793</code>).</li>
@@ -32,13 +36,23 @@
       reader's own predicate <code>dimension_disposition_valid</code>. A second copy of the
       vocabulary in the writer could accept a kind the read-back then ignores, which stores a row
       that reads as answered and stands.</li>
+      <li><code>reckon/crew/review.py:1042</code> — <code>stored_record</code> returns the file it
+      read beside the record it holds, and <code>record_dimension_disposition</code> writes back
+      into that file. Deriving a target from the record's own fields instead put the entry in a
+      copy the obligations list never reads: a store holding a legacy copy beside the
+      revision-keyed record for one head reported the disposition as recorded while the row
+      stood.</li>
+      <li><code>reckon/crew/review.py:1360</code> — a fold supplied with a reason, or an
+      exemption supplied with a node, is refused by name instead of dropping the field that
+      belongs to the other kind while the call reported success.</li>
       <li><code>reckon/crew/review.py:1166</code> — the floor comment that described a floor of zero
       as reporting every dimension now describes what a floor of zero does.</li>
-      <li><code>tests/test_sub_floor_disposition_has_a_writer.py</code> — 10 cases: the two accepted
-      kinds, five refusals, a hand-planted unknown kind, the shipped floors, and the temporary
-      config home.</li>
+      <li><code>tests/test_sub_floor_disposition_has_a_writer.py</code> — 13 cases: the two accepted
+      kinds, seven refusals, a store holding both records for one head, a hand-planted unknown
+      kind, the shipped floors, and the temporary config home.</li>
     </ul>
-    <p>Commit <code>857e514c</code>. Paths changed: <code>reckon/cli.py</code>,
+    <p>Commits <code>857e514c</code> and <code>0d77df3d</code>, the second resolving which stored
+    record a disposition belongs in. Paths changed: <code>reckon/cli.py</code>,
     <code>reckon/crew/review.py</code>, <code>tests/test_sub_floor_disposition_has_a_writer.py</code>.</p>
   </section>
 
@@ -61,7 +75,7 @@ E        +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
     <h2>The row's two exits, and the gate measured at three revisions</h2>
     <figure>
       <img src="/reckon/figures/crew-observability-truth/a-sub-floor-disposition-is-written-by-a-command/disposition_lifecycle_and_arm_outcomes.png"
-           alt="Left: a stored review whose durability (5) sits below its declared floor (10) while the total passes stands an obligation row; the command accepts a fold naming a node or an exemption recording a reason, retiring the row, and refuses an unknown dimension, an unknown kind, a fold with no node or an exemption with no reason, leaving the row where it was. Right: the gate run at three revisions — base 0 passed 8 failed, the change 48 passed, and a scratch copy with the kind check removed 46 passed 2 failed.">
+           alt="Left: a stored review whose durability (5) sits below its declared floor (10) while the total passes stands an obligation row; the command accepts a fold naming a node or an exemption recording a reason, retiring the row, and refuses an unknown dimension, an unknown kind, a fold with no node, an exemption with no reason, a fold carrying a reason or an exemption naming a node, leaving the row where it was. Right: the gate run at three revisions — base 40 passed 8 failed, the change 51 passed, and a scratch copy with the kind check removed 49 passed 2 failed.">
       <figcaption>The row the review stands, where each answer sends it, and the gate run at the
       given base, the change, and a mutated scratch copy.</figcaption>
     </figure>
@@ -75,12 +89,17 @@ E        +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
           <td><code>arms/baseline_suite.log</code></td>
         </tr>
         <tr>
-          <td>change</td><td><code>857e514c</code></td><td>48 passed — <code>EXIT=0</code></td>
+          <td>change</td><td><code>0d77df3d</code></td><td>51 passed — <code>EXIT=0</code></td>
           <td><code>arms/after_suite.log</code></td>
         </tr>
         <tr>
-          <td>scratch copy, kind check removed</td><td><code>857e514c</code> + mutation</td>
-          <td>2 failed, 46 passed — <code>EXIT=1</code></td>
+          <td>pre-repair source, this module beside it</td><td><code>857e514c</code></td>
+          <td>3 failed, 48 passed — <code>EXIT=1</code></td>
+          <td><code>arms/pre_repair.log</code></td>
+        </tr>
+        <tr>
+          <td>scratch copy, kind check removed</td><td><code>0d77df3d</code> + mutation</td>
+          <td>2 failed, 49 passed — <code>EXIT=1</code></td>
           <td><code>arms/negative_control.log</code></td>
         </tr>
       </tbody>
@@ -89,11 +108,16 @@ E        +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
     obligations list (<code>test_sub_floor_dimension_is_an_obligation.py</code>,
     <code>test_crew_obligations.py</code>, <code>test_mcp_crew_obligations.py</code>,
     <code>test_obligations_do_not_mislead.py</code>, <code>test_coordinator_obligations_hook.py</code>,
-    <code>test_review_in_flight_by_record_path.py</code>). The base arm's failing set is exactly the
-    new module's command cases; no existing file contributes an added failing id at either arm, so
-    the base arm needs no attribution. Each log opens with the revision, the tree, the command and
-    the imported module's resolved path (<code>review.__file__</code>), so a green log cannot be
-    describing another checkout.</p>
+    <code>test_review_in_flight_by_record_path.py</code>). The base arm ran the module as first
+    delivered — 10 cases in a 48-case gate, whose 8 failures are exactly its command cases — and the
+    repaired module carries 13, so the change arm's 51 is 13 plus 38. No existing file contributes
+    an added failing id at either arm, so the base arm needs no attribution. Each log opens with
+    the revision, the tree, the command and the imported module's resolved path
+    (<code>review.__file__</code>), so a green log cannot be describing another checkout.</p>
+    <p>The pre-repair arm is the source at <code>857e514c</code> with this module copied in beside
+    it: it fails exactly the three cases the repair answers — the store holding both records for
+    one head, the fold carrying a reason, and the exemption carrying a node — so each half of the
+    repair is load-bearing rather than covered by a case that would pass either way.</p>
   </section>
 
   <section id="refusals">
@@ -110,12 +134,33 @@ E        +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
         <tr><td><code>--dimension durability --kind noted</code></td><td><code>unknown disposition 'noted'</code></td></tr>
         <tr><td><code>--dimension durability --kind folded</code></td><td><code>a folded disposition must name the node it was folded into</code></td></tr>
         <tr><td><code>--dimension durability --kind exempted</code></td><td><code>an exempted disposition must record its reason</code></td></tr>
+        <tr><td><code>--dimension durability --kind folded --node &lt;id&gt; --reason &lt;text&gt;</code></td><td><code>a folded disposition carries no reason; record an exemption instead of folding a finding whose reason you are keeping</code></td></tr>
+        <tr><td><code>--dimension durability --kind exempted --reason &lt;text&gt; --node &lt;id&gt;</code></td><td><code>an exempted disposition names no node; record a fold instead of exempting a finding that a node already answers</code></td></tr>
       </tbody>
     </table>
     <p>The refusal is asserted through the same entry point the acceptance is, because a refusal that
     still wrote would be indistinguishable from an accepted call at every later read. The read-back
     case is asserted on its own as well: the store is reachable by hand, so an entry naming a kind
     the closed set does not define is not a disposition however complete its other fields look.</p>
+    <p>Those last two rows refuse a half-answered call: the field belongs to the other kind, so
+    storing the entry would drop it in silence while the reply reported success. Refusing by name
+    leaves the caller to say which kind they meant.</p>
+  </section>
+
+  <section id="record-selection">
+    <h2>Which stored record the entry belongs in</h2>
+    <p>A store can hold two records for one head: the review at the revision-keyed path, and a
+    legacy copy beside it carrying the same head — the shape this plan's own review store holds.
+    The obligations list reads the row through <code>recovery.select_review_for_head</code>, which
+    takes the first candidate carrying the head, and the identity path is a candidate before any
+    keyed one. The command selected the newest record instead, and the writer re-derived its target
+    from the record's own fields, so on such a store the entry could land in the file the reader
+    never reads: the reply named a path and reported success while the sub-floor row stayed.</p>
+    <p>The new case asserts the premise first — both files for one head, the reader resolving the
+    legacy copy, the row standing — and after the call requires the row gone and the disposition in
+    exactly the file <code>stored_record</code> reports reading. Against the pre-repair source it
+    fails with the command exiting 0 while the row stands, which is what makes it load-bearing
+    rather than a case that would pass either way.</p>
   </section>
 
   <section id="negative-control">
@@ -124,11 +169,11 @@ E        +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
     <code>dimension_disposition_valid</code>, and the gate run against it fails on exactly the two
     cases that read the closed set — the unknown-kind call now exits 0 and stores
     <code>{"kind": "noted", "reason": "shorthand", …}</code>, and the hand-planted entry is now
-    honoured by the read-back. The other 46 cases, including the four refusals the mutation cannot
+    honoured by the read-back. The other 49 cases, including the six refusals the mutation cannot
     reach, stay green.</p>
     <pre><code>FAILED …::test_a_refused_disposition_leaves_the_row_standing[unknown-kind-with-a-reason]
 FAILED …::test_a_kind_outside_the_closed_set_is_not_honoured_when_stored
-2 failed, 46 passed in 97.78s (0:01:37)
+2 failed, 49 passed in 98.08s (0:01:38)
 EXIT=1</code></pre>
   </section>
 

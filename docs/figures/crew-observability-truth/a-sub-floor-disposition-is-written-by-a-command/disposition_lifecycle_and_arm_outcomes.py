@@ -134,13 +134,15 @@ def draw_lifecycle(ax) -> None:
     _box(
         ax,
         6.7,
-        2.35,
-        3.05,
         2.1,
+        3.05,
+        2.35,
         "unknown dimension\n"
         "unknown kind\n"
         "fold naming no node\n"
         "exemption with no reason\n"
+        "fold carrying a reason\n"
+        "exemption carrying a node\n"
         "\n"
         "nothing written;\nrow stands",
         face=REFUSE,
@@ -161,9 +163,9 @@ def draw_lifecycle(ax) -> None:
 
 def draw_arms(ax) -> None:
     arms = [
-        ("base 5636e306\nno subcommand exists", 0, 8, "#c9c9c9"),
-        ("change 857e514c\ncrew dispose", 48, 0, "#8fbf8f"),
-        ("scratch copy, kind check removed", 46, 2, "#d98c85"),
+        ("base 5636e306\nno subcommand exists", 40, 8, "#c9c9c9"),
+        ("change 0d77df3d\ncrew dispose", 51, 0, "#8fbf8f"),
+        ("scratch copy, kind check removed", 49, 2, "#d98c85"),
     ]
     ys = [2.0, 1.0, 0.0]
     for (label, passed, failed, colour), y in zip(arms, ys, strict=True):
@@ -190,17 +192,17 @@ def draw_arms(ax) -> None:
         )
 
     ax.annotate(
-        "the 8 command cases:\nno such command 'dispose'",
-        xy=(9, 2.25),
-        xytext=(14, 2.85),
+        "the command cases at the base,\nno subcommand to run: 8 failed",
+        xy=(44, 2.3),
+        xytext=(16, 2.9),
         fontsize=8.4,
         color=INK,
         arrowprops={"arrowstyle": "->", "color": INK, "linewidth": 0.9},
     )
     ax.annotate(
         "unknown-kind refusal and\nread-back of a stored unknown kind",
-        xy=(48.6, 0.0),
-        xytext=(20, -0.5),
+        xy=(50.2, 0.0),
+        xytext=(18, -0.55),
         fontsize=8.4,
         color=INK,
         arrowprops={"arrowstyle": "->", "color": INK, "linewidth": 0.9},
@@ -209,7 +211,12 @@ def draw_arms(ax) -> None:
     ax.set_xlim(0, 66)
     ax.set_ylim(-1.0, 3.1)
     ax.set_yticks([])
-    ax.set_xlabel("cases in the gate: the new module's 10 plus 38 across the existing dispositions and obligations modules", fontsize=8.8)
+    ax.set_xlabel(
+        "cases in the gate: the new module's 13 plus 38 across the existing\n"
+        "dispositions and obligations modules\n"
+        "(the base arm ran the module as first delivered, 10 plus 38)",
+        fontsize=8.8,
+    )
     ax.set_title(
         "The gate run at three revisions (each arm its own log, EXIT= line last)",
         fontsize=10.5,
