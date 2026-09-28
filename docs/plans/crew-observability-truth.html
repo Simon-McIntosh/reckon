@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="520">
+<meta name="plan-version" content="521">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -1973,6 +1973,11 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
     <div class="r-fu-body"><p>5c91163b makes a review dimension below its floor an obligation row. It is shipped at a floor of 10 per dimension in flight-defaults.yaml. The review of that node found that record_dimension_disposition (reckon/crew/review.py:1289) is called only by its test. Nothing in production writes a dimension_dispositions entry, so a coordinator can retire a row only by editing the store by hand, or by promoting the run, which removes the live pointer the row reads. Give the closed disposition set (folded with a node id, exempted with a reason) a command-line writer. Two smaller review findings travel with it: the comment near review.py:1166 misdescribes a floor of 0, which reports nothing; and no test fails if the shipped default floors are removed.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth §21</pre>
     </article>
+<article class="r-fu" data-id="f-cot-lane-counts-read-through-the-lane-document" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-28" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The carried lane counts are read through the lane-document reader, and the generating alias is tested</h4>
+    <div class="r-fu-body"><p>From the review of lane-reading-carries-generating-and-waiting (total 90, zero added failures). The dispatch payload now carries generating, waiting and throughput, but <code>reckon/crew/dispatch.py:2842</code> reads them from the raw document rather than through <code>reckon/crew/lane_document.py</code>, so a change to the document's shape has two readers to keep in step. The <code>generating</code> alias at <code>:2603</code> has no test. Route the read through the lane-document reader and add a case for the alias. §22's per-row rate half is still open.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-observability-truth §22</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s5" data-id="c-20260903-budget-visibility" data-who="reckon-ship" data-when="2026-09-03T07:00:00Z">
@@ -3482,7 +3487,7 @@ if isinstance(argv, list) and argv:
     <div class="r-comment-body"><p>lane_reading now carries the lane's own generating and waiting counts and the rate it achieved with the rate's stamp, age and denominator, each figure resolved from the same single consult and withheld per field as unknown — never zero — when the document does not publish it; three cases in tests/test_lane_reading_carries_counts.py cover the known-counts, withheld-figure and undated-rate paths, and the record with its resolution diagram sits at docs/evidence/fragments/crew-observability-truth/lane-reading-carries-generating-and-waiting.html</p></div>
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20260928T153420386555-review-of-lane-reading-carries-generating-and-waiting" data-who="reckon-build" data-when="2026-09-28T16:44:51.404Z">
-    <div class="r-comment-body"><p>reviewed r-20260928T142644163914-lane-reading-carries-generating-and-waiting at head 1e0688263beed4a427520cd5f4d72efabc1d93f1 against base 687c8cbf124cef66f0a1e0d1ef210c5d65b1fd31: the dispatch payload&#x27;s lane_reading resolves the lane&#x27;s generating and waiting counts and its achieved rate with the rate&#x27;s own vintage and denominator in the single consult, an unpublished figure is withheld as unknown and never zero, the node&#x27;s own gate added zero failing test ids across the reviewed pair, and the stored record scores it 90 (goal_fidelity 18, evidence 19, scope_discipline 20, durability 16, fit 17) with two findings on a second owner of the count resolution and its unexercised generating alias</p></div>
+    <div class="r-comment-body"><p>reviewed r-20260928T142644163914-lane-reading-carries-generating-and-waiting at head 1e0688263beed4a427520cd5f4d72efabc1d93f1 against base 687c8cbf124cef66f0a1e0d1ef210c5d65b1fd31: the dispatch payload's lane_reading resolves the lane's generating and waiting counts and its achieved rate with the rate's own vintage and denominator in the single consult, an unpublished figure is withheld as unknown and never zero, the node's own gate added zero failing test ids across the reviewed pair, and the stored record scores it 90 (goal_fidelity 18, evidence 19, scope_discipline 20, durability 16, fit 17) with two findings on a second owner of the count resolution and its unexercised generating alias</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20260925T082220783770-refusal-names-the-roots-it-checked" data-who="reckon-build" data-when="2026-09-25T11:05:30.283Z">
     <div class="r-comment-body"><p>a write-scope refusal names the delivery roots it matched; review 95, no findings</p></div>

@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="115">
+<meta name="plan-version" content="116">
 </head>
 <body>
   <main class="plan-doc">
@@ -1313,6 +1313,11 @@
 <article class="r-fu" data-id="f-crpc-exit-record-forms" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T13:33:00Z" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The fact gate reads only EXIT=, and workers write other forms</h4>
     <div class="r-fu-body"><p>Within hours of the fact gate landing at a9df0e39, two sound controls from nodes dispatched before it were refused for recording no exit. One (name-the-ended-turn-in-its-reason) had FAILED ids but no exit line; it was re-run with EXIT=1. The other (a-sub-floor-dimension-is-an-obligation) recorded its exit as 'arm_exit=1', beside four FAILED ids and pytest's '4 failed, 3 passed'; its promotion waived the control with those facts stated. Either the gate reads the exit forms workers actually write (EXIT=, exit=, arm_exit=, 'gate exit: N'), or the manifest template and the dispatch prompt require the one form it reads. This extends the prompt repair already listed in f-crpc-control-gate-repairs.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-a-test-first-baseline-refuses-a-sound-control" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-28" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The control gate compares against the head arm, so a test-first baseline does not refuse a sound control</h4>
+    <div class="r-fu-body"><p>The fact gate admits a control only when it fails an id the <em>baseline</em> does not fail. A worker whose baseline arm runs its new tests against the unfixed base has every new case red there by design, so a correct control that reddens one of them is refused. Measured on r-20260928T142644163914 (lane-reading): the control failed <code>test_the_payload_carries_the_lane_counts_and_its_achieved_rate</code> with EXIT=1, that test passes at head, and the promotion needed a waiver. The admitting fact should be that the control fails a test the <em>head</em> arm passes, read from after_suite, with the baseline comparison kept only when no head arm is recorded.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
     </article>
 </section>
