@@ -1409,6 +1409,48 @@
       <p><strong>Measurement. Focused gate <code>tests/test_review_counts_added_failures.py</code>: 5 passed, exit 0</strong> at <code>f94c8b9b</code>, the revision the gate log carries. The tests write a review record by hand and read it back through <code>select_review_for_head</code>, with the reviewed run's manifest and gate logs under a temporary <code>RECKON_HOME</code>. An adjacent cohort of nine review test files measures 1 failed / 76 passed at base <code>2184a9f1</code> against 1 failed / 76 passed after, with an identical failing id — <strong>0 added failures</strong>. <code>reckon/crew/recovery.py</code> is untouched. Anchor: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#review-counts-added-failures-by-id">review-counts-added-failures-by-id</a>.</p>
     </div>
 
+    <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T100941236278-fixture-refusal-still-refuses" data-who="crew-worker" data-when="2026-09-28">
+      <p><strong>The sweep's refusal-continuation case refuses again.</strong> Two of this section's own
+      tests were red on <code>main</code>: <code>test_a_refused_review_leaves_the_rest_of_the_wave_dispatched</code>
+      and <code>test_a_recorded_refusal_is_the_report_and_not_a_generator</code>, both with
+      <code>IndexError</code> at <code>report["reviews"]["refused"][0]</code>. The fixture produced its
+      refusal from a member-seat collision — the second review of a session refused with
+      <code>member-in-flight</code> — and every unnamed dispatch now takes a disposable identity, so
+      the collision, and with it the only refusal the fixture could produce, was removed by design.
+      Both runs dispatched, and the property the case exists for was asserted against a fleet with
+      nothing to refuse in it. Measured at the base revision <code>bd231eff</code>: <strong>2 failed,
+      7 passed</strong>, the wave case failing on <code>assert 2 == 1</code> dispatched.</p>
+      <p><strong>The refusal is now a live claim over the review's own record path.</strong> The fixture
+      writes a third pointer holding a scope claim on the refused run's review record, which is a
+      refusal that still exists and belongs to one run rather than to the session — so the wave still
+      has a run behind it to reach. The refused run is also the one the sweep enumerates first (run id
+      ascending), which is what makes the case a <em>continuation</em>: a sweep that stopped at the
+      first refusal would never reach the second run, and the assertion that one review was dispatched
+      would fail. The refusal is asserted to name the claiming run, so the case cannot pass on
+      unrelated error text.</p>
+      <figure>
+        <img src="/reckon/figures/scoring-should-stop-a-promotion/review_refusal_continuation.png" alt="Three live pointers in enumeration order — the claimant, the refused run, the run behind it — with the sweep continuing past the refusal on the left and cut after it on the right, where the dispatch list is empty.">
+        <figcaption>The refused run is enumerated <em>before</em> the run it must not strand, so stopping at the first refusal is visible as an empty dispatch list rather than as a smaller one.</figcaption>
+      </figure>
+      <p><strong>Measurement.</strong> <code>tests/test_review_reflex_sweep.py</code> reports
+      <strong>9 passed, exit 0</strong> in the worktree; the same module with the fixture restored to
+      the base revision reports <strong>2 failed, 7 passed, exit 1</strong> in a scratch copy of that
+      revision. The declared negative control makes <code>dispatch_awaiting_reviews</code> stop after
+      the first refusal in a scratch copy of <code>reckon/crew/recovery.py</code>: the wave case then
+      fails on <code>assert 0 == 1</code> dispatched while the other eight pass, which is the
+      continuation itself and not the recording. <code>reckon/crew/recovery.py</code> is untouched —
+      the accumulator already stored the report rather than a generator and already reached the rest
+      of the wave, so nothing but the fixture needed repair. Ruff reports no findings on the changed
+      test file, at the base and after. Anchor:
+      <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#review-refusal-fixture-claim">review-refusal-fixture-claim</a>.</p>
+      <p><strong>What this does not close.</strong> Nothing in production behaviour changed: the node
+      restores the section's coverage of the reflex rather than widening it. What
+      <code>test_a_refused_review_leaves_the_rest_of_the_wave_dispatched</code> asserts is the run
+      behind the refusal still dispatching; the refusal itself is produced from a scope claim now,
+      and the fixture deliberately does not manufacture a seat collision the dispatcher no longer
+      has.</p>
+    </div>
+
     <h2 id="s4">§4 — A review that is quick enough to be reflexive</h2>
 
     <p>A review nobody waits for is as useless as one nobody asks for. The checklist in

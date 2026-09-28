@@ -12,7 +12,7 @@ here look like an idle fleet rather than an error. A sweep that dispatches
 nothing is indistinguishable from a fleet with nothing to dispatch, and a
 sweep that re-dispatches what it already dispatched manufactures reviews. A
 refusal on one run must leave the rest dispatched, because a sweep that stops
-at the first refusal makes one unavailable lane look like a quiet one. A run
+at the first refusal makes one refused dispatch look like a quiet fleet. A run
 awaiting review is itself an unreconciled run, so the composed command carries
 the unreconciled-runs waiver — without it the fence refuses the very dispatch
 that clears the backlog. A review run is never its own source run, keyed on
@@ -179,6 +179,36 @@ def _backdate_manifest(record: dict, seconds: int) -> None:
     os.utime(path, (when, when))
 
 
+def _live_claimant(repo: Path, run_id: str, *, write_paths: list[str]) -> dict:
+    """A live run holding a write claim, so a dispatch over that path is refused.
+
+    A claim binds from the moment its pointer exists and holds while no worker
+    process is recorded, which is the state a pointer carries between being
+    written and its worker being spawned. It names paths rather than a session,
+    so the refusal falls on the one run whose scopes overlap and the rest of a
+    wave still has somewhere to be dispatched to.
+    """
+    record = {
+        "run_id": run_id,
+        "project": "sample",
+        "repo": str(repo),
+        "node": {
+            "id": run_id,
+            "plan": "fixture",
+            "section": "s2",
+            "write_paths": [str(path) for path in write_paths],
+        },
+        "backend": "alpha",
+        "launch": "cli",
+        "argv": ["codex"],
+        "phase": "starting",
+        "process_alive": False,
+        "session": "session-orchestrating",
+    }
+    crew._write_json(crew.pointer_path(run_id), record)
+    return record
+
+
 def _wait_for_stopped_producer() -> None:
     deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
     while time.monotonic() < deadline:
@@ -258,26 +288,36 @@ def test_a_refused_review_leaves_the_rest_of_the_wave_dispatched(
 ) -> None:
     """A refusal on one run leaves the sweep reaching the rest of the wave.
 
-    The refusal recorded here is the seat the first review took, which is why a
-    second review cannot follow it in one coordinator session. What the sweep
-    owes its reader either way is the refusal itself and the fact that it kept
-    going: a sweep that stopped at the first refusal reports nothing at all
-    about the run it never reached, which makes one occupied seat look like a
-    quiet fleet.
+    The refusal recorded here is a write claim another live run holds over the
+    first run's own review record, so the refusal belongs to that run's scope
+    rather than to the session its reviews are dispatched from. The refused run
+    is also the one the sweep enumerates first, which is what makes the case a
+    continuation rather than a refusal the wave happens to end on: a sweep that
+    stopped at the first refusal reports nothing at all about the run it never
+    reached, which makes one claimed path look like a quiet fleet.
     """
     config_home, repo = isolated_project
-    _backdate_manifest(_completed_pointer(config_home, repo, "r-one"), 3600)
+    refused = _completed_pointer(config_home, repo, "r-one")
+    _backdate_manifest(refused, 3600)
     _backdate_manifest(_completed_pointer(config_home, repo, "r-two"), 3600)
+    _live_claimant(
+        repo,
+        "r-claiming-elsewhere",
+        write_paths=[recovery._review_dispatch_fields(refused)["write_path"]],
+    )
     calls: list[dict] = []
     with _armed_fleet():
         report = resumption.sweep(
             "sample", config=GRACED_CONFIG, launcher=_launcher_recording(calls)
         )
     assert len(report["reviews"]["dispatched"]) == 1
-    assert [row["run_id"] for row in report["reviews"]["refused"]] == ["r-two"]
+    assert [row["run_id"] for row in report["reviews"]["refused"]] == ["r-one"]
+    # The refusal is the claim, so the run that holds it is named: the wave
+    # continued past a scope refusal rather than past some other error text.
+    assert "r-claiming-elsewhere" in report["reviews"]["refused"][0]["reason"]
     assert len(calls) == 1
-    assert runs.read_pointer("r-one")["review_dispatch"]["status"] == "dispatched"
-    assert runs.read_pointer("r-two")["review_dispatch"]["status"] == "refused"
+    assert runs.read_pointer("r-one")["review_dispatch"]["status"] == "refused"
+    assert runs.read_pointer("r-two")["review_dispatch"]["status"] == "dispatched"
 
 
 def test_the_review_dispatch_waives_the_unreconciled_fence(
@@ -322,15 +362,21 @@ def test_a_recorded_refusal_is_the_report_and_not_a_generator(
 ) -> None:
     """The accumulator holds the report, which is what a JSON emit path can read."""
     config_home, repo = isolated_project
-    _backdate_manifest(_completed_pointer(config_home, repo, "r-one"), 3600)
+    refused = _completed_pointer(config_home, repo, "r-one")
+    _backdate_manifest(refused, 3600)
     _backdate_manifest(_completed_pointer(config_home, repo, "r-two"), 3600)
+    _live_claimant(
+        repo,
+        "r-claiming-elsewhere",
+        write_paths=[recovery._review_dispatch_fields(refused)["write_path"]],
+    )
     with _armed_fleet():
         report = resumption.sweep(
             "sample", config=GRACED_CONFIG, launcher=_launcher_recording([])
         )
     entry = report["reviews"]["refused"][0]
     assert isinstance(entry, dict)
-    assert entry["run_id"] == "r-two"
+    assert entry["run_id"] == "r-one"
     assert "reason" in entry
     assert json.loads(json.dumps(entry))["refused"] is True
 
