@@ -144,14 +144,17 @@ def _events(stream_path: Path, run_id: str) -> list[dict]:
 
 
 def _kinds(events: list[dict]) -> list[tuple]:
-    """Event kind with its state move and its reading, for a failure that names
-    what ran."""
+    """Event kind with its state move, its reading and the reason it composed.
+    The reason travels in the failure message because a red arm is about the
+    words the row carried: a reader must see the clause the reader composed
+    rather than infer it from a classification."""
     return [
         (
             str(event.get("event")),
             event.get("from_state"),
             event.get("to_state"),
             event.get("recovery_classification"),
+            str(event.get("detail") or ""),
         )
         for event in events
     ]
@@ -190,9 +193,9 @@ def test_a_turn_that_ended_without_a_manifest_is_a_row_at_once(tmp_path: Path) -
             assert acquired is True
             stream_path = Path(str(registration["stream_path"]))
             opened = _events(stream_path, run_id)
-            assert _kinds(opened) == [("baseline", None, "working", "running")], _kinds(
-                opened
-            )
+            assert [kind[:4] for kind in _kinds(opened)] == [
+                ("baseline", None, "working", "running")
+            ], _kinds(opened)
             # The positive control for the baseline: a live worker behind a
             # non-terminal manifest reads working, so the row asserted below is
             # the end the next snapshot observes rather than a state the run
