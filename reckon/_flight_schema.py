@@ -195,12 +195,41 @@ class FlightConfig(ConfiguredBaseModel):
     backends: Optional[dict[str, BackendConfig]] = Field(default=None, description="""Available worker backends, keyed by a name chosen by whoever writes the configuration. The schema fixes no backend names.""")
     roles: Optional[dict[str, RoleConfig]] = Field(default=None, description="""Per-role routing overlays, keyed by role name. A role overrides only the keys it names; everything else falls through to its backend.""")
     gates: Optional[GateConfig] = Field(default=None)
+    review: Optional[ReviewConfig] = Field(default=None)
     budget: Optional[BudgetConfig] = Field(default=None)
     fences: Optional[FenceConfig] = Field(default=None)
     capability_raise: Optional[CapabilityRaise] = Field(default=None, description="""Rule that raises the capability a node resolves at once its plan section has been attempted at or above a threshold, so a section that keeps costing attempts stops landing on the raise's own lane without anyone deciding it by hand. The raise moves a node upward only: a node already at or above the raised level resolves unchanged.""")
     worktree: Optional[WorktreeConfig] = Field(default=None)
     summary: Optional[SummaryConfig] = Field(default=None)
     ticker: Optional[TickerConfig] = Field(default=None, description="""The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back.""")
+
+
+class ReviewConfig(ConfiguredBaseModel):
+    """
+    How a finished run is sized to a review. Declared on the flight config so a host or project layer retunes the tier thresholds without a code change; the resolver reads them from the resolved config.
+    """
+    tiers: Optional[ReviewTiers] = Field(default=None, description="""The thresholds that size a review to a finished run's risk. The resolver reads them from the resolved flight config so a host or project layer retunes the tiers without a code change.""")
+
+
+class ReviewTiers(ConfiguredBaseModel):
+    """
+    The thresholds that separate the light and full review tiers. A run that changes runtime source below the changed-line ceiling, at a spec level that fixes the done-when, earns a light review.
+    """
+    light_changed_lines: Optional[int] = Field(default=None, description="""Changed-line ceiling (added plus deleted) below which a run that changes runtime source can earn a light review rather than a full one. A run at or above this ceiling is reviewed at full, because the size of a diff is itself a reason a reviewer has more to read than a light pass covers.""", ge=1)
+    light_time_budget: Optional[str] = Field(default=None, description="""Wall-clock budget granted to a light review, written as an integer followed by a unit — `s`, `m` or `h`. A light review that exceeds it escalates to a full review rather than being abandoned.""")
+
+    @field_validator('light_time_budget')
+    def pattern_light_time_budget(cls, v):
+        pattern=re.compile(r"^[0-9]+[smh]$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid light_time_budget format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid light_time_budget format: {v}"
+            raise ValueError(err_msg)
+        return v
 
 
 class BackendConfig(ConfiguredBaseModel):
@@ -478,6 +507,8 @@ class TickerConfig(ConfiguredBaseModel):
 # Model rebuild
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 FlightConfig.model_rebuild()
+ReviewConfig.model_rebuild()
+ReviewTiers.model_rebuild()
 BackendConfig.model_rebuild()
 PlacementConfig.model_rebuild()
 PlacementRequirement.model_rebuild()

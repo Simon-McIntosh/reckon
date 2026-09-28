@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 520" width="760" height="520" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="14">
+  <title>How a finished run resolves to a review tier</title>
+  <desc>A decision flow: an elevated-risk declaration forces full; otherwise runtime source decides, and a small diff at a fixing specification level earns light, while a run changing no runtime source earns none.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4b5563"/>
+    </marker>
+    <style>
+      .box { fill:#f8fafc; stroke:#334155; stroke-width:1.5; rx:8; }
+      .q { fill:#eef2ff; stroke:#4338ca; stroke-width:1.5; rx:8; }
+      .full { fill:#fee2e2; stroke:#b91c1c; stroke-width:1.5; rx:8; }
+      .light { fill:#fef3c7; stroke:#b45309; stroke-width:1.5; rx:8; }
+      .none { fill:#dcfce7; stroke:#15803d; stroke-width:1.5; rx:8; }
+      .t { fill:#0f172a; }
+      .lbl { fill:#475569; font-size:12px; }
+      .e { stroke:#4b5563; stroke-width:1.5; fill:none; marker-end:url(#arrow); }
+    </style>
+  </defs>
+
+  <!-- start -->
+  <rect class="box" x="270" y="16" width="220" height="44"/>
+  <text class="t" x="380" y="43" text-anchor="middle">finished run</text>
+
+  <!-- q1: elevated risk -->
+  <path class="e" d="M380 60 L380 92"/>
+  <rect class="q" x="230" y="92" width="300" height="56"/>
+  <text class="t" x="380" y="116" text-anchor="middle">plan or section risk</text>
+  <text class="t" x="380" y="134" text-anchor="middle">risk elevated or critical?</text>
+
+  <!-- yes -> full -->
+  <path class="e" d="M530 120 L640 120 L640 148"/>
+  <text class="lbl" x="560" y="112" text-anchor="middle">yes</text>
+
+  <!-- no -> q2 -->
+  <path class="e" d="M380 148 L380 186"/>
+  <text class="lbl" x="396" y="172">no</text>
+  <rect class="q" x="230" y="186" width="300" height="56"/>
+  <text class="t" x="380" y="210" text-anchor="middle">changes runtime source?</text>
+  <text class="lbl" x="380" y="230" text-anchor="middle">path_class(path) == "source"</text>
+
+  <!-- no -> none -->
+  <path class="e" d="M230 214 L110 214 L110 300"/>
+  <text class="lbl" x="170" y="206" text-anchor="middle">no</text>
+  <rect class="none" x="20" y="300" width="180" height="56"/>
+  <text class="t" x="110" y="324" text-anchor="middle">none</text>
+  <text class="lbl" x="110" y="342" text-anchor="middle">merged-head gate rerun</text>
+
+  <!-- yes -> q3 -->
+  <path class="e" d="M380 242 L380 280"/>
+  <text class="lbl" x="396" y="266">yes</text>
+
+  <rect class="q" x="200" y="280" width="360" height="60"/>
+  <text class="t" x="380" y="304" text-anchor="middle">changed lines &lt; light ceiling</text>
+  <text class="t" x="380" y="324" text-anchor="middle">and spec level exact or guided?</text>
+
+  <!-- no -> full (bottom) -->
+  <path class="e" d="M560 310 L645 310 L645 212"/>
+  <text class="lbl" x="596" y="302" text-anchor="middle">no</text>
+
+  <!-- yes -> light -->
+  <path class="e" d="M380 340 L380 388"/>
+  <text class="lbl" x="396" y="370">yes</text>
+
+  <rect class="full" x="550" y="150" width="190" height="60"/>
+  <text class="t" x="645" y="174" text-anchor="middle">full</text>
+  <text class="lbl" x="645" y="192" text-anchor="middle">read of the diff</text>
+
+  <rect class="light" x="260" y="388" width="240" height="56"/>
+  <text class="t" x="380" y="412" text-anchor="middle">light</text>
+  <text class="lbl" x="380" y="430" text-anchor="middle">answers brief + negative control</text>
+
+  <!-- escalate -->
+  <path class="e" d="M380 444 L380 478"/>
+  <text class="lbl" x="470" y="470">over budget: escalates</text>
+  <rect class="full" x="290" y="478" width="180" height="34"/>
+  <text class="t" x="380" y="500" text-anchor="middle">full</text>
+</svg>

@@ -871,6 +871,16 @@
                         "null"
                     ]
                 },
+                "review": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ReviewConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
                 "review_excluded_backends": {
                     "description": "Names of backends that review routing must never select, whatever lane composes the review and whatever backend has already dropped the dispatch. A review fallback walks a list of configured backends, so an exclusion it can step around is a note rather than a rule; naming a backend here removes it from every composed review lane.",
                     "items": {
@@ -1099,6 +1109,49 @@
                 "name"
             ],
             "title": "PlacementRequirement",
+            "type": "object"
+        },
+        "ReviewConfig": {
+            "additionalProperties": false,
+            "description": "How a finished run is sized to a review. Declared on the flight config so a host or project layer retunes the tier thresholds without a code change; the resolver reads them from the resolved config.",
+            "properties": {
+                "tiers": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ReviewTiers"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The thresholds that size a review to a finished run's risk. The resolver reads them from the resolved flight config so a host or project layer retunes the tiers without a code change."
+                }
+            },
+            "title": "ReviewConfig",
+            "type": "object"
+        },
+        "ReviewTiers": {
+            "additionalProperties": false,
+            "description": "The thresholds that separate the light and full review tiers. A run that changes runtime source below the changed-line ceiling, at a spec level that fixes the done-when, earns a light review.",
+            "properties": {
+                "light_changed_lines": {
+                    "description": "Changed-line ceiling (added plus deleted) below which a run that changes runtime source can earn a light review rather than a full one. A run at or above this ceiling is reviewed at full, because the size of a diff is itself a reason a reviewer has more to read than a light pass covers.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "light_time_budget": {
+                    "description": "Wall-clock budget granted to a light review, written as an integer followed by a unit \u2014 `s`, `m` or `h`. A light review that exceeds it escalates to a full review rather than being abandoned.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "title": "ReviewTiers",
             "type": "object"
         },
         "RoleConfig": {
@@ -1557,6 +1610,16 @@
             "type": [
                 "string",
                 "null"
+            ]
+        },
+        "review": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/ReviewConfig"
+                },
+                {
+                    "type": "null"
+                }
             ]
         },
         "review_excluded_backends": {

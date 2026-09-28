@@ -99,6 +99,17 @@ gates:
   require_evidence: true
   on_fail: hold
 
+# A run is sized to its risk at completion. Source changes earn a review; a
+# small source diff whose spec level fixes the done-when earns a light one; a
+# node that changes no runtime source is checked by the merged-head gate re-run
+# instead. Fifty lines is the ceiling that keeps a light review to a single
+# read, and ten minutes is the budget a light review is granted before it
+# escalates to a full one.
+review:
+  tiers:
+    light_changed_lines: 50
+    light_time_budget: 10m
+
 # The plan-review gate ships advisory, whatever every other gate here does.
 # Almost no plan carries a stored review yet, and the node that writes one is
 # not built, so an enforced plan-review gate would stop every build on a review

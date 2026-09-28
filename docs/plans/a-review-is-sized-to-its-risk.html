@@ -94,6 +94,24 @@
       <li>Promotion computes the tier, records it on the ledger row, and reads it in place of the role check.</li>
     </ol>
 
+    <div class="r-note" data-reckon="landed" data-node="review-tier-resolver" data-when="2026-09-28">
+    <p><strong>Node 1 landed — the flight key and the resolver.</strong> A finished run now resolves to one of three
+      review tiers from what it changed. The rule lives in a new module <code>reckon/review_tiers.py</code>, which
+      imports <code>reckon.path_classes.path_class</code> — the SPA-aware classifier — rather than carrying a second
+      copy, so a <code>.jsx</code> file under <code>docs/ui/</code> is runtime source while a plan, figure, test or
+      data file is not. Tiers: <code>full</code> for runtime source or a plan/section declaring capability risk
+      <code>elevated</code>/<code>critical</code>; <code>light</code> for runtime source under the changed-line
+      ceiling at spec level <code>exact</code> or <code>guided</code> with no elevated risk; <code>none</code> for a
+      run that changes no runtime source.</p>
+    <p>The thresholds ride a new <code>review.tiers</code> flight key, declared as a LinkML slot and class in
+      <code>reckon/schema/flight.yaml</code> with <code>reckon/_flight_schema.py</code> and
+      <code>docs/_shared/flight.schema.json</code> regenerated from it, and shipped in
+      <code>reckon/schema/flight-defaults.yaml</code> — 50 changed lines, a ten-minute light budget. The promotion
+      seam that reads the tier (<code>_require_review_waiver</code>) and the ledger row field are node 2, still to
+      land. Commit <code>505c690b</code>;
+      <a href="/reckon/evidence/archive/a-review-is-sized-to-its-risk-landed#s2">§2 evidence</a>.</p>
+    </div>
+
     <h2 id="s3">§3 — One repair per review round</h2>
     <p><strong>Deliverable.</strong> When a review carries findings, the reflex (and any coordinator acting on it)
       composes exactly one repair node for that review round, whose brief lists every finding and whose write scope is

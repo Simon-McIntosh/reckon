@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-is-sized-to-its-risk-landed">
+  <meta name="plan-title" content="A Review Is Sized To Its Risk — landed record">
+  <meta name="plan-summary" content="Cumulative landing record for A Review Is Sized To Its Risk: the flight key and the tier resolver, then the promotion seam that reads it.">
+  <meta name="plan-evidence-for" content="a-review-is-sized-to-its-risk">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Review Is Sized To Its Risk — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Review Is Sized To Its Risk — landed record</h1>
+  <p>Cumulative landing record for A Review Is Sized To Its Risk. Each section appends its own
+    anchor below; a later reader sees every node's evidence in one document.</p>
+
+   <section id="s2">
+    <h2>§2 — A review tier derived from what the node changed</h2>
+    <p>A finished run now resolves to one of three review tiers from what it actually changed. The rule lives in a
+      new module, <code>reckon/review_tiers.py</code>, and reads the SPA-aware classifier
+      <code>reckon.path_classes.path_class</code> — imported, not copied — so a <code>.jsx</code> file under
+      <code>docs/ui/</code> counts as runtime source while a plan, figure, test or data file does not. Tiers:
+      <code>full</code> when the run changes runtime source or its plan or section declares capability risk
+      <code>elevated</code>/<code>critical</code>; <code>light</code> when it changes runtime source by fewer than the
+      configured changed-line ceiling at spec level <code>exact</code> or <code>guided</code> with no elevated risk;
+      <code>none</code> when it changes no runtime source.</p>
+    <p>The light tier's ceiling and budget ride a new <code>review.tiers</code> flight key. It is declared as a LinkML
+      slot and class in <code>reckon/schema/flight.yaml</code>, and the generated artefacts
+      <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code> were regenerated from it,
+      so <code>tests/test_flight.py</code>'s two parity cases hold. The shipped defaults layer carries the values —
+      50 changed lines, a ten-minute light budget — so a host or project layer retunes the tiers without a code
+      change, and <code>flight.review_tier_thresholds()</code> reads them from the resolved config.</p>
+    <figure>
+      <a href="/reckon/figures/a-review-is-sized-to-its-risk/tier-decision.svg">the tier decision as a flow</a>
+      <figcaption>The resolver's precedence: declared risk first, then whether the run touched runtime source, then the
+        changed-line ceiling and spec level. A light review that overruns its budget escalates to full.</figcaption>
+    </figure>
+    <ul>
+      <li>Commit <code>505c690b</code>; <code>tests/test_review_tiers.py</code> adds 16 cases — one run per tier, one
+        <code>none</code> run for each path class (tests, plans, evidence, research data, figures) and one mixed
+        tests-plus-plan run — all passing.</li>
+      <li><code>tests/test_flight.py</code> 87 passing, its schema-parity cases executed against the LinkML generators
+        rather than skipped.</li>
+      <li>Negative control executed and logged: classifying paths with
+        <code>reckon.path_classes.file_class</code> instead of <code>path_class</code> makes the <code>docs/ui</code>
+        <code>.jsx</code> fixture resolve <code>none</code> instead of <code>full</code>
+        (<code>runs/…-review-tier-resolver/negative_control.log</code>).</li>
+      <li>The promotion seam that consumes the tier — <code>_require_review_waiver</code> in
+        <code>reckon/crew/promotion.py</code> — and the lack of a ledger row field are the section's second node,
+        not this one; the resolver and the flight key land here and are ready for it.</li>
+      <li>Review repair, commit <code>c45e7bac</code>: dropped two unread constants (<code>TIERS</code> and
+        <code>ESCALATED_TIER</code> — the escalation belongs to the flight key's light budget once a caller reads
+        it) and rewrote the fixture comment to name <code>review_tier()</code> and its inputs rather than a plan
+        section. Gate re-run at <code>c45e7bac</code>: 103 passing across <code>tests/test_review_tiers.py</code>
+        and <code>tests/test_flight.py</code>, exit 0.</li>
+    </ul>
+  </section>
+
+</main>
+</body>
+</html>
