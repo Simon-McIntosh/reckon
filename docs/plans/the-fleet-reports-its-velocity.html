@@ -168,6 +168,21 @@
     <p><strong>Done when</strong> a fixture of three resumed codex streams prices within 1% of their rollout totals
       rather than at 157%, and a synthetic wave projected past its reset is refused with the runs-remaining figure in the
       refusal.</p>
+    <div class="section-landed" data-section="s4">
+      <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span></p>
+      <p class="landed-summary">A resumed run's burn is priced per thread rather than by summing its attempts.
+        <code>reckon/crew/metering.py</code> reads the identity a codex <code>exec</code> stream declares
+        (<code>thread.started</code>) and folds each thread to its newest measured attempt, because a resume re-enters the
+        thread and its stream restates that thread's cumulative usage; a stream declaring no identity is its own thread and
+        is summed. <code>run_streams</code> now also gathers <code>lane-change-N.jsonl</code>, so a lane change &mdash; a
+        second thread &mdash; is counted instead of dropped. The per-attempt delta rule stays
+        <code>ledger.per_run_budget</code>, reused rather than copied. Over the eight single-thread codex lineage runs in
+        the reuse map (§2 table), the fold prices each within 0.1% of its rollout total (three-attempt run 1.0003) against
+        227% summed. Six tests in the node's file pass, alongside the metering and ledger suites; base 68, head 74, no added failures.
+        The declared control &mdash; summing every stream's cumulative reading again &mdash; reddens the three-stream case.
+        Full record:
+        <a href="/reckon/evidence/archive/the-fleet-reports-its-velocity-landed#s4-resumed-burn-prices-per-thread">§4 landed</a>.</p>
+    </div>
 
     <h2 id="s5">§5 — Work in progress is visible</h2>
     <div class="section-landed" data-section="s5">
