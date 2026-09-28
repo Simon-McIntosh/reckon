@@ -178,6 +178,9 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T063305266502-review-of-read-plan-reads-the-composed-record" data-who="reckon-build" data-when="2026-09-28T08:32:45.764Z">
     <div class="r-comment-body"><p>reviewed read-plan-reads-the-composed-record at 16ca61e7: 90/100, three findings (no case where the metas and the filename name different plans, mcp.py swallows a composition failure silently, prose suite arms and headerless gate logs); the repair round is held under the operator&#x27;s dispatch pause</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-20260928T102500-promotion-versioned-landing" data-who="reckon-build" data-when="2026-09-28T10:25:00Z">
+    <div class="r-comment-body"><p>promotion's publish of a run's landing line: promotion reads the run's manifest and, when it declares a <code>landing:</code> line, writes that line as the node section's comment through the versioned plan write (<code>_declared_manifest_landing</code> &#8594; <code>_record_landing_comment</code> &#8594; <code>_store.read_plan</code>/<code>write_plan</code> with the <code>VersionConflict</code> retry), so the record reaches the plan as an ordinary versioned edit and never through a git merge of the plan HTML. A run whose manifest declares no landing line keeps today's behaviour, including the worker-authored deferral. Three cases in <code>tests/test_promotion_writes_the_landing_line.py</code>: the landing line lands as a comment with the plan version bumped; a run without one is unchanged; a concurrent plan edit between read and write is retried, not lost. 23 passing with the neighbouring landing-store modules, <code>test_landing_comment_authorship.py</code> 5 passing; the landing-line case is observed to leave no comment under the declared mutation. Evidence anchor: <code>docs/evidence/archive/a-landing-record-never-conflicts-landed.html</code></p></div>
+</div>
 </section>
 </main>
 </body>
