@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="One path classifier in the package returns the same six line classes as the velocity census it was ported from.">
   <meta name="plan-evidence-for" content="the-fleet-reports-its-velocity">
   <meta name="plan-verifies" content="the-fleet-reports-its-velocity#s2,the-fleet-reports-its-velocity#s4,the-fleet-reports-its-velocity#s5">
-  <meta name="plan-commits" content="85af514b,4d79a470,fe33dbf6,106e4bbb,e26df29e">
-  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_work_in_progress.py,tests/test_velocity_session_continuity.py,reckon/run_store.py,tests/test_run_store_backend_query.py">
+  <meta name="plan-commits" content="85af514b,4d79a470,fe33dbf6,106e4bbb,e26df29e,eaa6adfb,d72ffc3f">
+  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_work_in_progress.py,tests/test_velocity_session_continuity.py,reckon/run_store.py,tests/test_run_store_backend_query.py,reckon/crew/metering.py,reckon/ledger.py,tests/test_resumed_burn_prices_to_rollout.py">
   <meta name="plan-recorded-at" content="2026-09-28">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -344,6 +344,70 @@
       an expected <code>0</code> and fails (<code>1 failed</code>, exit 1). Logs:
       <code>gate-head.log</code>, <code>gate-base.log</code>, <code>negative-control.log</code>,
       <code>measurement-reckon-0920-0927.log</code>.</p>
+  </section>
+  <section id="s4-resumed-burn-prices-per-thread">
+      <h2>&sect;4 &mdash; A resumed run prices per thread</h2>
+      <p>Commit <code>eaa6adfb</code> changes how <code>reckon/crew/metering.py</code> folds one
+      run's streams. A codex <code>exec resume</code> re-enters the same client thread and its
+      stream restates that thread's <em>cumulative</em> usage rather than reporting only the new
+      work, so a fold that adds the attempts counts each earlier one again. <code>_measure_streams</code>
+      now reads the identity each stream declares (<code>thread.started</code> &rarr; <code>thread_id</code>)
+      and keeps only the newest ranked measured attempt per thread, adding threads together. The
+      ranking is <code>stream.jsonl</code>, then <code>resume-N.jsonl</code> in order, then
+      <code>lane-change-N.jsonl</code>. A stream that declares no identity is its own thread, so
+      an unlabelled pair still sums and no attempt is silently dropped. <code>run_streams</code> also
+      gathers <code>lane-change-N.jsonl</code> beside the original and its resumes, deduplicated by
+      path &mdash; a lane change is a second thread and is summed, not superseded. The per-attempt
+      delta rule stays in <code>ledger.per_run_budget</code>, extended rather than copied: commit
+      <code>d72ffc3f</code> makes an unmeasured prior attempt leave the run's interval
+      <code>"unknown"</code> &mdash; the marker the ledger already uses where a figure cannot be
+      read &mdash; instead of subtracting a zero and charging the whole cumulative to the newer
+      attempt. A first attempt, with no predecessor, keeps the zero baseline and its whole
+      cumulative as its own work.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-reports-its-velocity/resumed-burn-per-thread.png"
+          alt="Left: three attempts of one thread climb from 1,810 to 3,670 charged tokens, with the summed 8,396 overshooting. Right: the eight host lineages price at 1.0003 to 1.0010 of their rollout totals.">
+        <figcaption>Left, the three-attempt fixture: each attempt restates the thread, so summing
+        reaches 8,396 against the thread's own 3,670. Right, the fold applied to the eight
+        single-thread codex lineage runs in the reuse map's &sect;2 table; every ratio is 1.0003 to
+        1.0010, inside the 1% band and near the rollout total's own reporting precision.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Run (reuse map &sect;2)</th><th>Streams</th><th>Priced</th><th>Rollout</th><th>Ratio</th></tr></thead>
+        <tbody>
+          <tr><td>obligations-are-a-derived-view</td><td>3</td><td>74,820,326</td><td>74,795,487</td><td>1.0003</td></tr>
+          <tr><td>append-run-writes-one-run-file</td><td>2</td><td>20,656,012</td><td>20,638,252</td><td>1.0009</td></tr>
+          <tr><td>promotion-stages-its-one-run-file</td><td>2</td><td>18,551,624</td><td>18,534,212</td><td>1.0009</td></tr>
+          <tr><td>headroom-publishes-real-readings</td><td>2</td><td>45,370,459</td><td>45,354,207</td><td>1.0004</td></tr>
+          <tr><td>promotion-never-amends-its-commit</td><td>2</td><td>14,591,149</td><td>14,577,840</td><td>1.0009</td></tr>
+          <tr><td>velocity-census</td><td>2</td><td>35,578,557</td><td>35,549,297</td><td>1.0008</td></tr>
+          <tr><td>code-depth-reuse-census</td><td>2</td><td>22,962,266</td><td>22,941,483</td><td>1.0009</td></tr>
+          <tr><td>nova-flapping-history</td><td>2</td><td>30,643,264</td><td>30,612,118</td><td>1.0010</td></tr>
+        </tbody>
+      </table>
+      <p><code>tests/test_resumed_burn_prices_to_rollout.py</code> synthesises three codex lineages
+      &mdash; a three-attempt run and two two-attempt runs &mdash; each stream declaring one shared
+      thread id and carrying strictly increasing cumulative readings, beside a rollout receipt
+      carrying the client's own total, and asserts each prices within the same 1% band the receipt
+      is read at. A further case holds two threads in one run directory and requires the lane-change
+      stream to be summed; another requires an unlabelled pair to sum, so nothing is dropped; two
+      more cover the delta rule &mdash; an unmeasured prior attempt reads <code>"unknown"</code>
+      while an absent one keeps the zero baseline. The
+      gate ran on this node's allocation: base arm (source at the base revision, test files overlaid)
+      7 failed, 70 passed, exit 1 &mdash; the seven failures are exactly the tests that need the new
+      behaviour (five for the fold, two for the delta rule); head arm 77 passed, exit 0, no added
+      failures. The declared negative control sums every
+      stream's cumulative reading again in <code>_measure_streams</code>; the three-attempt case then
+      reads 8,396 against a 3,670 rollout and the 1% bound fails, exit 1. A second control removes the
+      unmeasured-cost branch in a scratch copy of the head tree; the cost case then charges the whole
+      cumulative to the newer attempt and fails. The recorded measurement over the eight host runs is
+      <code>logs/measurement.log</code>; the arms are <code>logs/base-arm.log</code> and
+      <code>logs/gate-head.log</code> (the metering suites), <code>logs/ledger-base-arm.log</code> and
+      <code>logs/ledger-head-arm.log</code> (the ledger suite), and the controls
+      <code>logs/negative-control.log</code> and <code>logs/negative-control-cost.log</code>. Ten
+      failures in <code>tests/test_ledger.py</code> are pre-existing and outside this node's scope;
+      all ten fail identically at the base revision, 10 failed and 86 passed in both arms, so the
+      delta adds none.</p>
     </section>
   </main>
 </body>

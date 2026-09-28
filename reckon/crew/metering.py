@@ -48,6 +48,12 @@ class StreamTokenUsage:
     surcharged_request_count: MeasuredTokenCount
     turn_count: int
     dialect: StreamDialect
+    # The identity a client thread declared in stream. Only a codex exec
+    # stream declares one today. Two attempts naming the same thread are
+    # attempts at one conversation whose newer stream restates everything the
+    # older did, so they must be folded rather than added; a stream that
+    # declares none is its own thread and is summed with the others.
+    thread_id: str | None = None
 
 
 _CLAUDE_INPUT_FIELDS = (
@@ -75,6 +81,7 @@ def measure_stream_tokens(
     claude_messages: dict[str, dict[str, int]] = {}
     claude_aggregate: tuple[dict[str, int], int | None] | None = None
     codex_turns: list[dict[str, int]] = []
+    thread_ids: set[str] = set()
     anonymous_message = 0
     try:
         with Path(stream_path).open(encoding="utf-8") as lines:
@@ -84,6 +91,12 @@ def measure_stream_tokens(
                 except (json.JSONDecodeError, TypeError):
                     continue
                 if not isinstance(record, Mapping):
+                    continue
+
+                if record.get("type") == "thread.started":
+                    thread_id = record.get("thread_id")
+                    if isinstance(thread_id, str) and thread_id:
+                        thread_ids.add(thread_id)
                     continue
 
                 if record.get("type") == "assistant":
@@ -134,14 +147,20 @@ def measure_stream_tokens(
     has_codex = bool(codex_turns)
     if has_claude == has_codex:
         return UNMEASURED
+    # One distinct thread id is the stream's identity; two mean the file
+    # merged conversations, which has no single identity to fold under, so it
+    # carries none and is summed with the other streams.
+    thread_id = next(iter(thread_ids)) if len(thread_ids) == 1 else None
     if has_codex:
-        return _codex_usage(codex_turns)
-    return _claude_usage(claude_messages, claude_aggregate)
+        return _codex_usage(codex_turns, thread_id=thread_id)
+    return _claude_usage(claude_messages, claude_aggregate, thread_id=thread_id)
 
 
 def _claude_usage(
     messages: Mapping[str, Mapping[str, int]],
     aggregate: tuple[Mapping[str, int], int | None] | None,
+    *,
+    thread_id: str | None = None,
 ) -> StreamTokenUsage:
     request_inputs = [
         _sum_fields(usage, _CLAUDE_INPUT_FIELDS) for usage in messages.values()
@@ -179,10 +198,13 @@ def _claude_usage(
         surcharged_request_count=surcharge_count,
         turn_count=turn_count,
         dialect="claude",
+        thread_id=thread_id,
     )
 
 
-def _codex_usage(turns: list[Mapping[str, int]]) -> StreamTokenUsage:
+def _codex_usage(
+    turns: list[Mapping[str, int]], *, thread_id: str | None = None
+) -> StreamTokenUsage:
     cumulative = _sum_usage(turns)
     # A Codex exec stream reports usage once per turn in turn.completed.usage,
     # not once per model request. Surcharge exposure is therefore unmeasurable
@@ -195,6 +217,7 @@ def _codex_usage(turns: list[Mapping[str, int]]) -> StreamTokenUsage:
         surcharged_request_count=UNMEASURED,
         turn_count=len(turns),
         dialect="codex",
+        thread_id=thread_id,
     )
 
 
@@ -277,24 +300,51 @@ def _resume_stream_order(path: Path) -> tuple[int, str]:
     return (int(match.group(1)), path.name) if match else (sys.maxsize, path.name)
 
 
+def _lane_change_order(path: Path) -> tuple[int, str]:
+    """Order lane-change streams by lane number rather than by filename text."""
+    match = re.fullmatch(r"lane-change-(\d+)\.jsonl", path.name)
+    return (int(match.group(1)), path.name) if match else (sys.maxsize, path.name)
+
+
+def _attempt_rank(path: Path) -> tuple[int, str]:
+    """Rank one stream by attempt within its thread: the original, then resumes."""
+    if path.name == "stream.jsonl":
+        return (0, path.name)
+    match = re.fullmatch(r"resume-(\d+)\.jsonl", path.name)
+    return (int(match.group(1)), path.name) if match else (sys.maxsize, path.name)
+
+
 def run_streams(stream_path: str | Path) -> list[Path]:
-    """Every surviving stream one run wrote, in attempt order.
+    """Every surviving stream one run wrote, in attempt then lane order.
 
     ``log_path`` is repointed on every resume, so a figure read from the named
-    file alone resets each time the run restarts. The original stream and
-    every numbered resume share one directory, and the cumulative figure is
-    the sum over all of them.
+    file alone resets each time the run restarts. The original stream, every
+    numbered resume and every lane change share one directory, so all of them
+    are returned: a lane change leaves the run id and the directory intact and
+    writes ``lane-change-N.jsonl`` beside the stream, and dropping those files
+    is how a run's spend silently loses a whole lane's work.
     """
 
     value = str(stream_path or "")
     if not value.strip():
         return []
+
     stream = Path(value).expanduser()
     original = (
         stream.parent / "stream.jsonl" if stream.name.startswith("resume-") else stream
     )
     resumes = sorted(stream.parent.glob("resume-*.jsonl"), key=_resume_stream_order)
-    return [candidate for candidate in (original, *resumes) if candidate.is_file()]
+    lane_changes = sorted(
+        stream.parent.glob("lane-change-*.jsonl"), key=_lane_change_order
+    )
+    gathered: list[Path] = []
+    seen: set[Path] = set()
+    for candidate in (original, *resumes, *lane_changes):
+        if candidate in seen or not candidate.is_file():
+            continue
+        seen.add(candidate)
+        gathered.append(candidate)
+    return gathered
 
 
 @dataclass(frozen=True)
@@ -386,18 +436,39 @@ def _row_streams(record: Mapping[str, Any], streams_root: Path) -> list[Path]:
 def _measure_streams(
     paths: Sequence[Path],
 ) -> tuple[int, int, int, int, int]:
-    """Sum one run's streams into token totals and stream counts."""
+    """Fold one run's streams per thread into token totals and stream counts.
+
+    A stream restates its client thread's cumulative usage, so adding every
+    attempt of one thread counts the earlier attempts twice: a codex
+    ``exec resume`` re-enters the thread and its stream re-states everything
+    before it. A newer attempt therefore supersedes its predecessor rather
+    than adding to it, and the fold keeps only the highest-ranked measured
+    attempt per thread. Threads are added, because two threads are two
+    conversations: a lane change opens a new thread, and its stream is
+    summed with the original's.
+
+    Thread identity is what each stream declares. A stream that declares none
+    is its own thread, so a pair of unlabelled streams still adds up and an
+    attempt whose identity cannot be read is never silently dropped.
+    """
     total_input = 0
     total_cached = 0
     total_output = 0
     measured = 0
     unmeasured = 0
+    # Thread key -> (attempt rank, reading) of the newest measured attempt.
+    newest: dict[str, tuple[tuple[int, str], StreamTokenUsage]] = {}
     for path in paths:
         usage = measure_stream_tokens(path)
         if usage is UNMEASURED or not isinstance(usage, StreamTokenUsage):
             unmeasured += 1
             continue
         measured += 1
+        key = usage.thread_id or f"stream:{path}"
+        rank = _attempt_rank(path)
+        if key not in newest or rank >= newest[key][0]:
+            newest[key] = (rank, usage)
+    for _rank, usage in newest.values():
         total_input += usage.cumulative_input_tokens
         total_cached += usage.cumulative_cached_input_tokens
         total_output += usage.cumulative_output_tokens
@@ -609,11 +680,11 @@ def accumulate_run_spend(
 
     Rows are folded by accumulation key. A redispatch or lane change folds
     into the chain root it recorded, a resumed run keeps its run id and its
-    directory's streams accumulate under it, and a shadow accumulates onto its
-    own id so its never-merged evidence stays off its primary's total. Each
-    folded row contributes every surviving stream in its run directory,
-    because ``log_path`` is repointed on every resume and a figure read from
-    it alone would reset at each restart.
+    directory's streams fold under it per thread, and a shadow accumulates
+    onto its own id so its never-merged evidence stays off its primary's
+    total. Each folded row contributes every surviving stream in its run
+    directory, because ``log_path`` is repointed on every resume and a figure
+    read from it alone would reset at each restart.
 
     ``UNMEASURED`` names a run id absent from ``runs``; a present run whose
     streams carry no usage counters returns a zero total with its stream
