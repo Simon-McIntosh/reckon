@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="fd0b1d4,bea76f1,ec8fb56d">
 </head>
@@ -488,6 +488,39 @@
       </figure>
       <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#source-section-depends">mechanism, base/head arms, negative control and figure</a>.
       Section closure and the driving followup remain for the coordinator.</p>
+      <p><strong>The whole-value defect, 2026-09-28 (the review's second finding):</strong> a
+      <code>plan-section-depends-on</code> value the reader cannot parse as an object — invalid JSON, or
+      JSON that is not an object — returned <code>None</code>, which is also how the reader reports an
+      absent declaration, so every wait the author wrote disappeared with no finding. A malformed
+      <em>entry</em> was already refused by name; the whole value is now carried in the mapping under one
+      key that is not a section identity (<code>&lt;plan-section-depends-on&gt;</code>, which the
+      segment grammar can never produce), so <code>section_dependency_refusals</code> reports it as
+      <code>invalid-section-dependency</code> with the meta and the malformation in the message; edge
+      builders skip the key because it names no section, so no phantom section enters a readiness set
+      and the plan keeps its whole-plan behaviour. A meta carrying no content still reads as no
+      declaration, as does an absent meta.</p>
+      <p><strong>Arms, measured.</strong> Both new cases fail at base with <code>assert None</code>
+      (<code>2 failed</code>, the base tree's own module and cwd resolved in the log header); the gate
+      over <code>tests/test_schema.py tests/test_roadmap.py</code> reads <strong>3 failed / 1659
+      passed</strong> at base and <strong>3 failed / 1661 passed</strong> at head, the same three
+      pre-existing ids — zero added. An end-to-end probe through <code>build_roadmap</code> shows a
+      malformed value as a <code>wiring_findings</code> row naming the plan, the meta and the
+      malformation, with no phantom readiness keys, while the valid-mapping and malformed-entry arms of
+      the same probe show the refusal channel is live in both directions.</p>
+      <p><strong>Declared negative control:</strong> restoring the silent <code>None</code> return in a
+      scratch copy fails the invalid-JSON case, with the declared string as the red log's first line.</p>
+      <figure>
+        <img src="/reckon/figures/dependency-edge-semantics/malformed-section-mapping.svg"
+             alt="Two panels over the same malformed value: before, the reader returns None and every
+                  declared wait is gone with nothing reported; after, the mapping carries the defect
+                  under one non-section key and section_dependency_refusals reports it as
+                  invalid-section-dependency, naming the meta and the malformation.">
+        <figcaption>Both values declare a wait on <code>plan-b#s3</code>; only the reader's handling of
+        a value it cannot parse as an object differs, and that decides whether the defect is reported
+        or silently reads as no declaration at all.</figcaption>
+      </figure>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#unreadable-section-mapping">whole-value refusal arm, its declared negative control and figure</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
     </aside>
 
     <aside id="section-wait-reported-with-its-section">
@@ -641,7 +674,10 @@
     <div class="r-comment-body"><p>Correction appended to the schema-view-fits-its-budget-again landing (merged at 81dcc758, review 90). The title figures "14455 → 12111" are PlanState.model_json_schema() before and after the strip measured inside one process; measured at the two named revisions the generated schema reads 14998 at base and 12580 at head. The cited head receipts (head-size.log, head-gates.log) were written before commit c57c1d6c existed. The reviewer reproduced the results at the named revisions: 49 passed and a schema view of 22483 against the unchanged 24576 budget.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T105043679225-review-of-section-edge-stays-off-plan-blocking" data-who="reckon-build" data-when="2026-09-28T11:12:31.120Z">
-    <div class="r-comment-body"><p>review stored at 00884e07: total 92, zero added failures; one field-shape finding (per-section ready is a constant where the roadmap&#x27;s is a verdict)</p></div>
+    <div class="r-comment-body"><p>review stored at 00884e07: total 92, zero added failures; one field-shape finding (per-section ready is a constant where the roadmap's is a verdict)</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260928T110303524434-review-of-malformed-section-map-is-named" data-who="reckon-build" data-when="2026-09-28T11:33:56.890Z">
+    <div class="r-comment-body"><p>review stored at 5bb94009: total 98, zero added failures; one finding, the manifest&#x27;s tests field states the gate as a template</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260915T054942427549-a-followup-naming-a-terminal-foreign-plan-is-reported" data-who="skill-verb-surface" data-when="2026-09-15T08:50:59.180Z">
     <div class="r-comment-body"><p>reckon audit now reports a followup naming a foreign plan in a terminal state, with three distinct codes for terminal, unmounted and missing targets, so an obligation invisible to both projects' roadmaps becomes a finding. Count over the registered mounts stated as 2. Gate 7 passed with 5 new tests; test_schema 1282 passed; 75 passed across the doccheck-importing files. Two failures in test_provenance and test_mcp_recovery were verified pre-existing by reproducing them at base with pristine doccheck.py installed, so zero added. Its manifest is unreadable to the parser because it reports status 'done', which is outside the recognised set, so commit and gate evidence are supplied from independent verification.</p></div>

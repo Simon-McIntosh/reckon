@@ -20,16 +20,16 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,measurement">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <meta name="plan-blocks" content="open-work-is-capped">
   <title>The Fleet Reports Its Velocity | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="18">
 <meta name="plan-commits" content="85af514b,997c5539,7c508e7e,4d79a470,a70ad742,c0917d6f,e2fc9f03,30fe8845,280d7fa9,43e971d3,be18adb4,90959463,118b06ba,0b61cc5d,e6b344f3,474d8119,66edfc86,9576896f,2652f39b">
 <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_coordinator_cost.py">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-impl" content="0.67">
 </head>
 <body>
   <main class="plan-doc">
@@ -170,14 +170,18 @@
       refusal.</p>
 
     <h2 id="s5">§5 — Work in progress is visible</h2>
-    <p><strong>Deliverable.</strong> Per project and ISO week, the view reports plans opened (the week of the commit
-      that added the plan file) and plans closed (the week the plan's status became shipped, done, superseded or
-      abandoned, or its archive flag was set, counted once), and the count of pending plans — every plan not closed. It
-      also reports the cohort reading the review used: of the plans opened in a window, how many are closed as of a
-      named commit.</p>
-    <p><strong>Done when</strong> the cohort reading, run as of commit <code>23eb2545</code> over the pinned window,
-      reports reckon's 58 opened and 7 closed, matching the review's §9, and the test pins that commit rather than
-      today's date.</p>
+    <div class="section-landed" data-section="s5">
+      <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span></p>
+      <p class="landed-summary">Merged at <code>c474a3c8</code> (<code>fe33dbf6</code> to <code>cec27d86</code>).
+        <code>reckon/velocity.py</code> carries a plan census: a plan opens in the week of the commit that added its file
+        and closes in the week its status first reaches shipped, done, superseded or abandoned, or its archive flag is
+        set, counted once. The view reports opened, closed and pending per project and ISO week, and the cohort reading
+        as of a named commit. Run as of <code>23eb2545</code> over the pinned window, it reports reckon's 58 opened and
+        7 closed, and the test pins that commit rather than today's date. Base 15 passed, head 22 passed, no failures
+        in either arm. Dating an opening by the latest commit that touched the file fails four cases, the pinned reading
+        among them. Review 90, carried forward over an evidence-anchor repair. Full record:
+        <a href="/reckon/evidence/archive/the-fleet-reports-its-velocity-landed#s5-work-in-progress-is-visible">§5 landed</a>.</p>
+    </div>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -226,6 +230,15 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260927T191523670440-coordinator-cost-per-landed-node" data-who="reckon-build" data-when="2026-09-28T10:50:50.095Z">
     <div class="r-comment-body"><p>coordinator cost per landed node in reckon/velocity.py; 52 of 52 sessions within 1% of overhead.json; 15 passed; cache-read and receipt-rule controls redden; reviews 85 then 92 carried forward</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260928T115555224623-review-of-work-in-progress-is-visible" data-who="reckon-build" data-when="2026-09-28T12:37:54.382Z">
+    <div class="r-comment-body"><p>review of work-in-progress-is-visible at 790dfbe4: 90, added failures unmeasured; sent back for measured arms and the plan-verifies anchor</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260928T140000-work-in-progress-is-visible" data-who="reckon-build" data-when="2026-09-28T14:00:00Z">
+    <div class="r-comment-body"><p>work-in-progress-is-visible implemented at fe33dbf6 in reckon/velocity.py: a plan census dates each plan's opening to the commit that added its file, its closing to the first commit whose plan-status reaches shipped/done/superseded/abandoned or whose archive flag is set (counted once), and counts pending as every plan not closed, bucketed by project and ISO week; plan_cohort answers of-the-plans-opened-in-a-window-how-many-closed-as-of-a-named-commit. The cohort reading run as of 23eb2545 over the pinned window reports reckon's 58 opened and 7 closed, matching review §9; tests/test_velocity_work_in_progress.py 7 passed at exit 0 (22 with the sibling velocity suites); the declared control dating the opening by the latest touching commit reddens the 58-opened assertion (observed 125). Evidence: docs/evidence/archive/the-fleet-reports-its-velocity-landed.html §5. Section s5 awaits coordinator closure: the followup is not resolved and no terminal status is set by the worker.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260928T105911753846-work-in-progress-is-visible" data-who="reckon-build" data-when="2026-09-28T12:37:10.048Z">
+    <div class="r-comment-body"><p>plan census in reckon/velocity.py: opened, closed and pending per project and ISO week plus the cohort reading; 58 opened and 7 closed at 23eb2545; 22 passed; review 90 carried forward; merged at c474a3c8</p></div>
 </div>
 </section>
 </main>

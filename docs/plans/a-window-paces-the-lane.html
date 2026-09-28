@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="117">
+<meta name="plan-version" content="119">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.9">
@@ -429,6 +429,30 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     refusal path &mdash; reddens the dispatch pair on a scratch copy (2 failed). Record:
     <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html">a-window-paces-the-lane-landed</a>,
     commits <code>8512e898</code> and <code>d0787e93</code>.</p>
+
+    <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span>
+    The refusal now reads correctly for every role it names. Each site that interpolated the
+    dispatched role put it behind one fixed indefinite article, so a refusal for the
+    <code>implement</code> or <code>investigate</code> role read <em>a implement dispatch is
+    refused</em>; the four sites now name the role through the file's own
+    <code>the &lt;role&gt; role</code> construction behind a definite article, which is correct at
+    any letter, and <strong>no verdict moved</strong> &mdash; seven of the ten role-and-state texts
+    changed, and <code>admitted</code> is identical at both revisions for all ten.
+    <code>tests/test_reserve.py</code> gains one parametrised case over the five roles the reserve
+    composes a text for, asserting per role that the text names its role and puts no <code>a</code>
+    before a vowel-initial one: <strong>2 failed, 16 passed</strong> at the base revision
+    <code>e6a86550</code> for exactly <code>implement</code> and <code>investigate</code>,
+    <strong>18 passed exit 0</strong> at the head, and restoring the fixed article in a scratch copy
+    reddens the <code>implement</code> case. Record:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html">a-window-paces-the-lane-landed</a>,
+    commit <code>abb4f98b</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/where-a-fixed-article-breaks.svg"
+           alt="The five roles placed at their first letter on an alphabet strip whose vowel cells are shaded: implement and investigate both begin with a vowel and read &quot;a implement dispatch is refused&quot; under the fixed article, while review, verify and test are consonant-initial and agreed with it by accident of spelling. A panel below records that all four sites in reserve.py now name the role as the role's role behind a definite article, correct at any letter, and that a parametrised case asserts per role that the text names its role and puts no a before a vowel-initial one.">
+      <figcaption>The fixed article was wrong exactly inside the vowel band, and two of the five
+      roles sat there.</figcaption>
+    </figure>
 
     <h2 id="s5">&sect;5 &mdash; Reading the windows without inventing them</h2>
 
@@ -1106,6 +1130,32 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     rest. Ruff check and format are clean on both staged code paths. Full evidence:
     <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#s8-replay-guards">the cumulative
     landing record</a>.</p>
+
+    <h4 id="s8-reserve-refusal-at-the-window">Landing &mdash; the reserve refusal is exercised at the
+    window it reads</h4>
+
+    <p><strong>Landed 2026-09-28 (commit <code>3e1a0066</code>).</strong> No case in either gate file
+    dispatched a node into &sect;4's reserve refusal: every node factory in
+    <code>tests/test_dispatch_records_the_pace_row.py</code> is either a verify-role bookend, which the
+    reserve exempts, or is dispatched below the ceiling the reserve withholds from. The new case plants
+    a five-hour reading above the ceiling and dispatches an investigate node, and requires the refusal
+    to name the withheld fraction, the resulting limit and the five-hour figure of the row the dispatch
+    composed &mdash; and to leave the seven-day figure out, because it is not what refused.</p>
+
+    <p><strong>Gate.</strong> One invocation over <code>tests/test_pace_replay.py</code> and
+    <code>tests/test_dispatch_records_the_pace_row.py</code>: <strong>23 passed, exit 0</strong> at the
+    node head <code>3e1a0066</code>, against <strong>22, exit 0</strong> at the dispatch base
+    <code>a4525840</code> and <strong>21, exit 0</strong> at the pre-merge revision
+    <code>739d56b9</code>. Neither measured revision reports a failing id, so the merge introduced
+    none: the <code>crew verify-gate</code> exit 1 recorded at the integrated head <code>bdada7e5</code>
+    does not reproduce there, the gate's own two files are byte-identical from that revision to this
+    head, the exact recorded command re-run at it passes 22, exit 0, and the ids it named are
+    unrecoverable because the replay in <code>reckon/crew/promotion.py</code> captures the gate's output
+    and discards it. The declared negative control &mdash; the refusal call removed in a scratch copy at
+    the node head &mdash; reddens exactly the added case (<code>DID NOT RAISE CrewError</code>, 1 failed,
+    22 passed, exit 1). Full evidence:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#s8-reserve-refusal-at-the-window">the
+    cumulative landing record</a>.</p>
 
     <h2 id="s9">&sect;9 &mdash; The log that lets someone else tune this</h2>
 
@@ -2046,6 +2096,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260927T192328875979-review-of-reserve-reaches-the-refusal-boundary" data-who="reckon-build" data-when="2026-09-28T05:02:00.668Z">
     <div class="r-comment-body"><p>review stored at f836dc86: scores 18-20; findings were a gate-revision citation (corrected on main at 7af38bda) and the refusal article (followup f-awpl-reserve-refusal-article)</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260928T105207754335-review-of-reserve-refusal-reads-for-every-role" data-who="reckon-build" data-when="2026-09-28T11:37:42.699Z">
+    <div class="r-comment-body"><p>review stored at 46972086: total 96, zero added failures; findings are a negative-control header naming the base revision and two record wording points</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-20260921T1630-the-allowance-lands" data-who="reckon-ship" data-when="2026-09-21T16:30:00Z">
     <div class="r-comment-body">THE GOVERNOR LANDS. reckon/crew/pace.py derives a declared group's five-hour allowance from the week it must last -- the remaining budget over the remaining windows to the drain deadline, biased by the locked multiple of 1.1. Asserted at four states named ahead, on pace, behind and exhausted, with the on-pace case COMPUTING the multiple times the nominal share 5/D inside the test rather than comparing against a written-down number, which is what makes the equality prove self-consistency rather than merely restate a constant. The effective limit is asserted to be the lesser of the derived allowance and the provider ceiling with a case where each wins. Gate 19 tests; the declared mutation -- drop the multiple so the allowance returns the bare nominal share on pace -- was applied and observed to redden, its recorded wording matching the declaration verbatim, which was true of only two nodes in this wave. Merged at 45da9537. THE REVIEW SCORED 94 AND FOUND THE PLAN WRONG BEFORE IT FOUND THE CODE WRONG, by measuring the module with a direct call rather than reading it: this section's computed table was still printing the pre-multiple allowances of 2.65, 3.21 and 6.94 percent while the module returns 2.917, 3.514 and 7.639. The prose was rewritten when the multiple was locked and the table was not, so the document disagreed with the code it specifies. Corrected at dfab4e28. TWO FINDINGS REMAIN AND BOTH TRACE TO THE DONE-WHEN RATHER THAN THE WORKER. The assertion that every allowance carries the multiple pins the returned field to the configured value, so it PASSES under a mutation that drops the factor from the derivation -- it proves the field is populated, not that the number was produced by it. And the flight-key clause asks each tunable to be a flight key while the tests assert each as a key of a plain config mapping; the flight schema rejects an unknown budget key one layer BEFORE this module reads it, so the clause is satisfied in appearance only. The worker recorded that second one as such in its own manifest rather than letting it pass, which is what a manifest is for. Both are a follow-on. The general defect in my own briefs, now the fifth instance today: they are precise about WHAT must be true and vague about WHERE, and a worker can only assert at the layer it is pointed at.</div>
 </div>
@@ -2195,6 +2248,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260928T074452636884-review-of-replay-guards-every-row-read" data-who="reckon-build" data-when="2026-09-28T08:39:46.240Z">
     <div class="r-comment-body"><p>review stored at 295d9134: scores 16-20; four row reads still bypass the guarded reader without converting (no crash possible), prose suite fields, and a red line that does not alone separate the crash fix from the writable-path change</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260928T105701215830-review-of-pace-gate-green-at-main" data-who="reckon-build" data-when="2026-09-28T11:40:49.983Z">
+    <div class="r-comment-body"><p>review stored at ef6ec8eb: zero added failures; the gate is green at every revision measured and the reserve interaction is covered</p></div>
 </div>
 </section>
 </main>

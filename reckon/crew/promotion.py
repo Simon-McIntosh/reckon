@@ -4286,6 +4286,36 @@ def _negative_control_log_text(
         return None, str(path)
 
 
+def _control_failure_ids(log_text: str) -> set[str]:
+    """The failing tests a control log names, as canonical node ids.
+
+    Only the ids the log enumerates are a fact: a runner's summary saying how
+    many tests failed states that something did fail, not which test, and the
+    comparison needs the identity rather than the tally. The log's own short
+    summary marks them FAILED or ERROR, read through the review module's reader
+    so both sides of the comparison are canonical.
+    """
+    return review_module._pytest_failure_ids(log_text)
+
+
+def _baseline_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str]:
+    """The failing tests the manifest records for the baseline.
+
+    The baseline is the arm the control is compared against: a control shows
+    something broke only by failing a test that was not already failing. A run
+    that recorded no baseline observation has nothing on record as failing, so
+    every failure its control names is one the baseline does not.
+    """
+    observation = None if manifest is None else manifest.get("baseline_suite")
+    if not isinstance(observation, Mapping):
+        return set()
+    return {
+        review_module.canonical_node_id(str(test_id).strip())
+        for test_id in observation.get("failure_ids") or ()
+        if str(test_id).strip()
+    }
+
+
 def _require_declared_negative_control(
     run_id: str,
     record: Mapping[str, Any],
@@ -4295,16 +4325,26 @@ def _require_declared_negative_control(
     manifest_path: str,
     waiver_reason: str = "",
 ) -> dict[str, Any]:
-    """Refuse a passing gate on a check whose red log is not delivered.
+    """Refuse a passing gate on a check whose red log shows nothing break.
 
     A node whose write paths include a test file declares the mutation that
     check must fail against. The declaration is discharged at promotion by a
     manifest that carries the path to the log that mutation produced: the pair
-    of logs is the positive and negative control of one measurement, and the
-    red log must name the declared mutation rather than merely be a run that
-    failed for something else. A declaration of ``none`` with its reason is an
-    explicit escape rather than a silent one, so it is recorded on the row
-    rather than refused.
+    of logs is the positive and negative control of one measurement.
+
+    The log is judged on two facts about the run it captured, not on how it is
+    worded: the run's terminal record exited non-zero, and the log names at
+    least one failing test id the baseline does not fail. Neither fact is
+    inferred — a log with no exit record and a log naming no failing test id
+    each state too little to admit the control, and a bare failing count is not
+    evidence that either fact holds. Wording cannot carry either fact, so a
+    declaration pasted into a log whose run exited zero is refused, and neither
+    can a log whose run merely repeated the failures the baseline already had.
+    The declaration stays on the node record and on the verdict row beside the
+    log path, so a person compares the two — the instrument for *is this the
+    right mutation*, which no comparison of text can be. A declaration of
+    ``none`` with its reason is an explicit escape rather than a silent one, so
+    it is recorded on the row rather than refused.
     """
 
     check: dict[str, Any] = {"verdict": "exempt"}
@@ -4368,20 +4408,51 @@ def _require_declared_negative_control(
             "Write the red log where the manifest can be read alongside it and "
             "name that path"
         )
-    if declaration not in text:
+    control_ids = _control_failure_ids(text)
+    baseline_ids = _baseline_suite_failure_ids(manifest)
+    added = sorted(control_ids - baseline_ids)
+    recorded_exit = _recorded_exit_status(text)
+    check["control_exit_status"] = recorded_exit
+    check["control_failure_ids"] = sorted(control_ids)
+    check["baseline_failure_ids"] = sorted(baseline_ids)
+    check["added_failure_ids"] = added
+    # Both facts have to come from something only the run could have written: a
+    # log with no EXIT record says nothing about whether its command failed,
+    # and one naming no failing test id says nothing about what broke. Neither
+    # is inferred — a failing count and a repeated declaration together are
+    # exactly the shape the removed wording rule could not tell from a
+    # measurement — so an unrecorded fact refuses the declaration rather than
+    # admitting it.
+    if recorded_exit is None:
+        unexplained = "it records no EXIT status, so whether its run failed is unknown"
+    elif recorded_exit == 0:
+        unexplained = "it records EXIT=0, so its run did not fail"
+    elif not control_ids:
+        unexplained = "it names no failing test id, so what broke is unknown"
+    elif not added:
+        unexplained = (
+            "it adds no failure to the baseline's: every test it names "
+            f"({', '.join(sorted(control_ids))}) is one the baseline already fails"
+        )
+    else:
+        unexplained = ""
+    if unexplained:
+        refusal = (
+            f"run {run_id!r} declares the mutation {declaration!r} but the log at "
+            f"{resolved!r} shows no failed control run: {unexplained}. A control "
+            "is admitted on its facts alone — a non-zero exit record and at least "
+            "one failing test id the baseline does not fail — and neither fact is "
+            "inferred from the log's wording or from a bare failing count. Re-run "
+            "the declared mutation and keep the log it produced, with the "
+            "capture's EXIT=<n> record and the runner's own list of which tests "
+            "failed, or use --waive-negative-control REASON to record why the "
+            "control may be accepted without it"
+        )
         if waiver_reason:
             check["verdict"] = "waived"
             check["reason"] = waiver_reason
             return check
-        raise CrewError(
-            f"run {run_id!r} declares the mutation {declaration!r} but the log at "
-            f"{resolved!r} does not name it, so the log is a failure for some other "
-            "reason and not the negative control of this check. Record the log the "
-            "declared mutation produced with its first line repeating that mutation "
-            "verbatim, correct the declaration to the mutation the log shows, "
-            "or use --waive-negative-control REASON to record why the mismatch "
-            "may be accepted"
-        )
+        raise CrewError(refusal)
     check["verdict"] = "matched"
     return check
 

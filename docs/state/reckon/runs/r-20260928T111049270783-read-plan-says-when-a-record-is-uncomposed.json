@@ -1,0 +1,431 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "176a9ab6121055f83244efc767a0bd6bdb84df38",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 5618559,
+      "input_tokens_cumulative": 5618559,
+      "output_tokens": 20790,
+      "output_tokens_cumulative": 20790,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 250,
+    "files": 6,
+    "removed": 14
+  },
+  "commit_resolution": null,
+  "commits": [
+    "153a2cfdebc72dae0793a346049587ab51931106",
+    "5e4185c7d1d938c3a769749ea6b9024fefa7a4fe"
+  ],
+  "completed_at": "2026-09-28T12:17:16.861Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T11:11:08Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/mcp_views.py",
+    "tests/test_mcp_vocabulary_is_complete.py::test_op_vocab_names_every_dispatchable_op",
+    "reckon/_store.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_read_plan_composes_the_record.py tests/test_readers_compose_the_record.py tests/test_evidence_record_composition.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed/logs/head-arm-20260928T121503Z.log"
+  },
+  "impl_move": {
+    "at_complete": 0.75,
+    "at_dispatch": 0.5,
+    "plan": "a-landing-record-never-conflicts",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T11:50:50.600895+00:00",
+    "horizon_seconds": 2400,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T11:10:50Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 29,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 0,
+    "mean_context": 135000,
+    "observed_at": "2026-09-28T11:10:21Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T12:17:16.861Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed/manifest.md",
+  "member": "disposable-r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_read_plan_composes_the_record.py::test_a_composition_failure_reaches_the_read_plan_response"
+    ],
+    "baseline_failure_ids": [],
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_read_plan_composes_the_record.py::test_a_composition_failure_reaches_the_read_plan_response"
+    ],
+    "declaration": "drop the composition-failure warning from read_plan's response path in reckon/mcp.py; the end-to-end warning case must then fail",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed/logs/negative-control-20260928T113753Z.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed/logs/negative-control-20260928T113753Z.log",
+    "test_paths": [
+      "tests/test_read_plan_composes_the_record.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "read-plan-says-when-a-record-is-uncomposed",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1979,
+          "cached_input_tokens": 881931,
+          "input_tokens": 883912,
+          "output_tokens": 251,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 884163,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "A read_plan call through the public tool path (reckon.mcp read_plan, not _append_read_warning called directly) on a cumulative evidence record whose composition fails returns the record's own bytes together with a response-level warning that names the record and the error. This holds for every read_plan view that serves a record's text; if the section view refuses records, the manifest says so and names the views that do serve them. tests/test_read_plan_composes_the_record.py gains end-to-end cases that monkeypatch the composer to raise and drive each such view, and passes at exit 0, as do tests/test_readers_compose_the_record.py and tests/test_evidence_record_composition.py. The manifest records a base arm and a head arm of those three files, each log header printing its revision and reckon.__file__. The declared negative control is applied, the end-to-end warning case is observed to fail, and that log's absolute path is in the manifest.",
+    "estimated_hours": null,
+    "goal": "Deliver read_plan's composition-failure warning on the response a caller receives",
+    "id": "read-plan-says-when-a-record-is-uncomposed",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T11:10:50Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 29,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 0,
+      "mean_context": 135000,
+      "observed_at": "2026-09-28T11:10:21Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed/manifest.md",
+    "negative_control": "drop the composition-failure warning from read_plan's response path in reckon/mcp.py; the end-to-end warning case must then fail",
+    "plan": "a-landing-record-never-conflicts",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "guided",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/mcp.py",
+      "reckon/mcp_views.py",
+      "tests/test_read_plan_composes_the_record.py",
+      "docs/evidence/archive/a-landing-record-never-conflicts-landed.html",
+      "docs/figures/a-landing-record-never-conflicts",
+      "docs/plans/a-landing-record-never-conflicts.html"
+    ]
+  },
+  "orientation_input_tokens": 3584955.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "read-plan-says-when-a-record-is-uncomposed",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T11:10:57.705363+00:00",
+    "score": 0.7375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-landing-record-never-conflicts",
+  "plan_impl_at_dispatch": 0.5,
+  "promoted_revision": "5e4185c7d1d938c3a769749ea6b9024fefa7a4fe",
+  "release": {
+    "process_signalled": false,
+    "process_withheld": "process is not alive",
+    "worktree_audit": {
+      "counts": {
+        "dirty": 0,
+        "disposable": 0,
+        "integrated": 0,
+        "live-referenced": 0,
+        "retained-for-resume": 0,
+        "unintegrated": 0
+      },
+      "worktrees": [
+        {
+          "available": false,
+          "detail": "tree is no longer available",
+          "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/read-plan-says-when-a-record-is-uncomposed"
+        }
+      ]
+    },
+    "worktree_released": true
+  },
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 17,
+      "fit": 17,
+      "goal_fidelity": 18,
+      "scope_discipline": 18
+    },
+    "status": "parsed",
+    "total": 88
+  },
+  "role": "implement",
+  "run_id": "r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "e82dfe71-e01c-4c89-8b4f-b2bd866057f6",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 4,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 18340346,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 533.572,
+    "generated_tokens": 106390,
+    "generation_seconds": 448.27,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 30.6,
+    "machine_seconds": 85.302,
+    "peak_input_tokens": 146893,
+    "tokens_per_second": 237.33,
+    "wall_tokens_per_second": 199.39
+  },
+  "time_budget": "40m",
+  "tool_steps": 119.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3000,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 1353,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-28T10:33:12Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-28T10:11:00Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260928T101026532536-promotion-writes-the-landing-line",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 6007,
+          "worker_pid": 743192
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 2262,
+        "log_fresh": false,
+        "manifest_commits": [
+          "65c03d26",
+          "18719f5d"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "987c3bf1ff7fe7c0a31e866100e67aa140776468ddc7a894964f29e759b50d39",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101026532536-promotion-writes-the-landing-line/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan a-landing-record-never-conflicts --section '§3' --role review --spec-level exact --node review-of-promotion-writes-the-landing-line --goal 'attach an independent review to run r-20260928T101026532536-promotion-writes-the-landing-line' --done-when 'the review for r-20260928T101026532536-promotion-writes-the-landing-line stores a parsed record scoring all 5 dimensions in the range 0..20, carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T101026532536-promotion-writes-the-landing-line.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T101026532536-promotion-writes-the-landing-line.at-18719f5dcb105bd82c69536c85f330818fee7618.json --time-budget 50m --session s25-coord --allow-unreconciled-runs --local",
+        "node": "promotion-writes-the-landing-line",
+        "phase": "starting",
+        "plan": "a-landing-record-never-conflicts",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260928T101026532536-promotion-writes-the-landing-line",
+        "session": "s25-coord",
+        "terminal_age_seconds": 2318,
+        "terminal_at": "2026-09-28T10:32:15Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/promotion-writes-the-landing-line"
+      }
+    ]
+  },
+  "wall_seconds": 3968,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T12:17:17Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T12:08:19Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 21514,
+    "worker_pid": 1267497
+  },
+  "worker_seconds": 3932,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

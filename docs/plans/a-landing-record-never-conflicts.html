@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="24">
 <meta name="plan-commits" content="a69f554f,5bb66c48,41bc0eea,380dcd14,cf9160ff,32d932b2,53ceb356,cc44c453,65f5a378,3157768e,8602efcf,16ca61e7,d85fba28,6cdc5b8d,65c03d26,18719f5d,d41e0231">
 <meta name="plan-artifacts" content="reckon/evidence.py,tests/test_evidence_record_composition.py,reckon/serve.py,reckon/doccheck.py,tests/test_readers_compose_the_record.py,reckon/mcp.py,tests/test_read_plan_composes_the_record.py,reckon/crew/promotion.py,tests/test_promotion_writes_the_landing_line.py">
-<meta name="plan-impl" content="0.63">
+<meta name="plan-impl" content="0.75">
 </head>
 <body>
   <main class="plan-doc">
@@ -149,15 +149,46 @@
       list, so an uncomposed read never looks like a warning-free record. The review's evidence finding — baseline and
       after suites stated as prose — is answered with two logged arms whose headers print the revision, the resolved cwd
       and the served <code>reckon.__file__</code>: head and base each exit 0 with no failing ids, and the new test file
-      is absent at base. <strong>Open, and outside this node's fence:</strong> the public <code>read_plan</code> route
-      refuses an evidence document at <code>view='section'</code> (the section view admits plan resources only), so the
-      composed text is reachable today only through the <code>_typed_resource_text</code> machinery this node wired.
+      is absent at base. <strong>Then open, and closed by the next node:</strong> at this node's head the public <code>read_plan</code>
+      route refused an evidence document at <code>view='section'</code>, so the composed text was reachable only through
+      the <code>_typed_resource_text</code> machinery this node wired; the composition-failure-warning node below now
+      serves the record whole through that route.
       <a href="/reckon/evidence/archive/a-landing-record-never-conflicts-landed#s3">&sect;3 read_plan landed</a></p>
     <figure class="plan-figure">
       <img src="/reckon/figures/a-landing-record-never-conflicts/read-plan.svg"
            alt="The serve file route, doccheck.audit_file and the read_plan text path all call the one resolver evidence_record_plan, which decides from the document's own metas whether it is a record and which plan it composes for; a record reads composed, anything else reads as its own bytes.">
       <figcaption>One resolver: the three readers share <code>evidence_record_plan</code>, and the document's own metas
         &mdash; not its filename &mdash; decide whether it composes.</figcaption>
+    </figure>
+    <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span> <strong>the composition-failure
+      warning reaches the read_plan response</strong> &mdash; the public <code>read_plan</code> tool now serves a
+      cumulative evidence record whole at the section view, so a caller gets the composed bytes &mdash; or the record's
+      own bytes when composition failed &mdash; together with a response-level warning naming the record and the error.
+      <code>reckon/mcp_views.py</code> gained <code>_record_text_response</code>, which
+      <code>resource_view</code> dispatches to when the selected resource is typed <code>evidence</code> &mdash;
+      the selector's type, not the record resolver, so an ordinary evidence file whose metas name no plan is also
+      served whole; a plan still reads
+      through <code>_section_response</code> one authored section at a time, and a record read with an explicit
+      <code>section</code> argument is refused with <code>section_not_applicable</code>, because a record's fragments
+      are appended after the document rather than into one of its sections, so a section read cannot carry the anchors
+      they hold. The section view is the only <code>read_plan</code> view that serves a document's text, so with it
+      serving records the warning is reachable on every view that serves a record's text, and the fallback is no longer
+      confined to the <code>_typed_resource_text</code> machinery the previous node wired.
+      <br>Three end-to-end cases in <code>tests/test_read_plan_composes_the_record.py</code> drive
+      <code>_read_plan_tool</code> &mdash; not <code>_append_read_warning</code> directly: a composed record read through
+      the tool carries its fragment and no warning; a record whose composer raises returns the record's own bytes with a
+      response-level warning naming the record and the error, logged as well; and a record with no fragments reads
+      byte-identically. Negative control: dropping the warning from <code>read_plan</code>'s response path makes the
+      end-to-end warning case fail.
+      <br>Evidence arms: a base arm and a head arm of the three test files, each log header printing the revision, the
+      resolved cwd and the served <code>reckon.__file__</code>; base exits 0 with 20 passed, head exits 0 with 23
+      passed, the delta the three new cases.
+      <a href="/reckon/evidence/archive/a-landing-record-never-conflicts-landed#s3">&sect;3 read_plan warning landed</a></p>
+    <figure class="plan-figure">
+      <img src="/reckon/figures/a-landing-record-never-conflicts/view-dispatch.svg"
+           alt="read_plan calls _read_plan_view, which for the section view takes the text and its warning from _typed_resource_text_and_warning; resource_view then dispatches by type — an evidence record reads whole through _record_text_response, a plan reads one authored section through _section_response — and a composition failure carries a warning naming the record and the error on the response's warnings field.">
+      <figcaption>View dispatch: the section view is the text view, and it now serves an evidence record whole, so the
+        composition-failure warning reaches the response a caller receives.</figcaption>
     </figure>
 
     <h2 id="s4">§4 — Records without fragments are unchanged</h2>
@@ -233,6 +264,21 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T101026532536-promotion-writes-the-landing-line" data-who="reckon-build" data-when="2026-09-28T10:33:11.828Z">
     <div class="r-comment-body"><p>promotion writes a manifest landing: line as the plan-section comment through the versioned write, retrying a concurrent edit; 23 passed; skipping the line leaves no comment; review 92, bookkeeping finding declined</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260928T103341579982-review-of-promotion-writes-the-landing-line" data-who="reckon-build" data-when="2026-09-28T11:23:47.486Z">
+    <div class="r-comment-body"><p>reviewed promotion-writes-the-landing-line at 18719f5d: 92/100, one bookkeeping finding (reuse map not cited by path) declined; the reviewed run was merged at d41e0231</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260928T114739070644-review-of-read-plan-says-when-a-record-is-uncomposed" data-who="reckon-build" data-when="2026-09-28T12:15:29.092Z">
+    <div class="r-comment-body"><p>review of read-plan-says-when-a-record-is-uncomposed at 153a2cfd: 92, zero added failures, four findings sent back to the worker as a repair</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260928T123802221863" data-who="s25-coord" data-when="2026-09-28T12:38:02.000Z">
+    <div class="r-comment-body"><p>read-plan-says-when-a-record-is-uncomposed merged at 7630a9ba: read_plan serves a cumulative evidence record whole at the section view, with the composition-failure warning on the response and section_not_applicable for a section argument. Reviews 92 then 88 at the repaired head 5e4185c7, zero added failures. Six of eight nodes landed; default-scope-is-the-nodes-own-fragment (s2) is under review and the six-commit merge-tree measure (s3) remains.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260928T111049270783-read-plan-says-when-a-record-is-uncomposed" data-who="reckon-build" data-when="2026-09-28T12:17:16.861Z">
+    <div class="r-comment-body"><p>read_plan serves a cumulative evidence record whole with the composition-failure warning on the response and section_not_applicable for a section argument; reviews 92 then 88, zero added failures; merged at 7630a9ba</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260928T121811310907-review-of-read-plan-says-when-a-record-is-uncomposed" data-who="reckon-build" data-when="2026-09-28T12:39:35.978Z">
+    <div class="r-comment-body"><p>re-review of read-plan-says-when-a-record-is-uncomposed at 5e4185c7: 88, zero added failures; the reviewed run was promoted</p></div>
 </div>
 </section>
 </main>

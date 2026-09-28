@@ -314,8 +314,11 @@ def test_promotion_admits_a_red_log_that_names_the_declared_mutation(
     run_id = "r-20260919T090200000000-node-a"
     mutation = "removing the guard turns the fixture red"
     red = tmp_path / "guard_removed.log"
+    # Admission is decided by the run's facts — here the failing test id and
+    # the non-zero exit record — so the fixture that asserts admission carries
+    # both; the declaration above is the log's label for a human reader.
     red.write_text(
-        f"FAILED tests/test_guard.py - {mutation}\n1 failed, 1 passed\n",
+        f"FAILED tests/test_guard.py - {mutation}\n1 failed, 1 passed\nEXIT=1\n",
         encoding="utf-8",
     )
     manifest = tmp_path / "manifest.md"

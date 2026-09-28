@@ -346,6 +346,10 @@ def standalone_reason(html_text: str) -> str | None:
 
 SECTION_DEPENDS_ON_META = "plan-section-depends-on"
 
+#: Mapping key carrying a whole declaration no reader can use. It is not a
+#: section identity, so an edge builder skips it and the refusal set reports it.
+SECTION_DEPENDS_ON_DEFECT_KEY = "<plan-section-depends-on>"
+
 
 def is_section_identity(value: Any) -> bool:
     """Whether ``value`` is a usable section identity.
@@ -365,14 +369,17 @@ def section_depends_on(html_text: str) -> dict[str, Any] | None:
     while its siblings stay dispatchable. Like the standalone declaration it is
     authored markup the state engine leaves untouched, so the meta itself is
     read here rather than through parsed state. ``None`` means the plan declares
-    no such edge, which is the whole-plan behaviour every plan had before, or
-    declares one no reader can use at all — no meta, empty content, or a blob
-    that is not a JSON object.
+    no such edge at all — no meta, or a meta that carries no content — which is
+    the whole-plan behaviour every plan had before.
 
-    A defect inside one entry is not a reason to discard the declaration: an
-    entry is kept as authored when its refs are not a list, and kept under its
-    own identity when that identity fails the segment grammar, so
-    ``section_dependency_refusals`` can name the defect while the valid entries
+    A defect is never a reason for a declared wait to disappear. A value no
+    reader can use at all — invalid JSON, or JSON that is not an object — is
+    carried as one entry keyed by ``SECTION_DEPENDS_ON_DEFECT_KEY``, which is no
+    section identity, so ``section_dependency_refusals`` reports the defect by
+    name while every consumer that builds edges skips it. A defect inside one
+    entry is kept the same way: an entry is kept as authored when its refs are
+    not a list, and kept under its own identity when that identity fails the
+    segment grammar, so the refusals name the defect while the valid entries
     beside it go on describing their edges. Reading stays a read — nothing here
     repairs an entry, and a caller that builds edges from the mapping skips
     identities ``is_section_identity`` rejects.
@@ -388,10 +395,20 @@ def section_depends_on(html_text: str) -> dict[str, Any] | None:
             return None
         try:
             value = json.loads(raw)
-        except (TypeError, ValueError):
-            return None
+        except (TypeError, ValueError) as exc:
+            return {
+                SECTION_DEPENDS_ON_DEFECT_KEY: (
+                    f"{SECTION_DEPENDS_ON_META}: content is not valid JSON: {exc}"
+                )
+            }
         if not isinstance(value, dict):
-            return None
+            return {
+                SECTION_DEPENDS_ON_DEFECT_KEY: (
+                    f"{SECTION_DEPENDS_ON_META}: content must be a JSON object "
+                    "mapping section identities to plan refs; got "
+                    f"{type(value).__name__}"
+                )
+            }
         mapping: dict[str, Any] = {}
         for raw_section, raw_refs in value.items():
             section = str(raw_section or "").strip()
@@ -425,7 +442,9 @@ def section_dependency_refusals(
     unresolvable target is left to the dependency findings, which already report
     those. An entry whose own identity is not a section is refused by name and
     skipped — it names no section to hold — while the entries beside it are
-    still read.
+    still read. A whole declaration the reader could not parse arrives as one
+    entry keyed by ``SECTION_DEPENDS_ON_DEFECT_KEY`` and is refused the same way,
+    so a malformed value is reported rather than read as no declaration.
 
     Each row names the declaring section, the offending ref, the finding code the
     caller should raise, and the reason: an edge nobody can resolve must be
@@ -440,6 +459,13 @@ def section_dependency_refusals(
         )
 
     for raw_section, raw_refs in (mapping or {}).items():
+        if raw_section == SECTION_DEPENDS_ON_DEFECT_KEY:
+            # The whole declaration is unreadable, so it names no section and
+            # holds nothing; the reader carried the defect here instead of
+            # dropping it, and the message already names the meta and the
+            # malformation.
+            refuse("invalid-section-dependency", "", None, str(raw_refs))
+            continue
         section = str(raw_section or "").strip()
         if not is_section_identity(section):
             # An entry whose identity is not a section names no section to

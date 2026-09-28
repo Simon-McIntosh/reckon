@@ -20,15 +20,15 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <meta name="plan-standalone" content="Narrows the conditions under which existing refusals fire; it consumes no other plan&#x27;s evidence, and the discharge work in an-orchestrator-can-discharge-a-refusal proceeds beside it.">
   <title>A Refusal Is About The Work | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-27">
-<meta name="plan-version" content="5">
-<meta name="plan-commits" content="601e51e5,74dc4774,3ff3237b">
-<meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py">
+<meta name="plan-modified" content="2026-09-28">
+<meta name="plan-version" content="17">
+<meta name="plan-commits" content="601e51e5,74dc4774,3ff3237b,ee6fb313,fafbbe1f,5ad7eae0,27b4def6,956f91dd,d78ae0f3,5cb0fc39">
+<meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,reckon/crew/dispatch.py,reckon/crew/runs.py,tests/test_expired_follower_keeps_dispatching.py">
 <meta name="plan-impl" content="0.33">
 </head>
 <body>
@@ -63,14 +63,26 @@
     </div>
 
     <h2 id="s3">§3 — A session that armed a follower keeps dispatching</h2>
-    <p><strong>Deliverable.</strong> When the dispatching session appears in the project watcher's released-followers
-      list (it armed a follower that has since expired) and the watcher process is live, dispatch proceeds and prints a
-      warning whose text contains the exact attach command to re-arm. The watcher-required refusal remains for a session
-      that has never registered a follower with the watcher.</p>
-    <p><strong>Done when</strong> two tests pass — the expired-follower case proceeds with the attach command in its
-      warning, and the never-registered case is refused — and a dry run shows the same outcome for each.</p>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <div class="section-landed" data-section="s3">
+      <p><span class="badge">reopened 2026-09-28: one node remains</span></p>
+      <p class="landed-summary">First node merged at <code>27b4def6</code> (<code>ee6fb313</code>, <code>fafbbe1f</code>,
+        <code>5ad7eae0</code>). When a session's follower registration was released and the project watcher is live,
+        dispatch now proceeds with a warning that carries the exact re-arm command. A session that never registered is still
+        refused. <code>plan_dispatch</code> gives the same judgement, which <code>tests/test_expired_follower_keeps_dispatching.py</code>
+        passes, and treating a released registration as never-registered refuses the released case. Reviews 90, then 91
+        at <code>5ad7eae0</code>. Full record:
+        <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed#s3">§3 landed</a>.</p>
+      <p><strong>Remaining.</strong> The re-review at <code>5ad7eae0</code> found that the command's dry-run branch in
+        <code>reckon/cli.py</code> calls <code>plan_dispatch</code> with no session and no <code>watch_required</code>, so
+        <code>reckon crew dispatch --dry-run</code> reaches no admission judgement. This section's done-when, that a dry run
+        shows the same outcome for each case, is therefore unmet through the command. One node passes both from the CLI
+        and measures the released and never-registered cases through <code>reckon crew dispatch --dry-run</code> itself,
+        with a base arm taken at a revision where its test files exist.</p>
+    </div>
 
     <h2 id="s4">§4 — Bookkeeping follows the run</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> Three narrowings. A corrective run — one whose record carries
       <code>attempt_kind</code> resume or redispatch, or whose dispatch declares <code>--repairs &lt;run-id&gt;</code>
       naming a promoted run (a declaration this section adds) — promotes with <code>impl_move</code> recorded as exempt,
@@ -96,6 +108,18 @@
         <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed#s4">&sect;4 landed</a>.</p>
     </div>
 
+    <h2 id="s5">§5 — A hyphenated noun is not a second action</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
+    <div class="section-landed" data-section="s5">
+      <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span></p>
+      <p class="landed-summary">Merged at <code>5cb0fc39</code> (<code>956f91dd</code>, <code>d78ae0f3</code>). The contract lint
+        reads the token after a separator whole, so a hyphenated compound such as <code>verify-gate</code> is the noun the
+        author wrote rather than an action verb opening a second deliverable. A clause that begins with a bare action verb
+        still splits. The goal that tripped it is pinned verbatim as an accepted row: 10 passed, and restoring the first-word
+        match fails that row. Review 98 with zero added failures. Full record:
+        <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed">evidence record</a>.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-araw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
@@ -117,7 +141,31 @@
 <div class="r-comment" data-section="s2" data-id="c-20260927T190000-s2-closed" data-who="reckon-build" data-when="2026-09-27T19:00:00Z">
     <div class="r-comment-body">gate passed (tests/test_goal_contract_lint.py 8 passed); verify-gate at the integrated head ed676da4 exit 0, no finding; section s2 closed and collapsed. The driving followup f-araw-001 stays open for s3 and s4.</div>
 </div>
-<div class="r-comment" data-section="s4" data-id="c-run-r-20260928T112107745919-promotion-bookkeeping-follows-the-run" data-who="reckon-build" data-when="2026-09-28T00:00:00Z">
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260928T105748972956-review-of-expired-follower-keeps-dispatching" data-who="reckon-build" data-when="2026-09-28T11:23:43.195Z">
+    <div class="r-comment-body"><p>reviewed expired-follower-keeps-dispatching at fafbbe1f: 90/100, one finding (a missing trailing newline in the new test file) returned to the node's session and repaired</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260928T113000-s3-closed" data-who="reckon-build" data-when="2026-09-28T11:30:00Z">
+    <div class="r-comment-body">expired-follower-keeps-dispatching merged at 27b4def6; review 90, carried forward over a newline-only repair by a recorded waiver. Section s3 closed and collapsed. The plan keeps s4 (the promotion half is running; the --repairs flag follows in the dispatch.py lane) and s5 (the hyphenated-noun lint fix).</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260928T101006957060-expired-follower-keeps-dispatching" data-who="reckon-build" data-when="2026-09-28T11:24:22.178Z">
+    <div class="r-comment-body"><p>a session whose follower registration was released keeps dispatching with a re-arm warning; never-registered still refused; dry run matches; 6 passed; released-as-never control refuses the released case; review 90 carried forward over a newline repair</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260928T112519598949-review-of-expired-follower-keeps-dispatching" data-who="reckon-build" data-when="2026-09-28T11:55:21.722Z">
+    <div class="r-comment-body"><p>re-reviewed expired-follower-keeps-dispatching at 5ad7eae0: 91/100, confirming the carried-forward review; found that reckon crew dispatch --dry-run in reckon/cli.py passes no session or watch_required to plan_dispatch, so section 3's dry-run measure is unmet through the CLI, and that the base-arm gate log was stamped with the base while measuring the pre-commit tree; section 3 is reopened for a CLI follow-on node</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260928T120000-s3-reopened" data-who="reckon-build" data-when="2026-09-28T12:00:00Z">
+    <div class="r-comment-body">Reopened. The re-review at 5ad7eae0 (91) found the section's own dry-run measure unmet through the command: reckon/cli.py's dry-run branch passes no session or watch_required to plan_dispatch. One node remains, on reckon/cli.py, which queues behind promotion-bookkeeping-follows-the-run, which holds that file. The section's status was reopened by a direct edit of its record and declaration, because edit_plan has no op that reopens a done section.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260928T120500-s5-closed" data-who="reckon-build" data-when="2026-09-28T12:05:00Z">
+    <div class="r-comment-body">hyphenated-noun-is-not-an-action merged at 5cb0fc39; the lint reads the leading token whole, so verify-gate no longer opens a second deliverable; 10 passed; review 98 with zero added failures. Section s5 closed.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260928T113307099904-hyphenated-noun-is-not-an-action" data-who="reckon-build" data-when="2026-09-28T11:42:54.155Z">
+    <div class="r-comment-body"><p>the contract lint reads the token after a separator whole, so a hyphenated noun is not an action; 10 passed; first-word control fails the accepted row; review 98, zero added failures</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260928T114331759926-review-of-hyphenated-noun-is-not-an-action" data-who="reckon-build" data-when="2026-09-28T12:07:49.310Z">
+    <div class="r-comment-body"><p>review of hyphenated-noun-is-not-an-action at d78ae0f3: 98, zero added failures; the reviewed run was promoted</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260928T112107745919-promotion-bookkeeping-follows-the-run" data-who="reckon-build" data-when="2026-09-28T13:00:00Z">
     <div class="r-comment-body"><p>bookkeeping follows the run: a corrective attempt promotes with impl_move exempt by attempt_kind (resume/redispatch); a review run's outcome defaults to its stored review's total score and finding count; verify-gate accepts a checkout two ledger commits past the merge when no changed path differs and refuses one where a path does. tests/test_bookkeeping_follows_the_run.py 5 passed; the two named regression files 26 passed at base and 31 passed at head; the declared negative control (restore the exact-equality checkout check) refuses the two-commits-past case, exit 1</p></div>
 </div>
 </section>

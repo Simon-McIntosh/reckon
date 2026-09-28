@@ -9,9 +9,9 @@
   <meta name="plan-title" content="A Refusal Is About The Work — landed evidence">
   <meta name="plan-summary" content="The goal lint refuses placeholders and two-deliverable goals, not punctuation.">
   <meta name="plan-evidence-for" content="a-refusal-is-about-the-work">
-  <meta name="plan-verifies" content="a-refusal-is-about-the-work#s2">
-  <meta name="plan-commits" content="601e51e5">
-  <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,docs/figures/a-refusal-is-about-the-work/goal-lint-decision.svg">
+  <meta name="plan-verifies" content="a-refusal-is-about-the-work#s2,a-refusal-is-about-the-work#s4,a-refusal-is-about-the-work#s5">
+  <meta name="plan-commits" content="601e51e5,956f91dd">
+  <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,docs/figures/a-refusal-is-about-the-work/goal-lint-decision.svg,docs/figures/a-refusal-is-about-the-work/hyphenated-token-decision.svg">
   <meta name="plan-recorded-at" content="2026-09-27">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -83,6 +83,63 @@
       <code>reports/reckon/s25-coord/s25-reuse-map-dispatch-surface/reuse-map.md</code> records.</p>
     </section>
 
+    <section id="s3">
+      <h2>&sect;3 &mdash; A session whose follower was released keeps dispatching, warned to re-arm</h2>
+      <p>Commit <code>ee6fb313</code> <em>feat(crew): let a released follower keep dispatching with a
+      re-arm warning</em> narrows the watcher-required refusal. A follower registration is an advisory
+      lock on a per-session file, and the release drops the lock while deliberately leaving the file as
+      a record, so a session that armed a follower and then lost it is distinguishable from one that
+      never armed one at all. <code>_follower_liveness</code> in <code>reckon/crew/runs.py</code> now
+      reports that same distinction as <code>released</code>&nbsp;&mdash; the key is
+      true only where the file remains and its lock is free, false where no file was ever written &mdash;
+      and <code>watch_state</code> surfaces it as <code>session_follower_released</code>.</p>
+      <p><code>reckon/crew/dispatch.py</code> gains <code>_watcher_delivery_admission</code>, one
+      judgement invoked by both the launching path (<code>dispatch</code>) and the validating path
+      (<code>plan_dispatch</code>). An attached session needs nothing; a session whose registration was
+      released proceeds while the watcher process is live and is handed
+      <code>_released_follower_warning</code>, whose text carries the exact attach command from
+      <code>attach_line</code>; a session that never registered a follower is still refused with
+      <code>WatcherRequired</code>. The validating path evaluates the same two verdicts without starting
+      a producer.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-refusal-is-about-the-work/follower-admission-decision.svg"
+             alt="Three questions the admission guard asks in order — is the watcher live, is the session attached, was its registration released — with the four outcomes beside them: two refusals, a silent proceed, and a proceed whose warning names the attach command.">
+        <figcaption>The admission judgement in one view: the same two refusals that survive, and the
+        released case that now proceeds with the re-arm command in its warning.</figcaption>
+      </figure>
+
+      <h3>Measured</h3>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>tests/test_expired_follower_keeps_dispatching.py</code> and <code>tests/test_crew_dispatch_watcher_required.py</code> at <code>ee6fb313</code></td><td>6 passed, exit 0</td></tr>
+          <tr><td>Released case through a real dispatch</td><td>record carries <code>watcher_live</code> true, <code>session_attached</code> false, <code>session_follower_released</code> true; a warning contains <code>attach_line</code></td></tr>
+          <tr><td>Released case through the dry run (<code>plan_dispatch</code>)</td><td>proceeds; a warning contains <code>attach_line</code></td></tr>
+          <tr><td>Never-registered case, dispatch and dry run</td><td>both refuse with <code>WatcherRequired</code>; nothing is created and the message names the session</td></tr>
+          <tr><td>Declared negative control</td><td>the released case is refused</td></tr>
+          <tr><td><code>tests/test_follow_observes_other_sessions.py::test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three</code></td><td>fails identically at base <code>bd231eff</code>; pre-existing and outside this node's scope &mdash; reported as a follow-on</td></tr>
+        </tbody>
+      </table>
+      <p>The released case asserts the registration's own state (<code>registered</code> false,
+      <code>released</code> true) before it dispatches, so the test cannot pass on a session that never
+      armed a follower. The attach command is read from <code>runs.watch_state</code> at assertion time
+      rather than written as a literal, so the assertion tracks the command the warning actually
+      carries.</p>
+      <p>The declared negative control is applied to the committed HEAD and logged: treating a released
+      registration as never-registered in <code>reckon/crew/dispatch.py</code> makes both released
+      cases (the real dispatch and the dry run) refuse with <code>WatcherRequired</code>, while the
+      refusal cases stay green. The mutation is reverted and <code>dispatch.py</code> is verified
+      byte-identical to <code>ee6fb313</code> after the run.</p>
+      <p>The admission judgement is not re-implemented on either path: <code>dispatch</code> and
+      <code>plan_dispatch</code> both call <code>_watcher_delivery_admission</code>, whose seam the
+      reuse map at
+      <code>reports/reckon/s25-coord/s25-reuse-map-dispatch-surface/reuse-map.md</code> records. The
+      <code>cli.py</code> <code>--dry-run</code> call site does not yet forward the session and watcher
+      flags, so the dry run is exercised through <code>plan_dispatch</code> directly; that wiring is
+      outside this node's write scope and is reported as a follow-on.</p>
+    </section>
+
     <section id="s4">
       <h2>&sect;4 &mdash; Bookkeeping follows the run</h2>
       <p>Three refusals in the promotion and <code>verify-gate</code> surfaces now read
@@ -128,6 +185,49 @@
       which are stated at base <code>99455576</code>: the map names
       <code>_require_impl_moved</code>, the <code>--outcome</code> refusal and
       <code>rerun_gate_at_integrated_revision</code>, and each was re-derived here.</p>
+    </section>
+
+    <section id="s5">
+      <h2>&sect;5 &mdash; A hyphenated noun is not a second action</h2>
+      <p>Commit <code>956f91dd</code> <em>fix(crew): read a hyphenated compound as one token in the goal
+      lint</em> narrows <code>_deliverable_conjunction</code> in <code>reckon/crew/node.py</code>. The
+      clause after a separator was matched as its leading letters alone
+      (<code>([a-z]+)</code>), so a hyphenated compound whose first word is an action verb was read as
+      that verb. The leading token is now matched whole (<code>[a-z][a-z0-9-]*</code>) and tested
+      against <code>_DELIVERABLE_ACTIONS</code> as a unit, so <code>verify-gate</code> is the noun the
+      author wrote while a clause that genuinely begins with a bare <code>verify</code> still splits.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-refusal-is-about-the-work/hyphenated-token-decision.svg"
+             alt="Two clauses after a separator read as one token each: verify-gate is a noun and stays one deliverable, while a clause opening on the bare verb verify still opens a second deliverable.">
+        <figcaption>The leading token read whole: the hyphenated compound survives, and the bare action
+        verb still splits.</figcaption>
+      </figure>
+
+      <h3>Measured</h3>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>tests/test_goal_contract_lint.py</code> at <code>956f91dd</code></td><td>10 passed, exit 0</td></tr>
+          <tr><td>Accepted rows, after the change</td><td>5, none refused <code>single-goal</code> or <code>fully-specified</code></td></tr>
+          <tr><td>Refused rows still firing</td><td>4 of 4 (the property each names)</td></tr>
+          <tr><td>The goal s5 quotes, verbatim</td><td>dispatched no separator &mdash; accepted</td></tr>
+          <tr><td>Declared negative control</td><td>the accepted verify-gate row fails <code>single-goal</code>, exit 1</td></tr>
+          <tr><td>Ruff findings on the changed paths</td><td>baseline 12, after 10 &mdash; none added; <code>ruff format --check</code> clean</td></tr>
+        </tbody>
+      </table>
+      <p>The defect reproduces on the committed HEAD before the change: reading the goal
+      <em>"Narrow promotion's impl-move, outcome and verify-gate refusals to the run they judge"</em>
+      through <code>_deliverable_conjunction</code> returns <code>' and '</code> &mdash; the separator the
+      clause after it does not open. The accepted row carries that goal verbatim, so the row fails on the
+      old reading and passes on the new one; the refused row pairs a first clause with a second that
+      opens on a bare action verb, so it keeps firing.</p>
+      <p>The declared negative control is applied to the committed HEAD and logged: restoring the
+      first-word-only reading (<code>([a-z]+)</code>) in <code>reckon/crew/node.py</code> makes the
+      accepted verify-gate row fail <code>single-goal</code> with the detail <em>"the goal joins
+      deliverables with 'and'; split it into one node per deliverable"</em>, while the remaining nine
+      rows pass. The mutation is reverted and <code>node.py</code> carries the whole-token match again
+      afterward, re-run green at 10 passed.</p>
     </section>
   </main>
 </body>
