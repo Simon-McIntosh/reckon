@@ -9,9 +9,9 @@
   <meta name="plan-title" content="A Refusal Is About The Work — landed evidence">
   <meta name="plan-summary" content="The goal lint refuses placeholders and two-deliverable goals, not punctuation.">
   <meta name="plan-evidence-for" content="a-refusal-is-about-the-work">
-  <meta name="plan-verifies" content="a-refusal-is-about-the-work#s2">
-  <meta name="plan-commits" content="601e51e5">
-  <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,docs/figures/a-refusal-is-about-the-work/goal-lint-decision.svg">
+  <meta name="plan-verifies" content="a-refusal-is-about-the-work#s2,a-refusal-is-about-the-work#s5">
+  <meta name="plan-commits" content="601e51e5,956f91dd">
+  <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,docs/figures/a-refusal-is-about-the-work/goal-lint-decision.svg,docs/figures/a-refusal-is-about-the-work/hyphenated-token-decision.svg">
   <meta name="plan-recorded-at" content="2026-09-27">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -138,6 +138,49 @@
       <code>cli.py</code> <code>--dry-run</code> call site does not yet forward the session and watcher
       flags, so the dry run is exercised through <code>plan_dispatch</code> directly; that wiring is
       outside this node's write scope and is reported as a follow-on.</p>
+    </section>
+
+    <section id="s5">
+      <h2>&sect;5 &mdash; A hyphenated noun is not a second action</h2>
+      <p>Commit <code>956f91dd</code> <em>fix(crew): read a hyphenated compound as one token in the goal
+      lint</em> narrows <code>_deliverable_conjunction</code> in <code>reckon/crew/node.py</code>. The
+      clause after a separator was matched as its leading letters alone
+      (<code>([a-z]+)</code>), so a hyphenated compound whose first word is an action verb was read as
+      that verb. The leading token is now matched whole (<code>[a-z][a-z0-9-]*</code>) and tested
+      against <code>_DELIVERABLE_ACTIONS</code> as a unit, so <code>verify-gate</code> is the noun the
+      author wrote while a clause that genuinely begins with a bare <code>verify</code> still splits.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-refusal-is-about-the-work/hyphenated-token-decision.svg"
+             alt="Two clauses after a separator read as one token each: verify-gate is a noun and stays one deliverable, while a clause opening on the bare verb verify still opens a second deliverable.">
+        <figcaption>The leading token read whole: the hyphenated compound survives, and the bare action
+        verb still splits.</figcaption>
+      </figure>
+
+      <h3>Measured</h3>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>tests/test_goal_contract_lint.py</code> at <code>956f91dd</code></td><td>10 passed, exit 0</td></tr>
+          <tr><td>Accepted rows, after the change</td><td>5, none refused <code>single-goal</code> or <code>fully-specified</code></td></tr>
+          <tr><td>Refused rows still firing</td><td>4 of 4 (the property each names)</td></tr>
+          <tr><td>The goal s5 quotes, verbatim</td><td>dispatched no separator &mdash; accepted</td></tr>
+          <tr><td>Declared negative control</td><td>the accepted verify-gate row fails <code>single-goal</code>, exit 1</td></tr>
+          <tr><td>Ruff findings on the changed paths</td><td>baseline 12, after 10 &mdash; none added; <code>ruff format --check</code> clean</td></tr>
+        </tbody>
+      </table>
+      <p>The defect reproduces on the committed HEAD before the change: reading the goal
+      <em>"Narrow promotion's impl-move, outcome and verify-gate refusals to the run they judge"</em>
+      through <code>_deliverable_conjunction</code> returns <code>' and '</code> &mdash; the separator the
+      clause after it does not open. The accepted row carries that goal verbatim, so the row fails on the
+      old reading and passes on the new one; the refused row pairs a first clause with a second that
+      opens on a bare action verb, so it keeps firing.</p>
+      <p>The declared negative control is applied to the committed HEAD and logged: restoring the
+      first-word-only reading (<code>([a-z]+)</code>) in <code>reckon/crew/node.py</code> makes the
+      accepted verify-gate row fail <code>single-goal</code> with the detail <em>"the goal joins
+      deliverables with 'and'; split it into one node per deliverable"</em>, while the remaining nine
+      rows pass. The mutation is reverted and <code>node.py</code> carries the whole-token match again
+      afterward, re-run green at 10 passed.</p>
     </section>
   </main>
 </body>
