@@ -216,9 +216,7 @@ def test_failure_after_append_names_the_row_state(repository, monkeypatch, failu
     if restore_codes == {0}:
         rolled_back = True
     elif restore_codes:
-        relative = ledger.run_path("sample", run_id, repository).relative_to(
-            repository
-        )
+        relative = ledger.run_path("sample", run_id, repository).relative_to(repository)
         carried = subprocess.run(
             ["git", "-C", str(repository), "cat-file", "-e", f"HEAD:{relative}"],
             capture_output=True,
