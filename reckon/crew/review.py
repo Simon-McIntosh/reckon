@@ -506,6 +506,14 @@ _MEASURED_FIELDS = (_BASE_LOG_FIELD, _HEAD_LOG_FIELD)
 # prefix its own working directory contributed.
 _REPO_PATH_ANCHOR = "tests"
 
+# The opening components that mark a path as written from a working directory
+# rather than from the repository root: an absolute path, whose first component
+# is empty, and one beginning with the current or parent directory. A spelling
+# that opens with a plain component is repository-relative already, and may
+# legitimately name a package that keeps its own ``tests`` directory, so it is
+# left whole rather than reduced onto the anchor.
+_CWD_COMPONENTS = ("", ".", "..")
+
 
 def canonical_node_id(node_id: str) -> str:
     """Return a pytest node id in the repository-relative form the count compares.
@@ -518,21 +526,27 @@ def canonical_node_id(node_id: str) -> str:
     verbatim, one test reads as two, and a run that added nothing reads as
     having added failures — which caps its total below the promotion floor.
 
-    So the path part, everything before the first ``::``, is reduced to the
-    sub-path from the last ``tests`` component onward, and its separators are
-    normalised to ``/``. The ``::`` segments and parametrisation brackets are
-    returned untouched, because they are what tells apart two tests sharing a
-    file. An id carrying no ``tests`` component cannot be resolved against the
+    Only a spelling written from a working directory is reduced, because only
+    there is the part above the anchor the working directory's contribution
+    rather than part of the path. Such a path — absolute, or opening with ``.``
+    or ``..`` — keeps the sub-path from its last ``tests`` component onward. A
+    plain relative spelling is kept whole: reducing it would merge a package's
+    own ``pkg/tests/x.py`` into ``tests/x.py``, and an addition under one would
+    read as one the other already had. Separators are normalised to ``/`` in
+    every case. The ``::`` segments and parametrisation brackets are returned
+    untouched, because they are what tells apart two tests sharing a file. An
+    id carrying no ``tests`` component cannot be resolved against the
     repository and is kept verbatim: it is still compared, under the spelling
     its own log used, rather than dropped from the difference.
     """
     path, separator, segments = node_id.partition("::")
     path = path.replace("\\", "/")
     components = path.split("/")
-    for index in range(len(components) - 1, -1, -1):
-        if components[index] == _REPO_PATH_ANCHOR:
-            path = "/".join(components[index:])
-            break
+    if components[0] in _CWD_COMPONENTS:
+        for index in range(len(components) - 1, -1, -1):
+            if components[index] == _REPO_PATH_ANCHOR:
+                path = "/".join(components[index:])
+                break
     return path + separator + segments
 
 
@@ -656,18 +670,49 @@ def _manifest_prose(manifest_text: str) -> str:
     return "\n".join(kept)
 
 
+# The punctuation a sentence may wrap a node id in, and which is therefore not
+# part of the id: a manifest naming an id in backticks and following it with a
+# comma writes it with both. Only the token's edges are trimmed, so the ``::``
+# segments and parametrisation brackets inside an id survive untouched.
+_PROSE_EDGE_CHARS = "`'\"()<>{};,:.!?*|"
+
+
+def _prose_id_token(raw: str) -> str | None:
+    """Return the node id a prose token carries, or ``None`` when it carries none.
+
+    A manifest retires an added id by naming the test, and names it as the
+    manifest knows it. The wrapping punctuation of the sentence around it,
+    trimmed here, is not part of the name. Unbalanced square brackets are
+    trimmed too — a bracketed mention is prose, not a parametrised id — while a
+    parametrised id keeps its own closing bracket, balanced against the one
+    that opens it.
+    """
+    token = raw.strip(_PROSE_EDGE_CHARS).removeprefix("[")
+    if token.endswith("]") and token.count("[") < token.count("]"):
+        token = token.removesuffix("]")
+    return token if "::" in token else None
+
+
 def _retires_id(text: str, test_id: str) -> bool:
     """Whether retirement prose names a test id in full.
 
-    A bare node id is matched as a whole token so a shorter id is not retired
-    by a longer one that contains it.
+    The prose spelling and the counted id are compared as canonical forms
+    rather than as spellings, because they are written by different hands: the
+    count's id comes from a gate log, which may have been printed from another
+    working directory, while the manifest names the test as the repository
+    knows it. A manifest that spells the id with the working-directory prefix the
+    gate log printed must still retire it, and both sides therefore reduce
+    through :func:`canonical_node_id`. Each token is compared as a whole, so a
+    shorter id is not retired by a longer one that contains it.
     """
     if not text or not test_id:
         return False
-    return (
-        re.search(rf"(?<![\w:/\[\].-]){re.escape(test_id)}(?![\w:/\[\].-])", text)
-        is not None
-    )
+    target = canonical_node_id(test_id)
+    for raw in text.split():
+        token = _prose_id_token(raw)
+        if token is not None and canonical_node_id(token) == target:
+            return True
+    return False
 
 
 # ── The durable store ───────────────────────────────────────────────────────
