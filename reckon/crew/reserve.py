@@ -110,20 +110,20 @@ def _unreadable_verdict(
     if bookend:
         admitted = True
         reason = (
-            f"the window's utilisation could not be read{detail}, and a {role} "
-            f"role spends from the whole window: the {reserve:g}% bookend "
-            "reserve is not withheld from it, so the unreadable reading does "
-            f"not bar this dispatch from the {limit:g}% ceiling"
+            f"the window's utilisation could not be read{detail}, and the "
+            f"{role} role spends from the whole window: the {reserve:g}% "
+            "bookend reserve is not withheld from it, so the unreadable "
+            f"reading does not bar this dispatch from the {limit:g}% ceiling"
         )
     else:
         admitted = False
         reason = (
             f"the window's utilisation could not be read{detail}, and an "
-            "unreadable window is not an empty one: a "
-            f"{role} dispatch is refused against the {reserve:g}% the window "
-            "keeps for review and verify roles rather than admitted as if the "
-            f"window were empty; an implementation dispatch reaches {limit:g}% "
-            f"of the {ceiling_pct(block):g}% window"
+            "unreadable window is not an empty one: the "
+            f"{role} role's dispatch is refused against the {reserve:g}% the "
+            "window keeps for review and verify roles rather than admitted as "
+            f"if the window were empty; an implementation dispatch reaches "
+            f"{limit:g}% of the {ceiling_pct(block):g}% window"
         )
     return {
         "role": str(role),
@@ -181,9 +181,9 @@ def admit(
     if admitted:
         if bookend:
             reason = (
-                f"a {role} role spends from the whole window and reaches the "
-                f"{limit:g}% ceiling; the {reserve:g}% bookend reserve is not "
-                "withheld from it"
+                f"the {role} role spends from the whole window and reaches "
+                f"the {limit:g}% ceiling; the {reserve:g}% bookend reserve "
+                "is not withheld from it"
             )
         else:
             reason = (
@@ -194,7 +194,7 @@ def admit(
             )
     elif bookend:
         reason = (
-            f"a {role} role may reach the {limit:g}% window ceiling, and "
+            f"the {role} role may reach the {limit:g}% window ceiling, and "
             f"utilisation {used:g}% plus a {claim:g}% claim projects "
             f"{projected:g}% above it"
         )

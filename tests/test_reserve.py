@@ -177,6 +177,38 @@ def test_a_bookend_is_admitted_when_the_window_is_unreadable(role: str) -> None:
     assert "could not be read" in verdict["reason"]
 
 
+# Every role the reserve composes a verdict for. A role interpolated behind one
+# fixed article reads correctly for the roles that article happens to agree with
+# and wrongly for the rest, so the pairing is asserted per role rather than once.
+COMPOSED_ROLES = ("implement", "review", "verify", "investigate", "test")
+
+# The letters an indefinite "a" cannot precede. "a implement dispatch is
+# refused" is what a fixed article reads as for a role beginning with one.
+VOWEL_INITIAL = "aeiou"
+
+
+@pytest.mark.parametrize("role", COMPOSED_ROLES)
+def test_no_refusal_puts_a_fixed_article_before_the_role(role: str) -> None:
+    """Every role reads correctly in the texts the reserve composes for it.
+
+    A spent window refuses a role outright, and a window nobody could read
+    refuses every role the reserve withholds from; a bookend meets the second
+    of those as an admission, so the two texts together cover every state the
+    reserve puts a role into. Each names its role, and where the role begins
+    with a vowel neither puts "a" in front of it — which is how "a implement
+    dispatch is refused" was composed from a fixed article.
+    """
+    unreadable = reserve.admit(WINDOW, role=role, utilisation_pct=None)["reason"]
+    spent = reserve.admit(WINDOW, role=role, utilisation_pct=99.0, claim_pct=100.0)[
+        "reason"
+    ]
+
+    assert role in unreadable, unreadable
+    for text in (unreadable, spent):
+        if role[:1] in VOWEL_INITIAL:
+            assert f"a {role}" not in text, text
+
+
 # The dispatch boundary: a correct verdict refuses nothing if the dispatch path
 # never reaches it. The pair is asserted through the dispatch entry point, on
 # the harness that drives one — a temporary crew home, a real worktree, and the

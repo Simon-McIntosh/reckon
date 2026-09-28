@@ -2820,6 +2820,114 @@ both fields, so a layer setting them survives the <code>extra=&quot;forbid&quot;
       head gate log:
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T045443284910-replay-guards-every-row-read/reports/pace-gate.log</code>.</p>
     </section>
+
+    <section id="s4-refusal-article">
+      <h2>&sect;4 &mdash; The refusal reads correctly for every role it names</h2>
+
+      <p>The reserve composes its refusal around the role a dispatch carries, and every site that
+      interpolates that role put it behind one fixed indefinite article. For a role that begins with
+      a vowel the sentence cannot take that article, so the text read
+      <em>a implement dispatch is refused</em>. At the base revision <code>e6a86550</code> the text
+      composed for an implementation dispatch whose window nobody could read is, verbatim:</p>
+
+      <pre><code>the window's utilisation could not be read, and an unreadable window is not an empty
+one: a implement dispatch is refused against the 20% the window keeps for review and
+verify roles rather than admitted as if the window were empty; an implementation
+dispatch reaches 80% of the 100% window</code></pre>
+
+      <p>The evidence is that text rather than a count, because the defect is a sentence a reader
+      meets. Seven of the ten role-and-state texts the reserve composes changed; the three that did
+      not are the spent-window refusals of a non-bookend role, which name the class
+      (<em>an implementation dispatch</em>) rather than the role. <strong>No verdict moved</strong>:
+      the admission a role reaches is a function of the role and the reserved fraction, and
+      <code>admitted</code> is identical at both revisions for all ten.</p>
+
+      <table>
+        <thead>
+          <tr><th>Role</th><th>Text before (window unreadable)</th><th>Text after</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>implement</code></td>
+          <td><code>a implement dispatch is refused</code></td>
+          <td><code>the implement role's dispatch is refused</code></td></tr>
+          <tr><td><code>investigate</code></td>
+          <td><code>a investigate dispatch is refused</code></td>
+          <td><code>the investigate role's dispatch is refused</code></td></tr>
+          <tr><td><code>test</code></td>
+          <td><code>a test dispatch is refused</code></td>
+          <td><code>the test role's dispatch is refused</code></td></tr>
+          <tr><td><code>review</code></td>
+          <td><code>a review role spends from the whole window</code></td>
+          <td><code>the review role spends from the whole window</code></td></tr>
+          <tr><td><code>verify</code></td>
+          <td><code>a verify role spends from the whole window</code></td>
+          <td><code>the verify role spends from the whole window</code></td></tr>
+        </tbody>
+      </table>
+
+      <p>The refusal a spent window composes for a bookend moved the same way,
+      <code>a review role may reach the 100% window ceiling</code> becoming
+      <code>the review role may reach &hellip;</code>. The consonant-initial rows were the reason not
+      to keep the fixed article: <code>implement</code> and <code>investigate</code> were read
+      wrongly while <code>test</code>, <code>review</code> and <code>verify</code> only agreed with
+      it by accident of spelling. Sourcing the article from the role's first letter would have kept
+      the dependence on the spelling, so every site now names the role through the file's own
+      <code>the &lt;role&gt; role</code> construction behind a definite article, which is correct at
+      any letter. Four sites moved: the two branches of <code>_unreadable_verdict</code> and the
+      bookend branches of <code>admit</code>, admitted and refused.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-window-paces-the-lane/where-a-fixed-article-breaks.svg"
+             alt="The five roles placed at their first letter on an alphabet strip whose vowel cells are shaded: implement and investigate both begin with a vowel and read &quot;a implement dispatch is refused&quot; under the fixed article, while review, verify and test are consonant-initial and agreed with it by accident of spelling. A panel below records that all four sites in reserve.py now name the role as the role's role behind a definite article, correct at any letter, and that a parametrised case asserts per role that the text names its role and puts no a before a vowel-initial one.">
+        <figcaption>The fixed article was wrong exactly inside the vowel band, and two of the five
+        roles sat there — the three that read correctly did so by agreement, not by construction.</figcaption>
+      </figure>
+
+      <h3>The measure</h3>
+
+      <p><code>tests/test_reserve.py</code> gains one parametrised case over the five roles the
+      reserve composes a text for. For each role it asserts that the composed text names that role,
+      and that a role beginning with a vowel is not preceded by <code>a</code> — the construction
+      that composed <em>a implement dispatch is refused</em>. The role list is the parametrisation,
+      so a role added to the reserve is covered by adding it in one place.</p>
+
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Base arm — module at <code>e6a86550</code>, delivered test file</td>
+          <td><strong>2 failed, 16 passed</strong>, exit 1. The two failures are the
+          <code>implement</code> and <code>investigate</code> cases, each quoting the composed text
+          in its assertion message. The log's header names the scratch tree, and
+          <code>module.__file__</code> with the resolved cwd confirm the base module is the import
+          that ran.</td></tr>
+          <tr><td>Head gate — delivered worktree</td>
+          <td><strong>18 passed</strong>, exit 0, with <code>module.__file__</code> naming the
+          worktree's own <code>reserve.py</code>.</td></tr>
+          <tr><td>Negative control — fixed article restored in a scratch copy</td>
+          <td>The <code>implement</code> case fails, and the <code>investigate</code> case with it:
+          both read through the one mutated site. Reintroducing the article is what the case exists
+          to refuse.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Negative control</h3>
+      <blockquote><p>restore the fixed article before the role in a scratch copy of reserve.py; the
+      implement case must fail</p></blockquote>
+      <p>The delivered module was copied to a scratch tree and the sentence restored to
+      <code>an unreadable window is not an empty one: a {role} dispatch is refused</code> there, so
+      the copy serves the import while the deliverable tree is untouched; the replacement is
+      asserted to have happened before the run, so a mutation that missed cannot leave a green log
+      that reads as a red one. Against the copy the parametrised case reports
+      <code>2 failed, 16 passed</code> — <code>[implement]</code> and <code>[investigate]</code> —
+      and the deliverable reports <code>18 passed</code>. Logs: base arm
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101446663322-reserve-refusal-reads-for-every-role/reports/reserve-base-arm.log</code>,
+      negative control
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101446663322-reserve-refusal-reads-for-every-role/reports/reserve-negative-control.log</code>,
+      head gate
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101446663322-reserve-refusal-reads-for-every-role/reports/reserve-gate.log</code>;
+      the per-role texts at both revisions are in
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101446663322-reserve-refusal-reads-for-every-role/reports/role-texts-before-after.txt</code>.</p>
+    </section>
 </main>
 
 </body>
