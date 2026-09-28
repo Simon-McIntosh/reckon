@@ -3835,14 +3835,50 @@ def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pre
     review store by hand or promoting the close over it.
 
     Every refusal is the store's own, and nothing is written on one: an
-    unknown dimension, a kind outside the closed set, a fold naming no node
-    and an exemption carrying no reason all exit non-zero with the reason
-    stated. The record is rewritten where the review was read from, so the
-    disposition lands beside the reviewer's own content and a head-keyed
-    review keeps its own file.
+    unknown dimension, a kind outside the closed set, a fold naming no node,
+    an exemption carrying no reason, and either kind supplied with the other's
+    field all exit non-zero with the reason stated. The record rewritten is the
+    one the obligations read-back selects — the same resolution and the same
+    selection, by the run's own live pointer and by the head-first rule the
+    reader uses — so an accepted call is one the row follows, and a store
+    holding a legacy copy beside a revision-keyed record for the same head
+    cannot take the entry in the copy nobody reads.
     """
+    from reckon.crew import recovery, runs
     from reckon.crew import review as review_module
 
+    try:
+        pointer = runs.read_pointer(reviewed_run_id)
+    except runs.CrewError:
+        # A finished run has no live pointer, and the reader resolves the same
+        # absence to no tree and no head.
+        pointer = {}
+    tree = recovery._review_tree(pointer)
+    head = recovery._reviewed_run_head(pointer) if tree is not None else ""
+    try:
+        stored, described = recovery.select_review_for_head(
+            project, reviewed_run_id, head, tree=tree
+        )
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(
+            f"cannot read the stored review for run {reviewed_run_id!r}: {exc}"
+        ) from exc
+    if stored is None:
+        if described:
+            raise click.ClickException(
+                f"the stored review for run {reviewed_run_id!r} describes "
+                f"{described}, while the run's work is at {head}; a disposition "
+                "recorded now would answer a review its own head does not name"
+            )
+        raise click.ClickException(
+            f"no stored review for run {reviewed_run_id!r} in project "
+            f"{project!r} to record a disposition against"
+        )
+    # The head the selected record carries, not the one resolved from the tree:
+    # a record that names no revision was selected by the reader's fallback, and
+    # naming a revision for it would leave the writer nothing to read back.
+    _, _, carries_head, stored_head = review_module.carried_revision_pair(stored)
+    reviewed_head_sha = stored_head if carries_head and stored_head else None
     try:
         path = review_module.record_dimension_disposition(
             project,
@@ -3851,10 +3887,13 @@ def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pre
             kind=kind,
             node=node_id,
             reason=reason,
+            reviewed_head_sha=reviewed_head_sha,
         )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    _, record = review_module.stored_record(project, reviewed_run_id)
+    _, record = review_module.stored_record(
+        project, reviewed_run_id, reviewed_head_sha=reviewed_head_sha
+    )
     dispositions = (record or {}).get(review_module.DIMENSION_DISPOSITIONS_KEY) or {}
     _emit(
         {

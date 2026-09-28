@@ -251,6 +251,48 @@ def test_an_exemption_recording_its_reason_retires_the_row(fixture: Fixture) -> 
     assert _stored_dispositions(fixture.reviewed)["durability"]["reason"] == reason
 
 
+def test_a_legacy_copy_beside_the_keyed_record_takes_the_disposition(
+    fixture: Fixture,
+) -> None:
+    """The command writes the file the obligation row is read from.
+
+    A store can hold both files for one revision: the review at the
+    revision-keyed path, and a legacy record carrying the same head beside it —
+    the shape this plan's own review store holds. The head-first reader takes
+    the first candidate carrying the head, so a command that selected the
+    newest record, or wrote wherever the record's own fields pointed, could
+    answer ok while the copy the row is read from kept its sub-floor finding.
+    The premise is asserted first, the row standing; after the call the
+    disposition is in exactly the file the reader reads and the row is gone.
+    """
+    head = fixture.head_sha
+    keyed = review_module.review_path(PROJECT, fixture.reviewed, reviewed_head_sha=head)
+    legacy = review_module.review_path(PROJECT, fixture.reviewed)
+    assert keyed.is_file()
+    legacy.write_text(keyed.read_text(encoding="utf-8"), encoding="utf-8")
+
+    read_path, _record = review_module.stored_record(
+        PROJECT, fixture.reviewed, reviewed_head_sha=head
+    )
+    assert read_path == legacy, "the row's record is the legacy copy"
+    assert [row["dimension"] for row in _sub_floor_rows()] == ["durability"]
+
+    result = _dispose(
+        fixture, "--dimension", "durability", "--kind", "folded", "--node", FOLD_NODE
+    )
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["path"] == str(read_path)
+
+    assert _sub_floor_rows() == []
+    carrying = [
+        path
+        for path in (legacy, keyed)
+        if review_module.DIMENSION_DISPOSITIONS_KEY
+        in json.loads(path.read_text(encoding="utf-8"))
+    ]
+    assert carrying == [read_path]
+
+
 REFUSALS: tuple[tuple[str, tuple[str, ...], str], ...] = (
     (
         "unknown-dimension",
@@ -276,6 +318,34 @@ REFUSALS: tuple[tuple[str, tuple[str, ...], str], ...] = (
         "exemption-without-a-reason",
         ("--dimension", "durability", "--kind", "exempted"),
         "exempted disposition must record",
+    ),
+    (
+        "fold-carrying-a-reason",
+        (
+            "--dimension",
+            "durability",
+            "--kind",
+            "folded",
+            "--node",
+            FOLD_NODE,
+            "--reason",
+            "carried over from an exemption that was never recorded",
+        ),
+        "folded disposition carries no reason",
+    ),
+    (
+        "exemption-carrying-a-node",
+        (
+            "--dimension",
+            "durability",
+            "--kind",
+            "exempted",
+            "--reason",
+            "answered by the revision the merged head carries",
+            "--node",
+            FOLD_NODE,
+        ),
+        "exempted disposition names no node",
     ),
 )
 
