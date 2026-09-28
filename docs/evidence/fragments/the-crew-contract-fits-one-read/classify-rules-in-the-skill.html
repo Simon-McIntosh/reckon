@@ -25,16 +25,16 @@
   A keyword-and-imperative filter yields <strong>197</strong> candidates;
   <strong>15</strong> are structural headings or one-word fragments rather than
   rule-stating sentences and are excluded, leaving <strong>182</strong> rows. Of those,
-  <strong>23</strong> are enforced by code — each names the refusal or check and a test
+  <strong>26</strong> are enforced by code — each names the refusal or check and a test
   that drives the guarded action far enough to make it fire, run in the foreground with the log
-  cited under <code>logs/</code> — <strong>20</strong> restate a surviving row, and
-  <strong>139</strong> are prose rules with no code refusal at this boundary. The
+  cited under <code>logs/</code> — <strong>13</strong> restate a surviving row, and
+  <strong>143</strong> are prose rules with no code refusal at this boundary. The
   &ldquo;wanted?&rdquo; column is <em>proposed</em> here; the lead confirms it before the
   rewrite. No skill file or source file was edited.</p>
 
   <figure>
     <img src="/reckon/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/dispositions.svg"
-         alt="Bar chart of binding-sentence dispositions: keep 136, merge 23, delete as enforced 24.">
+         alt="Bar chart of binding-sentence dispositions: keep 143, merge 13, delete as enforced 26, over 182 rows.">
     <figcaption>Disposition of the 182 binding sentences in
     <code>skills/reckon-build/SKILL.md</code>.</figcaption>
   </figure>
@@ -258,7 +258,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: `grep -rn &quot;&lt;pat&gt;&quot; src/ tests/` — never `grep -rn</td>
+        <td>merge into row 22 (L176): &quot;`grep -rn &quot;&lt;pat&gt;&quot; src/ tests/` — never `grep -rn &quot;&lt;pat&gt;&quot; .`…&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -330,7 +330,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: The portable dispatch contract is mandatory. `re</td>
+        <td>merge into row 31 (L216): &quot;The portable dispatch contract is mandatory. `reckon crew…&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -510,7 +510,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: This step is NON-NEGOTIABLE.</td>
+        <td>merge into row 51 (L306): &quot;This step is NON-NEGOTIABLE.&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -519,7 +519,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: This step is NON-NEGOTIABLE.</td>
+        <td>merge into row 51 (L306): &quot;This step is NON-NEGOTIABLE.&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -537,7 +537,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: Repair error-level `roadmap.wiring_findings` bef</td>
+        <td>merge into row 49 (L288): &quot;Repair error-level `roadmap.wiring_findings` before classifying…&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -600,7 +600,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: Persist that DAG-build classification before dis</td>
+        <td>merge into row 61 (L354): &quot;Persist that DAG-build classification before dispatch with one…&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -609,7 +609,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: Persist that DAG-build classification before dis</td>
+        <td>merge into row 61 (L354): &quot;Persist that DAG-build classification before dispatch with one…&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -678,11 +678,11 @@
       <tr>
         <td>71</td>
         <td>Check every node before it enters the ready queue:<br><span class="loc">skills/reckon-build/SKILL.md:393</span></td>
-        <td>—</td>
-        <td class="t">—</td>
+        <td>reckon/crew/node.py + dispatch.py node-contract validation (not-dispatchable, exit 2)</td>
+        <td class="t">tests/test_brief_dispatch.py::test_a_brief_dispatch_without_a_done_when_is_refused_as_not_dispatchable</td>
         <td>yes</td>
-        <td>merge into: All eight must hold:</td>
-        <td>restates the same rule as the named surviving row</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
       </tr>
       <tr>
         <td>72</td>
@@ -735,8 +735,8 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: | `watcher-required` | 8 | No watcher this sessi</td>
-        <td>restates the same rule as the named surviving row</td>
+        <td>keep</td>
+        <td>the exception path is prose; no check fires on a waiver-bearing one-off, only on the absent follower</td>
       </tr>
       <tr>
         <td>78</td>
@@ -750,11 +750,11 @@
       <tr>
         <td>79</td>
         <td>Read that document rather than inferring a refusal from an empty stream — several dispatches chained in one shell command leave only the last exit status behind.<br><span class="loc">skills/reckon-build/SKILL.md:423</span></td>
-        <td>—</td>
-        <td class="t">—</td>
+        <td>reckon/crew/refusals.py format_refusal emitted by reckon/cli.py</td>
+        <td class="t">tests/test_crew_refusal_visibility.py</td>
         <td>yes</td>
-        <td>merge into: Every refusal answers with a JSON document on st</td>
-        <td>restates the same rule as the named surviving row</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
       </tr>
       <tr>
         <td>80</td>
@@ -933,8 +933,8 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: It refuses to execute against any tree that is n</td>
-        <td>restates the same rule as the named surviving row</td>
+        <td>keep</td>
+        <td>a policy for the verify gate&#x27;s finding set; no check fires when a red base would manufacture one</td>
       </tr>
       <tr>
         <td>100</td>
@@ -1023,8 +1023,8 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: There is no slot pool and no numeric worker cap </td>
-        <td>restates the same rule as the named surviving row</td>
+        <td>keep</td>
+        <td>a reading rule for the lane document; the arm&#x27;s refusals are the ceiling and the member guard, not this inference</td>
       </tr>
       <tr>
         <td>110</td>
@@ -1092,11 +1092,11 @@
       <tr>
         <td>117</td>
         <td>It is never a wave that proceeds anyway.<br><span class="loc">skills/reckon-build/SKILL.md:692</span></td>
-        <td>—</td>
-        <td class="t">—</td>
+        <td>reckon/serve.py + reckon/crew/plan_review.py closure gate on plan writes</td>
+        <td class="t">tests/test_closure_gates.py::test_refused_terminal_write; tests/test_closure_gates.py::test_ops_and_patch_boundaries_refuse_terminal_transition</td>
         <td>yes</td>
-        <td>merge into: Under strict enforcement, refuse to dispatch wor</td>
-        <td>restates the same rule as the named surviving row</td>
+        <td>delete as enforced</td>
+        <td>code refuses the guarded action; the sentence restates the refusal</td>
       </tr>
       <tr>
         <td>118</td>
@@ -1239,7 +1239,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: Verify every worker by reading what it produced,</td>
+        <td>merge into row 30 (L214): &quot;Verify every worker by reading what it produced, not by…&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -1248,7 +1248,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: Update the plan at every node landing. Immediate</td>
+        <td>merge into row 33 (L219): &quot;Update the plan at every node landing. Immediately after EACH…&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -1311,7 +1311,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: Collapse the evergreen when a section ships. Rep</td>
+        <td>merge into row 39 (L234): &quot;Collapse the evergreen when a section ships. Replace the…&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -1356,7 +1356,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: Read that record and may edit or append to it — </td>
+        <td>merge into row 143 (L861): &quot;Read that record and may edit or append to it — never write…&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -1437,7 +1437,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: Same-plan follow-on work becomes a section, neve</td>
+        <td>merge into row 148 (L912): &quot;Same-plan follow-on work becomes a section, never a followup…&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
@@ -1455,8 +1455,8 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: The plan altitude is enforced at the write bound</td>
-        <td>restates the same rule as the named surviving row</td>
+        <td>keep</td>
+        <td>advisory to the coordinator; the refusal itself is the enforced rule, working around it is not a separate action code can refuse</td>
       </tr>
       <tr>
         <td>158</td>
@@ -1563,7 +1563,7 @@
         <td>—</td>
         <td class="t">—</td>
         <td>yes</td>
-        <td>merge into: Fold depth is expected, and carries no stopping </td>
+        <td>merge into row 168 (L1068): &quot;Fold depth is expected, and carries no stopping authority&quot;</td>
         <td>restates the same rule as the named surviving row</td>
       </tr>
       <tr>
