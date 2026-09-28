@@ -18,13 +18,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-28">
-  <meta name="plan-version" content="105">
+  <meta name="plan-version" content="107">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.68">
 </head>
 <body>
@@ -428,25 +428,26 @@
     foreground and reads its JSON. The follower remains the only long-lived process a session
     <em>watches</em>. &sect;3's per-run supervisors are detached and belong to their runs, so a
     session neither watches nor waits on them.</p>
-    <p><strong>Done when</strong> the launch-kind table in <code>skills/reckon-ship/SKILL.md</code>
+    <p><strong>Done when</strong> the launch-kind table in <code>skills/reckon-build/SKILL.md</code>
     says a CLI dispatch returns once its supervisor is running, without waiting for the worker to be
     spawned, and is run in the foreground. The row claims no order between dispatch's exit and the
     spawn.
-    <code>skills/reckon-ship/references/orchestrator-harness/claude-code.md</code> names the
+    <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code> names the
     follower as the session's only monitor. No sentence in <code>skills/</code> instructs
     backgrounding a <code>reckon crew dispatch</code>, checked by
     <code>grep -rn "dispatch" skills/</code> read line by line, with the lines that mention
     backgrounding listed in the manifest. Two such sentences are known and are targets, not
     incidental uses: the scout note in
-    <code>skills/reckon-ship/references/sprint-orchestration.md</code> ("Dispatch a prior-art scout
+    <code>skills/reckon-build/references/sprint-orchestration.md</code> ("Dispatch a prior-art scout
     in the background") and the line in
-    <code>skills/reckon-ship/references/worker-backends.md</code> that backgrounds a CLI dispatch and
+    <code>skills/reckon-build/references/worker-backends.md</code> that backgrounds a CLI dispatch and
     yields. A scout is still dispatched first and not waited on, since the coordinator reads its
     result later, but the dispatch command itself runs in the foreground. The write paths are
-    <code>skills/reckon-ship/SKILL.md</code>,
-    <code>skills/reckon-ship/references/orchestrator-harness/claude-code.md</code>,
-    <code>skills/reckon-ship/references/sprint-orchestration.md</code> and
-    <code>skills/reckon-ship/references/worker-backends.md</code>. A backgrounding sentence found in
+    <code>skills/reckon-build/SKILL.md</code>,
+    <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>,
+    <code>skills/reckon-build/references/sprint-orchestration.md</code> and
+    <code>skills/reckon-build/references/worker-backends.md</code>. The skill was renamed from
+    reckon-ship to reckon-build after this section was written. A backgrounding sentence found in
     any other file is listed in the manifest as a follow-on. This section runs after &sect;3
     merges.</p>
 
@@ -992,10 +993,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-adrwiw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-adrwiw-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker" data-resolved-at="2026-09-28T14:43:36+00:00" data-resolved-by="s21-coord">
     <h4 class="r-fu-title">Measure, detach, then correct the skill</h4>
     <div class="r-fu-body"><p>Three nodes in order. The detach node waits on the measurement because the holding code path is not yet known.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
+    <p class="r-fu-outcome">Partly done, then superseded by f-adrwiw-remaining-after-audit. Per the S21 currency audit at 76e1bf93, the detach half is done: §3 landed (c8f0b545, d47c6a70), and tests/test_dispatch_returns_without_worker.py reports 5 passed. The measure half is partial: §2's probe is opt-in and reports 1 skipped. The skill half is §4 and stays open.</p>
     </article>
 <article class="r-fu" data-id="f-adrwiw-handoff-01" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Reflex pointer records no pid, and dispatch races the reflex</h4>
@@ -1027,6 +1029,11 @@
     <h4 class="r-fu-title">Close the stop flag&#x27;s read-to-fork window and test the post-spawn stop</h4>
     <div class="r-fu-body"><p>Residual findings from the review (93) of stop-before-spawn-spawns-nothing, merged at 425d0520. (1) The stop flag is read once, near dispatch.py:5415, and never again before the fork, so a stop delivered in that microsecond window still spawns a worker. Re-check the flag under the same signal mask immediately before the fork, or block SIGTERM across the check-and-fork. (2) No test delivers a group stop to a live supervisor after its worker spawns, so a supervisor that exits instead of recording the stop's exit status would pass. Add that case with a stub worker, and assert the recorded exit. (3) One docstring phrase, "It used to be ignored", is changelog prose, which the naming rule bans; restate it as the invariant. Each change carries a negative control.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker §3</pre>
+    </article>
+<article class="r-fu" data-id="f-adrwiw-remaining-after-audit" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-28T14:50:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §4, §6 and §8, then the on-node half of §10</h4>
+    <div class="r-fu-body"><p>The S21 currency audit at <code>76e1bf93</code> (report <code>~/.config/reckon/crew/reports/reckon/s21-audit-dispatch.{json,md}</code>) leaves four sections open. They touch disjoint files and can run in parallel.</p><ul><li><b>§4</b>: the skill stops telling coordinators to background a dispatch. Its done-when now names <code>skills/reckon-build/…</code>, since the skill was renamed from reckon-ship.</li><li><b>§6</b>: the asserting test <code>tests/test_dispatch_result_matches_launch.py</code> is absent. Write it; a refusal is never returned for a dispatch that launched.</li><li><b>§8</b>: the worker cap is still enforced. The roster bound from <code>max_concurrent_runs</code> is at <code>summary.py:279-300</code>, and the refusal at <code>summary.py:483</code>. Retire it and add <code>tests/test_backend_carries_no_worker_cap.py</code>.</li><li><b>§10, on-node half</b>: run the batch-step supervisor as the allocation's step with <code>RECKON_FLEET_SPAWN</code> set, and prove a <code>scancel</code> of the step id. This needs the operator, because it touches the live allocation.</li></ul><p>Open side followups to fold in where they touch the same files: runpy-warning, in-progress-unreadable, launch-flicker, and stop-window's three residual findings.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -1173,6 +1180,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260924T213000-discard-leaves-worktree" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
     <div class="r-comment-body">Evidence for this section, 2026-09-24 23:19. crew discard of r-20260924T211759945494-review-of-the-fleet-supervisor-lives-in-reckon removed its pointer but left its worktree, which was clean and at an integrated head. So redispatching the same node id was refused with 'worktree creation failed: worktree path already exists'. The coordinator removed the worktree by hand with a plain `git worktree remove`. The follower then labelled the discarded run 'promoted'. That label is owned by the-fleet-counters-count-the-fleet §3. The discarded run was itself a review-reflex launch with launch in-harness, backend native and pid null in a Claude Code coordinator session that never asked for in-harness. Nothing would ever have run it, yet it held the review's scope claim.</div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-20260928T1650-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:50:00Z">
+    <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch).</p><ul><li><b>Done, with passing tests:</b> §3 (5 passed), §5 (6 passed) and §7 (2 passed).</li><li><b>§9: superseded, now declared done.</b> The work landed under a-crew-process-ends-with-its-owner as <code>c4684acf</code>, and <code>tests/test_discard_releases_a_clean_worktree.py</code> reports 4 passed. The test name this section gives, test_discard_removes_an_empty_worktree.py, was never created.</li><li><b>§10: partly done.</b> test_dispatch_spawns_through_the_fleet.py reports 6 passed and test_fleet_supervisor.py 14 passed; the on-node half remains.</li><li><b>Still open:</b> §2 is partly done (its probe is opt-in), §6 has no asserting test, and §8's cap is still enforced.</li><li><b>Stale wording:</b> §4's skill paths are corrected to reckon-build. §8 still says "reckon-ship contract"; read it as reckon-build.</li></ul></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260924T2030-s7-landed" data-who="reckon-build" data-when="2026-09-24T20:30:00Z">
     <div class="r-comment-body"><p><strong>§7 landed</strong> (<code>2a33d2db</code>). <code>complete</code> in <code>reckon/crew/promotion.py</code> reads the run directory's <code>exit.json</code> once, before the run directory is released, and copies it verbatim onto the promoted row under <code>worker_exit</code>. The row's <code>gate_check.exit_status</code> is a separate fact: the worker's exit never writes it. A run with no <code>exit.json</code> carries no <code>worker_exit</code> key at all, because the key is written only when a record was read — a present-but-empty object would read as a supervisor that ran and recorded nothing. A file that exists but cannot be read, or does not parse as a JSON object, is treated as absent for the same reason: propagation would put a failure about the record where the record should be. <strong>Evidence:</strong> two cases in <code>tests/test_promotion_keeps_the_worker_exit.py</code>, both passing, and both declared negative controls reproduce as written — removing the copy fails case 1, and writing an empty key when the file is absent fails case 2. The promotion-import file set shows zero added failures against base <code>02e2757d</code>: an identical 30-failure set, 246 passed, at both revisions. Landing record and figure in <a href="/reckon/evidence/archive/a-dispatch-returns-without-its-worker-landed#s7">§7 of the landed evidence record</a>.</p></div>

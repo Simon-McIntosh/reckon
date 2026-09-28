@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="55">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="56">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -334,10 +334,11 @@
     <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default §9</pre>
     <p class="r-fu-outcome">done — no followup. Both ids are green at 42bfc207 after s22-coord's reckon-skill-overhaul landings (build-skill-sheds-reference-material, build-skill-keeps-its-pinned-rules): tests/test_skill_contracts.py 55 passed, test_skill_contract_parity.py 15 passed, test_crew_directory.py 7 passed.</p>
     </article>
-<article class="r-fu" data-id="f-tllitd-shared-claims" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build the-local-lane-is-the-default §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tllitd-shared-claims" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build the-local-lane-is-the-default §1" data-resolved-at="2026-09-28T14:44:41+00:00" data-resolved-by="s21-coord">
     <h4 class="r-fu-title">A declared hot file can be claimed by more than one live node</h4>
     <div class="r-fu-body"><p>Lead decision, 2026-09-25: allow shared-file writes, with coordination. Worktrees isolate in-flight work, and merging is the orchestrator's job. The measurement behind it: on 2026-09-25 all three reckon coordinators reported local-lane width bound by whole-file write claims on six to eleven hot modules (<code>dispatch.py</code>, <code>promotion.py</code>, <code>recovery.py</code>, <code>mcp.py</code>, <code>cli.py</code>, <code>roadmap.py</code>), with 15 running against a computed ceiling of 27 and a router gate of 36. The refused nodes would mostly edit different functions in those files.</p><p>The mechanism: a project declares shareable paths in <code>docs/state/&lt;project&gt;/shared-write-paths.json</code>, a list of repository-relative files, each with a one-line reason. The live claim check in <code>reckon/crew/runs.py</code> (<code>_raise_live_scope_conflict</code>) still refuses any overlap, except when the candidate path and the live claim resolve to the same file named in that list. In that case it permits the claim and records the co-claimants, so <code>crew(view="scopes")</code> shows every live node sharing the file. A directory claim that contains a shared file still conflicts, and so does any path not in the list. With no list present, behaviour is unchanged.</p><p>Done when a test synthesizes a repository with a list naming one file and asserts four things: two nodes claiming that file both pass the check; a node claiming an unlisted file is refused against a live claim on it; a directory claim overlapping the shared file is refused; with the list absent, the shared file is refused. The negative control ignores the list, and the first case then fails. The list for reckon is committed with the six modules named above.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default §1</pre>
+    <p class="r-fu-outcome">Done, evidenced by the S21 currency audit at 76e1bf93. _shared_write_paths (runs.py:830) reaches the live dispatch claim check (dispatch.py:1464), and tests/test_shared_claims_on_declared_hot_files.py is green at both base and head.</p>
     </article>
 <article class="r-fu" data-id="f-tllitd-readings-and-durability" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build the-local-lane-is-the-default §5" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The published headroom carries readings, from a timer that outlives the allocation</h4>
@@ -535,6 +536,16 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260925T203158493582-re-review-of-worker-digest-generator" data-who="reckon-build" data-when="2026-09-25T21:06:49.314Z">
     <div class="r-comment-body"><p>review record stored and read by the coordinator</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-20260928T1700-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T15:00:00Z">
+    <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T134355700628-s21-audit-lane). The report is at <code>~/.config/reckon/crew/reports/reckon/s21-audit-lane.{json,md}</code>. The twelve cited test files report 103 passed at both base and head, with 0 added failures.</p><ul><li><b>§1: done.</b></li><li><b>§10: superseded, now declared done.</b> the-suite-is-green-at-head §1–§3 landed, so the 77-failure baseline is historical.</li><li><b>§2 (model routing): still required, and it gates §3 and §4.</b> Dispatch has no <code>--model</code>, and each backend declares only one model.</li><li><b>§3: partly done.</b> There is no claude permission gate and no escalation-reason record.</li><li><b>§4: still required.</b> <code>_review_lane_candidates</code> still ends in <code>sorted(backends)</code>.</li><li><b>§5: partly done.</b> The live document reports state unknown for every account, and the timer is allocation-bound.</li><li><b>§6: partly done.</b> The graded pace state belongs with a-window-paces-the-lane.</li><li><b>§7: partly done.</b> <code>crew follow</code> has no <code>--until-actionable</code>.</li><li><b>§8: still required,</b> and now gated on a-dispatch-returns-without-its-worker §10 (gate g-tllitd-8).</li><li><b>§9: partly done.</b> The digest landed; SKILL.md is 1224 lines against a target of under 400.</li></ul><p>The audit estimates about 47 worker-hours remaining. f-tllitd-001 stays the driving followup, starting from §2.</p></div>
+</div>
+</section>
+<section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-tllitd-8" data-section="s8" data-gated-sections="s8" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">workers are launched from the fleet allocation&#x27;s batch step on the node, with RECKON_FLEET_SPAWN set and a scancel of the step id proven, so a session&#x27;s end cannot kill them</h4>
+    <p class="r-gate-required-evidence">a-dispatch-returns-without-its-worker#s10</p>
+    </div>
 </section>
 </main>
 </body>

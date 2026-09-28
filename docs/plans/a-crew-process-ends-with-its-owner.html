@@ -23,8 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="95">
+<meta name="plan-version" content="97">
 <meta name="plan-impl" content="0.75">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -483,8 +484,10 @@
     owner has usually moved on. The harness offers no heartbeat for that. The host dashboard
     in imas-codex's <code>host-dashboard-covers-every-agent-process</code> carries it instead,
     as a per-session list of long-running background processes.</p>
-    <p><strong>Done when</strong> the three rules above are in the reckon-ship skill and the
-    Claude Code harness reference, each beside the measurement that motivates it.</p>
+    <p><strong>Done when</strong> the three rules above are in the reckon-build skill
+    (<code>skills/reckon-build/</code>, renamed from reckon-ship) and the Claude Code harness
+    reference (<code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>),
+    each beside the measurement that motivates it.</p>
 
     <h2 id="s8">&sect;8 &mdash; Done when, for the plan</h2>
     <p>&sect;2&ndash;&sect;7 have each met their own done-when. On a working day with the
@@ -1031,10 +1034,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-acpewio-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="2026-09-28T14:44:15+00:00" data-resolved-by="s21-coord">
     <h4 class="r-fu-title">Make every crew process end with its owner</h4>
     <div class="r-fu-body"><p>§2 (<code>reckon/cli.py</code>), §3 (producer lease), §4 (the three <code>--untracked-files=all</code> call sites and dispatch back-pressure) and §5 (MCP deadlines) touch disjoint files and can run in parallel. §6 (ownership in the environment, and <code>crew census</code>) follows §2 and §3, because it reads the owner they record. §7 is guidance and follows §6, since it names the census. Each section's done-when carries a mutation that must fail its test.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
+    <p class="r-fu-outcome">Partly done, then superseded by f-acpewio-remaining-after-audit. Per the S21 currency audit at 76e1bf93, §2 is done (796583a4, 5194657a; test_follower_checks_its_owner.py 5 passed and test_orphaned_follower_releases.py 2 passed). §4 is done (c676b011; test_promotion_releases_its_worktree.py 4 passed), and so is §5 (d026717e; test_mcp_reads_have_deadlines.py 8 passed). §3, §6, §7, §9, §10's own gate and §11 remain.</p>
     </article>
 <article class="r-fu" data-id="f-20260924T192222968622" data-status="open" data-written-by="reckon-edit" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Land the producer lease, then make a live producer incremental</h4>
@@ -1127,6 +1131,11 @@
 <article class="r-fu" data-id="f-acpewio-unknown-departure-word" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T13:40:00Z" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">A departure with no ledger evidence: the code says withdrawn, a test still says promoted</h4>
     <div class="r-fu-body"><p>tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word has failed on main since ddf4509f (2026-09-25, node a-discard-never-reads-promoted). It asserts promoted at :581, and recovery.py:5599 now returns withdrawn. That commit deliberately made a departure with no resolvable project fail closed to withdrawn ("unknown is never promoted"). The test's docstring argues the opposite ("no reader is told a run was withdrawn on no evidence"). An s22 attribution run measured the flip on both sides of ddf4509f: 1 passed before, 1 failed at it. Neither word is honest about an unknown departure. Decide the contract: either update the test to the fail-closed rule, or give an unknown departure its own word, which neither promises nor withdraws. Then make the test assert that decision.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
+    </article>
+<article class="r-fu" data-id="f-acpewio-remaining-after-audit" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-28T14:55:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Producer lease first, then census, pause hold, reconcile gate, incremental reads and skill rules</h4>
+    <div class="r-fu-body"><p>The S21 currency audit at <code>76e1bf93</code> (report <code>~/.config/reckon/crew/reports/reckon/s21-audit-dispatch.{json,md}</code>) leaves these open:</p><ul><li><b>§3: producer lease.</b> No lease mechanism exists anywhere in <code>reckon/</code>, and <code>tests/test_producer_holds_a_lease.py</code> is absent. §11 follows §3.</li><li><b>§6: crew census of orphans.</b> <code>tests/test_crew_census.py</code> is absent, and <code>death_census.py</code> is a different census.</li><li><b>§9: dispatch holds while the lane is paused.</b> <code>tests/test_dispatch_holds_while_the_lane_is_paused.py</code> is absent. <code>lane_document.py</code> models a paused lane, but no hold path exists.</li><li><b>§10: its own gate.</b> Five sibling cases landed and pass, but <code>tests/test_a_run_can_always_be_reconciled.py</code> is absent. Write that gate, or re-point it at the five sibling files.</li><li><b>§11: incremental producer reads,</b> after §3.</li><li><b>§7: skill rules</b>, now named at reckon-build.</li></ul><p>§3, §6, §9 and §7 touch disjoint files. Open side followups: worker-retired-at-acceptance, phase-writer, complete-refuses-an-open-merge, predecessor-commits-reach-the-ledger, nongit-test-stays-outside-a-repo and every-signal-leaves-a-sender-record.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
     </article>
 </section>
@@ -1259,6 +1268,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20260926T142811418533-re-review-of-complete-refuses-a-live-run" data-who="reckon-build" data-when="2026-09-26T15:03:52.573Z">
     <div class="r-comment-body"><p>review stored at the reviewed head, total 95; a review is not gated by a suite</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
+    <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
 </div>
 </section>
 </main>
