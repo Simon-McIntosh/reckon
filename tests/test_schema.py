@@ -421,6 +421,17 @@ def test_decision_sections_read_the_scoping_from_the_decision_element():
     assert decision_sections("<p>no decisions here</p>") is None
 
 
+def test_decision_sections_survive_a_state_write():
+    """The scoping is authored markup, so a state write leaves it in place."""
+
+    html = _plan_with_scoped_decision("s1,s2")
+
+    assert decision_sections(html) == {"open-one": ["s1", "s2"]}
+    assert decision_sections(write_state(html, read_state(html))) == {
+        "open-one": ["s1", "s2"]
+    }
+
+
 def test_decision_sections_refuse_a_section_the_plan_does_not_declare():
     """A scoped decision naming no declared section is refused by name."""
 

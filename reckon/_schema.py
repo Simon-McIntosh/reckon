@@ -795,6 +795,7 @@ class Decision(BaseModel):
     choices: list[str] = Field(default_factory=list)
     option_labels: dict[str, str] = Field(default_factory=dict)
     choice: str = ""  # "" == open; an option value OR free text
+    sections: list[str] = Field(default_factory=list)
     rationale: str = ""
     when: str = ""
     by: str = ""

@@ -2386,7 +2386,7 @@ def _build_roadmap(
                 # to see, and they need not carry a gate or a comment anchor of
                 # their own, so the plan's authored declarations name them too.
                 | (
-                    set(_plan_declarations(plan, docs_dir, project, slug))
+                    set(_plan_declarations(plan, docs_dir, project, slug) or ())
                     if decision_section_blockers
                     else set()
                 )
