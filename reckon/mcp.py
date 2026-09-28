@@ -69,6 +69,9 @@ from reckon import (
 from reckon import (
     ledger as ledger_module,
 )
+from reckon import (
+    velocity as velocity_module,
+)
 from reckon._mcp_tools import StorageSlowResult
 from reckon._schema import (
     PLAN_STANDALONE_META,
@@ -3747,6 +3750,7 @@ def _crew(
     checkout_path: str | None = None,
     plan: str | None = None,
     since: str | None = None,
+    until: str | None = None,
     limit: int | None = None,
     candidates: list[dict[str, Any]] | None = None,
     session: str | None = None,
@@ -3796,6 +3800,13 @@ def _crew(
     ``obligations`` derives the duties one coordinator session still owes — each
     with its kind, run, age and next command — from the live pointers, the
     review store and the ledger, and needs ``session``.
+    ``velocity`` reports what the fleet delivered over the window ``since`` to
+    ``until`` — promotions split implementation against review, landed lines in
+    six classes, the seven-day deletion share, dispatch-to-completion and
+    dispatch-to-promotion quantiles, attempts per landed node and the review
+    share — by project, by lane, by day and in project-lane-day cells. It takes
+    one ``project``, or ``"*"`` for every mounted checkout, and refuses by name
+    when ``since`` is absent; ``until`` defaults to now.
 
     Pass ``session`` — the same id given to ``reckon crew dispatch`` — on
     ``live``: every run row gains ``mine``, and the watcher block reports
@@ -3875,6 +3886,7 @@ def _crew(
         "fleet",
         "runs",
         "obligations",
+        "velocity",
     ):
         return {
             "ok": False,
@@ -3883,7 +3895,8 @@ def _crew(
                 "view must be directory, drain, scopes, summary, flight, live, "
                 "records, ledger, budget or obligations; lanes is the endpoint "
                 "quota view, routing is the cross-ledger cost view, runs is the "
-                "compact joined view, and fleet is the cross-project view"
+                "compact joined view, velocity is the delivery-rate view, and "
+                "fleet is the cross-project view"
             ),
         }
     try:
@@ -3902,6 +3915,52 @@ def _crew(
                 "ok": True,
                 "view": view,
                 **obligations_module.obligations(project, session),
+            }
+        if view == "velocity":
+            # The window start is the caller's to name and is refused by name
+            # when absent, because there is no safe default: a view that
+            # silently measured "since forever" would report a window the
+            # caller did not ask for.
+            if since is None or velocity_module.stamp(since) is None:
+                return {
+                    "ok": False,
+                    "error": "crew_error",
+                    "project": project,
+                    "view": view,
+                    "detail": (
+                        "the velocity view needs since=<window start, ISO-8601>; "
+                        "it is absent or unparseable"
+                    ),
+                }
+            window_end = until if until is not None else velocity_module.iso(time.time())
+            if velocity_module.stamp(window_end) is None:
+                return {
+                    "ok": False,
+                    "error": "crew_error",
+                    "project": project,
+                    "view": view,
+                    "detail": (
+                        "until, when given, must be an ISO-8601 clock; "
+                        "it is unparseable"
+                    ),
+                }
+            if project == "*":
+                checkouts = {
+                    name: str(docs.parent)
+                    for name, docs in flight_module.mounted_project_docs().items()
+                }
+            else:
+                docs_dir = _docs_dir_for_project(project, checkout_path)
+                if docs_dir is None:
+                    raise crew_module.CrewError(
+                        f"project {project!r} has no readable docs directory"
+                    )
+                checkouts = {project: str(docs_dir.parent)}
+            return {
+                "ok": True,
+                "view": view,
+                "project": project,
+                **velocity_module.report(checkouts, start=since, end=window_end),
             }
         if view == "runs":
             return crew_runs_view(
