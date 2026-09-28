@@ -427,10 +427,16 @@ def test_a_manifest_directory_that_is_not_a_live_run_gets_no_harness_home(
 
 
 @requires_bwrap
-def test_the_codex_login_is_bound_read_only_into_the_runs_codex_home(
+def test_the_codex_login_is_bound_read_write_into_the_runs_codex_home(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The operator's login is exposed, not copied, and not writable."""
+    """The operator's login is exposed writable, not copied.
+
+    codex rewrites ``auth.json`` in place on a refresh, so the login is bound
+    read-write: a read-only bind let the run rotate the token server-side and
+    then drop the refreshed value, spending a single-use refresh token. The
+    login stays the operator's own file — bound, never copied.
+    """
     fixture = Fixture(tmp_path)
     fixture.isolate(monkeypatch)
     plan = fixture.plan(dialect="codex")
@@ -440,15 +446,14 @@ def test_the_codex_login_is_bound_read_only_into_the_runs_codex_home(
     assert codified.is_dir()
     source = str(fixture.codex / "auth.json")
     destination = str(codified / "auth.json")
-    assert [source, destination] in _bind_pairs(plan.argv, "--ro-bind")
+    assert [source, destination] in _bind_pairs(plan.argv, "--bind")
+    assert [source, destination] not in _bind_pairs(plan.argv, "--ro-bind")
     # The bind is composed after the run directory's writable grant, so the file
-    # overlay is the last word on that path rather than a grant re-opening it.
+    # bind is the last word on that path rather than a grant re-opening it.
     assert plan.argv.index(destination) > plan.argv.index(str(fixture.run))
 
     lines, completed = fixture.run_stub(dialect="codex", STUB_CODEX_BIND=destination)
     assert completed.returncode == 0, completed.stderr
-    assert "codex-login-remove refused" in _line(lines, "codex-login-remove refused")
-    assert destination in _line(lines, "codex-login-remove refused")
     assert _line(lines, "codex-login-readable").endswith("'operator-login'")
     assert (codified / "auth.json").is_file()
     assert (fixture.codex / "auth.json").read_text() == "operator-login"
@@ -486,7 +491,7 @@ def test_an_unfenced_codex_launch_keeps_the_operators_home(
     assert [
         str(fixture.codex / "auth.json"),
         str(codified / "auth.json"),
-    ] in _bind_pairs(fenced.argv, "--ro-bind")
+    ] in _bind_pairs(fenced.argv, "--bind")
 
     # Every dialect keeps the operator's home unfenced: the run's own home is a
     # fence artefact, and with no fence the operator's hooks, memory and
