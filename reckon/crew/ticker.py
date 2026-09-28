@@ -953,6 +953,12 @@ class RowPolicy:
 
     def __init__(self) -> None:
         self._reported: dict[str, str] = {}
+        # run_id -> the state this pane has actually drawn, as against a state
+        # carried in from a previous arming. A baseline is the inventory an arm
+        # opens with, so a state the pane has not been shown must not suppress
+        # it: only a baseline re-derived for a run this arming has already drawn
+        # is dropped.
+        self._drawn: dict[str, str] = {}
         # run_id -> (deadline, opener event). A run carries one opener at most:
         # a second hold for the same run is a different kind of noise, and the
         # first opener is released before the second is considered.
@@ -962,12 +968,39 @@ class RowPolicy:
         """Remember a state the pane already shows, before this pane's first row.
 
         A re-arm restores the states the previous pane drew, so the policy must
-        start from that memory: without it a re-derived baseline for a run the
-        reader has already seen would print as a fresh transition, which is the
-        noise the counter-only rule exists to keep off the pane.
+        start from that memory: without it a re-derived transition for a run the
+        reader has already seen would print as fresh, which is the noise the
+        counter-only rule exists to keep off the pane.
         """
         if run_id and state:
             self._reported[str(run_id)] = str(state)
+
+    def adopt_drawn(self, states: Mapping[str, str]) -> None:
+        """Seed the drawn memory with states a pane has already put on screen.
+
+        A reload of the same pane continues one reader's view: the rows drawn
+        before the replacement are on that reader's screen, so a baseline
+        re-derived for one of them after the reload is a repeat and is dropped.
+        A durable checkpoint's memory is not adopted this way — a Monitor-armed
+        re-arm has no screen to continue, and its fleet report is the attach.
+        """
+        if states:
+            self._draw_all(states)
+
+    def drawn_states(self) -> dict[str, str]:
+        """The states this pane has drawn, for a caller that rebuilds the policy."""
+        return dict(self._drawn)
+
+    def _draw_all(self, states: Mapping[str, Any]) -> None:
+        for key, value in states.items():
+            if key and value:
+                self._drawn[str(key)] = str(value)
+
+    def _draw(self, run_id: str, state: Any) -> None:
+        """Record a row this pane has just drawn, in both memories."""
+        if run_id:
+            self._reported[run_id] = str(state)
+            self._drawn[run_id] = str(state)
 
     def _release_expired(self, now: float, out: list[Mapping[str, Any]]) -> None:
         """Print every opener whose hold window has passed uncompleted."""
@@ -975,6 +1008,7 @@ class RowPolicy:
             run_id for run_id, (deadline, _) in self._held.items() if deadline <= now
         ]:
             _, opener = self._held.pop(run_id)
+            self._draw(run_id, opener.get("to_state"))
             out.append(opener)
 
     def feed(self, event: Mapping[str, Any], *, now: float) -> list[Mapping[str, Any]]:
@@ -1001,7 +1035,22 @@ class RowPolicy:
                 return out
             # The pair did not complete, so the opener was a real event after
             # all; it prints late, and this row is handled on its own account.
+            self._draw(run_id, opener.get("to_state"))
             out.append(opener)
+
+        # A baseline is the inventory an arming opens with: one row per live
+        # run, so the pane is never blank while work exists. It prints unless
+        # this arming has already drawn the same state for the run, which is
+        # what keeps a baseline re-derived mid-arming from reaching the pane
+        # twice. The memory consulted is the drawn one, not the restored one: a
+        # state carried in from a checkpoint was never put on this pane, so it
+        # cannot suppress the inventory that is meant to put it there.
+        if is_baseline(event):
+            if run_id and self._drawn.get(run_id) == to_state:
+                return out
+            self._draw(run_id, to_state)
+            out.append(event)
+            return out
 
         # A same-state rewrite carries no transition, so it moves the counter
         # block alone and never prints a row.
@@ -1033,8 +1082,7 @@ class RowPolicy:
                 self._reported[run_id] = to_state
             return out
 
-        if run_id:
-            self._reported[run_id] = to_state
+        self._draw(run_id, to_state)
         out.append(event)
         return out
 
@@ -1074,6 +1122,11 @@ class PaneRowPath:
         self._policy = RowPolicy()
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
+        # ``reported`` here is the memory a pane hands to its replacement, so
+        # the states it carries have reached a reader's screen: the path adopts
+        # them as drawn, and a baseline re-derived for one of them is a repeat
+        # rather than the attach inventory.
+        self._policy.adopt_drawn(self.reported)
 
     def remember(self, run_id: Any, state: Any) -> None:
         """Note a state the pane already shows, keeping any memory it has.
@@ -1089,13 +1142,24 @@ class PaneRowPath:
         self._policy.seed(key, value)
 
     def reseed(self, reported: Mapping[str, str] | None) -> None:
-        """Replace the remembered states, as a continuation restores them."""
+        """Replace the remembered states, as a continuation restores them.
+
+        The restored map is what the *checkpoint* carries, so it seeds the
+        state memory the policy reads a transition's left side from. It does
+        not seed the drawn memory: a state a checkpoint names may never have
+        been on this pane, and the attach inventory must still print it. The
+        drawn memory this path already holds survives the reseed, because a
+        continuation is the same pane continuing and must not re-derive a
+        baseline for a run it has already shown.
+        """
+        drawn = self._policy.drawn_states()
         self.reported = {
             str(run_id): str(state) for run_id, state in dict(reported or {}).items()
         }
         self._policy = RowPolicy()
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
+        self._policy.adopt_drawn(drawn)
 
     def _remember(self, rows: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
         """Record each released row's state, then hand the rows on unchanged."""

@@ -2695,6 +2695,18 @@ def _follow_watch_lines(
             # what moved is delivered and nothing is re-announced.
             cursor["offset"] = offset
             path.reseed(recorded)
+            if mode == "restart":
+                # The recorded place names no boundary — the stream was
+                # replaced or truncated — so nothing of the pane's screen
+                # survives to continue. It opens with the fleet report instead,
+                # one row per live run, exactly as a first attachment does. The
+                # rows come from the fleet as it stands rather than from the
+                # stream's head, where a truncated file may hold no baseline at
+                # all; the row policy drops any of them this arming has already
+                # shown, so a run is never announced twice.
+                for event in cursor["baseline"]:
+                    for printed in path.feed(event, now=clock()):
+                        yield printed
             if first_attach:
                 # Continue each run's chain from what the pane last showed it,
                 # for the runs the checkpoint does not name. The checkpoint is

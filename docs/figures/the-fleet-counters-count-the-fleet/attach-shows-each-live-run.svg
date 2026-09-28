@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" role="img" aria-labelledby="title desc">
+  <title id="title">A re-armed follower's pane, before and after the fix</title>
+  <desc id="desc">Two panes side by side. On the left, the base revision: a re-arm with three live runs whose checkpoint cannot continue the stream opens blank, and a reader waits for the first transition. On the right, the fixed revision: the same re-arm opens with one baseline row per live run, and a mid-arming re-derivation of the same baseline adds no row.</desc>
+  <rect width="960" height="400" fill="#fffdf8"/>
+
+  <g font-family="system-ui, sans-serif" font-size="14" fill="#292722">
+    <text x="30" y="34" font-size="17" font-weight="600">A re-arm with three live runs</text>
+    <text x="30" y="58" fill="#6b665c">The checkpoint names each run's state but cannot continue the stream, so the pane is rebuilt from the fleet.</text>
+  </g>
+
+  <!-- ── base pane ─────────────────────────────────────────────────── -->
+  <g>
+    <text x="30" y="96" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#b71c1c">before — the pane opens blank</text>
+    <rect x="30" y="108" width="430" height="150" rx="5" fill="#2b2a26" stroke="#b71c1c" stroke-width="1.5"/>
+    <text x="46" y="188" font-family="ui-monospace, monospace" font-size="13" fill="#8d8778">(no rows — waiting for a transition)</text>
+    <g font-family="system-ui, sans-serif" font-size="12.5" fill="#292722">
+      <text x="30" y="282">The policy suppressed each baseline against the state the</text>
+      <text x="30" y="300">checkpoint restored, so the inventory the arm was meant to</text>
+      <text x="30" y="318">draw never reached the pane.</text>
+      <text x="30" y="344" fill="#6b665c">3 live runs → 0 rows drawn</text>
+    </g>
+  </g>
+
+  <!-- ── fixed pane ────────────────────────────────────────────────── -->
+  <g>
+    <text x="510" y="96" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#00796b">after — one row per live run</text>
+    <rect x="510" y="108" width="430" height="150" rx="5" fill="#2b2a26" stroke="#00796b" stroke-width="1.5"/>
+    <g font-family="ui-monospace, monospace" font-size="12.5" fill="#e8e3d6">
+      <text x="524" y="136">16:55:01  implement  node-alpha   baseline → working</text>
+      <text x="524" y="158">16:55:01  implement  node-bravo   baseline → working</text>
+      <text x="524" y="180">16:55:01  investigate node-charlie baseline → working</text>
+      <text x="524" y="222" fill="#8d8778">16:55:04  re-derived baseline → no row (already drawn)</text>
+    </g>
+    <g font-family="system-ui, sans-serif" font-size="12.5" fill="#292722">
+      <text x="510" y="282">The inventory prints for any run this arming has not drawn;</text>
+      <text x="510" y="300">a baseline re-derived for a run already on the pane is the</text>
+      <text x="510" y="318">only one the policy drops.</text>
+      <text x="510" y="344" fill="#6b665c">3 live runs → 3 rows drawn, no repeat</text>
+    </g>
+  </g>
+</svg>
