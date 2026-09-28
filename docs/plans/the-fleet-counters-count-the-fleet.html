@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="118">
+<meta name="plan-version" content="119">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -374,10 +374,11 @@
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-host-change-test-asserts-its-baseline</pre>
     <p class="r-fu-outcome">Landed: host-change-test-asserts-its-baseline (merged 8740332e, review 90, 0 added failures by id). The test now asserts exactly one baseline row before the shape checks, and suppressing the baseline row turns it red. The review's minor findings are recorded in the merge message.</p>
     </article>
-<article class="r-fu" data-id="f-tfcctf-rearm-test-comment-matches-the-code" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfcctf-rearm-test-comment-matches-the-code" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="2026-09-28T17:16:59+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">The re-arm test&#x27;s section comment describes the framed, terminal-only burst</h4>
     <div class="r-fu-body"><p>The review of <code>rearm-shows-nothing-twice</code> found that the section comment near <code>tests/test_follow_rearm_continues.py:441</code> still describes the history burst as unframed. Since <code>8f58d31a</code>, the burst is written only to a terminal and under one dim frame line. Correct the comment to match the code. This is a comment-only change.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-rearm-test-comment-matches-the-code</pre>
+    <p class="r-fu-outcome">Landed: rearm-test-comment-matches-the-code (merged 91dea603, re-review 85, no findings, 0 added failures by id). The section comment now states that on a terminal _follow_history_burst returns one dim frame line and the replayed history rows, that under a Monitor it returns nothing, and that live rows are written afterwards by the follow loop. It took three passes: the first two rewrites still implied the burst held the live rows, so the coordinator supplied the exact wording.</p>
     </article>
 <article class="r-fu" data-id="f-tfcctf-resume-baseline-feed-is-tested" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="2026-09-28T16:08:13+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">The resume baseline branch&#x27;s feed into the row policy has a committed test</h4>
@@ -504,7 +505,7 @@
     <div class="r-comment-body"><p>independent review of r-20260928T144802071342-rearm-test-comment-matches-the-code stored parsed at reviews/reckon/r-20260928T144802071342-rearm-test-comment-matches-the-code.at-d104ea932b5d02f40cf1b5f889206ad8b2337fe9.json — total 84, five dimensions scored 18/18/19/12/17, zero added failures by id over the reviewed run's own two gate logs, one finding at tests/test_follow_rearm_continues.py:452 (the terminal bullet's list places the live rows inside the string _follow_history_burst composes, which is the frame and the replayed rows only)</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260928T144802071342-rearm-test-comment-matches-the-code" data-who="reckon-build" data-when="2026-09-28T16:54:57.120Z">
-    <div class="r-comment-body"><p>the section comment above the pane-history tests now states the history burst&#x27;s own extent — on a terminal _follow_history_burst returns one dim frame line then the replayed history rows, also dim; under a Monitor (stdout not a terminal) it returns nothing; the burst never contains live rows, which the follow loop writes afterwards one per transition</p></div>
+    <div class="r-comment-body"><p>the section comment above the pane-history tests now states the history burst's own extent — on a terminal _follow_history_burst returns one dim frame line then the replayed history rows, also dim; under a Monitor (stdout not a terminal) it returns nothing; the burst never contains live rows, which the follow loop writes afterwards one per transition</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260925-row-labels-and-alignment" data-who="reckon-build" data-when="2026-09-25T08:05:00Z">
     <div class="r-comment-body"><p>§6 and §7 come from the lead's 2026-09-25 review of the ticker. <code>a-monitor-row-reads-at-a-glance</code> (S22) is fully landed and covered neither issue. Both write <code>reckon/crew/ticker.py</code>, and ship in the same ticker node as §3–§5 once S21 releases <code>reckon/crew/recovery.py</code>.</p></div>
