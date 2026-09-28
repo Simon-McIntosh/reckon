@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-28">
-  <meta name="plan-version" content="46">
+  <meta name="plan-version" content="47">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -528,6 +528,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260928T192937445778-derive-the-row-phase-from-the-stream" data-who="reckon-build" data-when="2026-09-28T20:13:15.553Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/derive-the-row-phase-from-the-stream.html</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260928T201322442804-review-of-derive-the-row-phase-from-the-stream" data-who="reckon-build" data-when="2026-09-28T20:35:59.306Z">
+    <div class="r-comment-body"><p>the review of r-20260928T192937445778-derive-the-row-phase-from-the-stream is stored against reviewed head 0d24c7b0862d0a399f042d6b5b6697ee88b620c5 and base 5636e30629cb0ad1830bf9a93eb59a20bd22283f, at both fenced paths and byte-identical (md5 c7a6034618160fe6b70b152970064ee9, sha256 61b0cccdc913dbd0ff44bae35b4e5962311cc6a878be44825afaab3b64a98950), status parsed, all six checklist items with a verdict, all five dimensions scored in 0..20 — goal_fidelity 20, evidence 17, scope_discipline 19, durability 18, fit 16, total 90 — 4 production call sites, and three findings: (1) the reviewed manifest&#x27;s two suite fields (lines 21 and 22) carry prose after the log path rather than the dispatched armed-only JSON, so reckon/crew/review.py:612 _gate_log_path resolves no readable log and the store&#x27;s own added-failure derivation reports the run unmeasured with the reason that it names no base gate log, skipping the cap that surfaces unretired added failures; derived from the two logs themselves the true count is 0 with no added ids, so nothing is hidden here; (2) reckon/crew/directory.py:78 still renders the pointer&#x27;s stored phase under the same phase key the classifier and live rows now derive, so two live surfaces that agreed before this change disagree on the word for the same run, and the reviewed node&#x27;s follow_ons name only reckon/cli.py:3660; (3) tests/test_working_reads_working_at_once.py:273 asserts the case&#x27;s own two file mtimes, so it cannot fail on any code change, while the transition assertion at line 275 beside it is the real guard. The record&#x27;s stored added_failure_count is 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs; the store&#x27;s read-time annotation replaces that pair with an unmeasured None for this run, which is finding 1&#x27;s subject, and the stored file is not rewritten (read_review&#x27;s documented behaviour). Read back through read_review: status parsed, total 90, and reckon/crew/recovery.py::_review_is_complete and review._complete_review_exists both true.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T061821455320-review-of-watch-reports-death-at-once" data-who="reckon-build" data-when="2026-09-25T06:55:46.669Z">
     <div class="r-comment-body"><p>review stored: score 90, one finding (64 KiB tail window) routed to a followup</p></div>
