@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" width="900" height="500" role="img" aria-labelledby="t d">
+  <title id="t">The disposition writer's stored-is-None branch holds two refusals, and each is now pinned by a case whose control turns red</title>
+  <desc id="d">Left: the command resolves the run's own head from the live pointer's tree when a pointer exists and from the run's ledger row or stored review when it does not, then reads the review store for that head. When a record carries the head the call is accepted and the disposition is written on the record the reader selected; when none carries it, the branch reached is stored-is-None, which holds two refusals. Refusal A: a record for the run describes another revision, so the refusal names both revisions. Refusal B: the store holds no record for the run at all, so the refusal names the missing record. Both leave the sub-floor row standing. Below: a scratch copy of the module with refusal A deleted. Against the base test file the whole file still passes, so the deleted branch was reached by nothing; against the test file this change adds, the mismatched-head case fails and reports refusal B's text.</desc>
+
+  <style>
+    .bg { fill: #ffffff; }
+    .lane { fill: #f5f6f8; stroke: #c9ccd4; }
+    .ok { fill: #eef6f0; stroke: #8b9b92; }
+    .bad { fill: #fdecec; stroke: #d98a8a; }
+    .plain { fill: #e6e8ee; stroke: #8e99aa; }
+    .small { font-family: sans-serif; font-size: 11.5px; fill: #4a4e57; }
+    .head { font-family: sans-serif; font-size: 15px; font-weight: bold; fill: #23252b; }
+    .badtext { font-family: sans-serif; font-size: 12px; fill: #a13b3b; }
+    .goodtext { font-family: sans-serif; font-size: 12px; fill: #2f6b41; }
+    .mono { font-family: monospace; font-size: 11.5px; fill: #23252b; }
+    .flow { stroke: #6b7180; stroke-width: 1.4; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7180"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="900" height="500"/>
+  <text class="head" x="40" y="34">The stored-is-None branch holds two refusals; each now has a case</text>
+  <text class="small" x="40" y="54">The head is resolved, the store is read for it, and what the store answers decides which refusal speaks.</text>
+
+  <rect class="lane" x="40" y="72" width="820" height="286" rx="6"/>
+
+  <rect class="plain" x="60" y="92" width="240" height="38" rx="5"/>
+  <text class="mono" x="72" y="116">crew dispose --run &lt;id&gt;</text>
+
+  <rect class="plain" x="60" y="148" width="240" height="52" rx="5"/>
+  <text class="mono" x="72" y="168">resolve the run&#8217;s own head</text>
+  <text class="small" x="72" y="186">live pointer&#8217;s tree, else its records</text>
+
+  <rect class="plain" x="60" y="218" width="240" height="52" rx="5"/>
+  <text class="mono" x="72" y="238">select the review for that</text>
+  <text class="mono" x="72" y="254">head (head-first reader)</text>
+
+  <rect class="ok" x="60" y="288" width="240" height="52" rx="5"/>
+  <text class="mono" x="72" y="308">a record carries the head</text>
+  <text class="goodtext" x="72" y="326">accepted: written on that record</text>
+
+  <path class="flow" d="M 180 130 L 180 148" marker-end="url(#arrow)"/>
+  <path class="flow" d="M 180 200 L 180 218" marker-end="url(#arrow)"/>
+  <path class="flow" d="M 180 270 L 180 288" marker-end="url(#arrow)"/>
+
+  <text class="small" x="380" y="100">none carries it &#8212; stored is None</text>
+
+  <rect class="bad" x="380" y="108" width="464" height="106" rx="5"/>
+  <text class="mono" x="394" y="130">refusal A: a record describes another revision</text>
+  <text class="small" x="394" y="150">the head-first reader selects nothing, while a record for</text>
+  <text class="small" x="394" y="166">the run names a revision the work is not at</text>
+  <text class="badtext" x="394" y="186">names both revisions &#183; exits non-zero &#183; row stands</text>
+  <text class="small" x="394" y="204">case: a review keyed to the run&#8217;s base revision</text>
+
+  <rect class="bad" x="380" y="226" width="464" height="106" rx="5"/>
+  <text class="mono" x="394" y="248">refusal B: the store holds no record for the run</text>
+  <text class="small" x="394" y="268">nothing was ever stored for it, so no record exists</text>
+  <text class="small" x="394" y="284">for a disposition to be written against</text>
+  <text class="badtext" x="394" y="304">names the missing record &#183; exits non-zero &#183; row stands</text>
+  <text class="small" x="394" y="322">case: a live run whose store holds no record</text>
+
+  <path class="flow" d="M 300 304 L 340 304 L 340 150 L 380 150" marker-end="url(#arrow)"/>
+  <path class="flow" d="M 300 324 L 340 324 L 340 268 L 380 268" marker-end="url(#arrow)"/>
+
+  <rect class="lane" x="40" y="374" width="820" height="106" rx="6"/>
+  <text class="head" x="60" y="400" font-size="14">the control that shows the cases can fail</text>
+  <text class="small" x="60" y="420">A scratch copy deletes refusal A from the module; the same mutation is run against both test files.</text>
+  <text class="goodtext" x="60" y="440">base test file &#8212; 15 passed, EXIT=0: the deleted branch was reached by nothing.</text>
+  <text class="badtext" x="60" y="460">head test file &#8212; 1 failed: the mismatched-head case, reporting refusal B&#8217;s text. EXIT=1</text>
+</svg>
