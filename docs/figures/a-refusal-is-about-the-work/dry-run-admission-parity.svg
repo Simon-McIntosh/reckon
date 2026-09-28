@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" font-family="ui-sans-serif, system-ui, sans-serif">
+  <style>
+    .box { fill: #ffffff; stroke: #334155; stroke-width: 1.5; }
+    .head { fill: #eef2ff; stroke: #4338ca; stroke-width: 1.5; }
+    .accept { fill: #ecfdf5; stroke: #047857; stroke-width: 1.5; }
+    .warn { fill: #fffbeb; stroke: #b45309; stroke-width: 1.5; }
+    .refuse { fill: #fef2f2; stroke: #b91c1c; stroke-width: 1.5; }
+    .muted { fill: #f1f5f9; stroke: #94a3b8; stroke-width: 1.5; }
+    .t { font-size: 12.5px; fill: #0f172a; }
+    .h { font-size: 14px; font-weight: 700; fill: #0f172a; }
+    .s { font-size: 11px; fill: #475569; }
+    .edge { stroke: #334155; stroke-width: 1.5px; fill: none; marker-end: url(#a); }
+    .edge-m { stroke: #94a3b8; stroke-width: 1.5px; fill: none; marker-end: url(#b); }
+    .lab { font-size: 11px; font-weight: 700; fill: #334155; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  </style>
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#334155"/>
+    </marker>
+    <marker id="b" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <text x="30" y="34" class="h">The dry run now reaches the watcher admission judgement</text>
+  <text x="30" y="54" class="s">The gate runs only when the session is carried into <code>plan_dispatch</code>, so the command reaches the verdict a real dispatch reaches.</text>
+
+  <!-- Before -->
+  <rect x="30" y="84" width="430" height="450" rx="10" class="muted" opacity="0.25"/>
+  <text x="50" y="112" class="h">Before — session not carried</text>
+  <rect x="50" y="130" width="300" height="52" rx="8" class="muted"/>
+  <text x="70" y="152" class="t">crew dispatch --dry-run</text>
+  <text x="70" y="170" class="s">the validating branch</text>
+
+  <path d="M200,182 L200,215" class="edge-m"/>
+  <rect x="50" y="219" width="390" height="64" rx="8" class="muted"/>
+  <text x="70" y="243" class="t">plan_dispatch(session="", watch_required=False)</text>
+  <text x="70" y="263" class="s">no session, so the watcher gate is never entered</text>
+
+  <path d="M245,283 L245,316" class="edge-m"/>
+  <rect x="50" y="320" width="390" height="58" rx="8" class="refuse"/>
+  <text x="70" y="344" class="t">ok: true — no admission judgement</text>
+  <text x="70" y="364" class="s">reports a dispatchable node the real dispatch then refuses</text>
+
+  <!-- Now -->
+  <rect x="520" y="84" width="430" height="450" rx="10" class="box" opacity="0.35"/>
+  <text x="540" y="112" class="h">Now — session carried</text>
+  <rect x="540" y="130" width="300" height="52" rx="8" class="head"/>
+  <text x="560" y="152" class="t">crew dispatch --dry-run</text>
+  <text x="560" y="170" class="s">the validating branch</text>
+
+  <path d="M690,182 L690,215" class="edge"/>
+  <rect x="540" y="219" width="390" height="64" rx="8" class="head"/>
+  <text x="560" y="243" class="t">plan_dispatch(session, watch_required=True)</text>
+  <text x="560" y="263" class="s">same arguments the launching branch passes</text>
+
+  <path d="M735,283 L735,316" class="edge"/>
+  <rect x="540" y="320" width="390" height="52" rx="8" class="box"/>
+  <text x="560" y="344" class="t">_watcher_delivery_admission</text>
+  <text x="560" y="362" class="s">one judgement shared by both branches</text>
+
+  <path d="M600,372 L600,410" class="edge"/>
+  <path d="M700,372 L700,410" class="edge"/>
+  <path d="M830,372 L830,410" class="edge"/>
+
+  <rect x="536" y="414" width="150" height="60" rx="8" class="warn"/>
+  <text x="552" y="436" class="t">released</text>
+  <text x="552" y="454" class="s">proceed, re-arm</text>
+  <text x="552" y="468" class="s">warning · exit 0</text>
+
+  <rect x="694" y="414" width="120" height="60" rx="8" class="accept"/>
+  <text x="710" y="436" class="t">attached</text>
+  <text x="710" y="454" class="s">proceed</text>
+  <text x="710" y="468" class="s">· exit 0</text>
+
+  <rect x="822" y="414" width="120" height="60" rx="8" class="refuse"/>
+  <text x="836" y="436" class="t">never armed</text>
+  <text x="836" y="454" class="s">WatcherRequired</text>
+  <text x="836" y="468" class="s">· exit 8</text>
+
+  <text x="30" y="556" class="s">tests/test_dry_run_reaches_admission.py drives both surviving verdicts through the command: released proceeds at exit 0 with the re-arm warning; never registered is refused at exit 8.</text>
+</svg>

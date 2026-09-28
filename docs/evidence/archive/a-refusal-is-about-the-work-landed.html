@@ -9,9 +9,9 @@
   <meta name="plan-title" content="A Refusal Is About The Work — landed evidence">
   <meta name="plan-summary" content="The goal lint refuses placeholders and two-deliverable goals, not punctuation.">
   <meta name="plan-evidence-for" content="a-refusal-is-about-the-work">
-  <meta name="plan-verifies" content="a-refusal-is-about-the-work#s2,a-refusal-is-about-the-work#s4,a-refusal-is-about-the-work#s5">
-  <meta name="plan-commits" content="601e51e5,956f91dd">
-  <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,docs/figures/a-refusal-is-about-the-work/goal-lint-decision.svg,docs/figures/a-refusal-is-about-the-work/hyphenated-token-decision.svg">
+  <meta name="plan-verifies" content="a-refusal-is-about-the-work#s2,a-refusal-is-about-the-work#s3,a-refusal-is-about-the-work#s4,a-refusal-is-about-the-work#s5">
+  <meta name="plan-commits" content="601e51e5,956f91dd,b6b8742a">
+  <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,docs/figures/a-refusal-is-about-the-work/goal-lint-decision.svg,docs/figures/a-refusal-is-about-the-work/hyphenated-token-decision.svg,reckon/cli.py,tests/test_dry_run_reaches_admission.py,docs/figures/a-refusal-is-about-the-work/dry-run-admission-parity.svg">
   <meta name="plan-recorded-at" content="2026-09-27">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -138,6 +138,44 @@
       <code>cli.py</code> <code>--dry-run</code> call site does not yet forward the session and watcher
       flags, so the dry run is exercised through <code>plan_dispatch</code> directly; that wiring is
       outside this node's write scope and is reported as a follow-on.</p>
+
+      <h3>The command&rsquo;s dry run reaches the judgement</h3>
+      <p>Commit <code>b6b8742a</code> <em>fix(crew): reach the watcher gate on the dispatch dry run</em>
+      closes that follow-on. The <code>--dry-run</code> branch of <code>crew_dispatch</code> in
+      <code>reckon/cli.py</code> now passes the caller&rsquo;s <code>session</code>,
+      <code>watch_required=True</code> and the resolved watch override to <code>plan_dispatch</code>, the
+      same three arguments the launching branch passes to <code>dispatch</code>, and adds a
+      <code>WatcherRequired</code> handler that emits the <code>watcher-required</code> error key on exit
+      code 8 exactly as the launching path does. A dry run therefore reaches the same admission
+      judgement: a released registration proceeds with the re-arm warning, and a session that never
+      registered is refused.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-refusal-is-about-the-work/dry-run-admission-parity.svg"
+             alt="Two validating branches side by side: before, plan_dispatch is called with an empty session so the watcher gate is never entered and the dry run reports ok; now, the caller's session and watch_required are carried in, the shared admission judgement runs, and the three outcomes are the released session proceeding with a re-arm warning, an attached session proceeding silently, and a session that never armed a follower refused with WatcherRequired at exit 8.">
+        <figcaption>Carrying the session into <code>plan_dispatch</code> is what makes the dry run enter
+        the shared judgement; the two refusals and the warned proceed are then the same three the
+        launching branch reaches.
+        </figcaption>
+      </figure>
+
+      <h3>Measured</h3>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Base arm &mdash; <code>tests/test_dry_run_reaches_admission.py</code> (new) and <code>tests/test_expired_follower_keeps_dispatching.py</code> against the unpatched <code>cli.py</code> at <code>fb747528</code>, run in a scratch archive tree</td><td>2 failed, 4 passed, exit&nbsp;1 &mdash; both new cases fail (the command reports <code>ok: true</code> at exit&nbsp;0 where exit&nbsp;8 is required), the four sibling cases pass</td></tr>
+          <tr><td>Head arm &mdash; the same two files at <code>b6b8742a</code></td><td>6 passed, exit&nbsp;0</td></tr>
+          <tr><td>Released case through <code>reckon crew dispatch --dry-run</code></td><td>exit&nbsp;0, <code>ok</code> true, a warning in the output contains <code>attach_line</code></td></tr>
+          <tr><td>Never-registered case through <code>reckon crew dispatch --dry-run</code></td><td>exit&nbsp;8, <code>error</code> <code>watcher-required</code>, the message names the session, nothing is created</td></tr>
+          <tr><td>Declared negative control</td><td>removing the session from the dry-run call makes the never-registered case proceed (<code>assert 0 == 8</code>) and the test fails</td></tr>
+        </tbody>
+      </table>
+      <p>The base arm is taken at a revision where the sibling file exists, and the new test file is
+      carried into the scratch archive so the same two cases are measured on both arms. The module under
+      test is imported from the tree the run resolves from on both arms, and both log headers name the
+      revision, the imported <code>reckon.__file__</code> and the resolved working directory. The
+      declared negative control mutates the committed branch alone, is run against the never-registered
+      case, and is reverted with <code>cli.py</code> restored byte-identical before the final commit.</p>
     </section>
 
     <section id="s4">
