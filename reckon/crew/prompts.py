@@ -59,19 +59,24 @@ FALSIFIABLE_EVIDENCE_CONTRACT = (
 # protocol reference by design, so a discipline carried only by a reference file
 # reaches nobody. The read-only tiers (review, investigate) operate in a delivery
 # directory and receive no instruction to edit a repository they cannot write -
-# the same condition that raises the RUNTIME FILESYSTEM note. Figure placement
-# and the meta-line ban are stated because they bind the act of editing the plan
-# in the tree. Kept as a standalone constant so a test can compose with it masked
-# out and diff against the live prompt, which proves the addition is removable
-# and scoped.
+# the same condition that raises the RUNTIME FILESYSTEM note. The record goes to
+# the node's own fragment and its landing to a single manifest line rather than to
+# the plan, so two nodes on one plan never edit the same file and their merged
+# records need no manual union. Figure placement and the meta-line ban are stated
+# because a worker still edits the plan in its tree when it must. Kept as a
+# standalone constant so a test can compose with it masked out and diff against
+# the live prompt, which proves the addition is removable and scoped.
 PLAN_LANDING_CONTRACT = (
     "CONTRACT — LANDING YOUR RECORD\n"
-    "  Append your landing record to your own section of the plan and your evidence\n"
-    "  anchor to the cumulative evidence record; both live in this worktree and both\n"
-    "  go into your final commit.\n"
+    "  Write your landing record to your own fragment path and never to the plan:\n"
+    "  your evidence anchor to your scope's fragment under\n"
+    "  docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:`\n"
+    "  line in your manifest in place of a plan edit. The fragment goes into your\n"
+    "  final commit; promotion lands the `landing:` line on your plan section.\n"
     "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
-    "  shown than described, under docs/figures/<topic>/ with the project-absolute\n"
-    "  src /<project>/figures/...; never an image of what is naturally a table.\n"
+    "  shown than described, under your own docs/figures/<plan>/<node-id>/ with the\n"
+    "  project-absolute src /<project>/figures/<plan>/<node-id>/...; never an image\n"
+    "  of what is naturally a table.\n"
     "  Do not edit the plan-version or plan-modified meta lines: every worker\n"
     "  touching them makes every merge conflict there."
 )
@@ -364,6 +369,18 @@ RUNTIME FILESYSTEM
     )
     negative_control_declaration = _negative_control_declaration(node)
     orientation_scope = json.dumps(list(node.write_paths), separators=(",", ":"))
+    # The landing line belongs to a plan-carried node, whose landing record
+    # promotion lands as a comment on its plan section. A brief names no plan
+    # section, so the key is omitted rather than asking a brief worker to write a
+    # line that has no section to land on.
+    landing_key = (
+        ""
+        if brief
+        else (
+            "  landing: <exactly one line recording your landing record; promotion "
+            "lands it as a comment on your plan section, so do not edit the plan>\n"
+        )
+    )
     if node.role == "test":
         evidence_role_note = (
             " Your deliverable is an attribution, not a verdict: list new "
@@ -431,7 +448,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   checkpoint: <when you are recording progress and not setting status to waiting — any worker recording progress at any point, not only a resumed worker whose wait is met: one line recording where work stands and what comes next, so you leave a checkpoint rather than a wait block>
   commits: <sha list>
   changed_paths: <explicit list>
-  tests: <the gate command that actually ran, and its result — never a template command carrying an unsubstituted placeholder>
+{landing_key}  tests: <the gate command that actually ran, and its result — never a template command carrying an unsubstituted placeholder>
   test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; a gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
   measurement_module: <only for a gate or base-arm measurement run in a scratch tree: the absolute path of the module under test as imported — the value the run printed for `module.__file__`>
   measurement_cwd: <only for a gate or base-arm measurement run in a scratch tree: the resolved working directory the run resolved from>

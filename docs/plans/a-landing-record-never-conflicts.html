@@ -61,6 +61,49 @@
     <p><strong>Done when</strong> a test dispatching six dry-run nodes against one plan asserts that no two default
       scopes contain, or are contained in, the same path, and a prompt fixture shows the fragment path and no shared
       record among the write paths.</p>
+    <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span> <strong>the fragment default scope</strong>
+      &mdash; dispatch no longer grants the three shared landing paths by default. <code>_landing_fragment_paths</code>
+      in <code>reckon/crew/dispatch.py</code> derives <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node-id&gt;.html</code>
+      and <code>docs/figures/&lt;plan&gt;/&lt;node-id&gt;/</code> from the node's own id and the resolved plan authority, and
+      <code>_grant_landing_write_paths</code> appends those to <code>node.write_paths</code> in place of the shared trio.
+      Because the fragment is keyed by node id, a redispatch of the same node writes the same fragment and replaces its
+      predecessor's. <code>_shared_landing_paths</code> is kept, its body unchanged, as the detection set rather than the
+      grant: a write path a coordinator declares explicitly that resolves into it is still granted, and dispatch appends
+      a warning that the declaration reintroduces the conflict the fragment default exists to remove.
+      <code>PLAN_LANDING_CONTRACT</code> in <code>reckon/crew/prompts.py</code> now names the fragment as the write path
+      for the evidence anchor, names no shared record, and asks for exactly one <code>landing:</code> line in the manifest
+      in place of a plan edit; the brief carrier <code>BRIEF_LANDING_CONTRACT</code> is unchanged.
+      <a href="/reckon/evidence/archive/a-landing-record-never-conflicts-landed#s2">&sect;2 fragment scope landed</a></p>
+    <figure class="plan-figure">
+      <img src="/reckon/figures/a-landing-record-never-conflicts/own-fragment.svg"
+           alt="Two nodes' default scopes side by side: before, both point at the plan HTML, the cumulative evidence record and the plan figure directory, which conflicts on merge; after, each node points at its own evidence fragment and figure directory, which are disjoint.">
+      <figcaption>Default scope before and after: the three shared paths are replaced by a per-node evidence fragment
+        and figure directory, keyed by node id so no two scopes overlap.</figcaption>
+    </figure>
+    <ul>
+      <li><code>tests/test_shared_landing_paths.py</code> rewritten: six dry-run nodes on one plan, no two default scopes
+        containing or contained in the same path; the fragment named and no shared record among the write paths; a
+        redispatch returning the same fragment; and an explicitly declared shared record granted with
+        <code>reintroduces the merge conflict</code> in the warning. 6 passing.</li>
+      <li>Gate arms: <code>repair-gate-base.log</code> (base <code>4b05b1d7</code>, 33 passing, exit 0) and
+        <code>repair-gate-head.log</code> (this tree, 35 passing, exit 0) over
+        <code>tests/test_shared_landing_paths.py</code>, <code>tests/test_brief_prompt.py</code>,
+        <code>tests/test_crew_dispatch_guard.py</code> and
+        <code>tests/test_context_estimate_excludes_granted_paths.py</code>.</li>
+      <li>Negative control: restoring the plan's cumulative evidence record to every node's default scope makes the
+        six-node disjointness assertion fail (<code>negative-control.log</code>).</li>
+      <li>Reuse map: <code>_shared_landing_paths</code>, <code>_grant_landing_write_paths</code> and
+        <code>PLAN_LANDING_CONTRACT</code> per
+        <code>s25-reuse-map-dispatch-surface/reuse-map.md</code>, re-derived at this node's base
+        (<code>_shared_landing_paths</code> kept as the detection set rather than replaced; the fragment default added
+        alongside it).</li>
+      <li><strong>Open, outside this node's fence:</strong> seven cases in three neighbouring test modules pin the retired
+        default and were not in this node's write scope &mdash; <code>tests/test_crew_prompts.py</code> (1),
+        <code>tests/test_skill_contract_parity.py</code> (4, whose extracted expectation also needs the three ship-skill
+        files reworded) and <code>tests/test_role_write_scope.py</code> (2). In the same batch, three cases in
+        <code>tests/test_skill_contracts.py</code> fail at base too and are not this change's. See <code>follow_ons</code>
+        in the run manifest.</li>
+    </ul>
 
     <h2 id="s3">§3 — The record is composed at read time, and the plan comment goes through the versioned write</h2>
     <p><strong>Deliverable.</strong> One function composes a plan's cumulative evidence record — at

@@ -1825,12 +1825,12 @@ def _context_file_inputs(
     project = plan.get("project") if isinstance(plan, Mapping) else None
     if project:
         # ``dispatch`` imports this module to resolve a plan, so this stays
-        # local to keep the routing import graph acyclic.
-        from reckon.crew.dispatch import _shared_landing_paths
+        # local to keep the routing import graph acyclic. The set is the same
+        # default-scope function dispatch grants from, so a dispatcher-owned
+        # exemption cannot drift from the paths dispatch actually declares.
+        from reckon.crew.dispatch import _landing_fragment_paths
 
-        granted_paths = _shared_landing_paths(
-            node, project=str(project), authority=authority
-        )
+        granted_paths = _landing_fragment_paths(node, authority=authority)
 
     def describe(raw: str, *, declared_read: bool) -> dict[str, Any]:
         candidate = Path(raw).expanduser()

@@ -1,4 +1,11 @@
-"""Context estimates charge declared reads, not dispatcher-owned landing targets."""
+"""Context estimates charge declared reads, not dispatcher-owned landing targets.
+
+A node's landing scope is its own fragment, so the estimator exempts the
+fragment dispatch grants and nothing else. The plan's shared landing paths — the
+plan HTML, the cumulative evidence record and the plan-wide figure topic — are
+no longer dispatcher-owned, so naming one is an ordinary read declaration and is
+charged like any other.
+"""
 
 from __future__ import annotations
 
@@ -10,13 +17,16 @@ from reckon.crew.routing import _context_file_inputs
 
 PROJECT = "sample"
 PLAN = "context-accounting"
+NODE = "context-accounting"
 PLAN_PATH = f"docs/plans/{PLAN}.html"
 EVIDENCE_PATH = f"docs/evidence/archive/{PLAN}-landed.html"
+FRAGMENT_PATH = f"docs/evidence/fragments/{PLAN}/{NODE}.html"
+FIGURE_PATH = f"docs/figures/{PLAN}/{NODE}"
 
 
 def _node(*, write_paths: list[str], done_when: str = "") -> crew.TaskNode:
     return crew.TaskNode(
-        id="context-accounting",
+        id=NODE,
         goal="measure a declared context input",
         plan=PLAN,
         section="s4",
@@ -60,50 +70,53 @@ def _records_by_path(records: list[dict[str, object]]) -> dict[str, dict[str, ob
     return {str(record["declared"]): record for record in records}
 
 
-def test_granted_landing_targets_remain_writable_but_are_not_read_context(
+def test_the_granted_set_is_the_fragment_and_never_a_shared_landing_path(
     tmp_path: Path,
 ) -> None:
-    """Large evidence can be appended without becoming worker read context."""
-    plan, evidence = _seed_plan_and_evidence(tmp_path)
+    """The estimator exempts the fragment it grants, and no shared record."""
+    plan, _evidence = _seed_plan_and_evidence(tmp_path)
     node = _node(write_paths=[])
+    authority = _authority(tmp_path)
 
-    _grant_landing_write_paths(node, project=PROJECT, authority=_authority(tmp_path))
-    tokens, inputs = _context_file_inputs(tmp_path, node, _authority(tmp_path))
+    _grant_landing_write_paths(node, project=PROJECT, authority=authority, warnings=[])
+    tokens, inputs = _context_file_inputs(tmp_path, node, authority)
     records = _records_by_path(inputs["write_paths"])
 
-    assert PLAN_PATH in node.write_paths
-    assert EVIDENCE_PATH in node.write_paths
+    assert FRAGMENT_PATH in node.write_paths
+    assert FIGURE_PATH in node.write_paths
+    assert records[FRAGMENT_PATH]["provenance"] == "granted"
+    assert records[FIGURE_PATH]["provenance"] == "granted"
+    assert records[FRAGMENT_PATH]["counted"] is False
     assert tokens == 0
-    assert records[PLAN_PATH]["provenance"] == "granted"
-    assert records[EVIDENCE_PATH]["provenance"] == "granted"
-    assert records[PLAN_PATH]["counted"] is False
-    assert records[EVIDENCE_PATH]["counted"] is False
-    assert records[PLAN_PATH]["bytes"] == plan.stat().st_size
-    assert records[EVIDENCE_PATH]["bytes"] == evidence.stat().st_size
+    # The retired shared landing paths are no longer dispatcher-owned reads.
+    assert PLAN_PATH not in node.write_paths
+    assert EVIDENCE_PATH not in node.write_paths
+    assert plan.stat().st_size > 0
 
 
-def test_explicit_landing_input_remains_chargeable_after_the_other_grants(
-    tmp_path: Path,
-) -> None:
-    """A caller-owned evidence path is a read declaration, even when it is a landing target."""
-    _plan, _evidence = _seed_plan_and_evidence(tmp_path)
+def test_a_named_shared_record_remains_a_chargeable_read(tmp_path: Path) -> None:
+    """A declared shared record is a read declaration, not a granted target."""
+    _plan, evidence = _seed_plan_and_evidence(tmp_path)
     node = _node(
         write_paths=[EVIDENCE_PATH],
         done_when=f"the estimate reads {EVIDENCE_PATH} as a declared evidence input",
     )
+    authority = _authority(tmp_path)
+    warnings: list[str] = []
 
-    _grant_landing_write_paths(node, project=PROJECT, authority=_authority(tmp_path))
-    tokens, inputs = _context_file_inputs(tmp_path, node, _authority(tmp_path))
+    _grant_landing_write_paths(
+        node, project=PROJECT, authority=authority, warnings=warnings
+    )
+    tokens, inputs = _context_file_inputs(tmp_path, node, authority)
     records = _records_by_path(inputs["write_paths"])
     named_records = _records_by_path(inputs["named_files"])
 
-    assert PLAN_PATH in node.write_paths
+    assert FRAGMENT_PATH in node.write_paths
     assert EVIDENCE_PATH in node.write_paths
-    assert records[PLAN_PATH]["provenance"] == "granted"
-    assert records[EVIDENCE_PATH]["provenance"] == "granted"
-    assert records[PLAN_PATH]["counted"] is False
-    assert records[EVIDENCE_PATH]["counted"] is False
+    assert any("reintroduces the merge conflict" in warning for warning in warnings)
+    assert records[EVIDENCE_PATH]["provenance"] == "declared"
+    assert records[EVIDENCE_PATH]["provenance"] != "granted"
     assert named_records[EVIDENCE_PATH]["provenance"] == "declared"
-    assert named_records[EVIDENCE_PATH]["counted"] is True
-    assert tokens == named_records[EVIDENCE_PATH]["estimated_tokens"]
+    assert tokens == records[EVIDENCE_PATH]["estimated_tokens"]
+    assert evidence.stat().st_size > 1_000_000
     assert tokens > 1_000_000
