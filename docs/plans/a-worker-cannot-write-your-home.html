@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="68">
+<meta name="plan-version" content="69">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.98">
@@ -1563,6 +1563,11 @@
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §3</pre>
     <p class="r-fu-outcome">Lifted at dotfiles fb41bf5 on the probe's evidence, with the rollout confirming AGENTS.md reaches the request. The review's second finding, that probe line 5 records the bare command but quotes a capture wrapper's output, is evidence wording only.</p>
     </article>
+<article class="r-fu" data-id="f-awcwyh-codex-login-truncation-is-asserted" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-28T07:25:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Assert what a fenced run can do to the operator&#x27;s writable codex login</h4>
+    <div class="r-fu-body"><p>The review of fenced-codex-can-persist-its-login (91) found the following. The writable bind lets a fenced run truncate or blank the operator's single <code>~/.codex/auth.json</code>, and no assertion records that consequence. The replaced read-only test dropped its removal-refused expectation, and the end-to-end case in <code>tests/test_fenced_codex_can_persist_its_login.py</code> near line 229 exercises only the rewrite and the sibling refusal. Decide and test what the fence guarantees about that one file: at minimum that it cannot be removed or replaced, and whether a truncation to zero bytes is detected and reported rather than silently persisted. Two further findings are about evidence: the run's regression result is prose rather than baseline_suite/after_suite objects, and new-test.log carries no revision header.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §2</pre>
+    </article>
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -1709,6 +1714,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260926T194116761787-review-of-fence-never-binds-the-main-checkout" data-who="reckon-build" data-when="2026-09-26T19:58:08.730Z">
     <div class="r-comment-body"><p>review stored at head c11c988f, total 91; both findings are receipt wording, each closed by the reviewer's own re-run</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260928T0725-codex-login-read-write-landed" data-who="s21-coord" data-when="2026-09-28T07:25:00Z">
+    <div class="r-comment-body"><p>The codex login read-write bind landed on reckon main as merge <code>3fbd6562</code> (commits <code>cc795a18</code>, <code>806059ec</code>, <code>e0e6aa9f</code>), promoted with review 91 and 0 added failures. The negative control matched. Its measure: codex-cli 0.155.1 rewrites <code>auth.json</code> in place, on the same inode with <code>O_WRONLY|O_TRUNC</code> and no rename. This was measured against a synthetic copy; the operator's real login was never touched, and was last written on 2026-09-17. The operator chose this bind over copying the login, and must log codex in again before fenced codex runs resume.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T122925465818-s19-internals-consumers-survey" data-who="reckon-ship" data-when="2026-09-24T12:38:14.943Z">
     <div class="r-comment-body"><p>eight consumer rows that read reckon internals directly; ranked top five: worktree_fleet re-implements pointer classification, reckon-sync fallback writes mounts.json, lane.json read by hand with no crew verb, inline pointer read in the recovery recipe, hand manifest repair</p></div>
