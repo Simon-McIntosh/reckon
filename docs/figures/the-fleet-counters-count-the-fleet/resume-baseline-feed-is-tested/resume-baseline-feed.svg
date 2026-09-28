@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" font-family="system-ui, sans-serif" font-size="13">
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="#444"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="30" font-size="16" font-weight="600">A resume baseline is fed through the row path</text>
+  <text x="20" y="50" fill="#555">A checkpoint that no longer names the stream re-derives the baseline; each event passes the same PaneRowPath the pane reads.</text>
+
+  <!-- Panel A: correct path -->
+  <rect x="20" y="70" width="420" height="360" rx="8" fill="#f7f9fc" stroke="#c8d2e0"/>
+  <text x="36" y="94" font-weight="600" fill="#1f3a5f">head &#8212; fed through PaneRowPath</text>
+
+  <rect x="45" y="112" width="170" height="54" rx="6" fill="#fff" stroke="#8aa2c0"/>
+  <text x="58" y="134">checkpoint</text>
+  <text x="58" y="152">stream_path &#8800; this stream</text>
+
+  <rect x="245" y="112" width="170" height="54" rx="6" fill="#fff" stroke="#8aa2c0"/>
+  <text x="258" y="134">mode = baseline</text>
+  <text x="258" y="152">re-derive the fleet</text>
+  <line x1="215" y1="139" x2="243" y2="139" stroke="#444" marker-end="url(#arrow)"/>
+
+  <line x1="330" y1="166" x2="330" y2="196" stroke="#444" marker-end="url(#arrow)"/>
+  <rect x="245" y="198" width="170" height="54" rx="6" fill="#fff" stroke="#8aa2c0"/>
+  <text x="258" y="220">path.feed(event)</text>
+  <text x="258" y="238">row policy + memory</text>
+
+  <!-- RUN_A suppressed -->
+  <line x1="245" y1="225" x2="150" y2="285" stroke="#444" marker-end="url(#arrow)"/>
+  <rect x="45" y="288" width="200" height="52" rx="6" fill="#eef4ee" stroke="#6f9e6f"/>
+  <text x="58" y="309">r-policy-a (working)</text>
+  <text x="58" y="327" fill="#2f6b2f">pane already shows it &#8594; silent</text>
+
+  <!-- RUN_B printed -->
+  <line x1="330" y1="252" x2="330" y2="288" stroke="#444" marker-end="url(#arrow)"/>
+  <rect x="245" y="288" width="200" height="52" rx="6" fill="#eef1f7" stroke="#6f83b0"/>
+  <text x="258" y="309">r-policy-b (working)</text>
+  <text x="258" y="327" fill="#33477a">not named &#8594; prints once</text>
+
+  <text x="45" y="372" fill="#2f6b2f">assert r-policy-a not in rows</text>
+  <text x="45" y="392" fill="#33477a">assert r-policy-b in rows (event = baseline)</text>
+  <text x="45" y="416" fill="#555" font-size="12">the test is green: known row suppressed, new row shown</text>
+
+  <!-- Panel B: mutation -->
+  <rect x="460" y="70" width="420" height="360" rx="8" fill="#fdf7f7" stroke="#e0c8c8"/>
+  <text x="476" y="94" font-weight="600" fill="#7a2020">negative control &#8212; pass-through of every event</text>
+
+  <rect x="485" y="112" width="170" height="54" rx="6" fill="#fff" stroke="#c08a8a"/>
+  <text x="498" y="134">checkpoint</text>
+  <text x="498" y="152">stream_path &#8800; this stream</text>
+
+  <rect x="685" y="112" width="170" height="54" rx="6" fill="#fff" stroke="#c08a8a"/>
+  <text x="698" y="134">mode = baseline</text>
+  <text x="698" y="152">re-derive the fleet</text>
+  <line x1="655" y1="139" x2="683" y2="139" stroke="#444" marker-end="url(#arrow)"/>
+
+  <line x1="770" y1="166" x2="770" y2="196" stroke="#444" marker-end="url(#arrow)"/>
+  <rect x="685" y="198" width="170" height="54" rx="6" fill="#fff" stroke="#c08a8a"/>
+  <text x="698" y="220">yield event</text>
+  <text x="698" y="238">no policy, no memory</text>
+
+  <line x1="685" y1="225" x2="590" y2="285" stroke="#444" marker-end="url(#arrow)"/>
+  <rect x="485" y="288" width="200" height="52" rx="6" fill="#fbecec" stroke="#c06f6f"/>
+  <text x="498" y="309">r-policy-a (working)</text>
+  <text x="498" y="327" fill="#a02020">reaches the pane a second time</text>
+
+  <line x1="770" y1="252" x2="770" y2="288" stroke="#444" marker-end="url(#arrow)"/>
+  <rect x="685" y="288" width="170" height="52" rx="6" fill="#fbecec" stroke="#c06f6f"/>
+  <text x="698" y="309">r-policy-b</text>
+  <text x="698" y="327" fill="#a02020">prints</text>
+
+  <text x="485" y="372" fill="#a02020">assert r-policy-a not in rows &#8594; FAILS</text>
+  <text x="485" y="392" fill="#555">got [r-policy-a, r-policy-b]</text>
+  <text x="485" y="416" fill="#555" font-size="12">the test is red for the declared reason, verbatim in the log</text>
+</svg>
