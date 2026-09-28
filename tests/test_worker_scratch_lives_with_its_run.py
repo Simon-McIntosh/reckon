@@ -6,13 +6,17 @@ run is handed a private directory beneath a reckon-owned root, named for its run
 id, and pointed at it by ``TMPDIR``; promotion and discard remove that directory
 so it cannot outlive the run.
 
-Four properties, and the fourth is what makes the first three mean anything:
+Five properties, and the fourth and fifth are what make the first three mean
+anything:
 
 * the environment a dispatched worker is launched with carries a ``TMPDIR`` that
   is the run's own scratch directory, beneath the node-local scratch root;
 * a promoted run's scratch directory is removed, and the removal is reported;
-* a discarded run's scratch directory is removed, and the removal is reported;
-* a scratch directory that belongs to a *different* run survives both.
+* a scratch directory a run's own record names beneath the current root is
+  removed, and the removal is reported;
+* a scratch directory that belongs to a *different* run survives both;
+* a record made under a scratch root that has since moved is withheld and left
+  in place, never removed.
 
 Everything is synthesised under ``tmp_path`` and the scratch root is redirected
 by ``RECKON_WORKER_SCRATCH_ROOT``, so no test reads or writes the host's real
@@ -57,6 +61,14 @@ NEGATIVE_CONTROL = os.environ.get("RECKON_WORKER_SCRATCH_NEGATIVE") == "1"
 # it, so a record naming a different run's directory removes that directory.
 RECORDED_CONTROL_MUTATION = "trust the recorded scratch path without checking it"
 RECORDED_CONTROL = os.environ.get("RECKON_WORKER_SCRATCH_RECORDED_NEGATIVE") == "1"
+
+# The third declared mutation: accept a recorded path whose parent is not the
+# current scratch root, so a record made under a root that has since moved
+# removes the directory it names instead of leaving it in place.
+MOVED_ROOT_CONTROL_MUTATION = (
+    "accept a recorded path whose parent is not the current scratch root"
+)
+MOVED_ROOT_CONTROL = os.environ.get("RECKON_WORKER_SCRATCH_MOVED_NEGATIVE") == "1"
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -425,6 +437,34 @@ def _trust_recorded(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+def _accept_moved_root(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The declared mutation: drop the parent-of-the-current-root refusal.
+
+    Every other check the removal makes is kept, so the only paths this admits
+    that the real guard refuses are those whose parent is not the resolved
+    scratch root — a record made under a root that has since moved. Applying it
+    at the guard rather than in a caller shows the refusal is what withholds the
+    directory, not a coincidental caller check.
+    """
+
+    def _accept(run_id: str, recorded_path: object) -> tuple[Path | None, str]:
+        name = str(run_id or "").strip()
+        if not name or name in {".", ".."} or Path(name).name != name:
+            return None, "run id names no scratch directory"
+        path = (
+            Path(recorded_path)
+            if recorded_path
+            else dispatch.worker_scratch_root() / name
+        )
+        if path.is_symlink():
+            return None, "scratch path is a symlink"
+        if not path.is_dir():
+            return None, "scratch directory is no longer present"
+        return path, ""
+
+    monkeypatch.setattr(dispatch, "_removable_scratch_target", _accept)
+
+
 def test_a_recorded_path_naming_a_sibling_is_withheld(
     scratch_root: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -443,9 +483,11 @@ def test_a_recorded_path_naming_a_sibling_is_withheld(
 
 
 def test_a_recorded_path_outside_the_root_is_withheld(
-    scratch_root: Path, tmp_path: Path
+    scratch_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A record pointing outside the scratch root removes nothing."""
+    if MOVED_ROOT_CONTROL:
+        _accept_moved_root(monkeypatch)
     run_id = "r-20260928T140820000000-scratch-outside"
     outside = tmp_path / "away" / run_id
     outside.mkdir(parents=True)
@@ -457,6 +499,35 @@ def test_a_recorded_path_outside_the_root_is_withheld(
     assert outcome["scratch_withheld"]
     assert outside.is_dir()
     assert (outside / "keep.txt").is_file()
+
+
+def test_a_record_under_a_moved_root_is_withheld(
+    scratch_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A record made under a root that has since moved is left in place.
+
+    The scratch root is redirected between the create and the remove, so the
+    recorded path's parent is no longer the resolved root. That record must be
+    withheld — removed False, a reason — and the directory it names must still
+    be there afterwards.
+    """
+    if MOVED_ROOT_CONTROL:
+        _accept_moved_root(monkeypatch)
+    run_id = "r-20260928T140850000000-scratch-moved-root"
+    created = _plant_scratch(run_id)
+    recorded = str(created)
+    assert created.is_dir()
+
+    moved_root = tmp_path / "moved-scratch"
+    monkeypatch.setenv(dispatch.WORKER_SCRATCH_ROOT_ENV, str(moved_root))
+    assert dispatch.worker_scratch_root() == moved_root
+
+    outcome = dispatch.remove_worker_scratch(run_id, recorded_path=recorded)
+
+    assert outcome["scratch_removed"] is False
+    assert outcome["scratch_withheld"]
+    assert created.is_dir(), "a record under a moved root must be left in place"
+    assert (created / "worker-temp.txt").is_file()
 
 
 def test_a_recorded_symlink_is_withheld(scratch_root: Path, tmp_path: Path) -> None:
@@ -568,8 +639,47 @@ def _observed_recorded_trust(scratch_root: Path, tmp_path: Path) -> list[str]:
     return lines
 
 
+def _observed_moved_root(scratch_root: Path, tmp_path: Path) -> list[str]:
+    """Report whether a record under a moved root removes its directory."""
+    saved = os.environ.get(dispatch.WORKER_SCRATCH_ROOT_ENV)
+    os.environ[dispatch.WORKER_SCRATCH_ROOT_ENV] = str(scratch_root)
+    original = dispatch._removable_scratch_target
+
+    def _accept(run_id: str, recorded_path: object) -> tuple[Path | None, str]:
+        # The declared mutation, applied directly: the parent-of-the-current-
+        # root refusal is dropped, so a record under a moved root is accepted.
+        name = str(run_id or "").strip()
+        path = Path(recorded_path) if recorded_path else scratch_root / name
+        if path.is_symlink() or not path.is_dir():
+            return None, "scratch directory is no longer present"
+        return path, ""
+
+    dispatch._removable_scratch_target = _accept
+    lines: list[str] = []
+    try:
+        run_id = "r-20260928T140950000000-scratch-moved-root"
+        created = _plant_scratch(run_id)
+        moved_root = tmp_path / "moved-scratch"
+        os.environ[dispatch.WORKER_SCRATCH_ROOT_ENV] = str(moved_root)
+        dispatch.remove_worker_scratch(run_id, recorded_path=str(created))
+        lines.append(f"recorded directory present after root moved: {created.is_dir()}")
+    finally:
+        dispatch._removable_scratch_target = original
+        if saved is None:
+            os.environ.pop(dispatch.WORKER_SCRATCH_ROOT_ENV, None)
+        else:
+            os.environ[dispatch.WORKER_SCRATCH_ROOT_ENV] = saved
+    return lines
+
+
 if __name__ == "__main__":  # pragma: no cover - reproduces the red log
-    if RECORDED_CONTROL:
+    if MOVED_ROOT_CONTROL:
+        print(MOVED_ROOT_CONTROL_MUTATION)
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            for line in _observed_moved_root(temporary / "scratch", temporary):
+                print(line)
+    elif RECORDED_CONTROL:
         print(RECORDED_CONTROL_MUTATION)
         with tempfile.TemporaryDirectory() as directory:
             temporary = Path(directory)
