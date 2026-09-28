@@ -1,0 +1,396 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "fae0865c27cc01aa78a6d7ee30c71203988caedd",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 8019454,
+      "input_tokens_cumulative": 8019454,
+      "output_tokens": 35689,
+      "output_tokens_cumulative": 35689,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 380,
+    "files": 5,
+    "removed": 2
+  },
+  "commit_resolution": null,
+  "commits": [
+    "e3b07de519d40f521991c56d4228a7afc7a74196",
+    "f04e0304478b9b3f864a5a4c6d2b1f20095c3fd1"
+  ],
+  "completed_at": "2026-09-28T07:01:42.180Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T06:35:21Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_brief_plan_exclusivity.py tests/test_brief_dispatch.py tests/test_goal_contract_lint.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063504306183-validate-node-refuses-plan-and-brief/gate-brief-plan-exclusivity.log"
+  },
+  "impl_move": {
+    "at_complete": 0.6,
+    "at_dispatch": 0.4,
+    "plan": "a-worker-can-take-a-brief",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T07:05:05.518421+00:00",
+    "horizon_seconds": 1800,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T06:35:05Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 3,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 0,
+    "mean_context": 133333,
+    "observed_at": "2026-09-28T06:35:02Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T07:01:42.180Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063504306183-validate-node-refuses-plan-and-brief/manifest.md",
+  "member": "disposable-r-20260928T063504306183-validate-node-refuses-plan-and-brief",
+  "negative_control": {
+    "declaration": "delete the plan-and-brief exclusivity check from validate_node in reckon/crew/node.py; the brief-plus-plan case must then validate",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063504306183-validate-node-refuses-plan-and-brief/negative-control-brief-plan-exclusivity.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063504306183-validate-node-refuses-plan-and-brief/negative-control-brief-plan-exclusivity.log",
+    "test_paths": [
+      "tests/test_brief_plan_exclusivity.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "validate-node-refuses-plan-and-brief",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1402,
+          "cached_input_tokens": 734180,
+          "input_tokens": 735584,
+          "output_tokens": 250,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 735834,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "reckon.crew.validate_node refuses a TaskNode that carries a brief together with a plan or a section, with a finding naming both carriers, so a caller that bypasses the CLI argv check cannot reach the brief branch of plan_dispatch with a plan section named. tests/test_brief_plan_exclusivity.py passes at exit 0 with four cases: brief plus plan refused; brief plus section refused; brief alone validates; plan and section alone validate. A fifth case asserts that plan_dispatch on the brief-plus-plan node refuses before require_plan_section_visible would have been skipped. tests/test_brief_dispatch.py and tests/test_goal_contract_lint.py pass unchanged. The declared negative control is applied, the brief-plus-plan case is observed to validate, and that log's absolute path is in the manifest.",
+    "estimated_hours": null,
+    "goal": "Make validate_node refuse a node that names both a plan and a brief",
+    "id": "validate-node-refuses-plan-and-brief",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T06:35:05Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 3,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 0,
+      "mean_context": 133333,
+      "observed_at": "2026-09-28T06:35:02Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063504306183-validate-node-refuses-plan-and-brief/manifest.md",
+    "negative_control": "delete the plan-and-brief exclusivity check from validate_node in reckon/crew/node.py; the brief-plus-plan case must then validate",
+    "plan": "a-worker-can-take-a-brief",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "exact",
+    "time_budget": "30m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/node.py",
+      "tests/test_brief_plan_exclusivity.py",
+      "docs/evidence/archive/a-worker-can-take-a-brief-landed.html",
+      "docs/figures/a-worker-can-take-a-brief",
+      "docs/plans/a-worker-can-take-a-brief.html"
+    ]
+  },
+  "orientation_input_tokens": 1409082.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "validate-node-refuses-plan-and-brief",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T06:35:12.283732+00:00",
+    "score": 0.49375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-worker-can-take-a-brief",
+  "plan_impl_at_dispatch": 0.4,
+  "promoted_revision": "f04e0304478b9b3f864a5a4c6d2b1f20095c3fd1",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 18,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 93
+  },
+  "role": "implement",
+  "run_id": "r-20260928T063504306183-validate-node-refuses-plan-and-brief",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "f76f4dea-b33a-412d-90ec-b463fab52f3c",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 8019454,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 1555.01,
+    "generated_tokens": 35689,
+    "generation_seconds": 1409.677,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 31.2,
+    "machine_seconds": 145.333,
+    "peak_input_tokens": 149525,
+    "tokens_per_second": 25.32,
+    "wall_tokens_per_second": 22.95
+  },
+  "time_budget": "30m",
+  "tool_steps": 72.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 1363,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-28T06:09:09Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-28T05:46:51Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260928T054616395543-review-tier-resolver",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 5310,
+          "worker_pid": 4000954
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 1560,
+        "log_fresh": false,
+        "manifest_commits": [
+          "505c690b5d98f947c92d148f96443f9ad24bd9e9",
+          "9701e873162c0dfc74d83210664931a3cd69a175"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "3c6dd59fd5be75f5daf406e5b8feab242a255da6497b260e2a436fe8b728ee13",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T054616395543-review-tier-resolver/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan a-review-is-sized-to-its-risk --section '§2' --role review --spec-level exact --node review-of-review-tier-resolver --goal 'attach an independent review to run r-20260928T054616395543-review-tier-resolver' --done-when 'the review for r-20260928T054616395543-review-tier-resolver stores a parsed record scoring all 5 dimensions in the range 0..20, carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T054616395543-review-tier-resolver.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T054616395543-review-tier-resolver.at-9701e873162c0dfc74d83210664931a3cd69a175.json --time-budget 60m --session s25-coord --allow-unreconciled-runs --local",
+        "node": "review-tier-resolver",
+        "phase": "starting",
+        "plan": "a-review-is-sized-to-its-risk",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260928T054616395543-review-tier-resolver",
+        "session": "s25-coord",
+        "terminal_age_seconds": 1609,
+        "terminal_at": "2026-09-28T06:08:19Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/review-tier-resolver"
+      }
+    ]
+  },
+  "wall_seconds": 1581,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T07:01:42Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T06:35:43Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T063504306183-validate-node-refuses-plan-and-brief",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 4814,
+    "worker_pid": 4154796
+  },
+  "worker_seconds": 1543,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
