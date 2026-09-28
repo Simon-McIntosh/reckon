@@ -630,6 +630,7 @@ head, a first sighting that did move keeps its left word and its arrow:
         </tbody>
       </table>
       <p>The bound policy is stated in the commit message and in the <code>_remember_manifest_size</code> docstring, per the review's request that the commit say which bound was chosen.</p>
+    </section>
   <section id="promotion-never-reads-unpromoted">
       <h2>A promotion reads promoted from the moment its record exists</h2>
       <p>Promotion writes in a fixed order: it appends the run's ledger row, commits the two tracked stores as the landing, and only then removes the live pointer. Inside that window the landing commit has already moved the tree's head, so the stored review no longer names the head the classifier reads, and a completed run rendered <code>unpromoted</code> until the pointer's absence agreed on <code>promoted</code> a poll later &mdash; the measured <code>complete &rarr; unpromoted &rarr; promoted</code> flicker on <code>roadmap-docstring-names-the-focus-home</code> and <code>figure-as-text</code>. <code>_promote_record_holds</code> (<code>reckon/crew/recovery.py</code>) reads the run's own ledger row, the root promotion writes it under; the fleet reducer returns the <code>promoted</code> word while the row exists, so the word is the same at every instant of the window.</p>
