@@ -54,7 +54,7 @@ def test_two_concurrent_writers_never_interleave(tmp_path):
             except (OSError, ValueError) as exc:
                 faults.append(f"unreadable: {exc!r}")
                 return
-            if observed != payload:
+            if observed not in payloads:
                 faults.append("interleaved payload")
                 return
 
