@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-audit-agrees-with-the-skill-commitless-review-promotes">
+  <meta name="plan-title" content="A review's commitless manifest promotes without a hand edit — node evidence">
+  <meta name="plan-summary" content="Node evidence for the-audit-agrees-with-the-skill §3: a review's commits: none prose promotes, and the same prose is refused when it would hide an in-repository path.">
+  <meta name="plan-evidence-for" content="the-audit-agrees-with-the-skill">
+  <meta name="plan-verifies" content="the-audit-agrees-with-the-skill#s3">
+  <meta name="plan-recorded-at" content="2026-09-28">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux compute node 98dci4-clu-2018 (SLURM job 1277272); a detached worktree with the main checkout&#x27;s environment reached through PYTHONPATH and pytest -p no:cacheprovider; base and after arms run with pytest -n 8; the negative-control mutation applied to promotion.py and restored, verified clean against HEAD">
+  <meta name="plan-commits" content="75991c77">
+  <meta name="plan-artifacts" content="reckon/crew/promotion.py,tests/test_commitless_review_promotes.py,docs/figures/the-audit-agrees-with-the-skill/commitless-review-promotes/commitless-review-decision.svg">
+  <title>A review's commitless manifest promotes without a hand edit — node evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>&sect;3 — A review's commitless manifest promotes without a hand edit</h1>
+    <p class="plan-summary">One node's evidence: the review promotion already
+    worked at the dispatch base; the failing case was the same prose standing in
+    for a commit over an in-repository path.</p>
+  </header>
+
+  <section id="commitless-review-promotes">
+    <h2>Outcome</h2>
+
+    <figure>
+      <img src="/reckon/figures/the-audit-agrees-with-the-skill/commitless-review-promotes/commitless-review-decision.svg"
+           alt="A commitless manifest reaches the changed-manifest guard. If changed_paths names no path inside the run's own repository the run promotes with commits: [] — the review case. If it names a path inside the repository the run is refused with 'manifest field commits is missing', whatever the role, because a repository change needs the commit that contains it.">
+      <figcaption>The declaration is honoured by where the run's paths lie, not
+      by its role name: outside the repository it is an honest commitless report
+      and promotes; inside it is a contradiction and is refused.</figcaption>
+    </figure>
+
+    <h3>What reproduced at the dispatch base, and what did not</h3>
+    <p>At the dispatch base (<code>40d23d9b</code>) the review side of the
+    done-when already held. The report-only handling added at
+    <code>reckon/crew/promotion.py</code>'s <code>_declares_absent_commits</code>
+    and its use by <code>_unresolved_citations</code> reads a
+    <code>commits: none (…)</code> line as a declaration rather than a citation,
+    so a review run whose manifest carries it promotes through
+    <code>crew complete</code> with <code>commits: []</code> and no refusal —
+    no <code>--no-commit</code> and no hand edit. The defect from the three
+    recorded reviews does <strong>not</strong> reproduce at the base; it was
+    fixed by that earlier handling, and nothing on the review path needed
+    reimplementing.</p>
+
+    <p>What still failed is the mirror of it. The same declaration also answered
+    the commit-for-changed-manifest guard, which asks whether a manifest's named
+    in-repository path has the commit that contains it. A run naming an
+    in-repository path while declaring it has no commit is exactly the
+    contradiction that guard exists for, and the prose let it through. A review
+    run is exempt from the review gate, so nothing else refused it, and the run
+    promoted with the ledger recording a change and no commit pointing at it.
+    Measured on the base source: a review run whose manifest read
+    <code>changed_paths: candidate.txt</code> with the commitless prose
+    <strong>promoted</strong>.</p>
+
+    <h3>Change</h3>
+    <p><code>_manifest_cites_a_commit</code> now answers whether a manifest's
+    <code>commits</code> line cites a real commit, reading a declared absence as
+    neither a citation nor an omission. The guard uses it in place of a bare
+    truthiness test, so the declaration still promotes a run whose paths lie
+    outside the repository and is refused for a run that names a path inside it.
+    The refusal is <code>manifest field 'commits' is missing</code>, raised for
+    every role, review included.</p>
+
+    <h3>Evidence</h3>
+    <ul>
+      <li><strong>Review run promotes.</strong>
+      <code>tests/test_commitless_review_promotes.py::test_review_declaring_no_commits_promotes</code>
+      — a review run whose manifest reads <code>commits: none (review node; no
+      repository change; the review is the deliverable)</code> promotes with
+      <code>commits: []</code> and its pointer removed.</li>
+      <li><strong>Implement run still refused.</strong>
+      <code>…::test_implement_declaring_no_commits_over_its_own_path_is_refused</code>
+      — the same prose over <code>changed_paths: candidate.txt</code> is refused
+      with the missing-commits message.</li>
+      <li><strong>The guard is role-independent.</strong>
+      <code>…::test_a_non_implement_role_cannot_hide_a_change_behind_the_prose</code>
+      — a <em>review</em> run naming an in-repository path is refused too, which
+      is the case that pins the guard: the implement case alone would be refused
+      by the review gate rather than by the prose.</li>
+      <li><strong>Negative control.</strong> With
+      <code>_declares_absent_commits</code> mutated to return <code>False</code>
+      — parsing the review's <code>commits: none</code> prose as commit ids —
+      <code>test_review_declaring_no_commits_promotes</code> fails with the
+      citation refusal <code>cites 'none (review node; no repository change; the
+      review is the deliverable)' as a commit, but that identifier does not
+      resolve to an object</code>. Log: <code>negative-control.log</code>. The
+      mutation was restored and the tree verified clean against HEAD.</li>
+      <li><strong>Suite delta.</strong> Baseline
+      <code>40d23d9b</code>: 198 passed, 0 failed over the pre-existing promotion
+      test files. After <code>75991c77</code>: 211 passed, 0 failed over the same
+      files plus this node's three and the cited-identifier file — zero added
+      failures by id. Logs: <code>baseline-suite.log</code>,
+      <code>after-suite.log</code>.</li>
+    </ul>
+
+    <p>The dispatch base was reproduced in place by restoring
+    <code>reckon/crew/promotion.py</code> from <code>40d23d9b</code>, then the
+    committed version was restored and verified against HEAD.</p>
+  </section>
+</main>
+</body>
+</html>
