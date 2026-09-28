@@ -754,6 +754,89 @@
     with a runnable command. No plan state is touched by this node: the driving followup stays open and no
     terminal status is set, because only the coordinator observes the other nodes.</p>
   </section>
+<section id="s5-bound-names-itself">
+    <h2>A dispatch past the binding bound is refused by name, pinned through the dispatch entry point</h2>
+
+    <p><strong>What is landed.</strong> <code>tests/test_concurrency_bound_refuses_by_name.py</code> — commits
+    <code>7cb2195a</code> and <code>0e41a066</code>. Three cases, each driving a real dispatch through the
+    dispatch entry point rather than through the bound helpers, so a call site that passed the wrong occupancy
+    or the wrong slice reading fails them even while the helpers answer correctly. A backend whose declared
+    roster is at its ceiling is refused naming the roster and the count that refused it; a placement whose
+    admitted cores are spent is refused naming that bound and its figure; a dispatch inside every readable bound
+    is admitted, reaching <code>starting</code> with its pointer on disk.</p>
+
+    <p><strong>Every measured input is synthesised.</strong> The roster count is live pointer files written into
+    a temp crew directory (<code>RECKON_HOME</code>); the placement is the backend's own declared options, which
+    is what the bound is read from; the login slice is a cgroup tree written under a temp path with the reader's
+    two module globals repointed at it. A module-scoped autouse guard reads the real live-pointer directory
+    before and after the run and fails the module if it gains a pointer carrying this module's node token —
+    measured with the fleet live: <strong>24 json files before, 24 after, none gained</strong>, and those 24 are
+    the fleet's own runs, which is the positive control that the scan sees them at all.</p>
+
+    <p><strong>The refusals were captured rather than paraphrased.</strong> Both sentences were produced through
+    the entry point and written verbatim into the node's own log (<code>logs/refusal-texts.log</code>, revision
+    <code>0e41a066</code>), each followed by the dispatcher's own remedy tail:</p>
+    <ul>
+      <li><code>node is not dispatchable — backend 'alpha' is at its concurrency ceiling (2 live runs of 2 max);
+      the runs occupying its slots: r-20260906T000000000000-occupying-a, r-20260906T000000000000-occupying-b.
+      Wait for one to finish, or raise max_concurrent_runs for this backend.</code></li>
+      <li><code>node is not dispatchable — backend 'alpha' is at its partition admitted cores bound (3 of 3
+      cores admitted (1 per worker)); one more worker would ask the reservation for more cores than it was
+      admitted, and the runs occupying it: r-20260906T000000000000-occupying-a, r-20260906T000000000000-occupying-b,
+      r-20260906T000000000000-occupying-c. Wait for one to finish, or raise the cores the placement
+      declares.</code></li>
+    </ul>
+
+    <p><strong>Each refusal case also asserts what it is not.</strong> The roster case asserts the absence of the
+    cores bound's and the memory slice's sentences, and the cores case asserts the absence of the roster's and
+    the slice's, so a refusal raised for a neighbouring reason cannot be read as the case passing. The roster
+    case additionally asserts that the sentence names both occupying runs, which is the part of it a coordinator
+    acts on.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-is-charged-to-a-job/binding-bound-names-itself.svg"
+           alt="Two panels. Above: the roster ceiling, the placement's admitted cores and the login memory slice are each read with a measured value, and converge on the binding bound, which either refuses with the bound and its value in the sentence or admits. Below: the three cases as utilisation bars against a line at 1.0 — the first with the roster bar at 2 of 2 spent and the cores bound drawn as an empty dashed column because no placement declares a core count, the second with the cores bar at 3 of 3 spent and no roster ceiling declared, the third with every bar clear."
+           style="max-width:100%;height:auto">
+      <figcaption>Which bound decides a dispatch, and the measured utilisation each of the three cases puts
+      before it. A bound that cannot be read is drawn as no column at all, because it is never a
+      refusal.</figcaption>
+    </figure>
+
+    <p><strong>Gate, and the delta.</strong> The declared gate at the landed head: <strong>3 passed, exit
+    0</strong>, and the log's header records the module the run resolved — the worktree's own
+    <code>reckon/crew/dispatch.py</code> rather than the main checkout's. The helper-level cases over the same
+    model and this module in one invocation: <strong>16 passed, exit 0</strong>. The file does not exist at base,
+    so a base arm cannot redden; the red arm is the declared mutation below.</p>
+
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: <em>make the binding-bound check at
+    <code>reckon/crew/dispatch.py:518-527</code> return no refusal in a scratch copy; the roster and cores
+    refusal cases must fail.</em> Scratch tree <code>/tmp/cbrbn-negative-control-2</code>, with a
+    <code>return</code> inserted immediately above the line the check opens on:
+    <strong>2 failed, 1 passed, exit 1</strong>, both failures <code>DID NOT RAISE CrewError</code> — the roster
+    case and the cores case — while the admitted case stays green, which is the discrimination, since the
+    mutation removes the refusal rather than breaking the dispatch. The red log's first line repeats the
+    mutation verbatim, and the log is named in the node's manifest under <code>negative_control_log</code>.</p>
+
+    <p><strong>A host dependency the red run exposed, and closed.</strong> The first negative control ran under a
+    bare <code>PATH</code>, and the admitted case then failed with <code>LaunchResolutionError: backend command
+    'codex' cannot be resolved on the PATH this launch would search</code>. Only that case composes a launch,
+    and it had been composing it against whatever the host had installed, so the module passed here because a
+    <code>codex</code> happened to be on this PATH and would have failed on a host without one for a reason that
+    has nothing to do with the bound under test. A stub backend command on PATH is now autouse for the module
+    (<code>0e41a066</code>), so the module no longer depends on the host; the launcher is substituted, so the
+    stub is never executed. The count alone would have read that run as three failures caused by the mutation,
+    and the failure text is what says one of them was not.</p>
+
+    <p><strong>What is not here.</strong> No worker is launched and no fleet run is dispatched: the occupancy is
+    pointer files rather than running workers, the slice is a synthesised cgroup tree rather than this host's,
+    and the launcher is a substitute. The cores bound is measured from the placement's declared options, so a
+    reservation whose real grant differs from its declaration is measured from the declaration — the cases pin
+    the reading, not the scheduler. The assertions are fragments of the two sentences: they pin the bound's
+    naming and its measured value, which is the claim the cases make; the surrounding wording is not pinned, and
+    a rewording that kept both fragments would pass. No defect was found in <code>reckon/crew/dispatch.py</code>,
+    so this node raises no blocker. No plan state is touched by this node: the driving followup stays open and no
+    terminal status is set, because only the coordinator observes the other nodes.</p>
+  </section>
 </main>
 </body>
 </html>
