@@ -2834,6 +2834,58 @@ def _newest_stream_last_record_type(record: Mapping[str, Any]) -> str | None:
         return None
 
 
+# The record an engine writes when the model answers a turn. It is the run's
+# own first evidence that work is happening rather than that a launch was
+# started: the pointer's phase is a label only ``observe`` advances, while this
+# record lands the moment the worker's first turn is under way.
+STREAM_ASSISTANT_RECORD_TYPE = "assistant"
+
+
+def _stream_holds_assistant_record(path: Path) -> bool:
+    """Whether a stream holds at least one complete assistant record.
+
+    Read forwards and stopped at the first match, because a worker's first
+    assistant turn lands within its first few records: the scan answers after a
+    few kilobytes on a stream that grows to megabytes over a long run. A line
+    that does not parse is passed over, exactly as the tail read passes over
+    one, so a trailing partial write is never read as a record that completed.
+    """
+    try:
+        with path.open("rb") as handle:
+            for raw in handle:
+                text = raw.strip()
+                if not text:
+                    continue
+                try:
+                    event = json.loads(text)
+                except (TypeError, ValueError):
+                    continue
+                if (
+                    isinstance(event, Mapping)
+                    and event.get("type") == STREAM_ASSISTANT_RECORD_TYPE
+                ):
+                    return True
+    except OSError:
+        return False
+    return False
+
+
+def _newest_stream_shows_work(record: Mapping[str, Any]) -> bool:
+    """Whether a run's newest stream carries an assistant record.
+
+    The newest stream is the shared reader's answer, so this agrees with the
+    stall clock about which file is the run's current one; a run that resumed
+    or changed lane wrote a newer file than the one it started with. False
+    answers "no such record to read" — no stream, one that cannot be read, or
+    one holding no assistant turn — so a caller never reads an absent answer
+    as work.
+    """
+    found = _record_newest_stream(record)
+    if found is None:
+        return False
+    return _stream_holds_assistant_record(found[0])
+
+
 def _process_exit_reason(record: Mapping[str, Any], last_record_type: str) -> str:
     """Why a dead worker's row says the process exited, in its records' terms.
 
@@ -2886,6 +2938,7 @@ def _observed_phase(
     ended_exit: Mapping[str, Any] | None,
     manifest_status: str,
     commits_beyond_base: int,
+    stream_shows_work: bool = False,
 ) -> str:
     """The phase a run's own evidence supports, not the last writer's label.
 
@@ -2916,6 +2969,14 @@ def _observed_phase(
     proof only while it was ``True`` let the phase fall back to the pre-spawn
     label the moment the worker exited, so a run that had already been reported
     working was reported dispatched again.
+
+    An assistant record in the run's newest stream answers the same way, and it
+    is the evidence left when nothing else has been written: the phase advances
+    only when ``observe`` folds the stream, so a worker that has been thinking
+    and editing for an hour keeps the label its launcher set until a reader
+    happens to run one. The record is the worker's own first turn rather than a
+    stream's mere existence, which an earlier attempt can leave behind, and it
+    is consulted last so the stronger answers above decide first.
     """
     if phase not in _PRE_SPAWN_PHASES:
         return phase
@@ -2924,6 +2985,8 @@ def _observed_phase(
     if ended_exit is not None:
         return "complete"
     if worker_alive is not None or commits_beyond_base:
+        return "working"
+    if stream_shows_work:
         return "working"
     return phase
 
@@ -4690,6 +4753,13 @@ def classify_pointer(
         ended_exit=ended_exit,
         manifest_status=manifest_status,
         commits_beyond_base=commits_beyond_base,
+        # Read only where the label is still pre-spawn, which is the one case
+        # the answer can change: every other phase the classifier reaches
+        # already reads as the work it names, and the run's streams are not
+        # read to confirm a label that says working.
+        stream_shows_work=(
+            phase in _PRE_SPAWN_PHASES and _newest_stream_shows_work(record)
+        ),
     )
     classified = {
         "run_id": run_id,
@@ -4713,7 +4783,12 @@ def classify_pointer(
             if recovery_classification == "held" and hold is not None
             else None
         ),
-        "phase": phase,
+        # The phase the run's own evidence supports. The launcher's label is
+        # kept beside it under ``stored_phase``: it is what the pointer last
+        # recorded, and a reader comparing the two sees why a run left the
+        # pre-spawn bucket without anything having run ``observe``.
+        "phase": observed_phase,
+        "stored_phase": phase,
         # The stored phase is the last launcher's label; the effective phase is
         # what the run's own evidence supports, so a run whose pointer never
         # advanced past starting reads from its stream and its process; it does
