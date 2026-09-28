@@ -60,6 +60,7 @@ __all__ = [
     "ratio",
     "recover_ledger_clocks",
     "replay",
+    "session_continuity",
     "session_usage",
     "transcript_index",
     "velocity",
@@ -145,6 +146,44 @@ def lane(record):
         if name == family or name.startswith(family + "-"):
             return family
     return "unattributed"
+
+
+def session_continuity(runs):
+    """Classify each run by how its recorded session relates to earlier runs.
+
+    A run continues **another task's** session when its recorded ``session_id``
+    equals that of an earlier-dispatched run whose ``(project, plan, node)``
+    differs. The first dispatch of a session is ``fresh``; a later dispatch of
+    the same task is a ``same_task`` resume, which is not a continuation; a run
+    with no recorded ``session_id`` is ``unmeasured`` rather than fresh, because
+    an absent signal is not a signal.
+
+    The join is on the recorded ``session_id`` and the run's own dispatch clock,
+    so a resolved session is classified by the run it inherits, not by any
+    stream artifact. Classification runs over the whole population before any
+    lane/day cell is formed, because an earlier run may land outside the cell a
+    continuation is counted in.
+    """
+    result = {}
+    prior_tasks = collections.defaultdict(set)
+    order = sorted(
+        runs, key=lambda r: (r.get("dispatched_at") or "", str(r.get("run_id")))
+    )
+    for run in order:
+        session = run.get("session_id")
+        if not session:
+            result[run["run_id"]] = "unmeasured"
+            continue
+        task = (run.get("project"), run.get("plan"), run.get("node"))
+        seen = prior_tasks[session]
+        if not seen:
+            result[run["run_id"]] = "fresh"
+        elif seen - {task}:
+            result[run["run_id"]] = "continued"
+        else:
+            result[run["run_id"]] = "same_task"
+        seen.add(task)
+    return result
 
 
 def parse_stats(raw):
@@ -586,6 +625,7 @@ def capture_project(
         "role",
         "backend",
         "agent",
+        "session_id",
         "dispatched_at",
         "completed_at",
         "completed_at_source",
@@ -1542,6 +1582,9 @@ def measure(
     for rid in parents:
         family_by_root[root(rid)].add(rid)
     run_index = {run["run_id"]: run for run in all_runs}
+    continuity = session_continuity(all_runs)
+    for run in all_runs:
+        run["session_continuity"] = continuity[run["run_id"]]
 
     def aggregate(runs, commits):
         lines = {
@@ -1565,6 +1608,9 @@ def measure(
         eligible = [c for c in commits if c["product"]["mature"]]
         crew = [c for c in commits if c["run_ids"]]
         eligible_crew = [c for c in eligible if c["run_ids"]]
+        continuity_counts = collections.Counter(
+            r.get("session_continuity") for r in runs
+        )
         product = sum(lines[k]["added"] for k in ("source", "tests"))
         record = sum(
             lines[k]["added"]
@@ -1712,6 +1758,14 @@ def measure(
             "attempts_per_landed_node": ratio(
                 sum(observed_attempts[rid] for rid in attempt_ids), len(landed_roots)
             ),
+            "session_continuity": {
+                "denominator": len(runs),
+                "continued": continuity_counts.get("continued", 0),
+                "same_task": continuity_counts.get("same_task", 0),
+                "fresh": continuity_counts.get("fresh", 0),
+                "unmeasured": continuity_counts.get("unmeasured", 0),
+                "share": ratio(continuity_counts.get("continued", 0), len(runs)),
+            },
             "record_to_product_added_line_ratio": ratio(record, product),
             "record_to_product_excluding_figure_directory": ratio(
                 record - lines["figures"]["added"], product
@@ -1890,6 +1944,7 @@ def measure(
             "worker_hours": "Recorded worker_seconds, source histogram retained; no stall correction or invented time. Durable rate pairs mature attributed additions with timed promoted runs; failed/review overhead appears in all-promoted gross rate.",
             "coordinator_hours": "Union of dispatch-to-completion intervals per recorded coordinator session, summed across sessions. This is time with workers dispatched, not measured coordinator CPU or interaction time. Day cells are promotion-day cohorts, not time sliced exposure.",
             "daily": "Run rows grouped by promotion event UTC day; lines by primary landing committer UTC day; every project/day/lane combination is emitted, including zero populations.",
+            "session_continuity": "Per lane and day, the share of all dispatches whose recorded session_id equals that of an earlier-dispatched run under a different (project, plan, node): a run that continued another task's session. The denominator is every dispatch in the cell; the first dispatch of a session is fresh and a same-task resume is not counted; a dispatch with no recorded session_id is unmeasured and reported beside the share rather than counted fresh or as a continuation. The join uses the recorded session_id, and the classification is computed over the whole population before any cell is formed.",
             "quantiles": "Median and linearly interpolated percentile at (n-1)*p; missing denominator explicitly recorded.",
             "coordinator_cost": "Per coordinator session named by a landed run's node_definition.coordinator.runtime_session_id: assistant responses and logical input, the separately reported cache-read share and output tokens, each divided by the nodes that session landed. A node is landed when it has an in-window promote commit on the primary first parent with a colon subject, or a committed promoted_revision in the pinned ledger, or a successful promotion receipt in the coordinator transcript. The cohort is every run dispatched in the window or promoted in it. A run with no runtime session id enters an explicit unattributed bucket; a session with no transcript reports null rather than zero.",
         },
@@ -1918,6 +1973,9 @@ def measure(
         "by_project": cells([{"project": p} for p in projects]),
         "by_lane": cells([{"lane": p} for p in LANES]),
         "by_day": cells([{"day": p} for p in days]),
+        "by_day_lane": cells(
+            [{"day": d, "lane": lane_name} for d in days for lane_name in LANES]
+        ),
         "by_project_day_lane": cells(
             [
                 {"project": p, "day": d, "lane": lane_name}
@@ -1956,6 +2014,14 @@ def compact_summary(full, weekly_cells, *, artifacts=None):
     )
     if artifacts is not None:
         summary["full_artifacts"] = artifacts
+    summary["session_continuity"] = [
+        {
+            "day": cell["day"],
+            "lane": cell["lane"],
+            **cell["metrics"]["session_continuity"],
+        }
+        for cell in full["by_day_lane"]
+    ]
     points = collections.defaultdict(
         lambda: {"product_additions": 0, "durable_product_lines_seven_days": 0}
     )
