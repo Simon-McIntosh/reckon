@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="420" viewBox="0 0 1120 420" role="img" aria-labelledby="title desc">
+  <title id="title">A run's row phase before and after deriving it from the newest stream</title>
+  <desc id="desc">For one run: the pointer keeps the stored label starting while the stream gains its first assistant record. Before the change the row reads dispatched at every poll. After it, the poll that sees the assistant record emits dispatched to working.</desc>
+  <defs>
+    <style>
+      .edge { fill: none; stroke: #52647a; stroke-width: 2.5; }
+      .axis { stroke: #b9c3cf; stroke-width: 1.5; }
+      .guide { stroke: #3c8158; stroke-width: 1.5; stroke-dasharray: 6 4; }
+      .flat { fill: none; stroke: #a86d24; stroke-width: 3; }
+      .derived { fill: none; stroke: #3c8158; stroke-width: 3; }
+      .label { fill: #172333; font: 600 17px system-ui, sans-serif; text-anchor: middle; }
+      .detail { fill: #34465b; font: 14px system-ui, sans-serif; }
+      .caption { fill: #172333; font: 700 21px system-ui, sans-serif; }
+      .lanetag { fill: #52647a; font: 600 14px system-ui, sans-serif; text-anchor: end; }
+      .state { font: 700 16px system-ui, sans-serif; text-anchor: middle; }
+      .axislabel { fill: #52647a; font: 13px system-ui, sans-serif; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <text class="caption" x="36" y="34">The row leaves the pre-spawn bucket when the stream shows the worker's first turn</text>
+
+  <text class="lanetag" x="176" y="119">the run's own evidence</text>
+  <line class="edge" x1="200" y1="114" x2="1040" y2="114"/>
+  <circle cx="200" cy="114" r="6" fill="#52647a"/>
+  <circle cx="480" cy="114" r="7" fill="#3c8158"/>
+  <text class="detail" x="210" y="94">spawn: pointer phase &#8220;starting&#8221;, stream holds thread.started</text>
+  <text class="detail" x="1030" y="94" text-anchor="end">first assistant record</text>
+
+  <line class="guide" x1="480" y1="86" x2="480" y2="336"/>
+
+  <text class="lanetag" x="176" y="199">row before</text>
+  <path class="flat" d="M200 194 L1040 194"/>
+  <text class="state" x="760" y="182" fill="#a86d24">dispatched, every poll, while the worker edits</text>
+
+  <text class="lanetag" x="176" y="299">row after</text>
+  <path class="derived" d="M200 294 L480 294 L480 254 L1040 254"/>
+  <text class="state" x="340" y="314" fill="#a86d24">dispatched</text>
+  <text class="state" x="760" y="242" fill="#3c8158">working</text>
+  <text class="detail" x="494" y="230">the next poll emits dispatched &#8594; working</text>
+
+  <line class="axis" x1="200" y1="336" x2="1040" y2="336"/>
+  <line class="axis" x1="200" y1="336" x2="200" y2="344"/>
+  <line class="axis" x1="480" y1="336" x2="480" y2="344"/>
+  <line class="axis" x1="760" y1="336" x2="760" y2="344"/>
+  <line class="axis" x1="1040" y1="336" x2="1040" y2="344"/>
+  <text class="axislabel" x="200" y="364">launch</text>
+  <text class="axislabel" x="480" y="364">the turn starts</text>
+  <text class="axislabel" x="760" y="364">next poll</text>
+  <text class="axislabel" x="1040" y="364">later polls</text>
+
+  <text class="detail" x="36" y="400">The stored label is kept beside the derived phase as stored_phase, and it answers alone where the run writes no stream.</text>
+</svg>
