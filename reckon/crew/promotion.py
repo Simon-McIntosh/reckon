@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-from reckon import _backends, _store, capabilities, ledger
+from reckon import _backends, _store, capabilities, flight, ledger, review_tiers
 from reckon.crew import review as review_module
 from reckon.crew import rollout
 from reckon.crew.dispatch import (
@@ -2908,6 +2908,143 @@ def _require_worker_stopped_before_promotion(
     )
 
 
+def _capability_risk_of(capability: Any) -> str:
+    """The risk a plan or section record declares, or empty when none does."""
+    if not isinstance(capability, Mapping):
+        return ""
+    requirements = capability.get("requirements")
+    if not isinstance(requirements, Mapping):
+        return ""
+    return str(requirements.get("risk") or "").strip()
+
+
+def _run_capability_risk(
+    record: Mapping[str, Any], *, root: str | Path | None
+) -> str:
+    """The capability risk the run's plan or its section declares.
+
+    A section's own declaration is read first because a plan can carry a
+    moderate risk overall while the one section a run lands against is where a
+    guard or a fence lives, and a run's review is sized to the risk it actually
+    touched. An elevated declaration at either level forces the fuller review,
+    so the two are not averaged: whichever names an elevated risk wins.
+    """
+    state = _plan_state_for_run(record, fallback_root=root)
+    if not state:
+        return ""
+    section_risk = ""
+    wanted = _section_anchor((record.get("node") or {}).get("section"))
+    sections = state.get("sections")
+    if isinstance(sections, (list, tuple)):
+        for section in sections:
+            if not isinstance(section, Mapping):
+                continue
+            if str(section.get("id") or "") == wanted:
+                section_risk = _capability_risk_of(section.get("capability"))
+                break
+    plan_risk = _capability_risk_of(state.get("capability"))
+    for risk in (section_risk, plan_risk):
+        if review_tiers.elevated_risk(risk):
+            return risk
+    return section_risk or plan_risk
+
+
+def _light_changed_line_ceiling(project: str, root: str | Path | None) -> int:
+    """The light tier's changed-line ceiling from the resolved flight config.
+
+    The threshold rides the ``review.tiers`` flight key, so a host or project
+    layer retunes it without a code change. A config that cannot be resolved —
+    a malformed host layer, an unreadable shipped default — falls back to the
+    shipped ceiling rather than failing a promotion over a lookup.
+    """
+    config: Mapping[str, Any] | None
+    try:
+        config = flight.resolve(project or None, checkout_path=root).config
+    except (flight.FlightConfigError, OSError, ValueError):
+        config = None
+    ceiling, _budget = flight.review_tier_thresholds(config)
+    return ceiling
+
+
+def _review_changed_scope(
+    run_id: str,
+    record: Mapping[str, Any],
+    commit_list: Sequence[str],
+) -> tuple[tuple[str, ...], int | None, bool]:
+    """The paths a run changed, their changed-line count, and whether measured.
+
+    Read the same way the ledger row's own scope is read: from each cited
+    commit's own diff, so a head that merged the integration branch is not
+    charged the branch's paths. A run that cites no commit — a report-only or
+    review run — falls back to the repository paths its manifest declares, and
+    its line count is left unmeasured, which the resolver reads as over the
+    ceiling and so as the fuller review.
+
+    The third element says whether the run's own declarations gave the tier
+    anything to judge at all. A run that cites no commit and declares no path
+    whatever has not said it changed nothing — it has said nothing, which is a
+    different statement, and a reviewer cannot read a diff the run never named.
+    Such a silent scope is reported unmeasured so the caller grants the fuller
+    review rather than the lighter one.
+    """
+    worktree = Path(str(record.get("worktree") or ""))
+    tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
+    if commit_list:
+        resolved = _resolve_commits(cwd=tree, revisions=commit_list, run_id=run_id)
+        cumulative = _committed_scope(cwd=tree, commits=resolved, run_id=run_id)
+        lines = cumulative.changed_lines
+        changed_lines = (
+            int(lines["added"]) + int(lines["removed"])
+            if lines.get("available", True)
+            else None
+        )
+        return cumulative.paths, changed_lines, True
+    declared = _fresh_manifest(record)
+    declares_paths = bool(
+        declared
+        and declared.get("changed_paths")
+        and not _prose_changed_paths_name_no_paths(declared)
+    )
+    return _manifest_repository_paths(record), None, declares_paths
+
+
+def _run_review_tier(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    commit_list: Sequence[str],
+    root: str | Path | None,
+) -> str:
+    """Resolve this run's review tier from what it actually changed.
+
+    The four inputs the tier is decided from are read here rather than passed
+    in: the run's changed paths and their changed-line count at the promoted
+    head, the specification level its node declares, and the capability risk
+    its plan or section declares. The light ceiling is the resolved flight
+    value, so the threshold is not a literal in this module.
+
+    A run whose own declarations measure nothing is granted the fuller review
+    rather than the lighter one: silence about what changed is not evidence that
+    what changed was safe, and the tier resolver would otherwise read an empty
+    path list as a run that touched no runtime source.
+    """
+    changed_paths, changed_lines, measured = _review_changed_scope(
+        run_id, record, commit_list
+    )
+    if not measured:
+        return review_tiers.FULL
+    node = record.get("node") or {}
+    return review_tiers.review_tier(
+        changed_paths,
+        changed_lines,
+        str(node.get("spec_level") or ""),
+        _run_capability_risk(record, root=root),
+        light_changed_lines=_light_changed_line_ceiling(
+            str(record.get("project") or ""), root
+        ),
+    )
+
+
 def _require_review_waiver(
     run_id: str,
     record: Mapping[str, Any],
@@ -2917,20 +3054,25 @@ def _require_review_waiver(
     review: Mapping[str, Any] | None,
     review_action: str,
     waiver_reason: str,
+    review_tier: str = "",
     promoted_head: str = "",
     stale_head: str = "",
 ) -> dict[str, str] | None:
-    """Refuse an unreviewed promotion of a run that changed the repository.
+    """Refuse an unreviewed promotion of a run that owes a review.
 
-    The gate follows the writing, not the role name: a passing run that
-    changed a path inside its own repository has produced work a reviewer must
-    read, whatever role carried it — a test node writing test files, a
-    documentation node writing docs and an investigate node writing a report
-    all leave the repository altered. The implement role stays gated whether or
-    not its manifest names a path, so an implement run that declares no change
-    is still refused rather than slipping through on its silence. The review
-    role is exempt, because the review it wrote for another run is its own
-    deliverable; requiring another review would recurse without a stopping point.
+    The gate follows what the run changed, not the role name: a passing run
+    whose changes include runtime source has produced work a reviewer must
+    read, whatever role carried it. The tier is computed from the run's own
+    changed paths, changed-line count, declared spec level and declared
+    capability risk, so a node that changes no runtime source — a test, plan,
+    evidence, research-data or figure node — promotes unreviewed with its tier
+    recorded on the row as the reason no review exists, while a runtime-source
+    node is refused until a review is stored or a waiver states why it may land.
+    The implement role is no longer singled out: a source-touching test or
+    documentation node earns the same review the implement role does, and the
+    tier is what separates them. The review role is exempt, because the review
+    it wrote for another run is its own deliverable; requiring another review
+    would recurse without a stopping point.
 
     ``review`` is the record whose own comment says it read ``promoted_head``; a
     record of a different revision does not satisfy the gate. When such a record
@@ -2949,15 +3091,18 @@ def _require_review_waiver(
 
     role = _pointer_role(record)
     reason = str(waiver_reason).strip()
-    changed_repository = bool(_manifest_repository_paths(record))
     review_required = classification == "scoring" or (
         classification == "promotable" and bool(stale_head)
     )
+    # The tier, not the role, decides whether the run changed work a reviewer
+    # owes. An unmeasured or unknown tier is treated as the fuller review, so a
+    # caller that could not resolve one never opens a lighter path by silence.
+    tier = str(review_tier or review_tiers.FULL)
     unreviewed = (
         verdict == "passed"
         and review_required
         and role != REVIEW_ROLE
-        and (role == "implement" or changed_repository)
+        and tier != review_tiers.NONE
         and not (review and review.get("status") == "parsed")
     )
     if unreviewed:
@@ -3179,6 +3324,12 @@ def complete(
             promoted_revision=promoted_revision,
             tree=review_tree if review_tree.is_dir() else None,
         )
+        # The tier is computed before the gate reads it, from what the run
+        # actually changed at the promoted head, so the refusal and the row it
+        # would have written agree about which review the run owes.
+        review_tier = _run_review_tier(
+            run_id, record, commit_list=commit_list, root=root
+        )
         review_waived = _require_review_waiver(
             run_id,
             record,
@@ -3187,6 +3338,7 @@ def complete(
             review=reviewed,
             review_action=str(classified.get("next_action") or ""),
             waiver_reason=review_waiver,
+            review_tier=review_tier,
             promoted_head=promoted_revision,
             stale_head=stale_review_head,
         )
@@ -3250,6 +3402,7 @@ def complete(
             resume_waived=resume_waived,
             reviewed=reviewed,
             review_waived=review_waived,
+            review_tier=review_tier,
             negative_control_waiver=negative_control_waiver,
             recoverable_session=recoverable_session,
             discard_resume_worktree=discard_resume_worktree,
@@ -4472,6 +4625,7 @@ def _complete_locked(
     resume_waived: Mapping[str, str] | None = None,
     reviewed: Mapping[str, Any] | None = None,
     review_waived: Mapping[str, str] | None = None,
+    review_tier: str = "",
     negative_control_waiver: str | None = None,
     recoverable_session: Mapping[str, str] | None = None,
     discard_resume_worktree: bool = False,
@@ -4896,6 +5050,13 @@ def _complete_locked(
             run["resume_waiver"]["worktree_discarded"] = True
     if review_waived is not None:
         run["review_waiver"] = dict(review_waived)
+    # The tier rides the row on every promotion. For a run that changed no
+    # runtime source it is the recorded reason no review exists — the merged-head
+    # gate re-run and the node's negative control are what checked it instead —
+    # so a later reader can tell a deliberate no-review tier from a review that
+    # was simply never produced.
+    if review_tier:
+        run["review_tier"] = review_tier
     # A run promoted while its own worker was still alive survives on the row
     # with the reason given, so an audit can tell a deliberate promotion of a
     # live worker from the accidental orphan this refusal exists to prevent.
