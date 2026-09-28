@@ -4214,6 +4214,15 @@ def _require_impl_moved(
         check["verdict"] = "exempt"
         check["reason"] = f"corrective-run:{attempt_kind}"
         return check
+    # A dispatch may name the promoted run it repairs with ``--repairs``. The
+    # movement that run produced belongs to the run being repaired, so the
+    # same exemption the attempt-kind corrective forms carry applies, and the
+    # repaired run is named so a reader can follow the chain.
+    repaired_run = str(record.get("repairs") or "").strip()
+    if repaired_run:
+        check["verdict"] = "exempt"
+        check["reason"] = f"corrective-run:repairs:{repaired_run}"
+        return check
 
     if str(gate).strip().lower() != "passed":
         check["verdict"] = "exempt"

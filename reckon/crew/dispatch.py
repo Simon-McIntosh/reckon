@@ -3251,6 +3251,7 @@ def plan_dispatch(
     session: str = "",
     watch_required: bool = False,
     watch_override: bool = False,
+    repairs: str = "",
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
@@ -3281,6 +3282,12 @@ def plan_dispatch(
     # ``None``: only the dispatch path turns that into the mount.
     if repo is not None and project_mount_repository(project) is not None:
         repo = resolve_project_repository(project, repo)
+    # The run a --repairs dispatch repairs must already have landed, so the
+    # declaration is judged here, beside the other preconditions, before a
+    # worktree, pointer or process exists. A dry run reaches the same refusal
+    # because this is the one place the check runs.
+    if repairs:
+        _require_repairs_target(project, repairs, authority=authority)
     requested_backend = str(backend_override or default_backend_override or "").strip()
     # The configured local lane, named here so a ``--local`` dispatch has one
     # concrete backend to agree or disagree with. The CLI has already merged it
@@ -4079,6 +4086,76 @@ def _plan_impl_at_dispatch(
     return plan_impl_at(project, plan, root)
 
 
+def _repairs_ledger_root(
+    project: str, authority: Mapping[str, Any] | None
+) -> Path | None:
+    """Resolve the checkout owning the ledger a --repairs target is read from.
+
+    The dispatch path already carries a resolved authority; a dry run may not,
+    so the project's registered docs mount is the fallback. ``None`` leaves
+    ``ledger.load`` its config-home default rather than making the refusal
+    depend on a resolution that failed for an unrelated reason.
+    """
+    if authority is not None:
+        return resolve_dispatch_ledger_root(authority)
+    try:
+        docs = flight.mounted_project_docs().get(project)
+    except flight.FlightConfigError:
+        return None
+    if docs is None:
+        return None
+    return docs.parent.resolve()
+
+
+def _require_repairs_target(
+    project: str, repairs: str, *, authority: Mapping[str, Any] | None
+) -> None:
+    """Refuse a --repairs target that is not a promoted run of this project.
+
+    A repair declares that the plan movement its predecessor produced carries
+    forward, so the named run must already be in this project's ledger — the
+    bookkeeping it inherits exists only for a run that has landed. An unknown
+    run, a run still in flight, and a run from another project are three
+    distinct mistakes, refused separately so the caller reads which one it made
+    rather than a generic rejection.
+    """
+    target = str(repairs or "").strip()
+    if not target:
+        return
+    root = _repairs_ledger_root(project, authority)
+    if _SAFE_ID.fullmatch(target):
+        try:
+            data, _version = ledger.load(project, root=root)
+        except ledger.LedgerError:
+            data = None
+        if data is not None and any(
+            isinstance(row, Mapping) and str(row.get("run_id")) == target
+            for row in data.get("runs", [])
+        ):
+            return
+        try:
+            pointer = read_pointer(target)
+        except CrewError:
+            pointer = None
+        if isinstance(pointer, Mapping):
+            owner = str(pointer.get("project") or "").strip()
+            if owner and owner != project:
+                raise CrewError(
+                    f"--repairs {target!r} belongs to project {owner!r}, not "
+                    f"{project!r}; a repair is declared against this project's "
+                    "own ledger"
+                )
+            raise CrewError(
+                f"--repairs {target!r} is not yet promoted in project "
+                f"{project!r}; a repair names a run that has already landed, "
+                "so retire it with `reckon crew complete` first"
+            )
+    raise CrewError(
+        f"--repairs {target!r} names no run in project {project!r}'s ledger; the "
+        "promoted run this dispatch would repair does not exist"
+    )
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -4104,6 +4181,7 @@ def dispatch(
     local: bool = False,
     backend_override: str | None = None,
     default_backend_override: str | None = None,
+    repairs: str = "",
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -4180,6 +4258,7 @@ def dispatch(
         default_backend_override=default_backend_override,
         member=member,
         allow_unreviewed_plan=unreviewed_plan_override,
+        repairs=repairs,
     )
     if not resolution.validation.ok:
         raise CrewError(
@@ -4733,6 +4812,10 @@ def dispatch(
             "attempt_kind": (
                 "shadow" if shadow_lineage else "redispatch" if lineage else "dispatch"
             ),
+            # The promoted run this dispatch repairs, declared with --repairs.
+            # Promotion reads it to exempt the impl move: the movement belongs
+            # to the run being repaired. Absent when the dispatch declares none.
+            "repairs": str(repairs or "").strip() or None,
             "attempt_started_at": attempt_started_at,
             "phase": "starting",
             "session_id": reuse_session,
