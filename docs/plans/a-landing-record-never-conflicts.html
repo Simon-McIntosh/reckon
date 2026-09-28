@@ -26,9 +26,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="12">
-<meta name="plan-commits" content="a69f554f,5bb66c48,41bc0eea,380dcd14,cf9160ff,32d932b2,53ceb356,cc44c453,65f5a378,3157768e">
-<meta name="plan-artifacts" content="reckon/evidence.py,tests/test_evidence_record_composition.py,reckon/serve.py,reckon/doccheck.py,tests/test_readers_compose_the_record.py">
+<meta name="plan-version" content="13">
+<meta name="plan-commits" content="a69f554f,5bb66c48,41bc0eea,380dcd14,cf9160ff,32d932b2,53ceb356,cc44c453,65f5a378,3157768e,8602efcf,16ca61e7,d85fba28,6cdc5b8d">
+<meta name="plan-artifacts" content="reckon/evidence.py,tests/test_evidence_record_composition.py,reckon/serve.py,reckon/doccheck.py,tests/test_readers_compose_the_record.py,reckon/mcp.py,tests/test_read_plan_composes_the_record.py">
 <meta name="plan-impl" content="0.5">
 </head>
 <body>
@@ -214,7 +214,10 @@
     <div class="r-comment-body"><p>re-reviewed served-and-audited-records-are-composed at 65f5a378: 97/100; the duplicated spelling resolver and name-based routing were folded into read-plan-reads-the-composed-record</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T063305266502-review-of-read-plan-reads-the-composed-record" data-who="reckon-build" data-when="2026-09-28T08:32:45.764Z">
-    <div class="r-comment-body"><p>reviewed read-plan-reads-the-composed-record at 16ca61e7: 90/100, three findings (no case where the metas and the filename name different plans, mcp.py swallows a composition failure silently, prose suite arms and headerless gate logs); the repair round is held under the operator&#x27;s dispatch pause</p></div>
+    <div class="r-comment-body"><p>reviewed read-plan-reads-the-composed-record at 16ca61e7: 90/100, three findings (no case where the metas and the filename name different plans, mcp.py swallows a composition failure silently, prose suite arms and headerless gate logs); the repair round is held under the operator's dispatch pause</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260928T111000-read-plan-merged" data-who="reckon-build" data-when="2026-09-28T11:10:00Z">
+    <div class="r-comment-body">read-plan-reads-the-composed-record merged at 6cdc5b8d; one record resolver in reckon/evidence.py now serves serve.py, doccheck.py and read_plan, keyed on the document's own metas; 20 passed at head, 13 at base, no failing ids; reviews 90 then 94 with zero added failures. The re-review's remaining finding adds one node to s3: read_plan's composition-failure warning is proven only through a helper, and the call that would carry it on the response looks unreachable for records, so a follow-on drives the fallback end to end through read_plan. With that node added, s3 has six: composer, readers and read_plan landed; the landing-line promotion node is in review; the read_plan warning and the six-commit merge-tree measure remain. impl stays 4 of 8.</div>
 </div>
 </section>
 </main>
