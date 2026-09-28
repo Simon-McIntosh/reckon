@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 470" role="img" aria-label="A declared negative control is judged on two facts read from the log it cites. Fact one is that the run failed: the log's terminal EXIT record is non-zero, or with no such record a runner summary states a failing count. A log whose run exited zero is refused however the log is worded. Fact two is that something broke: at least one canonical test id the log marks FAILED is absent from the baseline's failure ids. A control surviving both is admitted with verdict matched, and the declaration is printed beside the log path so a person judges whether the mutation declared is the one the log shows.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 470" role="img" aria-label="A declared negative control is judged on two facts read from the log it cites. Fact one is that the run failed: the log's terminal EXIT record is non-zero, and nothing stands in for it: a log carrying no such record, or one reading zero, is refused however it is worded. Fact two is that something broke: at least one canonical test id the log marks FAILED is absent from the baseline's failure ids; a log naming no failing test id, or only ids the baseline already fails, is refused. A control surviving both is admitted with verdict matched, and the declaration is printed beside the log path so a person judges whether the mutation declared is the one the log shows.">
   <style>
     .box { fill:#1d2430; stroke:#3b6ea5; stroke-width:1.4px; }
     .ok { fill:#16241b; stroke:#2e7d43; stroke-width:1.6px; }
@@ -18,25 +18,25 @@
   <text class="note" x="150" y="176">read facts</text>
 
   <rect class="box" x="240" y="60" width="230" height="90" rx="6"/>
-  <text class="label" x="254" y="84">fact 1 &mdash; the run failed</text>
-  <text class="note" x="254" y="104">EXIT=<tspan font-style="italic">n</tspan>, <tspan font-style="italic">n</tspan> &ne; 0; or no record,</text>
-  <text class="note" x="254" y="120">and a runner summary states</text>
-  <text class="note" x="254" y="136">a failing count</text>
+  <text class="label" x="254" y="84">fact 1 — the run failed</text>
+  <text class="note" x="254" y="104">EXIT=<tspan font-style="italic">n</tspan>, <tspan font-style="italic">n</tspan> ≠ 0;</text>
+  <text class="note" x="254" y="120">no record, or EXIT=0,</text>
+  <text class="note" x="254" y="136">is refused</text>
 
   <path class="edge" d="M470 105 H 560"/>
   <text class="note" x="476" y="97">exit 0, or nothing stated</text>
   <rect class="no" x="560" y="40" width="300" height="110" rx="6"/>
-  <text class="label" x="574" y="64">refused &mdash; the run did not fail</text>
+  <text class="label" x="574" y="64">refused — no failing run on record</text>
   <text class="note" x="574" y="86">a first line repeating the</text>
   <text class="note" x="574" y="102">declaration while the run exited</text>
-  <text class="note" x="574" y="118">zero is the defeat the old</text>
-  <text class="note" x="574" y="134">comparison admitted</text>
+  <text class="note" x="574" y="118">zero is the defeat the</text>
+  <text class="note" x="574" y="134">wording comparison admitted</text>
 
   <path class="edge" d="M355 150 V 250"/>
   <text class="note" x="362" y="204">exited non-zero</text>
 
   <rect class="box" x="240" y="250" width="230" height="90" rx="6"/>
-  <text class="label" x="254" y="274">fact 2 &mdash; something broke</text>
+  <text class="label" x="254" y="274">fact 2 — something broke</text>
   <text class="note" x="254" y="294">a test id the log marks FAILED</text>
   <text class="note" x="254" y="310">is absent from the baseline's</text>
   <text class="note" x="254" y="326">failure ids</text>
@@ -44,16 +44,16 @@
   <path class="edge" d="M470 295 H 560"/>
   <text class="note" x="476" y="287">no added failure id</text>
   <rect class="no" x="560" y="250" width="300" height="90" rx="6"/>
-  <text class="label" x="574" y="274">refused &mdash; nothing broke</text>
-  <text class="note" x="574" y="296">it failed only what the baseline</text>
-  <text class="note" x="574" y="312">already fails, which a substring</text>
-  <text class="note" x="574" y="328">test cannot see at all</text>
+  <text class="label" x="574" y="274">refused — no added failure</text>
+  <text class="note" x="574" y="296">no failing test id is named, or</text>
+  <text class="note" x="574" y="312">every id it names is one the</text>
+  <text class="note" x="574" y="328">baseline already fails</text>
 
   <path class="edge" d="M355 340 V 385"/>
   <text class="note" x="362" y="368">at least one added failure</text>
 
   <rect class="ok" x="240" y="385" width="320" height="60" rx="6"/>
-  <text class="label" x="254" y="410">admitted &mdash; verdict matched</text>
+  <text class="label" x="254" y="410">admitted — verdict matched</text>
   <text class="note" x="254" y="430">log text is never compared with the declaration</text>
 
   <text class="note" x="584" y="400">the declaration stays on the node record and</text>

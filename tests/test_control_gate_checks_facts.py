@@ -8,10 +8,12 @@ defeatable in the one direction that matters: pasting the declaration into a log
 whose run exited zero satisfies it, and nothing afterwards separates that from an
 honest re-run.
 
-The gate here reads the two facts a run leaves behind instead — it exited
-non-zero, and its failure set contains at least one test the baseline does not
-fail — so the cases below exercise each refusal on a log that would satisfy a
-textual comparison, and each admission on a log that would not. The two parties
+The gate here reads the two facts a run leaves behind instead — its terminal
+exit record is non-zero, and it names at least one failing test id the baseline
+does not fail — so the cases below exercise each refusal on a log that would
+satisfy a textual comparison, and each admission on a log that would not. A
+fact neither record carries is not inferred from a count or from wording: a log
+without the facts is refused, or waived by a reasoned waiver. The two parties
 the facts cannot settle, whether the mutation applied is the one declared, stay
 with the reader: the declaration rides the verdict row beside the log path.
 """
@@ -36,6 +38,7 @@ def _gate(
     *,
     log_text: str,
     baseline: dict | None = None,
+    waiver: str = "",
 ) -> dict:
     """Run the gate over one red log and the manifest that names it."""
     log = tmp_path / "control.log"
@@ -57,6 +60,7 @@ def _gate(
         gate="passed",
         manifest=manifest,
         manifest_path=str(tmp_path / "manifest.md"),
+        waiver_reason=waiver,
     )
 
 
@@ -131,3 +135,48 @@ def test_a_control_whose_wording_matches_but_exited_zero_is_refused(
     message = str(refusal.value)
     assert "EXIT=0" in message
     assert DECLARATION in message
+
+
+def test_a_control_log_with_no_exit_record_is_refused(tmp_path: Path) -> None:
+    """A fact nothing recorded is unknown, never inferred from a failing count."""
+    with pytest.raises(CrewError) as refusal:
+        _gate(
+            tmp_path,
+            log_text=(
+                f"{DECLARATION}\n"
+                f"FAILED {ADDED_FAILURE} - AssertionError: no refusal\n"
+                "1 failed, 4 passed in 0.21s\n"
+            ),
+        )
+
+    message = str(refusal.value)
+    assert "records no EXIT status" in message
+    assert DECLARATION in message
+
+
+def test_a_control_log_naming_no_failing_test_is_refused(tmp_path: Path) -> None:
+    """The runner's own count is a summary, not an identity to compare."""
+    with pytest.raises(CrewError) as refusal:
+        _gate(
+            tmp_path,
+            log_text=f"{DECLARATION}\n1 failed, 4 passed in 0.21s\nEXIT=1\n",
+        )
+
+    message = str(refusal.value)
+    assert "names no failing test id" in message
+    assert DECLARATION in message
+
+
+def test_a_reasoned_waiver_is_the_door_unrecorded_facts_may_enter_by(
+    tmp_path: Path,
+) -> None:
+    """Refused facts with a waiver are recorded as waived, never admitted."""
+    control = _gate(
+        tmp_path,
+        log_text=f"{DECLARATION}\n1 failed, 4 passed in 0.21s\n",
+        waiver="no exit record was kept; the mutation was observed by hand.",
+    )
+
+    assert control["verdict"] == "waived"
+    assert control["reason"]
+    assert control["added_failure_ids"] == []

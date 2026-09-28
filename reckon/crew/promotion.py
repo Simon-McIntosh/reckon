@@ -654,12 +654,6 @@ _RUNNER_SUMMARY = re.compile(
     r"\b\d+\s+(?:passed|failed|errors?|skipped|xfailed|xpassed|deselected|warnings?)\b"
 )
 
-# The failing-test count a runner's own result summary states: "3 failed",
-# "1 error", "2 failed, 1 error". A red log that enumerates no FAILED line
-# still says how many tests failed, and that count is the fact a comparison
-# against a baseline can use when no id is available to compare.
-_RUNNER_FAILURE_COUNT = re.compile(r"\b(\d+)\s+(?:failed|errors?)\b")
-
 # Exit statuses that assert the shell could not execute the command at all:
 # 127 for a command it could not find, 126 for one it found but could not run.
 # A capture shell recording either has not evidenced that the cited command
@@ -4102,46 +4096,34 @@ def _negative_control_log_text(
         return None, str(path)
 
 
-def _control_failure_facts(log_text: str) -> tuple[set[str], int]:
-    """The failing tests a control log reports, and how many it reports failing.
+def _control_failure_ids(log_text: str) -> set[str]:
+    """The failing tests a control log names, as canonical node ids.
 
-    The ids are the pytest node ids the log's own short summary marks FAILED or
-    ERROR, read through the review module's reader so both sides of the
-    comparison are canonical. The count is the largest failing total any one
-    result-summary line states, because a log that enumerates no id still says
-    how many tests failed, and the count is then the only fact a comparison
-    against the baseline has to work with.
+    Only the ids the log enumerates are a fact: a runner's summary saying how
+    many tests failed states that something did fail, not which test, and the
+    comparison needs the identity rather than the tally. The log's own short
+    summary marks them FAILED or ERROR, read through the review module's reader
+    so both sides of the comparison are canonical.
     """
-    ids = review_module._pytest_failure_ids(log_text)
-    count = 0
-    for line in log_text.splitlines():
-        total = sum(int(found) for found in _RUNNER_FAILURE_COUNT.findall(line))
-        count = max(count, total)
-    return ids, count
+    return review_module._pytest_failure_ids(log_text)
 
 
-def _baseline_suite_failures(
-    manifest: Mapping[str, Any] | None,
-) -> tuple[set[str], int]:
-    """The failing tests the manifest records for the baseline, and their count.
+def _baseline_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str]:
+    """The failing tests the manifest records for the baseline.
 
     The baseline is the arm the control is compared against: a control shows
     something broke only by failing a test that was not already failing. A run
     that recorded no baseline observation has nothing on record as failing, so
-    every failure its control reports is one the baseline does not.
+    every failure its control names is one the baseline does not.
     """
     observation = None if manifest is None else manifest.get("baseline_suite")
     if not isinstance(observation, Mapping):
-        return set(), 0
-    ids = {
+        return set()
+    return {
         review_module.canonical_node_id(str(test_id).strip())
         for test_id in observation.get("failure_ids") or ()
         if str(test_id).strip()
     }
-    count = observation.get("failure_count")
-    if isinstance(count, bool) or not isinstance(count, int):
-        count = len(ids)
-    return ids, count
 
 
 def _require_declared_negative_control(
@@ -4161,8 +4143,11 @@ def _require_declared_negative_control(
     of logs is the positive and negative control of one measurement.
 
     The log is judged on two facts about the run it captured, not on how it is
-    worded: the run exited non-zero, and its failure set contains at least one
-    test the baseline does not fail. Wording cannot carry either fact, so a
+    worded: the run's terminal record exited non-zero, and the log names at
+    least one failing test id the baseline does not fail. Neither fact is
+    inferred — a log with no exit record and a log naming no failing test id
+    each state too little to admit the control, and a bare failing count is not
+    evidence that either fact holds. Wording cannot carry either fact, so a
     declaration pasted into a log whose run exited zero is refused, and neither
     can a log whose run merely repeated the failures the baseline already had.
     The declaration stays on the node record and on the verdict row beside the
@@ -4233,59 +4218,46 @@ def _require_declared_negative_control(
             "Write the red log where the manifest can be read alongside it and "
             "name that path"
         )
-    control_ids, failing_count = _control_failure_facts(text)
-    baseline_ids, baseline_count = _baseline_suite_failures(manifest)
+    control_ids = _control_failure_ids(text)
+    baseline_ids = _baseline_suite_failure_ids(manifest)
     added = sorted(control_ids - baseline_ids)
     recorded_exit = _recorded_exit_status(text)
     check["control_exit_status"] = recorded_exit
     check["control_failure_ids"] = sorted(control_ids)
-    check["control_failure_count"] = failing_count
     check["baseline_failure_ids"] = sorted(baseline_ids)
     check["added_failure_ids"] = added
-    # The exit fact. A terminal capture record decides when the log carries
-    # one; with no record, the runner's own result summary is what shows the
-    # command executed and failed. A log carrying neither states nothing about
-    # the run, so its wording cannot stand in for the run's status.
-    exited_nonzero = (
-        recorded_exit != 0 if recorded_exit is not None else failing_count > 0
-    )
-    # The added-failure fact, stated as containment: the control failed at
-    # least one test the baseline does not. The ids the log reports decide when
-    # it reports any; a log enumerating none is compared by count, where more
-    # failing tests than the baseline records still entails one the baseline
-    # does not fail, while a control that removed a pre-existing failure and
-    # added none reports no more than the baseline and is refused.
-    adds_a_failure = bool(added) or failing_count > baseline_count
-    if not exited_nonzero or not adds_a_failure:
-        if not exited_nonzero:
-            found = (
-                f"its cited log records EXIT={recorded_exit}"
-                if recorded_exit is not None
-                else "its cited log records no exit status and no failing test"
-            )
-            refusal = (
-                f"run {run_id!r} declares the mutation {declaration!r} but the "
-                f"log at {resolved!r} is not a run that failed: {found}. A "
-                "control is a run that failed, and the log is admitted on what "
-                "the run did rather than on how the log is worded. Re-run the "
-                "declared mutation, keep the log it produced with the runner's "
-                "own summary and the capture's EXIT=<n> record, or use "
-                "--waive-negative-control REASON to record why the control may "
-                "be accepted"
-            )
-        else:
-            refusal = (
-                f"run {run_id!r} declares the mutation {declaration!r} but the "
-                f"log at {resolved!r} adds no failure to the baseline's: the run "
-                f"reports {failing_count} failing test(s) where the baseline "
-                f"records {baseline_count} ({', '.join(sorted(baseline_ids)) or 'none'}), "
-                "so nothing it failed is a failure "
-                "the baseline does not already fail, whatever the log's wording. "
-                "A control whose failure set the baseline contains shows nothing "
-                "break. Apply the mutation so a test that passes unmutated "
-                "fails, or use --waive-negative-control REASON to record why the "
-                "control may be accepted"
-            )
+    # Both facts have to come from something only the run could have written: a
+    # log with no EXIT record says nothing about whether its command failed,
+    # and one naming no failing test id says nothing about what broke. Neither
+    # is inferred — a failing count and a repeated declaration together are
+    # exactly the shape the removed wording rule could not tell from a
+    # measurement — so an unrecorded fact refuses the declaration rather than
+    # admitting it.
+    if recorded_exit is None:
+        unexplained = "it records no EXIT status, so whether its run failed is unknown"
+    elif recorded_exit == 0:
+        unexplained = "it records EXIT=0, so its run did not fail"
+    elif not control_ids:
+        unexplained = "it names no failing test id, so what broke is unknown"
+    elif not added:
+        unexplained = (
+            "it adds no failure to the baseline's: every test it names "
+            f"({', '.join(sorted(control_ids))}) is one the baseline already fails"
+        )
+    else:
+        unexplained = ""
+    if unexplained:
+        refusal = (
+            f"run {run_id!r} declares the mutation {declaration!r} but the log at "
+            f"{resolved!r} shows no failed control run: {unexplained}. A control "
+            "is admitted on its facts alone — a non-zero exit record and at least "
+            "one failing test id the baseline does not fail — and neither fact is "
+            "inferred from the log's wording or from a bare failing count. Re-run "
+            "the declared mutation and keep the log it produced, with the "
+            "capture's EXIT=<n> record and the runner's own list of which tests "
+            "failed, or use --waive-negative-control REASON to record why the "
+            "control may be accepted without it"
+        )
         if waiver_reason:
             check["verdict"] = "waived"
             check["reason"] = waiver_reason
