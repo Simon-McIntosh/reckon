@@ -409,7 +409,7 @@ def test_session_starts_zellij_and_reload_reexecutes_the_module(
     exited = {**live, "RECKON_ZELLIJ_STUB_SESSIONS": "demo   EXITED\n"}
     assert fleet_supervisor.session_running("demo", exited) is False
 
-    # Parsing matches the reference's field split for both verbs.
+    # Parsing splits each verb's fields on whitespace.
     assert fleet_supervisor.parse_request("session demo") == Request(
         "session", ("demo",)
     )

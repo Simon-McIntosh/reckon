@@ -22,9 +22,9 @@ Requests arrive one per line on a FIFO in that directory:
                                step's own detached child, and acknowledge it in
                                the spec's run directory
 
-Each session start runs a fresh copy of this module (the ``start`` mode), for
-the same reason the reference did: the loop is long-lived, the starting logic is
-not.
+Each session start runs a fresh copy of this module (the ``start`` mode),
+because the loop is long-lived and the starting logic is not: a fix to how a
+session starts takes effect at the next start without a reload.
 
 Where the fleet lives is published to ``record.json`` so the connection side can
 resolve the job id rather than anyone remembering it. Both the record directory
@@ -100,7 +100,7 @@ DETACH_GRACE_SECONDS = 5.0
 
 # A session name and a layout name both reach a process argument, and the layout
 # name is used as a path under the zellij configuration directory. Both are
-# restricted to what the reference accepted, and nothing wider.
+# restricted to a plain name, and nothing wider.
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 
 # The submitting shell's environment is inherited by the batch step. An
@@ -625,7 +625,7 @@ class Request:
 
 
 def parse_request(line: str) -> Request:
-    """Split a request line the way the reference's ``read`` did."""
+    """Split a request line on whitespace into its verb and fields."""
     fields = line.split()
     if not fields:
         return Request("", ())
@@ -636,8 +636,7 @@ def _reexec(exec_: Any) -> None:
     """Replace this image with a fresh copy, so a fix to the module takes hold.
 
     No arguments are passed, so the replacement enters the request loop again
-    and republishes its record and FIFO, exactly as the reference's bare
-    ``exec "$0"`` did.
+    and republishes its record and FIFO.
     """
     argv = [sys.executable, "-m", "reckon.crew.fleet_supervisor"]
     exec_(argv[0], argv)
