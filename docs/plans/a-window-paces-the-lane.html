@@ -410,6 +410,26 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     form ran the reserve gate green, so the not-found exits evidence absence rather than a
     broken selector.</p>
 
+    <p><span class="badge badge-shipped">&#10003; landed 2026-09-27</span>
+    The reserve now reaches the dispatch refusal boundary. <code>dispatch()</code> composes the pace
+    row once, before anything is created, and reuses that same row on the run record, so the reading
+    a dispatch is refused against and the reading a later replay judges are one reading: a
+    non-bookend dispatch whose window is spent past the reserved fraction is refused naming the
+    fraction and the role, while a review dispatch meeting the same state is admitted. A lane
+    declaring no wallet is not judged &mdash; its row reports no reading by construction rather than
+    a reading that failed, and judging it would bar every unmetered lane from implementation work.
+    <strong>An unreadable window is not an empty one</strong>: a five-hour clock carrying no
+    utilisation refuses implementation against the reserved fraction, naming the lane and the
+    clock's own state, and admits review and verify, so the missing reading is no longer folded to
+    the zero that admits everything. Both limbs are driven through the dispatch entry point as
+    pairs: 68 passed in one invocation over <code>tests/test_reserve.py</code>, the pace-row harness
+    and the three refusal suites at <code>d0787e93</code>; the five added assertions are red at the
+    base revision (5 failed, 63 passed); the promotion run over the ids that pass at base exits 0
+    (63 passed); and the declared mutation &mdash; the reserve check deleted from the dispatch
+    refusal path &mdash; reddens the dispatch pair on a scratch copy (2 failed). Record:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html">a-window-paces-the-lane-landed</a>,
+    commits <code>8512e898</code> and <code>d0787e93</code>.</p>
+
     <h2 id="s5">&sect;5 &mdash; Reading the windows without inventing them</h2>
 
     <p><strong>Most runs do not carry the windows, and this is the correction that shapes the

@@ -18,6 +18,13 @@ spend from the whole window because they are the expenditure the reserve exists
 to protect, and the section names the two together, so neither is second class.
 Everything else — every implementation, test, investigation or cleanup node — is
 withheld the fraction.
+
+An unreadable window is not an empty one. A utilisation nobody could read must
+not be folded to zero, because zero is the one figure that admits everything, so
+a reserve judged against a missing reading would open the whole window to
+implementation work exactly when nothing knows how much of the window is gone.
+Absence of a reading therefore refuses the roles the reserve withholds from and
+admits the bookends, and the refusal says the window could not be read.
 """
 
 from __future__ import annotations
@@ -81,12 +88,64 @@ def role_ceiling_pct(block: Mapping[str, Any] | None, role: str | None) -> float
     return max(0.0, ceiling - reserve_pct(block))
 
 
+def _unreadable_verdict(
+    block: Mapping[str, Any] | None,
+    *,
+    role: str | None,
+    claim_pct: float,
+    unreadable_detail: str | None,
+) -> dict[str, Any]:
+    """Judge a dispatch whose window could not be read.
+
+    The figures an admitted verdict reports as numbers are left unset here
+    rather than defaulted to zero, because a zero written on this path would
+    read downstream as an observed empty window, which is the reading this
+    branch exists to refuse.
+    """
+    limit = role_ceiling_pct(block, role)
+    reserve = reserve_pct(block)
+    bookend = is_bookend(role)
+    claim = max(0.0, float(claim_pct))
+    detail = f" ({unreadable_detail})" if unreadable_detail else ""
+    if bookend:
+        admitted = True
+        reason = (
+            f"the window's utilisation could not be read{detail}, and a {role} "
+            f"role spends from the whole window: the {reserve:g}% bookend "
+            "reserve is not withheld from it, so the unreadable reading does "
+            f"not bar this dispatch from the {limit:g}% ceiling"
+        )
+    else:
+        admitted = False
+        reason = (
+            f"the window's utilisation could not be read{detail}, and an "
+            "unreadable window is not an empty one: a "
+            f"{role} dispatch is refused against the {reserve:g}% the window "
+            "keeps for review and verify roles rather than admitted as if the "
+            f"window were empty; an implementation dispatch reaches {limit:g}% "
+            f"of the {ceiling_pct(block):g}% window"
+        )
+    return {
+        "role": str(role),
+        "bookend": bookend,
+        "admitted": admitted,
+        "reserve_pct": reserve,
+        "ceiling_pct": ceiling_pct(block),
+        "limit_pct": limit,
+        "utilisation_pct": None,
+        "claim_pct": claim,
+        "projected_pct": None,
+        "reason": reason,
+    }
+
+
 def admit(
     block: Mapping[str, Any] | None,
     *,
     role: str | None,
     utilisation_pct: float | None,
     claim_pct: float = 0.0,
+    unreadable_detail: str | None = None,
 ) -> dict[str, Any]:
     """Judge one dispatch against the bookend reserve.
 
@@ -95,8 +154,23 @@ def admit(
     admitted when the window's utilisation plus the claim does not exceed the
     role's ceiling; the reserve withholds the fraction beyond that ceiling, so a
     dispatch landing exactly on it is admitted.
+
+    A utilisation of ``None`` is a window nobody could read, and it is judged as
+    unreadable rather than as empty: an implementation dispatch is refused
+    against the reserved fraction, and a bookend is admitted because the reserve
+    is never withheld from it. The caller may pass the reading's own account of
+    why it is missing in ``unreadable_detail``; it is appended to the refusal so
+    the sentence carries the resolver's reason alongside this one.
     """
-    used = 0.0 if utilisation_pct is None else float(utilisation_pct)
+    if utilisation_pct is None:
+        return _unreadable_verdict(
+            block,
+            role=role,
+            claim_pct=claim_pct,
+            unreadable_detail=unreadable_detail,
+        )
+
+    used = float(utilisation_pct)
     claim = max(0.0, float(claim_pct))
     projected = used + claim
     limit = role_ceiling_pct(block, role)
