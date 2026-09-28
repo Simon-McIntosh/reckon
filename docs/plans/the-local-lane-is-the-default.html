@@ -23,8 +23,8 @@
   <title>The local lane is the default | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-26">
-<meta name="plan-version" content="54">
+<meta name="plan-modified" content="2026-09-28">
+<meta name="plan-version" content="55">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -470,6 +470,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260926T0825-digest-d1-landed" data-who="" data-when="">
     <div class="r-comment-body"><p><strong>D1, the role digest generator, landed</strong> at <code>137767cf</code> (re-review 94, after two repair rounds). <code>reckon/crew/worker_digest.py</code> composes one digest per worker role from the global guidance. It excludes coordinator-only push, branch-policy and fleet-orchestration lines, and the implement and test digests carry Test Visibility. Its tests assert required headings per role and a forbidden-content set, so either leak fails a case. <strong>What remains:</strong> D2, a <code>--worker-profile</code> option on dispatch. imas-ambix measured the route it should use: clive merges the operator's hooks into its <code>--settings</code> and adds <code>--setting-sources ''</code>, with the digest and the repo's AGENTS.md passed via <code>--append-system-prompt</code>. That keeps the Stop hook and git guards while dropping the roughly 22.5k-token global memory block. Production measurement (imas-ambix, 2026-09-25): the git-safety rules reach an unfenced clive worker today twice, in the dispatch prompt and in user memory, so D2 must keep them in the digest. D4 qualification asserts the global memory marker is absent, the digest's git-safety text is present, the Stop hook ran, and the first-request size.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260928T134355700628-s21-audit-lane" data-who="reckon-build" data-when="2026-09-28T14:23:48.385Z">
+    <div class="r-comment-body"><p>S21 currency audit of the-local-lane-is-the-default; report at ~/.config/reckon/crew/reports/reckon/s21-audit-lane.{json,md}; verdicts are applied to the plan by the coordinator after spot-checking their evidence</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260925T1255-gate-aware-headroom" data-who="reckon-build" data-when="2026-09-25T12:55:00Z">
     <div class="r-comment-body">The implementation commit is <code>d677269f</code>. The gate-aware reader landed in the worker tree: <code>reckon/crew/lane_document.py</code> carries <code>router_generation_gate</code> width, in-flight and waiting, computes <code>admission_headroom</code>, reports the minimum of admission and engine headroom, and emits a congested verdict with its arithmetic reason. A published <code>admission</code> block wins when present. <code>docs/state/reckon/flight.yaml</code> declares clive's <code>~/public/imas-ambix/lane.json</code>. The focused gate passed 19 tests; the adjacent lane-document, flight and lanes selection passed 122 with 2 skipped. The live reader resolved this host's document as width 14, in-flight 14, waiting 7, admission headroom -7 and congested. The declared negative control loaded the base reader, read the 12:42Z fixture as headroom 6 and failed the congestion assertion. The actual <code>crew(view="lanes")</code> surface was run and logged but still omits clive gate fields; its renderer is outside this node's write scope and remains a coordinator follow-on.</div>
