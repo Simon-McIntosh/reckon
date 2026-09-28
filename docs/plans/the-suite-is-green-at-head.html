@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="86">
+<meta name="plan-version" content="87">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1203,10 +1203,11 @@
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
     <p class="r-fu-outcome">tests/test_ledger.py green on main at 5165e94e: 96 passed, where 1ae39477 failed 11. All eleven were stale expectations against newer contracts, with no product defect: six fixtures now commit real work, one uses its own node id under the fragment scope, and the rest follow the member-in-flight guard, the crew view list, a repository path and the pid-signal cases. No assertion deleted. Review 94, zero added failures.</p>
     </article>
-<article class="r-fu" data-id="f-sgh-receipt-rollback-classification-red" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-28T16:40:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-sgh-receipt-rollback-classification-red" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-28T16:40:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-09-28T20:36:41+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Four red ids in the receipt, rollback and failure-classification tests, repaired by s22-coord under §2</h4>
     <div class="r-fu-body"><p>Four ids fail at main. reckon-d5 measured that they predate its review-tier merges:</p><ul><li><code>tests/test_receipt_names_the_rolled_back_row.py::test_rolled_back_row_receipt_names_re_promotion_as_the_recovery</code></li><li><code>tests/test_receipt_names_the_rolled_back_row.py::test_survived_row_receipt_keeps_the_do_not_re_promote_wording</code></li><li><code>tests/test_rollback_asks_head.py::test_failure_after_append_names_the_row_state[stage]</code></li><li><code>tests/test_failure_classification.py::test_worker_pass_rate_uses_only_work_rejected_failures</code></li></ul><p><b>Owner:</b> s22-coord dispatches one local node under this §2, agreed with s21-coord on 2026-09-28. It writes only those three test files, and it names any product defect as a blocker rather than repairing it. <b>Do not dispatch a second node on these files.</b> Resolve this followup from that node's promotion. As for every §2 repair: fix to the current contract, delete no assertion to get to green, and add zero failures against the base.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
+    <p class="r-fu-outcome">receipt-rollback-classification-red merged at 81dac084 and promoted (review total 91, zero added failures). All four ids pass at main: verify-gate re-ran the three test files at main with exit 0. Each was a stale assertion against a deliberately changed contract, not a product defect. No assertion was deleted, and nothing under reckon/ changed. The control waiver cites f-crpc-a-test-first-baseline-refuses-a-sound-control.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
