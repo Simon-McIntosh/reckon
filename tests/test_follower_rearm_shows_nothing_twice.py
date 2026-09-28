@@ -30,6 +30,8 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
 import threading
 import time
 from datetime import UTC, datetime
@@ -61,6 +63,27 @@ def home(tmp_path, monkeypatch):
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     return config_home
+
+
+@pytest.fixture(autouse=True)
+def _a_live_owner(monkeypatch):
+    """Isolate every arming from an owner stamped into the ambient environment.
+
+    A review, or any other process a follower launches, inherits
+    ``RECKON_FOLLOWER_OWNER`` naming the follower's own pid and outlives it once
+    the follower exits on its lifetime. An arming that read that owner as its
+    own ends at its first wait pass and never sees a row written after it, so a
+    file that passes under a plain shell fails under a follower. The variable is
+    removed before each case, and the resolved owner cleared with it: the
+    identity is cached on the module after its first read, so a value read by an
+    earlier case would otherwise decide every later one. The previous cache is
+    restored after, so nothing here leaks into another file in the same process.
+    """
+    previous = runs._RESOLVED_FOLLOWER_OWNER.resolved
+    monkeypatch.delenv(runs._FOLLOWER_OWNER_ENV, raising=False)
+    runs._RESOLVED_FOLLOWER_OWNER.resolved = None
+    yield
+    runs._RESOLVED_FOLLOWER_OWNER.resolved = previous
 
 
 @pytest.fixture()
@@ -189,6 +212,33 @@ def _arm_generator(*, stop: threading.Event | None = None, **kwargs) -> list[dic
         if time.monotonic() > deadline:
             break
     return collected
+
+
+def _dead_owner() -> str:
+    """An owner identity the arming must read as gone.
+
+    The pid belongs to a child that has exited and been reaped, which is exactly
+    what a follower's owner becomes once the follower has exited on its
+    lifetime. The start time is one no live process can carry, so a pid the
+    kernel has since reused is still read as gone and the check cannot pass by
+    luck.
+    """
+    child = subprocess.Popen([sys.executable, "-c", ""])
+    pid = child.pid
+    child.wait()
+    return runs._format_follower_owner((pid, "0"))
+
+
+def _count_polls() -> int:
+    """Arm once and count the wait passes it reaches."""
+    polls = 0
+
+    def on_poll(checkpoint=None):
+        nonlocal polls
+        polls += 1
+
+    _arm_generator(on_poll=on_poll)
+    return polls
 
 
 # ── Case 1: a non-TTY re-arm with nothing new draws nothing ─────────────────
@@ -475,6 +525,44 @@ def test_a_flapping_run_discarded_before_the_stop_is_not_re_emitted(
 
     assert [line for line in _fleet_rows(follow_lines) if "node-c" in line] == [], (
         f"a discarded run's rows must not be re-emitted; got {follow_lines!r}"
+    )
+
+
+# ── A dead owner in the environment is isolated, as this file requires ──────
+
+
+def test_a_dead_owner_in_the_environment_is_isolated(home, monkeypatch) -> None:
+    """The file holds under the environment a follower hands its children.
+
+    A follower stamps its own pid into ``RECKON_FOLLOWER_OWNER`` for the
+    processes it launches, and one it launched outlives it once the follower
+    exits on its lifetime. An arming that read that owner as its own ends at its
+    first wait pass and never sees a row written after it, which is how the
+    withdrawal case failed under a follower. The variable is set to a reaped pid
+    here, so the hazard is live rather than assumed, and the isolation every
+    case relies on is then applied by hand: the arming reports to a live process
+    and idles for its whole lifetime, exactly as it does under a plain shell.
+    """
+    _write_pointer(home, RUN_A, "node-a", session=SESSION, phase="working")
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+        assert acquired
+        crew.list_live(project=PROJECT)
+
+        monkeypatch.setenv(runs._FOLLOWER_OWNER_ENV, _dead_owner())
+        runs._RESOLVED_FOLLOWER_OWNER.resolved = None
+        ended = _count_polls()
+
+        monkeypatch.delenv(runs._FOLLOWER_OWNER_ENV, raising=False)
+        runs._RESOLVED_FOLLOWER_OWNER.resolved = None
+        isolated = _count_polls()
+
+    assert ended <= 1, (
+        f"a dead owner must end the arming at its first wait pass, or this "
+        f"control is vacuous; got {ended} polls"
+    )
+    assert isolated >= 12, (
+        f"with the owner isolated the arming idles for its whole lifetime; "
+        f"got {isolated} polls"
     )
 
 

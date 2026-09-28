@@ -54,6 +54,27 @@ def home(tmp_path, monkeypatch):
     return config_home
 
 
+@pytest.fixture(autouse=True)
+def _a_live_owner(monkeypatch):
+    """Isolate every arming from an owner stamped into the ambient environment.
+
+    A follower stamps its own pid into ``RECKON_FOLLOWER_OWNER`` for the
+    processes it launches, and one it launched outlives it once the follower
+    exits on its lifetime. An arming that read that owner as its own ends at its
+    first wait pass, so a file that passes under a plain shell fails under a
+    follower: several cases here measure a *second* arming, and a first arming
+    ended early leaves the place it should have written unset. The variable is
+    removed before each case, and the resolved owner cleared with it, because
+    the identity is cached on the module after its first read. The previous
+    cache is restored after, so nothing leaks into another file in the process.
+    """
+    previous = runs._RESOLVED_FOLLOWER_OWNER.resolved
+    monkeypatch.delenv(runs._FOLLOWER_OWNER_ENV, raising=False)
+    runs._RESOLVED_FOLLOWER_OWNER.resolved = None
+    yield
+    runs._RESOLVED_FOLLOWER_OWNER.resolved = previous
+
+
 def _write_pointer(home: Path, run_id: str, node: str, *, phase: str) -> None:
     log = home / "logs" / f"{run_id}.jsonl"
     log.parent.mkdir(parents=True, exist_ok=True)
