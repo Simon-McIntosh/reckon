@@ -666,6 +666,22 @@ head, a first sighting that did move keeps its left word and its arrow:
       </table>
       <p>The figure <code>docs/figures/the-fleet-counters-count-the-fleet/follower-continues-across-hosts.svg</code> shows the same inode under two device numbers and the two comparison outcomes. The gate and control logs are in the node's run directory and are headed with revision, tree and the literal command. The worker does not resolve the driving followup or change terminal plan state.</p>
     </section>
+  <section id="host-change-test-asserts-its-baseline">
+      <h2>The host-change regression test asserts the baseline row it names</h2>
+      <p>The no-checkpoint regression test in <code>tests/test_follower_survives_a_host_change.py</code> asserted its two shape properties with <code>all(...)</code> over the rows the arming delivered. A suppression of the baseline row empties that list, and <code>all</code> over an empty list is <code>True</code>, so the test passed while the behaviour it names — a first arm derives the fleet as it stands — was absent. The test now asserts the row count first, then the row's shape: exactly one row, of kind <code>baseline</code>, the arm's own <code>run_id</code> and session, no previous state, and a destination state equal to the reading the fleet's own cursor returns for that run. The two <code>all(...)</code> checks stay after the count.</p>
+      <p>The destination state is read from <code>runs.watch_stream_cursor(PROJECT)</code>, the same call the arming itself reads the fleet through, so the shape assertion states the row the arm owes rather than a literal. No product file is edited. The declared mutation suppresses the baseline row the arming emits on a host-change arm, in <code>reckon/cli.py</code>'s <code>mode == "baseline"</code> branch of <code>_follow_watch_lines</code>.</p>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_follower_survives_a_host_change.py</code> and <code>test_follow_rearm_continues.py</code> at the base revision <code>1a1c50a5</code>, extracted with <code>git archive</code> into a scratch tree</td><td>22 passed</td><td><code>gates/base-arm.log</code>, one invocation headed with the revision, the tree, the tree's own <code>module.__file__</code> and the literal command.</td></tr>
+          <tr><td>The same two files at head</td><td>22 passed</td><td><code>gates/head-arm.log</code>, one invocation with the same header. Zero added failures by id against base.</td></tr>
+          <tr><td>Declared mutation <code>suppress the baseline row the follower emits on a host-change arm</code>, with the pre-change test</td><td>3 passed — the test under repair stays green</td><td><code>gates/green-mutation-old-test.log</code>. The delivered rows are empty, and both <code>all(...)</code> checks hold vacuously: this is the vacuity the count assertion removes.</td></tr>
+          <tr><td>The same mutation, with the new test</td><td>1 failed as required</td><td><code>gates/red-mutation.log</code>, whose first line repeats the declaration verbatim. The count assertion fails with <code>AssertionError: a first arm emits exactly the one baseline row its own run owns; got []</code>; the other two tests stay green.</td></tr>
+          <tr><td>Lint and format on the changed path</td><td>no added findings</td><td><code>ruff check</code> and <code>ruff format --check</code> over <code>tests/test_follower_survives_a_host_change.py</code>: clean at base and at head.</td></tr>
+        </tbody>
+      </table>
+      <p>The worker does not resolve the driving followup or change terminal plan state.</p>
+    </section>
   </main>
 </body>
 </html>

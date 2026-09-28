@@ -269,6 +269,13 @@
   <p>The figure <a href="/reckon/figures/the-fleet-counters-count-the-fleet/follower-continues-across-hosts.svg">one stream file, read from two hosts of the same shared mount</a> shows the same inode under two device numbers and the two comparison outcomes. Evidence is anchored in the <a href="/reckon/evidence/archive/the-fleet-counters-count-the-fleet-landed.html#follower-survives-a-host-change">cumulative record</a>. The worker does not resolve the driving followup or change terminal plan state.</p>
 </article>
 
+    <article id="host-change-test-asserts-its-baseline-landing">
+  <h3>The host-change regression test asserts the baseline row it names</h3>
+  <p>The no-checkpoint regression test proved its two shape properties with <code>all(...)</code> over the rows the arming delivered. An arm that suppressed its baseline row delivered an empty list, and <code>all</code> over an empty list is <code>True</code>, so the test passed while the property it exists to pin — a first arm derives the fleet as it stands — was absent. Measured under a declared mutation that suppresses the baseline emission in the <code>mode == "baseline"</code> branch of <code>reckon/cli.py</code>, the pre-change test stayed green at 3 passed.</p>
+  <p>The test now asserts the delivered row count before its shape: exactly one row, of kind <code>baseline</code>, for the run and session the arm owns, with no previous state and a destination state equal to the reading the fleet&rsquo;s own cursor returns for that run. The same mutation now fails it with <code>got []</code>. The two <code>all(...)</code> checks remain after the count, which is what makes them meaningful. The base and head arms of the gate each ran the two files in one invocation — 22 passed on both, so zero failures are added by id — and no product file is edited.</p>
+  <p>Read the <a href="/reckon/evidence/archive/the-fleet-counters-count-the-fleet-landed.html#host-change-test-asserts-its-baseline">cumulative evidence record</a>. The worker does not resolve the driving followup or change terminal plan state.</p>
+</article>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-counter-census-landed" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
