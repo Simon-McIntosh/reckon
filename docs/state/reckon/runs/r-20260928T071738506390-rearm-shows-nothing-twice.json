@@ -1,0 +1,408 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 3,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "b75b1a05f8a0d98bf9ac29913889771cfd0a5240",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 5896379,
+      "input_tokens_cumulative": 5896379,
+      "output_tokens": 39447,
+      "output_tokens_cumulative": 39447,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 747,
+    "files": 6,
+    "removed": 48
+  },
+  "commit_resolution": null,
+  "commits": [
+    "213a93936be2af7441c71c733ea05dd2db95c2b0",
+    "8447b93bd2637c0fa8d3878b946d9b0dee4a949e",
+    "5b5fad19fc8feac5cf35fd9b9e7a239589990211",
+    "5f3b9b03b20167639b36ab0efd1ea57744fef9e5",
+    "394ee48824ba34650964eca8c09c82049f6f47ef"
+  ],
+  "completed_at": "2026-09-28T09:51:31.007Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T07:18:00Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest fixture)",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_follower_keeps_memory.py",
+    "/",
+    "tests/test_follow_rearm_continues.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_follower_rearm_shows_nothing_twice.py",
+    "exit_status": 0,
+    "log_digest": "0b97a48b24d3de07280ac974eb0ae39e43c561dbb4a8dad0c17052004086ab19",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071738506390-rearm-shows-nothing-twice/new-test-after.log"
+  },
+  "impl_move": {
+    "at_complete": 0.6363636363636364,
+    "at_dispatch": 0.6363636363636364,
+    "plan": "the-fleet-counters-count-the-fleet",
+    "reason": "the-fleet-counters-count-the-fleet is s23-coord's plan; s23 records the landing on §4",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T08:17:40.115220+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T07:17:40Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 30,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": -1,
+    "mean_context": 115000,
+    "observed_at": "2026-09-28T07:17:10Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T09:51:31.007Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071738506390-rearm-shows-nothing-twice/manifest.md",
+  "member": "disposable-r-20260928T071738506390-rearm-shows-nothing-twice",
+  "negative_control": {
+    "declaration": "today's re-arm path; a non-TTY follower stopped without its clean exit and re-armed with nothing new re-prints its history burst, so the first case fails",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071738506390-rearm-shows-nothing-twice/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071738506390-rearm-shows-nothing-twice/negative-control.log",
+    "test_paths": [
+      "tests/test_follow_rearm_continues.py",
+      "tests/test_follower_rearm_shows_nothing_twice.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "rearm-shows-nothing-twice",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 423,
+          "cached_input_tokens": 512947,
+          "input_tokens": 513372,
+          "output_tokens": 572,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 513944,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+      "session_id": "s21-coord"
+    },
+    "done_when": "Measured 2026-09-28 on reckon main at 1b44f63e, after the host-change fix. Four coordinators see a re-armed `reckon crew follow` replay rows it already delivered. Each arming runs under a harness Monitor, and a Monitor stops its follower at a 29-minute expiry, the way a SIGTERM would. Two patterns:\n\nA. Same-session window, repeated on every re-arm, now measured by s23-coord. The re-emitted rows are exactly the contents of the follower's pane-history file, e.g. ~/.config/reckon/crew/watch/reckon-18dc8a86709b.followers/s23-coord-b61cfdd0f295.history.json. It is re-printed by _follow_history_burst (reckon/cli.py, around line 2869, called near line 3206, capped at 100 rows and 4 h). Since the re-arm banners were removed on 26 Sep it prints unframed, so a consumer reads it as new transitions. The checkpoint itself continues correctly. Evidence: s21's re-arms at about 08:18 and 08:47 local both began at the row stamped 06:43:21. s22's four re-arms (07:45, 08:05, 08:18, 08:41) all began at 06:55:16. s22's --run filters did not suppress it.\n\nB. Cross-session, hours-long replay, not yet explained. s25-coord's re-arm at about 08:59 local opened at 22:43:58 the previous evening (n-promotion-commit-resolution -> dispatched) and re-emitted hours of transitions, mostly other sessions' runs despite --session s25-coord. Its earlier re-arms at 06:48 and 07:57 did the same. This exceeds the burst's 4 h cap, so it is a different path: a checkpoint that did not continue, a baseline or seed path that ignores --session, or something else. Read s25's checkpoint and history, ~/.config/reckon/crew/watch/reckon-18dc8a86709b.followers/s25-coord-2b86c22ac91e.checkpoint.json and its .history.json, only; never write them.\n\n(1) Diagnose both patterns by reading the real stream ~/.config/reckon/crew/watch/reckon-18dc8a86709b.events and the followers' checkpoint and history files, never writing any of them. State each mechanism in the commit message and the manifest.\n(2) Fix, following this decision. A re-arm never presents already-delivered history as new transitions. When stdout is not a TTY (the Monitor case), the history burst is not printed at all. When stdout is a TTY, the burst is printed under one dim frame line naming it as earlier history. The --session and --run filters hold on every path: replay, baseline, seed and burst. A re-arm emits exactly the transitions appended after the previous arm's delivered position, once each.\n(3) tests/test_follower_rearm_shows_nothing_twice.py runs in tmp_path (the pytest fixture), with every crew directory environment-resolved to tmp_path, and afterwards asserts that the real ~/.config/reckon/crew/watch is untouched. Cases:\n- non-TTY re-arm after a stop without the clean-exit path, with nothing new: zero rows;\n- the same, with new transitions appended before the re-arm: exactly the new rows;\n- TTY re-arm: the burst appears only under its frame line;\n- a stream holding another session's transitions, plus the pattern-B precondition you diagnose: zero rows for the other session;\n- a run that flapped stalled/blocked and was discarded before the stop: not re-emitted.\nNegative control: today's code. The first case must fail.\n(4) tests/test_follow_rearm_continues.py, tests/test_follower_keeps_memory.py, tests/test_follower_keeps_memory_and_idles_quietly.py, tests/test_follower_survives_a_host_change.py and tests/test_ticker_row_is_one_transition.py add no failures against the base, with pytest basetemp outside any git repository. baseline_suite and after_suite in the manifest are JSON objects with log_path and failure_ids.\nGate, control and neighbour logs are written under the run directory, each headed with the revision, the tree and the literal command. The gate command names the absolute .venv python. Commit in this worktree. Tests are fast and this runs on the fleet node, so run them in place.\n\nPeer: s23-coord's node follower-prints-only-policy-rows is concurrently changing the follower's row path in reckon/cli.py and reckon/crew/ticker.py. Keep your cli.py change confined to the history burst, re-arm and filter paths, and do not reformat or move surrounding code. The coordinator merges both in a scratch worktree. If pattern B's fix needs a file outside your write paths, stop and name it in the manifest's blockers.",
+    "estimated_hours": null,
+    "goal": "Make a re-armed follower show no transition row it already showed, while still showing every transition that happened after it stopped.",
+    "id": "rearm-shows-nothing-twice",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T07:17:40Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 30,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": -1,
+      "mean_context": 115000,
+      "observed_at": "2026-09-28T07:17:10Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071738506390-rearm-shows-nothing-twice/manifest.md",
+    "negative_control": "today's re-arm path; a non-TTY follower stopped without its clean exit and re-armed with nothing new re-prints its history burst, so the first case fails",
+    "plan": "the-fleet-counters-count-the-fleet",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§4",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/cli.py",
+      "reckon/crew/follow_checkpoint.py",
+      "tests/test_follower_rearm_shows_nothing_twice.py",
+      "docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html",
+      "docs/figures/the-fleet-counters-count-the-fleet",
+      "docs/plans/the-fleet-counters-count-the-fleet.html",
+      "tests/test_follow_rearm_continues.py"
+    ]
+  },
+  "orientation_input_tokens": 4303710.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "rearm-shows-nothing-twice",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T07:17:49.015373+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-fleet-counters-count-the-fleet",
+  "plan_impl_at_dispatch": 0.6363636363636364,
+  "promoted_revision": "394ee48824ba34650964eca8c09c82049f6f47ef",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 18,
+      "fit": 17,
+      "goal_fidelity": 18,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 90
+  },
+  "role": "implement",
+  "run_id": "r-20260928T071738506390-rearm-shows-nothing-twice",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§4",
+  "session_harness": "claude",
+  "session_id": "34066d5c-e9f4-4334-9676-328c782ad2ba",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 25376097,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 846.289,
+    "generated_tokens": 190602,
+    "generation_seconds": 555.767,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.5,
+    "machine_seconds": 290.522,
+    "peak_input_tokens": 165617,
+    "tokens_per_second": 342.95,
+    "wall_tokens_per_second": 225.22
+  },
+  "time_budget": "60m",
+  "tool_steps": 133.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 2400,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "working",
+        "elapsed_seconds": 641,
+        "exit_record": {
+          "attempt": 2,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-28T06:31:48Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-28T06:21:26Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260928T052817612864-fenced-codex-can-persist-its-login",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 12205,
+          "worker_pid": 4111623
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 2755,
+        "log_fresh": false,
+        "manifest_commits": [
+          "cc795a18",
+          "806059ec",
+          "e0e6aa9f"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "616464535bb2a368e1afb41cbf8fd14d1ff49a76dc096dd562f94968198c669c",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T052817612864-fenced-codex-can-persist-its-login/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan a-worker-cannot-write-your-home --section '§2' --role review --spec-level exact --node review-of-fenced-codex-can-persist-its-login --goal 'attach an independent review to run r-20260928T052817612864-fenced-codex-can-persist-its-login' --done-when 'the review for r-20260928T052817612864-fenced-codex-can-persist-its-login stores a parsed record scoring all 5 dimensions in the range 0..20, carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T052817612864-fenced-codex-can-persist-its-login.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T052817612864-fenced-codex-can-persist-its-login.at-e0e6aa9f934db3bbb34ab4e3630420a12c5a158b.json --time-budget 40m --session s21-coord --allow-unreconciled-runs --local",
+        "node": "fenced-codex-can-persist-its-login",
+        "phase": "working",
+        "plan": "a-worker-cannot-write-your-home",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260928T052817612864-fenced-codex-can-persist-its-login",
+        "session": "s21-coord",
+        "terminal_age_seconds": 2798,
+        "terminal_at": "2026-09-28T06:31:04Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fenced-codex-can-persist-its-login"
+      }
+    ]
+  },
+  "wall_seconds": 9211,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 3,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T09:51:31Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T09:37:21Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T071738506390-rearm-shows-nothing-twice",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 34392,
+    "worker_pid": 648455
+  },
+  "worker_seconds": 9174,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
