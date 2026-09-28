@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="22">
 <meta name="plan-commits" content="a69f554f,5bb66c48,41bc0eea,380dcd14,cf9160ff,32d932b2,53ceb356,cc44c453,65f5a378,3157768e,8602efcf,16ca61e7,d85fba28,6cdc5b8d,65c03d26,18719f5d,d41e0231">
 <meta name="plan-artifacts" content="reckon/evidence.py,tests/test_evidence_record_composition.py,reckon/serve.py,reckon/doccheck.py,tests/test_readers_compose_the_record.py,reckon/mcp.py,tests/test_read_plan_composes_the_record.py,reckon/crew/promotion.py,tests/test_promotion_writes_the_landing_line.py">
-<meta name="plan-impl" content="0.63">
+<meta name="plan-impl" content="0.75">
 </head>
 <body>
   <main class="plan-doc">
@@ -149,9 +149,10 @@
       list, so an uncomposed read never looks like a warning-free record. The review's evidence finding — baseline and
       after suites stated as prose — is answered with two logged arms whose headers print the revision, the resolved cwd
       and the served <code>reckon.__file__</code>: head and base each exit 0 with no failing ids, and the new test file
-      is absent at base. <strong>Open, and outside this node's fence:</strong> the public <code>read_plan</code> route
-      refuses an evidence document at <code>view='section'</code> (the section view admits plan resources only), so the
-      composed text is reachable today only through the <code>_typed_resource_text</code> machinery this node wired.
+      is absent at base. <strong>Then open, and closed by the next node:</strong> at this node's head the public <code>read_plan</code>
+      route refused an evidence document at <code>view='section'</code>, so the composed text was reachable only through
+      the <code>_typed_resource_text</code> machinery this node wired; the composition-failure-warning node below now
+      serves the record whole through that route.
       <a href="/reckon/evidence/archive/a-landing-record-never-conflicts-landed#s3">&sect;3 read_plan landed</a></p>
     <figure class="plan-figure">
       <img src="/reckon/figures/a-landing-record-never-conflicts/read-plan.svg"
@@ -164,7 +165,9 @@
       cumulative evidence record whole at the section view, so a caller gets the composed bytes &mdash; or the record's
       own bytes when composition failed &mdash; together with a response-level warning naming the record and the error.
       <code>reckon/mcp_views.py</code> gained <code>_record_text_response</code>, which
-      <code>resource_view</code> dispatches to when the selected resource is an evidence record; a plan still reads
+      <code>resource_view</code> dispatches to when the selected resource is typed <code>evidence</code> &mdash;
+      the selector's type, not the record resolver, so an ordinary evidence file whose metas name no plan is also
+      served whole; a plan still reads
       through <code>_section_response</code> one authored section at a time, and a record read with an explicit
       <code>section</code> argument is refused with <code>section_not_applicable</code>, because a record's fragments
       are appended after the document rather than into one of its sections, so a section read cannot carry the anchors
@@ -267,6 +270,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T114739070644-review-of-read-plan-says-when-a-record-is-uncomposed" data-who="reckon-build" data-when="2026-09-28T12:15:29.092Z">
     <div class="r-comment-body"><p>review of read-plan-says-when-a-record-is-uncomposed at 153a2cfd: 92, zero added failures, four findings sent back to the worker as a repair</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260928T123802221863" data-who="s25-coord" data-when="2026-09-28T12:38:02.000Z">
+    <div class="r-comment-body"><p>read-plan-says-when-a-record-is-uncomposed merged at 7630a9ba: read_plan serves a cumulative evidence record whole at the section view, with the composition-failure warning on the response and section_not_applicable for a section argument. Reviews 92 then 88 at the repaired head 5e4185c7, zero added failures. Six of eight nodes landed; default-scope-is-the-nodes-own-fragment (s2) is under review and the six-commit merge-tree measure (s3) remains.</p></div>
 </div>
 </section>
 </main>
