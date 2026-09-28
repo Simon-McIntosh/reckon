@@ -912,6 +912,59 @@ worker's own commit, which `reckon crew recover` reports as the run's next actio
       misreports this file set, which is why the base count is taken from a full archive.</p>
     </section>
 
+    <section id="help-census">
+      <h2>The help census covers the split-runs verb</h2>
+      <p><strong>Reproduction at the dispatch base.</strong> <code>5665e64b</code> registers
+      <code>crew split-runs</code> (<code>reckon/cli.py:4745</code>, the leaf help line
+      <em>Move each mounted project's aggregate run rows into their own files.</em>) while
+      <code>tests/test_crew_help_names_its_state.py</code> still held the expected verb set aligned in
+      <code>33def709</code>. The exact-set assertion in
+      <code>test_every_crew_verb_help_names_its_state_or_condition</code> therefore failed at that
+      base, in the case's own words:</p>
+      <pre><code>assert set(leaves) == set(STATE_PHRASES)
+AssertionError: assert {('attach',),...patch',), ...} == {('attach',),...patch',), ...}
+
+  Extra items in the left set:
+  ('split-runs',)
+1 failed, 3 passed in 0.65s
+EXIT=1</code></pre>
+      <p>The failure is the census disagreeing with the CLI, not a defect in the verb: the
+      registered-leaf walk found 29 leaves where the expected set named 28.</p>
+      <p><strong>Repair.</strong> One row is added for the verb —
+      <code>("split-runs",): "aggregate run rows"</code> — and the counted leaves move from 28 to 29.
+      The phrase is the state the verb acts on, the aggregate run rows a mounted project's ledger
+      still holds, and it is read back out of the verb's own help first line by the existing
+      loop. The census stays an exact set: <code>set(leaves) == set(STATE_PHRASES)</code> is
+      untouched, so weakening it into a subset check — which would let a later verb go uncovered —
+      is not what closed this. Head arm: <strong>4 passed, EXIT=0</strong>, on a clean tree at
+      <code>78b229df</code>.</p>
+      <p><strong>Negative control.</strong> One mutant, in a scratch copy of the test at
+      <code>/tmp/help-census-nc</code> so the worktree source is untouched (its sha256 is
+      <code>129b42a368c6832ebefd057503f6a3449d4666ba9d2f3aa0ccbaf099cadbe7f3</code> before and after the
+      run). The declared mutation removes the <code>split-runs</code> row from the expected verb set,
+      four lines of comment and entry, and the census must then fail naming it. It does:</p>
+      <pre><code>remove split-runs from the expected verb set in a scratch copy; the census test must fail naming it
+...
+  Extra items in the left set:
+  ('split-runs',)
+1 failed, 3 passed in 0.53s
+EXIT=1</code></pre>
+      <p>The red and green states therefore differ by exactly the coverage the row supplies, and the
+      mutant is the same assertion the base arm failed — which is the reading the base arm alone
+      cannot show, since a census asserting equality fails identically whether the verb is
+      unregistered or uncovered.</p>
+      <p><a href="/reckon/figures/the-ledger-is-one-file-per-run/help-census-arms.svg">The three
+      arms</a> show the registered leaves, the exact-set comparison and each arm's own verdict.
+      Logs, from the worktree that produced them:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063203541416-help-census-counts-split-runs/logs/base-arm-5665e64b.log</code>,
+      <code>…/logs/gate-head-78b229df.log</code> and
+      <code>…/logs/negative-control.log</code>. Each header names its revision, tree, command, the
+      imported <code>reckon.__file__</code> and the resolved working directory.</p>
+      <p><strong>Boundary.</strong> This section's gate measures only the census change. The merged
+      result, and any failure outside these two paths, belongs to the separately dispatched
+      verification node.</p>
+    </section>
+
   </main>
 </body>
 </html>

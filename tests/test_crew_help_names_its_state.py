@@ -37,6 +37,10 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("resume",): "one blocked run with advice",
     ("resume-ready",): "provider hold or declared external wait has ended",
     ("shadow",): "committed run",
+    # `split-runs` is a registered leaf of `crew`, so the census of reachable
+    # verbs owes it a row like any other. It acts on the aggregate run rows a
+    # mounted project's ledger still holds, which is the state its phrase names.
+    ("split-runs",): "aggregate run rows",
     ("stop",): "running spawned worker",
     ("unwatch",): "registered project watcher",
     ("verify-gate",): "one run's gate at the integrated revision",
@@ -111,7 +115,7 @@ def test_every_crew_verb_help_names_its_state_or_condition() -> None:
     leaves = _leaf_commands(cli_module.crew)
 
     assert set(leaves) == set(STATE_PHRASES)
-    assert len(leaves) == 28
+    assert len(leaves) == 29
     for path, command in leaves.items():
         first_line = _first_help_line(command)
         result = _help_result(path)
