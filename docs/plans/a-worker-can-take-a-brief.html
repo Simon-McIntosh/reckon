@@ -178,6 +178,49 @@
       measured, and that head could not be written into this record before it existed.
     </p>
 
+    <h3 id="s2-landed-validate-node-refuses-plan-and-brief">Landed &mdash; node <code>validate-node-refuses-plan-and-brief</code></h3>
+    <p>
+      Commit <code>e3b07de5</code> on the base revision <code>fae0865c</code> makes
+      <code>validate_node</code> in <code>reckon/crew/node.py</code> refuse a node that carries a
+      brief <em>and</em> a plan or a section, with a finding that names both carriers. The pair was
+      refused at the CLI argv, but the brief branch of <code>plan_dispatch</code> takes the digest
+      and skips the committed-section and plan-review gates around their call sites, so a
+      programmatic caller that built a <code>TaskNode</code> directly reached that branch with a
+      plan section named and the section was silently never checked. The refusal now lives on the
+      node, so that skip cannot be reached with a second authority present. <code>TaskNode</code>
+      and <code>plan_dispatch</code> are otherwise unchanged.
+    </p>
+    <img src="/reckon/figures/a-worker-can-take-a-brief/authority-exclusivity.svg" alt="Two call paths reach plan_dispatch: the CLI argv check refuses a brief beside a plan or section, while a programmatic caller that builds a TaskNode directly passes only through validate_node; the gate added there refuses the pair and its finding names both carriers, so the brief branch is reachable with one authority only.">
+    <table>
+      <thead><tr><th>Measure at <code>e3b07de5</code></th><th>Result</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Gate <code>tests/test_brief_plan_exclusivity.py</code> (five cases)</td>
+          <td><strong>5 passed</strong>, exit 0</td>
+        </tr>
+        <tr>
+          <td>Regression arm <code>tests/test_brief_dispatch.py</code></td>
+          <td><strong>7 passed</strong>, exit 0, unchanged</td>
+        </tr>
+        <tr>
+          <td>Regression arm <code>tests/test_goal_contract_lint.py</code></td>
+          <td><strong>8 passed</strong>, exit 0, unchanged</td>
+        </tr>
+        <tr>
+          <td>Declared negative control &mdash; delete the exclusivity check from
+          <code>validate_node</code></td>
+          <td><strong>3 of 5</strong> fail at exit 1; the brief-plus-plan case validates</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Landing record and evidence anchor:
+      <code>docs/evidence/archive/a-worker-can-take-a-brief-landed.html</code>, which holds the
+      as-executed log paths. This gate measures this node's own change; verifying the merged result
+      belongs to a separately dispatched test node. Section &sect;2 stays open for the coordinator,
+      who resolves the driving followup and writes the next invocation.
+    </p>
+
     <h2 id="s3">&sect;3 &mdash; The prompt carries the brief where the plan section was</h2>
     <p><code>reckon/crew/prompts.py</code> composes the worker prompt from the brief text in place of the plan-section read instruction. The prompt keeps every other part of the contract: fences, manifest shape and the landing rule. For a brief run, the landing record goes to the run directory, not to a plan.</p>
     <p><strong>Done when:</strong></p>
