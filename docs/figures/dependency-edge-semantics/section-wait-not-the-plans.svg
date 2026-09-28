@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" role="img"
+     aria-labelledby="t d" font-family="system-ui, sans-serif">
+  <title id="t">One read payload, two lists: a section-scoped wait reported with its section</title>
+  <desc id="d">Both panels hold the same deps rows for a plan: a whole-plan ref and one
+  section-scoped ref, s5 waiting on plan-b#s3. Left, the summary folds every row into the
+  plan-level blocking list, so the plan reports blocked while only s5 waits. Right, the
+  section-scoped row is reported in section_blocking under the section that declared it, the
+  plan-level blocking list carries only whole-plan rows, and the plan stays active.</desc>
+  <defs>
+    <marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a2b2b"/>
+    </marker>
+    <marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6b36"/>
+    </marker>
+    <marker id="grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a8a95"/>
+    </marker>
+  </defs>
+  <rect width="900" height="400" fill="#ffffff"/>
+  <text x="450" y="30" text-anchor="middle" font-size="19" font-weight="600" fill="#1b1b1f">One read payload, two lists</text>
+  <text x="450" y="52" text-anchor="middle" font-size="13" fill="#5b5b66">same deps rows in both panels — a whole-plan ref and one section-scoped ref s5 waiting on plan-b#s3</text>
+
+  <!-- panel 1: every row folds into plan-level blocking -->
+  <g>
+    <rect x="24" y="70" width="400" height="300" rx="10" fill="#fdf2f2" stroke="#e0b4b4"/>
+    <text x="224" y="96" text-anchor="middle" font-size="15" font-weight="600" fill="#8a2b2b" font-family="ui-monospace, monospace">every row folded into blocking</text>
+
+    <rect x="44" y="112" width="360" height="86" rx="8" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="58" y="132" font-size="12" font-weight="600" fill="#33333a" font-family="ui-monospace, monospace">deps</text>
+    <rect x="56" y="140" width="336" height="22" rx="5" fill="#f4f4f6" stroke="#c9c9d1"/>
+    <text x="66" y="156" font-size="11" fill="#5b5b66" font-family="ui-monospace, monospace">{ref: "plan-b", found: true, status: "active"}</text>
+    <rect x="56" y="166" width="336" height="22" rx="5" fill="#fdf2f2" stroke="#e0b4b4"/>
+    <text x="66" y="182" font-size="11" fill="#8a2b2b" font-family="ui-monospace, monospace">{ref: "plan-b#s3", source_section: "s5"}</text>
+
+    <line x1="224" y1="202" x2="224" y2="222" stroke="#8a2b2b" stroke-width="2" marker-end="url(#red)"/>
+    <rect x="84" y="228" width="280" height="58" rx="8" fill="#ffffff" stroke="#e0b4b4"/>
+    <text x="96" y="248" font-size="12" font-weight="600" fill="#8a2b2b" font-family="ui-monospace, monospace">blocking</text>
+    <text x="96" y="266" font-size="11" fill="#8a2b2b" font-family="ui-monospace, monospace">[{ref: "plan-b"}, {ref: "plan-b#s3"}]</text>
+    <text x="96" y="280" font-size="11" fill="#8a2b2b" font-family="ui-monospace, monospace">→ effective_status: blocked</text>
+
+    <text x="224" y="316" text-anchor="middle" font-size="12" fill="#5b5b66">s3 waits; every sibling section of the plan reads as held too</text>
+    <rect x="140" y="330" width="168" height="24" rx="12" fill="#8a2b2b"/>
+    <text x="224" y="346" text-anchor="middle" font-size="11.5" fill="#ffffff">the whole plan reports blocked</text>
+  </g>
+
+  <!-- panel 2: rows split by the section that declared them -->
+  <g>
+    <rect x="476" y="70" width="400" height="300" rx="10" fill="#f1f7f2" stroke="#b4d0b8"/>
+    <text x="676" y="96" text-anchor="middle" font-size="15" font-weight="600" fill="#2f6b36" font-family="ui-monospace, monospace">rows reported where they belong</text>
+
+    <rect x="496" y="112" width="360" height="86" rx="8" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="510" y="132" font-size="12" font-weight="600" fill="#33333a" font-family="ui-monospace, monospace">deps</text>
+    <rect x="508" y="140" width="336" height="22" rx="5" fill="#f4f4f6" stroke="#c9c9d1"/>
+    <text x="518" y="156" font-size="11" fill="#5b5b66" font-family="ui-monospace, monospace">{ref: "plan-b", found: true, status: "active"}</text>
+    <rect x="508" y="166" width="336" height="22" rx="5" fill="#f1f7f2" stroke="#b4d0b8"/>
+    <text x="518" y="182" font-size="11" fill="#2f6b36" font-family="ui-monospace, monospace">{ref: "plan-b#s3", source_section: "s5"}</text>
+
+    <line x1="576" y1="202" x2="576" y2="222" stroke="#8a8a95" stroke-width="2" marker-end="url(#grey)"/>
+    <line x1="776" y1="202" x2="776" y2="222" stroke="#2f6b36" stroke-width="2" marker-end="url(#green)"/>
+    <rect x="486" y="228" width="190" height="58" rx="8" fill="#ffffff" stroke="#c9c9d1"/>
+    <text x="498" y="248" font-size="12" font-weight="600" fill="#33333a" font-family="ui-monospace, monospace">blocking</text>
+    <text x="498" y="266" font-size="11" fill="#5b5b66" font-family="ui-monospace, monospace">[{ref: "plan-b"}]</text>
+    <text x="498" y="280" font-size="11" fill="#5b5b66" font-family="ui-monospace, monospace">whole-plan refs only</text>
+
+    <rect x="686" y="228" width="180" height="58" rx="8" fill="#ffffff" stroke="#b4d0b8"/>
+    <text x="698" y="248" font-size="12" font-weight="600" fill="#2f6b36" font-family="ui-monospace, monospace">section_blocking</text>
+    <text x="698" y="266" font-size="11" fill="#2f6b36" font-family="ui-monospace, monospace">[{section: "s5",</text>
+    <text x="698" y="280" font-size="11" fill="#2f6b36" font-family="ui-monospace, monospace">  waits_on: ["plan-b#s3"]}]</text>
+
+    <text x="676" y="316" text-anchor="middle" font-size="12" fill="#5b5b66">s3 waits; s5 is named, and the plan's other sections stay ready</text>
+    <rect x="592" y="330" width="168" height="24" rx="12" fill="#2f6b36"/>
+    <text x="676" y="346" text-anchor="middle" font-size="11.5" fill="#ffffff">the plan reports its own state</text>
+  </g>
+</svg>

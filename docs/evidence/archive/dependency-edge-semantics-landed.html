@@ -717,6 +717,63 @@
     <p>Commits in the node: <code>2f870c2b</code> and <code>9bccbf58</code>. Section closure and the
     driving followup remain with the coordinator.</p>
 
+    <h3 id="section-wait-reported-with-its-section">The summary reports a section's wait with the section</h3>
+
+    <p><strong>Defect, reproduced at base <code>e6a86550</code>.</strong> The section-scoped rows the
+    read appends to <code>deps</code> were the same shape as whole-plan rows once resolved, so the
+    typed summary view's plan-level fold — <code>mcp_views._blocking</code> through
+    <code>lifecycle.unresolved_dependencies</code> — collected them with everything else. A plan whose
+    only wait was one section's read as <code>blocked</code>; the synthesised case
+    (<code>plan-a</code> declaring <code>s5: ["plan-b#s3"]</code> and no whole-plan ref) failed first
+    at <code>assert [{'ref': 'plan-b#s3', 'found': True, 'status': 'active'}] == []</code> with the
+    section row sitting in plan-level <code>blocking</code> and the plan's
+    <code>effective_status</code> reading <code>blocked</code>.</p>
+
+    <p><strong>Repair.</strong> <code>lifecycle.unresolved_dependencies</code> now leaves a row that
+    names the section it waits for (<code>is_section_scoped</code>) to that section, which fixes the
+    fold for every caller of it at once — the summary view and the served inventory both. The summary
+    projects those rows beside the plan-level list as <code>section_blocking</code>, one entry per
+    waiting section naming the targets it waits for, applying the same unresolved test the plan-level
+    list applies; it is emitted for plan reads alone, empty when the plan declares no section edge, so
+    a reader can tell an empty list from an omitted key. A whole-plan ref blocks exactly as before.
+    Commit <code>719406d0</code> carries the change in <code>reckon/lifecycle.py</code> and
+    <code>reckon/mcp_views.py</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/dependency-edge-semantics/section-wait-not-the-plans.svg"
+           alt="Two panels over the same deps rows. Left: every row folds into plan-level blocking, so
+                the plan reports blocked while only s5 waits. Right: whole-plan rows reach blocking,
+                the section-scoped row reaches section_blocking under s5, and the plan reports active.">
+      <figcaption>The rows are identical in both panels; the fold decides which list reports the
+      wait, and therefore whether the plan's own state is reported or a single section's.</figcaption>
+    </figure>
+
+    <p><strong>Base arm of the node's own test.</strong> Against base <code>e6a86550</code> the new
+    file reads <strong>5 failed</strong>: the section-only case on the fold above, the whole-plan case
+    and the no-edge case on the absent key, and the two mixed/satisfied cases likewise. The head arm
+    reads <strong>5 passed</strong>. Logs: <code>base-arm-new-test.log</code>,
+    <code>head-new-test.log</code>.</p>
+
+    <p><strong>Gate, both arms.</strong> Every test file importing <code>reckon.mcp_views</code> or
+    <code>reckon.lifecycle</code> — 21 files, run with <code>-n 8</code> and a per-test timeout from a
+    <code>git archive</code> export of the base revision and from the worktree at the change. Head,
+    with the new file included: <strong>1 failed, 349 passed</strong>. Base, the same 21 files:
+    <strong>1 failed, 344 passed</strong>. The single failure in both arms is the same pre-existing
+    id, <code>test_mcp_vocabulary_is_complete.py::test_op_vocab_names_every_dispatchable_op</code>
+    (<code>_OP_VOCAB</code> omits <code>append_evidence</code>, untouched by this change), so the delta
+    is <strong>zero added failing ids</strong> and the five extra passes are the node's own cases.
+    Logs: <code>base-suite.log</code>, <code>after-suite.log</code>; both headers name the revision,
+    the tree, the command, the imported module path and the resolved working directory. Every log
+    this record names sits in the node's run directory,
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101515530429-section-edge-stays-off-plan-blocking/logs/</code>.</p>
+
+    <p><strong>Declared negative control.</strong> Executed as declared, on a scratch export of the
+    head with one mutation — the section-scoped filter removed from
+    <code>unresolved_dependencies</code>, folding the section rows back into plan-level blocking. The
+    section-only case fails first at the same assertion the base arm fails at, with the section row
+    back in <code>blocking</code>, and the red log's first line is the declared string. Log:
+    <code>negative-control.log</code>.</p>
+
   </main>
 </body>
 </html>
