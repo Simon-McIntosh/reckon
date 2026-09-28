@@ -32,6 +32,7 @@ from reckon import doccheck, ledger, serve
 from reckon.evidence import EvidenceSynthesisError
 from reckon.mcp import (
     _append_read_warning,
+    _read_plan_tool,
     _typed_resource_text,
     _typed_resource_text_and_warning,
 )
@@ -198,6 +199,22 @@ def _select(resource_id: str) -> ResourceSelector:
     )
 
 
+def _read_plan_record(repository: Path, resource_id: str) -> dict:
+    """Read a record the way a caller does: through the public read_plan tool."""
+
+    return _read_plan_tool(
+        project=PROJECT,
+        resource={
+            "project": PROJECT,
+            "type": "evidence",
+            "id": resource_id,
+            "archived": True,
+        },
+        checkout_path=str(repository),
+        view="section",
+    )
+
+
 def _read(repository: Path, resource_id: str) -> str:
     return _typed_resource_text(_select(resource_id), str(repository))
 
@@ -301,6 +318,57 @@ def test_a_read_fallback_warning_reaches_the_response() -> None:
     assert _append_read_warning({"warnings": ["existing"]}, None)["warnings"] == [
         "existing"
     ]
+
+
+def test_the_read_plan_tool_serves_a_record_composed(repository: Path) -> None:
+    """The section view is the text view, and a record reads through it whole."""
+
+    result = _read_plan_record(repository, f"{COMPOSED_PLAN}-landed")
+
+    assert result["view"] == "section"
+    # The composed bytes carry the fragment the record's own bytes do not, so
+    # the served text proves the record was composed rather than read raw.
+    assert "fragment-marker" in result["section"]["html"]
+    assert (
+        result["section"]["html"]
+        == (_record_bytes(COMPOSED_PLAN) + _fragment_bytes(COMPOSED_NODE)).decode()
+    )
+    # A healthy read carries no warning.
+    assert "warnings" not in result
+
+
+def test_a_composition_failure_reaches_the_read_plan_response(
+    repository: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """An uncomposed record read through the public tool is never silent."""
+
+    monkeypatch.setattr("reckon.evidence.compose_landed_record", _composition_fails)
+
+    with caplog.at_level("WARNING", logger="reckon.mcp"):
+        result = _read_plan_record(repository, f"{COMPOSED_PLAN}-landed")
+
+    # The read does not fail: the record's own bytes come back, without the
+    # fragment the failed composition would have carried.
+    assert result["view"] == "section"
+    assert "fragment-marker" not in result["section"]["html"]
+    assert result["section"]["html"] == _record_bytes(COMPOSED_PLAN).decode()
+    # And the fallback is named on the response a caller receives.
+    warnings = result["warnings"]
+    assert len(warnings) == 1
+    assert f"{COMPOSED_PLAN}-landed.html" in warnings[0]
+    assert "ledger unavailable" in warnings[0]
+    assert any("ledger unavailable" in record.getMessage() for record in caplog.records)
+
+
+def test_the_read_plan_tool_serves_a_record_with_no_fragments(
+    repository: Path,
+) -> None:
+    """A record with nothing to compose reads byte-identically through the tool."""
+
+    result = _read_plan_record(repository, f"{BARE_PLAN}-landed")
+
+    assert result["section"]["html"] == _record_bytes(BARE_PLAN).decode()
+    assert "warnings" not in result
 
 
 def _served_bytes(repository: Path, resource_id: str) -> bytes:

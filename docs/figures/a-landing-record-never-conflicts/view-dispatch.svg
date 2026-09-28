@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 460" width="860" height="460" role="img" aria-label="The read_plan tool calls _read_plan_view, which for the section view obtains the text and its warning from _typed_resource_text_and_warning; resource_view then dispatches by resource type — an evidence record goes to _record_text_response and reads whole, a plan goes to _section_response and reads one authored section; both return the response, and a composition failure carries a warning naming the record and the error on the response's warnings field.">
+  <style>
+    .box { fill: #ffffff; stroke: #334155; stroke-width: 1.5; rx: 6; }
+    .reader { fill: #eff6ff; stroke: #2563eb; stroke-width: 1.5; rx: 6; }
+    .resolver { fill: #ecfdf5; stroke: #059669; stroke-width: 1.5; rx: 6; }
+    .composer { fill: #f5f3ff; stroke: #7c3aed; stroke-width: 1.5; rx: 6; }
+    .out { fill: #fefce8; stroke: #ca8a04; stroke-width: 1.5; rx: 6; }
+    .meta { fill: #fff7ed; stroke: #ea580c; stroke-width: 1.2; stroke-dasharray: 5 3; rx: 6; }
+    text { font-family: ui-sans-serif, system-ui, sans-serif; fill: #0f172a; }
+    .t { font-size: 15px; font-weight: 600; }
+    .s { font-size: 12px; fill: #475569; }
+    .lbl { font-size: 12px; fill: #334155; }
+    line, path { stroke: #334155; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <rect class="reader" x="330" y="16" width="200" height="52"/>
+  <text class="t" x="430" y="40" text-anchor="middle">read_plan</text>
+  <text class="s" x="430" y="58" text-anchor="middle">_read_plan_tool</text>
+
+  <rect class="box" x="330" y="96" width="200" height="66"/>
+  <text class="t" x="430" y="118" text-anchor="middle">_read_plan_view</text>
+  <text class="s" x="430" y="136" text-anchor="middle">view == "section" &#8594;</text>
+  <text class="s" x="430" y="152" text-anchor="middle">_typed_resource_text_and_warning</text>
+
+  <rect class="resolver" x="330" y="190" width="200" height="56"/>
+  <text class="t" x="430" y="214" text-anchor="middle">resource_view</text>
+  <text class="s" x="430" y="232" text-anchor="middle">dispatch by resource type</text>
+
+  <rect class="composer" x="60" y="290" width="310" height="86"/>
+  <text class="t" x="215" y="313" text-anchor="middle">_record_text_response</text>
+  <text class="s" x="215" y="333" text-anchor="middle">evidence &#8594; the record whole</text>
+  <text class="s" x="215" y="351" text-anchor="middle">composed bytes, or the record's own</text>
+  <text class="s" x="215" y="367" text-anchor="middle">bytes when composition failed</text>
+
+  <rect class="out" x="490" y="290" width="310" height="86"/>
+  <text class="t" x="645" y="313" text-anchor="middle">_section_response</text>
+  <text class="s" x="645" y="333" text-anchor="middle">plan &#8594; one authored section</text>
+  <text class="s" x="645" y="351" text-anchor="middle">the requested h2's html/text</text>
+
+  <rect class="meta" x="270" y="398" width="320" height="52"/>
+  <text class="t" x="430" y="420" text-anchor="middle">response</text>
+  <text class="s" x="430" y="438" text-anchor="middle">warnings: ["evidence record X read uncomposed: &#8230;"]</text>
+
+  <line x1="430" y1="68" x2="430" y2="96"/>
+  <line x1="430" y1="162" x2="430" y2="190"/>
+
+  <path d="M370 246 L215 246 L215 290"/>
+  <text class="lbl" x="300" y="240" text-anchor="middle">type == "evidence"</text>
+
+  <path d="M490 246 L645 246 L645 290"/>
+  <text class="lbl" x="580" y="240" text-anchor="middle">plan</text>
+
+  <path d="M215 376 L215 424 L270 424"/>
+  <path d="M645 376 L645 424 L590 424"/>
+</svg>
