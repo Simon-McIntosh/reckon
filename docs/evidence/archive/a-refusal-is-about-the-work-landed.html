@@ -185,6 +185,37 @@
       which are stated at base <code>99455576</code>: the map names
       <code>_require_impl_moved</code>, the <code>--outcome</code> refusal and
       <code>rerun_gate_at_integrated_revision</code>, and each was re-derived here.</p>
+
+      <h3>Repair round &mdash; an unknown comparison is not an empty one</h3>
+      <p>An independent review of the delivered head raised five defects; all five are
+      repaired in one round, and one of them changes behaviour. The path comparison
+      behind the ancestor widening returned the same <code>None</code> whether the run
+      stated no changed paths or the comparison itself failed, and on the failure route
+      the ladder ran the gate anyway while the report printed an empty list for a
+      comparison that was never taken &mdash; a broken probe read as a clean difference.
+      The ladder now refuses whenever the comparison is unknown, whichever route produced
+      it, and the report prints <code>null</code> rather than <code>[]</code> for a
+      comparison that was never taken. A duplicate ancestry helper that a later
+      module-level definition had silently shadowed is deleted, so the call site reaches
+      the one helper in the module and an instrument fault propagates instead of reading
+      as a negative answer. Each refusal route now has its own case, and the review-run
+      refusal is exercised through a review run rather than through the generic
+      non-passing-gate refusal.</p>
+      <table>
+        <thead><tr><th>Repair measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Base arm, pre-repair head <code>c649a057</code>, the node's file and the two regression files</td><td>31 passed, exit 0</td></tr>
+          <tr><td>Head arm, <code>315f7b7a</code>, the same three files</td><td>33 passed, exit 0 &mdash; the two added cases are the only additions</td></tr>
+          <tr><td>Probe-mutation arm &mdash; the fail-open restored in a scratch copy</td><td>2 failed, 5 passed, exit 1</td></tr>
+        </tbody>
+      </table>
+      <p>The probe-mutation arm lays the repaired revision into a scratch tree, restores
+      the fail-open there and runs the node's test file: both refusal cases fail &mdash;
+      the probe case because the gate runs and writes its marker, the unknown-citation
+      case because the report prints an empty list for a comparison that was never taken.
+      The committed tree is untouched by the mutation. The three arm logs are
+      <code>arm-base.log</code>, <code>arm-head.log</code> and
+      <code>arm-probe-mutation.log</code> in the run's own directory.</p>
     </section>
 
     <section id="s5">
