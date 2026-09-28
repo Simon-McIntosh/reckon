@@ -1702,8 +1702,10 @@ def test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code(
         "ok": False,
         "error": "scope-conflict",
         "detail": payload["detail"],
-        "run_id": owner["run_id"],
-        "node": "owner-node",
+        "run_id": None,
+        "node": "node-a",
+        "conflicting_run_id": owner["run_id"],
+        "conflicting_node_id": "owner-node",
         "candidate_path": "reckon/crew.py",
         "claimed_path": "reckon",
     }
