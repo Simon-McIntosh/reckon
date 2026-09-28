@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-commits" content="85af514b,997c5539,7c508e7e,4d79a470,a70ad742,c0917d6f,e2fc9f03,30fe8845,280d7fa9,43e971d3,be18adb4,90959463,118b06ba,0b61cc5d,e6b344f3,474d8119,66edfc86,9576896f,2652f39b">
 <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_coordinator_cost.py">
 <meta name="plan-impl" content="0.67">
@@ -236,6 +236,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260928T140000-work-in-progress-is-visible" data-who="reckon-build" data-when="2026-09-28T14:00:00Z">
     <div class="r-comment-body"><p>work-in-progress-is-visible implemented at fe33dbf6 in reckon/velocity.py: a plan census dates each plan's opening to the commit that added its file, its closing to the first commit whose plan-status reaches shipped/done/superseded/abandoned or whose archive flag is set (counted once), and counts pending as every plan not closed, bucketed by project and ISO week; plan_cohort answers of-the-plans-opened-in-a-window-how-many-closed-as-of-a-named-commit. The cohort reading run as of 23eb2545 over the pinned window reports reckon's 58 opened and 7 closed, matching review §9; tests/test_velocity_work_in_progress.py 7 passed at exit 0 (22 with the sibling velocity suites); the declared control dating the opening by the latest touching commit reddens the 58-opened assertion (observed 125). Evidence: docs/evidence/archive/the-fleet-reports-its-velocity-landed.html §5. Section s5 awaits coordinator closure: the followup is not resolved and no terminal status is set by the worker.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260928T105911753846-work-in-progress-is-visible" data-who="reckon-build" data-when="2026-09-28T12:37:10.048Z">
+    <div class="r-comment-body"><p>plan census in reckon/velocity.py: opened, closed and pending per project and ISO week plus the cohort reading; 58 opened and 7 closed at 23eb2545; 22 passed; review 90 carried forward; merged at c474a3c8</p></div>
 </div>
 </section>
 </main>
