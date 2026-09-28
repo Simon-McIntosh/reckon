@@ -68,6 +68,12 @@ def _run_row(record: Mapping[str, Any]) -> dict[str, Any]:
     if record.get("pid"):
         observed["process_alive"] = record_process_alive(record)
     classified = classify_pointer(observed)
+    # The classifier's phase is the run's own evidence — its stream, its worker
+    # record, its delivery — while the pointer's is the launcher's label, which
+    # only ``observe`` advances. The row carries the same reading the live and
+    # classifier rows do, so one run cannot read two ways across the views that
+    # render it; the stored label stands only where the derivation has nothing
+    # to say about it.
     row = {
         "run_id": str(record.get("run_id") or ""),
         "node": str(node.get("id") or ""),
@@ -75,7 +81,7 @@ def _run_row(record: Mapping[str, Any]) -> dict[str, Any]:
         "repository": str(record.get("repo") or ""),
         "plan": str(node.get("plan") or ""),
         "section": str(node.get("section") or ""),
-        "phase": str(record.get("phase") or ""),
+        "phase": str(classified.get("phase") or "") or str(record.get("phase") or ""),
         "classification": str(classified.get("classification") or ""),
         "process_alive": classified.get("process_alive"),
     }
