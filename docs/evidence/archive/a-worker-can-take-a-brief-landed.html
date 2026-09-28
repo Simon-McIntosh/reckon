@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Cumulative execution evidence: one anchor per landed node, carrying its commit, gate measure, tests and negative findings.">
   <meta name="plan-evidence-for" content="a-worker-can-take-a-brief">
   <meta name="plan-verifies" content="a-worker-can-take-a-brief#s2,a-worker-can-take-a-brief#s3">
-  <meta name="plan-commits" content="488d3e92,e4d70125,dcb66ac8,92b7eca7">
+  <meta name="plan-commits" content="488d3e92,e4d70125,dcb66ac8,92b7eca7,e3b07de5">
   <meta name="plan-artifacts" content="reckon/crew/prompts.py,tests/test_brief_prompt.py,reckon/cli.py,reckon/crew/dispatch.py,reckon/crew/node.py,tests/test_brief_dispatch.py">
   <meta name="plan-recorded-at" content="2026-09-28">
   <meta name="plan-verdict" content="passed">
@@ -135,6 +135,68 @@
         <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T192434735630-dispatch-accepts-a-brief/logs/gate-repair.log</code>,
         <code>.../arm-dispatch-guard-repair.log</code>,
         <code>.../negative-control-repair.log</code>.
+      </p>
+
+      <h3>Node <code>validate-node-refuses-plan-and-brief</code> &mdash; the pair is refused on the node</h3>
+      <p>
+        Commit <code>e3b07de5</code> on the base revision <code>fae0865c</code> makes
+        <code>validate_node</code> in <code>reckon/crew/node.py</code> refuse a node that carries a
+        brief together with a plan or a section, with a finding naming both carriers. The pair was
+        already refused at the CLI argv (<code>reckon/cli.py</code>), but the brief branch of
+        <code>plan_dispatch</code> takes the digest and skips the committed-section and plan-review
+        gates around their call sites, so a programmatic caller that built a <code>TaskNode</code>
+        directly reached that branch with a plan section named and the section was silently never
+        checked. The refusal now lives on the node, so the skip cannot be reached with a second
+        authority present.
+      </p>
+      <p>
+        <strong>Reproduction before repair.</strong> A <code>TaskNode</code> built with
+        <code>plan="reckon:a-worker-can-take-a-brief"</code>, <code>section="s2"</code> and
+        <code>brief="&lt;path&gt;"</code> returned <code>validate_node ok = True</code> with an empty
+        findings list, and <code>plan_dispatch</code> would have taken the brief branch with the
+        section unchecked.
+      </p>
+      <img src="/reckon/figures/a-worker-can-take-a-brief/authority-exclusivity.svg" alt="Two call paths reach plan_dispatch: the CLI argv check refuses a brief beside a plan or section, while a programmatic caller that builds a TaskNode directly passes only through validate_node; the gate added there refuses the pair and its finding names both carriers, so the brief branch is reachable with one authority only.">
+      <h3>The gate measures, as executed</h3>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Gate <code>tests/test_brief_plan_exclusivity.py</code> at <code>e3b07de5</code></td>
+            <td><strong>5 passed</strong>, exit 0: brief+plan refused, brief+section refused, brief
+            alone validates, plan+section alone validate, and <code>plan_dispatch</code> refuses the
+            pair before the skipped gate would run</td>
+          </tr>
+          <tr>
+            <td>Regression arm <code>tests/test_brief_dispatch.py</code></td>
+            <td><strong>7 passed</strong>, exit 0, unchanged</td>
+          </tr>
+          <tr>
+            <td>Regression arm <code>tests/test_goal_contract_lint.py</code></td>
+            <td><strong>8 passed</strong>, exit 0, unchanged</td>
+          </tr>
+          <tr>
+            <td>Declared negative control &mdash; delete the exclusivity check from
+            <code>validate_node</code></td>
+            <td><strong>3 of 5</strong> fail at exit 1: the brief-plus-plan and brief-plus-section
+            cases validate (<code>AssertionError: a brief beside a plan must be refused</code>), and
+            <code>plan_dispatch</code> resolves the pair (<code>assert not True</code>); source
+            restored byte-identical (<code>sha256 4b9189ec&hellip;</code>)</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        As-executed logs, absolute paths on the run's own directory:
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T063504306183-validate-node-refuses-plan-and-brief/gate-brief-plan-exclusivity.log</code>
+        and
+        <code>.../negative-control-brief-plan-exclusivity.log</code>. Each header names the revision
+        under test (<code>e3b07de5</code>), the tree and the command; the negative control's first
+        line repeats its declared mutation verbatim.
+      </p>
+      <p>
+        <strong>Scope of this measure.</strong> The gate measures this node's own change only.
+        Verifying the merged result belongs to a separately dispatched test node; a failure outside
+        the declared scope is reported as a follow-on rather than triaged here.
       </p>
     </section>
 

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" font-family="ui-sans-serif, system-ui, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="960" height="560" fill="#ffffff"/>
+  <text x="24" y="34" font-size="19" font-weight="700" fill="#111827">A node names one authority: a brief, or a plan and section</text>
+  <text x="24" y="56" font-size="13" fill="#4b5563">The argv check covers the CLI; the node itself must refuse the pair so a direct caller cannot reach the brief branch with a section named.</text>
+
+  <!-- Callers -->
+  <rect x="60" y="86" width="330" height="70" rx="8" fill="#eef2ff" stroke="#6366f1"/>
+  <text x="78" y="112" font-size="14" font-weight="600" fill="#312e81">reckon crew dispatch (CLI argv)</text>
+  <text x="78" y="134" font-size="12" fill="#374151">--brief beside --plan / --section</text>
+  <text x="78" y="150" font-size="12" fill="#b91c1c">refused: UsageError at argv</text>
+
+  <rect x="570" y="86" width="330" height="70" rx="8" fill="#fef2f2" stroke="#ef4444"/>
+  <text x="588" y="112" font-size="14" font-weight="600" fill="#7f1d1d">programmatic caller builds TaskNode</text>
+  <text x="588" y="134" font-size="12" fill="#374151">no argv check runs on this path</text>
+  <text x="588" y="150" fill="#b91c1c" font-size="12">the hole this node closes</text>
+
+  <!-- arrows down -->
+  <line x1="225" y1="156" x2="225" y2="196" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="735" y1="156" x2="735" y2="196" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- validate_node gate -->
+  <rect x="150" y="196" width="660" height="86" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="180" y="224" font-size="15" font-weight="700" fill="#92400e">validate_node — the gate added here</text>
+  <text x="180" y="248" font-size="12.5" fill="#374151">brief and (plan or section) &#8594; finding <tspan font-family="monospace">fully-specified</tspan></text>
+  <text x="180" y="268" font-size="12.5" fill="#374151">the finding names both carriers: the brief and the plan section</text>
+
+  <!-- branch down -->
+  <line x1="480" y1="282" x2="480" y2="316" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="492" y="304" font-size="12" fill="#4b5563">one authority holds</text>
+
+  <!-- plan_dispatch -->
+  <rect x="330" y="316" width="300" height="46" rx="8" fill="#eef2ff" stroke="#6366f1"/>
+  <text x="352" y="344" font-size="14" font-weight="600" fill="#312e81">plan_dispatch — side-effect-free resolution</text>
+
+  <line x1="430" y1="378" x2="430" y2="412" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="530" y1="362" x2="700" y2="412" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- brief branch -->
+  <rect x="180" y="412" width="300" height="96" rx="8" fill="#f5f3ff" stroke="#8b5cf6"/>
+  <text x="198" y="438" font-size="13.5" font-weight="600" fill="#5b21b6">brief branch (brief is set)</text>
+  <text x="198" y="460" font-size="12" fill="#374151">takes the digest from the stored copy</text>
+  <text x="198" y="480" font-size="12" fill="#b91c1c">skips the committed-section gate</text>
+  <text x="198" y="498" font-size="12" fill="#b91c1c">skips the plan-review gate</text>
+
+  <!-- plan branch -->
+  <rect x="600" y="412" width="300" height="96" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+  <text x="618" y="438" font-size="13.5" font-weight="600" fill="#065f46">plan branch</text>
+  <text x="618" y="460" font-size="12" fill="#374151">require_plan_section_visible(&#8230;)</text>
+  <text x="618" y="480" font-size="12" fill="#374151">require_plan_reviewed(&#8230;)</text>
+  <text x="618" y="498" font-size="12" fill="#374151" fill-opacity="0.9">the section is read and checked</text>
+
+  <text x="24" y="540" font-size="12" fill="#6b7280">Without the node-level gate a node naming both carriers was read as a brief, and its plan section was never checked. The gate makes that state unreachable.</text>
+</svg>

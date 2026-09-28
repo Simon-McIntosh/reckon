@@ -1045,7 +1045,29 @@ def validate_node(
                 "split it into one node per deliverable",
             )
 
-    if not node.plan.strip() and not node.brief.strip():
+    plan = node.plan.strip()
+    brief = node.brief.strip()
+    # The two carriers are mutually exclusive, and the reason is structural
+    # rather than stylistic: the brief branch of ``plan_dispatch`` takes the
+    # digest and skips the committed-section and plan-review gates around their
+    # call sites, so a node naming both is read as a brief and its plan section
+    # is silently never checked. The CLI refuses the pair at argv; this refuses
+    # it on the node, so a programmatic caller that builds a TaskNode directly
+    # cannot reach that skip with a plan section named.
+    if brief and (plan or node.section.strip()):
+        carriers = []
+        if plan:
+            carriers.append(f"plan {plan!r}")
+        if node.section.strip():
+            carriers.append(f"section {node.section.strip()!r}")
+        fail(
+            "fully-specified",
+            f"the node carries a brief and also names {' and '.join(carriers)}; "
+            "a brief and a plan section are mutually exclusive — pass exactly one "
+            "authority, because the brief branch would otherwise skip the "
+            "committed-section and plan-review gates for the named section",
+        )
+    elif not plan and not brief:
         fail(
             "fully-specified",
             "no plan or brief is named as the semantic authority",
