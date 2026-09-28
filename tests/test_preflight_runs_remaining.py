@@ -4,14 +4,20 @@ A coordinator committing a wave needs one figure it does not have today: how
 many more runs this wallet's remaining week affords, and whether the wave about
 to open fits inside it. The figure is the group's remaining seven-day window
 divided by the mean per-run quota cost over the trailing seven days, keyed on the
-declared budget group and role, and it is unmeasured -- never zero -- when fewer
-than one priced run exists, because a zero would refuse every wave and read as a
-measurement rather than an absence.
+declared budget group and role, and it is unmeasured -- never zero -- when the
+week's cost cannot be measured, because a zero would refuse every wave and read
+as a measurement rather than an absence.
 
-The cases below build synthetic run records under a temporary ledger and hand the
-group a synthetic window reading, so the figure is arithmetic rather than a
-stroke of this host's clock. Every assertion reads the emitted payload, which is
-what a coordinator routes on, rather than a rendered summary string.
+A receipt's weekly figure is the *level* the window stood at when the run was
+harvested -- a stock. The run's own cost is a *flow*: the rise in that level
+across a reset window over the runs that produced it. Pricing the level as though
+it were the cost would read a nearly full window as a nearly spent budget and
+throttle every metered wave, so the cases below pin the flow, not the level.
+
+The cases build synthetic run records under a temporary ledger and hand the group
+a synthetic window reading, so the figure is arithmetic rather than a stroke of
+this host's clock. Every assertion reads the emitted payload, which is what a
+coordinator routes on, rather than a rendered summary string.
 
 The refusal is exercised in both directions: a wave whose projected cost exceeds
 the remaining window is refused with the runs-remaining figure and the reset time
@@ -35,6 +41,11 @@ PROJECT = "demo"
 # arithmetic rather than a stroke of the clock. A test reading the wall clock
 # here would pass on the day it was written and drift afterwards.
 NOW = datetime(2026, 9, 21, 18, 0, 0, tzinfo=UTC)
+
+# The receipt rows of two consecutive weekly windows, distinguished by their own
+# reset boundary: a rise is priced within one, never across.
+CURRENT_RESET = "2026-09-26T00:00:00Z"
+PREVIOUS_RESET = "2026-09-19T00:00:00Z"
 
 # Two lanes sharing one declared wallet, so the figure is counted once per group
 # rather than once per lane.
@@ -104,16 +115,17 @@ def _run_doc(
     backend: str,
     used_percent: float | None,
     completed_at: datetime,
+    resets_at: str = CURRENT_RESET,
     window_minutes: int = WEEKLY_WINDOW_MINUTES,
 ) -> dict:
-    """One committed run record, priced by the weekly row of its own receipt."""
+    """One committed run record, carrying its weekly receipt row."""
     windows = []
     if used_percent is not None:
         windows.append(
             {
                 "window_minutes": window_minutes,
                 "used_percent": used_percent,
-                "resets_at": 1790869124,
+                "resets_at": resets_at,
                 "observed_at": _iso(completed_at),
             }
         )
@@ -144,6 +156,42 @@ def _rows(root: Path) -> list[dict]:
     return ledger.runs(PROJECT, root)
 
 
+def _series(
+    root: Path,
+    *,
+    count: int,
+    start_pct: float,
+    end_pct: float,
+    oldest_hours_ago: float,
+    resets_at: str = CURRENT_RESET,
+    role: str = "implement",
+    backend: str = "sol-a",
+    run_id_prefix: str = "r",
+) -> None:
+    """Commit ``count`` receipts rising linearly from ``start_pct`` to ``end_pct``.
+
+    The series is oldest-first, each receipt one hour after the last, so the
+    earliest-to-latest rise is exactly ``end_pct - start_pct`` over ``count``
+    runs, and its reset boundary is the caller's. This is the flow the estimator
+    must price, and the shape a level-based reading mistakes for a spent budget.
+    """
+    step = 0.0 if count < 2 else (end_pct - start_pct) / (count - 1)
+    _write_runs(
+        root,
+        [
+            _run_doc(
+                run_id=f"{run_id_prefix}-{index}",
+                role=role,
+                backend=backend,
+                used_percent=start_pct + step * index,
+                completed_at=NOW - timedelta(hours=oldest_hours_ago - index),
+                resets_at=resets_at,
+            )
+            for index in range(count)
+        ],
+    )
+
+
 def _runway(report: list[dict], group: str = "sol") -> dict:
     found = [entry for entry in report if entry["group"] == group]
     assert len(found) == 1, f"expected exactly one entry for {group!r}, got {found}"
@@ -156,75 +204,110 @@ def _bar(report: list[dict], group: str = "sol") -> dict:
     return found[0]["bar"]
 
 
-def _four_implement_runs(
-    root: Path, *, cost: float = 20.0, hours_ago: float = 6.0
-) -> None:
-    _write_runs(
-        root,
-        [
-            _run_doc(
-                run_id=f"r-{index}",
-                role="implement",
-                backend="sol-a",
-                used_percent=cost,
-                completed_at=NOW - timedelta(hours=hours_ago + index),
-            )
-            for index in range(4)
-        ],
-    )
-
-
 # ── The figure: the remaining week over the mean per-run cost ────────────────
 
 
-def test_the_figure_is_the_remaining_window_over_the_mean_run_cost(
-    tmp_path: Path,
-) -> None:
-    """40% of the week left at 20% a run is two runs, from the payload."""
-    _four_implement_runs(tmp_path)
+def test_the_figure_is_the_rise_over_the_runs_that_produced_it(tmp_path: Path) -> None:
+    """A rise from 10% to 18% over 12 receipts prices 8/12 of a point a run.
+
+    The window's level, 18%, is where the week stands -- not what a run cost. The
+    cost is the rise, so the figure is (100 - 18) divided by 8/12.
+    """
+    _series(tmp_path, count=12, start_pct=10.0, end_pct=18.0, oldest_hours_ago=30.0)
 
     runway = _runway(
         budget.group_pace(
             CONFIG,
-            windows={"sol-a": _reading(0.10, 0.60)},
+            windows={"sol-a": _reading(0.10, 0.10)},
             records=_rows(tmp_path),
             now=NOW,
         )
     )
 
     assert runway["state"] == budget.OBSERVED
-    assert runway["remaining_pct"] == pytest.approx(40.0)
-    assert runway["mean_run_cost_pct"] == pytest.approx(20.0)
-    assert runway["priced_runs"] == 4
-    assert runway["runs_remaining"] == pytest.approx(2.0)
+    assert runway["mean_run_cost_pct"] == pytest.approx(8.0 / 12.0)
+    assert runway["priced_runs"] == 12
+    assert runway["remaining_pct"] == pytest.approx(90.0)
+    assert runway["runs_remaining"] == pytest.approx(90.0 / (8.0 / 12.0))
 
 
-def test_the_figure_carries_the_age_of_both_its_inputs(tmp_path: Path) -> None:
-    """The window's age and the mean's own observation age both ride the figure."""
-    _write_runs(
+def test_a_nearly_full_window_does_not_report_few_runs(tmp_path: Path) -> None:
+    """A high level with no rise is unmeasured, never a nearly spent budget.
+
+    This is the defect the flow estimator exists to prevent: pricing the level as
+    the cost would read twelve runs that each moved the window a hair as though
+    each had spent 18% of the week, and report a fraction of a run remaining.
+    """
+    _series(tmp_path, count=12, start_pct=18.0, end_pct=18.0, oldest_hours_ago=30.0)
+
+    runway = _runway(
+        budget.group_pace(
+            CONFIG,
+            windows={"sol-a": _reading(0.10, 0.10)},
+            records=_rows(tmp_path),
+            now=NOW,
+        )
+    )
+
+    assert runway["state"] == budget.UNKNOWN
+    assert runway["runs_remaining"] is None
+    assert runway["reason"]
+    # The window itself was measured, so the remaining week is still carried.
+    assert runway["remaining_pct"] == pytest.approx(90.0)
+
+
+def test_a_window_that_reset_mid_series_prices_the_current_window(
+    tmp_path: Path,
+) -> None:
+    """Receipts from a reset window price their own rise, not the current level.
+
+    Five receipts in the previous window sat flat at 90% -- a nearly full window
+    that moved not at all -- and four in the current window rose 10% to 13%. Only
+    the current window's rise is priced, so the per-run cost is 3/4 over the four
+    runs that made it; a level-based reading would have taken the 90% level for a
+    cost and reported a fraction of a run.
+    """
+    _series(
         tmp_path,
-        [
-            _run_doc(
-                run_id="r-new",
-                role="implement",
-                backend="sol-a",
-                used_percent=20.0,
-                completed_at=NOW - timedelta(hours=2),
-            ),
-            _run_doc(
-                run_id="r-old",
-                role="implement",
-                backend="sol-a",
-                used_percent=20.0,
-                completed_at=NOW - timedelta(hours=30),
-            ),
-        ],
+        count=5,
+        start_pct=90.0,
+        end_pct=90.0,
+        oldest_hours_ago=40.0,
+        resets_at=PREVIOUS_RESET,
+        run_id_prefix="old",
+    )
+    _series(
+        tmp_path,
+        count=4,
+        start_pct=10.0,
+        end_pct=13.0,
+        oldest_hours_ago=8.0,
+        resets_at=CURRENT_RESET,
+        run_id_prefix="new",
     )
 
     runway = _runway(
         budget.group_pace(
             CONFIG,
-            windows={"sol-a": _reading(0.10, 0.60, age_seconds=120.0)},
+            windows={"sol-a": _reading(0.10, 0.10)},
+            records=_rows(tmp_path),
+            now=NOW,
+        )
+    )
+
+    assert runway["state"] == budget.OBSERVED
+    assert runway["mean_run_cost_pct"] == pytest.approx(3.0 / 4.0)
+    assert runway["priced_runs"] == 4
+
+
+def test_the_figure_carries_the_age_of_both_its_inputs(tmp_path: Path) -> None:
+    """The window's age and the mean's own observation age both ride the figure."""
+    _series(tmp_path, count=2, start_pct=10.0, end_pct=12.0, oldest_hours_ago=3.0)
+
+    runway = _runway(
+        budget.group_pace(
+            CONFIG,
+            windows={"sol-a": _reading(0.10, 0.40, age_seconds=120.0)},
             records=_rows(tmp_path),
             now=NOW,
         )
@@ -240,93 +323,119 @@ def test_the_figure_carries_the_age_of_both_its_inputs(tmp_path: Path) -> None:
 
 
 def test_the_figure_is_reported_per_role_and_per_group(tmp_path: Path) -> None:
-    """One wallet, one remaining window, and a run count per role."""
+    """One wallet, one remaining window, and a run count per role.
+
+    The wallet is one cumulative level line, so its receipts rise monotonically
+    however the roles alternate; each role's own receipts then rise by their own
+    span, and both roles draw on the same remaining week.
+    """
+    roles = ["implement", "review"]
     _write_runs(
         tmp_path,
         [
             _run_doc(
-                run_id="r-impl-1",
-                role="implement",
+                run_id=f"r-{index}",
+                role=roles[index % 2],
                 backend="sol-a",
-                used_percent=30.0,
-                completed_at=NOW - timedelta(hours=3),
-            ),
-            _run_doc(
-                run_id="r-impl-2",
-                role="implement",
-                backend="sol-b",
-                used_percent=30.0,
-                completed_at=NOW - timedelta(hours=4),
-            ),
-            _run_doc(
-                run_id="r-review-1",
-                role="review",
-                backend="sol-b",
-                used_percent=10.0,
-                completed_at=NOW - timedelta(hours=5),
-            ),
+                used_percent=10.0 + 2.0 * index,
+                completed_at=NOW - timedelta(hours=10.0 - index),
+            )
+            for index in range(6)
         ],
     )
 
     runway = _runway(
         budget.group_pace(
             CONFIG,
-            windows={"sol-a": _reading(0.10, 0.60)},
+            windows={"sol-a": _reading(0.10, 0.10)},
             records=_rows(tmp_path),
             now=NOW,
         )
     )
 
-    assert runway["mean_run_cost_pct"] == pytest.approx(70.0 / 3.0)
+    # The whole wallet rose 10 points over 6 runs.
+    assert runway["mean_run_cost_pct"] == pytest.approx(10.0 / 6.0)
+    assert runway["priced_runs"] == 6
     assert sorted(runway["by_role"]) == ["implement", "review"]
-    assert runway["by_role"]["implement"]["priced_runs"] == 2
-    assert runway["by_role"]["implement"]["mean_run_cost_pct"] == pytest.approx(30.0)
-    assert runway["by_role"]["implement"]["runs_remaining"] == pytest.approx(
-        40.0 / 30.0
+    # implement drew 10, 14, 18 -- a rise of 8 over 3 runs; review drew 12, 16,
+    # 20 -- the same rise over its own 3.
+    assert runway["by_role"]["implement"]["mean_run_cost_pct"] == pytest.approx(
+        8.0 / 3.0
     )
-    assert runway["by_role"]["review"]["runs_remaining"] == pytest.approx(4.0)
+    assert runway["by_role"]["implement"]["runs_remaining"] == pytest.approx(
+        90.0 / (8.0 / 3.0)
+    )
+    assert runway["by_role"]["review"]["priced_runs"] == 3
+    assert runway["by_role"]["review"]["runs_remaining"] == pytest.approx(
+        90.0 / (8.0 / 3.0)
+    )
 
 
 def test_a_run_from_beyond_the_trailing_week_is_not_priced(tmp_path: Path) -> None:
     """A receipt outside the horizon describes a window that has already reset."""
-    _write_runs(
+    _series(tmp_path, count=2, start_pct=10.0, end_pct=12.0, oldest_hours_ago=8.0)
+    _series(
         tmp_path,
-        [
-            _run_doc(
-                run_id="r-fresh",
-                role="implement",
-                backend="sol-a",
-                used_percent=20.0,
-                completed_at=NOW - timedelta(hours=12),
-            ),
-            _run_doc(
-                run_id="r-stale",
-                role="implement",
-                backend="sol-a",
-                used_percent=80.0,
-                completed_at=NOW - timedelta(days=8),
-            ),
-        ],
+        count=2,
+        start_pct=60.0,
+        end_pct=80.0,
+        oldest_hours_ago=8 * 24.0,
+        resets_at=PREVIOUS_RESET,
+        run_id_prefix="stale",
     )
 
     runway = _runway(
         budget.group_pace(
             CONFIG,
-            windows={"sol-a": _reading(0.10, 0.60)},
+            windows={"sol-a": _reading(0.10, 0.10)},
             records=_rows(tmp_path),
             now=NOW,
         )
     )
 
-    assert runway["priced_runs"] == 1
-    assert runway["mean_run_cost_pct"] == pytest.approx(20.0)
+    assert runway["priced_runs"] == 2
+    assert runway["mean_run_cost_pct"] == pytest.approx(2.0 / 2.0)
 
 
 # ── Unmeasured, never zero ──────────────────────────────────────────────────
 
 
-def test_no_priced_run_reports_unmeasured_never_zero(tmp_path: Path) -> None:
-    """Nothing priced is an explicit absence, not a zero that refuses everything."""
+def test_a_single_priced_receipt_is_unmeasured(tmp_path: Path) -> None:
+    """One receipt measures no rise, so the cost is an absence, not a level."""
+    _write_runs(
+        tmp_path,
+        [
+            _run_doc(
+                run_id="r-solo",
+                role="implement",
+                backend="sol-a",
+                used_percent=20.0,
+                completed_at=NOW - timedelta(hours=3),
+            )
+        ],
+    )
+
+    runway = _runway(
+        budget.group_pace(
+            CONFIG,
+            windows={"sol-a": _reading(0.10, 0.10)},
+            records=_rows(tmp_path),
+            now=NOW,
+        )
+    )
+
+    assert runway["state"] == budget.UNKNOWN
+    assert runway["runs_remaining"] is None
+    assert runway["mean_run_cost_pct"] is None
+    assert runway["priced_runs"] == 0
+    assert runway["reason"]
+    # The window itself was measured, so it is carried even though nothing divides
+    # it.
+    assert runway["remaining_pct"] == pytest.approx(90.0)
+
+
+def test_a_run_with_no_weekly_receipt_is_not_priced(tmp_path: Path) -> None:
+    """A receipt naming no weekly row prices nothing rather than a zero."""
     _write_runs(
         tmp_path,
         [
@@ -343,7 +452,7 @@ def test_no_priced_run_reports_unmeasured_never_zero(tmp_path: Path) -> None:
     runway = _runway(
         budget.group_pace(
             CONFIG,
-            windows={"sol-a": _reading(0.10, 0.60)},
+            windows={"sol-a": _reading(0.10, 0.10)},
             records=_rows(tmp_path),
             now=NOW,
         )
@@ -351,11 +460,6 @@ def test_no_priced_run_reports_unmeasured_never_zero(tmp_path: Path) -> None:
 
     assert runway["state"] == budget.UNKNOWN
     assert runway["runs_remaining"] is None
-    assert runway["mean_run_cost_pct"] is None
-    assert runway["priced_runs"] == 0
-    assert runway["reason"]
-    # The window *was* measured, so it is carried even though nothing divides it.
-    assert runway["remaining_pct"] == pytest.approx(40.0)
 
 
 def test_a_group_whose_week_could_not_be_read_reports_unmeasured() -> None:
@@ -386,28 +490,41 @@ def test_an_unmeasured_runway_refuses_nothing() -> None:
 # ── The refusal ─────────────────────────────────────────────────────────────
 
 
-def test_a_wave_projected_past_the_reset_is_refused(tmp_path: Path) -> None:
-    """90% spent leaves 10%; one run at 15% projects past it, so the wave is held."""
-    _write_runs(
-        tmp_path,
-        [
-            _run_doc(
-                run_id=f"r-{index}",
-                role="implement",
-                backend="sol-a",
-                used_percent=15.0,
-                completed_at=NOW - timedelta(hours=2 + index),
-            )
-            for index in range(3)
-        ],
+def test_a_wave_inside_the_window_is_admitted(tmp_path: Path) -> None:
+    """A wave of 20 at 8/12 of a point each projects 13%, well inside 90%."""
+    _series(tmp_path, count=12, start_pct=10.0, end_pct=18.0, oldest_hours_ago=30.0)
+
+    bar = _bar(
+        budget.group_pace(
+            CONFIG,
+            windows={"sol-a": _reading(0.10, 0.10)},
+            records=_rows(tmp_path),
+            ready=[
+                {"name": f"open-{index}", "group": "sol", "score": 0.9}
+                for index in range(20)
+            ],
+            now=NOW,
+        )
     )
+
+    assert bar["refusal"] is None
+    assert len(bar["admitted"]) == 20
+    assert bar["runway"]["runs_remaining"] == pytest.approx(90.0 / (8.0 / 12.0))
+
+
+def test_a_wave_projected_past_the_reset_is_refused(tmp_path: Path) -> None:
+    """10% of the week left at 8/12 a run is 15 runs; 20 nodes project past it."""
+    _series(tmp_path, count=12, start_pct=10.0, end_pct=18.0, oldest_hours_ago=30.0)
 
     bar = _bar(
         budget.group_pace(
             CONFIG,
             windows={"sol-a": _reading(0.10, 0.90)},
             records=_rows(tmp_path),
-            ready=[{"name": "open-node", "group": "sol", "score": 0.9}],
+            ready=[
+                {"name": f"open-{index}", "group": "sol", "score": 0.9}
+                for index in range(20)
+            ],
             now=NOW,
         )
     )
@@ -415,79 +532,39 @@ def test_a_wave_projected_past_the_reset_is_refused(tmp_path: Path) -> None:
     refusal = bar["refusal"]
     assert refusal is not None
     assert refusal["refused"] is True
-    assert refusal["runs_remaining"] == pytest.approx(2.0 / 3.0)
+    assert refusal["runs_remaining"] == pytest.approx(10.0 / (8.0 / 12.0))
     # The refusal names the runs remaining and the reset time, because those are
     # the two figures that let a coordinator size the wave and time its retry.
-    assert "0.67 runs remain" in refusal["reason"]
+    assert "15.00 runs remain" in refusal["reason"]
     reset = _iso(NOW + timedelta(hours=100.0))
     assert reset in refusal["reason"]
     assert refusal["resets_at"] == reset
-    # A refused wave admits nobody, and the node that would have been admitted is
-    # held rather than silently dropped.
+    # A refused wave admits nobody, and the nodes that would have been admitted
+    # are held rather than silently dropped.
     assert bar["admitted"] == []
-    assert "open-node" in bar["held"]
-    assert refusal["withheld"] == ["open-node"]
-
-
-def test_a_wave_inside_the_window_is_admitted(tmp_path: Path) -> None:
-    """10% spent leaves 90%; one run at 15% fits, so the wave opens."""
-    _write_runs(
-        tmp_path,
-        [
-            _run_doc(
-                run_id="r-0",
-                role="implement",
-                backend="sol-a",
-                used_percent=15.0,
-                completed_at=NOW - timedelta(hours=2),
-            )
-        ],
-    )
-
-    bar = _bar(
-        budget.group_pace(
-            CONFIG,
-            windows={"sol-a": _reading(0.10, 0.10)},
-            records=_rows(tmp_path),
-            ready=[{"name": "open-node", "group": "sol", "score": 0.9}],
-            now=NOW,
-        )
-    )
-
-    assert bar["refusal"] is None
-    assert [entry["name"] for entry in bar["admitted"]] == ["open-node"]
-    runway = bar["runway"]
-    assert runway["runs_remaining"] == pytest.approx(6.0)
+    assert len(bar["held"]) == 20
+    assert len(refusal["withheld"]) == 20
 
 
 def test_preflight_reads_the_records_from_the_ledger_it_is_given(
     tmp_path: Path,
 ) -> None:
     """The figure is derived from the committed records, not from an injected set."""
-    _write_runs(
-        tmp_path,
-        [
-            _run_doc(
-                run_id=f"r-{index}",
-                role="implement",
-                backend="sol-a",
-                used_percent=15.0,
-                completed_at=NOW - timedelta(hours=2 + index),
-            )
-            for index in range(2)
-        ],
-    )
+    _series(tmp_path, count=12, start_pct=10.0, end_pct=18.0, oldest_hours_ago=30.0)
 
     report = budget.preflight(
         PROJECT,
         CONFIG,
         root=tmp_path,
         windows={"sol-a": _reading(0.10, 0.90)},
-        ready=[{"name": "open-node", "group": "sol", "score": 0.9}],
+        ready=[
+            {"name": f"open-{index}", "group": "sol", "score": 0.9}
+            for index in range(20)
+        ],
         now=NOW,
     )
 
     entry = next(item for item in report["groups"] if item["group"] == "sol")
-    assert entry["bar"]["runway"]["priced_runs"] == 2
+    assert entry["bar"]["runway"]["priced_runs"] == 12
     assert entry["bar"]["refusal"] is not None
     assert "runs remain before the weekly reset at" in entry["bar"]["refusal"]["reason"]

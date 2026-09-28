@@ -1917,14 +1917,13 @@ def _runway_records(
         return []
 
 
-def _priced_run_cost(row: Mapping[str, Any]) -> float | None:
-    """The weekly quota a run's own receipt measured, in percent, or ``None``.
+def _priced_receipt(row: Mapping[str, Any]) -> tuple[float, Any] | None:
+    """A run's weekly receipt as ``(used_percent, resets_at)``, or ``None``.
 
-    A run's cost is the utilisation its receipt recorded on the seven-day window
-    when it was harvested, in the same whole percent the receipt writes, so the
-    mean of those figures is the aggregate a plateau of integer points still
-    supports. A receipt naming no weekly row, or one whose figure is not a
-    number, prices nothing rather than a zero.
+    The figure is the level the seven-day window stood at when the run was
+    harvested, in the whole percent the receipt writes, and the reset boundary
+    that level belongs to. A receipt naming no weekly row, or one whose figure is
+    not a number, prices nothing rather than a zero.
     """
     receipt = row.get("lane_receipt")
     if not isinstance(receipt, Mapping):
@@ -1940,7 +1939,7 @@ def _priced_run_cost(row: Mapping[str, Any]) -> float | None:
         used = window.get("used_percent")
         if isinstance(used, bool) or not isinstance(used, (int, float)):
             return None
-        return float(used)
+        return float(used), window.get("resets_at")
     return None
 
 
@@ -1949,33 +1948,80 @@ def _priced_runs(
     members: Iterable[str],
     *,
     moment: datetime,
-) -> list[tuple[str, str, datetime, float]]:
+) -> list[tuple[str, str, datetime, float, Any]]:
     """Every priced run of this wallet's members inside the trailing week.
 
-    One tuple per run: its backend, its role, the moment its cost was observed,
-    and the receipt's weekly figure in percent. Only a run whose backend declares
-    the wallet is read, and only one whose own durable stamp places it inside the
-    trailing week -- a receipt from outside the horizon measures a window that has
-    already reset. The stamp is the record's own, read through the one reader that
-    names it, so every surface that ages a run ages it the same way.
+    One tuple per run: its backend, its role, the moment its receipt was observed,
+    the weekly level the receipt recorded, and the reset boundary that level
+    belongs to. Only a run whose backend declares the wallet is read, and only one
+    whose own durable stamp places it inside the trailing week -- a receipt from
+    outside the horizon measures a window that has already reset. The stamp is the
+    record's own, read through the one reader that names it, so every surface that
+    ages a run ages it the same way.
     """
     horizon = moment - timedelta(days=RUNWAY_TRAILING_DAYS)
     allowed = set(members)
-    priced: list[tuple[str, str, datetime, float]] = []
+    priced: list[tuple[str, str, datetime, float, Any]] = []
     for row in rows:
         if not isinstance(row, Mapping):
             continue
         backend = _run_backend(row)
         if backend not in allowed:
             continue
-        cost = _priced_run_cost(row)
-        if cost is None:
+        receipt = _priced_receipt(row)
+        if receipt is None:
             continue
         observed = _run_observed_at(row)
         if observed is None or observed < horizon:
             continue
-        priced.append((backend, str(row.get("role") or ""), observed, cost))
+        used, resets = receipt
+        key = resets if isinstance(resets, (str, int, float)) else repr(resets)
+        priced.append((backend, str(row.get("role") or ""), observed, used, key))
     return priced
+
+
+def _run_cost_flow(
+    priced: Iterable[tuple[str, str, datetime, float, Any]],
+) -> tuple[float, int, datetime] | None:
+    """The mean per-run cost as a rise within one reset window of one wallet.
+
+    A receipt's seven-day figure is the level the window stood at when the run was
+    harvested -- a stock, not what the run itself spent. Two receipts that share a
+    reset boundary differ by the quota the runs between them consumed, so the flow
+    is the rise from the earliest to the latest receipt of one window over the
+    runs that produced it, and summing the rises per window over the runs that
+    produced them gives the wallet's mean. Because a window is keyed by its own
+    reset boundary, a window that reset inside the trailing week contributes its
+    own rise and never its level against the current window's -- the current
+    window's receipts alone price the current week.
+
+    A window holding fewer than two receipts measured no rise, and a window whose
+    level did not move prices nothing, so neither contributes. That is what keeps
+    the figure honest: a window's level divided by another level would read a
+    nearly full window as a nearly spent budget and throttle every metered wave.
+    ``None`` means no window measured a rise, which is an absence and never a zero
+    cost or an infinite count.
+    """
+    by_window: dict[Any, list[tuple[datetime, float]]] = {}
+    for _backend, _role, observed, used, resets in priced:
+        by_window.setdefault(resets, []).append((observed, used))
+    total_rise = 0.0
+    total_runs = 0
+    newest: datetime | None = None
+    for samples in by_window.values():
+        if len(samples) < 2:
+            continue
+        samples.sort(key=lambda item: item[0])
+        rise = samples[-1][1] - samples[0][1]
+        if rise <= 0.0:
+            continue
+        total_rise += rise
+        total_runs += len(samples)
+        if newest is None or samples[-1][0] > newest:
+            newest = samples[-1][0]
+    if total_runs == 0 or total_rise <= 0.0 or newest is None:
+        return None
+    return total_rise / total_runs, total_runs, newest
 
 
 def _unmeasured_runway(
@@ -2031,14 +2077,16 @@ def _group_runway(
     group in the same week rather than in two; the deadline is
     :func:`reckon.crew.pace.drain_deadline`'s, and the membership is the declared
     group's, neither restated here. The mean comes from the committed run records'
-    own receipts, and the figure reports the age of both inputs rather than a
-    single fresh one.
+    own receipts, read as a flow -- the rise within a reset window over the runs
+    that produced it, never a window's level divided by another level -- and the
+    figure reports the age of both inputs rather than a single fresh one.
 
     The mean is an aggregate of whole percentage points and the quantisation rides
     the figure rather than being dropped, so a reader never mistakes it for an
-    exact count. A figure resting on fewer than one priced run is unmeasured
-    rather than zero, and a mean that measured exactly zero is unmeasured too,
-    because no finite number of runs divides a window by a zero cost.
+    exact count. A figure no window priced -- fewer than two receipts sharing a
+    reset boundary, or no rise between them -- is unmeasured rather than zero,
+    because a zero would refuse every wave and read as a measurement rather than
+    an absence, and a non-positive cost would read as an infinite count.
     """
     week = clocks[CLOCK_SEVEN_DAY]
     if week["state"] != OBSERVED:
@@ -2050,23 +2098,17 @@ def _group_runway(
     week_utilisation = float(week["utilisation"])
     remaining_pct = max(0.0, 1.0 - week_utilisation) * 100.0
     priced = _priced_runs(rows, members, moment=moment)
-    if not priced:
+    flow = _run_cost_flow(priced)
+    if flow is None:
         return _unmeasured_runway(
             group,
-            "no run recorded a weekly quota cost in the trailing seven days, so "
-            "there is no mean per-run cost to divide the remaining window",
+            "no reset window in the trailing seven days held two receipts with a "
+            "rise between them, so no per-run cost is measured to divide the "
+            "remaining window",
             remaining_pct=remaining_pct,
             week=week,
         )
-    mean_cost = sum(cost for _backend, _role, _observed, cost in priced) / len(priced)
-    if mean_cost <= 0.0:
-        return _unmeasured_runway(
-            group,
-            "the trailing week's mean per-run cost measured zero, so no finite "
-            "run count divides the remaining window",
-            remaining_pct=remaining_pct,
-            week=week,
-        )
+    mean_cost, priced_runs, newest = flow
     drain_hours = pace_module.drain_deadline(
         pace_module.GroupReading(
             group=group, utilisation=week_utilisation, elapsed_hours=0.0
@@ -2074,17 +2116,21 @@ def _group_runway(
         pace_module.policy(config),
     )
     by_role: dict[str, dict[str, Any]] = {}
-    for role in sorted({role for _backend, role, _observed, _cost in priced}):
-        role_costs = [
-            cost for _backend, run_role, _observed, cost in priced if run_role == role
-        ]
-        role_mean = sum(role_costs) / len(role_costs)
+    for role in sorted({role for _backend, role, _observed, _used, _resets in priced}):
+        role_flow = _run_cost_flow([row for row in priced if row[1] == role])
+        if role_flow is None:
+            by_role[role] = {
+                "mean_run_cost_pct": None,
+                "runs_remaining": None,
+                "priced_runs": 0,
+            }
+            continue
+        role_mean, role_runs, _role_newest = role_flow
         by_role[role] = {
             "mean_run_cost_pct": role_mean,
-            "runs_remaining": (None if role_mean <= 0.0 else remaining_pct / role_mean),
-            "priced_runs": len(role_costs),
+            "runs_remaining": remaining_pct / role_mean,
+            "priced_runs": role_runs,
         }
-    newest = max(observed for _backend, _role, observed, _cost in priced)
     week_observed = _parse_stamp(week.get("observed_at"))
     return {
         "group": group,
@@ -2092,7 +2138,7 @@ def _group_runway(
         "reason": None,
         "remaining_pct": remaining_pct,
         "mean_run_cost_pct": mean_cost,
-        "priced_runs": len(priced),
+        "priced_runs": priced_runs,
         "runs_remaining": remaining_pct / mean_cost,
         "resets_at": week.get("resets_at"),
         "observed_at": None if week_observed is None else _iso(week_observed),
