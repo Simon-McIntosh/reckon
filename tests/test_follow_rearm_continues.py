@@ -441,9 +441,15 @@ def test_the_real_follower_directory_is_untouched(home) -> None:
 # the reader's view empties every time the host re-arms it. The log holds each
 # rendered row's own bytes, the stamp it carried and the run and state it drew;
 # the re-arm replays those rows above its own fresh ones, in one write. The rows
-# carry their own clocks and fall straight onto the split they restored, so the
-# replay is framed by nothing: a header above it and a separator below it each
-# cost a line on every re-arm and said only what the rows already say.
+# carry their own clocks and fall straight onto the split they restored.
+#
+# Only a terminal is handed that replay. A pipe has no scrollback to restore and
+# would read the restored rows as fresh transitions, so the burst is gated on
+# `stdout.isatty()` by `_follow_replay_visible`. When a terminal is watching,
+# `_follow_history_burst` composes the whole replay as one string that opens
+# under one dim frame line naming it as earlier history, each history row
+# beneath it rendered dim too. Nothing frames the burst below — the frame line
+# alone marks the boundary, and every row after it is live.
 
 HISTORY_HEADER = "── history"
 HISTORY_SEPARATOR = "── re-armed"
