@@ -1410,22 +1410,22 @@ def _grant_landing_write_paths(
         return
     shared = _shared_landing_paths(node, project=project, authority=authority)
     if shared:
-        for declared in node.write_paths:
-            if _resolve_declared_path(declared, plan_repo) in shared:
-                warnings.append(
-                    f"declared write path {declared!r} is a landing file shared by "
-                    "every node on this plan; dispatch grants each node its own "
-                    "fragment by default, and this explicit declaration "
-                    "reintroduces the merge conflict"
-                )
-    for absolute in sorted(_landing_fragment_paths(node, authority=authority)):
-        try:
-            relative = absolute.relative_to(plan_repo)
-        except ValueError:
-            continue
-        declared = relative.as_posix()
-        if declared not in node.write_paths:
-            node.write_paths.append(declared)
+        warnings.extend(
+            f"declared write path {declared!r} is a landing file shared by "
+            "every node on this plan; dispatch grants each node its own "
+            "fragment by default, and this explicit declaration "
+            "reintroduces the merge conflict"
+            for declared in node.write_paths
+            if _resolve_declared_path(declared, plan_repo) in shared
+        )
+    within_plan_repo = [
+        absolute.relative_to(plan_repo).as_posix()
+        for absolute in sorted(_landing_fragment_paths(node, authority=authority))
+        if absolute.is_relative_to(plan_repo)
+    ]
+    node.write_paths.extend(
+        declared for declared in within_plan_repo if declared not in node.write_paths
+    )
 
 
 def _candidate_scope_entries(

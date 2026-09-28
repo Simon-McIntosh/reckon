@@ -20,6 +20,7 @@ from __future__ import annotations
 import importlib
 import json
 import subprocess
+from itertools import combinations, product
 from pathlib import Path
 
 import pytest
@@ -125,7 +126,9 @@ def _dry_run(
         role="implement",
         spec_level="guided",
         done_when="pytest reports one passing landing-path guard case",
-        write_paths=list(write_paths) if write_paths is not None else [f"src/{name}.py"],
+        write_paths=list(write_paths)
+        if write_paths is not None
+        else [f"src/{name}.py"],
         time_budget="20m",
         manifest_path=str(config_home / "manifests" / f"{name}.md"),
     )
@@ -147,12 +150,12 @@ def _contains(outer: str, inner: str) -> bool:
 def _overlapping_pairs(scopes: list[list[str]]) -> list[tuple[int, int, str, str]]:
     """Every ordered pair of paths, from two scopes, that nests either way."""
     overlaps: list[tuple[int, int, str, str]] = []
-    for left in range(len(scopes)):
-        for right in range(left + 1, len(scopes)):
-            for one in scopes[left]:
-                for other in scopes[right]:
-                    if _contains(one, other) or _contains(other, one):
-                        overlaps.append((left, right, one, other))
+    for left, right in combinations(range(len(scopes)), 2):
+        overlaps.extend(
+            (left, right, one, other)
+            for one, other in product(scopes[left], scopes[right])
+            if _contains(one, other) or _contains(other, one)
+        )
     return overlaps
 
 
@@ -202,8 +205,7 @@ def test_a_redispatched_node_gets_the_same_fragment_paths(
     fragments = {
         path
         for path in first
-        if path.startswith("docs/evidence/fragments/")
-        or path.startswith("docs/figures/")
+        if path.startswith(("docs/evidence/fragments/", "docs/figures/"))
     }
     assert fragments
     assert fragments <= set(second)
@@ -247,7 +249,7 @@ def test_a_composed_prompt_names_the_fragment_and_no_shared_record(
 
     assert f"docs/evidence/fragments/{PLAN}/node-prompt.html" in prompt
     assert f"docs/evidence/archive/{PLAN}-landed.html" not in prompt
-    assert f"docs/figures/{PLAN}\"" not in prompt
+    assert f'docs/figures/{PLAN}"' not in prompt
 
 
 def test_the_shared_set_still_describes_the_three_legacy_landing_paths(
@@ -270,5 +272,7 @@ def test_the_shared_set_still_describes_the_three_legacy_landing_paths(
 
     paths = dispatch._shared_landing_paths(node, project="sample", authority=authority)
 
-    assert (repo / "docs" / "evidence" / "archive" / f"{PLAN}-landed.html").resolve() in paths
+    assert (
+        repo / "docs" / "evidence" / "archive" / f"{PLAN}-landed.html"
+    ).resolve() in paths
     assert (repo / "docs" / "figures" / PLAN).resolve() in paths
