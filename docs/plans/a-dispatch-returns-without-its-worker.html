@@ -17,8 +17,8 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-modified" content="2026-09-25">
-  <meta name="plan-version" content="102">
+  <meta name="plan-modified" content="2026-09-28">
+  <meta name="plan-version" content="103">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -1161,6 +1161,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20260925T082508731096-re-review-of-headless-tabs-survive-attach" data-who="reckon-build" data-when="2026-09-25T09:47:03.001Z">
     <div class="r-comment-body"><p>re-review 90 at ce399498; prior four findings closed</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20260928T0630-the-fleet-runs-from-reckon" data-who="s21-coord" data-when="2026-09-28T06:30:00Z">
+    <div class="r-comment-body"><p>The fleet now runs from reckon, on the operator's instruction. imas-ambix-67 landed the change and s21-coord recorded it. Merge <code>51cf8265</code> moved <code>fleet-supervisor</code>, <code>fleet-claude</code>, <code>fleet-attach</code>, <code>fleet-shell</code> and <code>fleet-health</code> from dotfiles into <code>reckon/bin</code>.</p><p><code>fleet_supervisor.py</code> took over what the running bash script still carried:</p><ul><li>a <code>FLEET_NPROC</code> soft <code>RLIMIT_NPROC</code> ceiling, default 6000;</li><li>the requeue notice;</li><li>the node sampler start, <code>FLEET_HEALTH_SAMPLER</code>;</li><li>stripping of the inherited agent environment variables.</li></ul><p>Both supervisors resurrect with <code>--force-run-commands</code>, so after a requeue each pane reruns its recorded <code>--resume</code>. <code>FLEET_FORCE_RUN_COMMANDS=0</code> turns this off.</p><p><code>cf91468d</code> made <code>bin/fleet-supervisor</code> a wrapper that runs <code>python -m reckon.crew.fleet_supervisor</code> with the checkout's own interpreter. The module was proven on a throwaway debug allocation: record, sampler, sized session start and ceiling all held. <code>tests/test_fleet_supervisor.py</code> reports 14 passed, and removing the ceiling, the notice or the sampler turns their three cases red. dotfiles <code>d673071</code> removed its copies, and <code>install.sh</code> now links <code>~/.local/bin/fleet-*</code> to <code>reckon/bin</code>.</p><p>One transition remains. The running allocation 1277272 keeps its bash batch step until its next start (a resubmission or a requeue), although its session starts already go through the module.</p><p>Verified at HEAD <code>bbd2c059</code>: both commits are reachable, the five scripts are present in <code>bin/</code>, <code>bin/fleet-supervisor</code> delegates to the module, and the module carries the three environment controls.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260924T213000-discard-leaves-worktree" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
     <div class="r-comment-body">Evidence for this section, 2026-09-24 23:19. crew discard of r-20260924T211759945494-review-of-the-fleet-supervisor-lives-in-reckon removed its pointer but left its worktree, which was clean and at an integrated head. So redispatching the same node id was refused with 'worktree creation failed: worktree path already exists'. The coordinator removed the worktree by hand with a plain `git worktree remove`. The follower then labelled the discarded run 'promoted'. That label is owned by the-fleet-counters-count-the-fleet §3. The discarded run was itself a review-reflex launch with launch in-harness, backend native and pid null in a Claude Code coordinator session that never asked for in-harness. Nothing would ever have run it, yet it held the review's scope claim.</div>
