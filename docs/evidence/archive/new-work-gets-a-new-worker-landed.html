@@ -800,6 +800,77 @@ tests/test_no_member_dispatch_runs_alone.py::test_two_unnamed_reviews_launch_wit
     <p>The coordinator owns the plan-side landing record, the driving followup and section
     closure.</p>
   </section>
+
+  <section id="codex-resume-burn-after">
+    <h2>Codex session inheritance after the task-keyed rule — the after figure</h2>
+
+    <p><strong>Population.</strong> Codex run ids whose run-id timestamp falls after
+    <code>2026-09-23T10:40:20Z</code>, the committer time of
+    <code>adbb606797e2561dcc31758e49458f1d1bac3fef</code> — the commit that keyed session reuse to
+    the run's own task. The scan sees 84 codex runs in the window; 75 pair to a task in a rollout and
+    9 do not (6 runs whose rollout is absent, 3 sessions with no rollout file). Both sides of the
+    count are recorded in <code>after_population_reconciliation</code>, so the paired population is
+    bounded by a written reconciliation rather than by the parser's reach.</p>
+
+    <p><strong>After figure — zero, and censored by construction.</strong> <strong>75 paired
+    dispatches across 75 sessions, every one <code>fresh</code>: zero same-task resumes, zero
+    cross-task resumes, inherited total 0</strong> (opening-request median 48,079 tokens against a
+    fleet-wide fresh median of 41,002). The window contains no inherited transcript of either kind,
+    so the zero is read over a window in which no session was reused at all: §7's stopgap holds
+    <code>session_reuse</code> off, and the single live codex pointer at census time carries
+    <code>session_reuse_capable: false</code>. The figure therefore bounds the defect's absence over
+    the window; it does not yet read the rule's selectivity, which needs the §7 flip and the
+    ≥50-dispatch post-flip population §7 names.</p>
+
+    <p><strong>Before window, re-read by the same instrument, which is why the zero is not parser
+    drift.</strong> Restricted the same way, the before window yields 2,933 paired dispatches (1,785
+    fresh, 1,114 cross-task, 18 same-task, 16 prior-run-unknown; inherited 146,847,735 tokens)
+    against the recorded 3,274. The drop is absent run directories on disk, not a changed reading:
+    the fresh median reproduces to five tokens (<strong>41,002 against 40,997</strong>) and the
+    recorded positive control reproduces with the same run id and shape. A parser that had stopped
+    seeing inheritance would have collapsed this side too.</p>
+
+    <p><strong>Positive control, named, re-read through the same code path: try to failure.</strong>
+    <code>r-20260909T124530581873-n-swcr-observe-the-missing-validation</code> (rollout task 3 of 7,
+    opened by
+    <code>r-20260909T072310390297-n-pidp-restore-pedestal-density-family</code>) opens at 378,921
+    tokens — 9.2× the fresh median — for an inherited figure of <strong>337,919</strong> (recorded
+    before figure 337,924; the difference is the median moving five tokens). The instrument reports
+    zero for each of the 75 fresh after-window runs and a non-zero inheritance here, so the window's
+    zero is the fleet rather than the parser.</p>
+
+    <p><strong>Checks that could fail, and the declared negative control.</strong> Gate:
+    <code>tests/test_resume_burn_after_the_fix.py</code> reads the committed census file only, making
+    three checks — the cross-task figure against the file's own verdict (<code>zero</code>, with
+    <code>≥50</code> dispatches asserted), <code>same_task_resumes</code> a number, and the named
+    control's <code>inherited_tokens &gt; 0</code>. Unmutated: <strong>3 passed, exit 0</strong>.
+    Negative control: with the control run's <code>inherited_tokens</code> set to 0 in a temp copy of
+    the data file, the control check fails — <strong>1 failed, 2 passed, exit 1</strong>, the
+    assertion quoted in the log — so the check is shown to see inheritance before its zero is
+    trusted. Logs in run directory
+    <code>r-20260928T055740804370-state-the-burn-after-the-fix</code>: <code>census-after.log</code>
+    (bounded <code>timeout 1200</code>, 82 s), <code>gate-test.log</code>,
+    <code>negative-control.log</code>. Compute node <code>98dci4-clu-2018</code>, job
+    <code>1277272</code>, run in place; never on the login node. Data:
+    <code>docs/research/data/codex-resume-burn-after.json</code> (56 KB).</p>
+
+    <figure>
+      <img src="/reckon/figures/new-work-gets-a-new-worker/reuse-classes-before-after.png"
+           alt="Two bar charts of paired codex dispatches by class. Before the task-keyed rule: 1,785 fresh, 18 same-task resumes, 1,114 cross-task resumes, 16 prior-run-unknown over 2,933 dispatches. After: 75 fresh and zero in both resume classes over 75 dispatches.">
+      <figcaption>The class census before and after the task-keyed rule, by the rollout's own task
+      boundary. The after window's two resume classes are empty because no session was inherited in
+      it — the DATA's own window carries no inherited transcript at all.</figcaption>
+    </figure>
+
+    <p><strong>What this anchor does not claim.</strong> (1) The after zero does not show the rule
+    refusing a cross-task session; with reuse off, none was offered. (2) The after window has no
+    resumed row, so the identity-metadata cross-check
+    (<code>identity_metadata_agrees_with_worktree</code>, 0) exercises nothing there. (3) The
+    capability sample is one live pointer; the censoring reading rests on §7's config statement plus
+    that sample, and both are named so a later reader can re-measure the count instead of inheriting
+    it. (4) Six after-window runs pair to no task and three sessions have no rollout file; they are
+    excluded from both numerator and denominator and listed in the data file.</p>
+  </section>
 </main>
 </body>
 </html>
