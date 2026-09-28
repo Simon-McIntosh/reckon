@@ -330,6 +330,50 @@
       past the reader's transient windows, so no case depends on the instant it runs.</p>
     </section>
 
+    <section id="attribution">
+      <h2>&sect;8 &mdash; Attribution of the red gate at the main head</h2>
+      <p>A gate run reported <code>tests/test_a_live_run_never_reads_dead.py</code> exiting 1 at the
+      main head and keeps no output, and the merge that landed the §8 reason text
+      (<code>92c39d90</code>) was the candidate. It is not the cause. Measured over two
+      <code>git archive</code> trees carried on <code>PYTHONPATH</code> — <code>92c39d90^1</code>
+      at <code>af15a34b</code> and the <code>origin/main</code> head at <code>356928b3</code> —
+      both arms return <code>1 failed, 11 passed</code>, exit 1, with the same single failing id
+      and therefore an empty set difference. Each arm printed the resolved
+      <code>reckon/crew/recovery.py</code> it imported and refused to run had it resolved outside
+      its own tree, because the shared virtualenv carries an editable install of <code>reckon</code>.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/revision_attribution_timeline.png"
+             alt="Six revisions in commit order. The asserting test passes at 132a7d4b and fails at
+                  ddf4509f, af15a34b and the origin/main head; the suspect merge 92c39d90 and the
+                  revision that wrote the test carry no measured outcome.">
+        <figcaption>The failure appears at <code>ddf4509f</code> and is unchanged across the
+        suspect merge. Hollow markers are revisions read for context that were not executed.</figcaption>
+      </figure>
+
+      <p>The pre-existing failure is
+      <code>tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word</code>,
+      and its candidate commit is <code>ddf4509f</code>, measured rather than inferred: the same
+      single test exits 0 at that commit's parent <code>132a7d4b</code> and 1 at
+      <code>ddf4509f</code>. The cause is
+      <code>reckon/crew/recovery.py:5599</code> — <code>_departure_word</code> returns
+      <code>"withdrawn"</code> because the guard at <code>:5595</code> requires a recorded ledger
+      row, and the test's stub snapshot carries no <code>project</code> for
+      <code>_departure_recorded_run_ids</code> (<code>:5581-5582</code>) to resolve a reader from.
+      Before <code>ddf4509f</code> the fold read
+      <code>"promoted" if recorded is None or run_id in recorded</code>, which is the word the test
+      still asserts; the commit inverted that deliberately, so a reader-less departure withdraws
+      rather than promising a landing. The test and the contract disagree, and which half moves is
+      not settled here — this node is a read-only attribution and changed no repository file.</p>
+
+      <p><strong>Evidence:</strong> four logs beside the report at
+      <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/live-run-test-attribution/</code>
+      — <code>gate-base-af15a34b.log</code>, <code>gate-head-356928b3.log</code>,
+      <code>attribution-pre-ddf4509f.log</code>, <code>attribution-at-ddf4509f.log</code> — each
+      naming its revision and tree on the first line. The test file is byte-identical at all four
+      revisions (sha256 <code>f20f5aef&hellip;2fedff</code>).</p>
+    </section>
+
     <section id="verification">
       <h2>Verification</h2>
       <p><code>tests/test_watch_reports_death_at_once.py</code> passed: 3 passed, exit 0. The killed
