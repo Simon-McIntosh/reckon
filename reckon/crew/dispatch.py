@@ -6285,7 +6285,7 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     environment = _worker_runtime_environment(
         plan.get("environment") or {},
         run_id=str(spec["run_id"]),
-        manifest_path=str(record.get("manifest_path") or ""),
+        manifest_path=_recorded_manifest_path(record, str(spec["run_id"])),
         attempt_started_at=_utc_now(),
         coordinator_session=str(record.get("session") or ""),
         claude_headers=str(plan.get("dialect") or "") == "claude",
@@ -7200,6 +7200,42 @@ def _backend_settings(
     return settings
 
 
+def _recorded_manifest_path(record: Mapping[str, Any], run_id: str) -> str:
+    """The manifest path a launch rebuilt from a live pointer must carry.
+
+    A pointer records the path twice — the top-level field a dispatch writes
+    and the node definition it was written from — and a record may hold
+    neither, or a value that is not absolute. Every launch composed from the
+    record derives the run's directory from this path: the harness home and
+    the fence roots are both built from its parent, and a path that names no
+    location anchors them to the directory of whichever process rebuilt the
+    launch instead of to the run. The run directory is the fallback because it
+    is absolute by construction; the worker record the run's own supervisor
+    writes into it is read first, since that record names the run the launch
+    belongs to.
+    """
+    node = record.get("node")
+    candidates = [record.get("manifest_path")]
+    if isinstance(node, Mapping):
+        candidates.append(node.get("manifest_path"))
+    for candidate in candidates:
+        text = str(candidate or "").strip()
+        if text and Path(text).is_absolute():
+            return text
+    directory = run_dir(run_id)
+    try:
+        worker = json.loads(
+            (directory / WORKER_RECORD_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        worker = None
+    if isinstance(worker, Mapping):
+        text = str(worker.get("manifest_path") or "").strip()
+        if text and Path(text).is_absolute():
+            return text
+    return str(directory / "manifest.md")
+
+
 def resume_plan(
     run_id: str,
     advice: str,
@@ -7263,6 +7299,7 @@ def resume_plan(
         str(record.get("backend") or ""), backend, fence=FENCE_WORKERS
     )
     attempt_started_at = _utc_now()
+    manifest_path = _recorded_manifest_path(record, run_id)
     plan = resolve_launch_executable(
         _backends.launch_plan(
             backend_name=str(record.get("backend") or ""),
@@ -7273,12 +7310,12 @@ def resume_plan(
                 else advice
             ),
             worktree=str(record.get("worktree") or "."),
-            manifest_path=str(record.get("manifest_path") or ""),
+            manifest_path=manifest_path,
             writable_directories=_fence_write_roots(
                 backend=backend,
                 repository=str(record.get("repo") or "."),
-                run_directory=Path(str(record.get("manifest_path") or "")).parent,
-                manifest_path=record.get("manifest_path"),
+                run_directory=Path(manifest_path).parent,
+                manifest_path=manifest_path,
                 worktree=record.get("worktree"),
                 declared_write_paths=(record.get("node") or {}).get("write_paths")
                 or (),
@@ -7290,7 +7327,7 @@ def resume_plan(
     plan = _worker_runtime_plan(
         plan,
         run_id=run_id,
-        manifest_path=str(record.get("manifest_path") or ""),
+        manifest_path=manifest_path,
         attempt_started_at=attempt_started_at,
         coordinator_session=str(record.get("session") or ""),
     )
@@ -7608,6 +7645,7 @@ def change_lane(
     prompt = _lane_prompt(record, advice, explanation, continued=continued)
     attempt = int(record.get("attempt") or 1) + 1
     directory = run_dir(run_id)
+    manifest_path = _recorded_manifest_path(record, run_id)
     prompt_path = directory / f"lane-change-{attempt}-prompt.txt"
     log_path = directory / f"lane-change-{attempt}.jsonl"
     stderr_path = directory / f"lane-change-{attempt}.stderr.log"
@@ -7638,7 +7676,7 @@ def change_lane(
     directive_environment = _worker_runtime_environment(
         None,
         run_id=run_id,
-        manifest_path=str(record.get("manifest_path") or ""),
+        manifest_path=manifest_path,
         attempt_started_at=lane_change["changed_at"],
         coordinator_session=str(record.get("session") or ""),
         claude_headers=False,
@@ -7652,12 +7690,12 @@ def change_lane(
                 backend=backend,
                 prompt=prompt,
                 worktree=str(record.get("worktree") or "."),
-                manifest_path=str(record.get("manifest_path") or ""),
+                manifest_path=manifest_path,
                 writable_directories=_fence_write_roots(
                     backend=backend,
                     repository=str(record.get("repo") or "."),
-                    run_directory=Path(str(record.get("manifest_path") or "")).parent,
-                    manifest_path=record.get("manifest_path"),
+                    run_directory=Path(manifest_path).parent,
+                    manifest_path=manifest_path,
                     worktree=record.get("worktree"),
                     declared_write_paths=(record.get("node") or {}).get("write_paths")
                     or (),
@@ -7670,7 +7708,7 @@ def change_lane(
         target_plan = _worker_runtime_plan(
             target_plan,
             run_id=run_id,
-            manifest_path=str(record.get("manifest_path") or ""),
+            manifest_path=manifest_path,
             attempt_started_at=lane_change["changed_at"],
             coordinator_session=str(record.get("session") or ""),
         )
