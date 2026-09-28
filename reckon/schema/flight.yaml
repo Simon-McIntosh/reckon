@@ -346,6 +346,14 @@ slots:
     description: The display suffix rendered for an effort level's word.
     range: string
 
+  floor:
+    description: >-
+      Lowest score the dimension this entry names may carry and still read as
+      a pass, on the review schema's own 0..20 scale. A stored score below it
+      is reported as a sub-floor finding until a disposition answers it.
+    range: integer
+    minimum_value: 0
+
   model:
     description: >-
       Model identifier passed to this backend. User data; free text so that no
@@ -696,6 +704,22 @@ slots:
   on_fail:
     range: GateFailureAction
 
+  dimension_floors:
+    description: >-
+      Lowest score each review dimension may carry and still read as a pass,
+      keyed by dimension name. A stored dimension below its floor is a finding
+      that carries a disposition of its own rather than being folded into the
+      review's total, so a low score cannot be averaged away by four high ones.
+      Declared here beside the other gate settings rather than compiled in, so
+      the standard a stored score was read against is readable by whoever is
+      deciding what to do next. A dimension absent from the map has no floor:
+      an undeclared floor is not a floor of zero, which would report every
+      dimension of every review as a finding. Keys are the review schema's own
+      dimension names; a key it does not define is ignored by the reader.
+    range: DimensionFloor
+    multivalued: true
+    inlined: true
+
   suite_command:
     description: >-
       Project test-suite command whose presence arms promotion consequence
@@ -886,6 +910,15 @@ classes:
       - name
       - spelling
 
+  DimensionFloor:
+    description: >-
+      One review dimension and the lowest score it may carry and still read as
+      a pass. The name is a key of this inlined map, so a configuration writes
+      the dimension and its floor together and neither can be read apart.
+    slots:
+      - name
+      - floor
+
   RoleConfig:
     description: >-
       A routing overlay for one kind of node. Every slot is optional; an unset
@@ -944,6 +977,7 @@ classes:
       - require_evidence
       - on_fail
       - suite_command
+      - dimension_floors
 
   BudgetConfig:
     description: >-

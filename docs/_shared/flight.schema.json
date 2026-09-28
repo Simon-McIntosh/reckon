@@ -649,6 +649,50 @@
             "title": "CatalogConfig",
             "type": "object"
         },
+        "DimensionFloor": {
+            "additionalProperties": false,
+            "description": "One review dimension and the lowest score it may carry and still read as a pass. The name is a key of this inlined map, so a configuration writes the dimension and its floor together and neither can be read apart.",
+            "properties": {
+                "floor": {
+                    "description": "Lowest score the dimension this entry names may carry and still read as a pass, on the review schema's own 0..20 scale. A stored score below it is reported as a sub-floor finding until a disposition answers it.",
+                    "minimum": 0,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "DimensionFloor",
+            "type": "object"
+        },
+        "DimensionFloor__identifier_optional": {
+            "additionalProperties": false,
+            "description": "One review dimension and the lowest score it may carry and still read as a pass. The name is a key of this inlined map, so a configuration writes the dimension and its floor together and neither can be read apart.",
+            "properties": {
+                "floor": {
+                    "description": "Lowest score the dimension this entry names may carry and still read as a pass, on the review schema's own 0..20 scale. A stored score below it is reported as a sub-floor finding until a disposition answers it.",
+                    "minimum": 0,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "DimensionFloor",
+            "type": "object"
+        },
         "EffortSpelling": {
             "additionalProperties": false,
             "description": "One effort level and its declared display suffix.",
@@ -955,6 +999,28 @@
             "additionalProperties": false,
             "description": "How evidence gates are enforced.",
             "properties": {
+                "dimension_floors": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/DimensionFloor__identifier_optional"
+                            },
+                            {
+                                "description": "Lowest score the dimension this entry names may carry and still read as a pass, on the review schema's own 0..20 scale. A stored score below it is reported as a sub-floor finding until a disposition answers it.",
+                                "minimum": 0,
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Lowest score each review dimension may carry and still read as a pass, keyed by dimension name. A stored dimension below its floor is a finding that carries a disposition of its own rather than being folded into the review's total, so a low score cannot be averaged away by four high ones. Declared here beside the other gate settings rather than compiled in, so the standard a stored score was read against is readable by whoever is deciding what to do next. A dimension absent from the map has no floor: an undeclared floor is not a floor of zero, which would report every dimension of every review as a finding. Keys are the review schema's own dimension names; a key it does not define is ignored by the reader.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
                 "enforce": {
                     "$ref": "#/$defs/GateEnforcement"
                 },
