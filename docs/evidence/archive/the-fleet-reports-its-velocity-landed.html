@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="One path classifier in the package returns the same six line classes as the velocity census it was ported from.">
   <meta name="plan-evidence-for" content="the-fleet-reports-its-velocity">
   <meta name="plan-verifies" content="the-fleet-reports-its-velocity#s2,the-fleet-reports-its-velocity#s4,the-fleet-reports-its-velocity#s5">
-  <meta name="plan-commits" content="85af514b,4d79a470,fe33dbf6,106e4bbb,e26df29e,eaa6adfb,d72ffc3f">
-  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_work_in_progress.py,tests/test_velocity_session_continuity.py,reckon/run_store.py,tests/test_run_store_backend_query.py,reckon/crew/metering.py,reckon/ledger.py,tests/test_resumed_burn_prices_to_rollout.py">
+  <meta name="plan-commits" content="85af514b,4d79a470,fe33dbf6,106e4bbb,e26df29e,eaa6adfb,d72ffc3f,c45327c8,0f135716,4b458d3f">
+  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_work_in_progress.py,tests/test_velocity_session_continuity.py,reckon/run_store.py,tests/test_run_store_backend_query.py,reckon/crew/metering.py,reckon/ledger.py,tests/test_resumed_burn_prices_to_rollout.py,reckon/budget.py,tests/test_preflight_runs_remaining.py,docs/figures/the-fleet-reports-its-velocity/quota-runway.png">
   <meta name="plan-recorded-at" content="2026-09-28">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -408,6 +408,94 @@
       failures in <code>tests/test_ledger.py</code> are pre-existing and outside this node's scope;
       all ten fail identically at the base revision, 10 failed and 86 passed in both arms, so the
       delta adds none.</p>
+  </section>
+    <section id="s4-quota-runway">
+      <h2>&sect;4 &mdash; Quota runway</h2>
+      <p>Commit <code>c45327c8</code> extends the group pace in <code>reckon/budget.py</code> so
+      each declared budget group carries a <em>runway</em>: the runs remaining before the weekly
+      reset, and the refusal of a wave that would run past it. The figure is the group's remaining
+      seven-day window divided by the mean per-run quota cost over the trailing seven days. Neither
+      input is restated &mdash; the remaining window is the group's own seven-day clock, the same
+      one the pace already divides, and the drain deadline comes from
+      <code>reckon/crew/pace.py</code>'s <code>drain_deadline</code>; membership comes from
+      <code>budget_group.declared_groups</code>. The judgement extends <code>_group_bar</code> and
+      <code>group_pace</code> rather than adding a second bar, so one entry carries the whole
+      verdict.</p>
+      <p>Commit <code>0f135716</code> corrects how the per-run cost is priced, which is the whole
+      substance of the figure. A run record's own <code>lane_receipt.quota_windows</code> row for
+      the ten-thousand-and-eighty-minute window is the <em>level</em> that window stood at when the
+      run was harvested &mdash; a stock, not what the run itself consumed. Dividing the remaining
+      window by that level is a stock over a stock. The per-run cost is instead the <em>flow</em>:
+      the rise in a window's level from its earliest to its latest priced receipt,
+      <em>divided by the intervals that rise spans</em> &mdash; <code>n</code> receipts bound
+      <code>n - 1</code> gaps of spend, because the first receipt is the level the rise starts from,
+      not a run the rise paid for. Dividing by the receipt count would understate the cost by
+      <code>n / (n - 1)</code> &mdash; a factor of two on a two-receipt window &mdash; and so
+      overstate the runs remaining, the direction that weakens the refusal. The rises and their
+      intervals are summed across the reset windows present in the trailing week. Because a window is
+      keyed by its own reset boundary, a window that reset inside the trailing week contributes its
+      own rise and never its level against the current window's; a receipt from outside the horizon,
+      measuring a window that has already reset, does not enter.</p>
+      <p>Three properties make the figure honest rather than merely present. It carries the age of
+      both its inputs &mdash; the window reading's own age and the mean's observation age &mdash;
+      because a figure that cannot be aged cannot be told from a current one. It is
+      <em>unmeasured</em>, never zero, when a window holds fewer than two priced receipts or none
+      that rose: an absence is not a spent week, and the same substitution is refused for a hold and
+      for a reset; the receipt-quantisation caveat rides the figure.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-reports-its-velocity/quota-runway.png"
+          alt="Left: one reset window's receipts rising from 10% to 18% across 12 receipts, the rise marked and divided by the 11 intervals between them to give 0.73% per run. Right: for four wallets, the runs remaining under the flow reading (22 to 86) beside the level reading (3.2 to 10.4) on the same receipts.">
+        <figcaption>Left: the run's cost is the rise, not the level &mdash; a window that rises from
+        10% to 18% across 12 receipts spends 8/11 = 0.73% per run, the rise being divided by the 11
+        intervals between the receipts, while the latest level of 18% alone says nothing about cost.
+        Right: the same receipts read two ways on the committed ledger's four wallets. The level
+        reading throttles each to a handful of runs; the flow shows the week each wallet actually
+        has, and a wave is sized against that. A wave whose projected cost &mdash; node count times
+        the mean run cost &mdash; exceeds the remaining window is refused, with the runs remaining
+        and the reset time in the refusal text and its nodes held rather than dropped. Absence of a
+        signal never holds a wave &mdash; an unmeasured runway admits, exactly as an unread lane
+        does.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Base arm (<code>fb747528</code>, budget and pace files)</td><td>192 passed, exit 0</td></tr>
+          <tr><td>Head arm (same files plus the new cases, at the committed head)</td><td>206 passed, exit 0</td></tr>
+          <tr><td>Added by this node</td><td>14 passed, no failures added</td></tr>
+          <tr><td>Declared negative control &mdash; price at the level again</td><td>9 failed, exit 1</td></tr>
+        </tbody>
+      </table>
+      <p>Over the committed ledger the flow reading is not academic: 2,259 records, four wallets
+      with priced receipts inside the trailing week. Each wallet's rise, priced runs, intervals,
+      per-run cost and runs remaining, beside the old level-based figure:</p>
+      <table>
+        <thead><tr><th>Wallet</th><th>Receipts</th><th>Reset windows</th><th>Priced receipts</th><th>Intervals</th><th>Rise (%)</th><th>Per-run (%)</th><th>Level runs remaining</th><th>Flow runs remaining</th></tr></thead>
+        <tbody>
+          <tr><td>codex</td><td>19</td><td>3</td><td>19</td><td>16</td><td>49</td><td>3.06</td><td>3.2</td><td>25.5</td></tr>
+          <tr><td>codex-astra</td><td>17</td><td>3</td><td>16</td><td>14</td><td>45</td><td>3.21</td><td>4.0</td><td>22.1</td></tr>
+          <tr><td>codex-luna</td><td>13</td><td>2</td><td>13</td><td>11</td><td>10</td><td>0.91</td><td>4.8</td><td>85.8</td></tr>
+          <tr><td>codex-terra</td><td>4</td><td>3</td><td>2</td><td>1</td><td>3</td><td>3.00</td><td>10.4</td><td>32.0</td></tr>
+        </tbody>
+      </table>
+      <p>Terra is the sharpest case: its one measurable window holds two receipts, so it bounds a
+      single interval, and the rise of 3% is the whole per-run cost -- 32 runs remaining, where the
+      receipt-count divisor would have said 64.</p>
+      <p><code>tests/test_preflight_runs_remaining.py</code> builds synthetic run records under a
+      temporary ledger and a synthetic group window, so the figure is arithmetic rather than a
+      stroke of this host's clock. It asserts the flow figure (receipts rising 10 to 18% over 12
+      receipts report 8/11 per run -- the rise over the 11 intervals the receipts bound -- and the
+      week's runs), that a two-receipt window prices one interval and not two (the 2x difference the
+      interval divisor pins), that a window that resets mid-series prices only the current window's
+      rise, that a nearly full window does not report few runs, the age of both inputs and the
+      receipt quantisation, the per-role and per-group split, that a run from beyond the trailing
+      week is not priced, that a single priced receipt is unmeasured and never zero, that an unread
+      week reports unmeasured with no remaining window, that an unmeasured runway refuses nothing,
+      that a wave projected past the reset is refused with the runs-remaining figure and the reset
+      time in its text and its node held rather than dropped,
+      that a wave inside the window is admitted, and that the pre-flight reads its records from the
+      ledger it is given. The declared negative control prices a run at its receipt's level again;
+      the rising-receipts case then reddens, as do the cases that depend on it. Logs:
+      <code>gate-base.log</code>, <code>gate-control-level.log</code>, <code>gate-head.log</code>.</p>
     </section>
   </main>
 </body>
