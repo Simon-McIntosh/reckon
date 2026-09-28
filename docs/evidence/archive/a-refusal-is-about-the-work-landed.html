@@ -82,6 +82,53 @@
       <code>capability.assess_execution_fit</code>, whose seam the reuse map at
       <code>reports/reckon/s25-coord/s25-reuse-map-dispatch-surface/reuse-map.md</code> records.</p>
     </section>
+
+    <section id="s4">
+      <h2>&sect;4 &mdash; Bookkeeping follows the run</h2>
+      <p>Three refusals in the promotion and <code>verify-gate</code> surfaces now read
+      what the run's own record already carries instead of demanding it again. In
+      <code>reckon/crew/promotion.py</code>, <code>_require_impl_moved</code> records
+      <code>impl_move</code> as <code>exempt</code> when the record's <code>attempt_kind</code>
+      is <code>resume</code> or <code>redispatch</code>; the stored review's total score and
+      finding count supply a review run's outcome when <code>--outcome</code> is omitted;
+      and <code>rerun_gate_at_integrated_revision</code> accepts a checkout the integrated
+      revision is an ancestor of when none of the run's changed paths differs between the
+      two. <code>reckon/cli.py</code> restates both in the <code>--outcome</code> and
+      <code>--no-impl-change</code> help so the operator reads the narrowing at the flag.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-refusal-is-about-the-work/bookkeeping-follows-the-run.svg"
+             alt="Three rows — a corrective attempt, a review run's outcome, and verify-gate on a checkout past the merge — each showing the fact read from the run's record, the demand it replaces, and the narrowed outcome.">
+        <figcaption>Each narrowing reads a fact the run already carries; the demand each
+        replaces is struck out, and the real defects stay refused.</figcaption>
+      </figure>
+
+      <h3>Measured</h3>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>New file <code>tests/test_bookkeeping_follows_the_run.py</code> at head</td><td>5 passed, exit 0</td></tr>
+          <tr><td><code>tests/test_promotion_requires_impl_move.py</code> + <code>tests/test_verify_gate_command_option.py</code> at base <code>3c7e7872</code></td><td>26 passed, exit 0</td></tr>
+          <tr><td>Same two files plus the new file at head</td><td>31 passed, exit 0 &mdash; zero regressions</td></tr>
+          <tr><td>Declared negative control</td><td>exact-equality checkout check restored: the two-commits-past case refused, exit 1</td></tr>
+        </tbody>
+      </table>
+      <p>The negative control restores the exact-equality checkout check in
+      <code>rerun_gate_at_integrated_revision</code>. With it restored the accepted arm's
+      two-ledger-commits-past case reports <code>checkout_descends_from_integrated_revision:
+      false</code>, <code>ran: false</code> and the reason <em>"does not descend from it: a
+      gate run here would verify the wrong tree"</em>; the mutation is reverted and
+      <code>promotion.py</code> restored. Both arms record the resolved module each imported
+      &mdash; the base arm the committed scratch tree, the head arm the working tree &mdash;
+      because the editable install resolves through the checkout rather than the
+      <code>PYTHONPATH</code> alone.</p>
+      <p>Each narrowing was derived from the live code at this node's base, not from the
+      line numbers in the reuse map at
+      <code>reports/reckon/s25-coord/s25-reuse-map-record-and-promotion/reuse-map.md</code>,
+      which are stated at base <code>99455576</code>: the map names
+      <code>_require_impl_moved</code>, the <code>--outcome</code> refusal and
+      <code>rerun_gate_at_integrated_revision</code>, and each was re-derived here.</p>
+    </section>
   </main>
 </body>
 </html>

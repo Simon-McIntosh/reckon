@@ -83,6 +83,18 @@
       uses of <code>--no-impl-change</code> on corrective runs and <code>--outcome</code> on review runs, against the
       counts in the coordinator-overhead census; the target is zero, reported as a follow-up measure rather than a
       release gate.</p>
+    <div class="section-landed" data-section="s4">
+      <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span></p>
+      <p class="landed-summary">Three narrowings, each named by a test in
+        <code>tests/test_bookkeeping_follows_the_run.py</code> (5 passed): a record whose
+        <code>attempt_kind</code> is resume or redispatch promotes with <code>impl_move</code>
+        exempt; a review run's <code>--outcome</code> defaults to its stored review's total
+        score and finding count; <code>verify-gate</code> accepts a checkout two ledger
+        commits past the merge when no changed path differs, and refuses one where a changed
+        path does. The <code>--repairs</code> declaration this section also named is a later
+        node. Full record:
+        <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed#s4">&sect;4 landed</a>.</p>
+    </div>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -104,6 +116,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260927T190000-s2-closed" data-who="reckon-build" data-when="2026-09-27T19:00:00Z">
     <div class="r-comment-body">gate passed (tests/test_goal_contract_lint.py 8 passed); verify-gate at the integrated head ed676da4 exit 0, no finding; section s2 closed and collapsed. The driving followup f-araw-001 stays open for s3 and s4.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260928T112107745919-promotion-bookkeeping-follows-the-run" data-who="reckon-build" data-when="2026-09-28T00:00:00Z">
+    <div class="r-comment-body"><p>bookkeeping follows the run: a corrective attempt promotes with impl_move exempt by attempt_kind (resume/redispatch); a review run's outcome defaults to its stored review's total score and finding count; verify-gate accepts a checkout two ledger commits past the merge when no changed path differs and refuses one where a path does. tests/test_bookkeeping_follows_the_run.py 5 passed; the two named regression files 26 passed at base and 31 passed at head; the declared negative control (restore the exact-equality checkout check) refuses the two-commits-past case, exit 1</p></div>
 </div>
 </section>
 </main>
