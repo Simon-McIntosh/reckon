@@ -1,0 +1,326 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "e6a865505e9c1dcbb560602087616c71ebd04b06",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 9073331,
+      "input_tokens_cumulative": 9073331,
+      "output_tokens": 58054,
+      "output_tokens_cumulative": 58054,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 382,
+    "files": 6,
+    "removed": 5
+  },
+  "commit_resolution": null,
+  "commits": [
+    "719406d01438a45b858d33baa8e1237075d6f878",
+    "00884e079814ea5d702fb742cfbc3af38515c38d"
+  ],
+  "completed_at": "2026-09-28T10:50:10.105Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T10:15:27Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "roadmap.py",
+    "reckon/mcp.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "env -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/section-edge-stays-off-plan-blocking PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/section-edge-stays-off-plan-blocking /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_section_edge_stays_off_plan_blocking.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101515530429-section-edge-stays-off-plan-blocking/logs/head-new-test.log"
+  },
+  "impl_move": {
+    "at_complete": 0.97,
+    "at_dispatch": 0.97,
+    "plan": "dependency-edge-semantics",
+    "reason": "closes one defect from f-des-section-edge-reaches-summary under the already-done §4; the plan holds at 0.97 while the section-scoped decision followup stays open",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T11:15:17.020594+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T10:15:17Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 7,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": -2,
+    "mean_context": 115000,
+    "observed_at": "2026-09-28T10:15:10Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T10:50:10.105Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101515530429-section-edge-stays-off-plan-blocking/manifest.md",
+  "member": "disposable-r-20260928T101515530429-section-edge-stays-off-plan-blocking",
+  "negative_control": {
+    "declaration": "fold section_depends_on rows back into the plan-level blocking list in a scratch copy; the section-only case must report the plan blocked",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101515530429-section-edge-stays-off-plan-blocking/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101515530429-section-edge-stays-off-plan-blocking/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_section_edge_stays_off_plan_blocking.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "section-edge-stays-off-plan-blocking",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2969,
+          "cached_input_tokens": 686902,
+          "input_tokens": 689873,
+          "output_tokens": 1021,
+          "reasoning_output_tokens": 175,
+          "total_tokens": 690894,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "A test with a synthesised plan builds a summary view. The plan has one section-scoped wait, on another plan's section that is not done, and no whole-plan dependency. The test asserts that the summary's plan-level blocking list is empty and that the waiting section is reported as blocked, naming its target. It fails at the base revision (logged) and passes at the head.\n\nA second case keeps a whole-plan dependency blocking the plan as before.\n\nThe negative control folds section rows back into plan-level blocking in a scratch copy, and the first case fails, with the mutation on the red log's first line.\n\nThe gate: the new test file plus the existing tests that exercise mcp_views and lifecycle. It exits 0, or shows no added failing ids against the base, with both arms recorded as log paths under baseline_suite and after_suite.",
+    "estimated_hours": 2.0,
+    "goal": "Plan dependency-edge-semantics, followup f-des-section-edge-reaches-summary, first defect. read_plan appends section_depends_on rows to deps, near reckon/mcp.py:942-952. The typed summary view then folds those rows into its plan-level blocking list, via mcp_views._blocking into lifecycle.unresolved_dependencies (reckon/mcp_views.py near :1916). So a summary reports the whole plan blocked when only one section waits.\n\nMake the summary's plan-level blocking list exclude section-scoped waits, which belong to the section that declares them. reckon/mcp.py belongs to another coordinator's live node, so the fix lives in mcp_views.py or lifecycle.py.",
+    "id": "section-edge-stays-off-plan-blocking",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T10:15:17Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 7,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": -2,
+      "mean_context": 115000,
+      "observed_at": "2026-09-28T10:15:10Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101515530429-section-edge-stays-off-plan-blocking/manifest.md",
+    "negative_control": "fold section_depends_on rows back into the plan-level blocking list in a scratch copy; the section-only case must report the plan blocked",
+    "plan": "dependency-edge-semantics",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/mcp_views.py",
+      "reckon/lifecycle.py",
+      "tests/test_section_edge_stays_off_plan_blocking.py",
+      "docs/evidence/archive/dependency-edge-semantics-landed.html",
+      "docs/figures/dependency-edge-semantics",
+      "docs/plans/dependency-edge-semantics.html"
+    ]
+  },
+  "orientation_input_tokens": 2483955.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "section-edge-stays-off-plan-blocking",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T10:15:22.245661+00:00",
+    "score": 0.49375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "dependency-edge-semantics",
+  "plan_impl_at_dispatch": 0.97,
+  "promoted_revision": "00884e079814ea5d702fb742cfbc3af38515c38d",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 17,
+      "goal_fidelity": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 92
+  },
+  "role": "implement",
+  "run_id": "r-20260928T101515530429-section-edge-stays-off-plan-blocking",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "",
+  "session_harness": "claude",
+  "session_id": "9cb12200-260b-4b8c-877e-3a9904b91fef",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 9238920,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2059.573,
+    "generated_tokens": 66579,
+    "generation_seconds": 1900.038,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.2,
+    "machine_seconds": 159.535,
+    "peak_input_tokens": 164289,
+    "tokens_per_second": 35.04,
+    "wall_tokens_per_second": 32.33
+  },
+  "time_budget": "60m",
+  "tool_steps": 101.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 2083,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T10:50:10Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T10:15:46Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T101515530429-section-edge-stays-off-plan-blocking",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 10610,
+    "worker_pid": 762647
+  },
+  "worker_seconds": 2046,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
