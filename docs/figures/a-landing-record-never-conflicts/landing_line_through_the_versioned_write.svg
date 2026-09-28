@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 430" role="img" aria-labelledby="title desc">
+<title id="title">A run's landing: line lands as a plan comment through the versioned write</title>
+<desc id="desc">Promotion reads the run's manifest. When it declares a landing: line, that line becomes the comment body and is written with _store.write_plan; a VersionConflict re-reads and retries up to four times, so a concurrent plan edit is never lost. A manifest without a landing: line keeps the coordinator narrative and the worker-authored deferral.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#186466"/></marker>
+<marker id="arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a5a12"/>
+</marker></defs>
+<g font-family="sans-serif" font-size="17" fill="#172b35">
+<rect x="20" y="30" width="230" height="76" rx="4" fill="#f4f7f8" stroke="#5a6b74"/>
+<text x="36" y="58">manifest.md</text>
+<text x="36" y="84" font-size="15" fill="#3d4b52">landing: &lt;one line&gt;</text>
+
+<path d="M 250 68 H 320" stroke="#186466" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="330" y="30" width="250" height="76" rx="4" fill="#edf7f5" stroke="#186466"/>
+<text x="346" y="58">_declared_manifest_landing</text>
+<text x="346" y="84" font-size="15" fill="#3d4b52">"" when the line is absent</text>
+
+<path d="M 580 68 H 650" stroke="#186466" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="660" y="30" width="300" height="76" rx="4" fill="#edf7f5" stroke="#186466"/>
+<text x="676" y="58">_record_landing_comment</text>
+<text x="676" y="84" font-size="15" fill="#3d4b52">body_text = landing or narrative</text>
+
+<rect x="330" y="170" width="250" height="70" rx="4" fill="#fff" stroke="#186466"/>
+<text x="346" y="198">_store.read_plan</text>
+<text x="346" y="224" font-size="15" fill="#3d4b52">state + version</text>
+
+<path d="M 660 208 H 580" stroke="#186466" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="600" y="200" font-size="14" fill="#3d4b52">state</text>
+
+<rect x="330" y="296" width="250" height="70" rx="4" fill="#edf7f5" stroke="#186466"/>
+<text x="346" y="324">_store.write_plan</text>
+<text x="346" y="350" font-size="15" fill="#3d4b52">version-checked commit</text>
+
+<path d="M 455 240 V 296" stroke="#186466" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="470" y="272" font-size="14" fill="#3d4b52">append comment</text>
+
+<path d="M 580 331 H 640 V 205 H 580" fill="none" stroke="#8a5a12" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-amber)"/>
+<text x="648" y="284" font-size="14" fill="#8a5a12">VersionConflict</text>
+<text x="648" y="304" font-size="14" fill="#8a5a12">retry (4 attempts)</text>
+
+<rect x="700" y="296" width="260" height="70" rx="4" fill="#fff" stroke="#186466"/>
+<text x="716" y="324">plan comment</text>
+<text x="716" y="350" font-size="15" fill="#3d4b52">c-run-&lt;run_id&gt;, version bumped</text>
+<path d="M 580 331 H 700" stroke="#186466" stroke-width="2" marker-end="url(#arrow)"/>
+
+<rect x="20" y="170" width="250" height="196" rx="4" fill="#f4f7f8" stroke="#5a6b74"/>
+<text x="36" y="198" font-size="15" fill="#3d4b52">no landing: line</text>
+<text x="36" y="230" font-size="15">body = narrative</text>
+<text x="36" y="258" font-size="15">and the worker-authored</text>
+<text x="36" y="282" font-size="15">deferral still applies:</text>
+<text x="36" y="306" font-size="15">a record already in the</text>
+<text x="36" y="330" font-size="15">worker's committed plan</text>
+<text x="36" y="354" font-size="15">is left to its merge</text>
+
+<text x="330" y="404" font-size="15" fill="#3d4b52">No path writes the plan HTML directly: the landing reaches the plan only as a versioned edit.</text>
+</g></svg>

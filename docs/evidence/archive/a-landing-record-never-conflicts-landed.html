@@ -45,6 +45,16 @@
       <li>Evidence arms: <code>gate-head.log</code> and <code>gate-base.log</code>, each header printing the revision, the resolved cwd and the served <code>reckon.__file__</code>; head and base each exit 0 with no failing ids, the delta empty, and the new test file absent at base.</li>
       <li><strong>Open, outside this node's fence:</strong> the public <code>read_plan</code> route refuses an evidence document at <code>view='section'</code> &mdash; the section view in <code>reckon/mcp_views.py</code> admits plan resources only &mdash; so the composed text is reachable today only through the <code>_typed_resource_text</code> machinery this node wired.</li>
     </ul>
+    <p><strong>Versioned landing write</strong> &mdash; promotion lands a run's <code>landing:</code> line as a comment on the node's plan section through the versioned plan write, with no dependence on a git merge of the plan HTML. <code>_declared_manifest_landing</code> reads the line from the run's durable manifest; <code>_record_landing_comment</code> uses it as the comment body in place of the coordinator narrative and writes it with <code>_store.write_plan</code> under the same run-derived comment id and <code>VersionConflict</code> retry the versioned half already used. A run whose manifest declares no <code>landing:</code> line keeps the existing path, including the worker-authored deferral in <code>_worker_authored_landing_record</code>: a worker that writes one declares its record in the manifest and does not edit the plan, so there is no merge-borne duplicate for promotion to leave alone.</p>
+    <figure>
+      <img src="/reckon/figures/a-landing-record-never-conflicts/landing_line_through_the_versioned_write.svg" alt="Manifest landing: line to _declared_manifest_landing to _record_landing_comment to the versioned read/write with a VersionConflict retry, producing the plan comment; a manifest without a landing: line keeps the narrative and the worker-authored deferral.">
+      <figcaption>The landing reaches the plan as a versioned edit; a concurrent plan edit is retried rather than lost.</figcaption>
+    </figure>
+    <ul>
+      <li>3 cases in <code>tests/test_promotion_writes_the_landing_line.py</code> over a synthesised repository: the <code>landing:</code> line lands as the section comment with the plan version bumped; a run whose manifest declares no landing line keeps the coordinator narrative and <code>_declared_manifest_landing</code> returns the empty string; and a plan edited by a peer between promotion's read and its write is retried, both comments surviving with the landing body intact. 23 passing with the four neighbouring landing-store modules; <code>tests/test_landing_comment_authorship.py</code> 5 passing.</li>
+      <li>Negative control: skipping the landing line (<code>body_text = landing or narrative</code> &rarr; <code>body_text = narrative</code>) leaves the landing-line case's section with no comment, and the case fails (<code>logs/negative-control.log</code>).</li>
+      <li>Reuse map: <code>reckon/crew/promotion.py</code> <code>_record_landing_comment</code> and <code>_worker_authored_landing_record</code> per <code>s25-reuse-map-record-and-promotion/reuse-map.md</code>.</li>
+    </ul>
   </section>
 
 </main>
