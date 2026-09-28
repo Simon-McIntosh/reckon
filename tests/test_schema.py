@@ -409,6 +409,38 @@ def test_section_dependency_mapping_survives_a_state_write():
     }
 
 
+def test_one_malformed_section_entry_keeps_the_entries_beside_it():
+    """One unreadable entry must not discard the mapping it sits in."""
+    html = SPARSE_PLAN.replace(
+        "</head>",
+        '<meta name="plan-section-depends-on" content='
+        '"{&quot;s5&quot;: [&quot;plan-b#s3&quot;], '
+        '&quot;not a section!&quot;: [&quot;plan-b#s3&quot;]}">\n</head>',
+        1,
+    )
+    mapping = section_depends_on(html)
+
+    assert mapping is not None
+    assert mapping["s5"] == ["plan-b#s3"]
+    assert mapping["not a section!"] == ["plan-b#s3"]
+
+    refusals = section_dependency_refusals(mapping, lambda project, slug: None)
+    assert [(row["code"], row["section"]) for row in refusals] == [
+        ("invalid-section-dependency", "not a section!")
+    ]
+
+
+def test_a_non_list_refs_entry_keeps_the_entries_beside_it():
+    html = SPARSE_PLAN.replace(
+        "</head>",
+        '<meta name="plan-section-depends-on" content='
+        '"{&quot;s5&quot;: [&quot;plan-b#s3&quot;], &quot;s6&quot;: 7}">\n</head>',
+        1,
+    )
+
+    assert section_depends_on(html) == {"s5": ["plan-b#s3"], "s6": 7}
+
+
 def test_section_dependency_refuses_a_ref_naming_no_target_section():
     refusals = section_dependency_refusals(
         {"s5": ["plan-b#s3", "plan-b#gone", "not a ref"]},

@@ -20,6 +20,7 @@ from reckon._schema import (
     GRAPH_HANDLE_GRAMMAR,
     LEGACY_EFFORT_HOURS,
     is_graph_handle,
+    is_section_identity,
     parse_plan_ref,
     pending_transition_gates,
     plan_section_anchors,
@@ -549,7 +550,10 @@ def _section_scoped_edges(
     section, because an unresolvable edge is no evidence that its dependency
     landed. A malformed ref names no section to hold and so holds nothing, but it
     is refused with a finding rather than dropped, so a mapping that does nothing
-    says why.
+    says why. The same holds for an entry whose own identity is not a section:
+    it is refused by name and its refs build no edge, so neither a phantom
+    section nor a phantom blocker enters the sets. One malformed entry never
+    exempts the entries beside it from being read.
     """
 
     rows: list[dict[str, Any]] = []
@@ -575,6 +579,10 @@ def _section_scoped_edges(
     )
     for raw_section, raw_refs in mapping.items():
         waiting_section = str(raw_section or "").strip()
+        if not is_section_identity(waiting_section):
+            # An entry that names no section holds nothing; the refusals have
+            # refused it by name, so no phantom section is added to the sets.
+            continue
         refs = [raw_refs] if isinstance(raw_refs, str) else raw_refs
         if not isinstance(refs, list):
             continue

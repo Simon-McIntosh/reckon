@@ -347,7 +347,17 @@ def standalone_reason(html_text: str) -> str | None:
 SECTION_DEPENDS_ON_META = "plan-section-depends-on"
 
 
-def section_depends_on(html_text: str) -> dict[str, list[str]] | None:
+def is_section_identity(value: Any) -> bool:
+    """Whether ``value`` is a usable section identity.
+
+    Section identities are resource path segments, so the grammar is shared
+    with filenames and slugs rather than invented per consumer.
+    """
+
+    return bool(_RESOURCE_SEGMENT_RE.fullmatch(str(value or "").strip()))
+
+
+def section_depends_on(html_text: str) -> dict[str, Any] | None:
     """Return a plan's section-scoped dependency mapping, or ``None``.
 
     The mapping is keyed by the section identities the plan declares, each holding the
@@ -355,10 +365,17 @@ def section_depends_on(html_text: str) -> dict[str, list[str]] | None:
     while its siblings stay dispatchable. Like the standalone declaration it is
     authored markup the state engine leaves untouched, so the meta itself is
     read here rather than through parsed state. ``None`` means the plan declares
-    no such edge, which is the whole-plan behaviour every plan had before. A
-    declaration that will not parse reads as absent: markup validation belongs to
-    the state engine, and a second reader inventing its own recovery would be a
-    second source of truth.
+    no such edge, which is the whole-plan behaviour every plan had before, or
+    declares one no reader can use at all — no meta, empty content, or a blob
+    that is not a JSON object.
+
+    A defect inside one entry is not a reason to discard the declaration: an
+    entry is kept as authored when its refs are not a list, and kept under its
+    own identity when that identity fails the segment grammar, so
+    ``section_dependency_refusals`` can name the defect while the valid entries
+    beside it go on describing their edges. Reading stays a read — nothing here
+    repairs an entry, and a caller that builds edges from the mapping skips
+    identities ``is_section_identity`` rejects.
     """
 
     for tag in _META_TAG_RE.findall(html_text or ""):
@@ -375,14 +392,16 @@ def section_depends_on(html_text: str) -> dict[str, list[str]] | None:
             return None
         if not isinstance(value, dict):
             return None
-        mapping: dict[str, list[str]] = {}
+        mapping: dict[str, Any] = {}
         for raw_section, raw_refs in value.items():
             section = str(raw_section or "").strip()
-            if not _RESOURCE_SEGMENT_RE.fullmatch(section):
-                return None
             refs = [raw_refs] if isinstance(raw_refs, str) else raw_refs
             if not isinstance(refs, list):
-                return None
+                # Kept as authored so the refusals can name the entry: dropping
+                # it here would lose the defect with no report, and returning
+                # None would lose every valid entry beside it.
+                mapping[section] = raw_refs
+                continue
             mapping[section] = [
                 str(ref).strip() for ref in refs if str(ref or "").strip()
             ]
@@ -404,7 +423,9 @@ def section_dependency_refusals(
     is the code a staged ``depends_on`` ref already earns for the same defect, so
     one code carries one meaning whichever field declared the edge. An
     unresolvable target is left to the dependency findings, which already report
-    those.
+    those. An entry whose own identity is not a section is refused by name and
+    skipped — it names no section to hold — while the entries beside it are
+    still read.
 
     Each row names the declaring section, the offending ref, the finding code the
     caller should raise, and the reason: an edge nobody can resolve must be
@@ -420,7 +441,11 @@ def section_dependency_refusals(
 
     for raw_section, raw_refs in (mapping or {}).items():
         section = str(raw_section or "").strip()
-        if not _RESOURCE_SEGMENT_RE.fullmatch(section):
+        if not is_section_identity(section):
+            # An entry whose identity is not a section names no section to
+            # hold, so its refs are not meaningful and are not read from; one
+            # defect earns one refusal, and the entries beside it are
+            # unaffected.
             refuse(
                 "invalid-section-dependency",
                 section,
@@ -428,6 +453,7 @@ def section_dependency_refusals(
                 "section_depends_on: section identities must match "
                 f"{_RESOURCE_SEGMENT_RE.pattern}; got {raw_section!r}",
             )
+            continue
         refs = [raw_refs] if isinstance(raw_refs, str) else raw_refs
         if not isinstance(refs, list):
             refuse(

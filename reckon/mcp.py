@@ -75,7 +75,9 @@ from reckon._schema import (
     IndexData,
     PlanState,
     gen_json_schema,
+    is_section_identity,
     parse_plan_ref,
+    section_depends_on,
     standalone_reason,
 )
 from reckon._store import (
@@ -938,6 +940,16 @@ def _read_plan(
         result["deps"] = [
             _resolve_plan_ref(ref, project, checkout_path) for ref in deps
         ]
+    if data and canonical_type(data.get("type")) == "plan":
+        # Section-scoped refs resolve through the same read, so a caller sees
+        # the waiting section beside the whole-plan dependencies it already had.
+        section_rows = _section_dependency_rows(
+            _plan_html_text(project, slug, checkout_path, doc_type),
+            project,
+            checkout_path,
+        )
+        if section_rows:
+            result["deps"] = [*result.get("deps", []), *section_rows]
     if with_schema:
         result["schema"] = gen_json_schema()
         result["dos_donts"] = _DOS_DONTS
@@ -1436,6 +1448,35 @@ def _read_plan_view(
             selector=selector,
             hint="Inspect the typed identity and project-state audit.",
         )
+
+
+def _section_dependency_rows(
+    html_text: str,
+    owning_project: str,
+    checkout_path: str | None = None,
+) -> list[dict[str, Any]]:
+    """Resolve a plan's section-scoped refs, naming the section that waits.
+
+    The mapping is authored markup the state engine leaves untouched, so it is
+    read from the header the same way the standalone declaration is read.
+    Each row carries the whole-plan row shape plus ``source_section``, so a
+    caller can see which section of the owning plan holds the ref beside the
+    target plan and section the ref resolves to.
+    """
+
+    rows: list[dict[str, Any]] = []
+    for raw_section, raw_refs in (section_depends_on(html_text) or {}).items():
+        waiting = str(raw_section or "").strip()
+        if not is_section_identity(waiting):
+            continue
+        refs = [raw_refs] if isinstance(raw_refs, str) else raw_refs
+        if not isinstance(refs, list):
+            continue
+        for ref in refs:
+            row = _resolve_plan_ref(str(ref), owning_project, checkout_path)
+            row["source_section"] = waiting
+            rows.append(row)
+    return rows
 
 
 def _resolve_plan_ref(

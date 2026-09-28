@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from reckon import mcp as mcp_module
+from reckon._store import new_plan_html
 from reckon.mcp_views import _blocking
 from reckon.roadmap import build_roadmap
 from reckon.serve import _derive_lifecycle, discover_plans
@@ -369,6 +371,84 @@ def test_plan_without_the_mapping_blocks_whole_plans_as_before(tmp_path: Path) -
     assert row["effective_status"] == "blocked"
     assert "section_readiness" not in row
     assert "plan-c" not in [item["slug"] for item in result["ready_now"]]
+
+
+def test_one_unreadable_section_entry_keeps_the_valid_edge(tmp_path: Path) -> None:
+    """A malformed section identity must not discard the entries beside it."""
+    docs = tmp_path / "docs"
+    (docs / "plans").mkdir(parents=True)
+    (docs / "plans" / "plan-b.html").write_text(
+        _plan_document("plan-b", sections={"s3": False}), encoding="utf-8"
+    )
+    (docs / "plans" / "plan-a.html").write_text(
+        _plan_document(
+            "plan-a",
+            sections={"s2": True, "s5": True},
+            section_depends_on={
+                "s5": ["plan-b#s3"],
+                "not a section!": ["plan-b#s3"],
+            },
+        ),
+        encoding="utf-8",
+    )
+
+    discovered = discover_plans(docs, "sample", tmp_path / "state")
+    result = build_roadmap(
+        "sample",
+        discovered["inventory"],
+        discovered["sprints"],
+        active_sprint_id=discovered["active_sprint_id"],
+        project_manifest=discovered,
+        review={},
+        docs_dir=docs,
+    )
+    row = next(item for item in result["pending_work"] if item["slug"] == "plan-a")
+
+    assert row["ready_sections"] == ["s2"]
+    assert row["blocked_sections"] == ["s5"]
+    assert [edge["ref"] for edge in row["section_depends_on"]] == ["plan-b#s3"]
+    finding = next(
+        item
+        for item in result["wiring_findings"]
+        if item["code"] == "invalid-section-dependency" and item["slug"] == "plan-a"
+    )
+    assert finding["extra"] == {"ref": None, "section": "not a section!"}
+
+
+def test_read_plan_deps_name_the_waiting_section(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The MCP read path resolves section-scoped refs beside whole-plan ones."""
+    repo = tmp_path / "repo"
+    plans = repo / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "plan-b.html").write_text(
+        new_plan_html("sample", "plan-b"), encoding="utf-8"
+    )
+    mapping_meta = (
+        '<meta name="plan-section-depends-on" content="'
+        f'{escape(json.dumps({"s5": ["plan-b#s3"]}), quote=True)}"></head>'
+    )
+    (plans / "plan-a.html").write_text(
+        new_plan_html("sample", "plan-a").replace("</head>", mapping_meta, 1),
+        encoding="utf-8",
+    )
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(json.dumps({"sample": str(repo / "docs")}), encoding="utf-8")
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(tmp_path / "state"))
+
+    result = mcp_module._read_plan(
+        project="sample", slug="plan-a", checkout_path=str(repo)
+    )
+    edge = next(row for row in result["deps"] if row["ref"] == "plan-b#s3")
+
+    assert edge["source_section"] == "s5"
+    assert edge["scope"] == "local"
+    assert edge["project"] == "sample"
+    assert edge["slug"] == "plan-b"
+    assert edge["stage"] == "s3"
+    assert edge["found"] is True
 
 
 def test_open_decision_blocks_its_plan_with_a_distinct_blocker_kind() -> None:
