@@ -63,7 +63,14 @@ def test_complete_preserves_the_promotion_commit_through_release(
         (worktree / "keep.txt").write_text("uncommitted worker result\n")
     run_id = "r-release"
     manifest = tmp_path / "manifest.md"
-    manifest.write_text("status: complete\nchanged_paths: []\n")
+    # A report-only run declares the artefact it wrote. An empty declared
+    # scope reads as silence about what changed and is granted the fuller
+    # review; naming the report path measures a scope that holds no runtime
+    # source, so the run resolves to the tier that owes no review.
+    manifest.write_text(
+        "status: complete\n"
+        f"changed_paths: {tmp_path / 'reports' / (run_id + '.md')}\n"
+    )
     gate_log = tmp_path / "gate.log"
     command = [sys.executable, "-c", "print('promotion fixture ready')"]
     with gate_log.open("w") as log:

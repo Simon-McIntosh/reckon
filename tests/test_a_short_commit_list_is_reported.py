@@ -308,6 +308,9 @@ def test_a_shortfall_promotion_completes_and_reports_on_the_record(
         },
     )
 
+    # The cited commits change only root-level text files, which the review
+    # tier reads as no runtime source: the run owes no review, so it promotes
+    # without a waiver and the report under test is what the promotion carries.
     result = CliRunner().invoke(
         cli_main,
         [
@@ -327,8 +330,6 @@ def test_a_shortfall_promotion_completes_and_reports_on_the_record(
             "0",
             "--gate-log-path",
             "/durable/shortfall.log",
-            "--waive-unreviewed-promotion",
-            "the fixture measures the shortfall report, not the review gate",
         ],
     )
 
