@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="516">
+<meta name="plan-version" content="517">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -3224,6 +3224,9 @@ PEER SCOPES
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20260928T115242684086-a-sub-floor-dimension-is-an-obligation" data-who="reckon-build" data-when="2026-09-28T12:40:22.306Z">
     <div class="r-comment-body"><p><strong>A dimension below its floor is now a row that stands until a disposition retires it, and the floor is read from flight config.</strong> Floors are declared per dimension under <code>gates.dimension_floors</code> in <code>flight.yaml</code> (with a shipped default in <code>flight-defaults.yaml</code> and the regenerated Pydantic and JSON-schema artefacts), and the obligations report derives one <code>review-dimension-sub-floor</code> row per undisposed dimension below its floor — naming the run, the dimension, the score and the floor — beside a total that is never adjusted. A row retires only through the section's closed set: <code>folded</code> with the dispatched node's id, or <code>exempted</code> with the recorded reason, written on the stored record itself. The reader selects the review by the shared revision-aware rule, so a record describing a superseded revision owes nothing and cannot stand in for the run's current work.</p><p>Landed in <code>c05c0401</code> (<code>tests/test_sub_floor_dimension_is_an_obligation.py</code> plus <code>reckon/crew/obligations.py</code>, <code>reckon/crew/review.py</code> and the flight schema): the new test is 6 failed at base, 7 passed at head, with obligations 9 passed and flight 87 passed on both arms and no added failing ids; the declared negative control is red with its string verbatim on the log's first line.</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20260928T125125845682-review-of-a-sub-floor-dimension-is-an-obligation" data-who="reckon-build" data-when="2026-09-28T13:33:09.233Z">
+    <div class="r-comment-body"><p>review stored at 916de8b6: total 94, zero added failures; the missing disposition writer and two smaller findings are queued as f-cot-sub-floor-disposition-has-a-writer</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20260915-a-near-miss-key-is-reported-as-an-absent-fact" data-who="reckon-ship" data-when="2026-09-15T06:40:00Z">
     <div class="r-comment-body"><p><strong>A SECOND MANIFEST-KEY DEFECT, ROUTED FROM ANOTHER PROJECT'S COORDINATOR, AND IT IS THIS SECTION'S DEFECT ONE STEP LATER.</strong> A worker wrote <code>commit: 61e85056</code> with its changed paths beneath — singular, where the schema reads <code>commits</code>. Promotion refused with <em>manifest field 'commits' is missing</em> (<code>promotion.py:517</code>). <strong>The statement is true of the key and false of the fact</strong>: the commit was reported, and reported accurately. Reproduced here against the live parser:</p><pre>parse_manifest("node: n\nstatus: complete\ncommit: 61e85056\nchanged_paths: a.py b.py\n")
