@@ -155,7 +155,8 @@
 
     <div data-reckon="landing" data-node="coordinator-cost-per-landed-node" data-when="2026-09-28">
       <h3>Landing record &mdash; coordinator cost per landed node</h3>
-      <p>Commits <code>e2fc9f03</code>, <code>280d7fa9</code> and <code>118b06ba</code> extend
+      <p>Commits <code>e2fc9f03</code>, <code>280d7fa9</code>, <code>118b06ba</code> and
+      <code>474d8119</code> extend
       <code>reckon/velocity.py</code> with a <code>coordinator_cost</code> section: each landed
       node's <code>node_definition.coordinator.runtime_session_id</code> groups it under the
       session that directed it, and the section divides that session's assistant responses, logical
@@ -182,16 +183,21 @@
       </figure>
       <p><strong>Committed tests.</strong> <code>tests/test_velocity_coordinator_cost.py</code>
       synthesises its transcripts and run rows under <code>tmp_path</code> and passes at exit 0
-      (<strong>13 passed</strong> across it and the existing view test). The declared negative
-      control folds cache-read tokens into the uncached input figure; the cache-read separation
-      test then reads the uncached bucket at 3400 instead of 300 and fails
-      (<strong>1 failed</strong>, exit 1).
-      The transcript root defaults to nothing in the measurement entry point, so the suite never
-      reads the live transcript store.</p>
+      (<strong>15 passed</strong> across it and the existing view test). Two declared negative
+      controls. The first folds cache-read tokens into the uncached input figure; the cache-read
+      separation test then reads the uncached bucket at 3400 instead of 300 and fails
+      (<strong>1 failed</strong>, exit 1). The second restores the pre-repair receipt rule — a
+      whole-command word search for a crew verb, and no failure receipt for a printed
+      <code>Error:</code> line — and the two fixtures that bind the rule then fail
+      (<strong>2 failed</strong>, exit 1): a dispatch whose goal names a promotion classifies as
+      one, and a refused promotion reads as a landing through its clipped tail. The transcript
+      root defaults to nothing in the measurement entry point, so the suite never reads the live
+      transcript store.</p>
       <p>Receipts under
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T191523670440-coordinator-cost-per-landed-node/</code>:
       <code>measure_coordinator_cost.py</code>, <code>measurement3.log</code>,
-      <code>negative_control2.log</code>, <code>tests2.log</code>. Full record:
+      <code>tests3.log</code>, <code>negative_control3.log</code>,
+      <code>negative_control_receipts.log</code>. Full record:
       <code>the-fleet-reports-its-velocity-landed.html#s3-coordinator-cost-per-landed-node</code>.</p>
     </div>
 

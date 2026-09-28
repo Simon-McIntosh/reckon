@@ -110,7 +110,8 @@
     </section>
   <section id="s3-coordinator-cost-per-landed-node">
       <h2>&sect;3 &mdash; Coordinator cost per landed node</h2>
-      <p>Commits <code>e2fc9f03</code>, <code>280d7fa9</code> and <code>118b06ba</code> extend
+      <p>Commits <code>e2fc9f03</code>, <code>280d7fa9</code>, <code>118b06ba</code> and
+      <code>474d8119</code> extend
       <code>reckon/velocity.py</code> with a <code>coordinator_cost</code> section. Each landed
       node names its coordinator's runtime session, so nodes are grouped by the session that
       directed them; the section then divides that session's assistant responses, logical input,
@@ -139,8 +140,9 @@
           <tr><td>Input tokens</td><td>20,375,175,527</td><td>20,375,175,527</td></tr>
           <tr><td>Cache read (reported separately)</td><td>20,179,819,699</td><td>20,179,819,699</td></tr>
           <tr><td>Output tokens</td><td>28,029,284</td><td>28,029,284</td></tr>
-          <tr><td>Gate at <code>118b06ba</code></td><td>13 passed, exit 0</td><td>&mdash;</td></tr>
-          <tr><td>Negative control</td><td>1 failed, exit 1</td><td>&mdash;</td></tr>
+          <tr><td>Gate at <code>474d8119</code></td><td>15 passed, exit 0</td><td>&mdash;</td></tr>
+          <tr><td>Negative control (cache-read fold)</td><td>1 failed, exit 1</td><td>&mdash;</td></tr>
+          <tr><td>Negative control (receipt rule)</td><td>2 failed, exit 1</td><td>&mdash;</td></tr>
         </tbody>
       </table>
       <p><strong>Sessions outside tolerance: none.</strong> An earlier measurement over this window
@@ -157,8 +159,12 @@
       under <code>tmp_path</code>. It asserts the repeated-response dedupe, the cache-read share as
       its own figure, the per-landed-node division, the unattributed bucket, that a session with no
       transcript reports null rather than zero, and that the measurement entry point runs without a
-      transcript root. Logs: <code>measurement3.log</code>, <code>negative_control2.log</code>,
-      <code>tests2.log</code>.</p>
+      transcript root. Two fixtures bind the receipt rule: a dispatch whose goal text names a
+      promotion must not classify as one, and a refused promotion printing an
+      <code>Error:</code> line must not read as a landing through its clipped tail; both fail when
+      the pre-repair receipt rule is restored, which is recorded as the second declared negative
+      control. Logs: <code>measurement3.log</code>, <code>tests3.log</code>,
+      <code>negative_control3.log</code>, <code>negative_control_receipts.log</code>.</p>
     </section>
   </main>
 </body>
