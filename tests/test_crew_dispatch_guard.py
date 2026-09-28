@@ -244,25 +244,30 @@ def test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch(
     assert "node-accepted" in worktrees
 
 
-def test_two_concurrent_nodes_both_hold_the_shared_landing_paths(
+def test_two_concurrent_nodes_each_hold_their_own_landing_fragment(
     isolated_project: tuple[Path, Path],
 ) -> None:
-    """The plan and evidence paths are not exclusive to the first node.
+    """Two nodes on one plan get disjoint fragments, so both are admitted.
 
-    Both nodes on one plan append their landing record to the same plan file
-    and evidence record, so those paths cannot belong to whichever dispatches
-    first. The exclusive-claim refusal exempts them, git merge resolves the
-    appends, and a second dispatch on the same plan is admitted.
+    Each node's landing record goes to a fragment keyed by its own id, so the
+    two default scopes share no path and neither is nested inside the other.
+    The plan file, the cumulative evidence record and the plan-wide figure
+    directory belong to no node's default scope, and the second dispatch on
+    the same plan is admitted.
     """
     config_home, repo = isolated_project
 
     first = _dispatch(config_home, repo, "landing-owner")
     second = _dispatch(config_home, repo, "landing-second")
 
-    for record in (first, second):
+    for record, name in ((first, "owner"), (second, "second")):
         declared = set(record["node"]["write_paths"])
-        assert "docs/plans/fixture.html" in declared
-        assert "docs/evidence/archive/fixture-landed.html" in declared
+        assert f"docs/evidence/fragments/fixture/node-landing-{name}.html" in declared
+        assert f"docs/figures/fixture/node-landing-{name}" in declared
+        assert "docs/plans/fixture.html" not in declared
+        assert "docs/evidence/archive/fixture-landed.html" not in declared
+        assert "docs/figures/fixture" not in declared
+    assert sorted(first["node"]["write_paths"]) != sorted(second["node"]["write_paths"])
     assert (
         crew.read_pointer(second["run_id"])["node"]["write_paths"]
         == second["node"]["write_paths"]
@@ -400,16 +405,14 @@ def test_member_lookup_uses_project_mount_from_another_repository(
     assert Path.cwd() == work_repo
     assert record["repo"] == str(plan_repo.resolve())
     assert record["authority"]["plan"]["repository"] == str(plan_repo.resolve())
-    # The node's own delivery path plus the shared landing paths dispatch grants
-    # the fixture plan — its file, its cumulative evidence record and the plan's
-    # figure topic directory — still declared relative to the repository that
-    # owns it.
+    # The node's own delivery path plus the fragment dispatch grants it —
+    # its evidence fragment and its figure directory — still declared relative
+    # to the repository that owns it.
     assert sorted(record["node"]["write_paths"]) == sorted(
         [
             str(report),
-            "docs/plans/fixture.html",
-            "docs/evidence/archive/fixture-landed.html",
-            "docs/figures/fixture",
+            "docs/evidence/fragments/fixture/node-mounted-member.html",
+            "docs/figures/fixture/node-mounted-member",
         ]
     )
 
