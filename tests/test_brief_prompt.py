@@ -123,6 +123,18 @@ def test_a_brief_prompt_keeps_a_landing_contract_naming_the_run_directory() -> N
     assert "rather than into a plan section" in flat
 
 
+def test_the_plan_landing_contract_names_the_nodes_own_figure_directory() -> None:
+    """The plan node's fence grants ``docs/figures/<plan>/<node-id>/``, so the
+    figure sentence must name that directory. The plan-wide topic it once named
+    is exactly what this change retired: a worker following the sentence would
+    write into the directory no node owns, outside its own fence."""
+    flat = _flat(_compose())
+
+    assert "docs/figures/<plan>/<node-id>/" in flat
+    assert "src /<project>/figures/<plan>/<node-id>/" in flat
+    assert "docs/figures/<topic>/" not in flat
+
+
 def test_the_brief_landing_contract_keeps_the_figure_and_meta_rules() -> None:
     flat = _flat(_compose(brief=BRIEF_TEXT))
 
@@ -264,8 +276,9 @@ CONTRACT — LANDING YOUR RECORD
   line in your manifest in place of a plan edit. The fragment goes into your
   final commit; promotion lands the `landing:` line on your plan section.
   Use a figure wherever a spatial, plotted or sequential relationship is clearer
-  shown than described, under docs/figures/<topic>/ with the project-absolute
-  src /<project>/figures/...; never an image of what is naturally a table.
+  shown than described, under your own docs/figures/<plan>/<node-id>/ with the
+  project-absolute src /<project>/figures/<plan>/<node-id>/...; never an image
+  of what is naturally a table.
   Do not edit the plan-version or plan-modified meta lines: every worker
   touching them makes every merge conflict there.
 

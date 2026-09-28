@@ -267,9 +267,7 @@ def test_two_concurrent_nodes_each_hold_their_own_landing_fragment(
         assert "docs/plans/fixture.html" not in declared
         assert "docs/evidence/archive/fixture-landed.html" not in declared
         assert "docs/figures/fixture" not in declared
-    assert sorted(first["node"]["write_paths"]) != sorted(
-        second["node"]["write_paths"]
-    )
+    assert sorted(first["node"]["write_paths"]) != sorted(second["node"]["write_paths"])
     assert (
         crew.read_pointer(second["run_id"])["node"]["write_paths"]
         == second["node"]["write_paths"]

@@ -1373,9 +1373,7 @@ def _landing_fragment_paths(
     except (KeyError, TypeError, ValueError):
         return set()
     return {
-        (
-            docs_dir / "evidence" / "fragments" / node.plan / f"{node.id}.html"
-        ).resolve(),
+        (docs_dir / "evidence" / "fragments" / node.plan / f"{node.id}.html").resolve(),
         (docs_dir / "figures" / node.plan / node.id).resolve(),
     }
 

@@ -85,10 +85,11 @@
         containing or contained in the same path; the fragment named and no shared record among the write paths; a
         redispatch returning the same fragment; and an explicitly declared shared record granted with
         <code>reintroduces the merge conflict</code> in the warning. 6 passing.</li>
-      <li>Gate arms: <code>gate-base.log</code> (base <code>4b05b1d7</code>, 31 passing, exit 0) and
-        <code>gate-head.log</code> (this tree, 33 passing, exit 0) over
-        <code>tests/test_shared_landing_paths.py</code>, <code>tests/test_brief_prompt.py</code> and
-        <code>tests/test_crew_dispatch_guard.py</code>.</li>
+      <li>Gate arms: <code>repair-gate-base.log</code> (base <code>4b05b1d7</code>, 33 passing, exit 0) and
+        <code>repair-gate-head.log</code> (this tree, 35 passing, exit 0) over
+        <code>tests/test_shared_landing_paths.py</code>, <code>tests/test_brief_prompt.py</code>,
+        <code>tests/test_crew_dispatch_guard.py</code> and
+        <code>tests/test_context_estimate_excludes_granted_paths.py</code>.</li>
       <li>Negative control: restoring the plan's cumulative evidence record to every node's default scope makes the
         six-node disjointness assertion fail (<code>negative-control.log</code>).</li>
       <li>Reuse map: <code>_shared_landing_paths</code>, <code>_grant_landing_write_paths</code> and
@@ -96,12 +97,11 @@
         <code>s25-reuse-map-dispatch-surface/reuse-map.md</code>, re-derived at this node's base
         (<code>_shared_landing_paths</code> kept as the detection set rather than replaced; the fragment default added
         alongside it).</li>
-      <li><strong>Open, outside this node's fence:</strong> nine cases in four neighbouring test modules pin the retired
+      <li><strong>Open, outside this node's fence:</strong> seven cases in three neighbouring test modules pin the retired
         default and were not in this node's write scope &mdash; <code>tests/test_crew_prompts.py</code> (1),
         <code>tests/test_skill_contract_parity.py</code> (4, whose extracted expectation also needs the three ship-skill
-        files reworded), <code>tests/test_role_write_scope.py</code> (2) and
-        <code>tests/test_context_estimate_excludes_granted_paths.py</code> (2, the last calling
-        <code>_grant_landing_write_paths</code> without the new <code>warnings</code> argument). See <code>follow_ons</code>
+        files reworded) and <code>tests/test_role_write_scope.py</code> (2). In the same batch, three cases in
+        <code>tests/test_skill_contracts.py</code> fail at base too and are not this change's. See <code>follow_ons</code>
         in the run manifest.</li>
     </ul>
 

@@ -74,8 +74,9 @@ PLAN_LANDING_CONTRACT = (
     "  line in your manifest in place of a plan edit. The fragment goes into your\n"
     "  final commit; promotion lands the `landing:` line on your plan section.\n"
     "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
-    "  shown than described, under docs/figures/<topic>/ with the project-absolute\n"
-    "  src /<project>/figures/...; never an image of what is naturally a table.\n"
+    "  shown than described, under your own docs/figures/<plan>/<node-id>/ with the\n"
+    "  project-absolute src /<project>/figures/<plan>/<node-id>/...; never an image\n"
+    "  of what is naturally a table.\n"
     "  Do not edit the plan-version or plan-modified meta lines: every worker\n"
     "  touching them makes every merge conflict there."
 )
