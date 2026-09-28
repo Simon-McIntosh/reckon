@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 560" width="1040" height="560" font-family="Helvetica, Arial, sans-serif">
+  <style>
+    .panel { fill: #ffffff; stroke: #cbd5e0; stroke-width: 1; }
+    .box   { fill: #f7fafc; stroke: #4a5568; stroke-width: 1.4; rx: 6; }
+    .hd    { fill: #e8eef7; stroke: #4a5568; stroke-width: 1.4; rx: 6; }
+    .title { font-size: 15px; font-weight: bold; fill: #1a202c; }
+    .lab   { font-size: 12.5px; fill: #4a5568; }
+    .code  { font-family: "DejaVu Sans Mono", Menlo, monospace; font-size: 13px; fill: #1a202c; }
+    .note  { font-size: 12.5px; fill: #744210; }
+    .arr   { stroke: #2b6cb0; stroke-width: 2.2; fill: none; marker-end: url(#head); }
+    .darr  { stroke: #b7791f; stroke-width: 2.2; fill: none; stroke-dasharray: 7 4; marker-end: url(#dhead); }
+  </style>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2b6cb0"/>
+    </marker>
+    <marker id="dhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b7791f"/>
+    </marker>
+  </defs>
+
+  <rect class="panel" x="10" y="10" width="1020" height="282" rx="8"/>
+  <text class="title" x="30" y="38">One read, no second call: the document the dispatch already consults &#8594; the reading it carries</text>
+
+  <rect class="hd" x="30" y="58" width="300" height="212"/>
+  <text class="title" x="46" y="82">lane.json</text>
+  <text class="lab" x="46" y="100">published by the lane, republished every 30 s</text>
+  <text class="code" x="46" y="128">observed_at : 2026-09-28T15:16:33Z</text>
+  <text class="code" x="46" y="150">running     : 7</text>
+  <text class="code" x="46" y="172">waiting     : 0</text>
+  <text class="code" x="46" y="194">throughput  : &#8212; absent today</text>
+  <text class="lab" x="46" y="224">read live by this node, 2026-09-28</text>
+  <text class="lab" x="46" y="242">(a key the lane does not publish is</text>
+  <text class="lab" x="46" y="258">carried as unknown, never as zero)</text>
+
+  <line class="arr" x1="330" y1="164" x2="366" y2="164"/>
+
+  <rect class="hd" x="372" y="58" width="300" height="212"/>
+  <text class="title" x="388" y="82">the dispatch consult</text>
+  <text class="lab" x="388" y="100">one read, through the shared reader</text>
+  <text class="code" x="388" y="128">generating &#8592; "generating"</text>
+  <text class="code" x="388" y="148">             else "running"</text>
+  <text class="code" x="388" y="174">waiting    &#8592; "waiting"</text>
+  <text class="code" x="388" y="200">throughput &#8592; "throughput"</text>
+  <text class="code" x="388" y="220">             (block, incl. its own</text>
+  <text class="code" x="388" y="240">              stamp when present)</text>
+  <text class="lab" x="388" y="262">each key resolved on its own</text>
+
+  <line class="arr" x1="672" y1="164" x2="708" y2="164"/>
+
+  <rect class="hd" x="714" y="58" width="296" height="212"/>
+  <text class="title" x="730" y="82">lane_reading (in the payload)</text>
+  <text class="lab" x="730" y="100">beside the routing decision, no extra call</text>
+  <text class="code" x="730" y="128">generating : 7</text>
+  <text class="code" x="730" y="150">waiting    : 0</text>
+  <text class="code" x="730" y="176">throughput : {state: "unknown",</text>
+  <text class="code" x="730" y="196">  mean_tokens_per_second: "unknown", ...}</text>
+  <text class="code" x="730" y="222">observed_at: 2026-09-28T15:16:33Z</text>
+  <text class="code" x="730" y="244">age_seconds: 5</text>
+
+  <rect class="panel" x="10" y="302" width="1020" height="248" rx="8"/>
+  <text class="title" x="30" y="330">An unpublished figure is withheld per field, and a withheld figure is never a zero</text>
+
+  <rect class="hd" x="30" y="348" width="330" height="82"/>
+  <text class="code" x="46" y="374">lane.json: running 7, no "waiting" key</text>
+  <text class="lab" x="46" y="398">the queue was not measured, so it is</text>
+  <text class="lab" x="46" y="416">not reported as a measured empty queue</text>
+
+  <line class="darr" x1="360" y1="389" x2="396" y2="389"/>
+
+  <rect class="hd" x="402" y="348" width="330" height="82"/>
+  <text class="code" x="418" y="374">waiting : "unknown"</text>
+  <text class="code" x="418" y="398">generating : 7   &#8592; still measured</text>
+  <text class="lab" x="418" y="420">the published count survives the missing one</text>
+
+  <rect class="hd" x="30" y="446" width="330" height="82"/>
+  <text class="code" x="46" y="472">lane.json: no "throughput" block</text>
+  <text class="lab" x="46" y="496">the lane never had its rate sampled, so no</text>
+  <text class="lab" x="46" y="514">rate is carried rather than a rate of zero</text>
+
+  <line class="darr" x1="360" y1="487" x2="396" y2="487"/>
+
+  <rect class="hd" x="402" y="446" width="330" height="82"/>
+  <text class="code" x="418" y="472">throughput : {state: "unknown",</text>
+  <text class="code" x="418" y="494">  mean_tokens_per_second: "unknown",</text>
+  <text class="code" x="418" y="514">  runs: "unknown"}  &#8594; detail names why</text>
+
+  <rect class="box" x="762" y="348" width="248" height="180"/>
+  <text class="title" x="778" y="374">Why per field</text>
+  <text class="lab" x="778" y="400">A lane serving 7 with 3 queued is</text>
+  <text class="lab" x="778" y="418">not a lane serving 10. A lane</text>
+  <text class="lab" x="778" y="436">nobody is using and a lane nobody</text>
+  <text class="lab" x="778" y="454">can measure must not read alike,</text>
+  <text class="lab" x="778" y="472">so zero is only ever carried when</text>
+  <text class="lab" x="778" y="490">the lane published a zero.</text>
+  <text class="note" x="778" y="514">Whole-carry collapse is reserved for</text>
+  <text class="note" x="778" y="530">document-level defects, unchanged.</text>
+</svg>
