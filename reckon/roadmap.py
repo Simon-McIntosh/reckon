@@ -1404,6 +1404,7 @@ def resolve_graph_target(
             list(state.get("sprints") or []),
             active_sprint_id=state.get("active_sprint_id"),
             project_manifest=state.get("project_manifest") or {},
+            docs_dir=state.get("docs_dir"),
         )
         for row in report["pending_work"]:
             schedule_rows[(project, str(row["slug"]))] = row
