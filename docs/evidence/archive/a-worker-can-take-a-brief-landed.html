@@ -9,10 +9,10 @@
   <meta name="plan-title" content="A Worker Can Take A Brief &mdash; landed record">
   <meta name="plan-summary" content="Cumulative execution evidence: one anchor per landed node, carrying its commit, gate measure, tests and negative findings.">
   <meta name="plan-evidence-for" content="a-worker-can-take-a-brief">
-  <meta name="plan-verifies" content="a-worker-can-take-a-brief#s3">
-  <meta name="plan-commits" content="488d3e92,e4d70125">
-  <meta name="plan-artifacts" content="reckon/crew/prompts.py,tests/test_brief_prompt.py">
-  <meta name="plan-recorded-at" content="2026-09-25">
+  <meta name="plan-verifies" content="a-worker-can-take-a-brief#s2,a-worker-can-take-a-brief#s3">
+  <meta name="plan-commits" content="488d3e92,e4d70125,dcb66ac8">
+  <meta name="plan-artifacts" content="reckon/crew/prompts.py,tests/test_brief_prompt.py,reckon/cli.py,reckon/crew/dispatch.py,reckon/crew/node.py,tests/test_brief_dispatch.py">
+  <meta name="plan-recorded-at" content="2026-09-28">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment on a fleet compute node (Python 3.14), real composition via reckon.crew.prompts.compose_prompt">
   <meta name="plan-tags" content="crew,dispatch,prompt,brief,verification">
@@ -29,6 +29,67 @@
       negative found on the way. The evergreen plan holds the design; this record holds what
       happened.
     </p>
+
+    <section id="s2">
+      <h2>&sect;2 &mdash; Dispatch accepts a brief</h2>
+      <p>
+        Commit <code>dcb66ac8</code> on the base revision <code>3f251453</code> makes
+        <code>reckon crew dispatch</code> take <code>--brief &lt;file&gt;</code> as the node's
+        authority in place of <code>--plan</code>/<code>--section</code>. The two are mutually
+        exclusive at the CLI (<code>reckon/cli.py</code>), and <code>--plan</code> is no longer a
+        required option. <code>TaskNode</code> in <code>reckon/crew/node.py</code> carries
+        <code>brief</code>, <code>brief_sha256</code> and <code>brief_path</code> beside
+        <code>plan</code> and <code>section</code>, and <code>validate_node</code>'s
+        <code>fully-specified</code> property is satisfied by either a plan or a brief. In
+        <code>plan_dispatch</code> (<code>reckon/crew/dispatch.py</code>) the brief branch takes the
+        digest and skips the committed-section and plan-review gates around their call sites &mdash;
+        not inside <code>routing.py</code> &mdash; while scope claims, the write-path authority
+        check and the fences still run. In <code>dispatch</code> the brief is copied under the run
+        directory and its digest and stored path are written to the live pointer and the pre-launch
+        claim; the text is passed to <code>compose_prompt(..., brief=...)</code> so the worker's
+        task-authority slot carries it verbatim.
+      </p>
+      <img src="/reckon/figures/a-worker-can-take-a-brief/brief-dispatch-flow.svg" alt="A stored brief is digested in the side-effect-free resolution step, copied into the run directory by the launching step, and named on the live pointer by digest and path; the composed prompt carries the brief text verbatim, while the same refusals a plan dispatch carries apply unchanged.">
+      <h3>The gate measures, as executed</h3>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Gate <code>tests/test_brief_dispatch.py</code> at <code>dcb66ac8</code></td>
+            <td><strong>4 passed</strong>, exit 0</td>
+          </tr>
+          <tr>
+            <td>Regression arm <code>tests/test_brief_prompt.py</code></td>
+            <td><strong>13 passed</strong>, exit 0; the same file passes at the base revision
+            <code>3f251453</code></td>
+          </tr>
+          <tr>
+            <td>Regression arm <code>tests/test_crew_dispatch_guard.py</code></td>
+            <td><strong>14 passed</strong>, exit 0; the same file passes at the base revision</td>
+          </tr>
+          <tr>
+            <td>Declared negative control &mdash; restore the committed plan-section check for a
+            brief dispatch</td>
+            <td>the brief gate fails <strong>2 of 4</strong> with <code>error:
+            plan-unavailable</code> at exit 1; the source is restored and confirmed
+            byte-identical</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        As-executed logs, absolute paths on the run's own directory:
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T192434735630-dispatch-accepts-a-brief/logs/gate-brief-dispatch.log</code>,
+        <code>.../arm-brief-prompt.log</code>, <code>.../arm-dispatch-guard.log</code>,
+        <code>.../base-brief-prompt.log</code>, <code>.../base-dispatch-guard.log</code>,
+        <code>.../negative-control.log</code>. The gate log's header prints the revision under test
+        and <code>reckon.__file__</code> for each arm.
+      </p>
+      <p>
+        <strong>Scope of this measure.</strong> The gate measures this node's own change only.
+        Verifying the merged result belongs to a separately dispatched test node; a failure
+        outside the declared scope is reported as a follow-on rather than triaged here.
+      </p>
+    </section>
 
     <section id="s3">
       <h2>&sect;3 &mdash; The prompt carries the brief where the plan section was</h2>

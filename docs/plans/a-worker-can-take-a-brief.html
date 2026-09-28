@@ -77,6 +77,55 @@
       <li>If a new public symbol appears, <code>tests/fixtures/crew-public-surface.txt</code> is its snapshot.</li>
     </ul>
 
+    <h3 id="s2-landed">Landed &mdash; node <code>dispatch-accepts-a-brief</code></h3>
+    <p>
+      Commit <code>dcb66ac8</code> on the base revision <code>3f251453</code> makes
+      <code>crew dispatch</code> take <code>--brief &lt;file&gt;</code> as the node's authority in
+      place of <code>--plan</code>/<code>--section</code>. The two carriers are mutually exclusive
+      at the CLI, and <code>--plan</code> is no longer a required option. <code>TaskNode</code>
+      carries <code>brief</code>, <code>brief_sha256</code> and <code>brief_path</code> beside
+      <code>plan</code> and <code>section</code>, and <code>validate_node</code>'s
+      <code>fully-specified</code> property is satisfied by either a plan or a brief. In
+      <code>plan_dispatch</code> the brief branch takes the digest and skips the committed-section
+      and plan-review gates around their call sites; in <code>dispatch</code> the brief is copied
+      under the run directory and its digest and stored path are written to the live pointer and the
+      pre-launch claim. The brief text is passed to <code>compose_prompt(..., brief=...)</code>, so
+      the worker's task-authority slot carries it verbatim. Scope claims, the write-path authority
+      check, the fences and the watcher requirement all still run.
+    </p>
+    <img src="/reckon/figures/a-worker-can-take-a-brief/brief-dispatch-flow.svg" alt="A stored brief is digested in the side-effect-free resolution step, copied into the run directory by the launching step, and named on the live pointer by digest and path; the composed prompt carries the brief text verbatim, while the same refusals a plan dispatch carries apply unchanged.">
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Gate <code>tests/test_brief_dispatch.py</code></td>
+          <td><strong>4 passed</strong>, exit 0 (<code>dcb66ac8</code>, base
+          <code>3f251453</code>)</td>
+        </tr>
+        <tr>
+          <td>Regression arm <code>tests/test_brief_prompt.py</code></td>
+          <td><strong>13 passed</strong>, exit 0; the same file passes at the base revision</td>
+        </tr>
+        <tr>
+          <td>Regression arm <code>tests/test_crew_dispatch_guard.py</code></td>
+          <td><strong>14 passed</strong>, exit 0; the same file passes at the base revision</td>
+        </tr>
+        <tr>
+          <td>Declared negative control &mdash; restore the committed plan-section check for a brief
+          dispatch</td>
+          <td>the brief gate fails <strong>2 of 4</strong> with
+          <code>error: plan-unavailable</code> at exit 1; the source is restored and confirmed
+          identical</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Landing record and evidence anchor:
+      <code>docs/evidence/archive/a-worker-can-take-a-brief-landed.html</code>, which also holds the
+      as-executed gate logs' absolute paths. This gate measures this node's own change; verifying
+      the merged result belongs to a separately dispatched test node.
+    </p>
+
     <h2 id="s3">&sect;3 &mdash; The prompt carries the brief where the plan section was</h2>
     <p><code>reckon/crew/prompts.py</code> composes the worker prompt from the brief text in place of the plan-section read instruction. The prompt keeps every other part of the contract: fences, manifest shape and the landing rule. For a brief run, the landing record goes to the run directory, not to a plan.</p>
     <p><strong>Done when:</strong></p>
