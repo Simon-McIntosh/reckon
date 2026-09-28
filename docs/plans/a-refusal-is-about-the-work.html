@@ -94,6 +94,15 @@
 <section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> The narrowed lint (§2, merged at <code>3ff3237b</code>) opens a second deliverable when the clause after a separator begins with an action verb. It reads a hyphenated compound whose first token is an action verb as that verb. On 2026-09-28 it refused the goal "Narrow promotion's impl-move, outcome and verify-gate refusals to the run they judge" as two deliverables, because <code>verify-gate</code> starts with <code>verify</code>. That is a form refusal of the kind this plan removes.</p><p><strong>Deliverable.</strong> In <code>reckon/crew/node.py</code>, a token joined by a hyphen to a following word is not read as an action verb opening a clause. A clause that genuinely begins with an action verb still splits.</p><p><strong>Done when</strong> <code>tests/test_goal_contract_lint.py</code> gains an accepted row carrying that goal verbatim and a refused row whose second clause begins with a bare action verb, and the declared negative control (treating the hyphenated token as its first word again) fails the accepted row.</p>
 
+    <div class="section-landed" data-section="s5">
+      <p><em>Worker record &mdash; the section close is the coordinator's.</em> Commit <code>956f91dd</code>
+      reads the leading token of a clause whole, so a hyphenated compound is not read as its first word's
+      verb. <code>tests/test_goal_contract_lint.py</code> carries the goal s5 quotes, verbatim, as an
+      accepted row and a refused row opening on a bare action verb: 10 passed, exit 0. The declared
+      negative control restores the first-word reading and the accepted row fails <code>single-goal</code>.
+      Full record: <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed#s5">&sect;5 landed</a>.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-araw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
