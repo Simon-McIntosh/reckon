@@ -1306,6 +1306,16 @@ def crew_preflight(
     help="Route through the backend named by the resolved local_backend key.",
 )
 @click.option(
+    "--repairs",
+    "repairs",
+    default="",
+    help=(
+        "Run id this dispatch repairs; must be a promoted run in the project's "
+        "ledger. Its plan movement carries forward, so promotion needs no "
+        "--no-impl-change."
+    ),
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Validate and resolve only: no worktree, no process, no record.",
@@ -1342,6 +1352,7 @@ def crew_dispatch(
     no_watch,
     allow_unreviewed_plan,
     local,
+    repairs,
     dry_run,
     pretty,
 ):
@@ -1440,6 +1451,7 @@ def crew_dispatch(
                 session=session,
                 watch_required=True,
                 watch_override=no_watch,
+                repairs=repairs,
             )
         except crew_module.PlanVisibilityError as exc:
             _emit(
@@ -1527,6 +1539,7 @@ def crew_dispatch(
             local=local,
             backend_override=backend,
             default_backend_override=flight_backend_override,
+            repairs=repairs,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
