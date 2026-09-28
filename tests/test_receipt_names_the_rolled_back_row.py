@@ -1,8 +1,10 @@
 """A failed landing's receipt says which of the two states the ledger row is in.
 
-A landing that fails its commit rolls its own writes back, and the ledger is
-one of them: a successful restore returns the file to HEAD and takes the
-appended row with it. The receipt raised around that landing then has two
+A landing that fails its commit rolls its own writes back, and the row is one
+of them: each run is stored in its own file under the project's ledger
+directory, so the rollback takes that file out of the working tree and the row
+with it. A path HEAD already carries survives a restore git refuses, which is
+the second case. The receipt raised around that landing therefore has two
 cases to tell apart — the row survived the rollback, or the rollback reverted
 it — and it must name the recovery that fits the case it reports, because the
 already-written wording advises against re-promoting and re-promoting is
@@ -82,13 +84,14 @@ def test_rolled_back_row_receipt_names_re_promotion_as_the_recovery(
     """The rollback reverts the appended row, and the receipt says so.
 
     The hook makes the landing commit fail for real; the rollback that follows
-    restores the tracked ledger to HEAD and the row leaves the working tree.
-    The receipt must state that, and must not carry the advice that forbids the
-    only action that recovers the row.
+    drops the run file the row was appended to and the row leaves the working
+    tree. The receipt must name that file as the rolled-back store, and must
+    not carry the advice that forbids the only action that recovers the row.
     """
     marker = tmp_path / "hook-ran"
     _install_failing_hook(repository, marker)
     ledger_path = ledger.ledger_path("sample", root=repository)
+    run_path = ledger.run_path("sample", RUN_ID, repository)
     assert ledger_path.is_file()
 
     with pytest.raises(promotion.CrewError) as caught:
@@ -97,7 +100,7 @@ def test_rolled_back_row_receipt_names_re_promotion_as_the_recovery(
     assert marker.exists(), "the real commit path must reach the failing hook"
     message = str(caught.value)
     assert "was written and has been rolled back" in message
-    assert f"rolled back with {ledger_path}" in message
+    assert f"rolled back with {run_path}" in message
     assert "re-promote once the landing failure is resolved" in message
     assert "do not re-promote" not in message
     # The read-back the branch rests on, asserted directly: the row is gone.
@@ -105,6 +108,17 @@ def test_rolled_back_row_receipt_names_re_promotion_as_the_recovery(
     assert _git(repository, "status", "--porcelain").stdout.strip() == ""
     restored = _git(repository, "show", f"HEAD:{ledger_path.relative_to(repository)}")
     assert RUN_ID not in restored.stdout
+    # The row's own file was created by this promotion, so the rollback drops
+    # it rather than returning it to HEAD.
+    assert not run_path.exists()
+    carried = _git(
+        repository,
+        "cat-file",
+        "-e",
+        f"HEAD:{run_path.relative_to(repository)}",
+        check=False,
+    )
+    assert carried.returncode != 0, "HEAD never carried the row's own file"
 
 
 def test_survived_row_receipt_keeps_the_do_not_re_promote_wording(
@@ -112,12 +126,26 @@ def test_survived_row_receipt_keeps_the_do_not_re_promote_wording(
 ):
     """A rollback git refuses preserves the row, and the receipt says so.
 
-    Same real commit failure; here the restore is refused, so HEAD carries the
-    ledger path and the rollback keeps it. The row is still in the ledger a
-    reader will open, and the receipt keeps the wording that warns against
-    re-promoting — the two cases must not collapse into one another.
+    Same real commit failure; here the restore is refused, and the rollback
+    preserves a path only while HEAD already carries it, so the run file is
+    committed before the promotion appends to it. The row is still in the
+    ledger a reader will open, and the receipt keeps the wording that warns
+    against re-promoting — the two cases must not collapse into one another.
     """
     marker = tmp_path / "hook-ran"
+    run_path = ledger.run_path("sample", RUN_ID, repository)
+    run_path.parent.mkdir(parents=True, exist_ok=True)
+    run_path.write_text("{}\n")
+    _git(repository, "add", "--", str(run_path))
+    _git(
+        repository,
+        "commit",
+        "-qm",
+        "test: seed the run file",
+        "-m",
+        "Seed the row's own file so HEAD carries it.",
+    )
+    run_path.unlink()
     _install_failing_hook(repository, marker)
     real_git = promotion._git
 
