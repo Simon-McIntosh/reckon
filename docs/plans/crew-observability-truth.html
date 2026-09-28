@@ -3465,6 +3465,9 @@ if isinstance(argv, list) and argv:
 <div class="r-comment" data-section="s11" data-id="c-run-r-20260925T105844968393-review-of-refusal-names-the-roots-it-checked" data-who="reckon-build" data-when="2026-09-25T11:46:46.882Z">
     <div class="r-comment-body"><p>review stored: 95, no findings</p></div>
 </div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20260928T115242684086-a-sub-floor-dimension-is-an-obligation" data-who="reckon-build" data-when="2026-09-28T12:40:22.306Z">
+    <div class="r-comment-body"><p><strong>A dimension below its floor is now a row that stands until a disposition retires it, and the floor is read from flight config.</strong> Floors are declared per dimension under <code>gates.dimension_floors</code> in <code>flight.yaml</code> (with a shipped default in <code>flight-defaults.yaml</code> and the regenerated Pydantic and JSON-schema artefacts), and the obligations report derives one <code>review-dimension-sub-floor</code> row per undisposed dimension below its floor &mdash; naming the run, the dimension, the score and the floor &mdash; beside a total that is never adjusted. A row retires only through the section's closed set: <code>folded</code> with the dispatched node's id, or <code>exempted</code> with the recorded reason, written on the stored record itself. The reader selects the review by the shared revision-aware rule, so a record describing a superseded revision owes nothing and cannot stand in for the run's current work.</p><p>Landed in <code>c05c0401</code> (<code>tests/test_sub_floor_dimension_is_an_obligation.py</code> plus <code>reckon/crew/obligations.py</code>, <code>reckon/crew/review.py</code> and the flight schema): the new test is 6 failed at base, 7 passed at head, with obligations 9 passed and flight 87 passed on both arms and no added failing ids; the declared negative control is red with its string verbatim on the log's first line.</p></div>
+</div>
 </section>
 </main>
 </body>
