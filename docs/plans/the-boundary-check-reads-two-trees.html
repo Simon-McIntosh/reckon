@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
-<meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="7">
+<meta name="plan-modified" content="2026-09-28">
+<meta name="plan-version" content="8">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -130,6 +130,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-tbcrtt-supervisor-gate-met" data-who="reckon-e5" data-when="2026-09-24">
     <div class="r-comment-body"><p><strong>The supervisor-snapshot gate is met.</strong> <code>a-dispatch-returns-without-its-worker</code> §3 merged at 3ad8b13c, verified on main with <code>git merge-base --is-ancestor</code>, and <code>TREE_SNAPSHOT_NAME = "tree-snapshot.json"</code> is present in <code>reckon/crew/dispatch.py</code>. This node's base is at or after that merge. The call sites it must cover, as reported by the S20 session: (1) the per-run supervisor, which calls <code>_repository_tree_snapshot(repo)</code> before spawning the worker and writes <code>&lt;run_dir&gt;/tree-snapshot.json</code>; (2) the inline snapshot an in-harness dispatch still takes in <code>dispatch.py</code>; (3) the launcher branch that <code>dispatch_awaiting_reviews</code> and <code>_resume</code> in <code>resumption.py</code> take; (4) promotion's re-snapshot over the persisted roots, which reads <code>tree-snapshot.json</code> and falls back to the pointer field. All four go through <code>_repository_tree_snapshot</code>. The remaining gate is <code>a-worker-cannot-write-your-home</code> §3.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-20260928T1745-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T15:45:00Z">
+    <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T142339561173-s21-audit-page).</p><ul><li><b>§1 and §2: still required.</b> <code>routing._repository_tree_snapshot</code> still enumerates the whole registry (<code>routing.py:561-578</code>) and runs one <code>git status</code> per tree. The audit's own run directory holds a registry-wide <code>tree-snapshot.json</code>, so the premise holds exactly.</li><li><b>Gates.</b> g-tbcrtt-1 is passed. g-tbcrtt-2 is <b>correctly open</b>: <code>protected_paths()</code> (<code>_backends.py:2296-2332</code>) deliberately leaves <code>Code/.reckon-worktrees</code> unprotected, and its required evidence, a-worker-cannot-write-your-home §3, is still implementable (confirmed by that plan's own audit).</li></ul><p><b>The sequencing with a-crew-process-ends-with-its-owner §4 is now moot.</b> The agreed order was this plan's §1, then that §4 on the reduced set. But that §4 (polling reads what changed) has already landed: <code>c676b011</code>, <code>tests/test_promotion_releases_its_worktree.py</code> 4 passed, per the S21 audit of that plan. No edge is needed. This §1 now waits only on the fence's §3.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-tbcrtt-baseline-and-order" data-who="reckon-e5" data-when="2026-09-24">
     <div class="r-comment-body"><p><strong>Baseline and agreed order.</strong> Measured by the S20 session on 2026-09-24, with storage healthy and 214 registered worktrees (107 fewer than the day before after cleanup): an env-scope promotion that had run 3 h 10 m before being stopped re-ran in 132 s. That is roughly 0.6 s per tree over its persisted roots, several of which no longer existed. So tree count and filesystem health dominate promotion time, and §2 records both beside each wall time. Order agreed with S20: <code>a-dispatch-returns-without-its-worker</code> §3 first, then this plan's §1 after <code>a-worker-cannot-write-your-home</code> §3, then <code>a-crew-process-ends-with-its-owner</code> §4 on the reduced set. That §4's done-when carries the constraint that untracked files in the run's own worktree are still read.</p></div>

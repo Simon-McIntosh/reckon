@@ -23,8 +23,8 @@
   <title>The Page Paints From An Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="8">
+<meta name="plan-modified" content="2026-09-28">
+<meta name="plan-version" content="9">
 <meta name="plan-impl" content="0.14">
 </head>
 <body>
@@ -238,7 +238,10 @@
     <div class="r-comment-body"><p>review of server-listens-before-it-watches stored at 91; broken evidence link, unused armed_roots</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260925T075705698064-s21-wave-scope" data-who="reckon-build" data-when="2026-09-25T09:35:03.597Z">
-    <div class="r-comment-body"><p>S21 wave scope: 4 dispatchable (3 self-flagged defects: a shared metadata_index.py, a wrong evidence record, a dispatch.py live claim), 16 sequenced, 4 landed or blocked; the checker printed FAIL yet exited 0; wave held while the live-session working set is the lane&#x27;s limit</p></div>
+    <div class="r-comment-body"><p>S21 wave scope: 4 dispatchable (3 self-flagged defects: a shared metadata_index.py, a wrong evidence record, a dispatch.py live claim), 16 sequenced, 4 landed or blocked; the checker printed FAIL yet exited 0; wave held while the live-session working set is the lane's limit</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260928T1745-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T15:45:00Z">
+    <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T142339561173-s21-audit-page).</p><ul><li><b>§1 and §2: done.</b> The gate at §2 is satisfied: <code>tests/test_server_listens_before_it_watches.py</code> reports 3 passed (<code>caa09a7c</code>, merged <code>ad7eef98</code>).</li><li><b>§3 to §7: still required, and all unlanded.</b> <code>reckon/metadata_index.py</code>, the <code>/_index</code> route and the <code>/_thumb</code> route do not exist. The loader's first fetch is still <code>/_discover</code> (<code>docs/ui/state-loader.js:42</code>), and <code>_write_project_event</code> emits only a content digest.</li><li><b>§8: its line citations have moved.</b> <code>discover_plans</code> is now at <code>reckon/mcp.py:1646</code>, not 1250, and <code>reckon/mcp_views.py:2454-2458</code>, not 1985. The premise is intact.</li><li><b>Carried from §2's own review, for the §3 brief:</b> <code>_FleetChangeWatch.armed_roots</code> has no caller at head, and <code>close()</code> joins the reader thread for only 2 s while one tree can take longer to arm.</li></ul><p>The audit estimates about 16.5 worker-hours remaining. f-tppfai-001 stays the driving followup.</p></div>
 </div>
 </section>
 </main>
