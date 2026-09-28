@@ -53,8 +53,10 @@ fields runs **only** at the explicit write boundary, via
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Callable, Mapping
+from html import unescape
 from pathlib import Path
 from typing import Any
 
@@ -340,6 +342,168 @@ def standalone_reason(html_text: str) -> str | None:
         reason = content.group(1).strip() if content else ""
         return reason or None
     return None
+
+
+SECTION_DEPENDS_ON_META = "plan-section-depends-on"
+
+
+def is_section_identity(value: Any) -> bool:
+    """Whether ``value`` is a usable section identity.
+
+    Section identities are resource path segments, so the grammar is shared
+    with filenames and slugs rather than invented per consumer.
+    """
+
+    return bool(_RESOURCE_SEGMENT_RE.fullmatch(str(value or "").strip()))
+
+
+def section_depends_on(html_text: str) -> dict[str, Any] | None:
+    """Return a plan's section-scoped dependency mapping, or ``None``.
+
+    The mapping is keyed by the section identities the plan declares, each holding the
+    plan refs that section waits for: one section can wait on a foreign section
+    while its siblings stay dispatchable. Like the standalone declaration it is
+    authored markup the state engine leaves untouched, so the meta itself is
+    read here rather than through parsed state. ``None`` means the plan declares
+    no such edge, which is the whole-plan behaviour every plan had before, or
+    declares one no reader can use at all — no meta, empty content, or a blob
+    that is not a JSON object.
+
+    A defect inside one entry is not a reason to discard the declaration: an
+    entry is kept as authored when its refs are not a list, and kept under its
+    own identity when that identity fails the segment grammar, so
+    ``section_dependency_refusals`` can name the defect while the valid entries
+    beside it go on describing their edges. Reading stays a read — nothing here
+    repairs an entry, and a caller that builds edges from the mapping skips
+    identities ``is_section_identity`` rejects.
+    """
+
+    for tag in _META_TAG_RE.findall(html_text or ""):
+        name = _META_NAME_RE.search(tag)
+        if name is None or name.group(1).strip().lower() != SECTION_DEPENDS_ON_META:
+            continue
+        content = _META_CONTENT_RE.search(tag)
+        raw = unescape(content.group(1)).strip() if content else ""
+        if not raw:
+            return None
+        try:
+            value = json.loads(raw)
+        except (TypeError, ValueError):
+            return None
+        if not isinstance(value, dict):
+            return None
+        mapping: dict[str, Any] = {}
+        for raw_section, raw_refs in value.items():
+            section = str(raw_section or "").strip()
+            refs = [raw_refs] if isinstance(raw_refs, str) else raw_refs
+            if not isinstance(refs, list):
+                # Kept as authored so the refusals can name the entry: dropping
+                # it here would lose the defect with no report, and returning
+                # None would lose every valid entry beside it.
+                mapping[section] = raw_refs
+                continue
+            mapping[section] = [
+                str(ref).strip() for ref in refs if str(ref or "").strip()
+            ]
+        return mapping
+    return None
+
+
+def section_dependency_refusals(
+    mapping: Mapping[str, Any] | None,
+    lookup: Callable[[str, str], Mapping[str, Any] | None],
+    *,
+    owning_project: str = "",
+) -> list[dict[str, Any]]:
+    """Refusals for a mapping whose refs cannot name a target section.
+
+    A section-scoped edge is only meaningful with a target section, so each ref
+    must be a well-formed plan ref carrying a ``#section`` anchor, and that
+    anchor must be a section the target plan declares. ``missing-dependency-section``
+    is the code a staged ``depends_on`` ref already earns for the same defect, so
+    one code carries one meaning whichever field declared the edge. An
+    unresolvable target is left to the dependency findings, which already report
+    those. An entry whose own identity is not a section is refused by name and
+    skipped — it names no section to hold — while the entries beside it are
+    still read.
+
+    Each row names the declaring section, the offending ref, the finding code the
+    caller should raise, and the reason: an edge nobody can resolve must be
+    reported, never silently dropped from a blocker list.
+    """
+
+    refusals: list[dict[str, Any]] = []
+
+    def refuse(code: str, section: str, ref: str | None, message: str) -> None:
+        refusals.append(
+            {"code": code, "section": section, "ref": ref, "message": message}
+        )
+
+    for raw_section, raw_refs in (mapping or {}).items():
+        section = str(raw_section or "").strip()
+        if not is_section_identity(section):
+            # An entry whose identity is not a section names no section to
+            # hold, so its refs are not meaningful and are not read from; one
+            # defect earns one refusal, and the entries beside it are
+            # unaffected.
+            refuse(
+                "invalid-section-dependency",
+                section,
+                None,
+                "section_depends_on: section identities must match "
+                f"{_RESOURCE_SEGMENT_RE.pattern}; got {raw_section!r}",
+            )
+            continue
+        refs = [raw_refs] if isinstance(raw_refs, str) else raw_refs
+        if not isinstance(refs, list):
+            refuse(
+                "invalid-section-dependency",
+                section,
+                None,
+                (f"section_depends_on[{section!r}]: refs must be a list of plan refs"),
+            )
+            continue
+        for ref in refs:
+            parsed = parse_plan_ref(str(ref))
+            if parsed is None:
+                refuse(
+                    "invalid-section-dependency",
+                    section,
+                    str(ref),
+                    (
+                        f"section_depends_on[{section!r}]: malformed plan ref "
+                        f"{ref!r} — expected [project:]slug[#section]"
+                    ),
+                )
+                continue
+            if not parsed.stage:
+                refuse(
+                    "invalid-section-dependency",
+                    section,
+                    str(ref),
+                    (
+                        f"section_depends_on[{section!r}]: ref {ref!r} names no "
+                        "target section — expected slug#section"
+                    ),
+                )
+                continue
+            external = parsed.is_external(owning_project)
+            target = lookup(
+                str(parsed.project) if external else owning_project, parsed.slug
+            )
+            if target is None:
+                continue
+            if parsed.stage not in plan_section_anchors(target):
+                refuse(
+                    "missing-dependency-section",
+                    section,
+                    str(ref),
+                    (
+                        f"section_depends_on[{section!r}]: ref {ref!r} names no "
+                        f"section {parsed.stage!r} on {parsed.slug}"
+                    ),
+                )
+    return refusals
 
 
 def resolve_plan_ref(

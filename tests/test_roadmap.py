@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import json
 from datetime import date, timedelta
+from html import escape
 from pathlib import Path
 
 import pytest
 
+from reckon import mcp as mcp_module
+from reckon._store import new_plan_html
 from reckon.mcp_views import _blocking
 from reckon.roadmap import build_roadmap
 from reckon.serve import _derive_lifecycle, discover_plans
@@ -66,6 +70,8 @@ def _plan_document(
     *,
     depends_on: str | None = None,
     graph_handle: str | None = None,
+    sections: dict[str, bool] | None = None,
+    section_depends_on: dict[str, list[str]] | None = None,
 ) -> str:
     dependency_meta = (
         f'<meta name="plan-depends-on" content="{depends_on}">' if depends_on else ""
@@ -75,6 +81,21 @@ def _plan_document(
         if graph_handle
         else ""
     )
+    section_meta = (
+        '<meta name="plan-section-depends-on" content="'
+        f'{escape(json.dumps(section_depends_on), quote=True)}">'
+        if section_depends_on
+        else ""
+    )
+    section_gates = "".join(
+        f'<div class="r-gate" data-id="{section}-evidence" '
+        f'data-section="{section}" data-status="{status}" '
+        f'data-verdict="{verdict}"></div>'
+        for section, status, verdict in (
+            (name, "closed" if passed else "open", "passed" if passed else "")
+            for name, passed in (sections or {}).items()
+        )
+    )
     return (
         "<!doctype html><html><head>"
         '<meta name="docs-project" content="sample">'
@@ -82,10 +103,11 @@ def _plan_document(
         f'<meta name="plan-slug" content="{slug}">'
         '<meta name="plan-status" content="active">'
         '<meta name="plan-effort" content="M">'
-        f"{dependency_meta}{handle_meta}<title>{slug}</title></head><body>"
+        f"{dependency_meta}{handle_meta}{section_meta}<title>{slug}</title></head><body>"
         '<main class="plan-doc"><section data-reckon="gates">'
         '<div class="r-gate" data-id="evidence" data-status="closed" '
-        'data-verdict="passed"></div></section>'
+        'data-verdict="passed"></div>'
+        f"{section_gates}</section>"
         '<section data-reckon="followups">'
         '<article class="r-fu" data-id="next" data-status="open">'
         '<h4 class="r-fu-title">Continue</h4><div class="r-fu-body"></div>'
@@ -272,6 +294,161 @@ def test_section_dependency_surfaces_the_eight_hour_portfolio_case() -> None:
     assert row["blocked_sections"] == ["run"]
     assert [item["slug"] for item in result["ready_now"]] == ["catalog"]
     assert row["remaining_effort_hours"] == 8.0
+
+
+def test_section_scoped_mapping_waits_without_hiding_its_siblings(
+    tmp_path: Path,
+) -> None:
+    docs = tmp_path / "docs"
+    (docs / "plans").mkdir(parents=True)
+    (docs / "plans" / "plan-b.html").write_text(
+        _plan_document("plan-b", sections={"s3": False}), encoding="utf-8"
+    )
+    (docs / "plans" / "plan-a.html").write_text(
+        _plan_document(
+            "plan-a",
+            sections={"s2": True, "s5": True},
+            section_depends_on={"s5": ["plan-b#s3"]},
+        ),
+        encoding="utf-8",
+    )
+
+    discovered = discover_plans(docs, "sample", tmp_path / "state")
+    result = build_roadmap(
+        "sample",
+        discovered["inventory"],
+        discovered["sprints"],
+        active_sprint_id=discovered["active_sprint_id"],
+        project_manifest=discovered,
+        review={},
+        docs_dir=docs,
+    )
+    row = next(item for item in result["pending_work"] if item["slug"] == "plan-a")
+
+    assert row["dispatchable"] is True
+    assert row["ready"] is True
+    assert row["effective_status"] == "active"
+    assert [item["slug"] for item in result["ready_now"]] == ["plan-a"]
+    assert row["ready_sections"] == ["s2"]
+    assert row["blocked_sections"] == ["s5"]
+
+    readiness = {entry["section"]: entry for entry in row["section_readiness"]}
+    assert readiness["s2"] == {"section": "s2", "ready": True, "blockers": []}
+    assert readiness["s5"]["ready"] is False
+    blocker = readiness["s5"]["blockers"][0]
+    assert blocker["ref"] == "plan-b#s3"
+    assert blocker["source_section"] == "s5"
+    assert blocker["stage"] == "s3"
+    assert blocker["slug"] == "plan-b"
+    assert blocker["satisfied"] is False
+    assert [edge["ref"] for edge in row["section_depends_on"]] == ["plan-b#s3"]
+
+
+def test_plan_without_the_mapping_blocks_whole_plans_as_before(tmp_path: Path) -> None:
+    docs = tmp_path / "docs"
+    (docs / "plans").mkdir(parents=True)
+    (docs / "plans" / "plan-b.html").write_text(
+        _plan_document("plan-b", sections={"s3": False}), encoding="utf-8"
+    )
+    (docs / "plans" / "plan-c.html").write_text(
+        _plan_document("plan-c", sections={"s1": True}, depends_on="plan-b"),
+        encoding="utf-8",
+    )
+
+    discovered = discover_plans(docs, "sample", tmp_path / "state")
+    result = build_roadmap(
+        "sample",
+        discovered["inventory"],
+        discovered["sprints"],
+        active_sprint_id=discovered["active_sprint_id"],
+        project_manifest=discovered,
+        review={},
+        docs_dir=docs,
+    )
+    row = next(item for item in result["pending_work"] if item["slug"] == "plan-c")
+
+    assert row["ready"] is False
+    assert row["effective_status"] == "blocked"
+    assert "section_readiness" not in row
+    assert "plan-c" not in [item["slug"] for item in result["ready_now"]]
+
+
+def test_one_unreadable_section_entry_keeps_the_valid_edge(tmp_path: Path) -> None:
+    """A malformed section identity must not discard the entries beside it."""
+    docs = tmp_path / "docs"
+    (docs / "plans").mkdir(parents=True)
+    (docs / "plans" / "plan-b.html").write_text(
+        _plan_document("plan-b", sections={"s3": False}), encoding="utf-8"
+    )
+    (docs / "plans" / "plan-a.html").write_text(
+        _plan_document(
+            "plan-a",
+            sections={"s2": True, "s5": True},
+            section_depends_on={
+                "s5": ["plan-b#s3"],
+                "not a section!": ["plan-b#s3"],
+            },
+        ),
+        encoding="utf-8",
+    )
+
+    discovered = discover_plans(docs, "sample", tmp_path / "state")
+    result = build_roadmap(
+        "sample",
+        discovered["inventory"],
+        discovered["sprints"],
+        active_sprint_id=discovered["active_sprint_id"],
+        project_manifest=discovered,
+        review={},
+        docs_dir=docs,
+    )
+    row = next(item for item in result["pending_work"] if item["slug"] == "plan-a")
+
+    assert row["ready_sections"] == ["s2"]
+    assert row["blocked_sections"] == ["s5"]
+    assert [edge["ref"] for edge in row["section_depends_on"]] == ["plan-b#s3"]
+    finding = next(
+        item
+        for item in result["wiring_findings"]
+        if item["code"] == "invalid-section-dependency" and item["slug"] == "plan-a"
+    )
+    assert finding["extra"] == {"ref": None, "section": "not a section!"}
+
+
+def test_read_plan_deps_name_the_waiting_section(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The MCP read path resolves section-scoped refs beside whole-plan ones."""
+    repo = tmp_path / "repo"
+    plans = repo / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "plan-b.html").write_text(
+        new_plan_html("sample", "plan-b"), encoding="utf-8"
+    )
+    mapping_meta = (
+        '<meta name="plan-section-depends-on" content="'
+        f'{escape(json.dumps({"s5": ["plan-b#s3"]}), quote=True)}"></head>'
+    )
+    (plans / "plan-a.html").write_text(
+        new_plan_html("sample", "plan-a").replace("</head>", mapping_meta, 1),
+        encoding="utf-8",
+    )
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(json.dumps({"sample": str(repo / "docs")}), encoding="utf-8")
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(tmp_path / "state"))
+
+    result = mcp_module._read_plan(
+        project="sample", slug="plan-a", checkout_path=str(repo)
+    )
+    edge = next(row for row in result["deps"] if row["ref"] == "plan-b#s3")
+
+    assert edge["source_section"] == "s5"
+    assert edge["scope"] == "local"
+    assert edge["project"] == "sample"
+    assert edge["slug"] == "plan-b"
+    assert edge["stage"] == "s3"
+    assert edge["found"] is True
 
 
 def test_open_decision_blocks_its_plan_with_a_distinct_blocker_kind() -> None:
