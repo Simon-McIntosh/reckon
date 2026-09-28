@@ -695,15 +695,27 @@
     <code>negative-control.diff.note</code>. Logs: <code>negative-control-red.txt</code>,
     <code>mutate-drop-mapping.py</code>, <code>run-negative-control.sh</code>.</p>
 
-    <p><strong>Follow-on outside this node's write scope.</strong> Publishing the mapping through
-    <code>read_plan</code>'s own <code>deps</code> payload lives in <code>reckon/mcp.py</code>,
-    owned by a concurrent node and outside this node's paths. The refs already resolve through the
-    shared grammar (<code>parse_plan_ref</code> and the existing <code>[project:]slug[#stage]</code>
-    row shape), so surfacing the mapping to that reader is a small follow-up, not a behaviour gap in
-    the roadmap.</p>
+    <p><strong>Repair, review round.</strong> The review found the read leg unreached — the MCP read's
+    <code>deps</code> payload came only from the whole-plan meta, so no caller of
+    <code>read_plan</code> saw a section-scoped dependency — and the reader brittle: one malformed
+    entry made <code>section_depends_on</code> return <code>None</code> for the whole mapping, losing
+    every valid edge beside it. Both are fixed in <code>reckon/mcp.py</code>, <code>reckon/_schema.py</code>
+    and <code>reckon/roadmap.py</code>: each section-scoped ref resolves through the same read path the
+    MCP tool calls, its row carrying the waiting section beside the target plan and section, while the
+    reader keeps an entry whose refs are not a list, or whose identity fails the segment grammar, so the
+    refusals name each defect by section and the valid entries beside it still hold their sections (edge
+    builders skip an identity that names no section, so no phantom section enters the readiness sets).
+    Red arm against the delivered revision — a <code>git archive</code> of <code>d9321a20</code> with
+    the repair's test files copied in — reads <strong>2 failed</strong> in each file: the roadmap arm
+    raising <code>KeyError: 'deps'</code> (no section rows on the read payload) and the schema arm
+    reading <code>None</code> where the valid entries should survive. The repaired gate reads
+    <strong>3 failed, 1659 passed</strong> — the same three pre-existing ids, the passed count carrying
+    the four new assertions and two conformance params other evidence records added. Logs:
+    <code>repair-base-arm.txt</code>, <code>repair-gate-head.txt</code>, <code>run-repair-base-arm.sh</code>,
+    <code>run-repair-gate.sh</code>.</p>
 
-    <p>Commit in the node: <code>2f870c2b</code>. Section closure and the driving followup remain with
-    the coordinator.</p>
+    <p>Commits in the node: <code>2f870c2b</code> and <code>9bccbf58</code>. Section closure and the
+    driving followup remain with the coordinator.</p>
 
   </main>
 </body>

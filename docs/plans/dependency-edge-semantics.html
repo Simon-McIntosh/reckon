@@ -449,10 +449,17 @@
       whole-plan rows carry. Whole-plan
       <code>depends_on</code>, readiness and terminal transitions are untouched: a section with a
       section-scoped wait stays out of <code>plan_dependency_blockers</code>, so only the section split
-      changes. Commit <code>2f870c2b</code> carries the change. <em>Deviation, reported as such:</em> publishing the mapping through <code>read_plan</code>'s
-      own <code>deps</code> payload requires editing <code>reckon/mcp.py</code>, outside this node's
-      write scope and owned by a concurrent node; the refs resolve here through the existing grammar,
-      and the surfacing is recorded as a follow-on.</p>
+      changes. Commit <code>2f870c2b</code> carries the change.</p>
+      <p><strong>Repair, 2026-09-28 (review round):</strong> two defects found in review are fixed here.
+      Publishing the mapping through <code>read_plan</code>'s own <code>deps</code> payload lands too, in
+      <code>reckon/mcp.py</code>: each section-scoped ref now resolves to a row carrying the
+      <code>source_section</code> that waits beside the target <code>project</code>, <code>slug</code>
+      and <code>stage</code>, through the same read path the MCP tool calls. And one malformed entry no
+      longer discards the mapping it sits in: the reader keeps an entry whose refs are not a list, and
+      an entry whose identity fails the segment grammar, so the refusals name each defect while the
+      valid entries beside it still hold their sections; edge builders skip an identity that names no
+      section, so no phantom section enters the readiness sets. Commit <code>9bccbf58</code> carries
+      the repair.</p>
       <p><strong>Gate:</strong> at the worktree revision this record's commit carries (base
       <code>056012ae</code> plus the node's change),
       <code>pytest tests/test_roadmap.py tests/test_schema.py</code> reads <strong>3 failed / 1653
@@ -461,7 +468,12 @@
       cross-project conformance refs in other projects' evidence records) — <strong>zero added failure
       ids, one removed</strong>. The base arm of the node's own tests is logged: the roadmap case fails
       at base with <code>KeyError: 'ready_sections'</code> and the schema half cannot be collected
-      there (<code>ImportError: cannot import name 'section_depends_on'</code>).</p>
+      there (<code>ImportError: cannot import name 'section_depends_on'</code>). The repaired gate
+      re-run reads <strong>3 failed / 1659 passed</strong> — the same three pre-existing ids — and the
+      repair's red arm against the delivered revision <code>d9321a20</code> reads <strong>2 failed</strong>
+      in each file: the roadmap arm with <code>KeyError: 'deps'</code> (no section rows on the read
+      payload) and the schema arm on the reader returning <code>None</code> where the valid entries
+      should survive a malformed neighbour.</p>
       <p><strong>Declared negative control:</strong> dropping the mapping from the roadmap's blocker
       computation in a scratch copy fails the ready-set case first —
       <code>assert ['s2', 's5'] == ['s2']</code>, the held section leaking back into the ready set —
