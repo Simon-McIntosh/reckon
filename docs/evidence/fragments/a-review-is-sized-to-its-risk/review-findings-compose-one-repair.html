@@ -10,16 +10,21 @@
       </p>
       <p>
         <code>reckon/crew/repair.py</code> turns a stored review record into that
-        single node. Each finding is given a stable id minted from the record's own
-        frozen order (<code>f01</code>, <code>f02</code>, …). The node's brief lists
-        every finding under its id, and its write scope is the union of the reviewed
-        run's own fence and the paths the findings name — so a finding outside the
-        reviewed run's fence is <em>granted</em> that path rather than refused the
-        file its brief asks it to edit. The composed <code>done_when</code> obliges
-        the repair to answer every finding by id: <code>acted &lt;id&gt;:&lt;commit&gt;</code>
-        for one it fixes, <code>declined &lt;id&gt;: &lt;reason&gt;</code> for one it
-        does not. The response vocabulary is shared with plan review (stable id,
-        acted-or-declined with a reason) rather than reinvented.
+        single node. Each finding is given a stable id derived from its own
+        content — the fixed prefix <code>f</code> plus ten hex digits of
+        <code>sha256(file, line, text)</code> — so the id is a function of the
+        finding rather than of its position: two findings differing only in text
+        get different ids, and a scheme returning one constant for every finding
+        cannot pass. The node's brief lists every finding under its id, and its
+        write scope is the union of the reviewed run's own fence and the paths the
+        findings name — so a finding outside the reviewed run's fence is
+        <em>granted</em> that path rather than refused the file its brief asks it
+        to edit. The composed <code>done_when</code> obliges the repair to answer
+        every finding by id: <code>acted &lt;id&gt;:&lt;commit&gt;</code> for one it
+        fixes, <code>declined &lt;id&gt;: &lt;reason&gt;</code> for one it does not.
+        The response words are imported from plan review's
+        <code>RESPONSE_ACTIONS</code>, not declared here, so the brief teaches the
+        very words a response record validates against.
       </p>
       <p>
         Round identity is the pair the review stands for — the run it reviewed and
@@ -28,15 +33,18 @@
         redispatch of a failed attempt is another attempt of one round, not a second
         round. A run reviewed again at a later head composes a different id, so a
         later round is not mistaken for a retry. The module imports the existing
-        review parser and store and edits neither.
+        review parser, plan-review vocabulary and review store and edits none of
+        them.
       </p>
       <figure>
         <img src="/reckon/figures/a-review-is-sized-to-its-risk/review-findings-compose-one-repair/composition.png"
-             alt="A stored review record with three findings composes through round = run + head into one repair node whose brief lists f01, f02, f03 and whose write scope is the fence union the finding paths, granting the out-of-fence finding; recomposing the same round returns the same node id.">
+             alt="A stored review record with three findings composes through round = run + head into one repair node whose brief lists content-derived ids f<hex> and whose write scope is the fence union the finding paths, granting the out-of-fence finding; recomposing the same round returns the same node, and the same run at a new head composes a different round and node.">
         <figcaption>
           The third finding (<code>new_module.py</code>) sits outside the reviewed
           run's fence and is unioned into the repair's write scope. Recomposing the
-          same round returns the same node, so a redispatch is one round.
+          same round returns the same node, so a redispatch is one round; the same
+          run at a new head composes a different round and node, so a later review
+          is not mistaken for a retry.
         </figcaption>
       </figure>
       <p>
@@ -46,7 +54,13 @@
         reviewed run's fence, and asserts: one repair node composed; its brief
         naming all three findings by id; its write scope containing the out-of-fence
         path; and a second composition of the same round returning the same node.
-        It passes at exit 0:
+        The finding ids are asserted against an expectation the test derives itself
+        from each finding's file, line and text, so the module cannot pass by
+        returning a constant; a case where two findings differ only in text must
+        return different ids; and the round test pairs the same run at two heads, so
+        a round key that ignored the head would fail. A vocabulary case asserts the
+        brief teaches exactly <code>plan_review.RESPONSE_ACTIONS</code>, reddening
+        if the two ever diverge. It passes at exit 0:
       </p>
       <table>
         <caption>Arms recorded in the run manifest</caption>
@@ -55,7 +69,8 @@
         </thead>
         <tbody>
           <tr><td>base (base revision + the new test file)</td><td><code>ba1a26e4</code></td><td>2</td><td>1 (collection error: <code>reckon.crew.repair</code> absent)</td></tr>
-          <tr><td>head (committed head)</td><td><code>6ea239a9</code></td><td>0</td><td>0</td></tr>
+          <tr><td>head (first round)</td><td><code>6ea239a9</code></td><td>0</td><td>0</td></tr>
+          <tr><td>head (repair round)</td><td><code>3122cc56</code></td><td>0</td><td>0</td></tr>
         </tbody>
       </table>
       <p>
@@ -67,6 +82,19 @@
         log <code>negative-control.log</code> under the run directory carries the
         declared mutation verbatim on its first line, exits 1, and names
         <code>test_a_findings_review_composes_one_repair_node</code> FAILED.
+      </p>
+      <p>
+        <strong>Second negative control.</strong> A companion mutation makes
+        <code>finding_id</code> return one constant for every finding. It is applied
+        in a scratch copy of the tree, never the committed file, with the tests
+        directory copied alongside so the mutation reaches the same test. Three
+        cases red under it —
+        <code>test_a_findings_review_composes_one_repair_node</code>,
+        <code>test_finding_ids_are_distinct_and_content_derived</code> and
+        <code>test_findings_differing_only_in_text_get_different_ids</code> — which
+        is the second finding of the review round this node repairs. That log is
+        <code>negative-control-constant-id.log</code> under the run directory,
+        exiting 1.
       </p>
       <p>
         <strong>Scope.</strong> Wiring the composer into the review reflex is a
