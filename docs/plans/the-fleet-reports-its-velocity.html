@@ -227,6 +227,9 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260927T191523670440-coordinator-cost-per-landed-node" data-who="reckon-build" data-when="2026-09-28T10:50:50.095Z">
     <div class="r-comment-body"><p>coordinator cost per landed node in reckon/velocity.py; 52 of 52 sessions within 1% of overhead.json; 15 passed; cache-read and receipt-rule controls redden; reviews 85 then 92 carried forward</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-20260928T140000-work-in-progress-is-visible" data-who="reckon-build" data-when="2026-09-28T14:00:00Z">
+    <div class="r-comment-body"><p>work-in-progress-is-visible implemented at fe33dbf6 in reckon/velocity.py: a plan census dates each plan's opening to the commit that added its file, its closing to the first commit whose plan-status reaches shipped/done/superseded/abandoned or whose archive flag is set (counted once), and counts pending as every plan not closed, bucketed by project and ISO week; plan_cohort answers of-the-plans-opened-in-a-window-how-many-closed-as-of-a-named-commit. The cohort reading run as of 23eb2545 over the pinned window reports reckon's 58 opened and 7 closed, matching review §9; tests/test_velocity_work_in_progress.py 7 passed at exit 0 (22 with the sibling velocity suites); the declared control dating the opening by the latest touching commit reddens the 58-opened assertion (observed 125). Evidence: docs/evidence/archive/the-fleet-reports-its-velocity-landed.html §5. Section s5 awaits coordinator closure: the followup is not resolved and no terminal status is set by the worker.</p></div>
+</div>
 </section>
 </main>
 </body>

@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="One path classifier in the package returns the same six line classes as the velocity census it was ported from.">
   <meta name="plan-evidence-for" content="the-fleet-reports-its-velocity">
   <meta name="plan-verifies" content="the-fleet-reports-its-velocity#s2">
-  <meta name="plan-commits" content="85af514b,4d79a470">
-  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py">
+  <meta name="plan-commits" content="85af514b,4d79a470,fe33dbf6">
+  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_work_in_progress.py">
   <meta name="plan-recorded-at" content="2026-09-27">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -165,6 +165,58 @@
       the pre-repair receipt rule is restored, which is recorded as the second declared negative
       control. Logs: <code>measurement3.log</code>, <code>tests4.log</code>,
       <code>negative_control4.log</code>, <code>negative_control_receipts2.log</code>.</p>
+    </section>
+  <section id="s5-work-in-progress-is-visible">
+      <h2>&sect;5 &mdash; Work in progress is visible</h2>
+      <p>Commit <code>fe33dbf6</code> extends <code>reckon/velocity.py</code> with a plan census
+      read from each project's own git history. A plan is <em>opened</em> by the commit that added
+      its file: the earliest commit at which the path exists, counted only when that commit added
+      the file, so a path whose first appearance is a rename has no opening here. It is
+      <em>closed</em> by the earliest commit at which its <code>plan-status</code> reaches
+      <code>shipped</code>, <code>done</code>, <code>superseded</code> or <code>abandoned</code>,
+      or its <code>plan-archived</code> flag is set &mdash; counted once however many later commits
+      repeat the state. <em>Pending</em> is every plan not closed at the named commit. The census
+      buckets opened and closed by ISO week and <code>measure</code> rolls them up per project
+      beside each project's pending backlog. A second reading, <code>plan_cohort</code>, answers
+      the review's question: of the plans opened in a window, how many are closed as of a named
+      commit. The module imports nothing from <code>docs/</code>.</p>
+      <p><strong>Done when (recorded measurement).</strong> The cohort reading was run in place on
+      this node against this repository's own history at the pinned commit
+      <code>23eb2545</code> over the pinned window <code>2026-09-12T00:00:00Z</code> to
+      <code>2026-09-26T10:00:00Z</code>: <strong>58 opened and 7 closed</strong>, matching the
+      review's &sect;9. The commit is named rather than today's tree, so the reading is
+      reproducible.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-reports-its-velocity/plan-census.png"
+          alt="Plans opened and closed per ISO week for the whole history at the pinned commit, beside the window cohort of 58 opened, 7 closed and 51 still open">
+        <figcaption>Opened and closed plans per ISO week at <code>23eb2545</code>, beside the
+        window cohort: of the 58 plans opened in the pinned window, 58 carried the full history the
+        reading needs and 7 were closed as of that commit. The module's whole-repository pending
+        count over the same history is 70.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>ISO week (2026)</th><th>Opened</th><th>Closed</th></tr></thead>
+        <tbody>
+          <tr><td>W35</td><td>16</td><td>7</td></tr>
+          <tr><td>W36</td><td>22</td><td>16</td></tr>
+          <tr><td>W37</td><td>6</td><td>3</td></tr>
+          <tr><td>W38</td><td>20</td><td>18</td></tr>
+          <tr><td>W39</td><td>47</td><td>7</td></tr>
+          <tr><td>Cohort (window)</td><td>58</td><td>7</td></tr>
+          <tr><td>Gate at <code>fe33dbf6</code></td><td>7 passed, exit 0 (22 passed with the sibling velocity suites)</td><td>&mdash;</td></tr>
+          <tr><td>Negative control</td><td>1 failed, exit 1</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+      <p><code>tests/test_velocity_work_in_progress.py</code> builds a five-commit plan history
+      under <code>tmp_path</code> and asserts the opening is the adding commit, that a plan closed
+      by two commits counts once (closed at the first), that the archive flag closes a
+      still-<code>active</code> plan, that pending is every plan not closed, that a window bounds
+      which openings enter the cohort, and that the cohort answer moves with the named commit. The
+      pinned reading is asserted against this repository's own history at <code>23eb2545</code>.
+      The declared negative control dates a plan's opening by the latest commit that touched its
+      file instead of the commit that added it; the 58-opened assertion then reads
+      <strong>125</strong> and fails. Logs: <code>wip_gate.log</code>,
+      <code>negative_control_work_in_progress.log</code>.</p>
     </section>
   </main>
 </body>
