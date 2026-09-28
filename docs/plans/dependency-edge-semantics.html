@@ -490,6 +490,43 @@
       Section closure and the driving followup remain for the coordinator.</p>
     </aside>
 
+    <aside id="section-wait-reported-with-its-section">
+      <p><strong>Worker implementation, 2026-09-28:</strong> naming the waiting section was not enough
+      on the read side. The rows a read appends to <code>deps</code> carried the same resolved shape as
+      the whole-plan rows beside them, so the typed summary view's plan-level fold — its
+      <code>blocking</code> list through <code>unresolved_dependencies</code> — collected them too: a
+      plan whose only wait was one section's reported the whole plan blocked, holding work its
+      siblings could start. <code>reckon/lifecycle.py</code> now leaves a row that names the section it
+      waits for to that section, one filter that covers every caller of the plan-level fold, and
+      <code>reckon/mcp_views.py</code> reports those rows beside the plan-level list as
+      <code>section_blocking</code>: one entry per waiting section, naming the targets it waits for and
+      applying the same unresolved test the plan-level list applies. The key rides plan reads alone and
+      is empty when the plan declares no section edge, so an empty list is distinguishable from an
+      omitted key. A whole-plan ref blocks exactly as before. Commit <code>719406d0</code> carries the
+      change.</p>
+      <p><strong>Gate:</strong> every test file importing <code>reckon.mcp_views</code> or
+      <code>reckon.lifecycle</code> — 21 files — reads <strong>1 failed / 349 passed</strong> at head
+      with the node's own file included, against <strong>1 failed / 344 passed</strong> at the base
+      revision; the single failure is the same pre-existing vocabulary id in both arms, so
+      <strong>zero added failing ids</strong>. The node's own file is <strong>5 failed</strong> at base
+      and <strong>5 passed</strong> at head, the first case failing at base on the fold itself with the
+      section row sitting in plan-level <code>blocking</code>.</p>
+      <p><strong>Declared negative control:</strong> folding the section rows back into the plan-level
+      blocking list in a scratch copy fails the section-only case first — the section row back in
+      <code>blocking</code>, the plan reporting blocked with only one section waiting — with the
+      declared string as the red log's first line.</p>
+      <figure>
+        <img src="/reckon/figures/dependency-edge-semantics/section-wait-not-the-plans.svg"
+             alt="Two panels over the same deps rows: left, every row folds into plan-level blocking
+                  and the plan reports blocked; right, the whole-plan row reaches blocking, the
+                  section-scoped row reaches section_blocking under s5, and the plan stays active.">
+        <figcaption>The rows are identical in both panels; the fold decides which list reports the
+        wait, and therefore whether the plan's own state is reported or one section's.</figcaption>
+      </figure>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#section-wait-reported-with-its-section">mechanism, base/head arms, negative control and figure</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
+    </aside>
+
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
       Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout

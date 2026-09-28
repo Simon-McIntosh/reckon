@@ -21,8 +21,10 @@ from reckon.crew import rollout as rollout_module
 from reckon.crew import staleness as staleness_module
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.lifecycle import (
+    COMPLETED_STATUSES,
     TERMINAL_STATUSES,
     effective_status,
+    is_section_scoped,
     unpassed_gate_blockers,
     unresolved_dependencies,
 )
@@ -1307,9 +1309,7 @@ def _recorded_live_run_classifications(project: str) -> dict[str, dict[str, Any]
                     continue
                 run_id = str(event.get("run_id") or "")
                 classification = str(
-                    event.get("recovery_classification")
-                    or event.get("to_state")
-                    or ""
+                    event.get("recovery_classification") or event.get("to_state") or ""
                 )
                 if run_id and classification:
                     latest[run_id] = event
@@ -1920,6 +1920,34 @@ def _blocking(data: dict[str, Any], deps: list[dict[str, Any]]) -> list[Any]:
     return result
 
 
+def _section_blocking(deps: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Report the sections that wait, each beside the targets it waits for.
+
+    A section-scoped row holds one section of the owning plan, so it is
+    reported here instead of in the plan-level blocking list, and only while
+    its target is unresolved — the same test the plan-level list applies.
+    """
+
+    waits: dict[str, list[dict[str, Any]]] = {}
+    for dep in deps:
+        if not is_section_scoped(dep):
+            continue
+        if dep.get("found") and dep.get("status") in COMPLETED_STATUSES:
+            continue
+        target = {
+            "ref": dep.get("ref", ""),
+            "found": bool(dep.get("found")),
+            "status": dep.get("status", ""),
+        }
+        if dep.get("stage"):
+            target["stage"] = dep["stage"]
+        waits.setdefault(str(dep.get("source_section")), []).append(target)
+    return [
+        {"section": section, "ready": False, "waits_on": rows}
+        for section, rows in sorted(waits.items())
+    ]
+
+
 def _plan_effort(data: dict[str, Any]) -> dict[str, Any] | None:
     """Return the plan estimate and its derived consumption in named units."""
 
@@ -2060,7 +2088,7 @@ def _summary(
             "Use view='detail' with include_prompts=true.",
         )
     blocking = _blocking(data, deps)
-    return {
+    result = {
         "resource": selector.as_dict(),
         "version": version,
         "view": "summary",
@@ -2075,6 +2103,9 @@ def _summary(
         "next": _next_action(data, include_prompts=False),
         "warnings": list(data.get("compatibility_warnings") or []),
     }
+    if selector.type == "plan":
+        result["section_blocking"] = _section_blocking(deps)
+    return result
 
 
 def _detail(
