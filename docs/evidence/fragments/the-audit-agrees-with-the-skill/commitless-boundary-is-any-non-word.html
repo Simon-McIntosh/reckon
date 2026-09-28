@@ -57,9 +57,15 @@
       </p>
       <p>
         <strong>Gate.</strong> The 25 promotion test files plus
-        <code>tests/test_cited_identifier_resolves.py</code> were run at the dispatch
-        base and at the new head; the delta by failure id is recorded in
-        <code>gate-base.log</code> and <code>gate-head.log</code> under the run
-        directory.
+        <code>tests/test_cited_identifier_resolves.py</code> ran at the new head:
+        10 failed, 227 passed. All 10 failures sit in three files
+        (<code>test_promotion_never_amends_its_commit.py</code>,
+        <code>test_promotion_stages_its_one_run_file.py</code>,
+        <code>test_cited_identifier_resolves.py</code>); the base arm over exactly
+        those files reproduced the same 10 ids, so the change adds zero failures by
+        id. Those failures are the review gate refusing to classify a scoring run as
+        promoted — unrelated to the absence-word boundary — and are reported as a
+        follow-on rather than triaged here. Logs: <code>gate-head.log</code> and
+        <code>gate-base.log</code> under the run directory.
       </p>
     </article>
