@@ -1079,6 +1079,34 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     by class of work is reproducible from those rows alone &mdash; the same cut the fitness table
     needs, so one record serves both.</p>
 
+    <h4 id="s8-replay-guards-landed">Landing &mdash; every pace-row field is read through one guarded door</h4>
+
+    <p><strong>Landed 2026-09-28 (commits <code>ce55cc93</code> and <code>1e6b8688</code>).</strong>
+    Every field of a pace row in <code>reckon/crew/pace_replay.py</code> now passes through one reader
+    that owns the module's only two conversions, <code>float()</code> and
+    <code>datetime.fromisoformat()</code>. The reader answers with a value its declared kind admits
+    or with an <code>_UnmeasuredAllowance</code> naming the field it could not read, so a null,
+    blank or wrong-typed field costs its own row &mdash; which reads unmeasured with a reason &mdash;
+    and never the week's report. The review at <code>d4eee48b</code> had reproduced the surviving
+    site at line 290, where a <code>None</code> utilisation died inside
+    <code>float(week["utilisation"])</code> and took every healthy row with it. Three earlier rounds
+    repaired one site each; this landing closes the class the site belonged to. Figure:
+    <a href="/reckon/figures/a-window-paces-the-lane/one-door-reads-every-row-field.svg">one guarded
+    door for the whole class</a>.</p>
+
+    <p><strong>Gate.</strong> One invocation over <code>tests/test_pace_replay.py</code> and
+    <code>tests/test_dispatch_records_the_pace_row.py</code> passed <strong>22 tests, exit 0</strong>
+    at the landing head against <strong>21, exit 0</strong> at <code>0999053b</code>; the delta is
+    exactly the field sweep, which damages one field at a time across the row's own key set (148
+    cases) and requires the report to return, the damaged row to read unmeasured with a reason, and
+    the untouched row to still match. The sweep fails at the review revision <code>d4eee48b</code>
+    with the crash of the quoted site and passes at the head. The declared negative
+    control &mdash; the bare conversion restored in a scratch copy of the module &mdash;
+    reproduces the crash against the copy while the delivered module marks the row and replays the
+    rest. Ruff check and format are clean on both staged code paths. Full evidence:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#s8-replay-guards">the cumulative
+    landing record</a>.</p>
+
     <h2 id="s9">&sect;9 &mdash; The log that lets someone else tune this</h2>
 
     <p>Every dispatch records the group, the utilisation it was judged against with that figure's

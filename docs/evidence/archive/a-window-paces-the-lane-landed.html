@@ -2751,6 +2751,75 @@ both fields, so a layer setting them survives the <code>extra=&quot;forbid&quot;
       the base arm records the expected <code>ModuleNotFoundError</code> because the new module is
       absent at <code>99455576</code>.</p>
     </section>
+
+    <section id="s8-replay-guards">
+      <h2>&sect;8 &mdash; Every row field is read through one guarded door</h2>
+
+      <p><strong>Landed 2026-09-28 (commits <code>ce55cc93</code> and <code>1e6b8688</code>).</strong>
+      <code>reckon/crew/pace_replay.py</code> now reads every field of a pace row through one reader,
+      <code>_read(row, path, kind, *, label, missing)</code>. That reader owns the module's only two
+      conversions &mdash; <code>float()</code> and <code>datetime.fromisoformat()</code> &mdash; and
+      answers with either a value its declared kind admits or an
+      <code>_UnmeasuredAllowance</code> naming the field it could not read. A row carrying a null,
+      blank or wrong-typed field therefore reads <em>unmeasured with a reason</em>: the week's report
+      still returns, that row is marked, and the rows nobody touched replay exactly as before. A
+      field the producer legitimately leaves null (<code>reason</code>, <code>hold</code>, a clock's
+      <code>age_seconds</code>) is nullable by declaration rather than by exception.</p>
+
+      <p>The review at <code>d4eee48b</code> reproduced the surviving site directly: with the
+      seven-day clock's utilisation replaced by <code>None</code>, replay died at
+      <code>utilisation=float(week["utilisation"])</code> (line 290) with
+      <code>TypeError: float() argument must be a string or a real number, not 'NoneType'</code>,
+      taking every healthy row in the week with it. Three earlier rounds each repaired one site of
+      this class; this landing closes the class, which is why the check is a sweep over the row's
+      whole field set rather than one more assertion about one field.</p>
+
+      <table>
+        <caption>Evidence for the guarded read and the sweep that drives it.</caption>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Conversion sites in the module</td><td><strong>2</strong>, both inside
+          <code>_read</code> (<code>float()</code> at line 398, <code>datetime.fromisoformat()</code>
+          on a row value at line 409)</td></tr>
+          <tr><td>Sweep coverage</td><td>one field damaged at a time on a producer-written row:
+          <strong>30 paths &#215; 5 candidates &#8722; 2 no-op skips = 148 cases</strong>, the field
+          list taken from the row's own keys</td></tr>
+          <tr><td>Damaged row</td><td>unmeasured with a non-empty reason, for every candidate the
+          producer does not write at that path; a candidate the producer does write there keeps the
+          row measurable, because refusing a value the module can use would cost a healthy week its
+          report</td></tr>
+          <tr><td>Untouched row</td><td>still replays: unmeasured <strong>false</strong>, allowance
+          <strong>match true</strong></td></tr>
+          <tr><td>Reproduction at the review revision</td><td>the crash at line 290 quoted above,
+          and the sweep fails there (<code>1 failed</code>); both pass at the head</td></tr>
+          <tr><td>Head gate</td><td><strong>22 passed, exit 0</strong> over both measured test
+          files</td></tr>
+          <tr><td>Baseline</td><td><strong>21 passed, exit 0</strong> at <code>0999053b</code>; the
+          delta is exactly the sweep</td></tr>
+        </tbody>
+      </table>
+
+      <figure>
+        <img src="/reckon/figures/a-window-paces-the-lane/one-door-reads-every-row-field.svg"
+             alt="Left: a bare float() on the row's utilisation raises TypeError and the whole week's report never returns. Right: the same field read through _read() either yields a value the kind admits, with the row replaying as recorded, or an _UnmeasuredAllowance naming the missing figure, with the report still returning and untouched rows still matching. A footer notes the sweep's 148 damage cases and that the module's only two conversions both sit inside _read.">
+        <figcaption>A damaged field costs its own row and nothing else: one guarded door in place of
+        a conversion per site.</figcaption>
+      </figure>
+
+      <h3>Negative control</h3>
+      <blockquote><p>restore a bare float() on the row value near pace_replay.py:290; the
+      field-garbage test must fail on that field</p></blockquote>
+      <p>The guarded read of the seven-day clock's utilisation was replaced in a scratch copy of the
+      module with the bare conversion, so the copy serves the import while the deliverable tree is
+      untouched. Against the copy the damaged field raises
+      <code>TypeError: float() argument must be a string or a real number, not 'NoneType'</code> and
+      the sweep fails on that field; against the delivered module the same damaged field returns the
+      report with <code>"damaged_reason": "the seven-day clock has no utilisation"</code> while the
+      untouched row still matches. Red log:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T045443284910-replay-guards-every-row-read/reports/pace-negative-control.log</code>;
+      head gate log:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T045443284910-replay-guards-every-row-read/reports/pace-gate.log</code>.</p>
+    </section>
 </main>
 
 </body>

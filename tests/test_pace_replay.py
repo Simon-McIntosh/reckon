@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import copy
 import importlib.util
 import json
+import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -377,3 +379,268 @@ def test_a_row_without_lane_identity_is_in_the_unknown_split(committed_week):
         "unknown": 1,
         "total": 3,
     }
+
+
+# The values a damaged row is made of.  One of them is a legal value in some
+# fields -- a lane may be named "x" -- so a case decides per field whether the
+# candidate is a value the producer writes there or damage.
+_GARBAGE: tuple[object, ...] = (None, "x", [], {}, -1)
+
+# A declared wallet, so the producer writes a paced row rather than the row of a
+# lane that declares no group.
+_CONFIG: dict = {
+    "default_backend": "alpha",
+    "backends": {
+        "alpha": {
+            "launch": "cli",
+            "command": "codex",
+            "model": "some-model",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "session_reuse": True,
+            "time_budget": "25m",
+            "budget_group": "sol",
+            "fallback": "beta",
+        },
+        "beta": {
+            "launch": "cli",
+            "command": "claude",
+            "model": "some-model",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "session_reuse": True,
+            "time_budget": "25m",
+            "budget_group": "other",
+        },
+    },
+    "roles": {"implement": {}, "review": {}, "verify": {}, "investigate": {}},
+    "budget": {
+        "utilisation_ceiling_pct": 100,
+        "resume_reserve_pct": 5,
+        "coordinator_reserve_pct": 3,
+        "drain_lead_hours": 12.0,
+        "pace_multiple": 1.25,
+        "exhausted_statuses": [],
+    },
+    "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+}
+
+
+def _stamp(offset_seconds: int = 0) -> str:
+    return (datetime.now(UTC) + timedelta(seconds=offset_seconds)).isoformat()
+
+
+def _text(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _figure(value: object) -> bool:
+    return isinstance(value, float)
+
+
+def _object(value: object) -> bool:
+    return isinstance(value, dict) and bool(value)
+
+
+def _null(value: object) -> bool:
+    return value is None
+
+
+def _refused(value: object) -> bool:
+    return False
+
+
+def _observed_word(value: object) -> bool:
+    return value == "observed"
+
+
+# The values a reader admits at each path, written as the predicate that admits
+# a candidate.  A candidate one of these admits is a value the producer itself
+# writes in a row that still measures, so the row must NOT read unmeasured: the
+# reader may only refuse a value it cannot use.  Every path not listed admits
+# nothing, so a field a later producer starts writing is swept as damage here
+# without an edit to this table.
+_WRITABLE: dict[str, tuple] = {
+    "lane": (_text,),
+    "node": (_text,),
+    "group": (_text,),
+    "state": (_text,),
+    "source": (_text,),
+    "member": (_text,),
+    "reason": (_text, _null),
+    "score": (_figure,),
+    "policy": (_object,),
+    "clocks": (_object,),
+    "policy.drain_lead_hours": (_figure,),
+    "policy.pace_multiple": (_figure,),
+    "clocks.*": (_object,),
+    "clocks.*.period": (_text,),
+    "clocks.*.utilisation": (_figure,),
+    "clocks.*.age_seconds": (_figure, _null),
+    "clocks.five_hour.state": (_text,),
+    # The seven-day clock's own state is what makes a row measurable at all, so
+    # the one text admitted there is the word that says it was observed.  Any
+    # other word -- damage, or the producer's own "unknown" -- leaves the row
+    # unmeasured, which is the outcome a case expects either way.
+    "clocks.seven_day.state": (_observed_word,),
+    "hold": (_object, _null),
+}
+
+
+def _writable(path: tuple[str, ...], value: object) -> bool:
+    """Whether a candidate is a value the producer can write at that path."""
+    name = ".".join(path)
+    if name not in _WRITABLE and len(path) == 3 and path[0] == "clocks":
+        name = f"clocks.*.{path[2]}"
+    return any(admits(value) for admits in _WRITABLE.get(name, (_refused,)))
+
+
+def _row_paths(row: dict, prefix: tuple[str, ...] = ()):
+    """Every field of a row, and every leaf of the containers derived from.
+
+    The replay reads a row's figures wherever they sit, so the sweep descends
+    into the blocks it derives from -- the policy and each metered clock -- and
+    reaches the leaves a later figure would be written as.  The blocks a row
+    carries beside its derivation, the recorded allowance, bar and hold, are read
+    whole and compared whole, so they are swept as values: a changed one is
+    already reported as a disagreement by the sibling tests.
+    """
+    for key, value in row.items():
+        path = (*prefix, key)
+        yield path
+        if isinstance(value, dict) and (
+            key in ("policy", "clocks") or prefix[:1] == ("clocks",)
+        ):
+            yield from _row_paths(value, path)
+
+
+def _at(row: dict, path: tuple[str, ...]):
+    value = row
+    for key in path:
+        value = value[key]
+    return value
+
+
+def _put(row: dict, path: tuple[str, ...], value: object) -> None:
+    _at(row, path[:-1])[path[-1]] = value
+
+
+def _producer_records(tmp_path: Path, *, nodes: tuple[str, ...]) -> list[dict]:
+    """Records whose pace rows were written by the producer, one per node.
+
+    The row's shape is the producer's to decide, so a case that hand-built one
+    would sweep the fields this test remembered rather than the fields a
+    dispatch records.  The wallet is observed through a receipt planted on a
+    live pointer, as a run in flight records it.
+    """
+    from reckon import budget
+    from reckon.crew import runs
+
+    observed_at = _stamp(0)
+    receipt = {
+        "quota_state": "measured",
+        "observed_at": observed_at,
+        "quota_windows": [
+            {
+                "window_minutes": minutes,
+                "used_percent": percent,
+                "resets_at": int(
+                    (datetime.now(UTC) + timedelta(hours=hours)).timestamp()
+                ),
+                "observed_at": observed_at,
+            }
+            for minutes, percent, hours in ((300, 22.0, 4.0), (10080, 45.0, 100.0))
+        ],
+    }
+    runs.live_dir().mkdir(parents=True, exist_ok=True)
+    (runs.live_dir() / "r-lane-wallet.json").write_text(
+        json.dumps(
+            {
+                "run_id": "r-lane-wallet",
+                "project": "sample",
+                "backend": "alpha",
+                "phase": "running",
+                "pid": os.getpid(),
+                "created_at": observed_at,
+                "observed_at": observed_at,
+                "lane_receipt": receipt,
+            }
+        ),
+        encoding="utf-8",
+    )
+    root = tmp_path / "root"
+    root.mkdir()
+    return [
+        {
+            "run_id": f"run-{node}",
+            "role": "implement",
+            "backend": "alpha",
+            "local": False,
+            "pace": budget.pace_row(
+                _CONFIG,
+                project="sample",
+                lane="alpha",
+                node=node,
+                score=0.3,
+                root=root,
+            ),
+        }
+        for node in nodes
+    ]
+
+
+def test_a_damaged_field_marks_its_row_and_never_the_week(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """One damaged field yields one marked row, never a dead report.
+
+    Each case replaces one field of a producer-written pace row, and requires
+    three things of the week's replay: it returns at all, the row carrying the
+    damage is marked rather than silently derived, and the rows nobody touched
+    replay exactly as they did before.  The mark is "unmeasured with a reason"
+    wherever the candidate is not a value the producer writes at that path --
+    every candidate for a figure, a stamp or a block, and four of the five for a
+    label.  A candidate the producer does write there is held to the other half
+    of the reader's contract: the row stays measurable, because refusing a value
+    the module can use would cost a week its report over a healthy row.  The
+    fields swept are the row's own keys, so a field the producer starts writing
+    is covered here without an edit.
+    """
+    from reckon.crew.pace_replay import replay
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    subject, control = _producer_records(tmp_path, nodes=("subject", "control"))
+
+    intact = replay([subject, control])
+    assert intact["allowances"]["all_match"] is True, intact["text"]
+
+    paths = list(_row_paths(subject["pace"]))
+    assert len({path[0] for path in paths}) == len(subject["pace"])
+
+    for path in paths:
+        original = _at(subject["pace"], path)
+        for candidate in _GARBAGE:
+            if candidate is None and original is None:
+                # Not a mutation: a null hold and a null reason are values a
+                # dispatch that was not held records, not damage.
+                continue
+            mutated = copy.deepcopy(subject)
+            _put(mutated["pace"], path, candidate)
+
+            report = replay([mutated, control])
+
+            damaged = next(
+                row for row in report["rows"] if row["run_id"] == "run-subject"
+            )
+            untouched = next(
+                row for row in report["rows"] if row["run_id"] == "run-control"
+            )
+            if _writable(path, candidate):
+                assert damaged["allowance_unmeasured"] is False, (path, candidate)
+            else:
+                assert damaged["allowance_unmeasured"] is True, (path, candidate)
+                assert damaged["allowance_match"] is False, (path, candidate)
+                assert damaged["allowance_unmeasured_reason"], (path, candidate)
+                assert report["allowances"]["all_match"] is False, (path, candidate)
+            assert untouched["allowance_unmeasured"] is False, (path, candidate)
+            assert untouched["allowance_match"] is True, (path, candidate)
