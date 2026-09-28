@@ -1045,8 +1045,8 @@ def stored_record(
     *,
     base_dir: str | Path | None = None,
     reviewed_head_sha: str | None = None,
-) -> tuple[bool, dict[str, Any] | None]:
-    """Return which file the record was read from and the record it holds.
+) -> tuple[Path | None, dict[str, Any] | None]:
+    """Return the file a stored record was read from and the record it holds.
 
     The selection rule is shared by every reader and by the writer that records
     a disposition beside the review store's own content: a named head is
@@ -1058,9 +1058,13 @@ def stored_record(
 
     The record returned is the file's own content, never the read-time
     annotation :func:`read_review` adds, so a caller that writes the record
-    back does not persist a derived view. The boolean reports whether a record
-    was read from a head-keyed path, which is what a writer needs to keep
-    writing where the reader looked.
+    back does not persist a derived view. The path returned is the file it came
+    from — the legacy path, or one keyed by a revision — and it is what a
+    writer needs to keep writing where the reader looked: a store can hold a
+    legacy copy beside a revision-keyed record of the same head, and the
+    head-first reader takes the first candidate carrying the head, so a rewrite
+    that re-derived its target from the record's own fields could land beside
+    the file the reader reads and leave that file unchanged.
     """
     directory = review_store_root(base_dir) / project
     candidates = [review_path(project, reviewed_run_id, base_dir)]
@@ -1068,7 +1072,7 @@ def stored_record(
         candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
     existing = {path.resolve(): path for path in candidates if path.is_file()}
     if not existing:
-        return False, None
+        return None, None
 
     records = [
         (path, json.loads(path.read_text(encoding="utf-8")))
@@ -1076,16 +1080,15 @@ def stored_record(
     ]
     if reviewed_head_sha is not None:
         named = reviewed_head_sha.strip().lower()
-        for _, record in records:
+        for path, record in records:
             _, _, carried_head, stored_head = carried_revision_pair(record)
             if not carried_head or not stored_head:
                 continue
             actual = stored_head.lower()
             if actual.startswith(named) or named.startswith(actual):
-                return True, record
-        return False, None
-    newest = max(records, key=lambda item: item[0].stat().st_mtime_ns)[1]
-    return False, newest
+                return path, record
+        return None, None
+    return max(records, key=lambda item: item[0].stat().st_mtime_ns)
 
 
 def read_review(
@@ -1164,8 +1167,10 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
 # settings and is readable by whoever is deciding what to do next.
 #
 # A dimension the map does not name carries no floor. A floor of zero would
-# report every dimension of every review, so the absence of a declared floor
-# is read as the absence of a standard rather than as a standard of nothing.
+# report nothing, since every stored score is at or above zero — so reading an
+# undeclared floor as zero would claim a standard the configuration never
+# declared while changing no verdict. The absence of a declared floor is read
+# as the absence of a standard rather than as a standard of nothing.
 #
 # A sub-floor dimension is a finding with its own disposition, never a lower
 # total: the total remains the reviewer's arithmetic over what it parsed, and
@@ -1307,14 +1312,20 @@ def record_dimension_disposition(
     A fold names the node id through ``node``; an exemption records its reason
     through ``reason``. Anything else is refused rather than stored: an unknown
     dimension, a kind outside :data:`DIMENSION_DISPOSITION_KINDS`, a fold
-    naming no node and an exemption carrying no reason all raise
-    :class:`ValueError`. A run with no stored review is refused too — a
-    disposition answers a finding, and there is none to answer.
+    naming no node, an exemption carrying no reason, a fold carrying a reason
+    and an exemption naming a node all raise :class:`ValueError`. The last two
+    are refused because the field they carry belongs to the other kind and
+    would otherwise be dropped in silence while the call reported success. A
+    run with no stored review is refused too — a disposition answers a finding,
+    and there is none to answer.
 
-    The record is written back to the path the review was read from, so a
-    head-keyed review keeps its own file and a disposition recorded against one
-    revision never speaks for another. The write is atomic and preserves every
-    other field, including the reviewer's verbatim text.
+    The record is written back to the file the review was read from, so a
+    head-keyed review keeps its own file, a legacy record carrying the same
+    head keeps its own, and a disposition recorded against one revision never
+    speaks for another. Writing anywhere else would leave the copy the reader
+    reads without the entry — the row standing while this call reported the
+    disposition as recorded. The write is atomic and preserves every other
+    field, including the reviewer's verbatim text.
     """
     dimension_name = str(dimension or "").strip().lower()
     if dimension_name not in REVIEW_DIMENSIONS:
@@ -1323,25 +1334,47 @@ def record_dimension_disposition(
             f"known dimensions are {', '.join(REVIEW_DIMENSIONS)}"
         )
     disposition_kind = str(kind or "").strip().lower()
-    if disposition_kind not in DIMENSION_DISPOSITION_KINDS:
-        raise ValueError(
-            f"unknown disposition {kind!r}; "
-            f"allowed kinds are {', '.join(DIMENSION_DISPOSITION_KINDS)}"
-        )
     named_node = str(node or "").strip()
     recorded_reason = str(reason or "").strip()
-    if disposition_kind == "folded" and not named_node:
-        raise ValueError("a folded disposition must name the node it was folded into")
-    if disposition_kind == "exempted" and not recorded_reason:
+    # The gate here is the reader's own predicate, so a disposition this writer
+    # accepts is one :func:`sub_floor_dimensions` will honour. A second copy of
+    # the closed set in the writer could accept a kind the reader then ignores,
+    # which stores a row that reads as answered and stands.
+    if not dimension_disposition_valid(
+        {"kind": disposition_kind, "node": named_node, "reason": recorded_reason}
+    ):
+        if disposition_kind not in DIMENSION_DISPOSITION_KINDS:
+            raise ValueError(
+                f"unknown disposition {kind!r}; "
+                f"allowed kinds are {', '.join(DIMENSION_DISPOSITION_KINDS)}"
+            )
+        if disposition_kind == "folded":
+            raise ValueError(
+                "a folded disposition must name the node it was folded into"
+            )
         raise ValueError("an exempted disposition must record its reason")
+    # The field a caller supplies for the other kind is refused rather than
+    # dropped: a stored entry that carries a reason no fold can name, or a node
+    # no exemption can stand behind, reads as recorded on both sides of a
+    # question the caller only half answered.
+    if disposition_kind == "folded" and recorded_reason:
+        raise ValueError(
+            "a folded disposition carries no reason; record an exemption "
+            "instead of folding a finding whose reason you are keeping"
+        )
+    if disposition_kind == "exempted" and named_node:
+        raise ValueError(
+            "an exempted disposition names no node; record a fold instead of "
+            "exempting a finding that a node already answers"
+        )
 
-    head_keyed, record = stored_record(
+    path, record = stored_record(
         project,
         reviewed_run_id,
         base_dir=base_dir,
         reviewed_head_sha=reviewed_head_sha,
     )
-    if record is None:
+    if record is None or path is None:
         raise ValueError(
             f"no stored review for run {reviewed_run_id!r} in project "
             f"{project!r} to record a disposition against"
@@ -1359,50 +1392,9 @@ def record_dimension_disposition(
     merged[dimension_name] = disposition
     record[DIMENSION_DISPOSITIONS_KEY] = merged
 
-    path = _stored_record_path(
-        project,
-        reviewed_run_id,
-        head_keyed=head_keyed,
-        record=record,
-        base_dir=base_dir,
-    )
     path.parent.mkdir(parents=True, exist_ok=True)
     _write_record(path, record)
     return path
-
-
-def _stored_record_path(
-    project: str,
-    reviewed_run_id: str,
-    *,
-    head_keyed: bool,
-    record: Mapping[str, Any],
-    base_dir: str | Path | None,
-) -> Path:
-    """Return the path a record selected by :func:`stored_record` occupies.
-
-    A head-keyed record keeps the revision-keyed path it was read from, which
-    the head it carries re-derives. A record selected without a named head is
-    written back onto the revision pair its own fields carry, and falls back to
-    the keyed-by-identity path when the pair is incomplete — the same rule
-    :func:`store_review` applies, so a rewritten record does not move.
-    """
-    _, _, _, head_sha = carried_revision_pair(record)
-    if head_sha:
-        return review_path(
-            project,
-            reviewed_run_id,
-            base_dir,
-            reviewed_head_sha=head_sha,
-        )
-    if head_keyed:
-        return _incomplete_review_path(project, reviewed_run_id, record, base_dir)
-    return _partial_review_path(
-        project,
-        reviewed_run_id,
-        record,
-        base_dir,
-    )
 
 
 def _write_record(path: Path, record: Mapping[str, Any]) -> None:

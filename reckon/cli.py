@@ -3790,6 +3790,201 @@ def crew_path(kind, project, run_id):
     click.echo(str(path))
 
 
+def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
+    """The revision a run with no live pointer was reviewed at, from its records.
+
+    A promoted run has no live pointer, so the run's own committed records
+    answer which revision its stored review is about: the revision its ledger
+    row records as the tip its promotion landed, or the head its stored review
+    carries. Both are the run's own account of itself, and a row that names no
+    revision falls through to the head the review recorded.
+
+    The caller's working directory is not a third source. An absent tree reads
+    as the empty string, which is ``.``, so a head resolved from it belongs to
+    whatever repository the operator happened to stand in, and the review
+    selected against that revision is another run's — which is why this
+    resolves both records here rather than passing the absence on.
+
+    A run whose records name no revision, and a ledger that cannot be read, are
+    refused by name: a revision nobody recorded cannot be answered, and writing
+    a disposition against a guessed one reports a finding retired on a diff
+    that was never read.
+    """
+    from reckon import ledger as ledger_module
+    from reckon._store import CorruptEnvelopeError
+    from reckon.crew import review as review_module
+
+    try:
+        ledger_data, _version = ledger_module.load(project)
+    except (
+        OSError,
+        ValueError,
+        ledger_module.LedgerError,
+        CorruptEnvelopeError,
+    ) as exc:
+        raise ValueError(
+            f"cannot read the ledger for project {project!r}, which records "
+            f"the revision run {reviewed_run_id!r} landed at: {exc}"
+        ) from exc
+    for row in ledger_data.get("runs") or []:
+        if not isinstance(row, Mapping):
+            continue
+        if str(row.get("run_id") or "") != reviewed_run_id:
+            continue
+        promoted = str(row.get("promoted_revision") or "").strip()
+        if promoted:
+            return promoted
+        break
+    try:
+        _path, record = review_module.stored_record(project, reviewed_run_id)
+    except (OSError, ValueError) as exc:
+        raise ValueError(
+            f"cannot read the stored review for run {reviewed_run_id!r}: {exc}"
+        ) from exc
+    if isinstance(record, Mapping):
+        _carried, _base, carries_head, head = review_module.carried_revision_pair(
+            record
+        )
+        if carries_head and head:
+            return head
+    raise ValueError(
+        f"run {reviewed_run_id!r} has no live pointer, and neither its ledger "
+        f"row in project {project!r} nor its stored review names a revision; "
+        "refusing to take one from the working directory, which would answer a "
+        "review belonging to whatever repository the caller stands in"
+    )
+
+
+@crew.command(name="dispose")
+@click.option(
+    "--project",
+    required=True,
+    help="Project whose review store holds the run's record.",
+)
+@click.option(
+    "--run",
+    "reviewed_run_id",
+    required=True,
+    help="Run the review is about, not the run that reviewed it.",
+)
+@click.option(
+    "--dimension",
+    required=True,
+    help="Review dimension carrying the sub-floor finding.",
+)
+@click.option(
+    "--kind",
+    required=True,
+    help="Disposition kind: folded with --node, or exempted with --reason.",
+)
+@click.option(
+    "--node",
+    "node_id",
+    default=None,
+    help="Node id the finding was folded into, for --kind folded.",
+)
+@click.option(
+    "--reason",
+    default=None,
+    help="Why the finding is not being acted on, for --kind exempted.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pretty):
+    """Record the disposition one sub-floor review dimension carries.
+
+    A review dimension below the floor flight configuration declares for it is
+    an obligation row until an entry in the closed set answers it: a fold
+    naming the dispatched node the finding went into, or an exemption naming
+    why it is not being acted on. This is that entry's writer, so a
+    coordinator retires the row through a command rather than editing the
+    review store by hand or promoting the close over it.
+
+    Every refusal is the store's own, and nothing is written on one: an
+    unknown dimension, a kind outside the closed set, a fold naming no node,
+    an exemption carrying no reason, and either kind supplied with the other's
+    field all exit non-zero with the reason stated. The record rewritten is the
+    one the obligations read-back selects — the same resolution and the same
+    selection, by the run's own live pointer and by the head-first rule the
+    reader uses — so an accepted call is one the row follows, and a store
+    holding a legacy copy beside a revision-keyed record for the same head
+    cannot take the entry in the copy nobody reads. A run with no live pointer,
+    the ordinary case once it is promoted, is answered from its own records
+    rather than from the directory the operator stands in; see
+    :func:`_reviewed_head_from_run_records`.
+    """
+    from reckon.crew import recovery, runs
+    from reckon.crew import review as review_module
+
+    try:
+        pointer = runs.read_pointer(reviewed_run_id)
+    except runs.CrewError:
+        pointer = None
+    if pointer is None:
+        # A promoted run has no live pointer, and an empty mapping here is a
+        # tree of ``.``: the head would be resolved from the caller's own
+        # repository and the review selected against a revision belonging to
+        # something else.
+        tree = None
+        try:
+            head = _reviewed_head_from_run_records(project, reviewed_run_id)
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
+    else:
+        tree = recovery._review_tree(pointer)
+        head = recovery._reviewed_run_head(pointer) if tree is not None else ""
+    try:
+        stored, described = recovery.select_review_for_head(
+            project, reviewed_run_id, head, tree=tree
+        )
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(
+            f"cannot read the stored review for run {reviewed_run_id!r}: {exc}"
+        ) from exc
+    if stored is None:
+        if described:
+            raise click.ClickException(
+                f"the stored review for run {reviewed_run_id!r} describes "
+                f"{described}, while the run's work is at {head}; a disposition "
+                "recorded now would answer a review its own head does not name"
+            )
+        raise click.ClickException(
+            f"no stored review for run {reviewed_run_id!r} in project "
+            f"{project!r} to record a disposition against"
+        )
+    # The head the selected record carries, not the one resolved from the tree:
+    # a record that names no revision was selected by the reader's fallback, and
+    # naming a revision for it would leave the writer nothing to read back.
+    _, _, carries_head, stored_head = review_module.carried_revision_pair(stored)
+    reviewed_head_sha = stored_head if carries_head and stored_head else None
+    try:
+        path = review_module.record_dimension_disposition(
+            project,
+            reviewed_run_id,
+            dimension,
+            kind=kind,
+            node=node_id,
+            reason=reason,
+            reviewed_head_sha=reviewed_head_sha,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _, record = review_module.stored_record(
+        project, reviewed_run_id, reviewed_head_sha=reviewed_head_sha
+    )
+    dispositions = (record or {}).get(review_module.DIMENSION_DISPOSITIONS_KEY) or {}
+    _emit(
+        {
+            "ok": True,
+            "project": project,
+            "run_id": reviewed_run_id,
+            "dimension": dimension,
+            "path": str(path),
+            "disposition": dispositions.get(str(dimension or "").strip().lower()),
+        },
+        pretty,
+    )
+
+
 @crew.command(name="check-manifest")
 @click.option("--run", "run_id", required=True, help="Run id whose manifest to check.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
