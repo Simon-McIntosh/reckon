@@ -1208,11 +1208,72 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     return out
 
 
+def _evidence_record_plan(path: Path) -> str | None:
+    """Return the plan slug when ``path`` is a cumulative evidence record.
+
+    A record is spelled ``docs/evidence/archive/<plan>-landed.html`` or
+    ``docs/evidence/<plan>-landed.html``; the fragments it composes from sit
+    beside both spellings. Anything else returns None and is audited as it is.
+    """
+
+    if not path.name.endswith("-landed.html"):
+        return None
+    parent = path.parent
+    if parent.name == "archive":
+        parent = parent.parent
+    if parent.name != "evidence":
+        return None
+    return path.name[: -len("-landed.html")]
+
+
+def _composed_record_text(
+    path: Path, plan_slug: str, project: str | None
+) -> tuple[str, Exception | None]:
+    """Read a record through its composition, so an audit sees its fragments.
+
+    A record audits its composed form — the file's own bytes followed by its
+    fragments — because a fragment carries the anchors a reader is expected to
+    find in the record. An unreadable ledger falls back to the record's own
+    bytes rather than refusing the audit, and the error is returned so the
+    caller can report that the fragments were not composed; a record whose
+    fragments are hidden by a read failure otherwise audits like one with none.
+    """
+
+    from reckon.evidence import EvidenceSynthesisError, compose_landed_record
+
+    if project is None:
+        project = str(_plan_html.parse_plan(path).get("project") or "")
+    try:
+        return (
+            compose_landed_record(path, plan_slug, project=project).decode(
+                "utf-8", errors="replace"
+            ),
+            None,
+        )
+    except (OSError, EvidenceSynthesisError) as exc:
+        return path.read_text(encoding="utf-8", errors="replace"), exc
+
+
 def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
     if not path.is_file():
         return [Finding("error", "io", f"cannot read {path}: file does not exist")]
-    text = _plan_html._read_plan_text(path)
-    return audit_html(text, project=project)
+    record_plan = _evidence_record_plan(path)
+    if record_plan is None:
+        return audit_html(_plan_html._read_plan_text(path), project=project)
+    text, compose_error = _composed_record_text(path, record_plan, project)
+    findings = audit_html(text, project=project)
+    if compose_error is not None:
+        findings.append(
+            Finding(
+                "warn",
+                "record-not-composed",
+                f"could not compose {path} with its fragments: {compose_error}; "
+                "audited the record's own bytes, so any fragment content is "
+                "unchecked and unreported",
+            )
+        )
+        findings.sort(key=lambda f: SEVERITIES.index(f.severity))
+    return findings
 
 
 # ── Dangling internal-link check (corpus-aware) ────────────────────────────
