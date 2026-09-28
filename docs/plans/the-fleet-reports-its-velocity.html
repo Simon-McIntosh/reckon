@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-commits" content="85af514b,997c5539,7c508e7e,4d79a470,a70ad742,c0917d6f,e2fc9f03,30fe8845,280d7fa9,43e971d3,be18adb4,90959463,118b06ba,0b61cc5d,e6b344f3,474d8119,66edfc86,9576896f,2652f39b">
 <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_coordinator_cost.py">
-<meta name="plan-impl" content="0.56">
+<meta name="plan-impl" content="0.67">
 </head>
 <body>
   <main class="plan-doc">
@@ -273,8 +273,11 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260928T141325959096-review-of-session-continuity-share-per-lane-day" data-who="reckon-build" data-when="2026-09-28T15:22:21.713Z">
     <div class="r-comment-body"><p>review of session-continuity-share-per-lane-day at 8c97ac82: 90, zero added failures; merged at d3fda2dc and promoted</p></div>
 </div>
-<div class="r-comment" data-section="s4" data-id="c-20260928T142300-run-store-queries-by-backend" data-who="reckon-build" data-modified="" data-modified-at="">
+<div class="r-comment" data-section="s4" data-id="c-20260928T142300-run-store-queries-by-backend" data-who="reckon-build" data-when="">
     <div class="r-comment-body"><p>the run store carries the backend as a query column: "backend" is added to QUERY_KEYS in reckon/run_store.py, the single declaration that drives the runs table, so the column, its index, the insert extraction and the migration backfill all derive from that one name and no second writer is added in dispatch or promotion. A copy of the shared config-home store, opened through this change, went from 6211 to 26 NULL-backend rows of 6233 (6185 backfilled from payloads); the live store is opened by neither the tests nor the measurement. Head gate tests/test_run_store_backend_query.py + tests/test_run_store.py 30 passed at exit 0; base arm 2 failed 28 passed at exit 1; the declared control removing backend from QUERY_KEYS reddens the legacy-store backfill case, 2 failed at exit 1. Evidence: docs/evidence/archive/the-fleet-reports-its-velocity-landed.html §4. Section s4 awaits coordinator closure: the driving followup is not resolved and no terminal status is set by the worker.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260928T152909122248" data-who="s25-coord" data-when="2026-09-28T15:31:00.000Z">
+    <div class="r-comment-body"><p>run-store-queries-by-backend merged at 1ff4e8ab: backend joins QUERY_KEYS, so a fresh store has an indexed backend column and a legacy store's NULL column is backfilled from each payload on open. Review 96, zero added failures. Six of nine nodes landed. Follow-on, measured by the review: reckon/run_store.py _migrate_runs triggers whenever the column set differs rather than when a column is missing, so every open of the live store rewrites about 6,200 rows (55 MB store); a node should gate the migration on a missing name and measure the open cost before and after.</p></div>
 </div>
 </section>
 </main>
