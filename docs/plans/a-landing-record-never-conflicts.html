@@ -121,6 +121,31 @@
       <figcaption>Reader routing: one composer serves both the file route and the audit, with the raw record as the
         fallback when there is nothing to compose.</figcaption>
     </figure>
+    <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span> <strong>read_plan and the one resolver</strong>
+      &mdash; <code>read_plan</code> now reads a cumulative evidence record through <code>compose_landed_record</code>
+      as well, so a caller of the text path (<code>reckon.mcp._typed_resource_text</code>) sees the anchors a fragment
+      carries rather than the record's own bytes. One function decides whether a document is a record and which plan it
+      composes for: <code>evidence_record_plan</code> in <code>reckon/evidence.py</code>, reading the document's own
+      <code>reckon-type</code> and <code>plan-evidence-for</code> metas rather than its filename. The
+      <code>-landed.html</code> name no longer decides identity, so a document merely named like a record whose metas
+      name no plan is served, audited and read as an ordinary file, and a record whose metas name a plan the filename
+      does not composes the fragments of the plan it actually documents. The resolver normalises
+      <code>plan-evidence-for</code> the way the SPA resolves a reference (project prefix and <code>#section</code>
+      suffix stripped), so the plan composed is the plan the surface links the record to. <code>serve.py</code> and
+      <code>doccheck.py</code> drop their local copies of the resolver and call it, closing the two findings of the
+      <code>served-and-audited-records-are-composed</code> re-review.
+      <br>Three cases in <code>tests/test_read_plan_composes_the_record.py</code>: a record read through the text path
+      carries its fragment; a document named like a record whose metas name no plan is served, audited and read as its
+      own bytes (a fragment parked under the pseudo-slug its filename suggests is what makes the case observable); and
+      a record with no fragments reads byte-identically. Negative control: making the resolver decide by the filename
+      ending <code>-landed.html</code> again makes the misnamed-document case fail.
+      <a href="/reckon/evidence/archive/a-landing-record-never-conflicts-landed#s3">&sect;3 read_plan landed</a></p>
+    <figure class="plan-figure">
+      <img src="/reckon/figures/a-landing-record-never-conflicts/read-plan.svg"
+           alt="The serve file route, doccheck.audit_file and the read_plan text path all call the one resolver evidence_record_plan, which decides from the document's own metas whether it is a record and which plan it composes for; a record reads composed, anything else reads as its own bytes.">
+      <figcaption>One resolver: the three readers share <code>evidence_record_plan</code>, and the document's own metas
+        &mdash; not its filename &mdash; decide whether it composes.</figcaption>
+    </figure>
 
     <h2 id="s4">§4 — Records without fragments are unchanged</h2>
     <div class="section-landed" data-section="s4">

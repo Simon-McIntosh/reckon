@@ -36,6 +36,12 @@
     <ul>
       <li>6 tests now, 38 passing with the composition and doccheck modules; the negative control fails both served-bytes spellings and the route-fallback case (<code>logs/gate-repair.log</code>, <code>logs/negative-control-repair.log</code>).</li>
     </ul>
+    <p><strong>read_plan and the one resolver</strong> &mdash; <code>read_plan</code> reads a cumulative evidence record through <code>compose_landed_record</code> too, so a caller of the text path (<code>reckon.mcp._typed_resource_text</code>) sees the anchors a fragment carries instead of the record's own bytes. One function decides whether a document is a record and which plan it composes for: <code>evidence_record_plan</code> in <code>reckon/evidence.py</code>, reading the document's own <code>reckon-type</code> and <code>plan-evidence-for</code> metas rather than its filename. The <code>-landed.html</code> name no longer decides identity, and the resolver normalises <code>plan-evidence-for</code> the way the SPA resolves a reference (project prefix and <code>#section</code> suffix stripped), so the plan composed is the plan the surface links the record to. <code>reckon/serve.py</code> and <code>reckon/doccheck.py</code> drop their local copies of the resolver and call it, closing the two findings of the <code>served-and-audited-records-are-composed</code> re-review.</p>
+    <ul>
+      <li>3 tests in <code>tests/test_read_plan_composes_the_record.py</code>: a record read through the text path carries its fragment; a document named like a record whose metas name no plan is served, audited and read as its own bytes, with a fragment parked under the pseudo-slug its filename suggests making the case observable; and a record with no fragments reads byte-identically.</li>
+      <li>Negative control: making <code>evidence_record_plan</code> decide by the filename ending <code>-landed.html</code> again makes the misnamed-document case fail (<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T054600104139-read-plan-reads-the-composed-record/negative-control.log</code>).</li>
+      <li>Adjacent batch green: 304 passed, 4 skipped across the doccheck, evidence, mcp, serve, provenance and typed-resource suites.</li>
+    </ul>
   </section>
 
 </main>
