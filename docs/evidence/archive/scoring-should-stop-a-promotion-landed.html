@@ -1912,6 +1912,61 @@ E  assert 5 == 90</pre>
     cases this node's own tests assert at the base revision; the head log
     reports none, so the difference is empty.</p>
   </section>
+
+  <section id="review-refusal-fixture-claim">
+    <h2>The sweep's per-run refusal, produced again by a path that still refuses</h2>
+    <p><strong>What was red, and why.</strong> Two cases in
+    <code>tests/test_review_reflex_sweep.py</code> failed on <code>main</code> at revision
+    <code>bd231eff</code>: <code>test_a_refused_review_leaves_the_rest_of_the_wave_dispatched</code>
+    (<code>assert 2 == 1</code> dispatched, then a <code>KeyError</code>-shaped contradiction on the
+    pointer statuses) and <code>test_a_recorded_refusal_is_the_report_and_not_a_generator</code>
+    (<code>IndexError</code> at <code>report["reviews"]["refused"][0]</code>). The fixture produced its
+    one refusal from a member-seat collision: the second review of a coordinator session was refused
+    with <code>member-in-flight</code>. Commit <code>ecd1528c</code> gave every unnamed dispatch a
+    disposable identity by design, so that collision no longer exists and both runs of the fixture
+    dispatched. The refusal-continuation property was therefore asserted over a fleet with nothing in
+    it to refuse, and the case went red rather than silently weaker — which is the visible reading the
+    repository asks for.</p>
+    <p><strong>What the fixture refuses through now.</strong> A third live pointer holds an exclusive
+    scope claim on the refused run's own review record path, resolved through the same composition the
+    reflex uses (<code>recovery._review_dispatch_fields(record)["write_path"]</code>), so the refusal
+    raised is <code>ScopeConflict</code> inside <code>crew dispatch</code> — the same class of
+    refusal an ordinary dispatch meets, arriving at the reflex exactly where a member-seat refusal
+    arrived before. The claim belongs to one run's paths rather than to a session, so the wave keeps a
+    run to reach; and the refused run sorts before the dispatched one in the sweep's enumeration
+    (pointers are read in run-id order), which is what makes the assertion a continuation: a sweep
+    that stopped at the first refusal would never reach the second run.</p>
+    <table>
+      <caption>Arms at the revision this node was dispatched at, <code>bd231eff</code>, and at its
+      head. Each log's first line names the revision, the tree and the command.</caption>
+      <thead><tr><th>Arm</th><th>Tree</th><th>Exit</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Module at the base revision</td><td><code>/tmp/reflex-base-arm.YBjbhm</code> (scratch copy, fixture at <code>HEAD</code>)</td><td>1</td><td>2 failed, 7 passed — the two named cases</td></tr>
+        <tr><td>Module at the head</td><td>the node's worktree</td><td>0</td><td>9 passed</td></tr>
+        <tr><td>Declared negative control</td><td><code>/tmp/reflex-negative-control.PmKkcL</code> (scratch copy, <code>dispatch_awaiting_reviews</code> breaks after the first refusal)</td><td>1</td><td>1 failed, 8 passed — the wave case, on <code>assert 0 == 1</code> dispatched</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Evidence that could have failed.</strong> The refused run is enumerated first, so the
+    mutation that stops the loop after the first refusal strands the run behind it and the dispatch
+    list comes back empty; had the refused run been reached last, that mutation would have been
+    invisible and the case would have proved recording rather than continuation. The wave case also
+    asserts the refusal names the claiming run, so a case that passed on unrelated error text would
+    fail. Both scratch arms print the module under test's <code>__file__</code> and the resolved
+    working directory on their header lines, establishing that the run resolved against the scratch
+    tree rather than the assigned worktree.</p>
+    <p><strong>Source behaviour is untouched.</strong> <code>reckon/crew/recovery.py</code> is
+    unchanged by this node: <code>dispatch_awaiting_reviews</code> already appended the refusal report
+    itself rather than a generator over it, and already reached the rest of the wave, so the repair was
+    to restore the fixture's ability to produce a refusal and not to the accumulator that consumes it.
+    Ruff reports no findings on the changed test file, both before and after.</p>
+    <p><strong>Durable receipts.</strong> Base arm:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T100941236278-review-refusal-continuation-reachable/logs/baseline-suite.log</code>;
+    head arm:
+    <code>&hellip;/logs/after-suite.log</code>; declared negative control:
+    <code>&hellip;/logs/negative-control-red.log</code>, whose first line repeats the declared
+    mutation verbatim. The node records this landing only; it does not resolve the section's followup
+    or close it.</p>
+  </section>
 </main>
 </body>
 </html>
