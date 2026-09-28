@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-impl" content="0.7">
 </head>
 <body>
@@ -508,6 +508,11 @@
     <h4 class="r-fu-title">Strip the frozen followup-census figure from the doccheck comment</h4>
     <div class="r-fu-body"><p>Review of audit-doc-reports-missing-section-contract (91) found that the comment near <code>reckon/doccheck.py:142</code> cites a count (1 of 468 open followups) that the delivery's own census contradicts. A frozen count in source is a fuse. Fold into the next node touching <code>reckon/doccheck.py</code> (section 6): state the mechanism, not the figure.</p></div>
     <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §6 — include removing the census figure from the doccheck.py comment</pre>
+    </article>
+<article class="r-fu" data-id="f-scci-section-routing-reaches-dispatch" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T07:12:00Z" data-recommends-skill="/reckon-build section-contract-and-computed-impl §5" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Wire the section raise into dispatch, with one record-identity derivation</h4>
+    <div class="r-fu-body"><p>§5 landed its rule at 856c3605, but <code>resolve_section_routing</code> has no production caller, so a live dispatch never raises the class. <code>reckon/crew/dispatch.py</code> was claimed by a concurrent node at the time. One node closes three things. (1) Call the rule from the dispatch sites. (2) Collapse the four record-identity derivations (routing.py:194 and :1189, dispatch.py:245, promotion.py:1870) into one, with a parity test over dotted and hyphenated section references; today promotion spells s5-1 where routing spells s5.1. (3) Make <code>scripts/regen_flight_schema.py</code> emit output with no UP045 findings (nine were added at 856c3605). Dispatch it after brief §2 merges on dispatch.py.</p></div>
+    <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §5</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
