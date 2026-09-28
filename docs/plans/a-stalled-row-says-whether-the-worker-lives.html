@@ -441,6 +441,34 @@
     <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#s8">&sect;8
     of the landed evidence record</a>.</p>
 
+    <h3 id="s8-attribution">Attribution &mdash; node <code>live-run-test-attribution</code></h3>
+    <p><code>crew verify-gate</code> reported <code>tests/test_a_live_run_never_reads_dead.py</code>
+    exiting 1 at the main head and keeps no output, and the merge that landed this section's reason
+    text was the candidate. <strong>The merge did not introduce it.</strong> Two
+    <code>git archive</code> trees were carried on <code>PYTHONPATH</code> — the merge's first
+    parent <code>af15a34b</code> and the <code>origin/main</code> head <code>356928b3</code> — and
+    both arms return <code>1 failed, 11 passed</code>, exit 1, with the same single failing id
+    <code>test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word</code>. The set
+    difference is empty: nothing to attribute to the merge. Each arm printed the resolved
+    <code>reckon/crew/recovery.py</code> it imported and refused to run had it resolved outside its
+    own tree, because the shared virtualenv carries an editable install of <code>reckon</code> and
+    an unchecked arm could have measured the shared checkout instead of the revision under test.</p>
+    <p>The failing assertion
+    (<code>assert _departure_word(use_ledger=False) == "promoted"</code>, reported as
+    <code>'withdrawn' == 'promoted'</code>) is pre-existing and attributable to
+    <code>ddf4509f</code> — measured rather than inferred: the same test exits 0 at that commit's
+    parent and 1 at it. Cause <code>reckon/crew/recovery.py:5599</code>, where
+    <code>_departure_word</code> withdraws because the guard at <code>:5595</code> requires a
+    recorded ledger row and the test's stub snapshot carries no <code>project</code> for the reader
+    to be resolved from. Before <code>ddf4509f</code> the fold read
+    <code>"promoted" if recorded is None or run_id in recorded</code>, which is the word the test
+    still asserts; that commit inverted it deliberately, so a departure whose ledger cannot be
+    resolved withdraws rather than promising a landing. The test and the contract disagree, and
+    which half moves is not settled here — this was a read-only attribution that changed no source
+    file. Evidence in
+    <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#attribution">&sect;8
+    of the landed evidence record</a>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-asrswtwl-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
