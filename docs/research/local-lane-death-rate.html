@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"  content="reckon">
+  <meta name="reckon-type"   content="doc">
+  <meta name="plan-slug"     content="local-lane-death-rate">
+  <meta name="plan-title"    content="The Local Lane Death Rate">
+  <meta name="plan-summary"  content="Three in ten review attempts on the locally served lane end with nothing, and the runs' own streams say so.">
+  <meta name="plan-tags"     content="reckon-tooling,crew">
+  <meta name="plan-informs"  content="the-orchestrator-lane-is-not-a-worker-lane,a-review-dies-where-nobody-is-looking">
+  <title>The Local Lane Death Rate | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>The Local Lane Death Rate</h1>
+
+    <p><strong>Three in ten review attempts on the locally served lane end with nothing they
+    were asked to produce, and the runs' own streams say so.</strong> Over the 26 days to
+    2026-09-28, 299 of 1018 review attempts at <code>xhigh</code> — the effort this lane
+    declares for the review reflex — ended mid-turn on the <code>clive</code> lane: the
+    process was gone and its stream carried no <code>result</code> record. Counting the
+    review role at every declared effort gives 300 of 1066 (28.1%), and the same lane
+    killed implement attempts at every effort at 161 of 1969 (8.2%). That gap is the
+    reason sessions moved their review reflex onto the orchestrator lane, and it is the
+    number this record exists to state.</p>
+
+    <p><strong>Why it is a record rather than a footnote.</strong> The plan that fences
+    background work off the orchestrator lane gates its own default on this figure:
+    <em>closing the escape hatch while the locally served lane still dies nine times a day
+    converts a degraded review loop into no review loop.</em> Until the review-reliability
+    repair lands and an after-rate exists, that plan's fence warns and records rather than
+    the plan refuses. This page states the before-rate and says plainly that the after-rate
+    does not yet exist.</p>
+
+    <section id="s1" data-reckon="section">
+      <h2>§1 — What was measured, and where the answer comes from</h2>
+
+      <p><strong>The population is the runs' own attempt streams.</strong> Every run
+      directory under <code>~/.config/reckon/crew/runs/</code> holds one stream per attempt:
+      <code>stream.jsonl</code> for the first, <code>resume-N.jsonl</code> for each later
+      one. 6290 run directories were enumerated, 2486 were recorded on the local lane
+      (<code>backend: clive</code> in the ledger), and the 2484 of those carrying streams
+      hold 3354 attempts.</p>
+
+      <p><strong>A death is a stream that stops without a result.</strong> The harness
+      writes a top-level <code>{"type":"result"}</code> record when a turn reaches its end.
+      A stream whose last record is anything else, for a run whose process is no longer
+      alive, is an attempt that died mid-turn. No summary, rollup or ledger field was read
+      for this classification — the streams were read directly, and the ledger supplied only
+      the run's recorded backend, role and effort.</p>
+
+      <p><strong>Two populations, named wherever they appear.</strong> The headline death
+      count is <em>the review reflex's own configuration</em> — the review role at the effort
+      this lane declares for reviews. Review attempts dispatched at any other effort are
+      counted in the role-wide figure beside it, and never pooled into the headline: a count
+      that mixes populations reads as the effort cell it sits beside while counting something
+      else, which is the defect this page was corrected for.</p>
+
+      <p><strong>Two views, and they are not the same number.</strong> The <em>attempt</em>
+      view counts every stream as one observation, which is the event the plan is about: an
+      attempt that died is an attempt whose work was lost, whether or not it was later
+      resumed. The <em>terminal</em> view reads only a run's last attempt, so a run that died
+      and was successfully resumed reads as completed. The figures here are the attempt view;
+      the terminal view sits in the same data file and is the convention
+      <code>reckon.crew.death_census</code> documents.</p>
+
+      <p><strong>The script and its output both persist, and the script is versioned.</strong>
+      The scan is produced by <code>docs/research/scripts/scan_local_lane_deaths.py</code>,
+      committed beside this page, invoked as
+      <code>timeout 1200 &lt;venv&gt;/bin/python docs/research/scripts/scan_local_lane_deaths.py
+      --out docs/research/data/local-lane-deaths.json</code>. The corpus parses at roughly
+      55 MB/s, so a full pass takes minutes and the bound is what stops a runaway scan holding
+      the node. The measurement it writes is the committed file
+      <code>docs/research/data/local-lane-deaths.json</code> — which names the script that
+      produced it, and the moment of the scan — and the assertions over that file live in
+      <code>tests/test_the_local_lane_death_rate_is_stated.py</code>. The figure below is
+      drawn from that same file by
+      <code>docs/research/scripts/plot_local_lane_deaths.py</code>, also committed, so the
+      chart and the number a fence reads cannot drift apart.</p>
+    </section>
+
+    <section id="s2" data-reckon="section">
+      <h2>§2 — The before-rate</h2>
+
+      <p><strong>Window and population.</strong> 2026-09-02T13:32Z to 2026-09-28T08:05Z,
+      the whole life of the local lane's recorded history, closed at the moment of the scan.
+      Population: 2486 local-lane runs carrying 3354 attempts, of which 1066 are review-role
+      attempts and 1018 are review attempts at <code>xhigh</code>.</p>
+
+      <figure>
+        <img src="/reckon/figures/the-orchestrator-lane-is-not-a-worker-lane/deaths-per-day-by-role.png"
+             alt="Left: stacked bars of mid-turn deaths per day from 2026-09-03 to 2026-09-28, coloured by role, peaking at 80 deaths on 2026-09-25 of which 72 are review. Right: death rate by role — review 28.1% of 1066 attempts, test 9.0% of 78, investigate 8.8% of 137, implement 8.2% of 1969, documentation 7.8% of 103."
+             style="max-width:100%;height:auto">
+        <figcaption>Mid-turn deaths read from the runs' own streams, 2026-09-02 to 2026-09-28,
+        on the <code>clive</code> lane, <code>deepseek-v4.1-flash</code>,
+        <code>effort xhigh</code>. Left: deaths per day by role. Right: the death rate by
+        role, all efforts pooled, with the count behind each rate.</figcaption>
+      </figure>
+
+      <p><strong>The rate at the review reflex's effort is 29.4%.</strong> 299 deaths in
+      1018 review attempts at <code>xhigh</code> — the population the chart's headline and
+      the data file's <code>deaths.headline</code> both count, and the one the fence reads.
+      The review role at every effort is 300 deaths in 1066 attempts (28.1%), and every
+      role at every effort is 488 deaths in 3354. Split by role and the effort the run was
+      dispatched at:</p>
+
+      <table>
+        <caption>Attempt-view deaths on the local lane by role and declared effort,
+        2026-09-02 to 2026-09-28.</caption>
+        <thead>
+          <tr><th>Role</th><th>Effort</th><th>Attempts</th><th>Deaths</th><th>Death rate</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>review</td><td>xhigh</td><td>1018</td><td>299</td><td>29.4%</td></tr>
+          <tr><td>review</td><td>high</td><td>46</td><td>1</td><td>2.2%</td></tr>
+          <tr><td>review</td><td>medium</td><td>2</td><td>0</td><td>0.0%</td></tr>
+          <tr><td>implement</td><td>high</td><td>1814</td><td>153</td><td>8.4%</td></tr>
+          <tr><td>implement</td><td>medium</td><td>49</td><td>4</td><td>8.2%</td></tr>
+          <tr><td>implement</td><td>xhigh</td><td>106</td><td>4</td><td>3.8%</td></tr>
+          <tr><td>investigate</td><td>xhigh</td><td>133</td><td>12</td><td>9.0%</td></tr>
+          <tr><td>documentation</td><td>xhigh</td><td>103</td><td>8</td><td>7.8%</td></tr>
+          <tr><td>test</td><td>xhigh</td><td>77</td><td>7</td><td>9.1%</td></tr>
+          <tr><td>five further cells</td><td>—</td><td>8</td><td>0</td><td>0.0%</td></tr>
+        </tbody>
+      </table>
+
+      <p>The headline is the review/<code>xhigh</code> row and nothing else: read it there
+      and the table sums to it. The last row is the five cells too small to carry a rate —
+      <code>cleanup</code> at <code>xhigh</code>, <code>investigate</code> at
+      <code>high</code> and <code>medium</code>, <code>review</code> at
+      <code>medium</code>, <code>test</code> at <code>high</code> — 8 attempts between
+      them, none of which died.</p>
+
+      <p><strong>Recent windows are worse, not better.</strong> Trailing seven days
+      (2026-09-22 to 2026-09-28): 228 review deaths in 715 attempts, 31.9%. Trailing day:
+      6 in 17, 35%. The rate is not decaying on its own, and the two heaviest days on the
+      chart — 2026-09-25 with 80 deaths (72 of them review) and 2026-09-18 with 65 — are
+      the recent ones. The lane was not improving while sessions were migrating their
+      reviews off it.</p>
+
+      <p><strong>What this figure is for.</strong> It is the before block: a fence that
+      refuses background work on the orchestrator lane is only defensible once the
+      alternative it sends that work to is measured, and this is that measurement at the
+      effort the review reflex uses. It is not a claim about any other lane, and it is not a
+      claim about why the deaths happen — that belongs to the review-reliability work.</p>
+    </section>
+
+    <p><strong>Note on the effort axis.</strong> Effort is recorded, not effective, on this
+    lane: the endpoint ignores thinking budgets, so <code>xhigh</code> and <code>high</code>
+    are dispatch declarations rather than two experimental conditions. The review reflex and
+    the implement role are therefore close to collinear in this data — reviews run at the
+    declared maximum, implements mostly at <code>high</code> — and the 29%-against-8% gap
+    should be read as <em>the review reflex's configuration dies far more often</em>, not as
+    an isolated effect of effort. The one cell that separates them points the other way:
+    implement at <code>xhigh</code> died at 3.8%, so the role, not the effort alone, carries
+    the gap's larger share.</p>
+
+    <section id="s3" data-reckon="section">
+      <h2>§3 — The parser that read every run as dead</h2>
+
+      <p><strong>The first measurement of this rate was wrong in the direction that would
+      have made the plan look right.</strong> The first classifier matched each line against
+      the harness's record shape with an anchored pattern, <code>{"type":"</code>. The
+      harness writes the <code>result</code> record with <code>duration_api_ms</code> as its
+      first key, so the one record that separates a completion from a death never matched:
+      3335 of 3336 attempts and 1057 of 1058 review attempts classified as dead. Every
+      attempt in the corpus read as a corpse, and a limb of the plan would have been gated
+      on a lane that appeared to kill 99.8% of everything it was given.</p>
+
+      <p><strong>The check that was supposed to catch it could not fail.</strong> The check
+      ran the same regex over a stream whose last line was a <code>result</code> record and
+      reported that it did not find one — which was true of the regex and false of the
+      stream. It confirmed the parser against its own reading rather than against an
+      independent fact, and it passed. What caught the error was asking the question the
+      wrong answer makes uncomfortable: whether any attempt in the corpus ever completes
+      <em>at all</em>.</p>
+
+      <p><strong>The fix is the record's own field, and the control rides with it.</strong>
+      Every line is now parsed whole and the record's own top-level <code>type</code> is
+      read. Parsing the corpus that way costs about 120 seconds, which is why the scan is
+      bounded. Because a classifier that reads a completion as a death and one that reads a
+      death as a completion fail differently — the second inflates confidence in the lane,
+      the first destroys it — the measurement carries both directions on one run. The
+      committed file names a run that died and a later attempt of that same run that
+      completed, and a test requires both:</p>
+
+      <table>
+        <caption>The two controls, both read from the same run's directory by the same
+        classifier the corpus goes through.</caption>
+        <thead>
+          <tr><th>Attempt</th><th>Stream</th><th>Records</th><th>Result record</th><th>Last record</th><th>Classification</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>dead</td><td><code>stream.jsonl</code></td><td>7394</td><td>absent</td>
+            <td><code>user</code></td><td>dead — SIGTERM, ended during <em>working</em></td>
+          </tr>
+          <tr>
+            <td>completed</td><td><code>resume-1.jsonl</code></td><td>7394+</td><td>present</td>
+            <td><code>result</code> / <code>success</code></td><td>completed</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>The run is
+      <code>r-20260928T044354744785-review-of-reflex-keys-on-reviewed-run-and-head</code>, a
+      review that was killed at 06:55 local (04:55Z) on 2026-09-28 and resumed to a clean
+      completion. Its own exit record corroborates the stream's shape rather than repeating
+      it: the stream says the result is missing, the exit record says the process was
+      signalled. Record counts in the table are read at scan time and move if the run is
+      resumed again — the fixed facts are the two classifications.</p>
+
+      <p><strong>The dialect trap is one layer out.</strong> The corpus carries streams from
+      more than one harness, and the harnesses do not agree on how a turn ends: a stream on
+      the <code>codex</code> backends ends with <code>turn.completed</code>. A reader
+      assuming a single schema reports those runs as dead — measured here at 48 of 250 runs
+      in one day on 2026-09-23. The census above is therefore restricted to the
+      <code>clive</code> lane, where one dialect applies throughout, and the classification
+      is checked against a run known to have died rather than against the counts the same
+      parser produced.</p>
+    </section>
+
+    <section id="s4" data-reckon="section">
+      <h2>§4 — The after-rate does not exist yet</h2>
+
+      <p><strong>Only a before block is reported, because the repair it would measure has
+      not landed.</strong> The work that is to fix this is
+      <em>a-review-dies-where-nobody-is-looking</em> §9, which takes one reading of a review
+      dying mid-turn and makes the worker compact and continue instead. That section is
+      declared <code>implementable</code> and its driving followup is open. There is no
+      post-repair window in the corpus to measure, so no after block is stated: a second
+      number with no repair behind it would be a fiction with the same shape as a
+      measurement.</p>
+
+      <p><strong>What the fence should do until then, stated as the plan states it.</strong>
+      The orchestrator-lane fence warns and records rather than refuses. It still records the
+      dispatch and the lane, which removes the silent case without stopping the reviews —
+      and the reviews still need somewhere to go, because a lane that kills three in ten
+      review attempts is not a lane to send them back to until the rate moves.</p>
+
+      <p><strong>What makes the after-rate measurable.</strong> Once the repair lands, the
+      same scanner run again produces the after block with no code change: it reads
+      whatever attempts exist when it is run, and it groups them by the effort each run
+      declared. The comparison needs a window that begins after the repair's first
+      successful review, and enough attempts in it to distinguish a drop from noise — at
+      roughly 30 review attempts a day on this lane, the trailing-seven-day figure is the
+      smallest window that carries a rate worth gating on.</p>
+    </section>
+
+    <section id="s5" data-reckon="section">
+      <h2>§5 — Method limits a reader should carry</h2>
+
+      <ul>
+        <li><strong>Attempt, not run.</strong> A run that died and was resumed contributes
+        two observations. This is deliberate — the plan counts lost work, and a resumed
+        attempt is not evidence that the first one finished — but it means the rate cannot be
+        compared against a figure computed the terminal way.</li>
+        <li><strong>Timestamps fall back to file mtime.</strong> Streams that carry no
+        timestamp field are dated by the file's mtime, so a stream whose file was touched
+        after its last record lands on the wrong day. The daily series is therefore good for
+        shape and not for a single day's exact count.</li>
+        <li><strong>Signals are corroboration, not classification.</strong> Only some
+        attempts carry a supervisor exit record naming the signal. The classification never
+        depends on one as a stream may die for reasons the exit record does not capture, and
+        the classifier reads the stream shape.</li>
+        <li><strong>The window is the lane's whole recorded life.</strong> The start is the
+        first local-lane attempt the corpus holds, not a chosen boundary; a rate computed
+        over a sub-window is not directly comparable to it without recomputing.</li>
+        <li><strong>Role comes from the dispatch prompt.</strong> The run's own
+        <code>prompt.txt</code> declares its role; the ledger row is the fallback where the
+        prompt is absent, and disagreements between the two are recorded in the data file
+        rather than silently resolved. On this corpus the two sources did not disagree:
+        all 2484 local-lane runs carrying streams declared a role in the prompt, and none
+        contradicted its ledger row — the file's <code>role_attribution</code> block carries
+        those counts so a reader can check the claim rather than take it.</li>
+      </ul>
+    </section>
+
+  </main>
+</body>
+</html>
