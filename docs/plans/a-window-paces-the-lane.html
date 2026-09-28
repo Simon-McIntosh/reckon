@@ -1107,6 +1107,32 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#s8-replay-guards">the cumulative
     landing record</a>.</p>
 
+    <h4 id="s8-reserve-refusal-at-the-window">Landing &mdash; the reserve refusal is exercised at the
+    window it reads</h4>
+
+    <p><strong>Landed 2026-09-28 (commit <code>3e1a0066</code>).</strong> No case in either gate file
+    dispatched a node into &sect;4's reserve refusal: every node factory in
+    <code>tests/test_dispatch_records_the_pace_row.py</code> is either a verify-role bookend, which the
+    reserve exempts, or is dispatched below the ceiling the reserve withholds from. The new case plants
+    a five-hour reading above the ceiling and dispatches an investigate node, and requires the refusal
+    to name the withheld fraction, the resulting limit and the five-hour figure of the row the dispatch
+    composed &mdash; and to leave the seven-day figure out, because it is not what refused.</p>
+
+    <p><strong>Gate.</strong> One invocation over <code>tests/test_pace_replay.py</code> and
+    <code>tests/test_dispatch_records_the_pace_row.py</code>: <strong>23 passed, exit 0</strong> at the
+    node head <code>3e1a0066</code>, against <strong>22, exit 0</strong> at the dispatch base
+    <code>a4525840</code> and <strong>21, exit 0</strong> at the pre-merge revision
+    <code>739d56b9</code>. Neither measured revision reports a failing id, so the merge introduced
+    none: the <code>crew verify-gate</code> exit 1 recorded at the integrated head <code>bdada7e5</code>
+    does not reproduce there, the gate's own two files are byte-identical from that revision to this
+    head, the exact recorded command re-run at it passes 22, exit 0, and the ids it named are
+    unrecoverable because the replay in <code>reckon/crew/promotion.py</code> captures the gate's output
+    and discards it. The declared negative control &mdash; the refusal call removed in a scratch copy at
+    the node head &mdash; reddens exactly the added case (<code>DID NOT RAISE CrewError</code>, 1 failed,
+    22 passed, exit 1). Full evidence:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#s8-reserve-refusal-at-the-window">the
+    cumulative landing record</a>.</p>
+
     <h2 id="s9">&sect;9 &mdash; The log that lets someone else tune this</h2>
 
     <p>Every dispatch records the group, the utilisation it was judged against with that figure's

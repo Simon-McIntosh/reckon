@@ -2820,6 +2820,51 @@ both fields, so a layer setting them survives the <code>extra=&quot;forbid&quot;
       head gate log:
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T045443284910-replay-guards-every-row-read/reports/pace-gate.log</code>.</p>
     </section>
+
+    <section id="s8-reserve-refusal-at-the-window">
+      <h2>&sect;8 &mdash; The reserve refusal exercised at the window it reads (2026-09-28)</h2>
+
+      <p>The reserve withholds a fraction of the ceiling from every role but review and verify, and
+      refuses a non-bookend once a lane reaches the remainder. The refusal runs before the pace row's
+      own refusals, and reads the same row the dispatch composed. Measured at the node head
+      <code>3e1a0066</code>: planting a five-hour reading of 85 per cent and dispatching a node whose
+      role is not a bookend is refused with the withheld fraction, the resulting limit and the
+      five-hour figure of that row, and not the seven-day figure, which is not what refused it.</p>
+
+      <table>
+        <thead><tr><th>Revision</th><th>Gate result</th><th>Failing ids</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td><code>739d56b9</code> (pre-merge)</td><td>21 passed, exit 0</td><td>none</td>
+          <td><code>logs/gate-739d56b9.log</code></td></tr>
+          <tr><td><code>a4525840</code> (dispatch base)</td><td>22 passed, exit 0</td><td>none</td>
+          <td><code>logs/gate-head-a4525840.log</code></td></tr>
+          <tr><td><code>bdada7e5</code> (integrated head the replay reported exit 1 at)</td>
+          <td>22 passed, exit 0</td><td>none</td><td><code>logs/gate-bdada7e5.log</code></td></tr>
+          <tr><td><code>3e1a0066</code> (node head)</td><td>23 passed, exit 0</td><td>none</td>
+          <td><code>logs/gate-head-final.log</code></td></tr>
+        </tbody>
+      </table>
+
+      <p>The recorded exit 1 does not reproduce at the revision it was recorded at, the gate's own two
+      files are byte-identical from <code>bdada7e5</code> to the node head, and the exact recorded
+      command re-run in the main checkout passes 22, exit 0. The ids it named are unrecoverable: the
+      replay in <code>reckon/crew/promotion.py</code> captures the gate's output and discards it, and
+      no stored artefact carries it. The node therefore adds coverage rather than a repair, and its
+      own gate is the measurement above.</p>
+
+      <h3>Negative control</h3>
+      <blockquote><p>reintroduce the identified cause in a scratch copy; the pace gate must fail on
+      the ids the merge introduced</p></blockquote>
+      <p>A scratch copy of the node head had the <code>_refuse_against_the_bookend_reserve</code> call
+      in <code>reckon/crew/dispatch.py</code> replaced with <code>None</code> &mdash; the state before
+      the merge wired the reserve into the dispatch &mdash; with the file asserted to still parse and
+      with no live call remaining. Against the copy the gate reddens on exactly the added case,
+      <code>DID NOT RAISE CrewError</code>, 1 failed and 22 passed, exit 1; against the delivered tree
+      the same dispatch is refused. Red log:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T100759132734-pace-gate-green-at-main/logs/negative-control-red.log</code>;
+      head gate log:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T100759132734-pace-gate-green-at-main/logs/gate-head-final.log</code>.</p>
+    </section>
 </main>
 
 </body>
