@@ -27,11 +27,14 @@
       <li><code>reckon/cli.py</code> — a <code>crew dispose</code> subcommand taking
       <code>--project</code>, <code>--run</code>, <code>--dimension</code>, <code>--kind</code>,
       and whichever of <code>--node</code> / <code>--reason</code> the kind requires. It resolves
-      the reviewed head and selects the stored record through the reader's own calls
+      the reviewed head from the run's own live pointer, or — a run with no live pointer being the
+      ordinary case once it is promoted — from the run's own records rather than from the directory
+      the operator stands in, and selects the stored record through the reader's own call
       (<code>recovery.select_review_for_head</code>), writes
       through <code>review.record_dimension_disposition</code> and re-reads the stored record for the
       receipt, so the reply repeats what the store now holds rather than what the call intended
-      (<code>reckon/cli.py:3793</code>).</li>
+      (<code>reckon/cli.py:3793</code> the pointer-less head resolution,
+      <code>reckon/cli.py:3892</code> the subcommand).</li>
       <li><code>reckon/crew/review.py</code> — the writer's gate for the closed set is now the
       reader's own predicate <code>dimension_disposition_valid</code>. A second copy of the
       vocabulary in the writer could accept a kind the read-back then ignores, which stores a row
@@ -47,12 +50,15 @@
       belongs to the other kind while the call reported success.</li>
       <li><code>reckon/crew/review.py:1166</code> — the floor comment that described a floor of zero
       as reporting every dimension now describes what a floor of zero does.</li>
-      <li><code>tests/test_sub_floor_disposition_has_a_writer.py</code> — 13 cases: the two accepted
+      <li><code>tests/test_sub_floor_disposition_has_a_writer.py</code> — 15 cases: the two accepted
       kinds, seven refusals, a store holding both records for one head, a hand-planted unknown
-      kind, the shipped floors, and the temporary config home.</li>
+      kind, the shipped floors, the temporary config home, a run with no live pointer answered
+      from its own records while the operator stands in an unrelated repository, and the refusal
+      when those records name no revision.</li>
     </ul>
-    <p>Commits <code>857e514c</code> and <code>0d77df3d</code>, the second resolving which stored
-    record a disposition belongs in. Paths changed: <code>reckon/cli.py</code>,
+    <p>Commits <code>857e514c</code>, <code>0d77df3d</code> and <code>13e1fe70</code> — the second
+    resolving which stored record a disposition belongs in, the third resolving a promoted run's
+    revision from its own records. Paths changed: <code>reckon/cli.py</code>,
     <code>reckon/crew/review.py</code>, <code>tests/test_sub_floor_disposition_has_a_writer.py</code>.</p>
   </section>
 
@@ -72,12 +78,12 @@ E        +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
   </section>
 
   <section id="lifecycle">
-    <h2>The row's two exits, and the gate measured at three revisions</h2>
+    <h2>The row's two exits, and the gate run at each measured arm</h2>
     <figure>
       <img src="/reckon/figures/crew-observability-truth/a-sub-floor-disposition-is-written-by-a-command/disposition_lifecycle_and_arm_outcomes.png"
-           alt="Left: a stored review whose durability (5) sits below its declared floor (10) while the total passes stands an obligation row; the command accepts a fold naming a node or an exemption recording a reason, retiring the row, and refuses an unknown dimension, an unknown kind, a fold with no node, an exemption with no reason, a fold carrying a reason or an exemption naming a node, leaving the row where it was. Right: the gate run at three revisions — base 40 passed 8 failed, the change 51 passed, and a scratch copy with the kind check removed 49 passed 2 failed.">
+           alt="Left: a stored review whose durability (5) sits below its declared floor (10) while the total passes stands an obligation row; the command accepts a fold naming a node or an exemption recording a reason, retiring the row, and refuses an unknown dimension, an unknown kind, a fold with no node, an exemption with no reason, a fold carrying a reason or an exemption naming a node, leaving the row where it was. Right: the gate run at the base, the change and a mutated scratch copy — base 40 passed 8 failed, the change 53 passed, and the scratch copy with the kind check removed 51 passed 2 failed.">
       <figcaption>The row the review stands, where each answer sends it, and the gate run at the
-      given base, the change, and a mutated scratch copy.</figcaption>
+      given base, the change at its final revision, and a mutated scratch copy.</figcaption>
     </figure>
     <table>
       <thead>
@@ -93,14 +99,28 @@ E        +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
           <td><code>arms/after_suite.log</code></td>
         </tr>
         <tr>
+          <td>change</td><td><code>13e1fe70</code></td><td>53 passed — <code>EXIT=0</code></td>
+          <td><code>arms/after_suite_promoted_run.log</code></td>
+        </tr>
+        <tr>
           <td>pre-repair source, this module beside it</td><td><code>857e514c</code></td>
           <td>3 failed, 48 passed — <code>EXIT=1</code></td>
           <td><code>arms/pre_repair.log</code></td>
         </tr>
         <tr>
+          <td>pre-repair source, this module beside it</td><td><code>041be0b1</code></td>
+          <td>2 failed, 51 passed — <code>EXIT=1</code></td>
+          <td><code>arms/pre_promoted_run_repair.log</code></td>
+        </tr>
+        <tr>
           <td>scratch copy, kind check removed</td><td><code>0d77df3d</code> + mutation</td>
           <td>2 failed, 49 passed — <code>EXIT=1</code></td>
           <td><code>arms/negative_control.log</code></td>
+        </tr>
+        <tr>
+          <td>scratch copy, kind check removed</td><td><code>13e1fe70</code> + mutation</td>
+          <td>2 failed, 51 passed — <code>EXIT=1</code></td>
+          <td><code>arms/negative_control_promoted_run.log</code></td>
         </tr>
       </tbody>
     </table>
@@ -110,14 +130,16 @@ E        +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
     <code>test_obligations_do_not_mislead.py</code>, <code>test_coordinator_obligations_hook.py</code>,
     <code>test_review_in_flight_by_record_path.py</code>). The base arm ran the module as first
     delivered — 10 cases in a 48-case gate, whose 8 failures are exactly its command cases — and the
-    repaired module carries 13, so the change arm's 51 is 13 plus 38. No existing file contributes
-    an added failing id at either arm, so the base arm needs no attribution. Each log opens with
+    module now carries 15, so the change arm's 53 is 15 plus 38. No existing file contributes
+    an added failing id at any arm, so the base arm needs no attribution. Each log opens with
     the revision, the tree, the command and the imported module's resolved path
     (<code>review.__file__</code>), so a green log cannot be describing another checkout.</p>
-    <p>The pre-repair arm is the source at <code>857e514c</code> with this module copied in beside
-    it: it fails exactly the three cases the repair answers — the store holding both records for
-    one head, the fold carrying a reason, and the exemption carrying a node — so each half of the
-    repair is load-bearing rather than covered by a case that would pass either way.</p>
+    <p>Each pre-repair arm is the source before its repair with this module copied in beside it, and
+    fails exactly the cases that repair answers: at <code>857e514c</code> the store holding both
+    records for one head, the fold carrying a reason and the exemption carrying a node; at
+    <code>041be0b1</code> the new pointer-less pair — the run answered from its own records, and the
+    refusal when they name no revision. So each half of the work is load-bearing rather than covered
+    by a case that would pass either way.</p>
   </section>
 
   <section id="refusals">
@@ -163,17 +185,53 @@ E        +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
     rather than a case that would pass either way.</p>
   </section>
 
+  <section id="pointer-less">
+    <h2>A promoted run's revision comes from its own records</h2>
+    <p>A run with no live pointer is the ordinary case once it is promoted, and the command read its
+    reviewed head from the tree the pointer named. Absent, that pointer left an empty mapping, an
+    empty mapping is the empty path, and <code>Path("")</code> is <code>.</code> — so the head was
+    resolved by <code>git rev-parse HEAD</code> in whatever repository the operator's shell stood
+    in. Nothing downstream could catch it: the head was a revision, the record selected against it
+    was a stored review, and the entry written into it named a head belonging to something else
+    entirely. The obligations read-back already refuses an empty tree (<code>obligations</code>
+    reads it as no tree at all), so the defect sat in the one step before the reader, where the
+    empty path was still a legal one.</p>
+    <p>The revision is now resolved from the run's own records: the tip the run's ledger row records
+    as the revision its promotion landed (<code>promoted_revision</code>), or the head its stored
+    review carries. Both are the run's own account of itself, and they agree in the promoted case,
+    because a review record is accepted by the promotion gate carrying that head. A run whose
+    records name no revision is refused by name, as is a ledger that cannot be read — a revision
+    nobody recorded cannot be answered, and writing a disposition against a guessed one reports the
+    finding retired on a diff that was never read.</p>
+    <p>The case for this stands the command in a temporary git repository whose head is deliberately
+    not the run's, removes the run's live pointer and records its promotion in the ledger. Against
+    the source before the repair it fails on the command's own mismatch refusal, whose
+    <em>run's work is at</em> is the unrelated repository's head — the reading, named by the
+    command itself:</p>
+    <pre><code>AssertionError: Error: the stored review for run 'run-sub-floor' describes 175086c2…,
+while the run's work is at f59c019e…; a disposition recorded now would answer a review
+its own head does not name
+assert 1 == 0</code></pre>
+    <p>The refusal case — a record whose head fields are stripped, and a ledger row that names no
+    revision — fails the other way round: the pre-repair command exits 0 with the disposition
+    stored, because an empty head selected the record by fallback and the write landed anyway.
+    An accepted call that answered no revision at all:</p>
+    <pre><code>AssertionError: {"dimension": "durability", "disposition": {"kind": "folded",
+"node": "repair-durability-node", …}, "ok": true, "path": "…/run-sub-floor.at-fa9593d8….json", …}
+assert 0 != 0</code></pre>
+  </section>
+
   <section id="negative-control">
     <h2>The negative control</h2>
     <p>A scratch copy of the change has the kind check removed from
     <code>dimension_disposition_valid</code>, and the gate run against it fails on exactly the two
     cases that read the closed set — the unknown-kind call now exits 0 and stores
     <code>{"kind": "noted", "reason": "shorthand", …}</code>, and the hand-planted entry is now
-    honoured by the read-back. The other 49 cases, including the six refusals the mutation cannot
+    honoured by the read-back. The other 51 cases, including the six refusals the mutation cannot
     reach, stay green.</p>
     <pre><code>FAILED …::test_a_refused_disposition_leaves_the_row_standing[unknown-kind-with-a-reason]
 FAILED …::test_a_kind_outside_the_closed_set_is_not_honoured_when_stored
-2 failed, 49 passed in 98.08s (0:01:38)
+2 failed, 51 passed in 90.27s (0:01:30)
 EXIT=1</code></pre>
   </section>
 
@@ -196,9 +254,12 @@ EXIT=1</code></pre>
     <h2>The test stands its world up in a temporary config home</h2>
     <p>The fixture writes mounts, a live pointer, the reviewed run's tree and the stored review under
     a temporary <code>RECKON_HOME</code>, and patches the derivation's clock. The last case resolves
-    every root the command uses and requires the path it reports inside the temporary home — an
-    absence check against the real home would itself be a read of it. Nothing in this node reads or
-    writes the operator's <code>~/.config/reckon</code>.</p>
+    every root the command uses — the review store, the run pointers, and the ledger the pointer-less
+    path reads — and requires the path it reports inside the temporary home; an absence check against
+    the real home would itself be a read of it. The pointer-less cases stand their unrelated
+    repository under pytest's own temporary directory and assert afterwards that the command wrote
+    nothing into it. Nothing in this node reads or writes the operator's
+    <code>~/.config/reckon</code>.</p>
   </section>
  </main>
 </body>

@@ -15,8 +15,8 @@ import matplotlib
 
 matplotlib.use("Agg")
 
-import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch  # noqa: E402
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 HERE = pathlib.Path(__file__).resolve().parent
 
@@ -126,10 +126,28 @@ def draw_lifecycle(ax) -> None:
     _arrow(ax, (4.35, 5.95), (2.5, 4.55), rad=0.12)
     _arrow(ax, (5.65, 5.95), (7.5, 4.55), rad=-0.12)
     ax.text(1.35, 5.62, "accepted: exit 0", fontsize=9, color=INK, weight="bold")
-    ax.text(8.65, 5.62, "refused: exit 1", fontsize=9, color=INK, weight="bold", ha="right")
+    ax.text(
+        8.65, 5.62, "refused: exit 1", fontsize=9, color=INK, weight="bold", ha="right"
+    )
 
-    _box(ax, 0.35, 3.25, 3.1, 1.2, "--kind folded\n--node <id>\n\nrow retired", face=ACCEPT)
-    _box(ax, 3.7, 3.25, 2.6, 1.2, "--kind exempted\n--reason <text>\n\nrow retired", face=ACCEPT)
+    _box(
+        ax,
+        0.35,
+        3.25,
+        3.1,
+        1.2,
+        "--kind folded\n--node <id>\n\nrow retired",
+        face=ACCEPT,
+    )
+    _box(
+        ax,
+        3.7,
+        3.25,
+        2.6,
+        1.2,
+        "--kind exempted\n--reason <text>\n\nrow retired",
+        face=ACCEPT,
+    )
 
     _box(
         ax,
@@ -164,8 +182,8 @@ def draw_lifecycle(ax) -> None:
 def draw_arms(ax) -> None:
     arms = [
         ("base 5636e306\nno subcommand exists", 40, 8, "#c9c9c9"),
-        ("change 0d77df3d\ncrew dispose", 51, 0, "#8fbf8f"),
-        ("scratch copy, kind check removed", 49, 2, "#d98c85"),
+        ("change 13e1fe70\ncrew dispose", 53, 0, "#8fbf8f"),
+        ("scratch copy, kind check removed", 51, 2, "#d98c85"),
     ]
     ys = [2.0, 1.0, 0.0]
     for (label, passed, failed, colour), y in zip(arms, ys, strict=True):
@@ -201,7 +219,7 @@ def draw_arms(ax) -> None:
     )
     ax.annotate(
         "unknown-kind refusal and\nread-back of a stored unknown kind",
-        xy=(50.2, 0.0),
+        xy=(51.2, 0.0),
         xytext=(18, -0.55),
         fontsize=8.4,
         color=INK,
@@ -212,7 +230,7 @@ def draw_arms(ax) -> None:
     ax.set_ylim(-1.0, 3.1)
     ax.set_yticks([])
     ax.set_xlabel(
-        "cases in the gate: the new module's 13 plus 38 across the existing\n"
+        "cases in the gate: the new module's 15 plus 38 across the existing\n"
         "dispositions and obligations modules\n"
         "(the base arm ran the module as first delivered, 10 plus 38)",
         fontsize=8.8,
