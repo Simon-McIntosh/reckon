@@ -9,9 +9,9 @@
   <meta name="plan-title" content="The Fleet Reports Its Velocity &mdash; landed evidence">
   <meta name="plan-summary" content="One path classifier in the package returns the same six line classes as the velocity census it was ported from.">
   <meta name="plan-evidence-for" content="the-fleet-reports-its-velocity">
-  <meta name="plan-verifies" content="the-fleet-reports-its-velocity#s2,the-fleet-reports-its-velocity#s5">
-  <meta name="plan-commits" content="85af514b,4d79a470,fe33dbf6">
-  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_work_in_progress.py">
+  <meta name="plan-verifies" content="the-fleet-reports-its-velocity#s2,the-fleet-reports-its-velocity#s4,the-fleet-reports-its-velocity#s5">
+  <meta name="plan-commits" content="85af514b,4d79a470,fe33dbf6,c45327c8">
+  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity_work_in_progress.py,reckon/budget.py,tests/test_preflight_runs_remaining.py,docs/figures/the-fleet-reports-its-velocity/quota-runway.png">
   <meta name="plan-recorded-at" content="2026-09-27">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -217,6 +217,59 @@
       file instead of the commit that added it; the 58-opened assertion then reads
       <strong>125</strong> and fails. Logs: <code>wip_gate.log</code>,
       <code>negative_control_work_in_progress.log</code>.</p>
+    </section>
+    <section id="s4-quota-runway">
+      <h2>&sect;4 &mdash; Quota runway</h2>
+      <p>Commit <code>c45327c8</code> extends the group pace in <code>reckon/budget.py</code> so
+      each declared budget group carries a <em>runway</em>: the runs remaining before the weekly
+      reset, and the refusal of a wave that would run past it. The figure is the group's remaining
+      seven-day window divided by the mean per-run quota cost over the trailing seven days. Neither
+      input is restated &mdash; the remaining window is the group's own seven-day clock, the same
+      one the pace already divides, and the drain deadline comes from
+      <code>reckon/crew/pace.py</code>'s <code>drain_deadline</code>; membership comes from
+      <code>budget_group.declared_groups</code>. The mean is priced from each committed run
+      record's own <code>lane_receipt.quota_windows</code> row for the ten-thousand-and-eighty-minute
+      window, averaged over runs whose own durable stamp places them inside the trailing week, so a
+      receipt from outside the horizon &mdash; measuring a window that has already reset &mdash;
+      does not enter. The judgement extends <code>_group_bar</code> and <code>group_pace</code>
+      rather than adding a second bar, so one entry carries the whole verdict.</p>
+      <p>Two properties make the figure honest rather than merely present. It carries the age of
+      both its inputs &mdash; the window reading's own age and the mean's observation age &mdash;
+      because a figure that cannot be aged cannot be told from a current one. And it is
+      <em>unmeasured</em>, never zero, when fewer than one priced run exists.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-reports-its-velocity/quota-runway.png"
+          alt="Left: the seven-day window split into spent and remaining for a 90%-spent and a 10%-spent group, the mean 15% run cost repeated across what is left to give 0.67 and 6.00 runs. Right: the wave's projected cost rising with node count against the remaining-window lines, the admitted region below and the refused region above.">
+        <figcaption>Left: the runs-remaining figure is literally how many mean-cost runs fit in the
+        remaining week &mdash; at 90% spent, 0.67 runs remain; at 10% spent, 6.00. Right: the
+        refusal boundary. A wave's projected cost is its node count times the mean run cost, so at
+        90% spent a single 15% run projects past the 10% that remains and the wave is refused; the
+        same run opens comfortably against 90% remaining. The refusal names both figures a
+        coordinator sizes against: the runs remaining and the reset time. Absence of a signal never
+        holds a wave &mdash; an unmeasured runway admits, exactly as an unread lane does.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Base arm (<code>fb747528</code>, budget and pace files)</td><td>192 passed, exit 0</td></tr>
+          <tr><td>Head arm (same files plus the new case of record)</td><td>202 passed, exit 0</td></tr>
+          <tr><td>Added by this node</td><td>10 passed, no failures added</td></tr>
+          <tr><td>Declared negative control</td><td>1 failed, exit 1</td></tr>
+        </tbody>
+      </table>
+      <p><code>tests/test_preflight_runs_remaining.py</code> builds synthetic run records under a
+      temporary ledger and a synthetic group window, so the figure is arithmetic rather than a
+      stroke of this host's clock. It asserts the runs-remaining figure (a 40% window over a 20%
+      mean run cost is 2.0 runs), the age of both inputs and the receipt quantisation, the
+      per-role and per-group split, that a run from beyond the trailing week is not priced, that no
+      priced run reports unmeasured and never zero, that an unread week reports unmeasured with no
+      remaining window, that an unmeasured runway refuses nothing, that a wave projected past the
+      reset is refused with the runs-remaining figure and the reset time in its text and its node
+      held rather than dropped, that a wave inside the window is admitted, and that the pre-flight
+      reads its records from the ledger it is given. The declared negative control drops the
+      projected-cost refusal from the group bar; the past-reset wave is then admitted and the
+      refusal case reddens. Logs: <code>gate-base.log</code>, <code>gate-head.log</code>,
+      <code>gate-negative-control.log</code>.</p>
     </section>
   </main>
 </body>
