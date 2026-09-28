@@ -3790,6 +3790,85 @@ def crew_path(kind, project, run_id):
     click.echo(str(path))
 
 
+@crew.command(name="dispose")
+@click.option(
+    "--project",
+    required=True,
+    help="Project whose review store holds the run's record.",
+)
+@click.option(
+    "--run",
+    "reviewed_run_id",
+    required=True,
+    help="Run the review is about, not the run that reviewed it.",
+)
+@click.option(
+    "--dimension",
+    required=True,
+    help="Review dimension carrying the sub-floor finding.",
+)
+@click.option(
+    "--kind",
+    required=True,
+    help="Disposition kind: folded with --node, or exempted with --reason.",
+)
+@click.option(
+    "--node",
+    "node_id",
+    default=None,
+    help="Node id the finding was folded into, for --kind folded.",
+)
+@click.option(
+    "--reason",
+    default=None,
+    help="Why the finding is not being acted on, for --kind exempted.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pretty):
+    """Record the disposition one sub-floor review dimension carries.
+
+    A review dimension below the floor flight configuration declares for it is
+    an obligation row until an entry in the closed set answers it: a fold
+    naming the dispatched node the finding went into, or an exemption naming
+    why it is not being acted on. This is that entry's writer, so a
+    coordinator retires the row through a command rather than editing the
+    review store by hand or promoting the close over it.
+
+    Every refusal is the store's own, and nothing is written on one: an
+    unknown dimension, a kind outside the closed set, a fold naming no node
+    and an exemption carrying no reason all exit non-zero with the reason
+    stated. The record is rewritten where the review was read from, so the
+    disposition lands beside the reviewer's own content and a head-keyed
+    review keeps its own file.
+    """
+    from reckon.crew import review as review_module
+
+    try:
+        path = review_module.record_dimension_disposition(
+            project,
+            reviewed_run_id,
+            dimension,
+            kind=kind,
+            node=node_id,
+            reason=reason,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _, record = review_module.stored_record(project, reviewed_run_id)
+    dispositions = (record or {}).get(review_module.DIMENSION_DISPOSITIONS_KEY) or {}
+    _emit(
+        {
+            "ok": True,
+            "project": project,
+            "run_id": reviewed_run_id,
+            "dimension": dimension,
+            "path": str(path),
+            "disposition": dispositions.get(str(dimension or "").strip().lower()),
+        },
+        pretty,
+    )
+
+
 @crew.command(name="check-manifest")
 @click.option("--run", "run_id", required=True, help="Run id whose manifest to check.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")

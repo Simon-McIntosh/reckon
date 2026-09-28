@@ -1164,8 +1164,10 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
 # settings and is readable by whoever is deciding what to do next.
 #
 # A dimension the map does not name carries no floor. A floor of zero would
-# report every dimension of every review, so the absence of a declared floor
-# is read as the absence of a standard rather than as a standard of nothing.
+# report nothing, since every stored score is at or above zero — so reading an
+# undeclared floor as zero would claim a standard the configuration never
+# declared while changing no verdict. The absence of a declared floor is read
+# as the absence of a standard rather than as a standard of nothing.
 #
 # A sub-floor dimension is a finding with its own disposition, never a lower
 # total: the total remains the reviewer's arithmetic over what it parsed, and
@@ -1323,16 +1325,24 @@ def record_dimension_disposition(
             f"known dimensions are {', '.join(REVIEW_DIMENSIONS)}"
         )
     disposition_kind = str(kind or "").strip().lower()
-    if disposition_kind not in DIMENSION_DISPOSITION_KINDS:
-        raise ValueError(
-            f"unknown disposition {kind!r}; "
-            f"allowed kinds are {', '.join(DIMENSION_DISPOSITION_KINDS)}"
-        )
     named_node = str(node or "").strip()
     recorded_reason = str(reason or "").strip()
-    if disposition_kind == "folded" and not named_node:
-        raise ValueError("a folded disposition must name the node it was folded into")
-    if disposition_kind == "exempted" and not recorded_reason:
+    # The gate here is the reader's own predicate, so a disposition this writer
+    # accepts is one :func:`sub_floor_dimensions` will honour. A second copy of
+    # the closed set in the writer could accept a kind the reader then ignores,
+    # which stores a row that reads as answered and stands.
+    if not dimension_disposition_valid(
+        {"kind": disposition_kind, "node": named_node, "reason": recorded_reason}
+    ):
+        if disposition_kind not in DIMENSION_DISPOSITION_KINDS:
+            raise ValueError(
+                f"unknown disposition {kind!r}; "
+                f"allowed kinds are {', '.join(DIMENSION_DISPOSITION_KINDS)}"
+            )
+        if disposition_kind == "folded":
+            raise ValueError(
+                "a folded disposition must name the node it was folded into"
+            )
         raise ValueError("an exempted disposition must record its reason")
 
     head_keyed, record = stored_record(
