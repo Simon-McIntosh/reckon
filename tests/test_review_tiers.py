@@ -17,11 +17,12 @@ from reckon import flight
 from reckon.path_classes import file_class, path_class
 from reckon.review_tiers import FULL, LIGHT, NONE, review_tier
 
-# ── Fixtures: what a run changed, and the tier the §2 rule gives it ─────────
+# ── Fixtures: what a run changed, and the tier review_tier() gives it ───────
 
 # One fixture per tier, one ``none`` fixture per path class, and one mixed
 # fixture. ``spec`` and ``lines`` are the run's declared specification level and
-# its added-plus-deleted line count; ``risk`` is the plan's capability risk.
+# its added-plus-deleted line count; ``risk`` is the capability risk the run's
+# plan or section declares.
 FIXTURES = [
     pytest.param(
         ["reckon/crew/promotion.py"],

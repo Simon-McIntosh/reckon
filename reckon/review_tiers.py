@@ -37,12 +37,6 @@ FULL = "full"
 LIGHT = "light"
 NONE = "none"
 
-TIERS = (FULL, LIGHT, NONE)
-
-# A light review relaunches as a full one when it overruns its budget, so this
-# is the escalation target rather than a tier of its own.
-ESCALATED_TIER = FULL
-
 # Specification levels that fix the done-when tightly enough for a light review.
 # An exact brief names the change; a guided brief names the plan section that
 # does. An open brief leaves the approach to the worker, and a reviewer cannot
