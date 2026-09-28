@@ -17,6 +17,7 @@ import json
 import os
 import pty
 import re
+import resource
 import signal
 import stat
 import struct
@@ -154,6 +155,9 @@ def reader(tmp_path):
             **os.environ,
             "FLEET_RUNTIME_DIR": str(runtime),
             "FLEET_STATE_DIR": str(state),
+            # The machine's own sampler would outlive the case and sample into
+            # the case's state; the one case about the sampler names a stub.
+            "FLEET_HEALTH_SAMPLER": "",
             "PYTHONPATH": REPO_ROOT,
         }
         if extra_env:
@@ -382,14 +386,19 @@ def test_session_starts_zellij_and_reload_reexecutes_the_module(
     # line is written before zellij is invoked, so a reader that waited on it
     # could read the log before the create had run.
     _wait_for(
-        lambda: "attach --create-background --create demo" in _argv_log(stub_log),
+        lambda: (
+            "attach --create-background --force-run-commands --create demo"
+            in _argv_log(stub_log)
+        ),
         message=(
             "the session line did not start a zellij session; "
             f"log={_reader_log(reader.log)!r}"
         ),
     )
     invocations = stub_log.read_text(encoding="utf-8")
-    assert "attach --create-background --create demo" in invocations, invocations
+    assert (
+        "attach --create-background --force-run-commands --create demo" in invocations
+    ), invocations
     assert "--layout" not in invocations, invocations
 
     # A name whose server is already live is not started again, and a listed
@@ -459,7 +468,7 @@ def test_a_session_line_sizes_the_tabs_with_a_brief_client(reader, tmp_path) -> 
     lines = invocations.splitlines()
     cursor = 0
     for needle in (
-        "--create-background --create demo",
+        "--create-background --force-run-commands --create demo",
         "attach demo",
         "action query-tab-names",
     ):
@@ -554,6 +563,9 @@ def test_the_stripped_variables_are_absent_from_a_spawned_child(
             "CX_SESSION": "inherited",
             "CX_BACKGROUND": "1",
             "CLAUDE_CODE_CHILD_SESSION": "1",
+            "AI_AGENT": "claude-code",
+            "GIT_EDITOR": "true",
+            "ENVIRONMENT": "BATCH",
             "RECKON_CONTROL_MARKER": "present",
         }
     )
@@ -578,5 +590,152 @@ def test_the_stripped_variables_are_absent_from_a_spawned_child(
         "CX_SESSION",
         "CX_BACKGROUND",
         "CLAUDE_CODE_CHILD_SESSION",
+        "AI_AGENT",
+        "GIT_EDITOR",
+        "ENVIRONMENT",
     ):
         assert stripped not in names, f"{stripped} reached a spawned child: {names}"
+
+
+# A child that records its own soft task limit and exits.
+NPROC_DUMP_CHILD = (
+    "import resource, sys\n"
+    "open(sys.argv[1], 'w', encoding='utf-8').write("
+    "str(resource.getrlimit(resource.RLIMIT_NPROC)[0]))\n"
+)
+
+# A stand-in for the node sampler: it records the runtime and job it was
+# started with, then exits, so no sampler outlives the case.
+SAMPLER_STUB = """#!/bin/sh
+printf 'XDG_RUNTIME_DIR=%s\\nFLEET_JOB_ID=%s\\n' "$XDG_RUNTIME_DIR" "$FLEET_JOB_ID" \\
+    > "$RECKON_SAMPLER_MARKER"
+"""
+
+
+def _seed_record(state: Path, *, job: str, node: str) -> None:
+    """A record left by an earlier start of the fleet, as a requeue finds it."""
+    state.mkdir(parents=True, exist_ok=True)
+    (state / fleet_supervisor.RECORD_NAME).write_text(
+        json.dumps(
+            {
+                "job_id": job,
+                "node": node,
+                "runtime_dir": "/tmp/earlier-fleet",  # noqa: S108 - fixture value
+                "started_at": "2026-09-27T19:55:51Z",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def _published(state: Path) -> dict:
+    try:
+        return json.loads((state / fleet_supervisor.RECORD_NAME).read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def test_a_restart_on_another_node_is_announced(reader) -> None:
+    """A record naming this job on another node leaves a notice and an alert.
+
+    That record is the only trace a requeue leaves: the batch log is truncated
+    and the lost node refuses SSH, so the notice is what tells the operator
+    every session there died, and where the node's last samples are.
+    """
+    _seed_record(reader.state, job="4242", node="lost-node")
+    reader.start({"SLURM_JOB_ID": "4242"})
+    notice = (reader.state / "notice").read_text(encoding="utf-8")
+    assert "fleet job 4242 restarted on" in notice, notice
+    assert "after losing lost-node" in notice, notice
+    assert "4242-lost-node.tsv" in notice, notice
+    alerts = (reader.state / "alerts.log").read_text(encoding="utf-8")
+    assert alerts.strip() == notice.strip(), alerts
+    # The notice is read from the old record, and the new record replaces it.
+    assert _published(reader.state)["node"] == fleet_supervisor._short_hostname()
+
+
+@pytest.mark.parametrize(
+    ("job", "node"),
+    [("4242", ""), ("9999", "lost-node")],
+    ids=["same-job-same-node", "another-job"],
+)
+def test_a_start_that_is_not_a_requeue_leaves_no_notice(reader, job, node) -> None:
+    """The same job on the same node, or another job, is not a requeue."""
+    _seed_record(reader.state, job=job, node=node or fleet_supervisor._short_hostname())
+    reader.start({"SLURM_JOB_ID": "4242"})
+    # The reader publishes its own record only after deciding, so a record
+    # naming this start shows the decision has been taken.
+    published = _published(reader.state)
+    assert published["job_id"] == "4242", published
+    assert published["node"] == fleet_supervisor._short_hostname(), published
+    assert not (reader.state / "notice").exists()
+    assert not (reader.state / "alerts.log").exists()
+
+
+def test_the_task_ceiling_reaches_a_spawned_child(reader, tmp_path) -> None:
+    """A worker the batch step spawns inherits the fleet's soft task limit.
+
+    The ceiling asked for is below the limit this test runs under, so a child
+    reporting it shows the reader lowered the limit rather than passing on its
+    own.
+    """
+    soft, _hard = resource.getrlimit(resource.RLIMIT_NPROC)
+    ceiling = 4321 if soft == resource.RLIM_INFINITY else min(4321, soft - 1)
+    run_directory = tmp_path / "run"
+    dump = tmp_path / "nproc.txt"
+    stub = tmp_path / "nproc.py"
+    stub.write_text(NPROC_DUMP_CHILD, encoding="utf-8")
+    spec = _write_spec(run_directory, [sys.executable, str(stub), str(dump)])
+
+    reader.start({"FLEET_NPROC": str(ceiling)})
+    _send(reader.runtime, f"spawn r-test {spec}")
+    reported = _wait_for(
+        lambda: dump.read_text(encoding="utf-8") if dump.exists() else None,
+        message="the spawned child recorded no task limit",
+    )
+    assert int(reported) == ceiling, (reported, ceiling)
+
+
+def test_the_node_sampler_starts_in_the_fleet_runtime(reader, tmp_path) -> None:
+    """The sampler named by the environment starts with the fleet's runtime."""
+    marker = tmp_path / "sampler-ran"
+    stub = tmp_path / "sampler"
+    stub.write_text(SAMPLER_STUB, encoding="utf-8")
+    stub.chmod(0o755)
+    reader.start(
+        {
+            "FLEET_HEALTH_SAMPLER": str(stub),
+            "RECKON_SAMPLER_MARKER": str(marker),
+            "SLURM_JOB_ID": "4242",
+        }
+    )
+    recorded = _wait_for(
+        lambda: marker.read_text(encoding="utf-8") if marker.exists() else None,
+        message=f"the sampler never ran; log={_reader_log(reader.log)!r}",
+    )
+    assert f"XDG_RUNTIME_DIR={reader.runtime}" in recorded, recorded
+    assert "FLEET_JOB_ID=4242" in recorded, recorded
+
+
+def test_a_resurrection_runs_its_commands_unless_turned_off(reader, tmp_path) -> None:
+    """With the switch off, a session starts without forcing its commands."""
+    stub_log = tmp_path / "zellij-argv.log"
+    stub_bin = tmp_path / "bin"
+    stub_bin.mkdir()
+    stub = stub_bin / "zellij"
+    stub.write_text(ZELLIJ_STUB, encoding="utf-8")
+    stub.chmod(0o755)
+    env = {
+        "PATH": f"{stub_bin}{os.pathsep}{os.environ['PATH']}",
+        "RECKON_ZELLIJ_STUB_LOG": str(stub_log),
+        "RECKON_ZELLIJ_STUB_SESSIONS": "",
+        "RECKON_ZELLIJ_STUB_TAB_NAMES": "main\n",
+        "FLEET_FORCE_RUN_COMMANDS": "0",
+    }
+    reader.start(env)
+    _send(reader.runtime, "session demo")
+    _wait_for(
+        lambda: "attach --create-background --create demo" in _argv_log(stub_log),
+        message=f"no session start was recorded; log={_reader_log(reader.log)!r}",
+    )
+    assert "--force-run-commands" not in _argv_log(stub_log)

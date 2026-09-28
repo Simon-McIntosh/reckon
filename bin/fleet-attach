@@ -1,0 +1,52 @@
+#!/bin/bash
+# fleet-attach <session> [layout] — attach to a zellij session on the fleet node.
+#
+# Runs inside an srun step that cx opens from a login node. The step is only a
+# viewer: the zellij server lives in the allocation's batch step, started by
+# fleet-supervisor, so ending this step (a dropped ssh, a closed terminal)
+# detaches the view and leaves every session running.
+set -uo pipefail
+
+name="${1:?usage: fleet-attach <session> [layout]}"
+layout="${2:-}"
+
+RT="${FLEET_RUNTIME_DIR:-/tmp/$(id -u)-fleet}"
+export XDG_RUNTIME_DIR="$RT"
+export ZELLIJ_SOCKET_DIR="$RT/zellij"
+export TMPDIR=/tmp
+
+if [ ! -p "$RT/requests" ]; then
+    echo "fleet-attach: no fleet supervisor on $(hostname -s) ($RT/requests is missing)" >&2
+    exit 1
+fi
+
+running() {
+    zellij list-sessions --no-formatting 2>/dev/null | grep -v EXITED \
+        | awk '{print $1}' | grep -qx "$name"
+}
+
+if ! running; then
+    if ! timeout 5 bash -c 'printf "%s\n" "$1" > "$2"' _ "session $name $layout" "$RT/requests"; then
+        echo "fleet-attach: the supervisor did not accept the request for $name" >&2
+        exit 1
+    fi
+    for _ in $(seq 1 60); do
+        running && break
+        sleep 0.5
+    done
+    if ! running; then
+        echo "fleet-attach: session $name did not start; see $RT/zellij-start.log on $(hostname -s)" >&2
+        exit 1
+    fi
+fi
+
+# A fleet restart is otherwise silent: the tabs come back and nothing says the
+# sessions in them died. Show the notice fleet-supervisor left, once.
+notice="${FLEET_STATE_DIR:-$HOME/.local/state/fleet}/notice"
+if [ -s "$notice" ]; then
+    printf '\n*** %s\n\n' "$(cat "$notice")" >&2
+    mv -f "$notice" "$notice.seen" 2>/dev/null || true
+    sleep 5
+fi
+
+exec zellij attach "$name"

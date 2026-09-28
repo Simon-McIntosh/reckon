@@ -1,0 +1,93 @@
+#!/bin/bash
+# fleet-health — sample the fleet node once a minute, onto shared storage.
+#
+# Started by fleet-supervisor inside the allocation's batch step, so it lives
+# exactly as long as the allocation and never outlives it. The samples go to
+# GPFS, not the node: when the node is declared failed the node-local state is
+# gone and SSH to it is refused, so the minutes before a failure survive only
+# if they were written somewhere else as they happened.
+#
+# SLURM declares a node failed when its slurmd does not answer the controller
+# for SlurmdTimeout (30 s on this cluster). The columns are the ones that tell
+# the causes apart: memory headroom and the job's own cgroup use (memory
+# pressure), blocked tasks and a timed stat of $HOME (a GPFS stall), the time
+# the local slurmd takes to answer (slurmd itself), and a controller ping
+# (the network path).
+#
+# The task columns name a spawn leak while it grows: this user's task count
+# (what RLIMIT_NPROC counts), how many of them are Python interpreters, and the
+# process with the most children. When any of them crosses its threshold, or
+# memory runs low, the full process table with parents and command lines is
+# written beside the samples and an alert is raised, at most once per ten
+# minutes. A kernel OOM report lists each process's memory but not its parent
+# or command line, so without that table a leak can be measured and not named.
+#
+# One file per job and node; a second copy for the same job and node exits.
+set -uo pipefail
+
+: "${SLURM_JOB_ID:?fleet-health runs inside the fleet allocation}"
+node=$(hostname -s)
+state="${FLEET_STATE_DIR:-$HOME/.local/state/fleet}"
+dir="$state/health"
+mkdir -p "$dir"
+out="$dir/${SLURM_JOB_ID}-${node}.tsv"
+lock="${XDG_RUNTIME_DIR:-/tmp/$(id -u)-fleet}/fleet-health.lock"
+exec 9>"$lock"
+flock -n 9 || exit 0
+
+# Thresholds for the process-table snapshot. A full fleet runs about 2,500
+# tasks and a few dozen Python processes; the two leaks measured on this
+# fleet each reached about 7,500 Python processes before the node failed.
+TASKS_ALERT="${FLEET_TASKS_ALERT:-4000}"
+PYTHON_ALERT="${FLEET_PYTHON_ALERT:-1000}"
+MEM_AVAIL_ALERT_MB="${FLEET_MEM_AVAIL_ALERT_MB:-12000}"
+
+cg=$(sed -n 's/^0:://p' /proc/self/cgroup | sed -E 's#/step_[^/]+.*##')
+cgdir="/sys/fs/cgroup$cg"
+
+ms_since() { echo $(( ($(date +%s%N) - $1) / 1000000 )); }
+
+header=$'utc\tload1\tload5\tprocs_running\tprocs_blocked\tdstate\tmem_avail_mb\tswap_free_mb\tjob_mem_mb\tjob_mem_max_mb\thome_stat_ms\tslurmd_ms\tctld_ping\ttasks\tpython_procs\ttop_parent'
+if [ -s "$out" ] && [ "$(head -1 "$out")" != "$header" ]; then
+    mv -f "$out" "${out%.tsv}.$(date -u +%Y%m%dT%H%M%SZ).tsv"
+fi
+[ -s "$out" ] || printf '%s\n' "$header" > "$out"
+
+last_snapshot=0
+while :; do
+    read -r load1 load5 _ < /proc/loadavg
+    running=$(awk '/^procs_running/ {print $2}' /proc/stat)
+    blocked=$(awk '/^procs_blocked/ {print $2}' /proc/stat)
+    dstate=$(ps -eo stat= 2>/dev/null | grep -c '^D')
+    avail=$(awk '/^MemAvailable:/ {printf "%d", $2/1024}' /proc/meminfo)
+    swap=$(awk '/^SwapFree:/ {printf "%d", $2/1024}' /proc/meminfo)
+    jobmem=$(awk '{printf "%d", $1/1048576}' "$cgdir/memory.current" 2>/dev/null || echo -)
+    jobmax=$(awk '$1 ~ /^[0-9]+$/ {printf "%d", $1/1048576; next} {print $1}' "$cgdir/memory.max" 2>/dev/null || echo -)
+    t=$(date +%s%N); timeout 10 stat "$HOME" >/dev/null 2>&1 && home=$(ms_since "$t") || home=timeout
+    t=$(date +%s%N); timeout 25 scontrol show slurmd >/dev/null 2>&1 && slurmd=$(ms_since "$t") || slurmd=timeout
+    ping=$(timeout 10 scontrol ping 2>/dev/null | grep -oE 'UP|DOWN' | head -1)
+    tasks=$(timeout 20 ps -L -u "$USER" --no-headers 2>/dev/null | wc -l)
+    table=$(timeout 20 ps -u "$USER" -o pid=,ppid=,comm= 2>/dev/null)
+    python=$(awk '$3 ~ /^python/' <<<"$table" | wc -l)
+    read -r top_n top_pid < <(awk '{print $2}' <<<"$table" | sort | uniq -c | sort -rn | head -1)
+    top_args=$(ps -o args= -p "${top_pid:-0}" 2>/dev/null | tr -d '\t\n' | cut -c1-80)
+    top="${top_n:-0}:${top_pid:--}:${top_args:--}"
+    now=$(date -u +%FT%TZ)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
+        "$load1" "$load5" "$running" "$blocked" "$dstate" "$avail" "$swap" \
+        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" >> "$out"
+
+    reason=""
+    [ "$tasks" -gt "$TASKS_ALERT" ] && reason="$tasks tasks"
+    [ "$python" -gt "$PYTHON_ALERT" ] && reason="${reason:+$reason, }$python python processes"
+    [ "${avail:-0}" -lt "$MEM_AVAIL_ALERT_MB" ] && reason="${reason:+$reason, }${avail} MB available"
+    if [ -n "$reason" ] && [ $(( $(date +%s) - last_snapshot )) -ge 600 ]; then
+        last_snapshot=$(date +%s)
+        snap="$dir/${SLURM_JOB_ID}-${node}-$(date -u +%Y%m%dT%H%M%SZ).ps"
+        timeout 30 ps -u "$USER" -o pid,ppid,pgid,etimes,rss,comm,args > "$snap" 2>&1
+        msg="$now fleet node $node under pressure: $reason. Busiest parent $top. Process table: $snap"
+        printf '%s\n' "$msg" >> "$state/alerts.log"
+        printf '%s\n' "$msg" > "$state/notice"
+    fi
+    sleep 60
+done

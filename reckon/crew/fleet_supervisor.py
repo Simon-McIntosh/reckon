@@ -41,6 +41,8 @@ import json
 import os
 import pty
 import re
+import resource
+import shutil
 import socket
 import struct
 import subprocess
@@ -109,6 +111,46 @@ SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 # this list being edited.
 STRIPPED_PREFIXES = ("ZELLIJ", "CX_", "CLAUDE")
 
+# Single variables an agent's tool shell or the batch step sets, none of which
+# belongs in an interactive pane: GIT_EDITOR=true makes a `git commit` without
+# -m accept the default message unseen, AI_AGENT tells every CLI in the pane an
+# agent is driving, and SLURM sets ENVIRONMENT for a batch step.
+STRIPPED_NAMES = (
+    "AI_AGENT",
+    "GIT_EDITOR",
+    "COREPACK_ENABLE_AUTO_PIN",
+    "NoDefaultCurrentDirectoryInExePath",
+    "ENVIRONMENT",
+)
+
+# A ceiling on this user's task count, set as the batch step's soft
+# RLIMIT_NPROC so every zellij server, pane and worker inherits it. A spawn
+# loop anywhere on the node grows until memory runs out, slurmd stops
+# answering, and SLURM fails the node with every session on it; at the ceiling
+# the loop's fork fails first and a chain of waiting processes unwinds. A full
+# fleet uses about 2,500 tasks.
+NPROC_ENV = "FLEET_NPROC"
+DEFAULT_NPROC = 6000
+
+# The node sampler this batch step starts, found on PATH. It writes one line a
+# minute to shared storage, which is the only record of a node's last minutes
+# once SLURM has failed it. An empty value starts none.
+HEALTH_SAMPLER_ENV = "FLEET_HEALTH_SAMPLER"
+DEFAULT_HEALTH_SAMPLER = "fleet-health"
+
+# A session resurrected after the fleet restarts on another node parks every
+# pane at "Waiting to run" until someone presses Enter in it. Resurrecting with
+# --force-run-commands runs each pane's recorded command instead, and a pane
+# started through fleet-claude records its conversation id, so each resumes its
+# own conversation. It reruns every recorded command, not only agent sessions,
+# so a false value turns it off. A session created rather than resurrected is
+# unaffected.
+FORCE_RUN_ENV = "FLEET_FORCE_RUN_COMMANDS"
+_OFF = frozenset({"0", "false", "no"})
+
+ALERTS_NAME = "alerts.log"
+NOTICE_NAME = "notice"
+
 
 def _utc_now() -> str:
     return datetime.now(tz=UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
@@ -124,7 +166,11 @@ def log(message: str) -> None:
 
 def stripped_variables(environ: Mapping[str, str]) -> list[str]:
     """Name the inherited variables the fleet must not pass on."""
-    return [name for name in environ if name.startswith(STRIPPED_PREFIXES)]
+    return [
+        name
+        for name in environ
+        if name.startswith(STRIPPED_PREFIXES) or name in STRIPPED_NAMES
+    ]
 
 
 def strip_inherited_variables(environ: MutableMapping[str, str]) -> list[str]:
@@ -212,6 +258,100 @@ def publish_record(runtime: Path, environ: Mapping[str, str] | None = None) -> P
     path = state / RECORD_NAME
     _write_json(path, record)
     return path
+
+
+def requeue_notice(environ: Mapping[str, str] | None = None) -> str | None:
+    """The notice for an allocation restarted on another node, or None.
+
+    A requeued allocation keeps its job id and starts again elsewhere, so a
+    record naming this job on a different node means every session on that node
+    died. Nothing else says so: the requeue truncates the batch log, and the
+    lost node refuses SSH once no job of this user runs there. Read before this
+    start publishes its own record over the old one.
+    """
+    environ = os.environ if environ is None else environ
+    job = environ.get("SLURM_JOB_ID", "")
+    state = state_directory(environ)
+    try:
+        previous = json.loads((state / RECORD_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(previous, Mapping):
+        return None
+    lost = str(previous.get("node") or "")
+    node = _short_hostname()
+    if not job or str(previous.get("job_id") or "") != job or not lost or lost == node:
+        return None
+    return (
+        f"{_utc_now()} fleet job {job} restarted on {node} after losing {lost}. "
+        f"Every session on {lost} died; each pane started through fleet-claude "
+        "reruns its own conversation, and sessions.tsv in the fleet state "
+        "directory maps pane to conversation for any that do not. Last node "
+        f"samples: {state / 'health' / f'{job}-{lost}.tsv'}. Check the cause "
+        f"with: sacct -j {job} -D -o JobID,State,Start,End,NodeList"
+    )
+
+
+def announce_requeue(environ: Mapping[str, str] | None = None) -> str | None:
+    """Record a requeue where the next attach shows it, and return the notice."""
+    environ = os.environ if environ is None else environ
+    notice = requeue_notice(environ)
+    if notice is None:
+        return None
+    state = state_directory(environ)
+    with open(state / ALERTS_NAME, "a", encoding="utf-8") as alerts:
+        alerts.write(notice + "\n")
+    (state / NOTICE_NAME).write_text(notice + "\n", encoding="utf-8")
+    log(notice)
+    return notice
+
+
+def apply_task_ceiling(environ: Mapping[str, str] | None = None) -> int:
+    """Lower this process's soft task limit to the fleet ceiling, and return it.
+
+    Every descendant inherits the soft limit. An existing limit tighter than the
+    ceiling is kept, and the hard limit is never touched.
+    """
+    environ = os.environ if environ is None else environ
+    try:
+        ceiling = int(str(environ.get(NPROC_ENV) or DEFAULT_NPROC))
+    except ValueError:
+        ceiling = DEFAULT_NPROC
+    soft, hard = resource.getrlimit(resource.RLIMIT_NPROC)
+    if hard != resource.RLIM_INFINITY:
+        ceiling = min(ceiling, hard)
+    if soft != resource.RLIM_INFINITY and soft <= ceiling:
+        return soft
+    resource.setrlimit(resource.RLIMIT_NPROC, (ceiling, hard))
+    return ceiling
+
+
+def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None:
+    """Start the node sampler as this batch step's own child, and return its pid.
+
+    The sampler holds a lock in the runtime directory, so a reload that calls
+    this again starts a copy that exits at once rather than a second sampler.
+    It leads its own session, so it ends with the allocation and with nothing
+    else.
+    """
+    environ = os.environ if environ is None else environ
+    name = environ.get(HEALTH_SAMPLER_ENV, DEFAULT_HEALTH_SAMPLER)
+    if not name:
+        return None
+    sampler = shutil.which(name, path=environ.get("PATH"))
+    if sampler is None:
+        log(f"no node sampler: {name} is not on PATH")
+        return None
+    process = subprocess.Popen(
+        [sampler],
+        env=dict(environ),
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    log(f"node sampler {sampler} started as pid {process.pid}")
+    return process.pid
 
 
 def session_running(name: str, environ: Mapping[str, str] | None = None) -> bool:
@@ -417,7 +557,10 @@ def start_session(
     argv = ["zellij"]
     if layout:
         argv += ["--layout", layout]
-    argv += ["attach", "--create-background", "--create", name]
+    argv += ["attach", "--create-background"]
+    if str((environ or os.environ).get(FORCE_RUN_ENV, "1")).lower() not in _OFF:
+        argv.append("--force-run-commands")
+    argv += ["--create", name]
     with open(runtime / START_LOG_NAME, "ab") as started:
         result = subprocess.run(
             argv,
@@ -567,7 +710,10 @@ def serve(
     """
     environ = os.environ if environ is None else environ
     strip_inherited_variables(environ)
+    apply_task_ceiling(environ)
     runtime = prepare_runtime(environ)
+    state_directory(environ).mkdir(parents=True, exist_ok=True)
+    announce_requeue(environ)
     publish_record(runtime, environ)
     fifo = runtime / REQUEST_FIFO_NAME
     with suppress(FileNotFoundError):
@@ -577,6 +723,7 @@ def serve(
         f"fleet supervisor on {_short_hostname()}, "
         f"job {environ.get('SLURM_JOB_ID') or '?'}, runtime {runtime}"
     )
+    start_health_sampler(environ)
     # Opening read-write holds a write end open, so a read between requests
     # blocks for the next line instead of seeing end-of-file.
     descriptor = os.open(fifo, os.O_RDWR)

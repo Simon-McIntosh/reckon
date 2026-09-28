@@ -1,0 +1,143 @@
+#!/bin/bash
+# fleet-supervisor — the fleet allocation's batch step.
+#
+# A step started with srun ends when its login-side client does, so the batch
+# step is the only process tree on the fleet node that outlives every login
+# node. Anything that must survive a lost login node is started from here: the
+# zellij servers that hold the agent sessions.
+#
+# The node has no /run/user/<uid>, and a step cannot create one, so the
+# supervisor makes a private node-local runtime directory and every fleet
+# process uses it for XDG_RUNTIME_DIR: zellij's sockets and Claude Code's
+# cross-session sockets both live there.
+#
+# Requests arrive one per line on a FIFO in that directory:
+#   session <name> [layout]   start a zellij server for <name> unless one runs
+#   reload                    re-execute this script in place, so a fix to it
+#                             takes effect without a new allocation
+#
+# Each session start runs a fresh copy of this script (the `start` mode), for
+# the same reason: the loop is long-lived, the starting logic is not.
+#
+# Where the fleet lives is published to ~/.local/state/fleet/record.json so the
+# connection side (cx) resolves the job id rather than anyone remembering it.
+#
+# reckon/crew/fleet_supervisor.py carries this protocol in Python, together with
+# the spawn request that launches a crew worker as this batch step's child.
+# This script stays the batch step until that module has run a fleet allocation.
+set -uo pipefail
+
+# sbatch exports the submitting shell's environment. Submitted from inside a
+# zellij pane, that includes ZELLIJ and its session variables, and zellij then
+# believes it is already inside a session and refuses to create one.
+unset ZELLIJ ZELLIJ_SESSION_NAME ZELLIJ_PANE_ID CX_BACKGROUND CX_SESSION
+# Submitted from inside a Claude Code session, the environment also carries
+# that session's identity: CLAUDE_CODE_CHILD_SESSION makes every Claude started
+# on the fleet believe it is a child, so it saves no transcript and does not
+# register, and the messaging socket and token belong to another session.
+# Claude sets its own on start, so every inherited one is dropped.
+for v in $(compgen -e | grep -E '^(CLAUDE|CLAUDECODE)'); do unset "$v"; done
+# Claude Code also sets these for its tool shells, and SLURM sets ENVIRONMENT
+# for a batch step. None belongs in an interactive pane: GIT_EDITOR=true makes a
+# `git commit` without -m accept the default message without opening an editor,
+# and AI_AGENT tells every CLI in the pane that an agent, not a person, is driving.
+unset AI_AGENT GIT_EDITOR COREPACK_ENABLE_AUTO_PIN NoDefaultCurrentDirectoryInExePath ENVIRONMENT
+
+# A ceiling on this user's task count, inherited by every zellij server and
+# pane: a spawn loop's fork fails before its processes exhaust the node's
+# memory and take slurmd, and every session, down with it. fleet-claude sets
+# the same ceiling for sessions started in an allocation that predates it.
+ulimit -Su "${FLEET_NPROC:-6000}" 2>/dev/null || true
+
+RT="${FLEET_RUNTIME_DIR:-/tmp/$(id -u)-fleet}"
+mkdir -p "$RT" && chmod 700 "$RT"
+export XDG_RUNTIME_DIR="$RT"
+export ZELLIJ_SOCKET_DIR="$RT/zellij"
+export TMPDIR=/tmp
+# Marks every shell started under the supervisor as a fleet shell, so the
+# shell configuration can route `claude` through fleet-claude.
+export FLEET_JOB_ID="${SLURM_JOB_ID:-}"
+mkdir -p "$ZELLIJ_SOCKET_DIR" && chmod 700 "$ZELLIJ_SOCKET_DIR"
+
+log() { printf '[%s] %s\n' "$(date -u +%FT%TZ)" "$*"; }
+
+running() {
+    zellij list-sessions --no-formatting 2>/dev/null | grep -v EXITED \
+        | awk '{print $1}' | grep -qx "$1"
+}
+
+if [ "${1:-}" = start ]; then
+    name="${2:-}"; layout="${3:-}"
+    if ! [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]]; then log "refused session name: $name"; exit 1; fi
+    if [ -n "$layout" ] && ! [[ "$layout" =~ ^[A-Za-z0-9._-]+$ ]]; then log "refused layout: $layout"; exit 1; fi
+    if running "$name"; then log "session $name already running"; exit 0; fi
+    log "starting zellij session $name${layout:+ with layout $layout}"
+    cd "$HOME" || exit 1
+    # A session resurrected after the fleet restarts on another node parks every
+    # pane at "Waiting to run" until someone presses Enter in it, so no agent
+    # session comes back on its own. --force-run-commands runs each pane's
+    # recorded command instead; fleet-claude records `--session-id <id>` or
+    # `--resume <id>`, so each pane reruns its own conversation. It reruns every
+    # recorded command, not only agent sessions: FLEET_FORCE_RUN_COMMANDS=0 turns
+    # it off. It has no effect on a session that is created rather than
+    # resurrected.
+    force=""
+    case "${FLEET_FORCE_RUN_COMMANDS:-1}" in 0|false|no) ;; *) force="--force-run-commands" ;; esac
+    # --create-background alone does not create a session in zellij 0.45; with
+    # --create it starts the server detached and returns.
+    # shellcheck disable=SC2086
+    zellij ${layout:+--layout "$layout"} attach --create-background $force --create "$name" \
+        >>"$RT/zellij-start.log" 2>&1 || { log "zellij start failed for $name"; exit 1; }
+    exit 0
+fi
+
+STATE="$HOME/.local/state/fleet"
+mkdir -p "$STATE"
+node=$(hostname -s)
+
+# A requeued allocation keeps its job id and starts again on another node, so
+# the previous record naming the same job on a different node means every
+# session on that node died. Nothing else reports it: the batch log is
+# truncated by the requeue, and the old node refuses SSH once no job of ours
+# runs there. Say so where the next attach will show it.
+if [ -f "$STATE/record.json" ]; then
+    read -r prev_job prev_node < <(python3 -c '
+import json, sys
+d = json.load(open(sys.argv[1]))
+print(d.get("job_id", ""), d.get("node", ""))' "$STATE/record.json" 2>/dev/null) || true
+    if [ -n "${prev_job:-}" ] && [ "$prev_job" = "${SLURM_JOB_ID:-}" ] && [ "${prev_node:-}" != "$node" ]; then
+        restarts=$(scontrol show job "$SLURM_JOB_ID" 2>/dev/null | grep -oE 'Restarts=[0-9]+' | cut -d= -f2)
+        msg="$(date -u +%FT%TZ) fleet job $SLURM_JOB_ID restarted on $node after losing $prev_node (Restarts=${restarts:-?}). Every session on $prev_node died. Panes started through fleet-claude resume their conversation when resurrected; ~/.local/state/fleet/sessions.tsv maps pane to conversation for any that do not. Last node samples: ~/.local/state/fleet/health/$SLURM_JOB_ID-$prev_node.tsv. Check the cause with: sacct -j $SLURM_JOB_ID -D -o JobID,State,Start,End,NodeList"
+        printf '%s\n' "$msg" >> "$STATE/alerts.log"
+        printf '%s\n' "$msg" > "$STATE/notice"
+        log "$msg"
+    fi
+fi
+
+tmp=$(mktemp "$STATE/.record.XXXXXX")
+printf '{"job_id": "%s", "node": "%s", "runtime_dir": "%s", "started_at": "%s"}\n' \
+    "${SLURM_JOB_ID:-}" "$node" "$RT" "$(date -u +%FT%TZ)" > "$tmp"
+mv -f "$tmp" "$STATE/record.json"
+
+FIFO="$RT/requests"
+rm -f "$FIFO"
+mkfifo -m 600 "$FIFO"
+# Hold a write end open so reads block between requests instead of seeing EOF.
+exec 3<>"$FIFO"
+
+log "fleet supervisor on $node, job ${SLURM_JOB_ID:-?}, runtime $RT"
+
+# Node samples for diagnosing a node failure after the fact. fleet-health holds
+# a lock, so a reload that runs this again does not start a second sampler; it
+# is a child of the batch step and ends with the allocation.
+if command -v fleet-health >/dev/null 2>&1; then
+    nohup fleet-health >/dev/null 2>&1 &
+fi
+while IFS= read -r line <&3; do
+    read -r verb name layout <<<"$line"
+    case "$verb" in
+        session) "$0" start "$name" "${layout:-}" ;;
+        reload)  log "reloading"; exec 3<&-; exec "$0" ;;
+        *)       log "unknown request: $line" ;;
+    esac
+done
