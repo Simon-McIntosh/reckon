@@ -1013,7 +1013,9 @@ def _read_archived_resource(
     if docs_dir is None:
         return {}, 0
     key = (canonical_type(doc_type), slug, True)
-    resource = resource_map(docs_dir, project, include_archived=True).get(key)
+    resource = resource_map(
+        docs_dir, project, include_archived=True, ignore_invalid=True
+    ).get(key)
     if resource is None:
         return {}, 0
     data = _plan_html.read_state(
@@ -1037,6 +1039,7 @@ def _typed_resource_provenance(
             docs_dir,
             selector.project,
             include_archived=True,
+            ignore_invalid=True,
         ).get((selector.type, selector.id, selector.archived))
         if resource is None:
             raise FileNotFoundError(
@@ -1067,7 +1070,19 @@ def _typed_resource_text(
     selector: ResourceSelector,
     checkout_path: str | None,
 ) -> str:
-    """Read the exact live or archived typed artifact selected by a view."""
+    """Read the exact live or archived typed artifact selected by a view.
+
+    A cumulative evidence record reads composed — its own bytes followed by the
+    fragments of the plan it documents — so a caller of the text path sees the
+    anchors a fragment carries. Any other document, and a record whose ledger
+    cannot be read, reads as its own bytes.
+    """
+
+    from reckon.evidence import (
+        EvidenceSynthesisError,
+        compose_landed_record,
+        evidence_record_plan,
+    )
 
     docs_dir = _docs_dir_for_project(selector.project, checkout_path)
     if docs_dir is None or selector.type not in {"plan", "research", "evidence"}:
@@ -1076,9 +1091,19 @@ def _typed_resource_text(
         docs_dir,
         selector.project,
         include_archived=True,
+        ignore_invalid=True,
     ).get((selector.type, selector.id, selector.archived))
     if resource is None:
         return ""
+    plan = evidence_record_plan(resource.path)
+    if plan is not None:
+        try:
+            return compose_landed_record(
+                resource.path, plan, project=selector.project
+            ).decode("utf-8", errors="replace")
+        except (OSError, EvidenceSynthesisError):
+            # An unreadable ledger suppresses composition, not the document.
+            pass
     try:
         return resource.path.read_text(encoding="utf-8", errors="replace")
     except OSError:

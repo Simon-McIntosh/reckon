@@ -1208,24 +1208,6 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     return out
 
 
-def _evidence_record_plan(path: Path) -> str | None:
-    """Return the plan slug when ``path`` is a cumulative evidence record.
-
-    A record is spelled ``docs/evidence/archive/<plan>-landed.html`` or
-    ``docs/evidence/<plan>-landed.html``; the fragments it composes from sit
-    beside both spellings. Anything else returns None and is audited as it is.
-    """
-
-    if not path.name.endswith("-landed.html"):
-        return None
-    parent = path.parent
-    if parent.name == "archive":
-        parent = parent.parent
-    if parent.name != "evidence":
-        return None
-    return path.name[: -len("-landed.html")]
-
-
 def _composed_record_text(
     path: Path, plan_slug: str, project: str | None
 ) -> tuple[str, Exception | None]:
@@ -1255,9 +1237,11 @@ def _composed_record_text(
 
 
 def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
+    from reckon.evidence import evidence_record_plan
+
     if not path.is_file():
         return [Finding("error", "io", f"cannot read {path}: file does not exist")]
-    record_plan = _evidence_record_plan(path)
+    record_plan = evidence_record_plan(path)
     if record_plan is None:
         return audit_html(_plan_html._read_plan_text(path), project=project)
     text, compose_error = _composed_record_text(path, record_plan, project)

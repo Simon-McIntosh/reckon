@@ -393,6 +393,56 @@ def _render_document(
     )
 
 
+#: The ``reckon-type`` a cumulative evidence record declares.
+_RECORD_TYPE = "evidence"
+
+
+def evidence_record_plan(path: Path) -> str | None:
+    """Return the plan a cumulative evidence record documents, else ``None``.
+
+    The document's own metas decide, not its filename or its directory: a
+    record declares a ``reckon-type`` of ``evidence`` and a ``plan-evidence-for``
+    naming the plan whose execution it records. A file merely named like a
+    record but carrying no such metas is an ordinary document, and a record is
+    one wherever it happens to be written.
+
+    ``plan-evidence-for`` is a typed plan reference — a bare slug, a
+    ``<project>:<slug>`` reference, or either with a ``#<section>`` suffix — so
+    the plan it names is the slug the last path segment resolves to. The SPA
+    resolves a record's ``evidence_for`` the same way, so the plan composed
+    here is the plan the surface links the record to. When the meta names more
+    than one plan, the first is the record's own.
+    """
+
+    if path.suffix != ".html":
+        # Metas live in an HTML document; a non-document cannot be a record.
+        # This bounds the read for the file route, which sees every asset.
+        return None
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    return record_plan_in_text(text)
+
+
+def record_plan_in_text(text: str) -> str | None:
+    """Return the plan a document's own evidence-record metas name, else None."""
+
+    soup = BeautifulSoup(text or "", "html.parser")
+
+    def meta(name: str) -> str:
+        tag = soup.find("meta", attrs={"name": name})
+        return ((tag.get("content") if tag else "") or "").strip()
+
+    if meta("reckon-type").lower() != _RECORD_TYPE:
+        return None
+    reference = meta("plan-evidence-for").split(",")[0].strip()
+    if not reference:
+        return None
+    plan = reference.split("#", 1)[0].rsplit(":", 1)[-1].strip()
+    return plan or None
+
+
 def _record_evidence_dir(record_path: Path) -> Path:
     """Return the ``docs/evidence`` directory a record path lives under.
 
