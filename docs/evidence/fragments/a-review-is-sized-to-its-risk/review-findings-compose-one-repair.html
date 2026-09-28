@@ -1,0 +1,79 @@
+<article class="landed-report" data-run-id="r-20260928T193846170874-review-findings-compose-one-repair">
+      <h3>review-findings-compose-one-repair — one repair node per finding-bearing review round</h3>
+      <p>
+        A review that carries findings had no path from its stored record to work.
+        The reflex composes only reviews, and code-review findings were parsed
+        without an identity, so nothing could key "one repair per round" or
+        "no finding left unanswered". Three findings answered in one turn cost one
+        dispatch; a design that emitted one repair node per finding would cost
+        three lanes and three merges against the same files.
+      </p>
+      <p>
+        <code>reckon/crew/repair.py</code> turns a stored review record into that
+        single node. Each finding is given a stable id minted from the record's own
+        frozen order (<code>f01</code>, <code>f02</code>, …). The node's brief lists
+        every finding under its id, and its write scope is the union of the reviewed
+        run's own fence and the paths the findings name — so a finding outside the
+        reviewed run's fence is <em>granted</em> that path rather than refused the
+        file its brief asks it to edit. The composed <code>done_when</code> obliges
+        the repair to answer every finding by id: <code>acted &lt;id&gt;:&lt;commit&gt;</code>
+        for one it fixes, <code>declined &lt;id&gt;: &lt;reason&gt;</code> for one it
+        does not. The response vocabulary is shared with plan review (stable id,
+        acted-or-declined with a reason) rather than reinvented.
+      </p>
+      <p>
+        Round identity is the pair the review stands for — the run it reviewed and
+        the head it read. Composition is a pure function of that pair and the
+        record, so composing twice returns the same <code>node_id</code>: a
+        redispatch of a failed attempt is another attempt of one round, not a second
+        round. A run reviewed again at a later head composes a different id, so a
+        later round is not mistaken for a retry. The module imports the existing
+        review parser and store and edits neither.
+      </p>
+      <figure>
+        <img src="/reckon/figures/a-review-is-sized-to-its-risk/review-findings-compose-one-repair/composition.png"
+             alt="A stored review record with three findings composes through round = run + head into one repair node whose brief lists f01, f02, f03 and whose write scope is the fence union the finding paths, granting the out-of-fence finding; recomposing the same round returns the same node id.">
+        <figcaption>
+          The third finding (<code>new_module.py</code>) sits outside the reviewed
+          run's fence and is unioned into the repair's write scope. Recomposing the
+          same round returns the same node, so a redispatch is one round.
+        </figcaption>
+      </figure>
+      <p>
+        <strong>Gate.</strong> <code>tests/test_review_findings_compose_a_repair.py</code>
+        drives a real stored review — written through the shared store into a
+        temporary root — carrying three findings, one naming a path outside the
+        reviewed run's fence, and asserts: one repair node composed; its brief
+        naming all three findings by id; its write scope containing the out-of-fence
+        path; and a second composition of the same round returning the same node.
+        It passes at exit 0:
+      </p>
+      <table>
+        <caption>Arms recorded in the run manifest</caption>
+        <thead>
+          <tr><th>arm</th><th>revision</th><th>exit</th><th>failures</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>base (base revision + the new test file)</td><td><code>ba1a26e4</code></td><td>2</td><td>1 (collection error: <code>reckon.crew.repair</code> absent)</td></tr>
+          <tr><td>head (committed head)</td><td><code>6ea239a9</code></td><td>0</td><td>0</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Negative control.</strong> The declared mutation — composing one
+        repair node per finding instead of per round — reddens the three-finding
+        case: the composer returns a list of per-finding nodes, so the
+        single-node and round-identity assertions fail. The mutation was applied,
+        the case observed to fail, and reverted before the final commit. The red
+        log <code>negative-control.log</code> under the run directory carries the
+        declared mutation verbatim on its first line, exits 1, and names
+        <code>test_a_findings_review_composes_one_repair_node</code> FAILED.
+      </p>
+      <p>
+        <strong>Scope.</strong> Wiring the composer into the review reflex is a
+        later node: <code>reckon/crew/recovery.py</code> and
+        <code>reckon/crew/review.py</code> are held by concurrent nodes and were
+        not touched. A review that carries no finding composes nothing — the clean
+        review is not work, which is the state a separate node's acceptance path
+        consumes.
+      </p>
+    </article>
