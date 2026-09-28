@@ -3790,6 +3790,71 @@ def crew_path(kind, project, run_id):
     click.echo(str(path))
 
 
+def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
+    """The revision a run with no live pointer was reviewed at, from its records.
+
+    A promoted run has no live pointer, so the run's own committed records
+    answer which revision its stored review is about: the revision its ledger
+    row records as the tip its promotion landed, or the head its stored review
+    carries. Both are the run's own account of itself, and a row that names no
+    revision falls through to the head the review recorded.
+
+    The caller's working directory is not a third source. An absent tree reads
+    as the empty string, which is ``.``, so a head resolved from it belongs to
+    whatever repository the operator happened to stand in, and the review
+    selected against that revision is another run's — which is why this
+    resolves both records here rather than passing the absence on.
+
+    A run whose records name no revision, and a ledger that cannot be read, are
+    refused by name: a revision nobody recorded cannot be answered, and writing
+    a disposition against a guessed one reports a finding retired on a diff
+    that was never read.
+    """
+    from reckon import ledger as ledger_module
+    from reckon._store import CorruptEnvelopeError
+    from reckon.crew import review as review_module
+
+    try:
+        ledger_data, _version = ledger_module.load(project)
+    except (
+        OSError,
+        ValueError,
+        ledger_module.LedgerError,
+        CorruptEnvelopeError,
+    ) as exc:
+        raise ValueError(
+            f"cannot read the ledger for project {project!r}, which records "
+            f"the revision run {reviewed_run_id!r} landed at: {exc}"
+        ) from exc
+    for row in ledger_data.get("runs") or []:
+        if not isinstance(row, Mapping):
+            continue
+        if str(row.get("run_id") or "") != reviewed_run_id:
+            continue
+        promoted = str(row.get("promoted_revision") or "").strip()
+        if promoted:
+            return promoted
+        break
+    try:
+        _path, record = review_module.stored_record(project, reviewed_run_id)
+    except (OSError, ValueError) as exc:
+        raise ValueError(
+            f"cannot read the stored review for run {reviewed_run_id!r}: {exc}"
+        ) from exc
+    if isinstance(record, Mapping):
+        _carried, _base, carries_head, head = review_module.carried_revision_pair(
+            record
+        )
+        if carries_head and head:
+            return head
+    raise ValueError(
+        f"run {reviewed_run_id!r} has no live pointer, and neither its ledger "
+        f"row in project {project!r} nor its stored review names a revision; "
+        "refusing to take one from the working directory, which would answer a "
+        "review belonging to whatever repository the caller stands in"
+    )
+
+
 @crew.command(name="dispose")
 @click.option(
     "--project",
@@ -3842,7 +3907,10 @@ def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pre
     selection, by the run's own live pointer and by the head-first rule the
     reader uses — so an accepted call is one the row follows, and a store
     holding a legacy copy beside a revision-keyed record for the same head
-    cannot take the entry in the copy nobody reads.
+    cannot take the entry in the copy nobody reads. A run with no live pointer,
+    the ordinary case once it is promoted, is answered from its own records
+    rather than from the directory the operator stands in; see
+    :func:`_reviewed_head_from_run_records`.
     """
     from reckon.crew import recovery, runs
     from reckon.crew import review as review_module
@@ -3850,11 +3918,20 @@ def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pre
     try:
         pointer = runs.read_pointer(reviewed_run_id)
     except runs.CrewError:
-        # A finished run has no live pointer, and the reader resolves the same
-        # absence to no tree and no head.
-        pointer = {}
-    tree = recovery._review_tree(pointer)
-    head = recovery._reviewed_run_head(pointer) if tree is not None else ""
+        pointer = None
+    if pointer is None:
+        # A promoted run has no live pointer, and an empty mapping here is a
+        # tree of ``.``: the head would be resolved from the caller's own
+        # repository and the review selected against a revision belonging to
+        # something else.
+        tree = None
+        try:
+            head = _reviewed_head_from_run_records(project, reviewed_run_id)
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
+    else:
+        tree = recovery._review_tree(pointer)
+        head = recovery._reviewed_run_head(pointer) if tree is not None else ""
     try:
         stored, described = recovery.select_review_for_head(
             project, reviewed_run_id, head, tree=tree

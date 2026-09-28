@@ -31,6 +31,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import flight
+from reckon import ledger as ledger_module
 from reckon.cli import main as cli_main
 from reckon.crew import review as review_module
 from reckon.crew import runs
@@ -114,6 +115,27 @@ def _write_pointer(run_id: str, *, worktree: Path) -> None:
     )
 
 
+def _unrelated_repository(tmp_path: Path) -> Path:
+    """Stand up a repository the reviewed run's work is not in.
+
+    It exists so a command that reads the caller's directory instead of the
+    run's own records has a head to read there, and it carries a commit so that
+    head is a real revision rather than an unborn branch.
+    """
+    tree = tmp_path / "operator-repository"
+    tree.mkdir()
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "operator@example.invalid"),
+        ("config", "user.name", "Operator"),
+    ):
+        _git(tree, *arguments)
+    (tree / "notes.txt").write_text("operator notes\n", encoding="utf-8")
+    _git(tree, "add", "notes.txt")
+    _git(tree, "commit", "-q", "-m", "test: seed the operator's repository")
+    return tree
+
+
 @pytest.fixture()
 def fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Fixture:
     config_home = tmp_path / "config"
@@ -121,6 +143,9 @@ def fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Fixture:
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     monkeypatch.delenv("RECKON_FLIGHT_CONFIG", raising=False)
     monkeypatch.delenv("RECKON_WORKTREES", raising=False)
+    # The ledger resolves through the state root, which the configuration home
+    # only owns when no environment variable overrides it.
+    monkeypatch.delenv("RECKON_STATE_ROOT", raising=False)
 
     repository = tmp_path / "repo"
     (repository / "docs" / "state" / PROJECT).mkdir(parents=True)
@@ -207,6 +232,43 @@ def _sub_floor_rows() -> list[dict[str, Any]]:
     ]
 
 
+def _record_the_promotion(reviewed_run_id: str, revision: str) -> Path:
+    """Record the run's landing the way a promotion does, and return the ledger."""
+    data, version = ledger_module.load(PROJECT)
+    ledger_module.write(
+        PROJECT,
+        {
+            **data,
+            "runs": [
+                *(data.get("runs") or []),
+                {
+                    "run_id": reviewed_run_id,
+                    "project": PROJECT,
+                    "promoted_revision": revision,
+                    "completed_at": "2026-09-28T11:30:00+00:00",
+                },
+            ],
+        },
+        version,
+    )
+    return ledger_module.ledger_path(PROJECT)
+
+
+def _undisposed_rows(reviewed_run_id: str, head: str) -> list[dict[str, Any]]:
+    """The sub-floor rows the derivation builds from the run's own record.
+
+    This is the list the obligation rows are made of, read from the record the
+    reader selects for that revision rather than from the live pointers the
+    obligations list walks: a promoted run has no pointer, so the finding's
+    retirement is asserted where the row's content comes from.
+    """
+    floors = review_module.declared_dimension_floors(flight.resolve(PROJECT).config)
+    _path, record = review_module.stored_record(
+        PROJECT, reviewed_run_id, reviewed_head_sha=head
+    )
+    return review_module.sub_floor_dimensions(record, floors)
+
+
 def _stored_dispositions(reviewed_run_id: str) -> dict[str, Any]:
     stored = review_module.read_review(PROJECT, reviewed_run_id)
     assert stored is not None
@@ -291,6 +353,80 @@ def test_a_legacy_copy_beside_the_keyed_record_takes_the_disposition(
         in json.loads(path.read_text(encoding="utf-8"))
     ]
     assert carrying == [read_path]
+
+
+def test_a_run_with_no_live_pointer_is_answered_from_its_own_records(
+    fixture: Fixture, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A promoted run's revision is read from its records, not from the directory.
+
+    A promoted run has no live pointer, which is the ordinary state of a run
+    whose review is still answerable: the store keeps the record after the
+    worktree it reviewed is released. The revision must then come from the
+    run's own records — the promoted revision its ledger row carries, or the
+    head its stored review records — because the empty tree an absent pointer
+    resolves to is the directory the operator stands in, and the head read
+    there belongs to whatever repository that is. This case stands the operator
+    in such a repository and requires the disposition on the record keyed to
+    the run's own head, with the sub-floor row built from that record gone.
+    """
+    ledger = _record_the_promotion(fixture.reviewed, fixture.head_sha)
+    assert ledger.is_relative_to(fixture.config_home)
+    runs.pointer_path(fixture.reviewed).unlink()
+    with pytest.raises(runs.CrewError):
+        runs.read_pointer(fixture.reviewed)
+
+    unrelated = _unrelated_repository(tmp_path)
+    assert _git(unrelated, "rev-parse", "HEAD") != fixture.head_sha
+    monkeypatch.chdir(unrelated)
+
+    keyed = review_module.review_path(
+        PROJECT, fixture.reviewed, reviewed_head_sha=fixture.head_sha
+    )
+    standing = _undisposed_rows(fixture.reviewed, fixture.head_sha)
+    assert [row["dimension"] for row in standing] == ["durability"]
+
+    result = _dispose(
+        fixture, "--dimension", "durability", "--kind", "folded", "--node", FOLD_NODE
+    )
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["path"] == str(keyed)
+
+    assert _undisposed_rows(fixture.reviewed, fixture.head_sha) == []
+    assert _stored_dispositions(fixture.reviewed)["durability"]["node"] == FOLD_NODE
+    assert not (unrelated / "docs").exists()
+
+
+def test_a_run_whose_records_name_no_revision_is_refused_by_name(
+    fixture: Fixture, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With no pointer and no recorded revision, nothing is written anywhere.
+
+    The caller's repository is not a fallback source for the revision: a run
+    whose ledger row and stored review both name none is refused by name, and
+    the refusal says why the directory cannot stand in for them.
+    """
+    keyed = review_module.review_path(
+        PROJECT, fixture.reviewed, reviewed_head_sha=fixture.head_sha
+    )
+    record = json.loads(keyed.read_text(encoding="utf-8"))
+    for field in review_module.HEAD_REVISION_FIELDS:
+        record.pop(field, None)
+    keyed.write_text(json.dumps(record), encoding="utf-8")
+    runs.pointer_path(fixture.reviewed).unlink()
+
+    unrelated = _unrelated_repository(tmp_path)
+    monkeypatch.chdir(unrelated)
+
+    result = _dispose(
+        fixture, "--dimension", "durability", "--kind", "folded", "--node", FOLD_NODE
+    )
+
+    assert result.exit_code != 0, result.output
+    assert "no live pointer" in result.output
+    assert "refusing to take one from the working directory" in result.output
+    assert _stored_dispositions(fixture.reviewed) == {}
+    assert not (unrelated / "docs").exists()
 
 
 REFUSALS: tuple[tuple[str, tuple[str, ...], str], ...] = (
@@ -418,6 +554,7 @@ def test_the_command_writes_only_inside_the_temporary_config_home(
     """
     assert review_module.review_store_root().is_relative_to(fixture.config_home)
     assert runs.pointer_path("probe").is_relative_to(fixture.config_home)
+    assert ledger_module.ledger_path(PROJECT).is_relative_to(fixture.config_home)
 
     result = _dispose(
         fixture, "--dimension", "durability", "--kind", "folded", "--node", FOLD_NODE
