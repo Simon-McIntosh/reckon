@@ -32,7 +32,11 @@ from reckon.crew.runs import _write_json, pointer_path
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 PROJECT = "head-keyed-store"
-FILE = "region.txt"
+# The fixture's run must change runtime source, so a review of it is required
+# at all: the head-keyed store's subject is the review a run owes, and a run
+# touching only text would resolve to the tier that owes no review, skipping
+# every gate and refusal these cases rest on.
+FILE = "reckon/region.py"
 BASE = "1" * 40
 
 # Dates are fixed and one second apart so the commit a legacy review's
@@ -84,6 +88,7 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (root / FILE).parent.mkdir(parents=True, exist_ok=True)
     (root / FILE).write_text("seed\n", encoding="utf-8")
     for arguments in (
         ("init", "-q", "-b", "main"),
