@@ -20,16 +20,16 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,measurement">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <meta name="plan-blocks" content="open-work-is-capped">
   <title>The Fleet Reports Its Velocity | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="12">
-<meta name="plan-commits" content="85af514b,997c5539,7c508e7e,4d79a470,a70ad742,c0917d6f">
-<meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="13">
+<meta name="plan-commits" content="85af514b,997c5539,7c508e7e,4d79a470,a70ad742,c0917d6f,e2fc9f03,30fe8845,280d7fa9,43e971d3,be18adb4,90959463,118b06ba,0b61cc5d,e6b344f3,474d8119,66edfc86,9576896f,2652f39b">
+<meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_coordinator_cost.py">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -146,61 +146,17 @@
     </div>
 
     <h2 id="s3">§3 — Coordinator cost per landed node</h2>
-    <p><strong>Deliverable.</strong> For each coordinator session named by a promoted run's
-      <code>node_definition.coordinator.runtime_session_id</code>, the view reports the session's assistant responses,
-      input tokens (cache reads reported separately) and output tokens, divided by the number of nodes that session
-      landed in the window. Runs with no coordinator identity are counted in an explicit unattributed bucket.</p>
-    <p><strong>Done when</strong> over the pinned window the per-session figures agree within 1% with
-      <code>docs/research/data/crew-pattern-review/coordinator-overhead/overhead.json</code>.</p>
-
-    <div data-reckon="landing" data-node="coordinator-cost-per-landed-node" data-when="2026-09-28">
-      <h3>Landing record &mdash; coordinator cost per landed node</h3>
-      <p>Commits <code>e2fc9f03</code>, <code>280d7fa9</code>, <code>118b06ba</code> and
-      <code>474d8119</code> extend
-      <code>reckon/velocity.py</code> with a <code>coordinator_cost</code> section: each landed
-      node's <code>node_definition.coordinator.runtime_session_id</code> groups it under the
-      session that directed it, and the section divides that session's assistant responses, logical
-      input, separately reported cache-read share and output tokens by the nodes it landed in the
-      window. A run with no runtime session id enters an explicit unattributed bucket keyed by
-      project and recorded label. The transcript accounting is ported from the review's census
-      (<code>docs/research/data/crew-pattern-review/coordinator-overhead/census.py</code>) and the
-      module still imports nothing from <code>docs/</code>.</p>
-      <p><strong>Done when (recorded measurement).</strong> Run in place on this node at the module
-      revision <code>118b06ba</code> over the pinned window <code>2026-09-12T00:00:00Z</code> to
-      <code>2026-09-26T10:00:00Z</code>, and every per-session figure compared with
-      <code>overhead.json</code>: <strong>52 of 52 comparable sessions within 1%</strong> (0 field
-      checks outside tolerance). The census carries 52 sessions (38 with a transcript, 14 without);
-      the section lists every one. The landed denominator reproduces the census's own rule: an
-      in-window first-parent promote commit, a committed promoted revision, or a promotion receipt
-      the coordinator transcript records, where a call counts only when the shell word after
-      <code>crew</code> is the verb. Reading the receipt by that rule moved the last two residual
-      sessions onto the census's count, so no row remains outside tolerance.</p>
-      <figure>
-        <img src="/reckon/figures/the-fleet-reports-its-velocity/coordinator-cost-per-landed-node.png"
-          alt="Input tokens per landed node for each coordinator session, marker area proportional to assistant responses and colour to the cache-read share, beside a histogram of the cache-read share">
-        <figcaption>Input tokens per landed node against the nodes a session landed, and the
-        cache-read share of that input.</figcaption>
-      </figure>
-      <p><strong>Committed tests.</strong> <code>tests/test_velocity_coordinator_cost.py</code>
-      synthesises its transcripts and run rows under <code>tmp_path</code> and passes at exit 0
-      (<strong>15 passed</strong> across it and the existing view test). Two declared negative
-      controls. The first folds cache-read tokens into the uncached input figure; the cache-read
-      separation test then reads the uncached bucket at 3400 instead of 300 and fails
-      (<strong>1 failed</strong>, exit 1). The second restores the pre-repair receipt rule — a
-      whole-command word search for a crew verb, and no failure receipt for a printed
-      <code>Error:</code> line — and the two fixtures that bind the rule then fail
-      (<strong>2 failed</strong>, exit 1): a dispatch whose goal names a promotion classifies as
-      one, and a refused promotion reads as a landing through its clipped tail. The transcript
-      root defaults to nothing in the measurement entry point, so the suite never reads the live
-      transcript store.</p>
-      <p>Receipts under
-      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T191523670440-coordinator-cost-per-landed-node/</code>:
-      <code>measure_coordinator_cost.py</code>, <code>measurement3.log</code>,
-      <code>tests4.log</code>, <code>negative_control4.log</code>,
-      <code>negative_control_receipts2.log</code>. Full record:
-      <code>the-fleet-reports-its-velocity-landed.html#s3-coordinator-cost-per-landed-node</code>.</p>
+    <div class="section-landed" data-section="s3">
+      <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span></p>
+      <p class="landed-summary">Merged at <code>2652f39b</code> (<code>e2fc9f03</code> to <code>9576896f</code>).
+        <code>reckon/velocity.py</code> reports each coordinator session's assistant responses and its input tokens
+        (cache reads separate) and output tokens per landed node, with an explicit unattributed bucket. The landed-node
+        denominator and the promotion-receipt rule follow the coordinator-overhead census's own definitions. Over the
+        pinned window, all 52 sessions present in both agree within 1% with <code>overhead.json</code>. 15 tests pass, and
+        two declared controls redden: folding cache reads into input, and reverting the receipt rule. Reviews 85, then
+        92, carried forward over a formatting-and-tests repair. Full record:
+        <a href="/reckon/evidence/archive/the-fleet-reports-its-velocity-landed#s3-coordinator-cost-per-landed-node">§3 landed</a>.</p>
     </div>
-
 
     <h2 id="s4">§4 — Quota runway and session hygiene</h2>
     <p><strong>Deliverable.</strong> Before each wave, the preflight reports for each metered budget group and role the
@@ -263,7 +219,10 @@
     <div class="r-comment-body"><p>reviewed coordinator-cost-per-landed-node at be18adb4: 85/100, three findings (miscounted within-1pct figure, landed-node denominator unlike the census, a ruff I001), returned to the node's session as one repair round</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T100756215192-review-of-coordinator-cost-per-landed-node" data-who="reckon-build" data-when="2026-09-28T10:50:03.195Z">
-    <div class="r-comment-body"><p>re-reviewed coordinator-cost-per-landed-node at e6b344f3: 92/100 at 52 of 52 parity; two findings (the repair&#x27;s two functions unformatted, the new receipt rule untested by any reddening control) returned to the node&#x27;s session as its final repair round</p></div>
+    <div class="r-comment-body"><p>re-reviewed coordinator-cost-per-landed-node at e6b344f3: 92/100 at 52 of 52 parity; two findings (the repair's two functions unformatted, the new receipt rule untested by any reddening control) returned to the node's session as its final repair round</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260928T110000-s3-closed" data-who="reckon-build" data-when="2026-09-28T11:00:00Z">
+    <div class="r-comment-body">coordinator-cost-per-landed-node merged at 2652f39b; 52 of 52 sessions within 1% of overhead.json; 15 passed; reviews 85 then 92, the 92 carried forward over a formatting-and-tests repair by a recorded waiver. Section s3 closed and collapsed. The plan keeps s2 (the MCP and CLI surfaces), s4 and s5 open.</div>
 </div>
 </section>
 </main>
