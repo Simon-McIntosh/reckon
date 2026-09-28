@@ -40,6 +40,8 @@ from reckon._schema import (
     PlanState,
     gen_json_schema,
     schema_path,
+    section_dependency_refusals,
+    section_depends_on,
 )
 from reckon.capability import CAPABILITY_CLASSES, CAPABILITY_SCHEMA_VERSION
 from reckon.resources import iter_resources
@@ -389,6 +391,38 @@ def test_section_declarations_reject_invalid_write_values():
 
     with pytest.raises(ValueError, match="section_declarations"):
         state.validate_for_write()
+
+
+def test_section_dependency_mapping_survives_a_state_write():
+    """The mapping is authored markup, so a state write leaves it in place."""
+    html = SPARSE_PLAN.replace(
+        "</head>",
+        '<meta name="plan-section-depends-on" content='
+        '"{&quot;s5&quot;: [&quot;plan-b#s3&quot;]}">\n</head>',
+        1,
+    )
+
+    assert section_depends_on(SPARSE_PLAN) is None
+    assert section_depends_on(html) == {"s5": ["plan-b#s3"]}
+    assert section_depends_on(write_state(html, read_state(html))) == {
+        "s5": ["plan-b#s3"]
+    }
+
+
+def test_section_dependency_refuses_a_ref_naming_no_target_section():
+    refusals = section_dependency_refusals(
+        {"s5": ["plan-b#s3", "plan-b#gone", "not a ref"]},
+        lambda project, slug: {"gates": [{"section": "s3"}, {"section": "s4"}]},
+        owning_project="sample",
+    )
+
+    assert [row["code"] for row in refusals] == [
+        "missing-dependency-section",
+        "invalid-section-dependency",
+    ]
+    assert refusals[0]["section"] == "s5"
+    assert refusals[0]["ref"] == "plan-b#gone"
+    assert "names no section 'gone'" in refusals[0]["message"]
 
 
 def test_validate_for_write_rejects_milestone_placeholder():

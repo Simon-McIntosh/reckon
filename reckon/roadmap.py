@@ -24,6 +24,8 @@ from reckon._schema import (
     pending_transition_gates,
     plan_section_anchors,
     resolve_plan_ref,
+    section_dependency_refusals,
+    section_depends_on,
     standalone_reason,
 )
 from reckon.doccheck import (
@@ -145,6 +147,48 @@ def _plan_declarations(
         return dict(value) if isinstance(value, Mapping) else {}
 
     return memoized("section_declarations", path, read_declarations)
+
+
+def _plan_section_deps(
+    plan: Mapping[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> Mapping[str, Any] | None:
+    """Read a plan's section-scoped dependency mapping, from the row or its file.
+
+    A composition carries the mapping only once a composed inventory row has it;
+    until then the declaration lives only in the authored markup, so the file is the
+    fallback — the same rule the section classification follows, judged against
+    the same docs tree the row was inventoried from. ``None`` means the plan
+    declares no section-scoped edge, which is the whole-plan behaviour.
+    """
+
+    mapping = plan.get("section_depends_on")
+    if isinstance(mapping, Mapping):
+        return mapping
+    if docs_dir is None:
+        docs_dir = _load_mounts().get(project)
+    if docs_dir is None:
+        return None
+    try:
+        resource = resolve_resource(
+            docs_dir, project, slug, "plan", include_archived=False
+        )
+    except Exception:  # noqa: BLE001 — a resolution error is "no declaration"
+        return None
+    path = getattr(resource, "path", None)
+    if path is None:
+        return None
+
+    def read_mapping() -> dict[str, Any]:
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return {}
+        return dict(section_depends_on(text) or {})
+
+    return memoized("section_depends_on", path, read_mapping)
 
 
 def _effort_hours(plan: dict[str, Any]) -> float:
@@ -477,11 +521,126 @@ def _after_edges(
             found_section = parsed.stage in plan_section_anchors(target)
             row["stage"] = parsed.stage
             row["section_found"] = found_section
-            row["satisfied"] = found_section and _section_satisfied(target, parsed.stage)
+            row["satisfied"] = found_section and _section_satisfied(
+                target, parsed.stage
+            )
         else:
             row["satisfied"] = target_status in COMPLETED_STATUSES
         rows.append(row)
     return rows
+
+
+def _section_scoped_edges(
+    project: str,
+    plan: Mapping[str, Any],
+    slug: str,
+    mapping: Mapping[str, Any],
+    all_plans: Mapping[str, dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Resolve a section-scoped mapping into per-section blocker rows and findings.
+
+    Each row names the waiting section beside the target it waits on, so a plan's
+    sections split into the dispatchable and the held while the plan itself keeps
+    its place in the ready set: the edge runs between sections, and a plan-level
+    veto is the very behaviour this declaration exists to replace. The refs use
+    the ``depends_on`` grammar, a ``project:``-qualified one included.
+
+    A ref that parses but resolves to no live section still holds its waiting
+    section, because an unresolvable edge is no evidence that its dependency
+    landed. A malformed ref names no section to hold and so holds nothing, but it
+    is refused with a finding rather than dropped, so a mapping that does nothing
+    says why.
+    """
+
+    rows: list[dict[str, Any]] = []
+    findings: list[dict[str, Any]] = []
+    refusals = section_dependency_refusals(
+        mapping,
+        lambda target_project, target_slug: (
+            all_plans.get(target_slug)
+            if target_slug and target_project == project
+            else None
+        ),
+        owning_project=project,
+    )
+    findings.extend(
+        _finding(
+            str(refusal["code"]),
+            "error",
+            str(refusal["message"]),
+            slug=slug,
+            extra={"ref": refusal["ref"], "section": refusal["section"]},
+        )
+        for refusal in refusals
+    )
+    for raw_section, raw_refs in mapping.items():
+        waiting_section = str(raw_section or "").strip()
+        refs = [raw_refs] if isinstance(raw_refs, str) else raw_refs
+        if not isinstance(refs, list):
+            continue
+        for ref in refs:
+            parsed = parse_plan_ref(str(ref))
+            if parsed is None or not parsed.stage:
+                continue
+            row: dict[str, Any] = {
+                "ref": str(ref),
+                "source_section": waiting_section,
+                "stage": parsed.stage,
+            }
+            if parsed.is_external(project):
+                blocking = _blocking_row(plan, str(ref))
+                row.update(
+                    {
+                        "scope": "external",
+                        "project": parsed.project,
+                        "slug": parsed.slug,
+                        "found": bool(blocking.get("found")) if blocking else True,
+                        "status": blocking.get("status", "")
+                        if blocking
+                        else "satisfied",
+                        "satisfied": blocking is None,
+                    }
+                )
+                rows.append(row)
+                continue
+            target = all_plans.get(parsed.slug)
+            if target is None:
+                row.update(
+                    {
+                        "scope": "local",
+                        "slug": parsed.slug,
+                        "found": False,
+                        "satisfied": False,
+                    }
+                )
+                rows.append(row)
+                findings.append(
+                    _finding(
+                        "dangling-hard-dependency",
+                        "error",
+                        (
+                            f"{slug}: section dependency {ref!r} resolves to no "
+                            "live plan"
+                        ),
+                        slug=slug,
+                        extra={"ref": str(ref), "section": waiting_section},
+                    )
+                )
+                continue
+            section_found = parsed.stage in plan_section_anchors(target)
+            row.update(
+                {
+                    "scope": "local",
+                    "slug": parsed.slug,
+                    "found": True,
+                    "status": _status(target),
+                    "section_found": section_found,
+                    "satisfied": section_found
+                    and _section_satisfied(target, parsed.stage),
+                }
+            )
+            rows.append(row)
+    return rows, findings
 
 
 def _finding(
@@ -1761,6 +1920,14 @@ def _build_roadmap(
                         )
                     )
 
+        section_mapping = _plan_section_deps(plan, docs_dir, project, slug)
+        if section_mapping:
+            section_edge_rows, section_edge_findings = _section_scoped_edges(
+                project, plan, slug, section_mapping, all_plans
+            )
+            dependency_rows[slug].extend(section_edge_rows)
+            findings.extend(section_edge_findings)
+
         # Soft sequencing: resolved here, ranked below, and deliberately kept
         # out of every blocker list — an after target that has not shipped
         # orders the plan later without ever holding it.
@@ -2078,16 +2245,18 @@ def _build_roadmap(
             if is_schedule_deferred
             else None,
         }
-        if section_dependency_blockers:
-            section_blockers = {
-                str(blocker["stage"]): [
-                    row
-                    for row in section_dependency_blockers
-                    if row.get("stage") == blocker["stage"]
-                ]
-                for blocker in section_dependency_blockers
-            }
-            sections = sorted(plan_section_anchors(plan) | section_blockers.keys())
+        mapped_edges = [
+            row for row in dependency_rows.get(slug, []) if row.get("source_section")
+        ]
+        if section_dependency_blockers or mapped_edges:
+            # A staging anchor holds the source plan's section of the same
+            # identity; the mapping names its waiting section outright, so every
+            # section-scoped edge keys its blockers by the section that waits.
+            section_blockers: dict[str, list[dict[str, Any]]] = defaultdict(list)
+            for blocker in section_dependency_blockers:
+                waiting = str(blocker.get("source_section") or blocker.get("stage"))
+                section_blockers[waiting].append(blocker)
+            sections = sorted(plan_section_anchors(plan) | set(section_blockers))
             row["section_readiness"] = [
                 {
                     "section": section,
@@ -2102,6 +2271,7 @@ def _build_roadmap(
             row["blocked_sections"] = [
                 section for section in sections if section in section_blockers
             ]
+            row["section_depends_on"] = mapped_edges
         if slug in live_runs:
             row["in_flight"] = live_runs[slug]
         if slug in interrupted_runs:
