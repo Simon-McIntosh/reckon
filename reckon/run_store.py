@@ -48,11 +48,11 @@ DETAIL_FIELDS = (
 # The query keys a reader routes through. Each is a real indexed column on the
 # runs row, extracted from the payload at insert, so a question about one run
 # is answered by an index search rather than by the scan-plus-parse the flat
-# file costs. run_id is the fifth query key and is indexed by the table's
+# file costs. run_id is the sixth query key and is indexed by the table's
 # primary key alone. The declaration is the only place the key list is
 # spelled out; it drives both the schema and the insert, so the two cannot
 # drift.
-QUERY_KEYS = ("member", "node", "project", "completed_at")
+QUERY_KEYS = ("member", "node", "project", "completed_at", "backend")
 
 # The runs table built from QUERY_KEYS. Precomputed once at import so the
 # schema, the indexes and the insert all come from the same declaration and
