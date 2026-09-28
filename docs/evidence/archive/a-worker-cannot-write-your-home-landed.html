@@ -2562,17 +2562,19 @@ exit: 0</pre>
 
     <p><strong>Regression delta.</strong> The three named neighbours,
     <code>basetemp</code> outside every git repository: base <code>7b2e963b</code>
-    <code>12 passed</code> &rarr; head <code>2 failed, 10 passed</code>. Both failures are in
-    <code>tests/test_each_run_owns_its_harness_home.py</code> and both pin the read-only bind
-    this change replaces
-    (<code>test_the_codex_login_is_bound_read_only_into_the_runs_codex_home</code> asserts the
-    pair under <code>--ro-bind</code> and that the login is unremovable;
+    <code>12 passed</code> &rarr; head <code>12 passed</code> &mdash; zero added failures. The
+    two assertions that still pinned the read-only bind lived in
+    <code>tests/test_each_run_owns_its_harness_home.py</code>, initially outside this node's
+    write scope; that file was widened in and updated in the same change:
+    <code>test_the_codex_login_is_bound_read_write_into_the_runs_codex_home</code> now asserts
+    the pair under <code>--bind</code> (and not under <code>--ro-bind</code>) and no longer
+    expects the login to be unremovable, and
     <code>test_an_unfenced_codex_launch_keeps_the_operators_home</code> asserts the pair under
-    <code>--ro-bind</code>). <code>test_fence_never_binds_the_main_checkout.py</code> and
-    <code>test_fence_is_on_again.py</code> add none. Logs:
+    <code>--bind</code>. Nothing else in the file changed;
+    <code>test_fence_never_binds_the_main_checkout.py</code> and
+    <code>test_fence_is_on_again.py</code> were already green. Logs:
     <code>&lt;run&gt;/logs/base-arm-three-files.log</code> and
-    <code>&lt;run&gt;/logs/head-arm-three-files.log</code>. That file is outside this node's write
-    scope, so the two stale assertions are reported for a follow-on rather than edited here.</p>
+    <code>&lt;run&gt;/logs/head-arm-three-files-2.log</code>.</p>
   </section>
 </main>
 </body>

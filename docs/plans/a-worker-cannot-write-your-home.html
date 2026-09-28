@@ -1443,16 +1443,17 @@
         <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-codex-login-read-write-bind</code>,
         figure <code>/reckon/figures/a-worker-cannot-write-your-home/codex-login-read-write-bind.svg</code>.</p>
 
-        <p><strong>Blocked on an out-of-scope pin.</strong> Two assertions in
-        <code>tests/test_each_run_owns_its_harness_home.py</code>
-        (<code>test_the_codex_login_is_bound_read_only_into_the_runs_codex_home</code>,
-        <code>tests/test_an_unfenced_codex_launch_keeps_the_operators_home</code>) still pin
-        <code>[operator/.codex/auth.json, run/codex-home/auth.json] in --ro-bind</code>, which is
-        the exact behaviour this change replaces; base 12 passed &rarr; head 2 failed / 10 passed,
-        both in that one file. That file is outside this node's write scope, so the assertions are
-        reported rather than edited. The repair is two-line: assert the pair under
-        <code>--bind</code>, and drop the <code>codex-login-remove refused</code> expectation,
-        whose premise (the login is unremovable) is what read-write binding ends.</p></div>
+        <p><strong>Regression delta &mdash; zero added failures.</strong> Two assertions in
+        <code>tests/test_each_run_owns_its_harness_home.py</code> still pinned the read-only bind
+        this change replaces (<code>test_the_codex_login_is_bound_read_only_into_the_runs_codex_home</code>,
+        <code>test_an_unfenced_codex_launch_keeps_the_operators_home</code>); the file was widened
+        into this node's scope and updated in the same change, so the three named neighbours read
+        base 12 passed &rarr; head 12 passed: the case renamed to
+        <code>test_the_codex_login_is_bound_read_write_into_the_runs_codex_home</code> asserts the
+        pair under <code>--bind</code> and no longer expects the login unremovable, and the second
+        asserts the pair under <code>--bind</code>. Nothing else in that file changed.
+        <code>test_fence_never_binds_the_main_checkout.py</code> and
+        <code>test_fence_is_on_again.py</code> were already green.</p></div>
       </div>
 
     <section id="s3" data-reckon="section">
