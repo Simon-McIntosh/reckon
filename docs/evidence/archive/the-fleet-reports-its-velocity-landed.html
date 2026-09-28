@@ -266,17 +266,21 @@
       stream to be summed; another requires an unlabelled pair to sum, so nothing is dropped; two
       more cover the delta rule &mdash; an unmeasured prior attempt reads <code>"unknown"</code>
       while an absent one keeps the zero baseline. The
-      gate ran on this node's allocation: base arm (metering.py at the node's base revision) 5 failed,
-      69 passed, exit 1 &mdash; the five failures are exactly the tests that need the new behaviour;
-      head arm 76 passed, exit 0, no added failures. The declared negative control sums every
+      gate ran on this node's allocation: base arm (source at the base revision, test files overlaid)
+      7 failed, 70 passed, exit 1 &mdash; the seven failures are exactly the tests that need the new
+      behaviour (five for the fold, two for the delta rule); head arm 77 passed, exit 0, no added
+      failures. The declared negative control sums every
       stream's cumulative reading again in <code>_measure_streams</code>; the three-attempt case then
-      reads 8,396 against a 3,670 rollout and the 1% bound fails, exit 1. The recorded measurement
-      over the eight host runs is <code>logs/measurement.log</code>; the arms are
-      <code>logs/base-arm.log</code> (metering), <code>logs/ledger-arm.log</code> (the ledger suite),
-      <code>logs/gate-head.log</code>, and the control
-      <code>logs/negative-control.log</code>. Ten failures in <code>tests/test_ledger.py</code> are
-      pre-existing and outside this node's scope; four were confirmed to fail identically at the
-      base revision.</p>
+      reads 8,396 against a 3,670 rollout and the 1% bound fails, exit 1. A second control removes the
+      unmeasured-cost branch in a scratch copy of the head tree; the cost case then charges the whole
+      cumulative to the newer attempt and fails. The recorded measurement over the eight host runs is
+      <code>logs/measurement.log</code>; the arms are <code>logs/base-arm.log</code> and
+      <code>logs/gate-head.log</code> (the metering suites), <code>logs/ledger-base-arm.log</code> and
+      <code>logs/ledger-head-arm.log</code> (the ledger suite), and the controls
+      <code>logs/negative-control.log</code> and <code>logs/negative-control-cost.log</code>. Ten
+      failures in <code>tests/test_ledger.py</code> are pre-existing and outside this node's scope;
+      all ten fail identically at the base revision, 10 failed and 86 passed in both arms, so the
+      delta adds none.</p>
     </section>
   </main>
 </body>
