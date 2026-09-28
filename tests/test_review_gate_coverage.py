@@ -23,6 +23,9 @@ from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "proj"
 PLAN = "plan-a"
+# A runtime-source path: the classifier the review tier reads calls a package
+# module runtime source, while a bare data file at the repository root is not.
+RUNTIME_SOURCE = "reckon/candidate.py"
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -83,20 +86,26 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return root
 
 
-def _seed_candidate(repository: Path) -> tuple[str, str]:
+def _seed_candidate(
+    repository: Path, relative_path: str = "candidate.txt"
+) -> tuple[str, str]:
     """Commit a candidate file twice; return (base, delivered).
 
     The base is the revision the run started from and the delivered revision is
     the one its manifest cites, so a cited commit genuinely changes an
-    in-repository path rather than merely claiming to.
+    in-repository path rather than merely claiming to. The path is a parameter
+    because the review tier reads what the path *is*: a run that changes
+    runtime source owes a review, while one that changes only a data file does
+    not, and a case that means to exercise the gate must change the former.
     """
-    candidate = repository / "candidate.txt"
+    candidate = repository / relative_path
+    candidate.parent.mkdir(parents=True, exist_ok=True)
     candidate.write_text("seed\n", encoding="utf-8")
-    _git(repository, "add", "candidate.txt")
+    _git(repository, "add", relative_path)
     _git(repository, "commit", "-q", "-m", "test: seed candidate")
     base = _git(repository, "rev-parse", "HEAD")
     candidate.write_text("seed\ndelivered\n", encoding="utf-8")
-    _git(repository, "add", "candidate.txt")
+    _git(repository, "add", relative_path)
     _git(repository, "commit", "-q", "-m", "test: record candidate")
     return base, _git(repository, "rev-parse", "HEAD")
 
@@ -111,6 +120,7 @@ def _write_complete_pointer(
     commits: str = "",
     status: str = "complete",
     base: str = "",
+    write_paths: str = "candidate.txt",
 ) -> None:
     manifest = tmp_path / "manifests" / f"{run_id}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -141,7 +151,7 @@ def _write_complete_pointer(
                 "plan": PLAN,
                 "section": "candidate-change",
                 "time_budget": "25m",
-                "write_paths": ["candidate.txt"],
+                "write_paths": [write_paths],
             },
         },
     )
@@ -264,14 +274,23 @@ def _refusal(run_id: str, repository: Path, **kwargs: object) -> str:
 def test_a_role_writing_a_tracked_file_is_refused_without_a_review(
     role: str, repository: Path, tmp_path: Path
 ) -> None:
-    base, commit = _seed_candidate(repository)
+    """The refusal follows what the run changed, not the role that carried it.
+
+    A role outside ``implement`` is not an exemption: the run's cited commit
+    changes runtime source, so it owes a review whatever its role name, and one
+    that is not stored is refused with the waiver named as the way through. The
+    case is role-independent — the same source change is refused under every
+    role — which is the intent the role rule carried.
+    """
+    base, commit = _seed_candidate(repository, RUNTIME_SOURCE)
     run_id = f"r-20260921T070000000000-{role}-writes"
     _write_complete_pointer(
         repository,
         tmp_path,
         run_id,
         role=role,
-        changed_paths="candidate.txt",
+        changed_paths=RUNTIME_SOURCE,
+        write_paths=RUNTIME_SOURCE,
         commits=commit,
         base=base,
     )
@@ -288,8 +307,22 @@ def test_a_role_writing_a_tracked_file_is_refused_without_a_review(
 def test_a_role_changing_no_tracked_path_is_not_refused(
     role: str, repository: Path, tmp_path: Path
 ) -> None:
+    """A run that changes nothing in the repository promotes, whatever its role.
+
+    The review is sized to what a reviewer would have to read, and a run whose
+    deliverable lives outside the repository — this report-only run, whose
+    manifest declares the report path and cites no commit — changes no runtime
+    source and so is tier none. An empty declared scope is deliberately not the
+    same claim and stays refused elsewhere.
+    """
     run_id = f"r-20260921T070100000000-{role}-report"
-    _write_complete_pointer(repository, tmp_path, run_id, role=role)
+    _write_complete_pointer(
+        repository,
+        tmp_path,
+        run_id,
+        role=role,
+        changed_paths=str(tmp_path / "reports" / f"{run_id}.md"),
+    )
 
     crew.complete(run_id, gate="passed", root=repository)
 
@@ -299,15 +332,21 @@ def test_a_role_changing_no_tracked_path_is_not_refused(
 def test_a_run_without_a_recorded_role_but_a_changed_path_is_refused(
     repository: Path, tmp_path: Path
 ) -> None:
-    """The gate follows the writing even when no role name was recorded."""
-    base, commit = _seed_candidate(repository)
+    """The gate follows the writing even when no role name was recorded.
+
+    An absent role cannot be the exemption a role rule granted: a run with no
+    recorded role whose cited commit changes runtime source owes a review like
+    any other.
+    """
+    base, commit = _seed_candidate(repository, RUNTIME_SOURCE)
     run_id = "r-20260921T070200000000-role-less-writes"
     _write_complete_pointer(
         repository,
         tmp_path,
         run_id,
         role="",
-        changed_paths="candidate.txt",
+        changed_paths=RUNTIME_SOURCE,
+        write_paths=RUNTIME_SOURCE,
         commits=commit,
         base=base,
     )
@@ -382,7 +421,13 @@ def test_an_implement_run_with_a_stored_review_promotes(
 def test_a_reasoned_waiver_permits_a_documentation_change(
     repository: Path, tmp_path: Path
 ) -> None:
-    base, commit = _seed_candidate(repository)
+    """A reasoned waiver still lands a run that is otherwise gated.
+
+    The run changes runtime source, so it owes a review; the waiver is the
+    stated route through, and the reason it carries is what the ledger row
+    records in place of the review the run did not have.
+    """
+    base, commit = _seed_candidate(repository, RUNTIME_SOURCE)
     run_id = "r-20260921T070700000000-documentation-waived"
     reason = "the review lane is unavailable and this doc repair is urgent"
     _write_complete_pointer(
@@ -390,7 +435,8 @@ def test_a_reasoned_waiver_permits_a_documentation_change(
         tmp_path,
         run_id,
         role="documentation",
-        changed_paths="candidate.txt",
+        changed_paths=RUNTIME_SOURCE,
+        write_paths=RUNTIME_SOURCE,
         commits=commit,
         base=base,
     )
