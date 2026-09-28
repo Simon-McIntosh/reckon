@@ -243,6 +243,9 @@ slots:
   gates:
     range: GateConfig
 
+  review:
+    range: ReviewConfig
+
   budget:
     range: BudgetConfig
 
@@ -745,6 +748,30 @@ slots:
     range: SummaryOccasion
     multivalued: true
 
+  light_changed_lines:
+    description: >-
+      Changed-line ceiling (added plus deleted) below which a run that changes
+      runtime source can earn a light review rather than a full one. A run at
+      or above this ceiling is reviewed at full, because the size of a diff is
+      itself a reason a reviewer has more to read than a light pass covers.
+    range: integer
+    minimum_value: 1
+
+  light_time_budget:
+    description: >-
+      Wall-clock budget granted to a light review, written as an integer
+      followed by a unit — `s`, `m` or `h`. A light review that exceeds it
+      escalates to a full review rather than being abandoned.
+    pattern: "^[0-9]+[smh]$"
+
+  tiers:
+    description: >-
+      The thresholds that size a review to a finished run's risk. The resolver
+      reads them from the resolved flight config so a host or project layer
+      retunes the tiers without a code change.
+    range: ReviewTiers
+    inlined: true
+
 # ── Classes ─────────────────────────────────────────────────────────────────
 
 classes:
@@ -759,12 +786,30 @@ classes:
       - backends
       - roles
       - gates
+      - review
       - budget
       - fences
       - capability_raise
       - worktree
       - summary
       - ticker
+
+  ReviewConfig:
+    description: >-
+      How a finished run is sized to a review. Declared on the flight config so
+      a host or project layer retunes the tier thresholds without a code
+      change; the resolver reads them from the resolved config.
+    slots:
+      - tiers
+
+  ReviewTiers:
+    description: >-
+      The thresholds that separate the light and full review tiers. A run that
+      changes runtime source below the changed-line ceiling, at a spec level
+      that fixes the done-when, earns a light review.
+    slots:
+      - light_changed_lines
+      - light_time_budget
 
   BackendConfig:
     description: One worker backend and the routing knobs that apply to it.

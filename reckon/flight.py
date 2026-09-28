@@ -62,6 +62,15 @@ PLAN_REVIEW_GATE_KEY = "plan_review_gate"
 PLAN_REVIEW_GATE_MODES = ("report", "enforce")
 PLAN_REVIEW_GATE_DEFAULT = "report"
 
+# The review tier thresholds. The shipped defaults layer carries both, so a
+# resolved config always supplies them; the module constants are the fallback
+# for a config assembled by hand — an in-process caller or a test — which
+# should still resolve rather than fail on a key it never set.
+REVIEW_KEY = "review"
+REVIEW_TIERS_KEY = "tiers"
+DEFAULT_LIGHT_CHANGED_LINES = 50
+DEFAULT_LIGHT_TIME_BUDGET = "10m"
+
 
 class FlightConfigError(Exception):
     """A flight config layer is malformed.
@@ -551,6 +560,40 @@ def plan_review_gate_enforces(config: Mapping[str, Any] | None) -> bool:
     """
     mode = (config or {}).get(PLAN_REVIEW_GATE_KEY) or PLAN_REVIEW_GATE_DEFAULT
     return str(mode) == "enforce"
+
+
+def review_tier_thresholds(
+    config: Mapping[str, Any] | None,
+) -> tuple[int, str]:
+    """Return ``(light_changed_lines, light_time_budget)`` for the light tier.
+
+    Read from the resolved config so a host or project layer can retune the
+    tiers without a code change. A config declaring no ``review.tiers`` — an
+    in-process caller or a test assembled by hand — falls back to the shipped
+    values rather than failing, and a declared value is kept only when it has
+    the shape the schema requires, so a malformed config cannot silently widen
+    the light tier.
+    """
+    review = (config or {}).get(REVIEW_KEY)
+    tiers = review.get(REVIEW_TIERS_KEY) if isinstance(review, Mapping) else None
+    if not isinstance(tiers, Mapping):
+        return DEFAULT_LIGHT_CHANGED_LINES, DEFAULT_LIGHT_TIME_BUDGET
+    declared_lines = tiers.get("light_changed_lines")
+    lines = (
+        declared_lines
+        if isinstance(declared_lines, int)
+        and not isinstance(declared_lines, bool)
+        and declared_lines > 0
+        else DEFAULT_LIGHT_CHANGED_LINES
+    )
+    declared_budget = tiers.get("light_time_budget")
+    budget = (
+        declared_budget
+        if isinstance(declared_budget, str)
+        and re.fullmatch(r"[0-9]+[smh]", declared_budget)
+        else DEFAULT_LIGHT_TIME_BUDGET
+    )
+    return lines, budget
 
 
 def placement_for(backend: Mapping[str, Any]) -> dict[str, Any] | None:
