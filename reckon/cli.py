@@ -552,6 +552,112 @@ def fleet(pretty):
     _emit({"ok": True, "view": "fleet", "projects": rows}, pretty)
 
 
+@main.group(name="fleet-node")
+def fleet_node_group():
+    """Hold, read and place work on the fleet node's whole-node allocation."""
+
+
+@fleet_node_group.command(name="hold")
+@click.option(
+    "--submit",
+    is_flag=True,
+    help="Submit the allocation instead of printing its SLURM script.",
+)
+def fleet_node_hold(submit):
+    """Print, or explicitly submit, the persistent whole-node allocation.
+
+    ``cx`` runs this with --submit when it finds no fleet running; the line it
+    prints names the job id ``cx`` records.
+    """
+    from reckon.crew import fleet_node
+
+    log_path = fleet_node.batch_log_path()
+    script = fleet_node.generate_hold_script(fleet_node.fleet_size(), log_path=log_path)
+    if not submit:
+        click.echo(script, nl=False)
+        return
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        job_id = fleet_node.submit(script)
+    except fleet_node.FleetNodeError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"Submitted fleet allocation job {job_id}.")
+
+
+@fleet_node_group.command(name="status")
+def fleet_node_status():
+    """Report the held allocation, its node and its remaining lifetime.
+
+    The allocation is found by its comment token under the account it is
+    charged to, and the node's own scheduler state is read too: a draining node
+    ends an allocation that has no wall clock, and is warned about on its own.
+    """
+    from reckon.crew import fleet_node
+
+    try:
+        jobs = fleet_node.query_jobs(fleet_node.fleet_size().account)
+    except fleet_node.FleetNodeError as exc:
+        raise click.ClickException(str(exc)) from exc
+    allocations = fleet_node.find_allocations(jobs)
+    if not allocations:
+        click.echo(
+            "No fleet allocation is held; the interactive fleet has no "
+            "whole-node allocation in the queue."
+        )
+        return
+    recorded = fleet_node.recorded_job_id()
+    for allocation in allocations:
+        state = fleet_node.node_state(allocation.get("node", ""))
+        for line in fleet_node.describe_allocation(allocation, state_of_node=state):
+            click.echo(line)
+        if allocation.get("jobid", "").strip() == recorded:
+            click.echo("  hosts      the fleet sessions (named by the fleet record)")
+    if len(allocations) > 1:
+        click.echo(
+            f"{len(allocations)} fleet allocations are held; "
+            + (
+                f"only {recorded} hosts the sessions."
+                if recorded in {job.get("jobid", "").strip() for job in allocations}
+                else "the fleet record names none of them."
+            )
+        )
+
+
+@fleet_node_group.command(
+    name="place",
+    context_settings={"ignore_unknown_options": True, "allow_extra_args": True},
+)
+@click.argument("command", nargs=-1, required=True, type=click.UNPROCESSED)
+def fleet_node_place(command):
+    """Run a command as a scheduler step inside the held fleet allocation.
+
+    The allocation is resolved from the queue at launch, so no job id is written
+    into configuration. Holding no allocation is a refusal rather than a launch
+    on the login node, because a command meant to be placed that silently is not
+    runs under the ceiling the placement exists to escape.
+    """
+    from reckon.crew import fleet_node
+
+    try:
+        jobs = fleet_node.query_jobs(fleet_node.fleet_size().account)
+    except fleet_node.FleetNodeError as exc:
+        raise click.ClickException(str(exc)) from exc
+    allocation = fleet_node.find_allocation(
+        jobs, preferred=fleet_node.recorded_job_id()
+    )
+    if allocation is None:
+        raise click.ClickException(
+            "No fleet allocation is held, so there is nowhere to place "
+            f"{' '.join(command)!r}; the login node is not the fleet's host. "
+            "Hold one with `reckon fleet-node hold --submit`."
+        )
+    result = fleet_node.subprocess.run(
+        fleet_node.placement_argv(allocation, command), check=False
+    )
+    if result.returncode != 0:
+        raise SystemExit(result.returncode)
+
+
 @main.command(name="paste")
 @click.option(
     "--no-fleet",
