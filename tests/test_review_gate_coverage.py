@@ -373,15 +373,18 @@ def test_a_review_role_run_stays_exempt_when_it_changed_a_tracked_file(
 ) -> None:
     """The exemption belongs to the role that produces reviews, not to the
     absence of a change: the review a review run wrote for another run is its
-    deliverable, so the run itself is not gated on having one."""
-    base, commit = _seed_candidate(repository)
+    deliverable, so the run itself is not gated on having one. The run changes
+    runtime source, so the exemption is what lets it through rather than a
+    tier-none change that would promote under any role."""
+    base, commit = _seed_candidate(repository, RUNTIME_SOURCE)
     run_id = "r-20260921T070400000000-review-writes"
     _write_complete_pointer(
         repository,
         tmp_path,
         run_id,
         role="review",
-        changed_paths="candidate.txt",
+        changed_paths=RUNTIME_SOURCE,
+        write_paths=RUNTIME_SOURCE,
         commits=commit,
         base=base,
     )
