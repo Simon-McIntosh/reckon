@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 430" width="1020" height="430" role="img" aria-labelledby="t d">
+  <title id="t">A promotion reads promoted from the moment its ledger row exists</title>
+  <desc id="d">The four writes a promotion makes in order: the manifest reports complete, the ledger row is appended, the landing commit moves the tree head, and only then is the live pointer removed. Between the landing commit and the pointer removal the pointer still exists while the work has already landed. A classifier that reads the pointer alone finds a completed manifest whose stored review no longer names the moved head, so it renders the completed run unpromoted for that whole window before the pointer's absence finally agrees on promoted. A classifier that consults the promote record reads promoted across the window, so the measured complete to unpromoted to promoted flicker never renders.</desc>
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f7f8fa; stroke: #4a5568; stroke-width: 1.5; rx: 6; }
+    .window { fill: #fff6e6; stroke: #b8860b; stroke-width: 1.5; rx: 6; }
+    .bad { fill: #fdecec; stroke: #b03030; stroke-width: 1.5; rx: 6; }
+    .good { fill: #eef7ef; stroke: #2f8f4e; stroke-width: 1.5; rx: 6; }
+    .lbl { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 13px; fill: #1a202c; }
+    .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 12px; fill: #1a202c; }
+    .dim { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 11px; fill: #5a6472; }
+    .head { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #1a202c; }
+  </style>
+  <rect class="bg" x="0" y="0" width="1020" height="430"/>
+  <text class="head" x="30" y="34">Promotion writes land in order; the classified word must not flicker</text>
+
+  <!-- step column x positions -->
+  <!-- step 1 -->
+  <rect class="box" x="30" y="70" width="200" height="70"/>
+  <text class="lbl" x="44" y="96">1. manifest reads</text>
+  <text class="mono" x="44" y="118">status: complete</text>
+
+  <line x1="230" y1="105" x2="270" y2="105" stroke="#4a5568" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- step 2 -->
+  <rect class="box" x="270" y="70" width="200" height="70"/>
+  <text class="lbl" x="284" y="96">2. ledger row</text>
+  <text class="mono" x="284" y="118">append_run(...)</text>
+
+  <line x1="470" y1="105" x2="510" y2="105" stroke="#4a5568" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- step 3 -->
+  <rect class="box" x="510" y="70" width="200" height="70"/>
+  <text class="lbl" x="524" y="96">3. landing commit</text>
+  <text class="mono" x="524" y="118">HEAD moves</text>
+
+  <line x1="710" y1="105" x2="750" y2="105" stroke="#4a5568" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- step 4 -->
+  <rect class="box" x="750" y="70" width="230" height="70"/>
+  <text class="lbl" x="764" y="96">4. pointer unlink</text>
+  <text class="mono" x="764" y="118">pointer_path().unlink()</text>
+
+  <g>
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#4a5568"/>
+      </marker>
+    </defs>
+  </g>
+
+  <!-- the promotion window between the ledger row and the pointer unlink -->
+  <rect class="window" x="270" y="170" width="710" height="52"/>
+  <text class="lbl" x="284" y="194">the promotion window: the row exists, the pointer is still live</text>
+  <line x1="270" y1="153" x2="270" y2="170" stroke="#b8860b" stroke-width="1.5"/>
+  <line x1="980" y1="153" x2="980" y2="170" stroke="#b8860b" stroke-width="1.5"/>
+
+  <!-- BEFORE row -->
+  <text class="head" x="30" y="268">pointer-only reading (before)</text>
+  <rect class="bad" x="30" y="280" width="300" height="46"/>
+  <text class="mono" x="44" y="309">unpromoted  (scoring)</text>
+  <text class="dim" x="30" y="342">the landed run renders as unfinished work for the whole window</text>
+
+  <!-- AFTER row -->
+  <text class="head" x="30" y="378">consults the promote record (after)</text>
+  <rect class="good" x="30" y="388" width="300" height="34"/>
+  <text class="mono" x="44" y="411">promoted</text>
+  <text class="dim" x="360" y="411">the same word at every instant of the window</text>
+</svg>
