@@ -406,6 +406,11 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
     told to write there was refused the very path the store would read back.
     The head is read from the run's own tree; when it cannot be resolved the
     legacy path is granted alone rather than a guessed key.
+
+    The resolved head is returned beside the paths because recognition keys on
+    the pair a review stands for — the run it reviews and the head it read —
+    so the caller comparing a standing review against this dispatch needs the
+    head the dispatch composed for, not only the paths it granted.
     """
     node = record.get("node") or {}
     run_id = str(record.get("run_id") or "")
@@ -420,6 +425,7 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "run_id": run_id,
         "project": project,
+        "head": head,
         "plan": str(node.get("plan") or ""),
         "section": str(node.get("section") or ""),
         "source_node": source_node,
@@ -434,10 +440,16 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
         # review holds. The statement lives in the done-when beside the record
         # condition it qualifies, so a reviewer reads the two together rather
         # than inferring a stopping point from the delivery condition alone.
+        # The added-failure count is named with the reviewed manifest's own
+        # fields — baseline_suite and after_suite are the gate logs the record
+        # is annotated from at read time — so a reviewer told to derive the
+        # count finds the logs by the names its own manifest will carry.
         "done_when": (
             f"the review for {run_id} stores a parsed record scoring all 5 "
-            "dimensions in the range 0..20; the turn ends once that record is "
-            "stored and the manifest reads complete"
+            "dimensions in the range 0..20, carrying added_failure_count and "
+            "added_failure_ids derived from the reviewed run's own baseline_suite "
+            "and after_suite gate logs; the turn ends once that record is stored "
+            "and the manifest reads complete"
         ),
         "write_path": write_paths[0],
         "write_paths": write_paths,
@@ -831,58 +843,121 @@ REVIEW_DISPATCH_FIELD = "review_dispatch"
 REVIEW_EXCLUDED_BACKENDS_KEY = "review_excluded_backends"
 
 
-def _review_in_flight(record: Mapping[str, Any]) -> str:
-    """The review run already standing for this scoring run, or empty.
+# The head suffix the review store writes onto a head-keyed record path is
+# validated with the same pattern before the write, so the reader parses by the
+# grammar the writer enforces.
+_REVIEW_HEAD_PATTERN = re.compile(r"[0-9A-Fa-f]{7,64}")
 
-    Three facts are consulted because the durable one fails soft. The dispatch
-    record the reflex wrote is the precise answer, but a review launched by a
-    coordinator by hand carries no such record; the deterministic node id the
-    review dispatch names is, so a hand-launched review is found by identity.
-    A review launched under another node id carries neither, so a third fact is
-    read — the record paths the reviewer was told to write, which the dispatch
-    composes from the reviewed run and which therefore name it whatever the
-    reviewer is called. A recorded run whose pointer is gone is not in flight —
-    the review died — and the reflex is free to dispatch again rather than wait
-    on a run that no
-    longer exists. A promoted or abandoned review leaves no live pointer, and a
-    sweep that reads the missing one as a pointer to inspect raises out of the
-    reflex rather than recomposing: the probe would fail on exactly the case it
-    was written to route.
+
+def _review_record_subject(path: Path) -> tuple[str, str]:
+    """The reviewed run and head a granted record path spells, if either.
+
+    The store writes two spellings — ``<run>.json`` at the legacy path and
+    ``<run>.at-<head>.json`` when the head it read is named — and a reviewer
+    is granted the reviewed run's own paths whatever it is called, so the path
+    names the run it reviews even when the reviewer's node id does not. A tail
+    that is not a head falls back to the legacy reading rather than dropping
+    the path: a run id is free to contain the suffix's letters.
+    """
+    name = path.name
+    if not name.endswith(".json"):
+        return "", ""
+    stem = name[: -len(".json")]
+    run_id, separator, head = stem.rpartition(".at-")
+    if separator and _REVIEW_HEAD_PATTERN.fullmatch(head):
+        return run_id, head
+    return stem, ""
+
+
+def _review_subject(pointer: Mapping[str, Any], project: str) -> tuple[str, str]:
+    """The reviewed run and head a live review pointer stands for.
+
+    Read from the record paths the reviewer was told to write, which the
+    dispatch composes from the reviewed run: a review hand-launched under a
+    coordinator's own node id still names the run it is scoring there, and a
+    path that names a head is preferred over the legacy spelling because the
+    head is the revision the review is evidence about. A reviewer granted none
+    of the store's paths falls back to the run its node id spells, which is the
+    reviewed run when a coordinator dispatched the review by hand; an id that
+    resolves to nothing is left unresolved rather than guessed.
+    """
+    named_run = ""
+    named_head = ""
+    legacy_run = ""
+    for path in _review_store_record_paths(pointer, project):
+        run_id, head = _review_record_subject(path)
+        if not run_id:
+            continue
+        if head and not named_run:
+            named_run, named_head = run_id, head
+        if not legacy_run:
+            legacy_run = run_id
+    if named_run:
+        return named_run, named_head
+    if legacy_run:
+        return legacy_run, ""
+    return _resolved_reviewed_run_id(pointer, project), ""
+
+
+def _review_head_covers(reviewed_head: str, head: str) -> bool:
+    """Whether a review that read ``reviewed_head`` stands for the head ``head``.
+
+    A review whose dispatch composed no head — or a run whose own head could
+    not be resolved — cannot be told apart from one standing at any revision,
+    and reading the unnamed side as covering keeps every case the pair cannot
+    discriminate exactly where a single-key recogniser left it. With both heads
+    named, the review covers only the revision it read, compared with prefix
+    tolerance so a short spelling still matches the full one it abbreviates.
+    """
+    reviewed = str(reviewed_head or "").strip()
+    current = str(head or "").strip()
+    if not reviewed or not current:
+        return True
+    return same_revision(reviewed, current)
+
+
+def _review_in_flight(record: Mapping[str, Any]) -> str:
+    """The review run already standing for this run at this head, or empty.
+
+    Recognition keys on the pair a review stands for — the run it reviews and
+    the head it read — never on the reviewer's node id, which a hand dispatch
+    chooses freely: a review hand-dispatched under a coordinator's own id is as
+    much this run's standing review as one the reflex launched, and a review
+    that read an earlier revision no longer stands for a run resumed past it.
+    The dispatch record the reflex wrote is read first, because it is the
+    precise answer and it carries the head the attempt composed for; a review
+    launched by a coordinator by hand carries no record, so the live pointers
+    are swept for one whose granted record paths name the same pair. A recorded
+    run whose pointer is gone is not in flight — the review died — and the
+    reflex is free to dispatch again rather than wait on a run that no longer
+    exists: a promoted or abandoned review leaves no live pointer, and a sweep
+    that reads the missing one as a pointer to inspect raises out of the reflex
+    rather than recomposing, failing on exactly the case it was written to
+    route.
     """
     fields = _review_dispatch_fields(record)
+    head = str(fields.get("head") or "")
     recorded = record.get(REVIEW_DISPATCH_FIELD)
     if isinstance(recorded, Mapping):
-        run_id = str(recorded.get("run_id") or "")
-        if run_id and runs.pointer_path(run_id).exists() and read_pointer(run_id):
-            return run_id
+        standing = str(recorded.get("run_id") or "")
+        if (
+            standing
+            and _review_head_covers(str(recorded.get("head") or ""), head)
+            and runs.pointer_path(standing).exists()
+            and read_pointer(standing)
+        ):
+            return standing
     project = fields["project"]
     if not project:
         return ""
+    run_id = str(record.get("run_id") or "")
     for pointer in list_live(project=project):
-        node = pointer.get("node") or {}
-        if str(node.get("id") or "") == fields["node_id"]:
-            return str(pointer.get("run_id") or "")
-        if _is_review_run(pointer) and _pointer_names_review_record(
-            pointer, fields["write_paths"]
-        ):
+        if not _is_review_run(pointer):
+            continue
+        reviewed, reviewed_head = _review_subject(pointer, project)
+        if reviewed and reviewed == run_id and _review_head_covers(reviewed_head, head):
             return str(pointer.get("run_id") or "")
     return ""
-
-
-def _pointer_names_review_record(
-    pointer: Mapping[str, Any], expected: Iterable[Any]
-) -> bool:
-    """Whether a live pointer was told to write one of these review records.
-
-    The dispatch grants a reviewer the record path of the run it reviews, so a
-    match identifies that run's standing review exactly. The node id is not
-    ``review-of-`` plus the source only by convention — a coordinator may launch
-    the review under its own id — but the granted path is composed from the
-    reviewed run and so cannot name a different one.
-    """
-    node = pointer.get("node") or {}
-    granted = {str(path) for path in node.get("write_paths") or ()}
-    return bool(granted.intersection(str(path) for path in expected))
 
 
 def _record_review_dispatch(
@@ -892,6 +967,7 @@ def _record_review_dispatch(
     reason: str,
     review_run_id: str = "",
     backend: str = "",
+    reviewed_head: str = "",
 ) -> None:
     """Write the reflex's outcome onto the run it acted for.
 
@@ -903,6 +979,11 @@ def _record_review_dispatch(
     is the only durable fact that lets the next attempt know which lane already
     dropped this run. A recorded run_id does not carry that: once the review
     dies its pointer is gone, and the run goes back to looking unattempted.
+
+    The head the attempt composed for is recorded with the outcome, because an
+    attempt about one revision must not read as covering a run that has since
+    moved past it: the next sweep compares the recorded pair and sees that the
+    standing review no longer speaks for the run's current head.
     """
     if not run_id:
         return
@@ -913,6 +994,7 @@ def _record_review_dispatch(
             "reason": reason,
             "run_id": review_run_id or None,
             "backend": backend or None,
+            "head": reviewed_head or None,
             "at": _utc_now(),
             "attempt": int(
                 (pointer.get(REVIEW_DISPATCH_FIELD) or {}).get("attempt") or 0
@@ -1083,7 +1165,9 @@ def dispatch_review_for_run(
     repo = str(record.get("repo") or "")
     if not project or not repo:
         reason = "the run records no project or repository to dispatch against"
-        _record_review_dispatch(run_id, status="refused", reason=reason)
+        _record_review_dispatch(
+            run_id, status="refused", reason=reason, reviewed_head=fields["head"]
+        )
         return {"run_id": run_id, "dispatched": False, "reason": reason}
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -1097,7 +1181,9 @@ def dispatch_review_for_run(
         resolved = flight.select_local_backend(resolved)
     except Exception as exc:  # noqa: BLE001 - the configured lane is the reason
         reason = f"the local lane is unavailable: {exc}"
-        _record_review_dispatch(run_id, status="awaiting-lane", reason=reason)
+        _record_review_dispatch(
+            run_id, status="awaiting-lane", reason=reason, reviewed_head=fields["head"]
+        )
         return {
             "run_id": run_id,
             "dispatched": False,
@@ -1121,7 +1207,11 @@ def dispatch_review_for_run(
     if not candidates:
         reason = _no_review_lane_reason(run_id, previous_lane, resolved)
         _record_review_dispatch(
-            run_id, status="awaiting-lane", reason=reason, backend=previous_lane
+            run_id,
+            status="awaiting-lane",
+            reason=reason,
+            backend=previous_lane,
+            reviewed_head=fields["head"],
         )
         return {
             "run_id": run_id,
@@ -1160,7 +1250,11 @@ def dispatch_review_for_run(
     except BudgetHold as exc:
         reason = f"the {backend} lane is unavailable: {exc}"
         _record_review_dispatch(
-            run_id, status="awaiting-lane", reason=reason, backend=backend
+            run_id,
+            status="awaiting-lane",
+            reason=reason,
+            backend=backend,
+            reviewed_head=fields["head"],
         )
         return {
             "run_id": run_id,
@@ -1176,7 +1270,11 @@ def dispatch_review_for_run(
         # they are skipped, so the refusal is recorded and reported rather than
         # caught and shrugged off.
         _record_review_dispatch(
-            run_id, status="refused", reason=str(exc), backend=backend
+            run_id,
+            status="refused",
+            reason=str(exc),
+            backend=backend,
+            reviewed_head=fields["head"],
         )
         return {
             "run_id": run_id,
@@ -1193,6 +1291,7 @@ def dispatch_review_for_run(
         reason=f"the review dispatched automatically as run {review_run_id}",
         review_run_id=review_run_id,
         backend=backend,
+        reviewed_head=fields["head"],
     )
     return {
         "run_id": run_id,

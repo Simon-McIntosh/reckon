@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="900" height="520" role="img" aria-labelledby="t d">
+  <title id="t">What the reflex compares when it asks whether a review already stands</title>
+  <desc id="d">Three lanes. At base the reflex compares the minted node ids, so a hand re-review of the same run and head is a different id, is not recognised, and a duplicate launches onto the identical review-store path. At the change it compares the pair (reviewed run, reviewed head): the same pair stands under any node id and the reflex dispatches nothing, while a run resumed to a new head is a different pair and gets exactly one review.</desc>
+
+  <style>
+    .bg { fill: #ffffff; }
+    .lane { fill: #f5f6f8; stroke: #c9ccd4; }
+    .bad { fill: #fdecec; stroke: #d98a8a; }
+    .good { fill: #eef6f0; stroke: #8fbf9f; }
+    .t { font-family: sans-serif; font-size: 14px; fill: #23252b; }
+    .small { font-family: sans-serif; font-size: 11.5px; fill: #4a4e57; }
+    .head { font-family: sans-serif; font-size: 15px; font-weight: bold; fill: #23252b; }
+    .badtext { font-family: sans-serif; font-size: 12.5px; fill: #a13b3b; }
+    .goodtext { font-family: sans-serif; font-size: 12.5px; fill: #2f6b41; }
+    .mono { font-family: monospace; font-size: 11px; fill: #23252b; }
+  </style>
+
+  <rect class="bg" x="0" y="0" width="900" height="520"/>
+
+  <text class="head" x="40" y="34">A standing review is recognised by the run and head it read, not by the node id that read it</text>
+  <text class="small" x="40" y="54">Measured 2026-09-26: a hand-dispatched re-review ran beside the reflex&#8217;s review of the same run, on the identical review-store paths.</text>
+
+  <text class="head" x="40" y="92">at base: the key compared is the minted node id</text>
+  <rect class="lane" x="40" y="102" width="820" height="92" rx="6"/>
+  <rect class="bad" x="60" y="116" width="300" height="28" rx="5"/>
+  <text class="mono" x="72" y="135">reflex: node review-of-source-node</text>
+  <rect class="bad" x="60" y="152" width="300" height="28" rx="5"/>
+  <text class="mono" x="72" y="171">hand: node re-review-of-source-node</text>
+  <text class="t" x="400" y="135" font-size="12.5">both read the same pair: run r-...-source at head 3f2a91c4</text>
+  <text class="t" x="400" y="171" font-size="12.5">and both are granted r-...-source.at-3f2a91c4.json</text>
+  <text class="badtext" x="60" y="214">the ids differ, so neither read recognises the other: the reflex launches a duplicate review of the very pair a review already stands for.</text>
+
+  <text class="head" x="40" y="248">at the change: the key compared is the pair the review read</text>
+  <rect class="lane" x="40" y="258" width="820" height="92" rx="6"/>
+  <rect class="good" x="60" y="272" width="300" height="28" rx="5"/>
+  <text class="mono" x="72" y="291">reflex: (r-...-source, 3f2a91c4)</text>
+  <text class="goodtext" x="400" y="291">the pairs are equal whatever the node ids say</text>
+  <rect class="good" x="60" y="308" width="300" height="28" rx="5"/>
+  <text class="mono" x="72" y="327">hand: (r-...-source, 3f2a91c4)</text>
+  <text class="goodtext" x="400" y="327">the reflex stands down: one review of this head, under either id.</text>
+
+  <text class="head" x="40" y="396">and when the head moves: a review standing at the old head does not cover the new one</text>
+  <rect class="lane" x="40" y="406" width="820" height="58" rx="6"/>
+  <rect class="good" x="60" y="420" width="230" height="28" rx="5"/>
+  <text class="mono" x="72" y="439" font-family="monospace" font-size="11" fill="#23252b">standing (r-...-source, 3f2a91c4)</text>
+  <rect class="good" x="310" y="420" width="230" height="28" rx="5"/>
+  <text class="mono" x="322" y="439">resumed to (r-...-source, 91be04d7)</text>
+  <text class="goodtext" x="560" y="439">pairs differ, so exactly one review is dispatched at the new head.</text>
+
+  <text class="small" x="40" y="490">Gate, 7 files, one invocation: 4 failed, 28 passed at base (2 added red, 2 pre-existing) &#8594; 2 failed, 30 passed at the change, zero added failures by id; the arm over the ids that pass at base exits 0.</text>
+  <text class="small" x="40" y="508">Control: keying recognition on the node id again, the hand-dispatched case launches a duplicate review of the same pair and its assertion fails.</text>
+  </svg>
