@@ -1,4 +1,4 @@
-"""One UTC timestamp parser shared by every module that reads a timber.
+"""One UTC timestamp parser shared by every module that reads a timestamp.
 
 A timestamp crosses this repository in several shapes: an ISO-8601 string
 with a ``Z`` suffix or a numeric offset, the same string without a zone, and

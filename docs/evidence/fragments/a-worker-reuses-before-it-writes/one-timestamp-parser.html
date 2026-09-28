@@ -7,96 +7,134 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
   <meta name="plan-title" content="One timestamp parser">
-  <meta name="plan-summary" content="The one UTC timestamp parser, its fixed behaviour, and the 44-caller migration inventory grouped into disjoint batches.">
+  <meta name="plan-summary" content="The one UTC timestamp parser, its fixed behaviour, and the 52-caller migration inventory grouped into disjoint batches.">
   <meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
   <meta name="plan-verdict" content="qualified">
-  <title>One timestamp parser &mdash; evidence | reckon</title>
+  <title>One timestamp parser -- evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
  <main class="plan-doc">
-  <h1>One timestamp parser &mdash; evidence</h1>
-  <p>A new primitive module <code>reckon/_timestamps.py</code> with one function <code>parse_utc(value) -&gt; datetime | None</code>, its behaviour fixed by <code>tests/test_timestamps_parse_utc.py</code> before any caller migrates, and the 44 callers the code-depth census found today grouped into migration batches disjoint from each other and from every live run's claims. No caller is migrated in this node.</p>
+  <h1>One timestamp parser -- evidence</h1>
+  <p>A new primitive module <code>reckon/_timestamps.py</code> with one function <code>parse_utc(value)</code>, its behaviour fixed by <code>tests/test_timestamps_parse_utc.py</code> before any caller migrates, and every caller of <code>fromisoformat</code> under <code>reckon/</code> grouped into migration batches disjoint from each other and from every live run's path claims. No caller is migrated in this node.</p>
 
   <figure>
-    <img src="/reckon/figures/a-worker-reuses-before-it-writes/one-timestamp-parser/parse-utc-flow.svg" alt="Decision flow: type dispatch to int/float epoch or ISO-8601 string, magnitude split at 1e11 between seconds and milliseconds, naive parsed as UTC, malformed returns None.">
-    <figcaption>The shapes <code>parse_utc</code> accepts and the zone rule it applies. A naive value is read as UTC &mdash; the rule the existing callers already assume &mdash; and every returned moment is UTC.</figcaption>
+    <img src="/reckon/figures/a-worker-reuses-before-it-writes/one-timestamp-parser/parse-utc-flow.svg" alt="Decision flow for parse_utc">
   </figure>
 
   <section id="behaviour">
     <h2>The behaviour the tests fix</h2>
     <ul>
-      <li>A <code>Z</code> suffix and an explicit numeric offset both return an aware UTC datetime; the offset case is asserted with a positive and a negative offset, both normalising to the same instant.</li>
-      <li>A naive value is read as UTC. This is the one policy choice the parser makes rather than inherits, so it is asserted against a fixed moment (and again against <code>.timestamp()</code>) so the result cannot depend on the host's zone.</li>
+      <li>A <code>Z</code> suffix and an explicit numeric offset both return an aware UTC datetime, asserted with a positive and a negative offset that normalise to the same instant.</li>
+      <li>A naive value is read as UTC.</li>
       <li>A numeric epoch in seconds and one in milliseconds are both read, told apart by magnitude split at <code>1e11</code>, the threshold stated in the module docstring.</li>
-      <li>Malformed input returns <code>None</code> rather than raising: a non-string, a non-numeric, a bool, an empty string, an unparseable string and an out-of-range epoch each assert <code>None</code>.</li>
+      <li>Malformed input returns <code>None</code> rather than raising.</li>
     </ul>
-    <p><strong>Evidence arms.</strong> Base arm at <code>a928b6be</code>: the test is absent and the module absent, so collection fails &mdash; <code>ModuleNotFoundError: No module named 'reckon._timestamps'</code>, exit 2 (<code>base-arm.log</code>). Head arm at the committed head <code>95c56533</code>: 15 passed, exit 0 (<code>head-arm.log</code>), with the log header naming the revision, the worktree, the command and the served <code>module.__file__</code>.</p>
-    <p><strong>Negative control.</strong> The declared mutation &mdash; read a naive timestamp as local time rather than UTC (<code>_from_iso8601</code> returning <code>parsed.astimezone()</code>) &mdash; turns the naive case red: 3 failed, including <code>test_naive_value_is_read_as_utc</code>, on a CEST host (<code>negative-control.log</code>, exit 1). The mutation was reverted and the tree is clean at the committed head.</p>
+    <p>Evidence arms: the base arm at <code>a928b6be</code> fails with <code>ModuleNotFoundError: No module named 'reckon._timestamps'</code> exit 2 (<code>base-arm.log</code>); the head arm at the committed head is 15 passed exit 0 (<code>head-arm.log</code>); the declared negative control (read a naive value as local time) fires the naive case red and is reverted.</p>
   </section>
 
   <section id="inventory">
-    <h2>The 44 callers, and the batches they migrate in</h2>
-    <p>Found with <code>git grep fromisoformat</code> at this node's head against the code-depth census's list (<code>docs/research/data/crew-pattern-review/code-depth/findings.md</code>, copies at census commit <code>056c08e0</code>). 43 of the 44 call <code>fromisoformat</code> in their own body, confirmed by AST; <code>quota_weight._as_date</code> calls <code>date.fromisoformat</code> and is a date-only consumer, not a timestamp parser &mdash; it keeps its own policy. Batch write paths are disjoint from each other and from every path currently claimed under <code>~/.config/reckon/crew/live</code> (read from each live run's <code>peer_scopes</code>).</p>
+    <h2>The callers of fromisoformat, and the batches they migrate in</h2>
+    <p>The inventory is a mechanical scan output, not a hand list. From the repository root, run the project interpreter (Python 3.12 or newer: under Python 3.11 the PEP 695 <code>type</code> alias in <code>reckon/crew/quota_weight.py</code> does not parse and the scan silently skips that file, reporting 51):</p>
+    <pre><code>python - &lt;&lt;'PYS'
+import ast, pathlib
+seen = []
+for p in sorted(pathlib.Path('reckon').rglob('*.py')):
+    tree = ast.parse(p.read_text())
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) \
+           and node.func.attr == 'fromisoformat':
+            fn = None
+            for parent in ast.walk(tree):
+                if isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef)) \
+                   and parent.lineno &lt;= node.lineno &lt;= (parent.end_lineno or parent.lineno):
+                    if fn is None or parent.lineno &gt; fn.lineno:
+                        fn = parent
+            row = (p.as_posix(), fn.name if fn else 'module')
+            if row not in seen:
+                seen.append(row)
+print(len(seen), 'functions')
+PYS</code></pre>
+    <p>It reports <strong>52 functions over 63 call sites</strong> at this node's head. It records <code>module:function</code> for every <code>ast.Call</code> whose <code>func</code> is an <code>ast.Attribute</code> with <code>attr == "fromisoformat"</code>, attributes each call to its innermost enclosing function, and deduplicates by <code>(path, name)</code>. The 52 entries below are exactly that output.</p>
+    <p>Batch write paths are disjoint from each other and from every path claimed under <code>~/.config/reckon/crew/live</code> (read from each live run's <code>peer_scopes</code>). Each entry states whether the caller uses the instant for elapsed arithmetic or for display.</p>
 
-    <h3>Batch 1 &mdash; crew stream-reading parsers (10)</h3>
+    <h3>The primitive itself (1) &mdash; the migration target, not a caller to migrate</h3>
     <ul>
-      <li><code>reckon/crew/hold.py:_as_moment</code> &mdash; aware instant or None; no display.</li>
-      <li><code>reckon/crew/lane_document.py:_parse_stamp</code> &mdash; aware instant or None; naive read as UTC.</li>
-      <li><code>reckon/crew/lane_evidence.py:_moment</code> &mdash; aware instant or None.</li>
-      <li><code>reckon/crew/paid_lanes.py:_parse_stamp</code> &mdash; naive read as UTC so a freshness statement is not inverted.</li>
-      <li><code>reckon/crew/window_reading.py:_parse_stamp</code> &mdash; naive read as UTC; trailing <code>Z</code> is the stream's own form.</li>
-      <li><code>reckon/crew/summary.py:_row_moment</code> &mdash; naive read as UTC, matching the ledger's own seconds derivation.</li>
-      <li><code>reckon/crew/resumption.py:_parse_stamp</code> &mdash; aware instant or None.</li>
-      <li><code>reckon/crew/rollout.py:_parse_timestamp</code> &mdash; ISO with trailing <code>Z</code>; aware instant or None.</li>
-      <li><code>reckon/crew/routing.py:_parse_utc_timestamp</code> &mdash; aware UTC or None for missing/malformed.</li>
-      <li><code>reckon/crew/runs.py:_stream_quiet_seconds</code> &mdash; elapsed seconds from a stream stamp, pointer activity as fallback.</li>
+      <li><code>reckon/_timestamps.py:_from_iso8601</code> &mdash; parse to an aware instant, or None</li>
     </ul>
 
-    <h3>Batch 2 &mdash; crew accounting and age helpers (3)</h3>
+    <h3>Batch A: crew reads with no live claim (13)</h3>
     <ul>
-      <li><code>reckon/crew/obligations.py:_seconds_since</code> &mdash; non-negative age in seconds, zero when unreadable (a caller-specific floor the migration must keep).</li>
-      <li><code>reckon/crew/sprint_liveness.py:_observed_seconds</code> &mdash; epoch seconds for a record's own ISO stamp, or None.</li>
-      <li><code>reckon/crew/query.py:_normalize_stamp</code> &mdash; returns <code>(stamp_utc, zone)</code>; a zoneless value is reported unknown, not assumed UTC (a caller-specific refusal the migration must keep).</li>
+      <li><code>reckon/crew/hold.py:_as_moment</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/lane_document.py:_parse_stamp</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/lane_evidence.py:_moment</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/obligations.py:_seconds_since</code> &mdash; elapsed seconds</li>
+      <li><code>reckon/crew/pace_replay.py:_read</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/paid_lanes.py:_parse_stamp</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/query.py:_normalize_stamp</code> &mdash; refusal: a zoneless value is reported unknown, not assumed UTC</li>
+      <li><code>reckon/crew/resumption.py:_parse_stamp</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/rollout.py:_parse_timestamp</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/routing.py:_parse_utc_timestamp</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/runs.py:_stream_quiet_seconds</code> &mdash; elapsed seconds</li>
+      <li><code>reckon/crew/summary.py:_row_moment</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/window_reading.py:_parse_stamp</code> &mdash; parse to an aware instant, or None</li>
     </ul>
 
-    <h3>Batch 3 &mdash; top-level and config (5)</h3>
+    <h3>Batch B: top-level reads with no live claim (6)</h3>
     <ul>
-      <li><code>reckon/doccheck.py:modified_age_days</code> &mdash; whole calendar days since a modification date.</li>
-      <li><code>reckon/schedule.py:_stamp_millis</code> &mdash; epoch milliseconds, naive read as UTC.</li>
-      <li><code>reckon/project_state.py:_review_date</code> &mdash; a <code>YYYY-MM-DD</code> date, raising <code>TypeError</code> on a wrong type (a caller-specific refusal).</li>
-      <li><code>reckon/project_state.py:_validate_review</code> &mdash; consumes <code>_review_date</code> for <code>reviewed_at</code>.</li>
-      <li><code>reckon/hooks/worker_stop.py:_manifest_predates_attempt</code> &mdash; a manifest-mtime versus attempt-start comparison; epoch and ISO both accepted.</li>
+      <li><code>reckon/doccheck.py:modified_age_days</code> &mdash; elapsed whole calendar days</li>
+      <li><code>reckon/hooks/worker_stop.py:_manifest_predates_attempt</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/project_state.py:_review_date</code> &mdash; refusal: raises TypeError on a wrong type</li>
+      <li><code>reckon/project_state.py:_validate_review</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/schedule.py:_stamp_millis</code> &mdash; epoch milliseconds, naive read as UTC</li>
+      <li><code>reckon/sprint_liveness.py:_observed_seconds</code> &mdash; elapsed seconds</li>
     </ul>
 
-    <h3>Batch 4 &mdash; the date-only consumer (1)</h3>
+    <h3>Batch C: date-only consumer, not interchangeable (1)</h3>
     <ul>
-      <li><code>reckon/crew/quota_weight.py:_as_date</code> &mdash; calls <code>date.fromisoformat</code>; accepts <code>date</code>/<code>datetime</code>/string and refuses the rest. Not interchangeable with <code>parse_utc</code>; migrate only if a date-shaped boundary is wanted, otherwise leave with a stated reason.</li>
+      <li><code>reckon/crew/quota_weight.py:_as_date</code> &mdash; date-only consumer (date.fromisoformat), not interchangeable</li>
     </ul>
 
-    <h3>Deferred &mdash; blocked by live claims (25)</h3>
-    <p>These files are claimed by runs live under <code>~/.config/reckon/crew/live</code> at this node's dispatch, so no batch may include them until those runs release their claims:</p>
+    <h3>Deferred: paths claimed by live runs (31)</h3>
     <ul>
-      <li><code>reckon/_backends.py</code> &mdash; <code>_parse_cached_fetch_stamp</code> (epoch seconds or zoned ISO, unzoned refused), <code>_event_timestamp</code>.</li>
-      <li><code>reckon/budget.py:_parse_stamp</code> &mdash; ISO-8601 or None.</li>
-      <li><code>reckon/cli.py:_follow_row_stamp</code> &mdash; epoch of a delivered row; an unreadable stamp is placed at read time.</li>
-      <li><code>reckon/crew/budget_group.py:_observed_moment</code> &mdash; epoch seconds or ISO; naive as UTC; bool refused.</li>
-      <li><code>reckon/crew/dispatch.py</code> &mdash; <code>_actionable_budget_hold</code> (hold lift time), <code>_lane_advisory_instant</code>, <code>_lane_reading_carry</code> (strict; malformed field withheld as <code>unknown</code>, never zero).</li>
-      <li><code>reckon/crew/metering.py</code> &mdash; <code>_event_timestamp</code> (naive as UTC), <code>_stamped_elapsed</code> (wall seconds to now for an in-flight run).</li>
-      <li><code>reckon/crew/promotion.py</code> &mdash; <code>_elapsed_seconds</code>, <code>_assume_utc_if_naive</code>, <code>_terminal_stream_data</code>.</li>
-      <li><code>reckon/crew/recovery.py</code> &mdash; <code>_budget_timing</code>, <code>_attempt_started_seconds</code>, <code>_manifest_wait</code>, <code>_run_chain_manifest_freshness</code>.</li>
-      <li><code>reckon/crew/ticker.py:local_clock</code> &mdash; renders a stored UTC stamp as a wall clock in the reader's zone (display policy; the record stays UTC).</li>
-      <li><code>reckon/flight.py:_observation_age</code> &mdash; epoch seconds or ISO; naive as UTC; None when unageable.</li>
-      <li><code>reckon/ledger.py</code> &mdash; <code>_event_completion</code>, <code>_worker_seconds</code> (naive as UTC), <code>_parse_timestamp</code>.</li>
-      <li><code>reckon/mcp_views.py</code> &mdash; <code>_parsed_observation</code> (malformed is not fresh), <code>compose_review</code>.</li>
-      <li><code>reckon/serve.py:_elapsed_since</code> &mdash; whole elapsed seconds, or None when unavailable.</li>
+      <li><code>reckon/_backends.py:_parse_cached_fetch_stamp</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/_backends.py:_event_timestamp</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/budget.py:_parse_stamp</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/cli.py:_follow_row_stamp</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/budget_group.py:_observed_moment</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/dispatch.py:_lane_advisory_instant</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/dispatch.py:_lane_age_seconds</code> &mdash; elapsed seconds</li>
+      <li><code>reckon/crew/dispatch.py:_lane_reading_carry</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/dispatch.py:_actionable_budget_hold</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/metering.py:_event_timestamp</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/metering.py:_stamped_elapsed</code> &mdash; elapsed seconds</li>
+      <li><code>reckon/crew/promotion.py:_elapsed_seconds</code> &mdash; elapsed seconds</li>
+      <li><code>reckon/crew/promotion.py:_assume_utc_if_naive</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/promotion.py:_terminal_stream_data</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/recovery.py:_budget_timing</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/recovery.py:_attempt_started_seconds</code> &mdash; elapsed seconds</li>
+      <li><code>reckon/crew/recovery.py:_run_chain_manifest_freshness</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/recovery.py:_seconds_since_dispatch</code> &mdash; elapsed seconds</li>
+      <li><code>reckon/crew/recovery.py:_manifest_wait</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/crew/ticker.py:local_clock</code> &mdash; display: stores UTC, renders the reader's own wall clock</li>
+      <li><code>reckon/crew/ticker.py:row_moment</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/flight.py:_observation_age</code> &mdash; elapsed seconds</li>
+      <li><code>reckon/ledger.py:_worker_seconds</code> &mdash; elapsed seconds</li>
+      <li><code>reckon/ledger.py:_parse_timestamp</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/ledger.py:_event_completion</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/mcp_views.py:_parsed_observation</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/mcp_views.py:compose_review</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/serve.py:_elapsed_since</code> &mdash; elapsed seconds</li>
+      <li><code>reckon/serve.py:completion_key</code> &mdash; parse to an aware instant, or None</li>
+      <li><code>reckon/velocity.py:stamp</code> &mdash; epoch seconds, naive read as UTC, None on ValueError</li>
+      <li><code>reckon/velocity.py:measure</code> &mdash; parse to an aware instant, or None</li>
     </ul>
   </section>
 
   <section id="scope">
-    <h2>What this node did and did not do</h2>
-    <p>Landed: <code>reckon/_timestamps.py</code> and <code>tests/test_timestamps_parse_utc.py</code>. Not landed here: any caller migration, and the census re-run that I need to land alongside. The migration batches above are the handoff; a coordinator dispatches them, each keeping the elapsed-time or display policy stated per function. This node's gate measures only its own change; verifying the merged result belongs to a separately dispatched test node.</p>
+    <h2>What this node did not do</h2>
+    <p>No caller was migrated. The batches above are the migration plan, held disjoint so each can land without colliding with another worker or a live run. The deferred set stays untouched until the claiming runs release their paths.</p>
   </section>
  </main>
 </body>
