@@ -1,0 +1,338 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "687c8cbf124cef66f0a1e0d1ef210c5d65b1fd31",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 12032098,
+      "input_tokens_cumulative": 12032098,
+      "output_tokens": 85623,
+      "output_tokens_cumulative": 85623,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 620,
+    "files": 4,
+    "removed": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "e6cf69e4562ffeea51fb0a072f18dfc3c26af3c7",
+    "1e0688263beed4a427520cd5f4d72efabc1d93f1"
+  ],
+  "completed_at": "2026-09-28T15:33:49.340Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T14:27:02Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_lane_advisory_on_dispatch.py",
+    "docs/state/advisory-project/crew.json"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "env -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/lane-reading-carries-generating-and-waiting PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/lane-reading-carries-generating-and-waiting /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_lane_reading_carries_counts.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T142644163914-lane-reading-carries-generating-and-waiting/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.45,
+    "at_dispatch": 0.45,
+    "plan": "crew-observability-truth",
+    "reason": "the lane reading now carries its generating and waiting counts; §22's per-row rate half is still open, so the section and impl hold",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T15:26:46.007743+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T14:26:46Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 21,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": -6,
+    "mean_context": 125714,
+    "observed_at": "2026-09-28T14:26:25Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T15:33:49.340Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T142644163914-lane-reading-carries-generating-and-waiting/manifest.md",
+  "member": "disposable-r-20260928T142644163914-lane-reading-carries-generating-and-waiting",
+  "negative_control": {
+    "added_failure_ids": [],
+    "baseline_failure_ids": [
+      "tests/test_lane_advisory_on_dispatch.py::test_a_promoted_row_carries_the_advisory_and_the_lane_fields",
+      "tests/test_lane_advisory_on_dispatch.py::test_a_run_with_no_advisory_promotes_with_no_advisory_key",
+      "tests/test_lane_advisory_on_dispatch.py::test_advice_taken_and_advice_declined_are_told_apart_from_the_rows",
+      "tests/test_lane_reading_carries_counts.py::test_a_count_the_document_omits_reads_unknown_and_never_zero",
+      "tests/test_lane_reading_carries_counts.py::test_a_rate_without_its_own_stamp_is_dated_by_the_reading_that_carries_it",
+      "tests/test_lane_reading_carries_counts.py::test_the_payload_carries_the_lane_counts_and_its_achieved_rate"
+    ],
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_lane_reading_carries_counts.py::test_the_payload_carries_the_lane_counts_and_its_achieved_rate"
+    ],
+    "declaration": "drop the generating, waiting and throughput fields from the carried lane_reading in a scratch copy; the known-counts case must fail",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T142644163914-lane-reading-carries-generating-and-waiting/logs/negative_control.log",
+    "reason": "the control log records EXIT=1 and fails tests/test_lane_reading_carries_counts.py::test_the_payload_carries_the_lane_counts_and_its_achieved_rate; that id is in the baseline only because the baseline ran the new test file against the unfixed base (test-first, all three new cases red at 687c8cbf); it passes at head 1e068826 (absent from after_suite's failures and green in the reviewer's head rerun), so the mutation reddens a test the head passes, which is the fact the control exists to show",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T142644163914-lane-reading-carries-generating-and-waiting/logs/negative_control.log",
+    "test_paths": [
+      "tests/test_lane_reading_carries_counts.py"
+    ],
+    "verdict": "waived"
+  },
+  "no_commit": null,
+  "node": "lane-reading-carries-generating-and-waiting",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1808,
+          "cached_input_tokens": 907706,
+          "input_tokens": 909516,
+          "output_tokens": 1401,
+          "reasoning_output_tokens": 289,
+          "total_tokens": 910917,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "A new test, tests/test_lane_reading_carries_counts.py, builds a lane document in a temporary config home with known generating, waiting and throughput figures. It asserts that the dispatch payload's lane_reading carries all three, with the throughput's age and denominator. A second case, where the document omits waiting, asserts the payload marks it unknown, not 0. Both fail at the base revision, which carries none of these fields (logged), and pass at the head. The negative control drops the counts from the carried reading in a scratch copy, and the first case fails, with the mutation on the red log's first line and an EXIT= line after pytest's output. The gate is the new test plus the existing test files that exercise lane_reading. It exits 0, or shows no added failing ids against the base, with both arms recorded as log paths under baseline_suite and after_suite. The test neither reads nor writes the real lane document or ~/.config/reckon.",
+    "estimated_hours": 3.0,
+    "goal": "Plan crew-observability-truth §22: the lane reading is sufficient to route. Read the section in docs/plans/crew-observability-truth.html. The dispatch payload's lane_reading is composed near reckon/crew/dispatch.py:2490-2614 and always emitted near :2037. It carries headroom, binding_observed, mean_context, observed_at, age and shelf life. It does not carry the lane's generating and waiting counts, or the achieved throughput with its age and its denominator. Make lane_reading carry those, read from the lane document the dispatch already consults (~/public/imas-ambix/lane.json or its configured equivalent), so that a dispatcher can choose a lane without a second read. A count the document does not publish is carried as unknown, never as zero.",
+    "id": "lane-reading-carries-generating-and-waiting",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T14:26:46Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 21,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": -6,
+      "mean_context": 125714,
+      "observed_at": "2026-09-28T14:26:25Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T142644163914-lane-reading-carries-generating-and-waiting/manifest.md",
+    "negative_control": "drop the generating, waiting and throughput fields from the carried lane_reading in a scratch copy; the known-counts case must fail",
+    "plan": "crew-observability-truth",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§22",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/dispatch.py",
+      "tests/test_lane_reading_carries_counts.py",
+      "docs/evidence/fragments/crew-observability-truth/lane-reading-carries-generating-and-waiting.html",
+      "docs/figures/crew-observability-truth/lane-reading-carries-generating-and-waiting"
+    ]
+  },
+  "orientation_input_tokens": 3113302.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "lane-reading-carries-generating-and-waiting",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T14:26:50.662971+00:00",
+    "score": 0.41875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "crew-observability-truth",
+  "plan_impl_at_dispatch": 0.45,
+  "promoted_revision": "1e0688263beed4a427520cd5f4d72efabc1d93f1",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 16,
+      "evidence": 19,
+      "fit": 17,
+      "goal_fidelity": 18,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 90
+  },
+  "role": "implement",
+  "run_id": "r-20260928T142644163914-lane-reading-carries-generating-and-waiting",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§22",
+  "session_harness": "claude",
+  "session_id": "15cb581f-e654-496c-9d5f-951e3905076f",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 12199926,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 3985.117,
+    "generated_tokens": 94563,
+    "generation_seconds": 3822.792,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.7,
+    "machine_seconds": 162.325,
+    "peak_input_tokens": 166528,
+    "tokens_per_second": 24.74,
+    "wall_tokens_per_second": 23.73
+  },
+  "time_budget": "60m",
+  "tool_steps": 123.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 4007,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T15:33:49Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T14:27:20Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T142644163914-lane-reading-carries-generating-and-waiting",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 19164,
+    "worker_pid": 1798054
+  },
+  "worker_seconds": 3960,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
