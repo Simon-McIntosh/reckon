@@ -140,6 +140,7 @@ RECORD_FIELDS = (
     "resume_waiver",
     "watch_override",
     "review",
+    "review_tier",
     "unreconciled_override",
 )
 
