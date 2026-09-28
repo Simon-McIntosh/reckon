@@ -22,10 +22,10 @@
   <title>The Suite Is Green At Head | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-modified" content="2026-09-28">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="77">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
+<meta name="plan-version" content="79">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
 </head>
@@ -1192,6 +1192,11 @@
     <div class="r-fu-body"><p><strong>authority-required.</strong> <code>test_schema::test_cross_project_conformance[imas-ambix:dsv41-flash-four-card-throughput-landed]</code> fails because imas-ambix/docs/evidence/archive/dsv41-flash-four-card-throughput-landed.html:40 cites sha <code>da64c5cb</code>, which resolves in no mounted repository. Either the peer record is corrected, or reckon's suite stops depending on another repository's data. <code>test_spa_module_scope</code> fails because the fleet compute node has no headless browser. Either browser tests run on a host that has one, or they are recorded as environment-gated. Once both are decided, the plan can close at impl 1.0.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head</pre>
     </article>
+<article class="r-fu" data-id="f-sgh-reckon-owned-citations" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-28T15:40:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Repair reckon&#x27;s own evidence record whose cited shas resolve nowhere, and remove the fixed waits</h4>
+    <div class="r-fu-body"><p>The S21 currency audit at <code>76e1bf93</code> (report <code>~/.config/reckon/crew/reports/reckon/s21-audit-placement.{json,md}</code>, log <code>sgh_outstanding_ids.log</code>) measured 3 failed and 1552 passed. There are three deterministic failures, not the two that f-sgh-003 names. The third is <code>test_schema::test_cross_project_conformance[reckon:orchestrator-crew-pattern-studies-landed]</code>. reckon's own <code>docs/evidence/archive/orchestrator-crew-pattern-studies-landed.html</code> (landed <code>0efd65e7</code>) cites four shas that resolve in no mounted repository. Unlike the imas-ambix id, this one is within reckon's authority: re-derive each cited sha from its source, or correct the citation. Separately, §3's "fixed waits removed" row is unmet, as the plan's own record notes. Estimate about 4.5 worker-hours.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-20260924T1955-fixtures" data-who="reckon-build" data-when="2026-09-24T19:55:00Z">
@@ -1350,6 +1355,9 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T055859555865-review-of-a-scalar-reexec-carrier-starts-clean" data-who="reckon-build" data-when="2026-09-25T06:14:56.465Z">
     <div class="r-comment-body"><p>review of the scalar reexec-carrier fix stored at 92</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-20260928T1740-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T15:40:00Z">
+    <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code>. §2 and §3 were declared done, but each has an unmet row. §2's zero-failure row fails on 3 deterministic ids; §3's "fixed waits removed" row is unmet. Both are therefore re-declared implementable.</p><ul><li><b>Two ids need an operator decision (f-sgh-003):</b> an imas-ambix evidence record cites sha <code>da64c5cb</code>, and <code>test_spa_module_scope</code> fails because there is no headless browser.</li><li><b>One id is reckon-owned (f-sgh-reckon-owned-citations):</b> <code>orchestrator-crew-pattern-studies-landed</code>.</li></ul></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
 </div>
@@ -1412,6 +1420,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0845-final" data-who="reckon-build" data-when="2026-09-25T06:45:00Z">
     <div class="r-comment-body"><p><strong>Confirming full run at <code>9c3bb751</code></strong>, with all §2 and §3 nodes merged: <code>-n 8</code>, pytest's default temp root, the repository's 300 s timeout. It took <strong>486 s</strong> and gave 6,301 passed, 72 skipped and 13 failed. Eleven of the 13 are not defects:</p><ul><li>Ten in <code>test_nested_launch.py</code> expect <code>&lt;tree&gt;/.venv/bin/python</code>, and the detached verification worktree had no <code>.venv</code> link. All ten pass at the main checkout.</li><li><code>test_crew.py::test_no_reader_promotes_a_run_without_commit_or_manifest</code> saw an extra <code>scoring</code> state under load and passes alone. It joins the load-sensitive family.</li></ul><p>Two ids remain red deterministically, and both need the lead's decision rather than a repair here:</p><ul><li><code>test_schema::test_cross_project_conformance[imas-ambix:dsv41-flash-four-card-throughput-landed]</code>: another repository's evidence record cites a sha that resolves nowhere.</li><li><code>test_spa_module_scope</code>: the compute node has no headless browser.</li></ul><p><strong>Drain ledger</strong>, rows: 5; foldable remaining: 0; unreconciled runs: 0.</p><ul><li>The two ids above: <em>authority-required</em>. The lead decides whether the cross-project test keeps reading a peer repository and where browser tests run.</li><li>The follower's mtime-only reload anomaly: <em>foreign-owner</em>, <code>a-crew-process-ends-with-its-owner</code>.</li><li>The roster-provisioning retry with no pause: <em>foreign-owner</em>, <code>new-work-gets-a-new-worker</code>.</li><li>The unmerged docs worktree <code>redispatch-delivery-test-is-deterministic</code>: kept deliberately. Its only commit, <code>f5a8ef23</code>, is a record this plan chose not to merge.</li></ul></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260928T142353317590-s21-audit-placement" data-who="reckon-build" data-when="2026-09-28T15:23:36.908Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/the-suite-is-green-at-head/s21-audit-placement.html</p></div>
 </div>
 </section>
 </main>
