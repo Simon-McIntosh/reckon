@@ -1,0 +1,87 @@
+<section id="s2-review-tier-suite-fallout">
+    <h2>§2 — The tier gate's suite fallout, reconciled</h2>
+    <p>The review tier is decided at completion from what a run actually changed, so a run that touches no
+      runtime source promotes with no stored review. Seven tests outside the fourteen review and promotion files
+      the gate's own node was checked against promoted report-only or non-runtime runs through the <em>retired</em>
+      role rule, and were turned red when the gate began reading the tier instead. Each is reconciled with the tier
+      contract: no assertion is deleted and none is weakened.</p>
+    <p>The mechanism the reconciliation turns on is the empty-scope boundary. A run that cites no commit has only
+      its manifest's <code>changed_paths</code> to measure, and a manifest that declares no path — a bare
+      <code>none</code> or an empty list — is read as <em>silence</em> about what changed, not as the claim that
+      nothing changed. Silence is granted the fuller review, so a report-only run declaring an empty scope is
+      refused for a review it does not owe. Naming the artefact the run delivered, outside the repository, measures
+      a scope that holds no runtime source and resolves the run to the tier that owes no review.</p>
+    <figure>
+      <img src="/reckon/figures/a-review-is-sized-to-its-risk/review-tier-suite-fallout/empty-scope-boundary.svg"
+           alt="A report-only run that declares no path resolves to tier full and is refused; one that declares its report artefact, outside the repository, resolves to tier none and promotes.">
+      <figcaption>The empty-scope boundary: two report-only runs that change the same thing — nothing in the
+        repository — reach different tiers only because one declared a scope and the other declared a bare
+        <code>none</code>.</figcaption>
+    </figure>
+    <table>
+      <thead>
+        <tr><th>Test id</th><th>Cause</th><th>Change</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release</code> (4 parameter sets)</td>
+          <td>The release fixture's run cites no commit and declares <code>changed_paths: []</code>, so it measures
+            no scope and the gate grants it the fuller review, refusing it for one it does not owe.</td>
+          <td>The manifest names the report artefact the run delivers (<code>tmp_path/reports/r-release.md</code>,
+            outside the repository), so the scope is measured and holds no runtime source: tier <code>none</code>.</td>
+        </tr>
+        <tr>
+          <td><code>test_crew_test_role.py::test_synthetic_wave_attribution_survives_in_the_promoted_ledger</code></td>
+          <td>Its attribution manifest declares <code>changed_paths: none</code> — read as silence — so the
+            report-only test node is refused before its ledger row can be checked.</td>
+          <td>The manifest names the attribution report it delivers beside the manifest, outside the repository:
+            tier <code>none</code>, and the promotion reports its suite attribution.</td>
+        </tr>
+        <tr>
+          <td><code>test_crew_test_role.py::test_test_role_cannot_waive_missing_attribution_for_an_added_failure</code></td>
+          <td>Same fixture and the same refusal: the tier gate fired before the suite-delta validation the case
+            means to exercise.</td>
+          <td>Same change. With the run at tier <code>none</code> the gate passes and the missing-attribution
+            refusal (<code>SuiteDeltaError</code>) is what the case measures, as it did before the tier gate.</td>
+        </tr>
+        <tr>
+          <td><code>test_a_short_commit_list_is_reported.py::test_a_shortfall_promotion_completes_and_reports_on_the_record</code></td>
+          <td>The shortfall run cites commits changing only root-level <code>.txt</code> files — no runtime source —
+            so it is tier <code>none</code> and has no unreviewed promotion, but the fixture still passed
+            <code>--waive-unreviewed-promotion</code> from the retired role rule.</td>
+          <td>The stale waiver flag is removed; the run promotes without one and the shortfall report under test is
+            unchanged. No assertion touched.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The whole <code>tests/</code> directory was run at both revisions with <code>-n 8</code>, and the seven
+      reconciled ids appear in neither arm's failure list: they pass at the base revision (before the tier gate)
+      and they pass again at the new head, where the gate had turned them red. Commit <code>ce2ac203</code>.</p>
+    <table>
+      <thead>
+        <tr><th>Arm</th><th>Command</th><th>Result</th><th>Failing ids</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>base <code>0805d391</code></td>
+          <td><code>pytest -p no:cacheprovider -n 8 -q tests/</code></td>
+          <td>100 failed, 7595 passed, 72 skipped, 4 errors, exit 1</td>
+          <td>100 (<code>runs/…-review-tier-suite-fallout/base-armed.json</code>)</td>
+        </tr>
+        <tr>
+          <td>head <code>ce2ac203</code></td>
+          <td><code>pytest -p no:cacheprovider -n 8 -q tests/</code></td>
+          <td>90 failed, 7682 passed, 72 skipped, exit 1</td>
+          <td>90 (<code>runs/…-review-tier-suite-fallout/head-armed.json</code>)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The head arm adds nine ids against the base arm. Two are contention artefacts — the base arm ran beside
+      this arm and another session's suite, and both follower ids pass when re-run serially in the head tree. The
+      remaining seven are the tier gate's fallout again, in three files this node's write fence does not cover:
+      <code>tests/test_cited_identifier_resolves.py</code> (4 ids, a stale waiver),
+      <code>tests/test_promotion_stages_its_one_run_file.py</code> (2 ids, refused for a review the run does not
+      owe), and <code>tests/test_review_store_reads_and_fences_by_head.py</code> (1 id, a case that expects a
+      refusal the tier gate no longer makes, because the run is tier <code>none</code>). Each needs the same
+      reconciliation applied here and is recorded as a follow-on rather than fixed from outside scope.</p>
+   </section>
