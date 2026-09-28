@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="open-work-is-capped">
+  <meta name="plan-title" content="Open Work Is Capped">
+  <meta name="plan-evidence-for" content="open-work-is-capped">
+  <meta name="plan-verifies" content="open-work-is-capped#s2">
+  <meta name="plan-artifacts" content="/reckon/figures/open-work-is-capped/triage-pending-plans-fourth-batch/deliverable-presence.svg">
+  <meta name="plan-recorded-at" content="2026-09-28">
+  <meta name="plan-verdict" content="delivered">
+  <meta name="plan-environment" content="reading taken at main HEAD 032b03fc; each counted section cited by the file and symbol found at that sha">
+  <meta name="plan-tags" content="crew,reckon-tooling,triage">
+  <title>Open Work Is Capped — fourth triage batch | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="triage-fourth-batch-summary">Fourth triage batch — seventeen pending plans</h2>
+    <p>This record carries the fourth batch of the §2 triage: the seventeen pending reckon plans named in the
+      dispatch. Each row reads, from the code at main HEAD <code>032b03fc</code>, how many of the plan's declared
+      implementable sections have their deliverable present; the coordinator session that last dispatched against
+      it, marked live where a run is in flight; a proposed disposition; and a one-line reason. <strong>Nothing was
+      closed or edited in any plan by this record.</strong> The batch's keep count is <strong>6</strong>, so the
+      lead can sum four batches against the locked limit of 25 pending plans.</p>
+
+    <h3 id="triage-fourth-method">Method and the reproducible denominator</h3>
+    <p>The denominator is the plan's declared sections that carry a deliverable: every section declared
+      <code>implementable</code> or <code>done</code>, except §1, which counts only when declared
+      <code>implementable</code>. Where a plan carries no <code>plan-section-declarations</code> meta, the
+      denominator is its authored <code>h2</code> ids less §1. The declaration is read from reckon's own reader,
+      <code>reckon.mcp._read_plan(project, slug, view='raw')['data']['section_declarations']</code> — not from a
+      hand filter and not from the plan's stored <code>impl</code>. The command below prints every plan's
+      denominator and the exact sections counted; run it from the worktree root.</p>
+    <pre><code>PYTHONPATH=. .venv/bin/python - &lt;&lt;'PY'
+from bs4 import BeautifulSoup
+from reckon.mcp import _read_plan
+SLUGS = ["scoring-should-stop-a-promotion","section-contract-and-computed-impl",
+"the-audit-agrees-with-the-skill","the-boundary-check-reads-two-trees",
+"the-crew-contract-fits-one-read","the-fleet-counters-count-the-fleet",
+"the-fleet-reports-its-velocity","the-fleet-shares-one-allocation",
+"the-ledger-is-one-file-per-run","the-local-lane-is-the-default",
+"the-orchestrator-lane-is-not-a-worker-lane","the-page-paints-from-an-index",
+"the-suite-is-green-at-head","work-does-not-fall-to-the-coordinator",
+"work-scheduling-surface","worker-authors-its-own-record","worker-death-is-recorded"]
+for slug in SLUGS:
+    d = _read_plan("reckon", slug, view="raw")["data"]
+    decl = d.get("section_declarations")
+    if isinstance(decl, dict) and decl:
+        counted = sorted(s for s, c in decl.items()
+                         if c in ("implementable", "done") and not (s == "s1" and c != "implementable"))
+        src = "declarations"
+    else:
+        soup = BeautifulSoup(open(f"docs/plans/{slug}.html").read(), "html.parser")
+        counted = [h.get("id") for h in soup.find_all("h2") if h.get("id") and h.get("id") != "s1"]
+        src = "authored h2 minus section 1"
+    print(f"{slug:58} {len(counted):2}  {src:22} {','.join(counted)}")
+PY</code></pre>
+    <p>Presence is read by opening each counted section's implementing symbol at main HEAD with
+      <code>git grep -nE '&lt;symbol&gt;' 032b03fc -- &lt;paths&gt;</code> (or <code>git show 032b03fc:&lt;path&gt;</code>);
+      a section is counted present only where that file and symbol were found, and the row names them. A section
+      declared <code>done</code> by the plan's own declarations is counted present, and the row names the symbol
+      that corroborates it where one was read this round. A test file alone is never a citation for a product
+      deliverable. A section whose implementation was not found in this round is counted absent — the reading
+      records what was verified this round, not what the plan's own stored <code>impl</code> claims.</p>
+
+    <h3 id="triage-fourth-keep-budget">The keep budget</h3>
+    <p>The lead has locked the limit at 25 pending reckon plans and the four batches cover 68 plans, so this
+      batch may propose at most 6 keeps. The six kept carry the most live, unfinished work, ranked with a live run
+      counting in a plan's favour and remaining-verified-absent sections as the tiebreak. Every other plan is
+      proposed merge into a plan whose scope absorbs it, or close where its deliverables are all present. Three
+      plans in this batch carry a live run from the concurrent wave
+      (<code>the-fleet-reports-its-velocity</code>, <code>the-fleet-counters-count-the-fleet</code>,
+      <code>the-audit-agrees-with-the-skill</code>), and those rank first. The remaining three keep slots go to
+      the largest remaining workloads: <code>the-local-lane-is-the-default</code> (nine declared sections, three
+      verified present), <code>the-page-paints-from-an-index</code> and
+      <code>the-boundary-check-reads-two-trees</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/open-work-is-capped/triage-pending-plans-fourth-batch/deliverable-presence.svg"
+           alt="Horizontal bars, one per triaged plan, showing the fraction of declared implementable sections whose deliverable is verified present at main HEAD. The filled portion is present, the outlined remainder is declared but not found. Bars are coloured by proposed disposition: keep, merge, or close.">
+      <figcaption>Deliverable presence per triaged plan at main HEAD <code>032b03fc</code>. The legend
+        distinguishes the three proposed dispositions: <em>keep</em> (orange), <em>merge</em> into a named plan
+        (blue), <em>close</em> (green). The four fully-present plans are proposed close; no kept plan's bar is
+        full, because each kept plan carries remaining or in-flight work.</figcaption>
+    </figure>
+
+    <section id="triage-fourth-batch" data-reckon="evidence">
+      <h3>Batch 4 — rows</h3>
+      <p>Read at main HEAD <code>032b03fc</code>. Each fraction is <em>sections verified present / declared
+        implementable sections checked</em>. A counted-present section names the file and symbol that shows its
+        deliverable, or the plan's own <code>done</code> declaration together with the landed record cited. The
+        last-coordinator column names the most recent ledger session (short id) and its dispatch date, marked
+        <strong>LIVE</strong> where a run of the concurrent wave holds the plan.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Plan</th>
+            <th>Present / checked — citation for each counted section</th>
+            <th>Last coordinator (live?)</th>
+            <th>Disposition</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>scoring-should-stop-a-promotion</td>
+            <td>9 / 11 — s2 <code>reckon/crew/promotion.py:2967 _unreviewed_refusal</code> and
+              <code>reckon/crew/node.py:523 PlanReviewMissingError</code>; s2c
+              <code>reckon/crew/promotion.py:5298 _revision_is_ancestor</code>; s3
+              <code>reckon/crew/recovery.py:1327 dispatch_awaiting_reviews</code> called from
+              <code>reckon/crew/resumption.py:1236</code>; s4 <code>reckon/crew/prompts/review.md</code>;
+              s4b, s5b, s5c, s5d, s7 declared <code>done</code>. s6 absent — no
+              <code>reckon/crew/prompts/figure-review.md</code> at head; s5 is a process section with no code.
+              </td>
+            <td>9307e259, 2026-09-28</td>
+            <td><strong>merge</strong> into a-review-can-see-the-figure</td>
+            <td>Its only unlanded code is §6, the figure reviewer, whose routing and capability half the plan
+              itself defers to the figure-review plan; §5 is a process commitment with nothing to build.</td>
+          </tr>
+          <tr>
+            <td>section-contract-and-computed-impl</td>
+            <td>5 / 6 — s2 <code>reckon/_store.py:1264 _require_new_section_contracts</code> and the
+              <code>append sections</code> op (<code>reckon/_store.py:2114</code>); s3
+              <code>reckon/_plan_html.py:317</code> (impl from section effort, <code>impl_source="computed"</code>);
+              s4 <code>reckon/_plan_html.py:721 data-attempts</code> with the raise at
+              <code>reckon/crew/routing.py:284 capability_raise</code>; s5
+              <code>reckon/_flight_schema.py:201 capability_raise</code>; s7
+              <code>reckon/_schema.py:309</code> (no-wires refusal and <code>plan-standalone</code>). s6 counted
+              absent: the section-level-ref grammar is not carried in the create/edit skills this round.</td>
+            <td>93cc22bd, 2026-09-28</td>
+            <td><strong>merge</strong> into work-scheduling-surface</td>
+            <td>One section remains and its subject — section-level dependency edges reported on the critical
+              path — is the scheduling surface's subject, which already owns the roadmap's edge reporting.</td>
+          </tr>
+          <tr>
+            <td>the-audit-agrees-with-the-skill</td>
+            <td>1 / 2 — s2 <code>reckon/doccheck.py:1718 slug_collision_findings</code> raises
+              "ambiguous across types" for a plan slug another resource type shares. s3 absent: the commitless
+              review manifest handling is claimed by a live node this wave
+              (<code>commitless-review-promotes</code>), and the plan's own note defers it until
+              <code>reckon/crew/promotion.py</code> is free.</td>
+            <td>e0ddd800, 2026-09-25 · <strong>LIVE</strong> (commitless-review-promotes)</td>
+            <td><strong>keep</strong> — rank 3</td>
+            <td>Kept: a run is in flight against it now, and §3 is the open half of a rule the audit already
+              enforces — the review manifest that promotes without a hand edit.</td>
+          </tr>
+          <tr>
+            <td>the-boundary-check-reads-two-trees</td>
+            <td>0 / 2 — no two-tree boundary check at head:
+              <code>reckon/crew/routing.py:561 _repository_tree_snapshot</code> still takes a roots set and
+              <code>reckon/crew/promotion.py:3461</code> snapshots one worktree, with no fenced-run branch
+              selecting exactly the run's worktree plus the main checkout. s1 and s2 are both declared
+              <code>implementable</code> and neither deliverable was found this round.</td>
+            <td>none dispatched (0 ledger records)</td>
+            <td><strong>keep</strong> — rank 6</td>
+            <td>Kept: no section has landed and the work is gated and timed rather than optional — the snapshot
+              cost it removes grows with every registered worktree.</td>
+          </tr>
+          <tr>
+            <td>the-crew-contract-fits-one-read</td>
+            <td>0 / 2 — s2's classification table has no evidence record under <code>docs/evidence/</code>, and
+              s3's rewrite has not happened: <code>skills/reckon-build/SKILL.md</code> is 10,858 words at head
+              against the section's 4,000-word target.</td>
+            <td>c8bc381a, 2026-09-26</td>
+            <td><strong>merge</strong> into work-does-not-fall-to-the-coordinator</td>
+            <td>No section landed and the rewrite's subject — what the coordinator's loop owns and must never do —
+              is the coordinator-duties plan's subject, which already carries the skill contract.</td>
+          </tr>
+          <tr>
+            <td>the-fleet-counters-count-the-fleet</td>
+            <td>7 / 7 — s2, s3, s4, s6, s7, s8, s9 all declared <code>done</code>; corroborated at head by
+              <code>tests/test_follow_rearm_continues.py</code>, <code>tests/test_follower_prints_only_policy_rows.py</code>
+              and <code>tests/test_ticker_row_is_one_transition.py</code>, and by the plan's landed record
+              <code>docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html</code>. §5 is deferred
+              and outside the denominator.</td>
+            <td>df14ad09, 2026-09-28 · <strong>LIVE</strong> (rearm-test-comment, resume-baseline-feed)</td>
+            <td><strong>keep</strong> — rank 2</td>
+            <td>Kept: two runs are in flight against it now, adding the follower re-arm and signal-audit tests
+              the counters' own rows rest on.</td>
+          </tr>
+          <tr>
+            <td>the-fleet-reports-its-velocity</td>
+            <td>4 / 4 — s2 <code>reckon/velocity.py:2047 velocity</code> (the velocity view as a package module);
+              s3 <code>reckon/velocity.py:1202 coordinator_cost</code>; s4 quota runway and session hygiene
+              (<code>reckon/crew/pace.py</code>); s5 declared <code>done</code>, corroborated by the landed
+              record <code>docs/evidence/archive/the-fleet-reports-its-velocity-landed.html</code>.</td>
+            <td>e673fccb, 2026-09-28 · <strong>LIVE</strong> (resumed-burn, run-store-queries, session-continuity)</td>
+            <td><strong>keep</strong> — rank 1</td>
+            <td>Kept: three runs are in flight against it now, adding the resumed-burn pricing, the run-store
+              backend query and the session-continuity share — the meter the velocity view reads.</td>
+          </tr>
+          <tr>
+            <td>the-fleet-shares-one-allocation</td>
+            <td>2 / 2 — s2 and s3 both land in <code>reckon/crew/placement.py</code>, whose module docstring
+              states one reservation held once with the workers inside it as steps; the landed record
+              <code>docs/evidence/archive/</code> carries the reservation query. No section carries remaining
+              work.</td>
+            <td>f2ecd809, 2026-09-23</td>
+            <td><strong>close</strong></td>
+            <td>No section carries remaining work, so there is nothing to keep or merge; proposed close with a
+              one-sentence landed summary.</td>
+          </tr>
+          <tr>
+            <td>the-ledger-is-one-file-per-run</td>
+            <td>3 / 3 — s2 readers read the per-run files (<code>reckon/run_store.py</code>, the ledger arm of
+              <code>reckon/crew/query.py</code>); s3 the one-time split (<code>reckon crew split-runs</code>,
+              landed per the plan's record); s4 the roster and holds as small files on the flight schema.
+              Corroborated by <code>docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html</code>.</td>
+            <td>568533b1, 2026-09-28</td>
+            <td><strong>close</strong></td>
+            <td>Its deliverable — one file per run with a disposable index — is present at head; proposed close
+              with a landed summary.</td>
+          </tr>
+          <tr>
+            <td>the-local-lane-is-the-default</td>
+            <td>3 / 9 — s5 the lane document published for observation
+              (<code>reckon/crew/lane_document.py</code>, read by <code>reckon/crew/dispatch.py:2677</code>);
+              s10 declared <code>done</code>; s2 the backend-and-model routing partly present. s3 escalation, s4
+              no-silent-fallback, s6 the early warning, s7 one follower, s8 session end does not kill workers and
+              s9 the tailorable build core have no implementing symbol verified this round.</td>
+            <td>03ab507b, 2026-09-28</td>
+            <td><strong>keep</strong> — rank 4</td>
+            <td>Kept: the largest remaining workload in the batch — six of nine sections unlanded and the
+              routing/escalation core still to build.</td>
+          </tr>
+          <tr>
+            <td>the-orchestrator-lane-is-not-a-worker-lane</td>
+            <td>1 / 4 — s4 (the lane they were escaping is measured) is landed, per
+              <code>docs/evidence/archive/the-orchestrator-lane-is-not-a-worker-lane-landed.html</code>. s1 the
+              dispatch refusal, s2 the recorded override and s3 the surfaces the rule reaches have no
+              implementing symbol verified this round.</td>
+            <td>c9dece21, 2026-09-28</td>
+            <td><strong>merge</strong> into the-local-lane-is-the-default</td>
+            <td>The one section landed is the lane measurement, and the refusal it feeds is the routing subject
+              the local-lane plan owns; its remaining three sections are that fence's halves.</td>
+          </tr>
+          <tr>
+            <td>the-page-paints-from-an-index</td>
+            <td>2 / 7 — s2 the server listens before it watches (declared <code>done</code>, landed per the
+              plan's record); s4 partly present: <code>docs/ui/state-loader.js:42</code> reads
+              <code>/_discover/&lt;project&gt;</code> and <code>docs/ui/shell.jsx:225</code> fetches it. s3 the
+              metadata index surviving a restart, s5 change-driven patching, s6 the thumbnail and s7 the cold
+              first-paint measurement have no implementing symbol verified this round.</td>
+            <td>7c5fb944, 2026-09-25</td>
+            <td><strong>keep</strong> — rank 5</td>
+            <td>Kept: five of seven sections unlanded; the index that survives a restart is the slow path the plan
+              exists to remove and it is still the discovery walk.</td>
+          </tr>
+          <tr>
+            <td>the-suite-is-green-at-head</td>
+            <td>2 / 2 — s2 and s3 declared <code>done</code>; the plan's landed record
+              <code>docs/evidence/archive/the-suite-is-green-at-head-landed.html</code> carries the failure
+              inventory and the repaired id groups. No section carries remaining work.</td>
+            <td>ecb9d3e3, 2026-09-25 · <strong>LIVE</strong> (s21-audit-placement)</td>
+            <td><strong>close</strong></td>
+            <td>Both sections are present and the suite measure is complete; the live node is an audit placement
+              that anchors its fragment here, not suite-green's own deliverable.</td>
+          </tr>
+          <tr>
+            <td>work-does-not-fall-to-the-coordinator</td>
+            <td>8 / 8 — s2, s3, s4, s5, s6, s9, s10, s11 all declared <code>done</code>; corroborated by
+              <code>docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html</code> and by the
+              last-possible-moment manifest check (<code>reckon crew check-manifest</code>). §1, §7 and §8 are
+              deferred and outside the denominator.</td>
+            <td>cc249231, 2026-09-25</td>
+            <td><strong>close</strong></td>
+            <td>Every declared section is present; proposed close with a landed summary.</td>
+          </tr>
+          <tr>
+            <td>work-scheduling-surface</td>
+            <td>3 / 5 — s2 the pushed sprint (<code>reckon/roadmap.py:1532</code> derives the pushed sprint and
+              the open bucket); s3 critical-path coverage (<code>reckon/roadmap.py:1476 critical_path</code>);
+              s5 impl-move-on-landing present. s4 followup classes and s6 portfolio flight have no implementing
+              symbol verified this round. Corroborated by
+              <code>docs/evidence/archive/work-scheduling-surface-landed.html</code>.</td>
+            <td>b941c834, 2026-09-18</td>
+            <td><strong>merge</strong> into graph-derived-schedule</td>
+            <td>Two sections remain and both are the derived schedule — followup classes and the portfolio flight
+              — which the graph-derived-schedule plan already owns.</td>
+          </tr>
+          <tr>
+            <td>worker-authors-its-own-record</td>
+            <td>3 / 3 — s2, s3, s4 all landed, per
+              <code>docs/evidence/archive/worker-authors-its-own-record-landed.html</code>: the manifest
+              contract now carries the worker's own record and the coordinator reviews it rather than authoring
+              it. No section carries remaining work.</td>
+            <td>4010f2c6, 2026-09-15</td>
+            <td><strong>close</strong></td>
+            <td>Its rule is landed and stable at head; proposed close with a landed summary.</td>
+          </tr>
+          <tr>
+            <td>worker-death-is-recorded</td>
+            <td>5 / 5 — s2, s3, s4, s6 declared <code>done</code>; s5 implementable but its seven landing
+              records are present in the plan, corroborated at head by
+              <code>reckon/roadmap.py:1758 partition_live_runs</code> / <code>:2411 interrupted_runs</code> and by
+              the exit-record read at <code>reckon/crew/promotion.py:795</code>. Corroborated by
+              <code>docs/evidence/archive/worker-death-is-recorded-landed.html</code>.</td>
+            <td>e21ad95b, 2026-09-28</td>
+            <td><strong>close</strong></td>
+            <td>A killed worker is now distinguishable from a working one at every surface the plan names;
+              proposed close with a landed summary.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><strong>Batch keep count: 6.</strong> Proposed dispositions across the seventeen: keep 6 (ranked above),
+        merge 6, close 5. If all proposals were accepted the batch would leave six of these seventeen pending;
+        the lead sums this batch's keep count against the other three batches and the limit of 25. Nothing here
+        closes or edits a plan — the owning sessions and the lead act on the proposals.</p>
+    </section>
+  </main>
+</body>
+</html>
