@@ -25,10 +25,12 @@ id is meaningful only against that record, which is what re-reading it returns.
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Mapping, Sequence
 from typing import Any
 
 from reckon.crew import review as review_module
+from reckon.crew.plan_review import RESPONSE_ACTIONS
 
 # The node-id prefix a composed repair carries, so a run can be recognised as
 # the repair of a reviewed run without consulting the dispatch record. It sits
@@ -36,31 +38,51 @@ from reckon.crew import review as review_module
 # review would otherwise be indistinguishable from a review of a review.
 REPAIR_NODE_PREFIX = "repair-of-"
 
-# The finding id a record's Nth finding is minted. Findings are numbered in the
-# order the stored record carries them, which is the record's own frozen order;
-# a later re-read of the same file returns the same numbering.
+# The finding-id prefix. The id itself is derived from the finding's own file,
+# line and text, so a constant cannot identify a record's findings and two
+# findings that differ only in text cannot collide on one id. It is stable
+# across re-reads because those three fields do not change once stored.
 FINDING_ID_PREFIX = "f"
 
-# The lead token of a finding line in the repair brief and of the answer the
-# repair writes back for it. Kept in one place so the brief and the manifest
-# contract cannot drift into two spellings of the same directive.
-DECLINED_WORD = "declined"
-ACTED_WORD = "acted"
+# The two answers a repair may give a finding, taken from the plan-review
+# vocabulary rather than declared here. The response record validates against
+# ``RESPONSE_ACTIONS``, so the words the brief teaches and the words the record
+# accepts are one fact read once, and the brief cannot drift to a spelling the
+# record would reject.
+ACTED_ACTION, DECLINED_ACTION = RESPONSE_ACTIONS
 
 # The write scope is declared from the review: the paths the findings name. The
 # reviewed run's own fence is unioned in by the caller from the run's record,
 # so a finding outside that fence is granted rather than refused.
 _DEFAULT_TIME_BUDGET = "30m"
 
+# The separator between the three fields a finding id is derived from. It is a
+# NUL so no field value can forge a boundary: a file path or a line cannot
+# contain it, so two distinct fields cannot join into the same material.
+_ID_MATERIAL_SEPARATOR = "\x00"
 
-def finding_id(index: int) -> str:
-    """Return the stable id of the finding at ``index`` in a review record.
+# How many hexadecimal digits of the digest the id keeps. Ten hex digits is
+# forty bits, far wider than any review's finding count, so a collision needs an
+# adversary rather than a long review.
+_ID_DIGEST_DIGITS = 10
 
-    ``index`` is zero-based, matching the list the record carries; the id is
-    one-based so the first finding reads ``f01`` rather than ``f00``, which a
-    reader can tell apart from a record whose first finding it cannot find.
+
+def finding_id(finding: Mapping[str, Any]) -> str:
+    """Return the stable id of one finding, derived from its own content.
+
+    The id is the fixed prefix followed by a digest over the finding's file,
+    line and text, so it is a function of the finding rather than of its
+    position: two findings that differ only in their text get different ids, and
+    a scheme that returned one constant for every finding is impossible here.
+    The three fields do not change once the record is stored, so re-reading the
+    same record returns the same id.
     """
-    return f"{FINDING_ID_PREFIX}{index + 1:02d}"
+    file = str(finding.get("file") or "").strip()
+    line = str(finding.get("line") or "").strip()
+    text = str(finding.get("text") or "").strip()
+    material = _ID_MATERIAL_SEPARATOR.join((file, line, text))
+    digest = hashlib.sha256(material.encode("utf-8")).hexdigest()
+    return f"{FINDING_ID_PREFIX}{digest[:_ID_DIGEST_DIGITS]}"
 
 
 def review_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -79,12 +101,12 @@ def review_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     if not isinstance(findings, list):
         return []
     composed: list[dict[str, Any]] = []
-    for index, finding in enumerate(findings):
+    for finding in findings:
         if not isinstance(finding, Mapping):
             continue
         composed.append(
             {
-                "id": finding_id(index),
+                "id": finding_id(finding),
                 "file": str(finding.get("file") or "").strip(),
                 "line": str(finding.get("line") or "").strip(),
                 "text": str(finding.get("text") or "").strip(),
@@ -203,9 +225,9 @@ def compose_repair_brief(
     lines += [
         "",
         "In your manifest, answer every finding by id: one line naming the id and",
-        f"the commit that answered it ('{ACTED_WORD} <id>: <commit>'), or, for a",
+        f"the commit that answered it ('{ACTED_ACTION} <id>: <commit>'), or, for a",
         "finding you do not act on, a line naming the id and a one-line reason",
-        f"('{DECLINED_WORD} <id>: <reason>'). A finding left unanswered is not",
+        f"('{DECLINED_ACTION} <id>: <reason>'). A finding left unanswered is not",
         "repaired.",
     ]
     return "\n".join(lines)
@@ -263,8 +285,8 @@ def compose_repair_node(
         "done_when": (
             f"the repair for {round_id} commits a change answering each of the "
             f"{len(findings)} finding(s) ({ids}) and its manifest names every "
-            f"finding by id — '{ACTED_WORD} <id>: <commit>' for a finding it "
-            f"answered and '{DECLINED_WORD} <id>: <reason>' for one it declines "
+            f"finding by id — '{ACTED_ACTION} <id>: <commit>' for a finding it "
+            f"answered and '{DECLINED_ACTION} <id>: <reason>' for one it declines "
             "— with no finding left unanswered"
         ),
     }
