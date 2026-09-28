@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-commits" content="6e168152,17bb7142,3824f9cf,a255c027,da3ea4a6">
 <meta name="plan-impl" content="0.67">
 </head>
@@ -139,7 +139,10 @@
     <div class="r-comment-body"><p>independent review of run r-20260928T144638621685-commitless-review-promotes stored for §3 — the review's commitless promotion holds at the head and both new assertions were red at the dispatch base in my own arm, with findings on the comma-bearing declaration, the after-suite log's revision label, and the base-arm log's test revision</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T171602084778-review-of-commitless-review-promotes" data-who="reckon-build" data-when="2026-09-28T17:50:22.806Z">
-    <div class="r-comment-body"><p>independent review of run r-20260928T144638621685-commitless-review-promotes at head 88dcbd4c stored for §3 — the plan&#x27;s done-when holds at that head and the reviewed assertions are red at the dispatch base in my own arm, with one finding: `commits: none, no repository change` (bare declaration word, comma, no parenthetical) is still refused, so that shape keeps the hand edit</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20260928T144638621685-commitless-review-promotes at head 88dcbd4c stored for §3 — the plan's done-when holds at that head and the reviewed assertions are red at the dispatch base in my own arm, with one finding: `commits: none, no repository change` (bare declaration word, comma, no parenthetical) is still refused, so that shape keeps the hand edit</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260928T144638621685-commitless-review-promotes" data-who="reckon-build" data-when="2026-09-28T18:04:29.794Z">
+    <div class="r-comment-body"><p>§3 landed: a commitless role&#x27;s `commits` declaration is read from the raw field text before the list reader parses it (`_raw_manifest_field` + `_opens_with_an_absence_word` in `_commits_field_declares_absence`), so `commits: none, no repository change` and every parenthetical/separator shape promotes on a review with no commits and no hand edit, while a role that commits is still refused; the commit-for-changed-manifest guard honours the same declaration via `_manifest_cites_a_commit`</p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,338 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 3,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "40d23d9bbefd0199d68c74caec573769bed888ff",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 6828995,
+      "input_tokens_cumulative": 6828995,
+      "output_tokens": 42620,
+      "output_tokens_cumulative": 42620,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 653,
+    "files": 4,
+    "removed": 13
+  },
+  "commit_resolution": null,
+  "commits": [
+    "75991c776d07cee0d457d6dcde7babadbb60d010",
+    "abd56a80a6c00fa37fab11036a2bc13b5fa6d1e1",
+    "830a50c68e8119eba0a825565e3b449f9e488eac",
+    "71ffc727aa88fc854ea7a4b0c1d679d8827bbcbd",
+    "88dcbd4c2ed106a12ca0d9d9e73258acbebea256",
+    "cf03fea8407bf9fa6588a258d5722211efc6098b"
+  ],
+  "completed_at": "2026-09-28T18:04:29.794Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T14:46:56Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/crew/prompts.py",
+    "docs/evidence/fragments/"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 --timeout=180 -q -rf tests/test_*promot*.py tests/test_cited_identifier_resolves.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/after-suite.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.67,
+    "plan": "the-audit-agrees-with-the-skill",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T15:31:40.027580+00:00",
+    "horizon_seconds": 2700,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T14:46:40Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 12,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": -5,
+    "mean_context": 142857,
+    "observed_at": "2026-09-28T14:46:28Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T18:04:29.794Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/manifest.md",
+  "member": "disposable-r-20260928T144638621685-commitless-review-promotes",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_commitless_review_promotes.py::test_a_bare_absence_shape_promotes_on_a_review[r-20260928T100000000006-review-comma-absence-none,"
+    ],
+    "baseline_failure_ids": [],
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_commitless_review_promotes.py::test_a_bare_absence_shape_promotes_on_a_review[r-20260928T100000000006-review-comma-absence-none,"
+    ],
+    "declaration": "parse a commits: none prose value on a review run as commit ids",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/negative-control.log",
+    "test_paths": [
+      "tests/test_commitless_review_promotes.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "commitless-review-promotes",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1446,
+          "cached_input_tokens": 861546,
+          "input_tokens": 862994,
+          "output_tokens": 1335,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 864329,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+      "session_id": "s23-coord"
+    },
+    "done_when": "the manifest states whether the defect reproduced at the dispatch base for a review run with its refusal text, a promotion test on a review run whose manifest reads commits: none (review node) promotes with no commits and no refusal, the same prose on an implement run is still refused, the declared mutation turns the review case red, zero added failures by id against base across the promotion test files, and every gate log sits under the run directory with revision, tree and command headers and paths recorded in baseline_suite and after_suite",
+    "estimated_hours": null,
+    "goal": "a review run whose manifest reads commits: none followed by prose promotes through crew complete with no commits and no hand edit or no-commit flag, while the same prose on an implement run is still refused, after first reproducing at the dispatch base whether the existing report-only handling near reckon/crew/promotion.py lines 429 and 604 already covers a review and fixing only what still fails",
+    "id": "commitless-review-promotes",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T14:46:40Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 12,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": -5,
+      "mean_context": 142857,
+      "observed_at": "2026-09-28T14:46:28Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144638621685-commitless-review-promotes/manifest.md",
+    "negative_control": "parse a commits: none prose value on a review run as commit ids",
+    "plan": "the-audit-agrees-with-the-skill",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "exact",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/promotion.py",
+      "reckon/crew/prompts.py",
+      "tests/test_commitless_review_promotes.py",
+      "docs/evidence/fragments/the-audit-agrees-with-the-skill/commitless-review-promotes.html",
+      "docs/figures/the-audit-agrees-with-the-skill/commitless-review-promotes"
+    ]
+  },
+  "orientation_input_tokens": 1284988.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "commitless-review-promotes",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T14:46:46.402765+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-audit-agrees-with-the-skill",
+  "plan_impl_at_dispatch": 0.67,
+  "promoted_revision": "cf03fea8407bf9fa6588a258d5722211efc6098b",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 17,
+      "evidence": 19,
+      "fit": 19,
+      "goal_fidelity": 18,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 93
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260928T144638621685-commitless-review-promotes",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "5b49a930-c69a-4e4b-8dbc-d6d45a1b4e66",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 23332096,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 1383.216,
+    "generated_tokens": 165339,
+    "generation_seconds": 994.033,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.7,
+    "machine_seconds": 389.183,
+    "peak_input_tokens": 166759,
+    "tokens_per_second": 166.33,
+    "wall_tokens_per_second": 119.53
+  },
+  "time_budget": "45m",
+  "tool_steps": 94.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 11853,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 3,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T18:04:30Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T17:41:23Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T144638621685-commitless-review-promotes",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 28294,
+    "worker_pid": 3157343
+  },
+  "worker_seconds": 11808,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
