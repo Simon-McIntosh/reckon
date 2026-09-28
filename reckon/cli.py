@@ -1437,6 +1437,9 @@ def crew_dispatch(
                 default_backend_override=flight_backend_override,
                 member=member,
                 allow_unreviewed_plan=allow_unreviewed_plan,
+                session=session,
+                watch_required=True,
+                watch_override=no_watch,
             )
         except crew_module.PlanVisibilityError as exc:
             _emit(
@@ -1460,6 +1463,21 @@ def crew_dispatch(
                 pretty,
             )
             raise click.exceptions.Exit(5) from exc
+        except crew_module.WatcherRequired as exc:
+            # The same refusal class, error key and exit code the launching path
+            # carries, so a validating caller reaches the admission judgement a
+            # real dispatch reaches rather than a generic dispatch refusal.
+            _emit(
+                {
+                    "ok": False,
+                    "dry_run": True,
+                    "error": "watcher-required",
+                    "detail": str(exc),
+                    "watch": exc.watch,
+                },
+                pretty,
+            )
+            raise click.exceptions.Exit(8) from exc
         except crew_module.CrewError as exc:
             _emit(
                 {
