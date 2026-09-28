@@ -19,6 +19,7 @@ agree on the word they report for the same run.
 from __future__ import annotations
 
 import json
+import os
 import socket
 import subprocess
 import sys
@@ -256,7 +257,13 @@ def test_an_assistant_record_in_a_resume_stream_advances_the_row(
     resume = directory / "resume-1.jsonl"
     worker = _start_worker()
     try:
-        _pointer(run_id, pid=worker.pid, stream=stream)
+        pointer = _pointer(run_id, pid=worker.pid, stream=stream)
+        # The launch stream is aged back so the file the tick writes is the
+        # newest by construction: the shared reader breaks an mtime tie by
+        # path, and a case resting on that tie-break would measure the file
+        # names rather than the derivation.
+        older = stream.stat().st_mtime - 1
+        os.utime(stream, (older, older))
         publisher = _Publisher(
             [_append(resume, {"type": "system"}, {"type": "assistant"})]
         )
@@ -270,7 +277,12 @@ def test_an_assistant_record_in_a_resume_stream_advances_the_row(
         _end_worker(worker)
 
     assert baseline["to_state"] == "dispatched", baseline
-    assert resume.stat().st_mtime >= stream.stat().st_mtime, (resume, stream)
+    # What this case measures is the one stream the derivation selects, so the
+    # assertion names it: a reader that opened the pointer's own stream instead
+    # would find no assistant record there and report the run as still starting.
+    found = recovery._record_newest_stream(pointer)
+    assert found is not None and found[0] == resume, found
+    assert not recovery._stream_holds_assistant_record(stream), stream
     assert transition["from_state"] == "dispatched", transition
     assert transition["to_state"] == "working", transition
 
