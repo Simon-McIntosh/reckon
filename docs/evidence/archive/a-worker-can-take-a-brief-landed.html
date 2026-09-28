@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Cumulative execution evidence: one anchor per landed node, carrying its commit, gate measure, tests and negative findings.">
   <meta name="plan-evidence-for" content="a-worker-can-take-a-brief">
   <meta name="plan-verifies" content="a-worker-can-take-a-brief#s2,a-worker-can-take-a-brief#s3">
-  <meta name="plan-commits" content="488d3e92,e4d70125,dcb66ac8">
+  <meta name="plan-commits" content="488d3e92,e4d70125,dcb66ac8,92b7eca7">
   <meta name="plan-artifacts" content="reckon/crew/prompts.py,tests/test_brief_prompt.py,reckon/cli.py,reckon/crew/dispatch.py,reckon/crew/node.py,tests/test_brief_dispatch.py">
   <meta name="plan-recorded-at" content="2026-09-28">
   <meta name="plan-verdict" content="passed">
@@ -55,8 +55,8 @@
         <thead><tr><th>Measure</th><th>Result</th></tr></thead>
         <tbody>
           <tr>
-            <td>Gate <code>tests/test_brief_dispatch.py</code> at <code>dcb66ac8</code></td>
-            <td><strong>4 passed</strong>, exit 0</td>
+            <td>Gate <code>tests/test_brief_dispatch.py</code> at <code>92b7eca7</code></td>
+            <td><strong>7 passed</strong>, exit 0</td>
           </tr>
           <tr>
             <td>Regression arm <code>tests/test_brief_prompt.py</code></td>
@@ -70,7 +70,7 @@
           <tr>
             <td>Declared negative control &mdash; restore the committed plan-section check for a
             brief dispatch</td>
-            <td>the brief gate fails <strong>2 of 4</strong> with <code>error:
+            <td>the brief gate fails <strong>4 of 7</strong> with <code>error:
             plan-unavailable</code> at exit 1; the source is restored and confirmed
             byte-identical</td>
           </tr>
@@ -88,6 +88,53 @@
         <strong>Scope of this measure.</strong> The gate measures this node's own change only.
         Verifying the merged result belongs to a separately dispatched test node; a failure
         outside the declared scope is reported as a follow-on rather than triaged here.
+      </p>
+      <h3>Repair &mdash; three reviewed behaviours</h3>
+      <p>
+        Independent review found three behaviours. Commit <code>92b7eca7</code> repairs each, and
+        each was reproduced first: the repaired test was run against its own reverted fix and
+        observed to fail.
+      </p>
+      <table>
+        <thead><tr><th>Finding</th><th>Reproduction (fix reverted)</th><th>Repair</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>The digest read the source path, not the run's stored copy, so a lane change
+            refused once the source scratch file was gone</td>
+            <td><code>reckon.crew.CrewError: the brief '&hellip;/brief.md' is not readable:
+            [Errno 2] No such file or directory</code>, from <code>_brief_digest</code> at
+            <code>dispatch.py:2890</code></td>
+            <td>the digest reads <code>node.brief_path or node.brief</code>; a test deletes the
+            source after dispatch and asserts a lane change still resolves and carries the same
+            digest and stored path</td>
+          </tr>
+          <tr>
+            <td>Nothing asserted the brief reached the composed prompt; an empty brief at
+            composition left the gate green</td>
+            <td>composing with an empty brief fails
+            <code>test_a_brief_dispatch_prompt_carries_the_brief_and_no_plan_pointer</code></td>
+            <td>a test reads the written <code>prompt.txt</code> and requires the brief text
+            present and <code>PLAN     proj:</code> absent</td>
+          </tr>
+          <tr>
+            <td><code>--section</code> beside <code>--brief</code> was accepted and silently
+            discarded</td>
+            <td>removing the check fails
+            <code>test_a_brief_and_a_section_together_are_refused</code></td>
+            <td>the CLI refuses <code>--brief</code> with <code>--section</code> beside the
+            existing <code>--plan</code> case</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Re-measured at <code>92b7eca7</code>: the gate passes <strong>7</strong> tests at exit 0,
+        <code>tests/test_crew_dispatch_guard.py</code> passes <strong>14</strong> at exit 0, and
+        the declared control fails <strong>4 of 7</strong> with <code>plan-unavailable</code>.
+        Fresh logs carry these measures, their headers naming the revision, tree and
+        <code>reckon.__file__</code>:
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T192434735630-dispatch-accepts-a-brief/logs/gate-repair.log</code>,
+        <code>.../arm-dispatch-guard-repair.log</code>,
+        <code>.../negative-control-repair.log</code>.
       </p>
     </section>
 

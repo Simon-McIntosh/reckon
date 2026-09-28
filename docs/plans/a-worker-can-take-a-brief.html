@@ -99,7 +99,7 @@
       <tbody>
         <tr>
           <td>Gate <code>tests/test_brief_dispatch.py</code></td>
-          <td><strong>4 passed</strong>, exit 0 (<code>dcb66ac8</code>, base
+          <td><strong>7 passed</strong>, exit 0 (<code>92b7eca7</code>, base
           <code>3f251453</code>)</td>
         </tr>
         <tr>
@@ -124,6 +124,57 @@
       <code>docs/evidence/archive/a-worker-can-take-a-brief-landed.html</code>, which also holds the
       as-executed gate logs' absolute paths. This gate measures this node's own change; verifying
       the merged result belongs to a separately dispatched test node.
+    </p>
+    <p>
+      <strong>Repair.</strong> Independent review of the first landing found three behaviours.
+      Commit <code>92b7eca7</code> repairs each, and each was reproduced before its repair: every
+      repaired test was run against its own reverted fix and observed to fail.
+    </p>
+    <ul>
+      <li>
+        <strong>The digest read the source path, not the stored copy.</strong> A lane change
+        rebuilds the node from the live pointer and re-resolves it, so once the coordinator's
+        scratch file was gone the run refused with <em>the brief is not readable</em> — the exact
+        case the copy exists to survive. The digest is now taken from the run's own copy whenever
+        dispatch has made one, falling back to the source only at first dispatch.
+      </li>
+      <li>
+        <strong>Nothing asserted the brief reached the composed prompt.</strong> An empty brief at
+        composition would have left the gate green while the worker read no authority. A test now
+        reads the written prompt and requires the brief text present and the plan pointer absent.
+      </li>
+      <li>
+        <strong><code>--section</code> was accepted beside <code>--brief</code> and silently
+        discarded.</strong> The mutual-exclusion check named only <code>--plan</code>. A section
+        with a brief is now refused beside the plan case.
+      </li>
+    </ul>
+    <table>
+      <thead><tr><th>Measure at <code>92b7eca7</code></th><th>Result</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Gate <code>tests/test_brief_dispatch.py</code> (seven tests)</td>
+          <td><strong>7 passed</strong>, exit 0</td>
+        </tr>
+        <tr>
+          <td>Regression arm <code>tests/test_crew_dispatch_guard.py</code></td>
+          <td><strong>14 passed</strong>, exit 0</td>
+        </tr>
+        <tr>
+          <td>Declared negative control &mdash; restore the committed plan-section check</td>
+          <td><strong>4 of 7</strong> fail with <code>plan-unavailable</code>, exit 1; source
+          restored byte-identical</td>
+        </tr>
+        <tr>
+          <td>Each repaired test against its own reverted fix</td>
+          <td>dropping the section check fails the refusal case; reading the source path fails with
+          <em>the brief is not readable</em>; composing an empty brief fails the prompt case</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The repair commit precedes the record commit because the gate logs name the head they
+      measured, and that head could not be written into this record before it existed.
     </p>
 
     <h2 id="s3">&sect;3 &mdash; The prompt carries the brief where the plan section was</h2>
