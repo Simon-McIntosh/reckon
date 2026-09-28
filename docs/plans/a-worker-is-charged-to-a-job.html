@@ -747,6 +747,51 @@ chosen for which tests reach the changed modules, not as a whole-suite run.</p>
     so before it kills anything.</p>
 
     <p><strong>Files, and the instrument that can actually warn.</strong> The bound is reported by the fleet surface in <code>reckon/crew/summary.py</code> and <code>reckon/crew/ticker.py</code> and enforced at the admission check in <code>reckon/crew/dispatch.py</code>. The <code>oom_kill</code> counter cannot warn before a kill, since it only increments on one; what warns is <code>memory.current</code> against <code>memory.max</code>, and the allocation-stall counter beside them, which stood at 2,912,593 while the kill count was 529. The surface reads those and reports the kill count only as history.</p>
+<div class="r-note" data-reckon="landed" data-node="concurrency-bound-refuses-by-name" data-when="2026-09-28">
+<p><strong>Outcome — the refusal names the bound that actually binds, pinned from outside the helpers.</strong>
+The bound model landed at <code>9f572885</code>; this node pins its enforcement from the far side of
+<code>plan_dispatch</code>, where a call site can pass the wrong occupancy or the wrong slice reading and still
+leave every helper-level case green. Three cases in <code>tests/test_concurrency_bound_refuses_by_name.py</code>
+(commits <code>7cb2195a</code>, <code>0e41a066</code>): a roster at its declared ceiling is refused naming the
+roster and the count that refused it; a placement whose admitted cores are spent is refused naming that bound
+and its figure; a dispatch inside both bounds is admitted, reaching <code>starting</code> with its pointer
+written. Each refusal case also asserts the absence of the other bounds' sentences, so a refusal for a
+neighbouring reason is not read as a pass. Both sentences are captured verbatim in the node's log rather than
+paraphrased: the roster keeps its historical wording, and the cores sentence carries the resource and its
+figure.</p>
+<p><strong>Every input is synthesised, and the real home is asserted untouched.</strong> The roster count is
+live pointer files in a temp crew directory, the slice is a cgroup tree written under a temp path with the
+reader's two module globals repointed at it, and the launcher is a substitute. A module-scoped guard reads the
+real live-pointer directory before and after the run: <strong>24 files before, 24 after, none gained</strong> —
+and the 24 are the fleet's own runs, which is the positive control that the scan sees them at all.</p>
+<p><strong>Gate, and the delta.</strong> The declared gate at the landed head: <strong>3 passed, exit 0</strong>,
+with the log's header recording that the run resolved the worktree's own
+<code>reckon/crew/dispatch.py</code> rather than the main checkout's; the helper-level cases over the same model
+and this module in one invocation are <strong>16 passed</strong>. The file does not exist at base, so a base arm
+cannot redden and the red arm is the declared mutation.</p>
+<p><strong>The guard was shown to fire.</strong> Declared mutation, verbatim: <em>make the binding-bound check
+at <code>reckon/crew/dispatch.py:518-527</code> return no refusal in a scratch copy; the roster and cores
+refusal cases must fail.</em> A scratch tree with a <code>return</code> inserted immediately above the line the
+check opens on gives <strong>2 failed, 1 passed</strong>, both failures <code>DID NOT RAISE CrewError</code>,
+with the admitted case still green — the discrimination, since the mutation removes the refusal rather than
+breaking the dispatch. The red log's first line repeats the mutation verbatim and the log is named in the
+node's manifest under <code>negative_control_log</code>.</p>
+<p><strong>The red run also found a host dependency the admitted case had been leaning on.</strong> Under a bare
+<code>PATH</code> that run reddened three cases, and the third was not the mutation: the admitted case failed
+with <code>LaunchResolutionError: backend command 'codex' cannot be resolved on the PATH this launch would
+search</code>, because it composed its launch against whatever the host had installed. A stub is now on
+<code>PATH</code> for the module (<code>0e41a066</code>), so it no longer passes on this host for a reason
+unrelated to what it measures. Reading the failure text rather than the count is what separated that failure
+from the mutation's two.</p>
+<p><strong>What this node did not do.</strong> It launches no worker and dispatches no live run: the occupancy
+is pointer files rather than running workers and the slice is a synthesised cgroup tree. The cores bound is
+read from the placement's declaration rather than from the scheduler's grant, and the assertions are fragments,
+so the bound's naming and measured value are pinned while the rest of the wording is not. No defect was found
+in <code>reckon/crew/dispatch.py</code>, so no blocker arises. It touches no plan state: the driving followup
+stays open and no terminal status is set, because only the coordinator observes the other nodes. The evidence
+anchor is <a href="/reckon/evidence/archive/a-worker-is-charged-to-a-job-landed#s5-bound-names-itself">the
+landed evidence record</a>.</p>
+</div>
 <h2 id="s6">§6 — The prototype ladder, and only then the default</h2>
     <p>The lead's instruction is to prototype on the local lane first and settle the details individually
     before the design is fixed. That makes the ladder part of the plan rather than a habit: one worker under
