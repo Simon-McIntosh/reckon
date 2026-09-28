@@ -286,3 +286,21 @@ def test_an_absent_prior_attempt_is_still_a_zero_baseline() -> None:
 
     assert measured["tokens"]["input_tokens"] == 5_000
     assert measured["tokens"]["input_tokens_cumulative"] == 5_000
+
+
+def test_an_unmeasured_prior_cost_leaves_the_interval_unknown() -> None:
+    """The cost counter obeys the same rule as the token counters.
+
+    A newer attempt's dollar cost is its cumulative when the prior attempt's
+    cost cannot be read; reporting the whole cumulative as this attempt's own
+    spend is the overcount the delta exists to prevent, so the interval is
+    unknown and the cumulative is still reported.
+    """
+    from reckon import ledger
+
+    previous = {"budget": {"cost_usd_cumulative": "unmeasured"}}
+    measured = ledger.per_run_budget({"cost_usd": 2.0}, previous)
+
+    assert measured["cost_usd"] == "unknown"
+    assert measured["cost_usd"] != 2.0
+    assert measured["cost_usd_cumulative"] == 2.0
