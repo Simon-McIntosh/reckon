@@ -1,0 +1,329 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "1a1c50a5e68ab083063d077767476db56a22864b",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 5946433,
+      "input_tokens_cumulative": 5946433,
+      "output_tokens": 32892,
+      "output_tokens_cumulative": 32892,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 47,
+    "files": 3,
+    "removed": 0
+  },
+  "commit_resolution": null,
+  "commits": [
+    "efc21c288cad878e4434af0549b18fbdf0eb9bc0"
+  ],
+  "completed_at": "2026-09-28T07:38:02.273Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T07:11:58Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_follower_survives_a_host_change.py tests/test_follow_rearm_continues.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071138350289-host-change-test-asserts-its-baseline/gates/head-arm.log"
+  },
+  "impl_move": {
+    "at_complete": 0.6363636363636364,
+    "at_dispatch": 0.6363636363636364,
+    "plan": "the-fleet-counters-count-the-fleet",
+    "reason": "a test-only repair within section 3, already declared done",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T07:41:39.917526+00:00",
+    "horizon_seconds": 1800,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T07:11:39Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 0,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 1,
+    "mean_context": 122857,
+    "observed_at": "2026-09-28T07:11:39Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T07:38:02.273Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071138350289-host-change-test-asserts-its-baseline/manifest.md",
+  "member": "disposable-r-20260928T071138350289-host-change-test-asserts-its-baseline",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_follower_survives_a_host_change.py::test_an_arm_with_no_checkpoint_replays_no_transitions_and_no_peer_rows"
+    ],
+    "baseline_failure_ids": [],
+    "control_exit_status": null,
+    "control_failure_count": 1,
+    "control_failure_ids": [
+      "tests/test_follower_survives_a_host_change.py::test_an_arm_with_no_checkpoint_replays_no_transitions_and_no_peer_rows"
+    ],
+    "declaration": "suppress the baseline row the follower emits on a host-change arm",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071138350289-host-change-test-asserts-its-baseline/gates/red-mutation.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071138350289-host-change-test-asserts-its-baseline/gates/red-mutation.log",
+    "test_paths": [
+      "tests/test_follower_survives_a_host_change.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "host-change-test-asserts-its-baseline",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1207,
+          "cached_input_tokens": 717567,
+          "input_tokens": 718776,
+          "output_tokens": 799,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 719575,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+      "session_id": "s23-coord"
+    },
+    "done_when": "the test asserts exactly one baseline row is emitted and then its shape, a declared mutation that suppresses the baseline row turns it red where the current test stays green, the test passes at head, the other tests in tests/test_follower_survives_a_host_change.py and tests/test_follow_rearm_continues.py show zero added failures by id against base, a single-invocation base log and head log sit under the run directory headed with revision, tree and command, and no product file is edited",
+    "estimated_hours": null,
+    "goal": "the host-change follower test asserts the one baseline row its done-when names rather than passing vacuously, by asserting the emitted row count before the all() shape checks at tests/test_follower_survives_a_host_change.py lines 193 and 196, and the base half of its gate carries its own single-invocation log",
+    "id": "host-change-test-asserts-its-baseline",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T07:11:39Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 0,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 1,
+      "mean_context": 122857,
+      "observed_at": "2026-09-28T07:11:39Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071138350289-host-change-test-asserts-its-baseline/manifest.md",
+    "negative_control": "suppress the baseline row the follower emits on a host-change arm",
+    "plan": "the-fleet-counters-count-the-fleet",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "exact",
+    "time_budget": "30m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_follower_survives_a_host_change.py",
+      "docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html",
+      "docs/figures/the-fleet-counters-count-the-fleet",
+      "docs/plans/the-fleet-counters-count-the-fleet.html"
+    ]
+  },
+  "orientation_input_tokens": 2089016.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "host-change-test-asserts-its-baseline",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T07:11:48.782589+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-fleet-counters-count-the-fleet",
+  "plan_impl_at_dispatch": 0.6363636363636364,
+  "promoted_revision": "efc21c288cad878e4434af0549b18fbdf0eb9bc0",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 17,
+      "evidence": 16,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 90
+  },
+  "role": "implement",
+  "run_id": "r-20260928T071138350289-host-change-test-asserts-its-baseline",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "c7933592-b352-4def-9fd5-56e433b66774",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 5946433,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 1537.49,
+    "generated_tokens": 32892,
+    "generation_seconds": 1391.428,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 28.7,
+    "machine_seconds": 146.062,
+    "peak_input_tokens": 137968,
+    "tokens_per_second": 23.64,
+    "wall_tokens_per_second": 21.39
+  },
+  "time_budget": "30m",
+  "tool_steps": 62.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 1564,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T07:38:02Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T07:12:18Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T071138350289-host-change-test-asserts-its-baseline",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 6104,
+    "worker_pid": 123710
+  },
+  "worker_seconds": 1524,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
