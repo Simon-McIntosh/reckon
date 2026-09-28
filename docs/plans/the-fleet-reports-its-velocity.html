@@ -165,18 +165,15 @@
       (<code>docs/research/data/crew-pattern-review/coordinator-overhead/census.py</code>) and the
       module still imports nothing from <code>docs/</code>.</p>
       <p><strong>Done when (recorded measurement).</strong> Run in place on this node at the module
-      revision <code>43e971d3</code> over the pinned window <code>2026-09-12T00:00:00Z</code> to
+      revision <code>118b06ba</code> over the pinned window <code>2026-09-12T00:00:00Z</code> to
       <code>2026-09-26T10:00:00Z</code>, and every per-session figure compared with
-      <code>overhead.json</code>: <strong>40 of 49 comparable sessions within 1%</strong> (45 field
-      checks outside tolerance). The census carries 52 sessions (38 with
-      a transcript, 14 without); three of them land zero nodes and
-      are absent from the section, which lists only sessions that landed at least one. Of the 49
-      compared, six differ in landed count: five by a single node, and one by 22. The section's
-      landed denominator is the in-window promote commit alone (2199 against the census's
-      2182), because the census admits a landings set the ledger alone cannot
-      reconstruct: a promotion recorded only by a transcript receipt or a committed marker, and for
-      one session a recovered ledger clock that attributes 22 further nodes to it. Every row outside
-      tolerance is named in the evidence record rather than smoothed.</p>
+      <code>overhead.json</code>: <strong>52 of 52 comparable sessions within 1%</strong> (0 field
+      checks outside tolerance). The census carries 52 sessions (38 with a transcript, 14 without);
+      the section lists every one. The landed denominator reproduces the census's own rule: an
+      in-window first-parent promote commit, a committed promoted revision, or a promotion receipt
+      the coordinator transcript records, where a call counts only when the shell word after
+      <code>crew</code> is the verb. Reading the receipt by that rule moved the last two residual
+      sessions onto the census's count, so no row remains outside tolerance.</p>
       <figure>
         <img src="/reckon/figures/the-fleet-reports-its-velocity/coordinator-cost-per-landed-node.png"
           alt="Input tokens per landed node for each coordinator session, marker area proportional to assistant responses and colour to the cache-read share, beside a histogram of the cache-read share">
@@ -185,15 +182,16 @@
       </figure>
       <p><strong>Committed tests.</strong> <code>tests/test_velocity_coordinator_cost.py</code>
       synthesises its transcripts and run rows under <code>tmp_path</code> and passes at exit 0
-      (<strong>11 passed</strong> across it and the existing view test). The declared negative
+      (<strong>13 passed</strong> across it and the existing view test). The declared negative
       control folds cache-read tokens into the uncached input figure; the cache-read separation
-      test then reads the share as zero and fails (<strong>2 failed, 4 passed</strong>, exit 1).
+      test then reads the uncached bucket at 3400 instead of 300 and fails
+      (<strong>1 failed</strong>, exit 1).
       The transcript root defaults to nothing in the measurement entry point, so the suite never
       reads the live transcript store.</p>
       <p>Receipts under
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260927T191523670440-coordinator-cost-per-landed-node/</code>:
-      <code>measure_coordinator_cost.py</code>, <code>measurement.log</code>,
-      <code>negative_control.log</code>, <code>tests.log</code>. Full record:
+      <code>measure_coordinator_cost.py</code>, <code>measurement3.log</code>,
+      <code>negative_control2.log</code>, <code>tests2.log</code>. Full record:
       <code>the-fleet-reports-its-velocity-landed.html#s3-coordinator-cost-per-landed-node</code>.</p>
     </div>
 
