@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="113">
+<meta name="plan-version" content="114">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -379,10 +379,11 @@
     <div class="r-fu-body"><p>The review of <code>rearm-shows-nothing-twice</code> found that the section comment near <code>tests/test_follow_rearm_continues.py:441</code> still describes the history burst as unframed. Since <code>8f58d31a</code>, the burst is written only to a terminal and under one dim frame line. Correct the comment to match the code. This is a comment-only change.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-rearm-test-comment-matches-the-code</pre>
     </article>
-<article class="r-fu" data-id="f-tfcctf-resume-baseline-feed-is-tested" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfcctf-resume-baseline-feed-is-tested" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="2026-09-28T16:08:13+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">The resume baseline branch&#x27;s feed into the row policy has a committed test</h4>
     <div class="r-fu-body"><p>The re-review of <code>follower-prints-only-policy-rows</code> (90) found that the resume baseline branch's feed site in <code>reckon/cli.py</code> (near line 2675) is covered by no committed test. Replacing it with a pass-through of every event leaves the committed tests green. The case it guards is real, and the reviewer measured it in a scratch run: when an arming's checkpoint no longer matches the stream, the baseline is re-derived, and without the feed a row the pane already shows reaches it again. Add that case as a committed test, red with the feed bypassed and green at head. This is a test-only change.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-resume-baseline-feed-is-tested</pre>
+    <p class="r-fu-outcome">Landed: resume-baseline-feed-is-tested (merged 4a38ea02, promoted 97cbd2b7, review 94, 0 added failures by id). A committed test drives an arming whose checkpoint no longer matches the stream and asserts that a row the pane already showed is not printed again. Bypassing the resume baseline feed site turns it red. Its evidence fragment was withdrawn at ae10dc0b because the reader refused the fragments path. Its content is at 8fd9d1e4, to be restored once the reader accepts fragments.</p>
     </article>
 </section>
 
