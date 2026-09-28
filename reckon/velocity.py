@@ -52,6 +52,7 @@ __all__ = [
     "file_class",
     "measure",
     "path_class",
+    "promotion_receipts",
     "ratio",
     "recover_ledger_clocks",
     "replay",
@@ -314,6 +315,7 @@ def capture_project(
             seen.add(sha)
             introduction[sha] = c["sha"]
             pending.extend(graph[sha]["parents"])
+    first_parent = set(first)
     promotions = collections.defaultdict(list)
     for sha, data in graph.items():
         match = re.match(r"promote\((r-[^)]+)\)", data["subject"])
@@ -323,6 +325,10 @@ def capture_project(
                     "sha": sha,
                     "epoch": data["epoch"],
                     "landing_sha": introduction.get(sha),
+                    "first_parent": sha in first_parent,
+                    "colon_subject": bool(
+                        re.match(r"promote\(r-[^)]+\):", data["subject"])
+                    ),
                 }
             )
     sources = dict.fromkeys(records, "committed_primary_snapshot")
@@ -782,6 +788,135 @@ def session_usage(paths, *, window_start=START, window_end=END):
     }
 
 
+def _json_objects(text):
+    """Decode whole outer JSON objects in tool-result text, in order."""
+    decoder = json.JSONDecoder()
+    offset = 0
+    while (start := text.find("{", offset)) >= 0:
+        try:
+            obj, end = decoder.raw_decode(text, start)
+        except json.JSONDecodeError:
+            offset = start + 1
+            continue
+        offset = end
+        if isinstance(obj, dict):
+            yield obj
+
+
+def _receipt_objects(text):
+    """Protocol receipts in a tool result, tolerant of clipped output.
+
+    A receipt is an object carrying a boolean ``ok``. Results are often clipped
+    after a few hundred bytes, so a bare ``"ok": true`` marker or an
+    ``already_promoted`` line still counts, while a quiet shell never does.
+    """
+    receipts = [obj for obj in _json_objects(text) if isinstance(obj.get("ok"), bool)]
+    for line in text.splitlines():
+        if not line.startswith("{") or "'ok':" not in line:
+            continue
+        try:
+            obj = ast.literal_eval(line)
+        except (ValueError, SyntaxError):
+            continue
+        if isinstance(obj, dict) and isinstance(obj.get("ok"), bool):
+            receipts.append(obj)
+    if not receipts:
+        receipts.extend(
+            {"ok": match.group(1) == "true"}
+            for match in re.finditer(r'"ok"\s*:\s*(true|false)', text)
+        )
+        if not receipts and re.search(
+            r'^\s*\{\s*"already_promoted"\s*:\s*(true|false)', text, re.MULTILINE
+        ):
+            receipts.append({"ok": True, "already_promoted": True})
+    return receipts
+
+
+def promotion_receipts(paths, *, window_start=START, window_end=END):
+    """Run ids a coordinator session's transcript records as successfully promoted.
+
+    Only a Bash call that invokes a crew promotion verb is considered, and only
+    a result that reports success. The run id is read from the receipt, or from
+    a literal ``--run`` flag on the command when the receipt omits it. This is
+    the transcript-side landing source: a node can be promoted without leaving a
+    promote commit, and the receipt is the only record of it.
+    """
+    start, end = stamp(window_start), stamp(window_end)
+    landed = set()
+    for path in paths:
+        uses, results = {}, {}
+        with Path(path).open("r", errors="replace") as stream:
+            for line in stream:
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if record.get("isSidechain"):
+                    continue
+                when = stamp(record.get("timestamp"))
+                if when is None or not start <= when <= end:
+                    continue
+                content = (record.get("message") or {}).get("content")
+                if not isinstance(content, list):
+                    continue
+                for block in content:
+                    if not isinstance(block, dict):
+                        continue
+                    if block.get("type") == "tool_use" and block.get("name") == "Bash":
+                        uses[block["id"]] = str(
+                            (block.get("input") or {}).get("command") or ""
+                        )
+                    elif block.get("type") == "tool_result":
+                        text = block.get("content")
+                        if isinstance(text, list):
+                            text = "\n".join(
+                                str(part.get("text", ""))
+                                for part in text
+                                if isinstance(part, dict)
+                            )
+                        results[block.get("tool_use_id")] = str(text or "")
+        for uid, command in uses.items():
+            if not re.search(r"\bcrew\b", command) or not re.search(
+                r"\b(complete|promote)\b", command
+            ):
+                continue
+            result = results.get(uid)
+            if result is None:
+                continue
+            for obj in _receipt_objects(result):
+                if not obj.get("ok"):
+                    continue
+                run = obj.get("run_id") or (obj.get("record") or {}).get("run_id")
+                if not run:
+                    flag = re.search(r"--run[=\s]+(r-[^\s'\"]+)", command)
+                    run = flag.group(1) if flag else None
+                if run:
+                    landed.add(run)
+    return landed
+
+
+def _landed_in_window(run, receipts, start, end):
+    """Census landed rule: an in-window promote commit, a committed marker, or a receipt.
+
+    The promote commit must be on the primary first parent and carry the
+    ``promote(<run>):`` colon subject; a bare ``promote(<run>)`` merged in from a
+    branch is not a landing on the primary line. A committed ``promoted_revision``
+    in the pinned ledger proves a promotion no later than the cutoff. A promotion
+    receipt in the coordinator transcript covers a node promoted without either.
+    """
+    for promotion in run.get("promotion_commits") or []:
+        epoch = promotion.get("epoch")
+        if epoch is None or not start <= epoch <= end:
+            continue
+        if promotion.get("first_parent") and promotion.get("colon_subject"):
+            return True
+    if run.get("promoted_revision") and (
+        run.get("record_source") == "committed_primary_snapshot"
+    ):
+        return True
+    return run.get("run_id") in receipts
+
+
 def coordinator_cost(
     runs,
     *,
@@ -791,8 +926,12 @@ def coordinator_cost(
 ):
     """Divide each coordinator session's work by the nodes it landed.
 
-    ``runs`` is the cohort of landed nodes; each row carries its
-    ``coordinator`` identity from the run record. Rows whose
+    ``runs`` is the cohort of candidate nodes; each row carries its
+    ``coordinator`` identity from the run record and is duplicated verbatim. A row
+    is counted as landed when the census rule holds: an in-window promote commit
+    on the primary first parent with a ``promote(<run>):`` colon subject, or a
+    committed ``promoted_revision`` in the pinned ledger, or a successful
+    promotion receipt in the coordinator transcript. Rows whose
     ``node_definition.coordinator.runtime_session_id`` is absent fall into an
     explicit unattributed bucket keyed by project and recorded session label, so
     unattributed work is counted rather than silently dropped. A session's
@@ -815,9 +954,16 @@ def coordinator_cost(
         groups[key].append(run)
         attributions[key] = attribution
     index = transcript_index(transcript_root) if transcript_root is not None else {}
+    start, end = stamp(window_start), stamp(window_end)
     sessions = []
     for key, items in sorted(groups.items()):
-        landed = len(items)
+        paths = index.get(key, []) if transcript_root is not None else []
+        receipts = (
+            promotion_receipts(paths, window_start=window_start, window_end=window_end)
+            if paths
+            else set()
+        )
+        landed = sum(1 for run in items if _landed_in_window(run, receipts, start, end))
         row = {
             "session_id": key,
             "attribution": attributions[key],
@@ -1428,14 +1574,18 @@ def measure(
             "coordinator_hours": "Union of dispatch-to-completion intervals per recorded coordinator session, summed across sessions. This is time with workers dispatched, not measured coordinator CPU or interaction time. Day cells are promotion-day cohorts, not time sliced exposure.",
             "daily": "Run rows grouped by promotion event UTC day; lines by primary landing committer UTC day; every project/day/lane combination is emitted, including zero populations.",
             "quantiles": "Median and linearly interpolated percentile at (n-1)*p; missing denominator explicitly recorded.",
-            "coordinator_cost": "Per coordinator session named by a landed run's node_definition.coordinator.runtime_session_id: assistant responses and logical input, the separately reported cache-read share and output tokens, each divided by the in-window promote-commit-promoted nodes that session landed. A run with no runtime session id enters an explicit unattributed bucket; a session with no transcript reports null rather than zero.",
+            "coordinator_cost": "Per coordinator session named by a landed run's node_definition.coordinator.runtime_session_id: assistant responses and logical input, the separately reported cache-read share and output tokens, each divided by the nodes that session landed. A node is landed when it has an in-window promote commit on the primary first parent with a colon subject, or a committed promoted_revision in the pinned ledger, or a successful promotion receipt in the coordinator transcript. The cohort is every run dispatched in the window or promoted in it. A run with no runtime session id enters an explicit unattributed bucket; a session with no transcript reports null rather than zero.",
         },
         "coordinator_cost": coordinator_cost(
             [
                 run
                 for run in all_runs
-                if any(
-                    promotion.get("source", "promote_commit") == "promote_commit"
+                if (
+                    (stamp(run.get("dispatched_at")) is not None)
+                    and start <= stamp(run.get("dispatched_at")) <= end
+                )
+                or any(
+                    promotion.get("epoch") is not None
                     and start <= promotion["epoch"] <= end
                     for promotion in run["promotion_commits"]
                 )

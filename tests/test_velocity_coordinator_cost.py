@@ -47,26 +47,37 @@ def _write_transcript(root: Path, session: str, records: list[dict]) -> None:
 
 
 def _runs() -> list[dict]:
+    # Every row is landed by a committed marker: a ``promoted_revision`` present in
+    # the pinned ledger. The candidate cohort and the landed count are therefore
+    # the same four rows, which is what the division tests below need.
+    landed = {
+        "promoted_revision": "deadbeef",
+        "record_source": "committed_primary_snapshot",
+    }
     return [
         {
             "run_id": "r-1",
             "project": "sample",
             "coordinator": {"runtime_session_id": SESSION},
+            **landed,
         },
         {
             "run_id": "r-2",
             "project": "sample",
             "coordinator": {"runtime_session_id": SESSION},
+            **landed,
         },
         {
             "run_id": "r-3",
             "project": "sample",
             "coordinator": {"session_id": "unlabelled-human"},
+            **landed,
         },
         {
             "run_id": "r-4",
             "project": "sample",
             "coordinator": {"runtime_session_id": MISSING},
+            **landed,
         },
     ]
 
@@ -177,6 +188,80 @@ def test_a_session_without_a_transcript_reports_null_not_zero(cost: dict):
     assert row["tokens_per_landed_node"] is None
 
 
+def test_a_promotion_receipt_lands_a_node_without_a_commit(tmp_path: Path):
+    root = tmp_path / "projects"
+    _write_transcript(
+        root,
+        SESSION,
+        [
+            {
+                "type": "assistant",
+                "timestamp": AT,
+                "message": {
+                    "id": "msg-tool",
+                    "usage": {"input_tokens": 1, "output_tokens": 1},
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": "t1",
+                            "name": "Bash",
+                            "input": {
+                                "command": "reckon crew promote --run r-9 --project sample"
+                            },
+                        }
+                    ],
+                },
+            },
+            {
+                "type": "user",
+                "timestamp": AT,
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": "t1",
+                            "content": '{"ok": true, "run_id": "r-9"}',
+                        }
+                    ]
+                },
+            },
+        ],
+    )
+    runs = [
+        {
+            "run_id": "r-9",
+            "project": "sample",
+            "coordinator": {"runtime_session_id": SESSION},
+        }
+    ]
+    cost = velocity.coordinator_cost(runs, transcript_root=root)
+    assert cost["sessions"][0]["landed_nodes"] == 1
+    assert velocity.promotion_receipts(velocity.transcript_index(root)[SESSION]) == {
+        "r-9"
+    }
+
+
+def test_a_promotion_off_the_first_parent_does_not_land():
+    runs = [
+        {
+            "run_id": "r-9",
+            "project": "sample",
+            "coordinator": {"runtime_session_id": SESSION},
+            "promotion_commits": [
+                {
+                    "sha": "x",
+                    "epoch": velocity.stamp(AT),
+                    "landing_sha": "x",
+                    "first_parent": False,
+                    "colon_subject": True,
+                }
+            ],
+        }
+    ]
+    cost = velocity.coordinator_cost(runs, transcript_root=None)
+    assert cost["sessions"][0]["landed_nodes"] == 0
+
+
 def test_measure_reports_the_section_without_reading_a_transcript_store(tmp_path: Path):
     # With no transcript root the section still reports landed counts, and the
     # committed suite never reaches into the live home directory.
@@ -216,6 +301,8 @@ def test_measure_reports_the_section_without_reading_a_transcript_store(tmp_path
                                 "sha": "deadbeef",
                                 "epoch": velocity.stamp(AT),
                                 "landing_sha": "deadbeef",
+                                "first_parent": True,
+                                "colon_subject": True,
                             }
                         ],
                     }
