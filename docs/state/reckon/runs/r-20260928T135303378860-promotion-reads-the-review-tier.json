@@ -1,0 +1,413 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 3,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "fb7475289c1d5e0230e6c146dc44891b02a23420",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 5265085,
+      "input_tokens_cumulative": 5265085,
+      "output_tokens": 41358,
+      "output_tokens_cumulative": 41358,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 897,
+    "files": 6,
+    "removed": 31
+  },
+  "commit_list_shortfall": {
+    "declared": 5,
+    "kind": "presented_commits_subset_of_manifest",
+    "message": "run 'r-20260928T135303378860-promotion-reads-the-review-tier' has a passing gate presenting 4 commit(s) of the 5 its manifest declares; missing: b84ae6238c80f5617cf3f7da05aa0ed477cc16f5. The out-of-scope boundary check runs against the presented commits, so an incomplete presentation narrows it. This is a report, not a refusal — present the full list, or the boundary check may not cover the node's work",
+    "missing": [
+      "b84ae6238c80f5617cf3f7da05aa0ed477cc16f5"
+    ],
+    "presented": 4
+  },
+  "commit_resolution": null,
+  "commits": [
+    "5c01306373397f0b7b444f2c7138129daafdb22b",
+    "4e75a08e5a0f9f783a8583af78864d2163c013ad",
+    "3a80abbac64158e700a090894cef5f05b6853762",
+    "45d443c0eb57429ec0a819ae9241afd8ab97ebeb"
+  ],
+  "completed_at": "2026-09-28T18:10:34.009Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T13:53:17Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "role/path"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 tests/test_a_promotion_never_reads_unpromoted.py tests/test_crew_promotion.py tests/test_crew_promotion_requires_review.py tests/test_promotion_landed_sweep.py tests/test_promotion_reads_the_matching_review.py tests/test_promotion_reads_the_review_tier.py tests/test_promotion_release.py tests/test_promotion_requires_impl_move.py tests/test_refused_promotion_leaves_no_trace.py tests/test_report_only_promotion.py tests/test_review_gate_coverage.py tests/test_review_role_is_not_reviewed.py tests/test_review_tiers.py tests/test_scoring_dispatches_its_review.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T135303378860-promotion-reads-the-review-tier/gate-merged-main.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.17,
+    "plan": "a-review-is-sized-to-its-risk",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T14:53:04.698685+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T13:53:04Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 14,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": -3,
+    "mean_context": 130000,
+    "observed_at": "2026-09-28T13:52:50Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T18:10:34.009Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T135303378860-promotion-reads-the-review-tier/manifest.md",
+  "member": "disposable-r-20260928T135303378860-promotion-reads-the-review-tier",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_promotion_reads_the_review_tier.py::test_tests_only_run_promotes_unreviewed_with_tier_none"
+    ],
+    "baseline_failure_ids": [],
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_promotion_reads_the_review_tier.py::test_tests_only_run_promotes_unreviewed_with_tier_none"
+    ],
+    "declaration": "restore the role check in place of the tier in _require_review_waiver; the tests-only run must then be refused",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T135303378860-promotion-reads-the-review-tier/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T135303378860-promotion-reads-the-review-tier/negative-control.log",
+    "test_paths": [
+      "tests/test_promotion_reads_the_review_tier.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "promotion-reads-the-review-tier",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1630,
+          "cached_input_tokens": 340378,
+          "input_tokens": 342010,
+          "output_tokens": 324,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 342334,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "At completion, reckon/crew/promotion.py computes the run's review tier by calling reckon.review_tiers.review_tier with four inputs: the run's actual changed paths; their added-plus-deleted line count at the promoted head; the run's declared spec level; and the capability risk its plan or section declares, read through the existing plan parser. The light ceiling comes from the resolved review.tiers flight key, not a literal. It writes the tier to the ledger row as review_tier. _require_review_waiver reads that tier in place of the role check: a none-tier run promotes without a stored review, and its ledger row records the tier as the reason no review exists. A full-tier or light-tier run without a stored review at the promoted head is refused exactly as today, and a review run stays exempt. Dispatching the light review with its ten-minute budget, and escalating one that overruns, are out of scope. tests/test_promotion_reads_the_review_tier.py covers four runs in a synthesised repository: a tests-only run promotes unreviewed with review_tier none on its ledger row; a small runtime-source run at spec level exact is light, and is refused without a review; a large runtime-source run is full, and is refused without a review; and a small runtime-source run whose plan declares capability risk elevated is full. It passes at exit 0, as do tests/test_review_tiers.py and the existing promotion review-gate tests the change reaches. The manifest records base and head arms of those files, each log header printing its revision and reckon.__file__, with FAILED ids per arm. The declared negative control is applied, the tests-only case is observed to be refused, and that log's absolute path is in the manifest with an EXIT= line and the FAILED test id.",
+    "estimated_hours": null,
+    "goal": "Make promotion compute each run's review tier, record it on the ledger row, and gate on it in place of the role check",
+    "id": "promotion-reads-the-review-tier",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T13:53:04Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 14,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": -3,
+      "mean_context": 130000,
+      "observed_at": "2026-09-28T13:52:50Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T135303378860-promotion-reads-the-review-tier/manifest.md",
+    "negative_control": "restore the role check in place of the tier in _require_review_waiver; the tests-only run must then be refused",
+    "plan": "a-review-is-sized-to-its-risk",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/promotion.py",
+      "tests/test_promotion_reads_the_review_tier.py",
+      "docs/evidence/archive/a-review-is-sized-to-its-risk-landed.html",
+      "docs/figures/a-review-is-sized-to-its-risk",
+      "docs/plans/a-review-is-sized-to-its-risk.html"
+    ]
+  },
+  "orientation_input_tokens": 4787059.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "promotion-reads-the-review-tier",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T13:53:09.363216+00:00",
+    "score": 0.6625,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-review-is-sized-to-its-risk",
+  "plan_impl_at_dispatch": 0.17,
+  "promoted_revision": "45d443c0eb57429ec0a819ae9241afd8ab97ebeb",
+  "resume_waiver": null,
+  "review": null,
+  "review_tier": "full",
+  "review_waiver": {
+    "reason": "review 89 at 4e75a08e carried forward: the commits since are tests only (3a80abba adds the three cases the review asked for; 45d443c0 reconciles ten review-gate cases with the tier contract, no assertion removed, no product code changed); the fourteen review and promotion files pass 167 with no failures at the tree merged into main"
+  },
+  "role": "implement",
+  "run_id": "r-20260928T135303378860-promotion-reads-the-review-tier",
+  "scope_acceptances": [
+    {
+      "path": "tests/test_review_gate_coverage.py",
+      "reason": "its role-rule cases were reconciled with the tier contract at the coordinator's direction after the first merge added failures there"
+    }
+  ],
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "c0db12fa-6b38-40e7-8ca9-45f28e5cef40",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": 10,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 33454585,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2518.918,
+    "generated_tokens": 203198,
+    "generation_seconds": 1199.691,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.0,
+    "machine_seconds": 1319.227,
+    "peak_input_tokens": 163387,
+    "tokens_per_second": 169.38,
+    "wall_tokens_per_second": 80.67
+  },
+  "time_budget": "60m",
+  "tool_steps": 148.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 1800,
+        "classification": "promotable",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 1657,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-28T13:19:23Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-28T12:52:07Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260928T125136008338-s25-reuse-map-quota-runway",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 13154,
+          "worker_pid": 1431181
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "promote",
+          "recovery_classification": "promotable",
+          "state": "complete"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 2023,
+        "log_fresh": false,
+        "manifest_commits": [],
+        "manifest_derived": false,
+        "manifest_digest": "b7d28b36d442d27f148222a92d8b17c31d3ff4a0e6fac5984170308baca7c02a",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T125136008338-s25-reuse-map-quota-runway/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew complete --run r-20260928T125136008338-s25-reuse-map-quota-runway --gate <verdict>",
+        "node": "s25-reuse-map-quota-runway",
+        "phase": "starting",
+        "plan": "the-fleet-reports-its-velocity",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "promote",
+        "recovery_classification": "promotable",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": true,
+        "review_status": "parsed",
+        "run_id": "r-20260928T125136008338-s25-reuse-map-quota-runway",
+        "session": "s25-coord",
+        "terminal_age_seconds": 2053,
+        "terminal_at": "2026-09-28T13:18:52Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/s25-reuse-map-quota-runway"
+      }
+    ]
+  },
+  "wall_seconds": 15437,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 3,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T18:10:34Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T17:28:31Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T135303378860-promotion-reads-the-review-tier",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 35622,
+    "worker_pid": 3117303
+  },
+  "worker_seconds": 15396,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
