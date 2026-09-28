@@ -1834,17 +1834,23 @@ def test_first_dispatch_proceeds_with_a_freshly_armed_project_watch(home, repo) 
 
     def controlled_sleep(_seconds):
         sleeping.set()
-        assert release.wait(timeout=5)
+        release.wait()
 
-    with ThreadPoolExecutor(max_workers=1) as pool:
-        watcher = pool.submit(
-            crew.watch,
-            "proj",
-            stall_window="1h",
-            sleeper=controlled_sleep,
-        )
-        assert sleeping.wait(timeout=5)
+    outcome: list[dict] = []
+    raised: list[BaseException] = []
 
+    def run_watch() -> None:
+        try:
+            outcome.append(
+                crew.watch("proj", stall_window="1h", sleeper=controlled_sleep)
+            )
+        except BaseException as exc:  # noqa: BLE001 - re-raised below
+            raised.append(exc)
+
+    watcher = threading.Thread(target=run_watch, daemon=True)
+    watcher.start()
+    try:
+        assert sleeping.wait(timeout=5), "the watch never reached its sleeper"
         with runs.follower_claim("proj", "sess", delivery="stream"):
             record = crew.dispatch(
                 node=_node(id="next-node"),
@@ -1861,10 +1867,17 @@ def test_first_dispatch_proceeds_with_a_freshly_armed_project_watch(home, repo) 
         assert record["watch_override"] is None
 
         _deliver_manifest(record, "complete", commits="HEAD")
+    finally:
         release.set()
-        event = watcher.result(timeout=5)
-        assert event["event"] == "terminal"
-        assert event["run_id"] == record["run_id"]
+
+    watcher.join(timeout=5)
+    assert not watcher.is_alive(), "the watch did not return after the manifest landed"
+    if raised:
+        raise raised[0]
+    assert outcome, "the watch returned no event"
+    event = outcome[0]
+    assert event["event"] == "terminal"
+    assert event["run_id"] == record["run_id"]
 
 
 def _assert_attach_line_shape(
