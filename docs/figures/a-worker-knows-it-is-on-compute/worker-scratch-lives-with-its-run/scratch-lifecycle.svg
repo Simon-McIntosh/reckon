@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" role="img" aria-labelledby="title description">
+  <title id="title">A run's scratch directory is born at dispatch and removed at release</title>
+  <desc id="description">Dispatch creates one directory per run under the node-local scratch root and sets the worker's TMPDIR to it. Promotion or discard removes only the directory named for the released run and prints the path; a sibling run's directory is never reached.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L8 4L0 8" fill="none" stroke="#16736a" stroke-width="1.4"/>
+    </marker>
+  </defs>
+  <g font-family="system-ui,sans-serif" fill="#162a35">
+    <text x="22" y="32" font-size="19" font-weight="600">Scratch lives and dies with its run</text>
+    <text x="22" y="56" font-size="13" fill="#4a6472">Host temp root is node-local and shared; each run owns one directory beneath it and only its own is removed.</text>
+
+    <!-- dispatch column -->
+    <rect x="22" y="84" width="230" height="112" rx="8" fill="#eef5f3" stroke="#16736a" stroke-width="1.5"/>
+    <text x="40" y="112" font-size="14" font-weight="600">dispatch</text>
+    <text x="40" y="138" font-size="12.5">mkdir &lt;root&gt;/&lt;run-id&gt;</text>
+    <text x="40" y="160" font-size="12.5">TMPDIR = that directory</text>
+    <text x="40" y="182" font-size="12.5" fill="#4a6472">worker writes only here</text>
+
+    <!-- scratch root panel -->
+    <rect x="330" y="84" width="300" height="290" rx="8" fill="#f7f9fa" stroke="#8aa0ab" stroke-width="1.2"/>
+    <text x="348" y="112" font-size="13.5" font-weight="600">/tmp/reckon-crew-scratch/</text>
+    <text x="348" y="132" font-size="11.5" fill="#4a6472">node-local scratch root</text>
+
+    <rect x="348" y="150" width="264" height="86" rx="6" fill="#e7f2ee" stroke="#16736a" stroke-width="1.4"/>
+    <text x="362" y="176" font-size="13" font-weight="600">run A/</text>
+    <text x="362" y="198" font-size="11.5">worker-temp.txt</text>
+    <text x="362" y="220" font-size="11.5" fill="#16736a">TMPDIR for worker A</text>
+
+    <rect x="348" y="252" width="264" height="86" rx="6" fill="#fdf3e6" stroke="#b6792a" stroke-width="1.4"/>
+    <text x="362" y="278" font-size="13" font-weight="600">run B/</text>
+    <text x="362" y="300" font-size="11.5">other scratch files</text>
+    <text x="362" y="322" font-size="11.5" fill="#b6792a">TMPDIR for worker B</text>
+
+    <!-- release column -->
+    <rect x="716" y="150" width="242" height="120" rx="8" fill="#fbecec" stroke="#b23b3b" stroke-width="1.5"/>
+    <text x="734" y="178" font-size="14" font-weight="600">promotion / discard of A</text>
+    <text x="734" y="202" font-size="12.5">rmtree &lt;root&gt;/run A</text>
+    <text x="734" y="224" font-size="11.5" fill="#4a6472">prints the path removed</text>
+
+    <rect x="716" y="292" width="242" height="82" rx="8" fill="#eef5f3" stroke="#16736a" stroke-width="1.5"/>
+    <text x="734" y="320" font-size="13" font-weight="600">run B survives</text>
+    <text x="734" y="342" font-size="11.5" fill="#4a6472">a different run's directory</text>
+    <text x="734" y="362" font-size="11.5" fill="#4a6472">is never reached</text>
+
+    <g fill="none" stroke="#16736a" stroke-width="1.5" marker-end="url(#arrow)">
+      <path d="M252 140H322"/>
+      <path d="M630 193H708"/>
+      <path d="M476 336H704" stroke-dasharray="5 4"/>
+    </g>
+    <text x="700" y="285" font-size="11.5" fill="#16736a" stroke="none">removed</text>
+    <text x="612" y="352" font-size="11.5" fill="#16736a" stroke="none">untouched by A's release</text>
+  </g>
+</svg>

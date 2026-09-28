@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="worker-scratch-lives-with-its-run">
+  <meta name="plan-title" content="A worker's scratch lives and dies with its run">
+  <meta name="plan-summary" content="Dispatch gives each run a private node-local scratch directory as TMPDIR; promotion and discard remove only that run's directory.">
+  <meta name="plan-evidence-for" content="a-worker-knows-it-is-on-compute">
+  <meta name="plan-verifies" content="a-worker-knows-it-is-on-compute#s6">
+  <meta name="plan-commits" content="c6e49d9">
+  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,reckon/crew/promotion.py,tests/test_worker_scratch_lives_with_its_run.py,docs/figures/a-worker-knows-it-is-on-compute/worker-scratch-lives-with-its-run/scratch-lifecycle.svg">
+  <meta name="plan-recorded-at" content="2026-09-28">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment; base arm in a scratch tree at the same revision">
+  <meta name="plan-tags" content="crew,dispatch,promotion,discard,scratch">
+  <title>A worker's scratch lives and dies with its run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>A worker's scratch lives and dies with its run</h1>
+      <p class="lead">Dispatch hands each run a private directory under the node-local scratch root and sets it as the worker's <code>TMPDIR</code>; promotion and discard remove that directory, printing the path they removed, and a sibling run's directory survives.</p>
+    </header>
+
+    <section id="s6">
+      <h2>&sect;6 &mdash; A worker's scratch lives and dies with its run</h2>
+      <p>Commit <code>c6e49d9</code> adds <code>worker_scratch_root()</code>, <code>worker_scratch_dir()</code>, <code>ensure_worker_scratch()</code> and <code>remove_worker_scratch()</code> to <code>reckon/crew/dispatch.py</code>. The root defaults to <code>&lt;tempfile.gettempdir()&gt;/reckon-crew-scratch</code> — the host's node-local <code>/tmp</code> — and is overridable through <code>RECKON_WORKER_SCRATCH_ROOT</code>. The run's directory is <code>&lt;root&gt;/&lt;run-id&gt;</code>. <code>_worker_runtime_environment</code> now sets <code>TMPDIR</code> to that directory and creates it, and every launch path — the supervisor's worker spawn, a resume, and the in-harness directive — composes its worker environment through that one function, so they cannot disagree about <code>TMPDIR</code>.</p>
+      <p>Removal is wired once, in <code>_release_run_workspace</code> in <code>reckon/crew/promotion.py</code>, which promotion (<code>_release_after_promotion</code>) and discard (<code>_remove_discarded_worktree</code>) both funnel through. It removes only <code>&lt;root&gt;/&lt;run-id&gt;</code> and prints <code>removed worker scratch directory &lt;path&gt;</code>; a run id that would climb out of the root is withheld rather than joined, so a directory a different run owns is never in reach. Gate logs and evidence continue to go to the run directory under the config home on GPFS.</p>
+
+      <img src="/reckon/figures/a-worker-knows-it-is-on-compute/worker-scratch-lives-with-its-run/scratch-lifecycle.svg" alt="Dispatch creates one directory per run under the node-local scratch root and points the worker's TMPDIR at it; releasing run A removes only run A's directory and prints the path, leaving run B's directory untouched.">
+
+      <h3>What the gate measured</h3>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Dispatch test: worker <code>TMPDIR</code> equals the run's scratch directory</td><td>pass</td></tr>
+          <tr><td>Dispatch test: <code>TMPDIR</code> survives the operator's inherited <code>TMPDIR</code> in the spawned process env</td><td>pass</td></tr>
+          <tr><td>Promotion test: scratch directory removed, path printed</td><td>pass</td></tr>
+          <tr><td>Discard test: scratch directory removed, a sibling run's survives, path printed</td><td>pass</td></tr>
+          <tr><td>Added failures by id across the gate</td><td>0</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Arms</h3>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Tree</th><th>Command</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>base</td>
+            <td><code>40d23d9</code></td>
+            <td><code>/tmp/scratch-base-worker-scratch</code></td>
+            <td><code>pytest -q</code> over the dispatch, promotion and discard test files (10 files, module <code>/tmp/scratch-base-worker-scratch/reckon/crew/dispatch.py</code>)</td>
+            <td>56 passed, 0 failed</td>
+          </tr>
+          <tr>
+            <td>after</td>
+            <td><code>40d23d9</code> + <code>c6e49d9</code></td>
+            <td>worktree <code>worker-scratch-lives-with-its-run</code></td>
+            <td><code>pytest -q</code> over the same 10 files plus <code>tests/test_worker_scratch_lives_with_its_run.py</code></td>
+            <td>60 passed, 0 failed</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The base arm runs the same ten existing test files in a scratch tree materialised from <code>40d23d9</code> (<code>measurement_module</code> <code>/tmp/scratch-base-worker-scratch/reckon/crew/dispatch.py</code>, <code>measurement_cwd</code> <code>/tmp/scratch-base-worker-scratch</code>). The after arm runs those same files plus the four new tests in this node's worktree. Base carries 56 passing and 0 failing; after carries 60 passing and 0 failing. Zero failures are added by id in either arm, and the four new tests are the only additions.</p>
+
+      <h3>The mutation this check fails against</h3>
+      <p>The declared mutation is <code>leave the per-run scratch directory in place at promotion and discard</code>. With <code>remove_worker_scratch</code> replaced by a no-op, <code>tests/test_worker_scratch_lives_with_its_run.py</code> under <code>RECKON_WORKER_SCRATCH_NEGATIVE=1</code> turns exactly the promotion and discard removal tests red (<code>2 failed, 2 passed</code>), and the file run directly prints the mutation as its first line followed by <code>scratch present after promotion release: True</code> and <code>scratch present after discard: True</code>. Red log: <code>gates/negative_control.log</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
