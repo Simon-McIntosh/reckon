@@ -1407,6 +1407,54 @@
       separately dispatched test node.</p></div>
     </div>
 
+      <div class="r-comment" data-section="s2" data-id="c-20260928T0600-codex-login-persists-a-refresh" data-who="node fenced-codex-can-persist-its-login" data-when="2026-09-28T06:00:00+00:00">
+        <div class="r-comment-body"><p><strong>The codex login is now bound read-write, so a fenced
+        refresh persists a refreshed login.</strong> Measured first: the installed codex
+        (codex-cli 0.155.1) rewrites <code>auth.json</code> <em>in place</em> &mdash; the file
+        backend opens the same path with <code>OpenOptions::truncate(true).write(true)</code>
+        (<code>codex-rs/login/src/auth/storage.rs</code>, the <code>File</code> backend's
+        <code>save</code>) and the strace of <code>codex login --with-api-key</code> against a
+        synthetic scratch <code>CODEX_HOME</code> shows exactly that
+        <code>open(&hellip;auth.json, O_WRONLY|O_CREAT|O_TRUNC, 0600)</code> on an unchanged
+        inode, with no rename anywhere in the trace. The refresh path reaches the same
+        <code>save</code> through <code>refresh_and_persist_chatgpt_token</code> &rarr;
+        <code>persist_tokens</code> &rarr; <code>storage.save</code>. So a single-file bind can
+        carry the refreshed login back.</p>
+
+        <p><strong>The change.</strong> <code>fence_argv</code> gained
+        <code>read_write_binds</code>, mounted <code>--bind</code> after the read-only pair, and
+        <code>launch_plan</code> now passes the codex credential there instead of to
+        <code>read_only_binds</code>. Only that one file is opened up: the operator's
+        <code>~/.codex</code> directory keeps its <code>--ro-bind</code> overlay, and the login is
+        bound rather than copied, so no stale copy lands in the run. This is the file the
+        read-only exposure used to rotate server-side and then drop, burning the single-use
+        refresh token &mdash; the run <code>r-20260926T204353115391</code> then failed with the
+        401 the section records.</p>
+
+        <p><strong>Gate.</strong> <code>tests/test_fenced_codex_can_persist_its_login.py</code>
+        (four cases) passes; the composed argv carries
+        <code>--bind &lt;home&gt;/.codex/auth.json &lt;run&gt;/codex-home/auth.json</code> and not the
+        <code>--ro-bind</code>, <code>~/.codex</code> keeps its overlay, no copy lands in the run,
+        and a real fenced run's rewrite of <code>auth.json</code> reaches the operator's file while
+        a sibling write under <code>~/.codex</code> is refused. Its declared negative control
+        &mdash; <em>restore the read-only bind of auth.json; the read-write bind assertion must
+        fail</em> &mdash; applied in a scratch module, turns the read-write assertion red and
+        reproduces the original <q>Read-only file system</q> on the login. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-codex-login-read-write-bind</code>,
+        figure <code>/reckon/figures/a-worker-cannot-write-your-home/codex-login-read-write-bind.svg</code>.</p>
+
+        <p><strong>Blocked on an out-of-scope pin.</strong> Two assertions in
+        <code>tests/test_each_run_owns_its_harness_home.py</code>
+        (<code>test_the_codex_login_is_bound_read_only_into_the_runs_codex_home</code>,
+        <code>tests/test_an_unfenced_codex_launch_keeps_the_operators_home</code>) still pin
+        <code>[operator/.codex/auth.json, run/codex-home/auth.json] in --ro-bind</code>, which is
+        the exact behaviour this change replaces; base 12 passed &rarr; head 2 failed / 10 passed,
+        both in that one file. That file is outside this node's write scope, so the assertions are
+        reported rather than edited. The repair is two-line: assert the pair under
+        <code>--bind</code>, and drop the <code>codex-login-remove refused</code> expectation,
+        whose premise (the login is unremovable) is what read-write binding ends.</p></div>
+      </div>
+
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host

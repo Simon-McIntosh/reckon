@@ -2255,11 +2255,11 @@ def create_write_roots(roots: Iterable[str | Path]) -> None:
 
 
 def codex_auth_source(home: str | Path | None = None) -> Path | None:
-    """Return the operator's codex login to bind read-only, or None.
+    """Return the operator's codex login to bind into a run, or None.
 
     Absent login is None and no bind is composed, so a machine without the
-    credential produces a fence that is short one read-only file rather than
-    one that refuses to start.
+    credential produces a fence that is short one file rather than one that
+    refuses to start.
     """
     root = Path(home) if home is not None else Path.home()
     candidate = root / ".codex" / CODEX_AUTH_FILENAME
@@ -2271,13 +2271,21 @@ def _harness_credential_binds(
     harness: Path | None,
     home: str | Path | None,
 ) -> list[tuple[Path, Path]]:
-    """Return the read-only file binds a run's harness home needs, if any.
+    """Return the writable file binds a run's harness home needs, if any.
 
     Only codex requires a credential file: it is exposed into the run's own
-    codex home so the harness authenticates from its run directory. The list is
-    empty for a dialect that needs no credential, for a run with no harness
-    home, and for a machine with no login — the fence is then short one bind
-    rather than refusing to start.
+    codex home so the harness authenticates from its run directory. The bind is
+    writable rather than read-only because codex rewrites ``auth.json`` in
+    place on a token refresh (``OpenOptions::truncate(true).write(true)``, the
+    same inode, no rename), so a read-only exposure rotates the login
+    server-side and then cannot persist it, burning the operator's single-use
+    refresh token. Binding the operator's one file writable — rather than
+    copying it into the run — is what lets the refresh survive without giving
+    the worker its own stale shadow of the login.
+
+    The list is empty for a dialect that needs no credential, for a run with no
+    harness home, and for a machine with no login — the fence is then short one
+    bind rather than refusing to start.
     """
     if dialect_name != "codex" or harness is None:
         return []
@@ -2473,6 +2481,7 @@ def fence_argv(
     manifest_path: str | Path | None = None,
     home: str | Path | None = None,
     read_only_binds: Iterable[tuple[str | Path, str | Path]] = (),
+    read_write_binds: Iterable[tuple[str | Path, str | Path]] = (),
 ) -> list[str]:
     """Wrap a launch argv so protected paths are read-only to the worker.
 
@@ -2499,9 +2508,13 @@ def fence_argv(
     destination has no link in it either — a grant below a symlinked directory
     would otherwise abort the launch just as a protected path did.
 
-    ``read_only_binds`` are source/destination pairs mounted last: a writable
-    grant re-binds a whole subtree, so a file mounted underneath one is exposed
-    correctly only when it is mounted after that grant.
+    ``read_only_binds`` and ``read_write_binds`` are source/destination pairs
+    mounted last: a writable grant re-binds a whole subtree, so a file mounted
+    underneath one is exposed correctly only when it is mounted after that
+    grant. ``read_write_binds`` carry a single file the worker must be able to
+    write back — the codex login, which the harness rewrites in place on a
+    token refresh — and are mounted after the read-only pair so the writable
+    one is the last word on its path.
 
     Every root the caller hands is created before the argv is composed, because
     bubblewrap binds a writable root by *source* path and refuses that root the
@@ -2543,6 +2556,8 @@ def fence_argv(
         fenced += ["--bind", key, key]
     for source, destination in read_only_binds:
         fenced += ["--ro-bind", str(source), str(destination)]
+    for source, destination in read_write_binds:
+        fenced += ["--bind", str(source), str(destination)]
     fenced.append("--")
     fenced += list(argv)
     return fenced
@@ -2668,7 +2683,7 @@ def launch_plan(
             worktree=worktree_path,
             manifest_path=manifest,
             home=fence_home,
-            read_only_binds=_harness_credential_binds(
+            read_write_binds=_harness_credential_binds(
                 dialect.name, harness, fence_home
             ),
         )

@@ -2490,6 +2490,90 @@ exit: 0</pre>
     measures only this node's own change; verifying the merged result belongs to a
     separately dispatched test node.</p>
   </section>
+
+  <section id="s2-codex-login-read-write-bind" data-reckon="section">
+    <h2>&sect;2 &mdash; A fenced codex run persists a refreshed login</h2>
+    <p><strong>Node:</strong> <code>fenced-codex-can-persist-its-login</code>. Run
+    <code>r-20260928T052817612864-fenced-codex-can-persist-its-login</code>.</p>
+
+    <p><strong>The defect.</strong> The fence bound the operator's single
+    <code>~/.codex/auth.json</code> <em>read-only</em> into each run's codex home. OAuth refresh
+    tokens are single-use: a fenced codex run that refreshed rotated the token server-side and
+    could not write the new one back, so the operator's stored refresh token was spent. The next
+    refresh then failed &mdash; codex-luna run <code>r-20260926T204353115391</code> died with
+    <q>Your access token could not be written back</q>-class 401s on a login last written
+    2026-09-17.</p>
+
+    <p><strong>Measure first &mdash; the write mode.</strong> codex rewrites
+    <code>auth.json</code> <em>in place</em>. Against a synthetic scratch
+    <code>CODEX_HOME</code> under <code>/tmp</code> (never the operator's real home, and no real
+    refresh triggered), the only auth.json syscall during
+    <code>codex login --with-api-key</code> is
+    <code>open(&hellip;/auth.json, O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE|O_CLOEXEC, 0600) = 10</code>
+    on an unchanged inode (67482502 before and after), with no
+    <code>rename</code>/<code>renameat</code>/<code>renameat2</code> in the trace. The refresh
+    path reaches the same <code>save</code>: <code>refresh_and_persist_chatgpt_token</code>
+    &rarr; <code>persist_tokens</code> &rarr; <code>storage.save</code>, and the file backend's
+    <code>save</code> is
+    <code>OpenOptions::new().truncate(true).write(true).create(true).mode(0o600).open(path)</code>
+    followed by <code>write_all</code> (codex-cli 0.155.1;
+    <code>codex-rs/login/src/auth/storage.rs</code> and
+    <code>&hellip;/auth/manager.rs</code>). A failed refresh writes nothing: the synthetic
+    expired-JWT <code>codex exec</code> reproduced the field 401 with zero auth.json syscalls.
+    Because the write is in place, a single-file bubblewrap bind carries the refreshed login
+    back; a rename would have failed <code>EBUSY</code>/<code>EXDEV</code> inside bwrap and the
+    node would stop. Measurement and raw traces:
+    <code>&lt;run&gt;/logs/codex-auth-write-mode.log</code> and the
+    <code>codex-auth-*.raw.log</code> traces beside it.</p>
+
+    <p><strong>What landed.</strong> <code>reckon._backends.fence_argv</code> gained
+    <code>read_write_binds</code>, mounted <code>--bind</code> after the read-only pair so the
+    writable bind is the last word on its path; <code>launch_plan</code> passes the codex
+    credential to it (<code>_harness_credential_binds</code>) rather than to
+    <code>read_only_binds</code>. Only the one file opens: the operator's
+    <code>~/.codex</code> directory keeps its <code>--ro-bind</code> overlay, and the login is
+    bound, never copied, so the run cannot shadow it with a stale copy.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/codex-login-read-write-bind.svg"
+           alt="The operator's ~/.codex is overlaid read-only except auth.json, which is bound read-write into the run's codex home; the in-place O_TRUNC write is shown beneath.">
+      <figcaption>The one-file read-write bind, and the in-place write that makes it sufficient.</figcaption>
+    </figure>
+
+    <p><strong>Gate &mdash; executed, not inspected.</strong>
+    <code>tests/test_fenced_codex_can_persist_its_login.py</code>, four cases, all pass:
+    (1) the composed argv carries
+    <code>--bind &lt;home&gt;/.codex/auth.json &lt;run&gt;/codex-home/auth.json</code> and not the
+    <code>--ro-bind</code>, and the destination is mounted after the run directory's writable
+    grant; (2) the operator's <code>~/.codex</code> keeps its <code>--ro-bind</code> overlay;
+    (3) no copy of the login lands in the run; (4) under a real bwrap fence the stub rewrites
+    <code>CODEX_HOME/auth.json</code> and the operator's file gains the rewritten
+    <code>refresh_token</code>, while a sibling write under <code>~/.codex</code> is refused
+    <q>Read-only file system</q> and leaves no file. Log:
+    <code>&lt;run&gt;/logs/new-test.log</code> (<code>4 passed in 0.73s</code>).</p>
+
+    <p><strong>Declared negative control.</strong> <em>restore the read-only bind of auth.json;
+    the read-write bind assertion must fail</em> &mdash; applied to a scratch copy of
+    <code>_backends.py</code> (mounting <code>read_write_binds</code> with <code>--ro-bind</code>),
+    the read-write assertion in case (1) fails and case (4) reproduces the original failure on
+    the login (<code>[Errno 30] Read-only file system</code> on
+    <code>&hellip;/codex-home/auth.json</code>), <code>2 failed, 2 passed</code>. Log:
+    <code>&lt;run&gt;/logs/negative-control.log</code>, first line the mutation verbatim.</p>
+
+    <p><strong>Regression delta.</strong> The three named neighbours,
+    <code>basetemp</code> outside every git repository: base <code>7b2e963b</code>
+    <code>12 passed</code> &rarr; head <code>2 failed, 10 passed</code>. Both failures are in
+    <code>tests/test_each_run_owns_its_harness_home.py</code> and both pin the read-only bind
+    this change replaces
+    (<code>test_the_codex_login_is_bound_read_only_into_the_runs_codex_home</code> asserts the
+    pair under <code>--ro-bind</code> and that the login is unremovable;
+    <code>test_an_unfenced_codex_launch_keeps_the_operators_home</code> asserts the pair under
+    <code>--ro-bind</code>). <code>test_fence_never_binds_the_main_checkout.py</code> and
+    <code>test_fence_is_on_again.py</code> add none. Logs:
+    <code>&lt;run&gt;/logs/base-arm-three-files.log</code> and
+    <code>&lt;run&gt;/logs/head-arm-three-files.log</code>. That file is outside this node's write
+    scope, so the two stale assertions are reported for a follow-on rather than edited here.</p>
+  </section>
 </main>
 </body>
 </html>
