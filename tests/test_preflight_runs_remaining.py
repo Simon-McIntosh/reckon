@@ -10,9 +10,13 @@ as a measurement rather than an absence.
 
 A receipt's weekly figure is the *level* the window stood at when the run was
 harvested -- a stock. The run's own cost is a *flow*: the rise in that level
-across a reset window over the runs that produced it. Pricing the level as though
-it were the cost would read a nearly full window as a nearly spent budget and
-throttle every metered wave, so the cases below pin the flow, not the level.
+across a reset window, divided by the intervals it spans -- the receipts bound one
+fewer gap of spend than there are receipts, because the first receipt is the level
+the rise starts from. Pricing the level as though it were the cost would read a
+nearly full window as a nearly spent budget and throttle every metered wave, and
+dividing the rise by the receipt count would overstate the runs remaining by
+n/(n-1); the cases below pin the flow, not the level, and pin the interval divisor
+against the receipt count.
 
 The cases build synthetic run records under a temporary ledger and hand the group
 a synthetic window reading, so the figure is arithmetic rather than a stroke of
@@ -171,9 +175,10 @@ def _series(
     """Commit ``count`` receipts rising linearly from ``start_pct`` to ``end_pct``.
 
     The series is oldest-first, each receipt one hour after the last, so the
-    earliest-to-latest rise is exactly ``end_pct - start_pct`` over ``count``
-    runs, and its reset boundary is the caller's. This is the flow the estimator
-    must price, and the shape a level-based reading mistakes for a spent budget.
+    earliest-to-latest rise is exactly ``end_pct - start_pct`` over ``count - 1``
+    intervals, and its reset boundary is the caller's. This is the flow the
+    estimator must price, and the shape a level-based reading mistakes for a spent
+    budget.
     """
     step = 0.0 if count < 2 else (end_pct - start_pct) / (count - 1)
     _write_runs(
@@ -208,10 +213,12 @@ def _bar(report: list[dict], group: str = "sol") -> dict:
 
 
 def test_the_figure_is_the_rise_over_the_runs_that_produced_it(tmp_path: Path) -> None:
-    """A rise from 10% to 18% over 12 receipts prices 8/12 of a point a run.
+    """A rise from 10% to 18% over 12 receipts prices 8/11 of a point a run.
 
     The window's level, 18%, is where the week stands -- not what a run cost. The
-    cost is the rise, so the figure is (100 - 18) divided by 8/12.
+    cost is the rise, divided by the intervals it spans: 12 receipts bound 11 gaps
+    of spend, because the first receipt is the 10% the rise starts from. So the
+    figure is (100 - 18) divided by 8/11.
     """
     _series(tmp_path, count=12, start_pct=10.0, end_pct=18.0, oldest_hours_ago=30.0)
 
@@ -225,10 +232,35 @@ def test_the_figure_is_the_rise_over_the_runs_that_produced_it(tmp_path: Path) -
     )
 
     assert runway["state"] == budget.OBSERVED
-    assert runway["mean_run_cost_pct"] == pytest.approx(8.0 / 12.0)
+    assert runway["mean_run_cost_pct"] == pytest.approx(8.0 / 11.0)
     assert runway["priced_runs"] == 12
     assert runway["remaining_pct"] == pytest.approx(90.0)
-    assert runway["runs_remaining"] == pytest.approx(90.0 / (8.0 / 12.0))
+    assert runway["runs_remaining"] == pytest.approx(90.0 / (8.0 / 11.0))
+
+
+def test_a_two_receipt_window_prices_one_interval_not_two(tmp_path: Path) -> None:
+    """Two receipts bound one gap, so the per-run cost is the whole rise.
+
+    Dividing the rise by the receipt count instead of the interval count would
+    halve this cost and double the runs remaining -- exactly the 2x error the
+    interval divisor exists to prevent, on the smallest window that measures.
+    """
+    _series(tmp_path, count=2, start_pct=10.0, end_pct=18.0, oldest_hours_ago=5.0)
+
+    runway = _runway(
+        budget.group_pace(
+            CONFIG,
+            windows={"sol-a": _reading(0.10, 0.10)},
+            records=_rows(tmp_path),
+            now=NOW,
+        )
+    )
+
+    assert runway["priced_runs"] == 2
+    assert runway["mean_run_cost_pct"] == pytest.approx(8.0 / 1.0)
+    # 90% remaining at 8 points a run is 11.25 runs; the receipt-count divisor
+    # would have said 22.5, twice as many.
+    assert runway["runs_remaining"] == pytest.approx(90.0 / 8.0)
 
 
 def test_a_nearly_full_window_does_not_report_few_runs(tmp_path: Path) -> None:
@@ -263,9 +295,9 @@ def test_a_window_that_reset_mid_series_prices_the_current_window(
 
     Five receipts in the previous window sat flat at 90% -- a nearly full window
     that moved not at all -- and four in the current window rose 10% to 13%. Only
-    the current window's rise is priced, so the per-run cost is 3/4 over the four
-    runs that made it; a level-based reading would have taken the 90% level for a
-    cost and reported a fraction of a run.
+    the current window's rise is priced, so the per-run cost is 3/3 over the three
+    intervals those four receipts bound; a level-based reading would have taken the
+    90% level for a cost and reported a fraction of a run.
     """
     _series(
         tmp_path,
@@ -296,7 +328,7 @@ def test_a_window_that_reset_mid_series_prices_the_current_window(
     )
 
     assert runway["state"] == budget.OBSERVED
-    assert runway["mean_run_cost_pct"] == pytest.approx(3.0 / 4.0)
+    assert runway["mean_run_cost_pct"] == pytest.approx(3.0 / 3.0)
     assert runway["priced_runs"] == 4
 
 
@@ -353,21 +385,21 @@ def test_the_figure_is_reported_per_role_and_per_group(tmp_path: Path) -> None:
         )
     )
 
-    # The whole wallet rose 10 points over 6 runs.
-    assert runway["mean_run_cost_pct"] == pytest.approx(10.0 / 6.0)
+    # The whole wallet rose 10 points over 6 receipts, i.e. 5 intervals.
+    assert runway["mean_run_cost_pct"] == pytest.approx(10.0 / 5.0)
     assert runway["priced_runs"] == 6
     assert sorted(runway["by_role"]) == ["implement", "review"]
-    # implement drew 10, 14, 18 -- a rise of 8 over 3 runs; review drew 12, 16,
-    # 20 -- the same rise over its own 3.
+    # implement drew 10, 14, 18 -- a rise of 8 over its 2 intervals; review drew
+    # 12, 16, 20 -- the same rise over its own 2.
     assert runway["by_role"]["implement"]["mean_run_cost_pct"] == pytest.approx(
-        8.0 / 3.0
+        8.0 / 2.0
     )
     assert runway["by_role"]["implement"]["runs_remaining"] == pytest.approx(
-        90.0 / (8.0 / 3.0)
+        90.0 / (8.0 / 2.0)
     )
     assert runway["by_role"]["review"]["priced_runs"] == 3
     assert runway["by_role"]["review"]["runs_remaining"] == pytest.approx(
-        90.0 / (8.0 / 3.0)
+        90.0 / (8.0 / 2.0)
     )
 
 
@@ -394,7 +426,7 @@ def test_a_run_from_beyond_the_trailing_week_is_not_priced(tmp_path: Path) -> No
     )
 
     assert runway["priced_runs"] == 2
-    assert runway["mean_run_cost_pct"] == pytest.approx(2.0 / 2.0)
+    assert runway["mean_run_cost_pct"] == pytest.approx(2.0 / 1.0)
 
 
 # ── Unmeasured, never zero ──────────────────────────────────────────────────
@@ -491,7 +523,7 @@ def test_an_unmeasured_runway_refuses_nothing() -> None:
 
 
 def test_a_wave_inside_the_window_is_admitted(tmp_path: Path) -> None:
-    """A wave of 20 at 8/12 of a point each projects 13%, well inside 90%."""
+    """A wave of 20 at 8/11 of a point each projects 14.5%, well inside 90%."""
     _series(tmp_path, count=12, start_pct=10.0, end_pct=18.0, oldest_hours_ago=30.0)
 
     bar = _bar(
@@ -509,11 +541,11 @@ def test_a_wave_inside_the_window_is_admitted(tmp_path: Path) -> None:
 
     assert bar["refusal"] is None
     assert len(bar["admitted"]) == 20
-    assert bar["runway"]["runs_remaining"] == pytest.approx(90.0 / (8.0 / 12.0))
+    assert bar["runway"]["runs_remaining"] == pytest.approx(90.0 / (8.0 / 11.0))
 
 
 def test_a_wave_projected_past_the_reset_is_refused(tmp_path: Path) -> None:
-    """10% of the week left at 8/12 a run is 15 runs; 20 nodes project past it."""
+    """10% of the week left at 8/11 a run is 13.75 runs; 20 nodes project past it."""
     _series(tmp_path, count=12, start_pct=10.0, end_pct=18.0, oldest_hours_ago=30.0)
 
     bar = _bar(
@@ -532,10 +564,10 @@ def test_a_wave_projected_past_the_reset_is_refused(tmp_path: Path) -> None:
     refusal = bar["refusal"]
     assert refusal is not None
     assert refusal["refused"] is True
-    assert refusal["runs_remaining"] == pytest.approx(10.0 / (8.0 / 12.0))
+    assert refusal["runs_remaining"] == pytest.approx(10.0 / (8.0 / 11.0))
     # The refusal names the runs remaining and the reset time, because those are
     # the two figures that let a coordinator size the wave and time its retry.
-    assert "15.00 runs remain" in refusal["reason"]
+    assert "13.75 runs remain" in refusal["reason"]
     reset = _iso(NOW + timedelta(hours=100.0))
     assert reset in refusal["reason"]
     assert refusal["resets_at"] == reset

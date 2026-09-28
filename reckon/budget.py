@@ -1987,18 +1987,25 @@ def _run_cost_flow(
 
     A receipt's seven-day figure is the level the window stood at when the run was
     harvested -- a stock, not what the run itself spent. Two receipts that share a
-    reset boundary differ by the quota the runs between them consumed, so the flow
-    is the rise from the earliest to the latest receipt of one window over the
-    runs that produced it, and summing the rises per window over the runs that
-    produced them gives the wallet's mean. Because a window is keyed by its own
-    reset boundary, a window that reset inside the trailing week contributes its
-    own rise and never its level against the current window's -- the current
-    window's receipts alone price the current week.
+    reset boundary differ by the quota spent between them, so the flow of one
+    window is the rise from its earliest to its latest receipt, and summing the
+    rises per window gives the wallet's total rise. Because a window is keyed by
+    its own reset boundary, a window that reset inside the trailing week
+    contributes its own rise and never its level against the current window's --
+    the current window's receipts alone price the current week.
 
-    A window holding fewer than two receipts measured no rise, and a window whose
-    level did not move prices nothing, so neither contributes. That is what keeps
-    the figure honest: a window's level divided by another level would read a
-    nearly full window as a nearly spent budget and throttle every metered wave.
+    The rise is divided by the number of *intervals* it spans, not the number of
+    receipts: ``n`` receipts bound ``n - 1`` gaps of spend, because the first
+    receipt is the level the rise starts *from*, not a run the rise paid for.
+    Dividing by ``n`` would understate the per-run cost -- by ``n / (n - 1)``,
+    exactly a factor of two on a two-receipt window -- and so overstate the runs
+    remaining, which is the direction that weakens the refusal. The receipts are
+    still counted, so a reader sees how many priced runs fed the figure.
+
+    A window holding fewer than two receipts bounds no interval, and a window
+    whose level did not move prices nothing, so neither contributes. That is what
+    keeps the figure honest: a window's level divided by another level would read
+    a nearly full window as a nearly spent budget and throttle every metered wave.
     ``None`` means no window measured a rise, which is an absence and never a zero
     cost or an infinite count.
     """
@@ -2006,7 +2013,8 @@ def _run_cost_flow(
     for _backend, _role, observed, used, resets in priced:
         by_window.setdefault(resets, []).append((observed, used))
     total_rise = 0.0
-    total_runs = 0
+    total_intervals = 0
+    priced_receipts = 0
     newest: datetime | None = None
     for samples in by_window.values():
         if len(samples) < 2:
@@ -2016,12 +2024,13 @@ def _run_cost_flow(
         if rise <= 0.0:
             continue
         total_rise += rise
-        total_runs += len(samples)
+        total_intervals += len(samples) - 1
+        priced_receipts += len(samples)
         if newest is None or samples[-1][0] > newest:
             newest = samples[-1][0]
-    if total_runs == 0 or total_rise <= 0.0 or newest is None:
+    if total_intervals == 0 or total_rise <= 0.0 or newest is None:
         return None
-    return total_rise / total_runs, total_runs, newest
+    return total_rise / total_intervals, priced_receipts, newest
 
 
 def _unmeasured_runway(
