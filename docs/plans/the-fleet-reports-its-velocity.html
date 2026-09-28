@@ -20,16 +20,16 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,measurement">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <meta name="plan-blocks" content="open-work-is-capped">
   <title>The Fleet Reports Its Velocity | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-commits" content="85af514b,997c5539,7c508e7e,4d79a470,a70ad742,c0917d6f,e2fc9f03,30fe8845,280d7fa9,43e971d3,be18adb4,90959463,118b06ba,0b61cc5d,e6b344f3,474d8119,66edfc86,9576896f,2652f39b">
 <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_coordinator_cost.py">
-<meta name="plan-impl" content="0.78">
+<meta name="plan-impl" content="0.89">
 </head>
 <body>
   <main class="plan-doc">
@@ -355,7 +355,10 @@ and its provenance sit in the record's added_failures_source and in review-store
     <div class="r-comment-body"><p>independent review of r-20260928T132148906656-resumed-burn-prices-to-rollout stored parsed at head ec3a248e in the crew review store — plain and revision-keyed paths byte-identical, total 90, dimensions 18/17/19/18/18, six items with none absent, two call sites, three findings on the manifest as delivered, and added_failure_count 0 with empty added_failure_ids derived from the reviewed run's own base-arm.log and gate-head.log</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260928T171036653688-review-of-preflight-reports-runs-remaining" data-who="reckon-build" data-when="2026-09-28T17:45:10.545Z">
-    <div class="r-comment-body"><p>review of r-20260928T140618988787-preflight-reports-runs-remaining at head f00c293c5f639ccc9c65726184754a409467310e: 88/100 (goal_fidelity 16, evidence 17, scope_discipline 19, durability 18, fit 18), status parsed, six item verdicts, two production call sites, measured zero added failures over the run&#x27;s own baseline_suite/after_suite gate logs, two findings (the flow&#x27;s denominator counts n receipts against a rise spanning n-1 intervals, overstating runs remaining up to 2x on two-receipt wallets; the head arm&#x27;s log command header is an elided placeholder).</p></div>
+    <div class="r-comment-body"><p>review of r-20260928T140618988787-preflight-reports-runs-remaining at head f00c293c5f639ccc9c65726184754a409467310e: 88/100 (goal_fidelity 16, evidence 17, scope_discipline 19, durability 18, fit 18), status parsed, six item verdicts, two production call sites, measured zero added failures over the run's own baseline_suite/after_suite gate logs, two findings (the flow's denominator counts n receipts against a rise spanning n-1 intervals, overstating runs remaining up to 2x on two-receipt wallets; the head arm's log command header is an elided placeholder).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260928T180750746283" data-who="s25-coord" data-when="2026-09-28T18:12:00.000Z">
+    <div class="r-comment-body"><p>preflight-reports-runs-remaining merged at 299b1396: the preflight reports runs remaining per metered budget group and role, pricing a run as the flow a window's receipts rose over their intervals, and refuses a wave projected past the reset with the runs remaining and reset time named. Reviews 67 (priced at the level), 88 (divided by receipts, not intervals), carried forward over the one-divisor fix; head exit 0. Section 4 done: all four nodes landed. Open follow-ons: split a lane-changed run's total per budget group; gate the run store's migration on a missing column; wire the runway figure onto the command surface.</p></div>
 </div>
 </section>
 </main>
