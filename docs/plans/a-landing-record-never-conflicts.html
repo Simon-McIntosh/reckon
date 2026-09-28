@@ -134,11 +134,24 @@
       suffix stripped), so the plan composed is the plan the surface links the record to. <code>serve.py</code> and
       <code>doccheck.py</code> drop their local copies of the resolver and call it, closing the two findings of the
       <code>served-and-audited-records-are-composed</code> re-review.
-      <br>Three cases in <code>tests/test_read_plan_composes_the_record.py</code>: a record read through the text path
+      <br>Seven cases in <code>tests/test_read_plan_composes_the_record.py</code>: a record read through the text path
       carries its fragment; a document named like a record whose metas name no plan is served, audited and read as its
-      own bytes (a fragment parked under the pseudo-slug its filename suggests is what makes the case observable); and
-      a record with no fragments reads byte-identically. Negative control: making the resolver decide by the filename
-      ending <code>-landed.html</code> again makes the misnamed-document case fail.
+      own bytes (a fragment parked under the pseudo-slug its filename suggests is what makes the case observable); a
+      record whose filename and metas name different plans composes the plan its own meta names, both plans carrying a
+      fragment so the composition alone tells them apart; a record with no fragments reads byte-identically; and three
+      cases over the fallback warning &mdash; a composition failure reads the record's own bytes and reports it, a
+      healthy read carries no warning, and a warning reaches the response's <code>warnings</code> list.
+      Negative control: making the resolver decide by the filename ending <code>-landed.html</code> again fails both the
+      misnamed-document case and the disagreement case.
+      <br><strong>Repaired after review (90/100).</strong> A read that fell back to the record's own bytes because
+      composition failed did so silently; <code>_typed_resource_text_and_warning</code> now returns and logs a warning
+      naming the record and the error, and the read path carries it on the response's <code>warnings</code>
+      list, so an uncomposed read never looks like a warning-free record. The review's evidence finding — baseline and
+      after suites stated as prose — is answered with two logged arms whose headers print the revision, the resolved cwd
+      and the served <code>reckon.__file__</code>: head and base each exit 0 with no failing ids, and the new test file
+      is absent at base. <strong>Open, and outside this node's fence:</strong> the public <code>read_plan</code> route
+      refuses an evidence document at <code>view='section'</code> (the section view admits plan resources only), so the
+      composed text is reachable today only through the <code>_typed_resource_text</code> machinery this node wired.
       <a href="/reckon/evidence/archive/a-landing-record-never-conflicts-landed#s3">&sect;3 read_plan landed</a></p>
     <figure class="plan-figure">
       <img src="/reckon/figures/a-landing-record-never-conflicts/read-plan.svg"

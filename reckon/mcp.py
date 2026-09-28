@@ -29,6 +29,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
+import logging
 import os
 import shlex
 import time
@@ -149,6 +150,8 @@ from reckon.resources import (
 )
 from reckon.roadmap import GraphTargetError, build_roadmap, resolve_graph_target
 from reckon.serve import _resolve_plan_file, discover_plans, edge_row
+
+_LOGGER = logging.getLogger("reckon.mcp")
 
 # ── Server instance ────────────────────────────────────────────────────────
 
@@ -1078,6 +1081,23 @@ def _typed_resource_text(
     cannot be read, reads as its own bytes.
     """
 
+    text, _warning = _typed_resource_text_and_warning(selector, checkout_path)
+    return text
+
+
+def _typed_resource_text_and_warning(
+    selector: ResourceSelector,
+    checkout_path: str | None,
+) -> tuple[str, str | None]:
+    """Read the selected artifact, naming a composition fallback it took.
+
+    Returns the text and, when a record could not be composed and its own bytes
+    were read instead, a warning naming the record and the failure. The warning
+    is also logged, so an uncomposed read is observable rather than silent: a
+    record whose fragments are hidden by a read failure otherwise reads exactly
+    like one that has none. ``None`` means the read is the healthy one.
+    """
+
     from reckon.evidence import (
         EvidenceSynthesisError,
         compose_landed_record,
@@ -1086,7 +1106,7 @@ def _typed_resource_text(
 
     docs_dir = _docs_dir_for_project(selector.project, checkout_path)
     if docs_dir is None or selector.type not in {"plan", "research", "evidence"}:
-        return ""
+        return "", None
     resource = resource_map(
         docs_dir,
         selector.project,
@@ -1094,20 +1114,38 @@ def _typed_resource_text(
         ignore_invalid=True,
     ).get((selector.type, selector.id, selector.archived))
     if resource is None:
-        return ""
+        return "", None
     plan = evidence_record_plan(resource.path)
     if plan is not None:
         try:
-            return compose_landed_record(
+            composed = compose_landed_record(
                 resource.path, plan, project=selector.project
             ).decode("utf-8", errors="replace")
-        except (OSError, EvidenceSynthesisError):
-            # An unreadable ledger suppresses composition, not the document.
-            pass
+        except (OSError, EvidenceSynthesisError) as exc:
+            # An unreadable ledger suppresses composition, not the record's own
+            # bytes — but the gap must be visible, so it is logged and returned.
+            warning = f"evidence record {resource.path.name} read uncomposed: {exc}"
+            _LOGGER.warning("%s", warning)
+            return _read_resource_bytes(resource.path), warning
+        return composed, None
+    return _read_resource_bytes(resource.path), None
+
+
+def _read_resource_bytes(path: Path) -> str:
+    """Return a document's own text, or ``""`` when it cannot be read."""
+
     try:
-        return resource.path.read_text(encoding="utf-8", errors="replace")
+        return path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return ""
+
+
+def _append_read_warning(result: dict[str, Any], warning: str | None) -> dict[str, Any]:
+    """Attach a read fallback warning to a response's ``warnings`` list."""
+
+    if warning:
+        result["warnings"] = [*(result.get("warnings") or []), warning]
+    return result
 
 
 def _distributed(docs_dir: Path) -> bool:
@@ -1427,7 +1465,13 @@ def _read_plan_view(
                 if held_blockers:
                     data = {**data, "held_by": held_blockers}
 
-        return resource_view(
+        html_text = None
+        html_warning = None
+        if selected_view == "section":
+            html_text, html_warning = _typed_resource_text_and_warning(
+                selector, checkout_path
+            )
+        result = resource_view(
             selector,
             version,
             data,
@@ -1438,15 +1482,12 @@ def _read_plan_view(
             limit=limit,
             include_prompts=include_prompts,
             section=section,
-            html_text=(
-                _typed_resource_text(selector, checkout_path)
-                if selected_view == "section"
-                else None
-            ),
+            html_text=html_text,
             storage_schema=storage_schema_for(selector.type),
             op_vocab=_OP_VOCAB,
             dos_donts=_DOS_DONTS,
         )
+        return _append_read_warning(result, html_warning)
     except ViewRequestError as exc:
         return error_response(
             exc.code,
