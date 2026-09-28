@@ -243,6 +243,62 @@ def _deliver(record: dict, *, status: str = "complete") -> None:
     manifest.write_text(f"node: {record['node']['id']}\nstatus: {status}\n")
 
 
+def _commit_work(repo: Path) -> str:
+    """Commit the run's declared work and return its revision.
+
+    A promotion cites what the run made beyond its base and refuses a citation
+    of the base itself, so a fixture that would cite the base must first make a
+    commit, as a real run does. The path is inside the dispatched node's
+    declared write scope so the promotion's boundary check sees work the run
+    was allowed to make.
+    """
+    (repo / "reckon" / "target.py").write_text("value = 2\n", encoding="utf-8")
+    subprocess.run(
+        ["git", "add", "reckon/target.py"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "feat: the run's declared work"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _init_ledger(repo: Path) -> None:
+    """Create the project ledger a promotion or a read surface resolves.
+
+    A promotion writes a per-run file and leaves the aggregate alone, so a test
+    that reads the aggregate must create it first: the fixture checkout carries
+    no ledger until something writes one, and an append no longer creates it.
+    """
+    ledger.write(PROJECT, {"members": [], "runs": [], "holds": []}, 0, root=repo)
+    subprocess.run(
+        ["git", "add", f"docs/state/{PROJECT}/crew.json"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "test: seed an empty project ledger"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+
+
+_UNREVIEWED_PROMOTION_WAIVED = (
+    "the fixture exercises promotion plumbing rather than reviewing this run; "
+    "the review lifecycle has its own coverage"
+)
+
+
 def _timestamp_stream(
     record: dict,
     *,
@@ -416,14 +472,22 @@ def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
 ) -> None:
     record = _dispatch(repo, fixture="codex-turn.jsonl")
     _deliver(record)
+    work = _commit_work(repo)
     before = sorted(path.name for path in crew.live_dir().glob("*.json"))
     assert before == [f"{record['run_id']}.json"]
-    assert ledger.member(PROJECT, record["member"], repo) is not None
+    # An unnamed dispatch is disposable: it mints a per-run identity and gets
+    # no roster row, so the pointer's member names no registered member.
+    assert record["member"].startswith("disposable-")
+    assert ledger.members(PROJECT, repo) == []
+    _init_ledger(repo)
     aggregate = ledger.ledger_path(PROJECT, repo)
     aggregate_before = aggregate.read_bytes()
 
     result = crew.complete(
-        record["run_id"], gate="passed", commits=[record["base_sha"]]
+        record["run_id"],
+        gate="passed",
+        commits=[work],
+        review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
     )
 
     run_file = _assert_run_file(PROJECT, repo, result["record"])
@@ -435,7 +499,7 @@ def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
     stored = ledger.runs(PROJECT, repo)
     assert [item["run_id"] for item in stored] == [record["run_id"]]
     assert stored[0]["gate"] == "passed"
-    assert stored[0]["commits"] == [record["base_sha"]]
+    assert stored[0]["commits"] == [work]
     # Promotion commits its own run file and leaves no dirty state behind.
     changed = [line for line in _porcelain(repo) if "docs/state" in line]
     assert changed == []
@@ -1338,7 +1402,7 @@ def test_a_killed_run_that_delivered_is_scoring_pending_review(home, repo) -> No
     promoted = crew.complete(
         record["run_id"],
         gate="passed",
-        commits=[record["base_sha"]],
+        commits=[_commit_work(repo)],
         review_waiver="this node measures the recovery classification of a "
         "killed delivery; the review lifecycle has its own coverage",
     )
@@ -1419,7 +1483,12 @@ def test_derived_member_guard_spans_work_repositories(home, repo) -> None:
     crew._write_json(crew.pointer_path(foreign_run["run_id"]), foreign_run)
 
     with pytest.raises(crew.MemberInFlight) as excinfo:
-        _dispatch(repo, session=session, node_kwargs={"id": "node-local"})
+        _dispatch(
+            repo,
+            session=session,
+            member=member,
+            node_kwargs={"id": "node-local"},
+        )
 
     assert excinfo.value.member == member
     assert excinfo.value.run_id == foreign_run["run_id"]
@@ -1494,7 +1563,10 @@ def test_promotion_refuses_a_merge_conflicted_ledger(home, repo) -> None:
     path.write_bytes(conflicted)
 
     with pytest.raises(_store.CorruptEnvelopeError) as excinfo:
-        crew.complete(record["run_id"], gate="passed", root=repo)
+        crew.complete(
+            record["run_id"], gate="passed", root=repo,
+            review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
+        )
 
     message = str(excinfo.value)
     assert str(path) in message
@@ -1568,6 +1640,11 @@ def test_a_second_node_reaches_the_members_captured_session(home, repo) -> None:
     ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
     first = _dispatch(repo, fixture="codex-turn.jsonl", member="worker-a")
     crew.observe(first["run_id"])
+    # A retry of one task reuses its node id, which is also what claims the
+    # node's landing fragment, so the first attempt is stopped before the
+    # retry: a stopped, empty claim no longer fences the fragment or the
+    # member, and the captured session on its pointer is still read.
+    _kill(first)
 
     # A second dispatch of the same task — the same plan and node id — reaches
     # the session the member captured; the resolution is keyed to the task, so
@@ -1631,7 +1708,7 @@ def test_a_promoted_record_names_the_member_and_its_session(home, repo) -> None:
     _deliver(record)
 
     promoted = crew.complete(
-        record["run_id"], gate="passed", commits=[record["base_sha"]]
+        record["run_id"], gate="passed", commits=[_commit_work(repo)]
     )
 
     assert promoted["record"]["member"] == "worker-a"
@@ -1676,7 +1753,10 @@ def test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it
     _deliver(record)
 
     promoted = crew.complete(
-        record["run_id"], gate="passed", commits=[record["base_sha"]]
+        record["run_id"],
+        gate="passed",
+        commits=[_commit_work(repo)],
+        review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
     )
 
     release = promoted["release"]
@@ -1717,7 +1797,10 @@ def test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releas
     process = spawned["process"]
     try:
         promoted = crew.complete(
-            record["run_id"], gate="passed", commits=[record["base_sha"]]
+            record["run_id"],
+            gate="passed",
+            commits=[_commit_work(repo)],
+            review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
         )
 
         release = promoted["release"]
@@ -1740,9 +1823,10 @@ def test_a_completed_record_carries_every_calibration_input(home, repo) -> None:
     stored = crew.complete(
         record["run_id"],
         gate="passed",
-        commits=[record["base_sha"]],
+        commits=[_commit_work(repo)],
         tests_added=9,
         outcome="landed the dispatch primitive",
+        review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
     )["record"]
 
     assert set(ledger.RECORD_FIELDS) <= set(stored)
@@ -2243,6 +2327,7 @@ def test_the_crew_tool_reads_the_ledger_and_the_live_pointers(home, repo) -> Non
     from reckon import mcp
 
     record = _dispatch(repo)
+    _init_ledger(repo)
     aggregate = ledger.ledger_path(PROJECT, repo)
     before = aggregate.read_bytes()
     _, version_before = ledger.load(PROJECT, repo)
@@ -2293,7 +2378,10 @@ def test_an_unknown_crew_view_names_every_view_it_has(home, repo) -> None:
     result = mcp._crew(PROJECT, view="everything")
 
     assert result["ok"] is False
-    assert "summary, flight, live, records, ledger or budget" in result["detail"]
+    assert (
+        "directory, drain, scopes, summary, flight, live, records, ledger, "
+        "budget or obligations" in result["detail"]
+    )
 
 
 def test_the_crew_tool_reads_budget_headroom_from_the_ledger(home, repo) -> None:
