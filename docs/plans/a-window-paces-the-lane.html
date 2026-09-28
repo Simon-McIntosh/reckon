@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="112">
+<meta name="plan-version" content="113">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.9">
@@ -1880,6 +1880,11 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <h4 class="r-fu-title">Route every row-sourced conversion in pace_replay through one guarded reader</h4>
     <div class="r-fu-body"><p>Review of pace-rows-replay-the-week at d4eee48b (94): a non-numeric reading on an observed seven-day clock still takes the whole week's report down at the float() near reckon/crew/pace_replay.py:290. Three review rounds each fixed one site of the same class (a missing reset stamp, an unparseable reset stamp), so the repair must close the class: every float, int, timestamp parse and key access on a row field goes through one guarded reader that yields unmeasured with a reason. Prove it with a test that replaces each field of a producer-written pace row in turn with garbage (None, "x", [], {}, -1), with the field list generated from the producer's row, so a new field is covered automatically. It must fail at d4eee48b. The codex lane that carried the node is down on an auth refresh failure, so this runs on the local lane.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §8</pre>
+    </article>
+<article class="r-fu" data-id="f-awpl-reserve-refusal-article" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="standard" data-capability-verification="standard" data-written-by="s22-coord" data-written-at="2026-09-28T07:00:00Z" data-recommends-skill="/reckon-build a-window-paces-the-lane §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The reserve refusal reads &quot;a implement dispatch&quot;</h4>
+    <div class="r-fu-body"><p>The review at f836dc86 found that <code>reckon/crew/reserve.py:122</code> puts the role name behind a fixed article, so the implement role's refusal reads "a implement dispatch is refused". Name the role without an article, or pick the article from the role. Add a test that asserts the refusal text for each role.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §4</pre>
     </article>
 </section>
 
