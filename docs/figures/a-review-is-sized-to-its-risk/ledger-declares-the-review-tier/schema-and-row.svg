@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" width="900" height="460" font-family="system-ui, sans-serif">
+  <rect width="900" height="460" fill="#ffffff"/>
+  <text x="24" y="34" font-size="19" font-weight="700" fill="#1c2530">The review tier rides the promoted row on two seams</text>
+  <text x="24" y="58" font-size="13" fill="#5b6570">promotion writes it, build_record always carries it, RECORD_FIELDS declares it — the mounted-row check reads the last against the first.</text>
+
+  <!-- Row 1: promotion -->
+  <rect x="30" y="92" width="230" height="96" rx="10" fill="#eef4fb" stroke="#9db8d6"/>
+  <text x="48" y="120" font-size="13" font-weight="700" fill="#1c2530">promotion.py</text>
+  <text x="48" y="142" font-size="12.5" fill="#39434f">run["review_tier"] =</text>
+  <text x="48" y="160" font-size="12.5" fill="#39434f">  "full" | "light" | "none"</text>
+  <text x="48" y="180" font-size="11.5" fill="#7a5b12">writes on every promotion</text>
+
+  <!-- arrow -->
+  <line x1="260" y1="140" x2="330" y2="140" stroke="#5b6570" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- Row 2: build_record -->
+  <rect x="335" y="92" width="230" height="96" rx="10" fill="#eef7f0" stroke="#9fc9ab"/>
+  <text x="353" y="120" font-size="13" font-weight="700" fill="#1c2530">build_record</text>
+  <text x="353" y="142" font-size="12.5" fill="#39434f">setdefault("review_tier", None)</text>
+  <text x="353" y="162" font-size="12.5" fill="#39434f">— key always present in</text>
+  <text x="353" y="180" font-size="12.5" fill="#39434f">every built row</text>
+
+  <!-- arrow -->
+  <line x1="565" y1="140" x2="635" y2="140" stroke="#5b6570" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- Row 3: RECORD_FIELDS -->
+  <rect x="640" y="92" width="230" height="96" rx="10" fill="#fdf1ee" stroke="#e0a99c"/>
+  <text x="658" y="120" font-size="13" font-weight="700" fill="#1c2530">RECORD_FIELDS</text>
+  <text x="658" y="142" font-size="12.5" fill="#39434f">…, "review",</text>
+  <text x="658" y="160" font-size="12.5" font-weight="700" fill="#a23b26">"review_tier",</text>
+  <text x="658" y="180" font-size="12.5" fill="#39434f">"unreconciled_override"</text>
+
+  <!-- check band -->
+  <rect x="30" y="232" width="840" height="86" rx="10" fill="#f5f6f8" stroke="#c3c9d1"/>
+  <text x="48" y="260" font-size="13" font-weight="700" fill="#1c2530">the declared-field check</text>
+  <text x="48" y="282" font-size="12.5" fill="#39434f">observed = _promoted_ledger_key_union()  →  keys of every promoted row in the mounted ledgers</text>
+  <text x="48" y="303" font-size="12.5" fill="#39434f">undeclared = observed − RECORD_FIELDS  ⇒  must be empty</text>
+
+  <!-- before/after -->
+  <rect x="30" y="348" width="405" height="86" rx="10" fill="#fff6f4" stroke="#e0a99c"/>
+  <text x="48" y="376" font-size="12.5" font-weight="700" fill="#a23b26">before — 19 committed rows, key undeclared</text>
+  <text x="48" y="398" font-size="12.5" fill="#39434f">observed − declared = { "review_tier" }</text>
+  <text x="48" y="419" font-size="12.5" fill="#39434f">schema and emitted row drift</text>
+
+  <rect x="465" y="348" width="405" height="86" rx="10" fill="#f0f8f2" stroke="#9fc9ab"/>
+  <text x="483" y="376" font-size="12.5" font-weight="700" fill="#1f6b3a">after — 19 committed rows, key declared</text>
+  <text x="483" y="398" font-size="12.5" fill="#39434f">observed − declared = ∅</text>
+  <text x="483" y="419" font-size="12.5" fill="#39434f">schema is a subset of every built row</text>
+
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#5b6570"/>
+    </marker>
+  </defs>
+</svg>
