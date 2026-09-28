@@ -35,7 +35,16 @@ CONFIG = {
             "sandbox": "worktree-full",
             "session_reuse": True,
             "time_budget": "20m",
-        }
+        },
+        "alternate": {
+            "launch": "cli",
+            "command": "codex",
+            "model": "another-model",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "session_reuse": True,
+            "time_budget": "20m",
+        },
     },
     "roles": {"implement": {}},
     "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
@@ -108,6 +117,7 @@ def _cli_arguments(
     node_id: str,
     done_when: str | None,
     plan: str | None = None,
+    section: str | None = None,
     dry_run: bool,
 ) -> list[str]:
     arguments = [
@@ -120,6 +130,8 @@ def _cli_arguments(
     ]
     if plan is not None:
         arguments += ["--plan", plan]
+    if section is not None:
+        arguments += ["--section", section]
     arguments += [
         "--role",
         "implement",
@@ -249,3 +261,102 @@ def test_a_brief_and_a_plan_together_are_refused(
 
     assert result.exit_code != 0
     assert "--brief and --plan are mutually exclusive" in result.output
+
+
+def test_a_brief_and_a_section_together_are_refused(
+    brief_repo: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A section names a plan's part; with no plan it has nothing to name."""
+    _config_home, repo, brief = brief_repo
+    result = _invoke(
+        repo,
+        monkeypatch,
+        _cli_arguments(
+            repo,
+            brief,
+            node_id="brief-and-section",
+            done_when=DONE_WHEN,
+            section="session-routing",
+            dry_run=True,
+        ),
+    )
+
+    assert result.exit_code != 0
+    assert "--brief and --section are mutually exclusive" in result.output
+
+
+def test_a_brief_dispatch_prompt_carries_the_brief_and_no_plan_pointer(
+    brief_repo: tuple[Path, Path, Path],
+) -> None:
+    """The brief must reach the composed prompt, not just the pointer.
+
+    A resolved digest and a stored copy say nothing about what the worker was
+    told: an empty brief passed to the composition would leave every other
+    assertion green while the worker received no authority at all.
+    """
+    _config_home, repo, brief = brief_repo
+    node = _brief_node(_config_home, done_when=DONE_WHEN, node_id="brief-prompt")
+    node.brief = str(brief)
+
+    record = crew.dispatch(
+        node=node,
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="session-brief-prompt",
+        launcher=lambda *args, **kwargs: os.getpid(),
+    )
+
+    prompt = (runs.run_dir(record["run_id"]) / "prompt.txt").read_text(encoding="utf-8")
+    assert BRIEF_TEXT.strip() in prompt
+    # A plan dispatch reads its authority through this pointer; a brief carries
+    # the text itself, so the pointer must be absent.
+    assert "PLAN     proj:" not in prompt
+
+
+def test_a_later_read_survives_the_source_brief_being_removed(
+    brief_repo: tuple[Path, Path, Path],
+) -> None:
+    """The durable copy, not the source path, serves every read after dispatch.
+
+    A coordinator's brief is often a scratch file. Once it is gone the run must
+    still resolve — a lane change rebuilds the node from the live pointer and
+    re-resolves it, and reading the source path there refuses a run that is
+    still perfectly dispatchable.
+    """
+    from reckon import ledger
+
+    config_home, repo, brief = brief_repo
+    ledger.register_member("proj", "worker-brief", harness="worker", root=repo)
+
+    node = _brief_node(config_home, done_when=DONE_WHEN, node_id="brief-durable")
+    node.brief = str(brief)
+    record = crew.dispatch(
+        node=node,
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="session-brief-durable",
+        member="worker-brief",
+        launcher=lambda *args, **kwargs: os.getpid(),
+    )
+
+    stored = Path(record["brief"]["path"])
+    Path(record["brief"]["source_path"]).unlink()
+
+    pointer = crew.read_pointer(record["run_id"])
+    pointer.update({"phase": "working", "pid": 41001})
+    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+
+    from reckon.crew.dispatch import change_lane
+
+    moved = change_lane(
+        record["run_id"],
+        "alternate",
+        "the first lane is spent",
+        config=CONFIG,
+        launcher=lambda *args, **kwargs: 42002,
+    )
+
+    assert moved["brief"]["sha256"] == record["brief"]["sha256"]
+    assert Path(moved["brief"]["path"]) == stored

@@ -1253,6 +1253,11 @@ def crew_dispatch(
         raise click.UsageError(
             "--brief and --plan are mutually exclusive; pass exactly one authority"
         )
+    if brief_path and section:
+        raise click.UsageError(
+            "--brief and --section are mutually exclusive; a brief names no "
+            "committed plan section"
+        )
 
     config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
     flight_backend_override = _flight_default_backend_override(

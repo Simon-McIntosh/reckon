@@ -3170,10 +3170,12 @@ def plan_dispatch(
             # A brief names no committed plan section, so the gates that join a
             # node to a base blob and a stored review have nothing to read and
             # are skipped around their call sites rather than inside the shared
-            # gate. The brief's digest is taken here, where the dry run reaches
-            # it too, so a validating caller sees the same digest a launch
-            # would record.
-            node.brief_sha256 = _brief_digest(node.brief)
+            # gate. The digest is taken from the run's own stored copy whenever
+            # dispatch has made one — a later read (a lane change, a resume)
+            # rebuilds the node from the pointer, and the source path a
+            # coordinator handed in may be a scratch file no longer on disk.
+            # At first dispatch no copy exists yet, so the source is read.
+            node.brief_sha256 = _brief_digest(node.brief_path or node.brief)
             resolved_authority["plan"] = {
                 **resolved_authority["plan"],
                 "base_sha": "",
