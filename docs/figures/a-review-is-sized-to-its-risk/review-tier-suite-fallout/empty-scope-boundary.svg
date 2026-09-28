@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 470" width="940" height="470" role="img" aria-labelledby="ttl desc">
+  <title id="ttl">The empty-scope boundary in the review tier</title>
+  <desc id="desc">A report-only run cites no commit. When its manifest declares no path — a bare "none" or an empty list — the tier resolver reads silence and grants the fuller review, so the run is refused for a review it does not owe. When its manifest declares the artefact it delivered, outside the repository, the run measures a scope that holds no runtime source and resolves to the tier that owes no review.</desc>
+  <style>
+    .box { fill: #f6f7f9; stroke: #6b7280; stroke-width: 1.4; }
+    .box-warn { fill: #fdecec; stroke: #b42318; stroke-width: 1.6; }
+    .box-ok { fill: #eaf6ee; stroke: #18794e; stroke-width: 1.6; }
+    .label { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 14px; fill: #1f2328; }
+    .small { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 12px; fill: #4b5563; }
+    .tag { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 12px; font-weight: 700; }
+    .warn { fill: #b42318; }
+    .ok { fill: #18794e; }
+    .edge { stroke: #6b7280; stroke-width: 1.6; fill: none; }
+    .edge-warn { stroke: #b42318; stroke-width: 1.8; fill: none; }
+    .edge-ok { stroke: #18794e; stroke-width: 1.8; fill: none; }
+  </style>
+
+  <text x="30" y="34" class="label" font-size="17" font-weight="700">A report-only run cites no commit — what its manifest declares decides the tier</text>
+  <text x="30" y="56" class="small">The run changes nothing in the repository; it delivers its report outside one. The manifest's changed_paths field is the only scope the tier resolver can measure.</text>
+
+  <!-- root -->
+  <rect class="box" x="30" y="180" width="190" height="86" rx="10"/>
+  <text x="46" y="212" class="label" font-weight="600">report-only run</text>
+  <text x="46" y="234" class="small">commits: none</text>
+  <text x="46" y="252" class="small">no in-repo path changed</text>
+
+  <!-- split -->
+  <path class="edge" d="M220 223 H300"/>
+  <path class="edge" d="M300 223 V135 H360"/>
+  <path class="edge" d="M300 223 V330 H360"/>
+
+  <!-- upper: silence -->
+  <rect class="box-warn" x="360" y="96" width="250" height="82" rx="10"/>
+  <text x="376" y="124" class="label" font-weight="600">declares no path</text>
+  <text x="376" y="146" class="small">changed_paths: none</text>
+  <text x="376" y="164" class="small">changed_paths: []</text>
+  <path class="edge-warn" d="M610 137 H700"/>
+  <polygon points="700,137 690,131 690,143" fill="#b42318"/>
+  <rect class="box-warn" x="700" y="96" width="210" height="82" rx="10"/>
+  <text x="716" y="124" class="tag warn">read as SILENCE</text>
+  <text x="716" y="146" class="label">tier: full</text>
+  <text x="716" y="164" class="small">refused — owes a review</text>
+
+  <!-- lower: declared artefact -->
+  <rect class="box-ok" x="360" y="289" width="250" height="82" rx="10"/>
+  <text x="376" y="317" class="label" font-weight="600">declares its artefact</text>
+  <text x="376" y="339" class="small">changed_paths: /…/report.md</text>
+  <text x="376" y="357" class="small">(a path outside the repository)</text>
+  <path class="edge-ok" d="M610 330 H700"/>
+  <polygon points="700,330 690,324 690,336" fill="#18794e"/>
+  <rect class="box-ok" x="700" y="289" width="210" height="82" rx="10"/>
+  <text x="716" y="317" class="tag ok">MEASURED</text>
+  <text x="716" y="339" class="label">tier: none</text>
+  <text x="716" y="357" class="small">promotes — no review owed</text>
+
+  <text x="30" y="424" class="small">Both runs change the same thing: nothing in the repository. The tier differs only because an empty declared scope is not the claim that nothing changed — it is no claim at all,</text>
+  <text x="30" y="442" class="small">so the resolver grants the fuller review rather than reading an empty path list as a safe change. The reconciliation names the artefact each report-only fixture delivers.</text>
+</svg>

@@ -175,7 +175,12 @@ def _write_attribution_manifest(
                 "node: merged-head-verification",
                 "status: complete",
                 "commits: none",
-                "changed_paths: none",
+                # The report-only run delivers its attribution outside the
+                # repository. Naming that artefact measures a scope holding no
+                # runtime source, so the run owes no review; a bare "none"
+                # reads as silence about what changed and is granted the fuller
+                # review instead.
+                "changed_paths: " + str(path.parent / "attribution-report.md"),
                 "tests: synthetic paired suite observations complete",
                 "baseline_suite: " + json.dumps(baseline),
                 "after_suite: " + json.dumps(after),

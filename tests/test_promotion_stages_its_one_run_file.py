@@ -137,7 +137,17 @@ def test_complete_commits_one_run_file_per_promotion(
             worktree = tmp_path / f"worktree-{name}"
             _git(repo, "worktree", "add", "--detach", str(worktree), "HEAD")
             manifest = tmp_path / f"{run_id}.md"
-            manifest.write_text("status: complete\nchanged_paths: []\n")
+            # This run changes no runtime source: completion stages only its own
+            # run file, which is project state a reviewer would not read for
+            # risk. An empty declared scope reads as silence about what changed
+            # and is granted the fuller review, refusing the run for one it does
+            # not owe; naming the report artefact the run delivers, outside the
+            # repository, measures a scope that holds no runtime source, so the
+            # run resolves to the tier that owes no review.
+            manifest.write_text(
+                "status: complete\n"
+                f"changed_paths: {tmp_path / (run_id + '-report.md')}\n"
+            )
             pointer = pointer_path(run_id)
             assert pointer.parent == config / "crew" / "live"
             _write_json(
