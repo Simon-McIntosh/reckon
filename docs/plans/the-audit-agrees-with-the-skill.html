@@ -19,12 +19,12 @@
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-standalone" content="Three independent contract mismatches between reckon&#x27;s own validators and the skill text; nothing upstream must land first, and §3 is sequenced by a file trigger rather than a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
   <title>The Audit Agrees With The Skill | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="7">
+<meta name="plan-modified" content="2026-09-28">
+<meta name="plan-version" content="8">
 <meta name="plan-commits" content="6e168152,17bb7142,3824f9cf,a255c027,da3ea4a6">
 <meta name="plan-impl" content="0.67">
 </head>
@@ -102,10 +102,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-taawts-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build the-audit-agrees-with-the-skill" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-taawts-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build the-audit-agrees-with-the-skill" data-resolved-at="2026-09-28T14:44:25+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">Land §1 and §2</h4>
     <div class="r-fu-body"><p>§1 and §2 both write <code>reckon/doccheck.py</code> and run in order. §3 waits on its trigger.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-audit-agrees-with-the-skill</pre>
+    <p class="r-fu-outcome">§1 (a landed section's header is not a splice) and §2 (a slug two resource types share is refused at audit) have landed, per their landing comments, and are declared done. §3, the commitless review manifest, remains. Coordinators have avoided the hand edit by promoting reviews with --no-commit, but the done-when, that a promotion test reads 'commits: none (review node)' as empty on a review and still refuses it on an implement run, is not met. It is now implementable and carried by f-taawts-commitless-review-promotes.</p>
+    </article>
+<article class="r-fu" data-id="f-taawts-commitless-review-promotes" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §3: a review&#x27;s commitless manifest promotes without a hand edit</h4>
+    <div class="r-fu-body"><p>A <code>commits:</code> value beginning <code>none</code> is read as an empty list on a node whose role produces no commit, such as a review, so <code>crew complete</code> promotes it without <code>--no-commit</code> or a hand edit. The same prose on an implement run is still refused. The done-when is §3's own.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-audit-agrees-with-the-skill §3</pre>
     </article>
 </section>
 

@@ -21,12 +21,12 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-fleet-counters-count-the-fleet">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
   <title>An Orchestrator Cannot Forget Its Obligations | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-impl" content="0.45">
 </head>
 <body>
@@ -392,6 +392,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260927-obligations-do-not-mislead" data-who="s23-coord" data-when="2026-09-27">
     <div class="r-comment-body"><p><strong>Landed: obligation hints match the fleet.</strong> Two obligation items misled a coordinator on 2026-09-26. <code>review-missing</code> offered a ready-to-run dispatch within a minute of a run going unpromoted, while the review reflex was already launching one, so the hand dispatch was refused as a scope conflict. <code>worktree-held</code> pointed at a worktree path that a live review had reused. Now <code>review-missing</code> is withheld while a reflex review holds a live claim for the reviewed run, and is aged from the reflex's launch window. <code>worktree-held</code> names the live run occupying the path. The node <code>obligations-do-not-mislead</code> was dispatched by the S21 coordinator, merged at <code>7c55fbd8</code> and promoted at <code>e1f341de</code> (commits <code>4a4c0836</code>, <code>1484d366</code>, <code>e1f341de</code>). Its review scored 92, with 0 added failures by id. The one remaining finding is followup <code>f-aocfio-reflex-in-flight-reads-the-record</code>: the in-flight check tests that the pointer exists, where the reflex also requires it to parse. A repair within the landed derivation, so impl is unchanged.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260928-section-declarations-reconciled" data-who="s23-coord" data-when="2026-09-28">
+    <div class="r-comment-body"><p><strong>Section declarations reconciled with the landing evidence.</strong> §7 is declared done. All five done-when clauses landed: the Stop hook's three cases, the run environment reaching fresh launches and resumes, the run and session headers, the attempt-start freshness check, and the failing mutation (worker-stop-binds-the-manifest, worker-env-carries-its-run, worker-env-review-fixes). §5 stays open. The hook script, the installer and the digest fixes have landed, but its done-when includes an acknowledged-obligation case that needs §3's <code>crew ack</code>, so §5 closes with §3. §3 and §6 have not started.</p></div>
 </div>
 </section>
   </main>
