@@ -2111,9 +2111,12 @@ class Handler(BaseHTTPRequestHandler):
 
         try:
             body = compose_landed_record(target, plan_slug, project=project)
-        except (OSError, EvidenceSynthesisError):
+        except (OSError, EvidenceSynthesisError) as exc:
             # Fall back to the record's own bytes rather than failing the read:
             # an unreadable ledger suppresses composition, not the document.
+            # Say so, because a record whose fragments are hidden by a read
+            # failure is otherwise indistinguishable from one with none.
+            LOGGER.warning("serving %s without its fragments: %s", target, exc)
             try:
                 body = target.read_bytes()
             except OSError as e:
