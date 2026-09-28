@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, _store, crew
+from reckon.crew import promotion
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 
@@ -234,16 +235,33 @@ def test_a_review_runs_outcome_defaults_to_its_stored_review(
     landing = next(item for item in comments if item.get("id") == f"c-run-{review_run}")
     assert "review scored 17, 3 finding(s)" in landing["body"]
 
-    unreviewed_run = "r-20260918T084200000000-not-a-review"
-    _write_pointer(repository, unreviewed_run)
+    unstored = "r-20260918T084300000000-reviewed-but-unstored"
+    review_with_no_review = "r-20260918T084400000000-review-scoring-nothing"
+    _write_pointer(
+        repository,
+        review_with_no_review,
+        role="review",
+        node_id=f"review-of-{unstored}",
+    )
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(
-            unreviewed_run,
+            review_with_no_review,
             root=repository,
             gate="failed",
             failure_classification="work-rejected",
         )
-    assert "--outcome" in str(refusal.value)
+    assert "review run whose stored review cannot be read" in str(refusal.value)
+
+    plain_run = "r-20260918T084500000000-not-a-review"
+    _write_pointer(repository, plain_run)
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(
+            plain_run,
+            root=repository,
+            gate="failed",
+            failure_classification="work-rejected",
+        )
+    assert "a non-passing gate requires --outcome" in str(refusal.value)
 
 
 # (3) a checkout past the merged revision is measured when nothing differs
@@ -363,4 +381,57 @@ def test_a_checkout_past_the_merge_is_refused_when_a_changed_path_differs(
     assert report["changed_paths_differing"] == ["pkg/target.py"]
     assert "wrong tree" in (report["reason"] or "")
     assert "pkg/target.py" in report["reason"]
+    assert not (repository / "stored.marker").exists()
+
+
+def test_a_checkout_past_the_merge_with_unknown_run_paths_is_refused(
+    repository: Path,
+) -> None:
+    """A run whose changed paths cannot be read is refused past the merge.
+
+    The ledger row cites a revision the checkout does not carry, so nothing
+    establishes which paths the run changed. An unknown scope is not an empty
+    one: the comparison is reported as null rather than as an empty list, and
+    the gate never runs.
+    """
+    merged = _merged_run(repository)
+    _seed_two_ledger_commits(repository, touches_run_path=False)
+    run_id = "r-20260918T085200000000-verify-unknown-paths"
+    _promote_run(repository, run_id, commit="deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+
+    result = _verify_gate(repository, run_id, merged)
+
+    assert result.exit_code == 0, result.output
+    report = json.loads(result.output)["report"]
+    assert report["ran"] is False
+    assert report["changed_paths_differing"] is None
+    assert "wrong tree" in (report["reason"] or "")
+    assert not (repository / "stored.marker").exists()
+
+
+def test_a_path_comparison_that_cannot_be_taken_is_refused(
+    repository: Path,
+) -> None:
+    """A failed path comparison refuses rather than measuring the tree.
+
+    A comparison that cannot be taken establishes nothing about the extra
+    commits, so it must not read as an empty difference and let the gate run.
+    The path here is one git cannot use as a pathspec, which is the shape a
+    hand-edited ledger row carries.
+    """
+    merged = _merged_run(repository)
+    _seed_two_ledger_commits(repository, touches_run_path=False)
+
+    report = promotion.rerun_gate_at_integrated_revision(
+        repository=repository,
+        gate_check={"command": "sh gate.sh", "exit_status": 0, "log_digest": "x"},
+        base_verdict="passed",
+        integrated_revision=merged,
+        changed_paths=[":(bogus)"],
+    )
+
+    assert report["ran"] is False
+    assert report["integrated_verdict"] == "not-run"
+    assert report["changed_paths_differing"] is None
+    assert "wrong tree" in (report["reason"] or "")
     assert not (repository / "stored.marker").exists()

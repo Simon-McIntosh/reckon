@@ -962,19 +962,6 @@ def _require_runnable_gate_command(
     )
 
 
-def _revision_is_ancestor(repository: Path, ancestor: str, descendant: str) -> bool:
-    """Whether one revision is an ancestor of another in the repository.
-
-    Used to tell a checkout that has moved past the integrated revision — where
-    the extra commits may be provably irrelevant to a re-run — from one that
-    diverged from it, which is never safe to measure.
-    """
-    probe = _git(
-        repository, "merge-base", "--is-ancestor", ancestor, descendant, check=False
-    )
-    return probe.returncode == 0
-
-
 def _paths_differing_between(
     repository: Path,
     integrated: str,
@@ -983,11 +970,13 @@ def _paths_differing_between(
 ) -> list[str] | None:
     """Return the run's changed paths whose content differs between two revisions.
 
-    ``None`` reports the paths as unknown: a caller that cannot state what the
-    run changed cannot establish that the commits after the merge leave that
-    work untouched, and an unknown scope is not an empty one. An empty list
-    means every stated path is identical between the two revisions, the
-    condition under which a checkout past the merge may still be measured.
+    ``None`` reports the paths as unknown, from either route: a caller that
+    states no paths cannot establish that the commits after the merge leave
+    that work untouched, and a comparison that cannot be taken reports the same
+    unknown rather than an empty result, because a failed probe establishes
+    nothing. An empty list means the comparison ran and every stated path is
+    identical between the two revisions, the condition under which a checkout
+    past the merge may still be measured.
     """
     if changed_paths is None:
         return None
@@ -1096,9 +1085,12 @@ def rerun_gate_at_integrated_revision(
     also accepts a checkout the integrated revision is an ancestor of, but only
     when none of the run's own changed paths differs between the two — the
     extra commits are then unable to change what the gate measures. A checkout
-    whose extra commits touch one of those paths is refused, and a caller that
-    cannot state the run's changed paths is refused too, because an unknown
-    scope is not an empty one.
+    whose extra commits touch one of those paths is refused, and a checkout
+    whose paths cannot be compared at all is refused too — whether the run
+    states no paths or the comparison itself fails — because an unknown scope
+    is not an empty one. ``changed_paths_differing`` reports the comparison's
+    result: the differing paths, an empty list for a comparison that ran and
+    found none, and null for one that was never taken.
 
     The command is executed only when the repository's tree is acceptable: a
     run against any other tree verifies the wrong tree, so it never executes
@@ -1148,7 +1140,7 @@ def rerun_gate_at_integrated_revision(
         "checkout_revision": checkout or "",
         "checkout_on_integrated_revision": on_integrated,
         "checkout_descends_from_integrated_revision": descends,
-        "changed_paths_differing": list(differing) if differing else [],
+        "changed_paths_differing": list(differing) if differing is not None else None,
         "gate_command": command or None,
         "gate_command_source": command_source,
         "ran": False,
@@ -1182,14 +1174,16 @@ def rerun_gate_at_integrated_revision(
             "would verify the wrong tree. Check the integrated revision out, "
             "or name the revision the checkout actually carries"
         )
-    elif not on_integrated and changed_paths is None:
+    elif not on_integrated and differing is None:
         reason = (
             f"the checkout is at {checkout[:12]}, past the integrated revision "
-            f"{integrated[:12]}, and the run's changed paths are unknown: "
-            "nothing establishes that the commits after the merge leave what "
-            "the gate measures untouched, so a gate run here would verify the "
-            "wrong tree. Check the integrated revision out, or state the paths "
-            "the run changed"
+            f"{integrated[:12]}, and the run's changed paths could not be "
+            "compared between the two: either the run does not state what it "
+            "changed or the comparison could not be taken, and an unknown "
+            "comparison is not an empty one, so nothing establishes that the "
+            "commits after the merge leave what the gate measures untouched. A "
+            "gate run here would verify the wrong tree. Check the integrated "
+            "revision out, or state the paths the run changed"
         )
     elif not on_integrated and differing:
         reason = (
