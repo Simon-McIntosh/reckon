@@ -44,6 +44,10 @@ DOTDOT = (
 # A path with no ``tests`` component carries nothing the repository can be
 # resolved against, whatever directory it names.
 UNRESOLVABLE = "/opt/other/suite/check.py::test_z"
+# A second, distinct test whose path differs from RELATIVE only above a
+# component that is itself named ``tests``: a package's own test directory, not
+# a working-directory prefix, so the two must not reduce onto one id.
+NESTED = "pkg/tests/test_gate.py::test_alpha"
 
 SCORE = 18
 TOTAL = SCORE * len(review_module.REVIEW_DIMENSIONS)
@@ -142,6 +146,132 @@ def test_an_id_carrying_no_repository_marker_is_kept_verbatim() -> None:
     count, added = _count(["tests/test_gate.py::test_alpha"], [UNRESOLVABLE])
     assert count == 1, "an unresolvable id that the head alone reports is still added"
     assert added == [UNRESOLVABLE], "it is reported under the spelling its log used"
+
+
+def test_ids_differing_above_a_tests_component_stay_distinct() -> None:
+    """A nested ``tests`` directory is a different test, not a shifted prefix.
+
+    The reduction exists to stop a prefix the working directory contributed
+    from telling one test from another. A component above the anchor that is
+    part of the repository-relative path is not that prefix. Reducing on it
+    merges two tests, and an added failure under one is then not counted
+    against the base log that reports the other — a silent under-count, which
+    is the direction opposite to the phantom this count was repaired against.
+    """
+    count, added = _count([NESTED], [RELATIVE])
+
+    assert count == 1, (
+        "the head's tests/test_gate.py::test_alpha is not the pkg/tests/… test "
+        "the base log reports; merging them reports an added failure as none"
+    )
+    assert added == [RELATIVE]
+
+    count, added = _count([RELATIVE], [NESTED])
+
+    assert count == 1, "the reverse direction under-counts by the same merge"
+    assert added == [NESTED]
+
+
+def test_a_working_directory_prefix_reduces_but_a_nested_one_does_not() -> None:
+    """Both halves of the rule, side by side, so a change to either is visible.
+
+    One id printed two ways is still one id; two ids differing only above a
+    ``tests`` component are still two. A reduction that satisfies only one half
+    moves the count silently in one direction or the other.
+    """
+    assert review_module.canonical_node_id(ABSOLUTE) == RELATIVE
+    assert review_module.canonical_node_id(DOTDOT) == RELATIVE
+    assert review_module.canonical_node_id(RELATIVE) == RELATIVE
+    assert review_module.canonical_node_id(NESTED) == NESTED
+
+
+def test_a_path_opening_with_the_repository_directory_name_reduces() -> None:
+    """An arm run from the repository's parent names the repository directory first.
+
+    The component records where the command ran, not part of the path: the base
+    log's ``tests/test_gate.py::test_alpha`` is the same test, and comparing the
+    two spellings verbatim reports it added. A first component that is part of
+    the repository-relative path — a package's own ``pkg/tests/…`` — is not
+    this case and stays distinct, which the assertion on NESTED below pins. The
+    name is read from the module rather than written down because a worktree
+    sits under its node's name; in the main checkout it is ``reckon``, so the
+    spelling there is ``reckon/tests/test_gate.py::test_alpha``.
+    """
+    spelled = f"{review_module._REPO_DIRECTORY_NAME}/{RELATIVE}"
+    nested_spelled = f"{review_module._REPO_DIRECTORY_NAME}/{NESTED}"
+
+    assert review_module.canonical_node_id(spelled) == RELATIVE
+    assert review_module.canonical_node_id(nested_spelled) == NESTED
+
+    count, added = _count([RELATIVE], [spelled])
+
+    assert count == 0, (
+        "both logs name the same test; the head arm's own directory prefix is "
+        "where it ran, not a different test, and counting it caps the total"
+    )
+    assert added == []
+
+
+def test_retirement_prose_spelling_a_shifted_prefix_retires_the_canonical_id() -> None:
+    """A manifest names an added id as the manifest knows it, and still retires it.
+
+    The id the count derives comes from the gate log, which a head arm invoked
+    from another working directory prints with that directory's prefix; the
+    manifest retires it by naming the test. Compared as spellings the two
+    disagree and a retired failure caps the total below the promotion floor.
+    """
+    added_id = "tests/test_added.py::test_added"
+    shifted = ABSOLUTE.replace("test_gate.py::test_alpha", "test_added.py::test_added")
+    assert shifted != ABSOLUTE
+
+    annotated = review_module.annotate_added_failures(
+        {"total": TOTAL},
+        base_text=_log(),
+        head_text=_log(shifted),
+        retirement_text=f"the suite is green apart from {shifted}, retired by name",
+    )
+
+    assert annotated["added_failure_count"] == 1
+    assert annotated["added_failure_ids"] == [added_id], (
+        "the count reports the id in canonical form, whatever the log spelled"
+    )
+    assert annotated["total"] == TOTAL, (
+        "the manifest retired the added id by name, so the total must not be "
+        "capped below the added-failures cap"
+    )
+    assert "not capped" in annotated["added_failures_note"]
+
+
+def test_a_comma_joined_retirement_sentence_retires_the_ids_it_names() -> None:
+    """A retirement sentence grouping ids as a manifest list field does retires each.
+
+    Manifests write id lists comma separated and retire them the same way, so a
+    sentence naming two ids as ``a,b`` retires both. Splitting the sentence on
+    whitespace alone leaves the pair as one token that names no id at all, and
+    both then count as unretired additions, capping the total below the
+    promotion floor.
+    """
+    first = "tests/test_added.py::test_added"
+    second = "tests/test_other.py::test_other"
+
+    annotated = review_module.annotate_added_failures(
+        {"total": TOTAL},
+        base_text=_log(),
+        head_text=_log(first, second),
+        retirement_text=(
+            f"the suite is green apart from {first},{second}, retired by name"
+        ),
+    )
+
+    assert annotated["added_failure_count"] == 2
+    assert annotated["added_failure_ids"] == [first, second], (
+        "each id is counted, in the canonical form the logs reduce to"
+    )
+    assert annotated["total"] == TOTAL, (
+        "the sentence retired both ids by name, so neither is an unretired "
+        "addition and the total must not be capped"
+    )
+    assert "not capped" in annotated["added_failures_note"]
 
 
 def test_a_head_log_written_from_another_cwd_adds_nothing(
