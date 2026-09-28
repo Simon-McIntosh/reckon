@@ -435,15 +435,11 @@ def test_the_real_follower_directory_is_untouched(home) -> None:
     assert follow_checkpoint.checkpoint_path(PROJECT, SESSION).exists()
 
 
-# ── The pane's memory across a re-arm ───────────────────────────────────────
-#
-# A re-arm starts with an empty pane, so without a log of what was already drawn
-# the reader's view empties every time the host re-arms it. The log holds each
-# rendered row's own bytes, the stamp it carried and the run and state it drew;
-# the re-arm replays those rows above its own fresh ones, in one write. The rows
-# carry their own clocks and fall straight onto the split they restored, so the
-# replay is framed by nothing: a header above it and a separator below it each
-# cost a line on every re-arm and said only what the rows already say.
+# On re-arm, _follow_history_burst composes the history burst: on a
+# terminal it returns one dim frame line followed by the replayed history
+# rows, also dim; under a Monitor (stdout is not a terminal) it returns
+# nothing. The burst never contains live rows. Live rows are written
+# afterwards, one per transition, by the follow loop.
 
 HISTORY_HEADER = "── history"
 HISTORY_SEPARATOR = "── re-armed"
