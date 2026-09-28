@@ -43,6 +43,7 @@ from reckon.path_classes import file_class, path_class
 
 __all__ = [
     "CLASSES",
+    "CLOSED_STATUSES",
     "LANES",
     "TOKEN_KEYS",
     "capture",
@@ -53,6 +54,8 @@ __all__ = [
     "file_class",
     "measure",
     "path_class",
+    "plan_census",
+    "plan_cohort",
     "promotion_receipts",
     "ratio",
     "recover_ledger_clocks",
@@ -95,6 +98,14 @@ CLASSES = (
 IMPLEMENT = {"implement", "documentation", "test", "cleanup"}
 REVIEW = {"review", "investigate"}
 WEEK = 7 * 86400
+# A plan is closed once its workflow status reaches one of these, or its archive
+# flag is set; the earliest such moment is its closing event, counted once
+# however many later commits repeat a closed state.
+CLOSED_STATUSES = frozenset({"shipped", "done", "superseded", "abandoned"})
+PLAN_DIRECTORY = "docs/plans/"
+PLAN_SUFFIX = ".html"
+_PLAN_STATUS = re.compile(rb'name="plan-status" content="([^"]*)"')
+_PLAN_ARCHIVED = re.compile(rb'name="plan-archived" content="([^"]*)"')
 
 
 def stamp(value):
@@ -109,6 +120,11 @@ def stamp(value):
 
 def iso(epoch):
     return dt.datetime.fromtimestamp(epoch, dt.UTC).isoformat().replace("+00:00", "Z")
+
+
+def _epoch(value):
+    """Accept an ISO clock or an epoch second and return an epoch second."""
+    return stamp(value) if isinstance(value, str) else value
 
 
 def git(repo, *args):
@@ -230,6 +246,215 @@ def parse_hunks(raw):
                 item["path"] = None if name == "/dev/null" else name[2:]
     flush()
     return [f for f in files if f["hunks"] or f["path"] != f["old_path"]]
+
+
+def _plan_documents(repo, head, prefix=PLAN_DIRECTORY):
+    """Every plan document reachable at ``head`` under the plans directory."""
+    listing = git(repo, "ls-tree", "-r", "--name-only", head, "--", prefix).decode()
+    return [path for path in listing.splitlines() if path.endswith(PLAN_SUFFIX)]
+
+
+def _plan_history(repo, head, prefix=PLAN_DIRECTORY):
+    """Ordered per-path history of the plans directory, oldest commit first.
+
+    Rename detection is on so a plan that was moved to a new filename is a
+    ``R`` entry at the destination rather than a spurious addition. Each path
+    carries the commits that touched it, each with its change state (``A`` for
+    an added file, ``R`` for a rename, ``M`` for a modification).
+    """
+    raw = git(
+        repo,
+        "log",
+        "--reverse",
+        "--format=%x1e%H%x09%ct",
+        "-M",
+        "--name-status",
+        head,
+        "--",
+        prefix,
+    )
+    history = collections.defaultdict(list)
+    for chunk in raw.split(b"\x1e")[1:]:
+        lines = chunk.decode("utf-8", errors="replace").strip("\n").splitlines()
+        if not lines:
+            continue
+        sha, epoch = lines[0].split("\t")
+        for line in lines[1:]:
+            if not line.strip():
+                continue
+            parts = line.split("\t")
+            state = parts[0]
+            if state[0] == "R":
+                path, old = parts[2], parts[1]
+            elif state[0] in "AMDC":
+                path, old = parts[1], None
+            else:
+                continue
+            if path.endswith(PLAN_SUFFIX):
+                history[path].append(
+                    {
+                        "sha": sha,
+                        "epoch": int(epoch),
+                        "state": state[0],
+                        "old_path": old,
+                    }
+                )
+    return history
+
+
+def _plan_metas(repo, specs):
+    """Read each plan blob once and return its ``(status, archived)`` pair.
+
+    ``specs`` is an ordered list of ``(sha, path)`` pairs; the returned mapping
+    is keyed the same way. One ``cat-file --batch`` process serves every plan,
+    so a full-history census is a single pass over the object store rather than
+    one subprocess per commit.
+    """
+    if not specs:
+        return {}
+    payload = "".join(f"{sha}:{path}\n" for sha, path in specs).encode()
+    result = subprocess.run(
+        ["git", "-C", str(repo), "cat-file", "--batch"],
+        input=payload,
+        capture_output=True,
+        check=False,
+        timeout=180,
+    )
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(
+            result.returncode, result.args, result.stdout, result.stderr
+        )
+    data, position, metas = result.stdout, 0, {}
+    for sha, path in specs:
+        newline = data.index(b"\n", position)
+        header = data[position : newline + 1].decode()
+        position = newline + 1
+        if header.strip().endswith("missing"):
+            content = b""
+        else:
+            size = int(header.split()[2])
+            content = data[position : position + size]
+            position += size + 1
+        status = _PLAN_STATUS.search(content)
+        archived = _PLAN_ARCHIVED.search(content)
+        metas[(sha, path)] = (
+            status.group(1).decode() if status else "",
+            archived.group(1).decode() if archived else "",
+        )
+    return metas
+
+
+def _iso_week(epoch):
+    day = dt.datetime.fromtimestamp(epoch, dt.UTC).date()
+    year, week, _ = day.isocalendar()
+    return {
+        "iso_week": f"{year}-W{week:02d}",
+        "week_start": (day - dt.timedelta(days=day.weekday())).isoformat(),
+    }
+
+
+def plan_census(repo, head, *, start=START, end=END, prefix=PLAN_DIRECTORY):
+    """Report plans opened, closed and pending for one repository at ``head``.
+
+    A plan is *opened* by the commit that added its file: the earliest commit
+    at which the plan's own path exists, counted only when that commit added
+    the file (a path whose first appearance is a rename was not added here).
+    It is *closed* by the earliest commit at which its ``plan-status`` reaches
+    a closed state or its archive flag is set, counted once however many later
+    commits repeat the state. *Pending* is every plan not closed; ``opened``
+    and ``closed`` are the project-wide totals, and ``by_week`` buckets the two
+    events by ISO week. The scope is the whole repository history reachable at
+    ``head``, so a plan opened long before ``start`` still counts as pending.
+    """
+    repo = Path(repo)
+    start, end = _epoch(start), _epoch(end)
+    history = _plan_history(repo, head, prefix)
+    paths = _plan_documents(repo, head, prefix)
+    specs = [
+        (entry["sha"], path)
+        for path in paths
+        for entry in history.get(path, [])
+        if entry["state"] in ("A", "C", "M")
+    ]
+    metas = _plan_metas(repo, specs)
+    plans, opened_weeks, closed_weeks = [], collections.Counter(), collections.Counter()
+    for path in sorted(paths):
+        chain = history.get(path, [])
+        if not chain:
+            continue
+        opened = chain[0]["epoch"] if chain[0]["state"] in ("A", "C") else None
+        closed = None
+        for entry in chain:
+            status, archived = metas.get((entry["sha"], path), ("", ""))
+            if archived == "1" or status in CLOSED_STATUSES:
+                closed = entry["epoch"]
+                break
+        plans.append(
+            {
+                "path": path,
+                "opened_epoch": opened,
+                "opened_week": _iso_week(opened)["iso_week"]
+                if opened is not None
+                else None,
+                "closed_epoch": closed,
+                "closed_week": _iso_week(closed)["iso_week"]
+                if closed is not None
+                else None,
+            }
+        )
+        if opened is not None:
+            opened_weeks[
+                (_iso_week(opened)["week_start"], _iso_week(opened)["iso_week"])
+            ] += 1
+        if closed is not None:
+            closed_weeks[
+                (_iso_week(closed)["week_start"], _iso_week(closed)["iso_week"])
+            ] += 1
+    weeks = sorted(set(opened_weeks) | set(closed_weeks))
+    return {
+        "head": head,
+        "window": {"start": iso(start), "end": iso(end)},
+        "opened": sum(1 for p in plans if p["opened_epoch"] is not None),
+        "closed": sum(1 for p in plans if p["closed_epoch"] is not None),
+        "pending": sum(1 for p in plans if p["closed_epoch"] is None),
+        "by_week": [
+            {
+                "week_start": week_start,
+                "iso_week": iso_week,
+                "opened": opened_weeks.get((week_start, iso_week), 0),
+                "closed": closed_weeks.get((week_start, iso_week), 0),
+            }
+            for week_start, iso_week in weeks
+        ],
+        "plans": plans,
+    }
+
+
+def plan_cohort(repo, head, *, start=START, end=END, prefix=PLAN_DIRECTORY):
+    """Of the plans opened in the window, how many are closed as of ``head``.
+
+    The as-of commit is named rather than taken from today, so the reading is
+    reproducible against a pinned revision; a plan counted as closed here is
+    one whose closing commit is reachable from ``head``.
+    """
+    census = plan_census(repo, head, start=start, end=end, prefix=prefix)
+    start, end = _epoch(start), _epoch(end)
+    opened = [
+        plan
+        for plan in census["plans"]
+        if plan["opened_epoch"] is not None and start <= plan["opened_epoch"] <= end
+    ]
+    closed = [plan for plan in opened if plan["closed_epoch"] is not None]
+    return {
+        "head": head,
+        "window": {"start": iso(start), "end": iso(end)},
+        "opened": len(opened),
+        "closed": len(closed),
+        "pending": census["pending"],
+        "opened_plans": [plan["path"] for plan in opened],
+        "closed_plans": [plan["path"] for plan in closed],
+        "census": census,
+    }
 
 
 def capture_project(
@@ -453,6 +678,7 @@ def capture_project(
         "head": head,
         "base": base,
         "ledger_sha256": hashlib.sha256(ledger_raw).hexdigest(),
+        "plan_census": plan_census(repo, head, start=start, end=end),
         "per_run_files": len(paths),
         "recovered_from_sqlite": recovered,
         "promotion_ids_without_record": sorted(
@@ -1594,6 +1820,40 @@ def measure(
             )
             monday = next_monday
 
+    plan_projects = [
+        {
+            "project": project["project"],
+            "opened": census["opened"],
+            "closed": census["closed"],
+            "pending": census["pending"],
+        }
+        for project in snapshot["projects"]
+        if (census := project.get("plan_census"))
+    ]
+    plan_weeks = collections.defaultdict(lambda: {"opened": 0, "closed": 0})
+    for project in snapshot["projects"]:
+        for row in (project.get("plan_census") or {}).get("by_week", []):
+            cell = plan_weeks[(project["project"], row["week_start"], row["iso_week"])]
+            cell["opened"] += row["opened"]
+            cell["closed"] += row["closed"]
+    plans = {
+        "by_project": plan_projects,
+        "by_project_week": [
+            {
+                "project": project,
+                "week_start": week_start,
+                "iso_week": iso_week,
+                **cell,
+            }
+            for (project, week_start, iso_week), cell in sorted(plan_weeks.items())
+        ],
+        "pending": {
+            project["project"]: project["plan_census"]["pending"]
+            for project in snapshot["projects"]
+            if project.get("plan_census")
+        },
+        "definition": "Opened is the week of the commit that added the plan file; closed is the week its plan-status first reached shipped/done/superseded/abandoned or its archive flag was set, counted once; pending is every plan not closed.",
+    }
     return {
         "window": {
             "start": window_start,
@@ -1601,6 +1861,7 @@ def measure(
             "elapsed_days": (end - start) / 86400,
             "complete_seven_day_followup_through": iso(end - WEEK),
         },
+        "plans": plans,
         "provenance": {
             "input_sha256": hashlib.sha256(dump(snapshot)).hexdigest(),
             "branches": [
@@ -1682,6 +1943,7 @@ def compact_summary(full, weekly_cells, *, artifacts=None):
             "coverage",
             "august_baseline",
             "total",
+            "plans",
             "by_project",
             "by_lane",
             "by_day",
