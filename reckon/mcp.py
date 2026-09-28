@@ -3580,6 +3580,7 @@ def _roadmap(
                         or index_data.get("active_sprint_id")
                     ),
                     "project_manifest": manifest,
+                    "docs_dir": _docs_dir_for_project(mounted_project),
                 }
             return resolve_graph_target(handle, mounted)
         except GraphTargetError as exc:
@@ -3691,6 +3692,7 @@ def _roadmap(
             sprint_id=sprint,
             max_paths=max_paths,
             project_manifest=project_manifest,
+            docs_dir=_docs_dir_for_project(project, checkout_path),
         )
         if view is None:
             return raw
@@ -4701,6 +4703,7 @@ def _audit(
             if project_rows and isinstance(project_rows[0], dict)
             else {}
         ),
+        docs_dir=docs_dir,
     )
     existing_findings = {
         (item.get("code"), item.get("slug"), item.get("message")) for item in findings

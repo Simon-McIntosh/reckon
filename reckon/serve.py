@@ -1619,7 +1619,7 @@ def _discover_plans_uncached(
             "resource_versions": composed.get("resource_versions", {}),
         }
         _attach_composed_review(result, docs_dir, project)
-        _attach_ready_set(result, project)
+        _attach_ready_set(result, project, docs_dir=docs_dir)
         return _cache_discovery_result(
             cache_key,
             sig,
@@ -1680,7 +1680,7 @@ def _discover_plans_uncached(
         "north_stars": north_stars,
         "source_format": "legacy-index",
     }
-    _attach_ready_set(result, project)
+    _attach_ready_set(result, project, docs_dir=docs_dir)
     return _cache_discovery_result(
         cache_key,
         sig,
@@ -1708,8 +1708,15 @@ def _attach_composed_review(result: dict, docs_dir: Path, project: str) -> None:
     result.setdefault("resource_versions", {})["review:review"] = version
 
 
-def _attach_ready_set(result: dict, project: str) -> None:
-    """Attach the HTTP projection of roadmap-owned readiness and sprint state."""
+def _attach_ready_set(
+    result: dict, project: str, *, docs_dir: Path | None = None
+) -> None:
+    """Attach the HTTP projection of roadmap-owned readiness and sprint state.
+
+    ``docs_dir`` names the checkout ``result`` was inventoried from, and is
+    passed through to the roadmap so its wiring scan reads declarations from
+    the same tree as the rows it judges.
+    """
 
     from reckon.mcp_views import ready_set_view
     from reckon.roadmap import build_roadmap
@@ -1721,6 +1728,7 @@ def _attach_ready_set(result: dict, project: str) -> None:
         active_sprint_id=result.get("active_sprint_id"),
         project_manifest=result,
         review=result.get("review") or {},
+        docs_dir=docs_dir,
     )
     projection = ready_set_view(roadmap)
     result["ready_set"] = projection
