@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560" role="img"
+     aria-label="Two scratch trees compared: base 19d9f51f and merged 355a8864 hold the same 11 failing tests, so the merge adds none">
+  <rect width="920" height="560" fill="#f7f6f3"/>
+  <text x="40" y="44" font-family="Helvetica, Arial, sans-serif" font-size="21" font-weight="bold" fill="#1f1f1f">
+    Merge 355a8864 against its first parent: the same 11 tests fail in both trees
+  </text>
+  <text x="40" y="70" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#555">
+    Population: every tests/ file importing reckon.crew.promotion or calling verify_gate, plus the five named files.
+    One scratch tree per revision, each on PYTHONPATH with its own reckon/crew/promotion.py asserted under it.
+  </text>
+
+  <!-- base panel -->
+  <text x="40" y="118" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f1f1f">base arm</text>
+  <text x="40" y="138" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#555">19d9f51f (merge's first parent)</text>
+  <rect x="40" y="152" width="380" height="46" fill="#ffffff" stroke="#c9c6bf"/>
+  <rect x="40" y="152" width="366" height="46" fill="#4a6fa5"/>
+  <rect x="406" y="152" width="12" height="46" fill="#b4534a"/>
+  <text x="40" y="220" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#1f1f1f">
+    34 files · 351 tests · <tspan fill="#4a6fa5" font-weight="bold">340 passed</tspan> · <tspan fill="#b4534a" font-weight="bold">11 failed</tspan> · exit 1
+  </text>
+
+  <!-- merged panel -->
+  <text x="490" y="118" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f1f1f">merged arm</text>
+  <text x="490" y="138" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#555">355a8864 (second parent 3a9eec99)</text>
+  <rect x="490" y="152" width="380" height="46" fill="#ffffff" stroke="#c9c6bf"/>
+  <rect x="490" y="152" width="368" height="46" fill="#4a6fa5"/>
+  <rect x="858" y="152" width="12" height="46" fill="#b4534a"/>
+  <text x="490" y="220" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#1f1f1f">
+    35 files · 353 tests · <tspan fill="#4a6fa5" font-weight="bold">342 passed</tspan> · <tspan fill="#b4534a" font-weight="bold">11 failed</tspan> · exit 1
+  </text>
+  <text x="490" y="240" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#555">
+    +2 passing: the merge's new test file, 2 tests, both green
+  </text>
+
+  <!-- difference band -->
+  <rect x="40" y="272" width="840" height="118" fill="#ffffff" stroke="#c9c6bf"/>
+  <text x="60" y="300" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#2f6b4f">
+    set difference: added = ∅ (no test fails at 355a8864 that passes at 19d9f51f)
+  </text>
+  <text x="60" y="324" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#555">
+    The 11 failing ids are identical in both arms, and identical again serially (no xdist) in both arms:
+  </text>
+  <text x="60" y="348" font-family="ui-monospace, Menlo, monospace" font-size="12.5" fill="#1f1f1f">test_promotion_never_amends_its_commit.py  4   test_receipt_names_the_rolled_back_row.py  2</text>
+  <text x="60" y="366" font-family="ui-monospace, Menlo, monospace" font-size="12.5" fill="#1f1f1f">test_crew_test_role.py                     2   test_rollback_asks_head.py                 1</text>
+  <text x="60" y="384" font-family="ui-monospace, Menlo, monospace" font-size="12.5" fill="#1f1f1f">test_a_short_commit_list_is_reported.py    1   test_failure_classification.py             1</text>
+
+  <!-- control -->
+  <rect x="40" y="404" width="840" height="126" fill="#ffffff" stroke="#c9c6bf"/>
+  <text x="60" y="432" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f1f1f">
+    The empty difference is measured, not blind
+  </text>
+  <text x="60" y="456" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">
+    1. Synthetic control on the differ: one injected FAILED line appended to the merged log is reported as added —
+    the comparison can see a new failure.
+  </text>
+  <text x="60" y="478" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">
+    2. Provenance assert before each run: the run printed reckon.crew.promotion.__file__ and required it inside its own tree
+    (/tmp/promotion-arms/base vs /tmp/promotion-arms/merged); probe exit 0 both arms.
+  </text>
+  <text x="60" y="500" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">
+    3. The pre-existing failures are red at the base for the same reasons: their first assertion lines are the same
+    sentence in each arm, differing only in pytest tmp paths.
+  </text>
+  <text x="60" y="522" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#777">
+    Logs: gate-base-19d9f51f.log, gate-merged-355a8864.log, confirm-base-19d9f51f.log, confirm-merged-355a8864.log, newtests-merged-355a8864.log
+  </text>
+</svg>
