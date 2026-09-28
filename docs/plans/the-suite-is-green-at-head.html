@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="85">
+<meta name="plan-version" content="86">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1376,7 +1376,10 @@
     <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T154155860907-ledger-suite-green-at-head.json</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260928T193532461213-receipt-rollback-classification-red" data-who="reckon-build" data-when="2026-09-28T20:28:06.021Z">
-    <div class="r-comment-body"><p>§2 receipt-rollback-classification-red: the four red ids were stale expectations after the ledger gave each run its own file — append_run creates that file and returns its path, so a failed landing&#x27;s receipt names the run file (rolled back with it, re-promote) and a restore git refuses preserves only a path HEAD already carries, while load() reads rows back in completion order — so the two receipt tests and test_failure_after_append_names_the_row_state[stage] moved to the run-file contract and test_worker_pass_rate_uses_only_work_rejected_failures finds its row by run id; no assertion deleted, nothing under reckon/ modified; evidence at docs/evidence/fragments/the-suite-is-green-at-head/receipt-rollback-classification-red.html</p></div>
+    <div class="r-comment-body"><p>§2 receipt-rollback-classification-red: the four red ids were stale expectations after the ledger gave each run its own file — append_run creates that file and returns its path, so a failed landing's receipt names the run file (rolled back with it, re-promote) and a restore git refuses preserves only a path HEAD already carries, while load() reads rows back in completion order — so the two receipt tests and test_failure_after_append_names_the_row_state[stage] moved to the run-file contract and test_worker_pass_rate_uses_only_work_rejected_failures finds its row by run id; no assertion deleted, nothing under reckon/ modified; evidence at docs/evidence/fragments/the-suite-is-green-at-head/receipt-rollback-classification-red.html</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260928T200639659711-review-of-receipt-rollback-classification-red" data-who="reckon-build" data-when="2026-09-28T20:30:52.903Z">
+    <div class="r-comment-body"><p>the review record for r-20260928T193532461213-receipt-rollback-classification-red is stored at ...at-0b8fe1be9b5d4fb900d7526edd2f188a2495ca64.json and its byte-identical legacy twin, status parsed, total 91 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 16), six of six checklist items, three findings, added_failure_count 0 with added_failure_ids [].</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
