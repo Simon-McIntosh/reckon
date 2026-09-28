@@ -2567,6 +2567,81 @@ detail         : ... conflicts with live claim ... held by run
     </figure>
   </section>
 
+  <section id="watch-test-deadline-lands-on-the-dispatch">
+    <h2 id="watch-test-deadline-lands-on-the-dispatch-h">&sect;15 measure 2 &mdash; the watch-armed first-dispatch test fails on a deadline over the dispatch, and the watch is never the slow half</h2>
+    <p>Recorded 2026-09-28 by the node that repaired it, landing in
+    <code>tests/test_crew.py</code> alone: the plan recorded this test as a deadlock and it is
+    not one, so the repair is a correction of the test's own timing discipline rather than of the
+    watch loop the plan named.</p>
+    <p><strong>The recorded cause is refuted by the traceback and by the clock.</strong> &sect;15's
+    second measure recorded the test as deadlocking, &ldquo;its main thread joining while its
+    worker stays inside the watch loop in <code>reckon/crew/runs.py</code>&rdquo;. Measured at
+    base, the main thread never stops working and the watch is never the slow half: the watcher
+    thread reaches its own controlled sleeper <strong>0.140 s</strong> after it starts, while the
+    main thread's first watch-armed dispatch is still running and returns at
+    <strong>5.303 s</strong>. The failure is an <code>AssertionError</code> raised <em>inside the
+    sleeper</em> at 5.00 s &mdash; <code>tests/test_crew.py:1837: assert release.wait(timeout=5)
+    </code> &mdash; which reads as the watch failing. The traceback is
+    <code>reckon/crew/runs.py:3247: in watch / sleeper(poll_interval)</code> &rarr;
+    <code>tests/test_crew.py:1837: assert release.wait(timeout=5)</code>, re-raised at the main
+    thread's <code>watcher.result()</code>, so a deadline the <em>test's own sleeper</em> imposed
+    on the <em>main thread's</em> dispatch is reported as the watch hanging. Total time to
+    failure 7.5 s, of which 5.0 s is the deadline and the rest is fixture setup.</p>
+    <p><strong>What the dispatch is doing for five seconds is ordinary work on a slow filesystem.</strong>
+    <code>cProfile</code> over the same dispatch in the same worktree: 5.824 s total, of which
+    <strong>33 <code>subprocess.run</code> calls total 3.591 s</strong> &mdash; git spawns at
+    ~0.48 s per call in this GPFS worktree against ~0.09 s in <code>/tmp</code> &mdash; a
+    <code>_coordinator_accounting</code> glob costs <strong>1.256 s</strong> over 2,631
+    <code>lexists</code> calls, and <code>posix.lstat</code> accounts for 1.296 s across 7,337
+    calls. Nothing is blocked on a lock and <code>reckon/crew/ticker.py</code> is not on this
+    path at all. The verdict is speed-dependent, which is the sharpest evidence that the deadline
+    is the defect: in the <em>base full-file census</em> the same test <strong>passed</strong>
+    inside the same process that had already run ~200 tests warm, and in isolated runs it failed
+    three times out of three. A test whose outcome follows the machine's warmth is a fuse, not a
+    measure.</p>
+    <table>
+      <thead><tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr></thead>
+      <tbody>
+        <tr><td>base, isolated &times;3</td><td><code>5f1c15d3</code></td><td><code>pytest -q tests/test_crew.py -k test_first_dispatch_&hellip;</code></td><td><strong>1 failed</strong> each (7.15 / 6.95 / 7.10 s), exit 1, <code>assert False</code> at <code>:1837</code></td></tr>
+        <tr><td>change head, isolated &times;3</td><td>this node</td><td>same</td><td><strong>1 passed</strong> each (6.45 / 5.80 / 5.56 s), exit 0</td></tr>
+        <tr><td>base full file</td><td><code>5f1c15d3</code></td><td><code>pytest -q tests/test_crew.py</code></td><td>9 failed, 197 passed, exit 1 &mdash; this test <em>passed</em> (see above)</td></tr>
+        <tr><td>change head, full file</td><td>this node</td><td>same</td><td>9 failed, 196 passed, exit 1 &mdash; the base's nine ids, <strong>none added</strong></td></tr>
+      </tbody>
+    </table>
+    <p><strong>The change.</strong> The sleeper becomes pure synchronisation
+    (<code>release.wait()</code> with no deadline) &mdash; the release event is the only condition
+    it waits on. The bounded waits move to the subjects they actually measure: a 5 s bound on the
+    watch <em>reaching</em> its sleeper (needs 0.140 s), and a 5 s <code>join</code> plus
+    <code>assert not watcher.is_alive()</code> after the manifest lands, so a genuinely stuck
+    watch fails by name in about five seconds instead of hanging the suite. The watcher runs in a
+    daemon thread that captures its own exception and re-raises it on the test thread, and
+    <code>release.set()</code> sits in a <code>finally</code>, so no failure path can strand the
+    watch. No timeout was lengthened and nothing was deselected: the assertion that was removed
+    was the one imposing a deadline on the <em>dispatch</em>, and every assertion in the test
+    still runs.</p>
+    <p><strong>Negative control, declared before it ran:</strong> &ldquo;reintroduce the
+    identified cause in a scratch copy; the watch-armed first-dispatch test must fail on
+    release.wait&rdquo;. Run with the base revision's test file as the scratch module
+    (<code>/tmp/negctl/tests/test_crew.py</code>, from <code>git show HEAD:</code>) against the
+    change's own source under test, the test failed on exactly that line: <code>assert False</code>
+    at <code>/tmp/negctl/tests/test_crew.py:1837</code>, 1 failed, exit 1. The only difference
+    between the two arms is the test's timing discipline, which is what the control isolates.</p>
+    <p><strong>Evidence on disk</strong>, under
+    <code>~/.config/reckon/crew/runs/r-20260928T061043305378-the-project-watch-test-terminates/</code>:
+    <code>base-arm-run1..3.log</code>, <code>head-gate-run1..3.log</code>,
+    <code>base-suite.log</code>, <code>head-suite-2.log</code>,
+    <code>negative-control.log</code>, with per-arm revisions, trees and cwds on each log's first
+    lines and the manifest's counts beside them.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/watch-sleeper-deadline.svg"
+           alt="Two timelines. At base, the watch reaches its sleeper at 0.140 seconds; the main thread's dispatch runs to 5.30 seconds; a dashed deadline at 5.00 seconds fires inside the sleeper's assertion, so the failure is raised in the main thread's dispatch window and attributed to the watch. At the change, the dispatch runs to 5.30 seconds with no deadline on it, the release is set, and the watch returns; the sleeper's only condition is the release event."
+           style="max-width:760px;width:100%">
+      <figcaption>The deadline the sleeper imposed landed on the main thread's dispatch
+      (5.30 s measured), not on the watch (0.140 s to its first sleep).
+      </figcaption>
+    </figure>
+  </section>
+
 </main>
 </body>
 </html>
