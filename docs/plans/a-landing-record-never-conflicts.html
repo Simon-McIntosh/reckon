@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-commits" content="a69f554f,5bb66c48,41bc0eea,380dcd14,cf9160ff,32d932b2,53ceb356,cc44c453,65f5a378,3157768e,8602efcf,16ca61e7,d85fba28,6cdc5b8d,65c03d26,18719f5d,d41e0231">
 <meta name="plan-artifacts" content="reckon/evidence.py,tests/test_evidence_record_composition.py,reckon/serve.py,reckon/doccheck.py,tests/test_readers_compose_the_record.py,reckon/mcp.py,tests/test_read_plan_composes_the_record.py,reckon/crew/promotion.py,tests/test_promotion_writes_the_landing_line.py">
 <meta name="plan-impl" content="0.88">
@@ -349,6 +349,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260928T192734555540" data-who="s25-coord" data-when="2026-09-28T19:28:00.000Z">
     <div class="r-comment-body"><p>Open follow-on, reported by s22-coord and owned here. The fragment default scope (0e3530ab) grants every node its fragment path and figure directory, verifier roles included. Promotion refuses a test role whose commit touches any repository path: a verifier may read the repository it grades, but writes only its manifest, report and logs. s22's replayed-gate-merged-tree-delta test node committed its fragment and figure because its scope offered them, and it was promoted without them. The two rules must agree. Dispatch should withhold the fragment and figure grants from roles that may not write the repository (test, review, and investigate unless it declares a repository path), so a verifier's evidence goes in its run directory. That is a change to reckon/crew/dispatch.py's default-scope grant and its test.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260928T214444941405" data-who="s25-coord" data-when="2026-09-28T21:45:00.000Z">
+    <div class="r-comment-body"><p>Second follow-on from the fragment default scope (0e3530ab), measured 2026-09-28: tests/test_role_write_scope.py fails two cases, test_an_implement_role_receives_the_landing_paths_in_its_write_scope and its local-lane twin, because they still expect the plan-wide landing paths the fragment scope replaced. Section 2's gate did not include that file. The verifier-scope fix above, on the same default-scope function in reckon/crew/dispatch.py, reconciles these two cases in the same node.</p></div>
 </div>
 </section>
 </main>
