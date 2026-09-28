@@ -107,6 +107,13 @@
       reporting a fragment-only <code>img-relative-src</code> error that the raw record's audit does not; and a
       fragment-free record serving and auditing identically. Negative control: serving the record's own bytes without
       composition makes the served-bytes case fail.
+      <br>Repaired at <code>cc44c453</code> after review: the fallback to the record's own bytes is now observable rather
+      than silent &mdash; the file route logs a warning naming the record and the error, and <code>audit_file</code>
+      reports a warn-level <code>record-not-composed</code> finding, both without failing the read. The served and
+      audited cases are parametrised over both record spellings (<code>docs/evidence/archive/&lt;plan&gt;-landed.html</code>
+      and <code>docs/evidence/&lt;plan&gt;-landed.html</code>), and two further cases assert the fallback: the route answers
+      200 with the record's own bytes and a warning, and <code>audit_file</code> reports the warning finding while
+      auditing the uncomposed bytes. Six cases total, 38 passing with the composition and doccheck modules.
       <a href="/reckon/evidence/archive/a-landing-record-never-conflicts-landed#s3">&sect;3 readers landed</a></p>
     <figure class="plan-figure">
       <img src="/reckon/figures/a-landing-record-never-conflicts/readers.svg"

@@ -32,6 +32,10 @@
       <li>3 tests in <code>tests/test_readers_compose_the_record.py</code> over a synthesised repository with one fragment and its ledger row: the served bytes equal the record then the fragment and the ETag moves when the fragment changes (the new tag revalidates with a <code>304</code>); <code>audit_file</code> reports a fragment-only <code>img-relative-src</code> error that the raw record's audit does not; and a record with no fragments is served and audited byte-identically to its own bytes.</li>
       <li>Negative control: making <code>reckon/serve.py</code> serve the record file's own bytes without composition fails the served-bytes case (<code>logs/negative-control.log</code>).</li>
     </ul>
+    <p><strong>Repaired at <code>cc44c453</code></strong> after review (93/100). The fallback to the record's own bytes was silent, so a record whose fragments were hidden by a read failure audited exactly like one with none; the file route now logs a warning naming the record and the error, and <code>audit_file</code> reports a warn-level <code>record-not-composed</code> finding, both without failing the read. The served and audited composition cases are parametrised over both record spellings (<code>docs/evidence/archive/&lt;plan&gt;-landed.html</code> and <code>docs/evidence/&lt;plan&gt;-landed.html</code>), and two further cases assert the fallback: the route answers 200 with the record's own bytes and a warning, and <code>audit_file</code> reports the warning finding while auditing the uncomposed bytes.</p>
+    <ul>
+      <li>6 tests now, 38 passing with the composition and doccheck modules; the negative control fails both served-bytes spellings and the route-fallback case (<code>logs/gate-repair.log</code>, <code>logs/negative-control-repair.log</code>).</li>
+    </ul>
   </section>
 
 </main>
