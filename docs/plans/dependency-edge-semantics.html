@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="37">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="fd0b1d4,bea76f1,ec8fb56d">
 </head>
@@ -678,10 +678,11 @@
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §4</pre>
     <p class="r-fu-outcome">section_depends_on landed at f129b456 (run r-20260928T061405788846, review total 86, no added failing ids). The roadmap blocks only the named sections, the ready set keeps their siblings, read_plan's deps resolve each section reference, and a malformed entry is refused by name. Two defects and the skills note move to f-des-section-edge-reaches-summary.</p>
     </article>
-<article class="r-fu" data-id="f-des-section-scoped-decisions" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova s19-handoff coordinator" data-written-at="2026-09-16" data-recommends-skill="/reckon-build dependency-edge-semantics §4" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-des-section-scoped-decisions" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova s19-handoff coordinator" data-written-at="2026-09-16" data-recommends-skill="/reckon-build dependency-edge-semantics §4" data-resolved-at="2026-09-28T14:58:58+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Decisions scoped to sections, carrying a recommendation the lead accepts and that never resolves itself</h4>
     <div class="r-fu-body"><p>An open decision blocks its whole plan: on nova, exact-clip-moment-quadrature and centroid-constrained-oracle-solve are blocked by one decision each although their first sections do not depend on the choice. Add an optional sections list on a decision so only the named sections are decision-blocked, and an optional recommended value with a recommended_by field that the lead accepts in one action. The recommendation must never become the choice by default: an unanswered recommendation stays open and blocking, because decisions are the lead's and a coordinator default would collapse authority into mechanism (raised by the reckon crew-observability session on 2026-09-16).</p></div>
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §4</pre>
+    <p class="r-fu-outcome">The sections list landed at f300cd33 (run r-20260928T124215588759, review total 94, zero added failures). A decision naming sections blocks only those; an unscoped one still blocks the plan. The list round-trips through the decision element and plan.schema.json. The recommended-value half and two edge findings move to f-des-decision-recommendation-and-edges.</p>
     </article>
 <article class="r-fu" data-id="f-des-004" data-status="resolved" data-written-by="reckon-build s22-coord" data-written-at="2026-09-25T03:10:00+02:00" data-recommends-skill="/reckon-build dependency-edge-semantics §6" data-resolved-at="2026-09-25T04:14:19+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Make the served view and MCP projection read the roadmap&#x27;s execution/closure split</h4>
@@ -700,6 +701,11 @@
     <div class="r-fu-body"><p>The review of f129b456 found two defects. First, the section rows that read_plan appends to deps (reckon/mcp.py:942-952) fold into the typed summary view's blocking list through mcp.py:1360, mcp_views._blocking and lifecycle.unresolved_dependencies (mcp_views.py:1916). So a summary reports the whole plan blocked when only one section waits. Second, a wholly malformed plan-section-depends-on value (invalid JSON, or JSON that is not an object) returns None at _schema.py:389 with no finding, and every declared wait disappears silently. Also: the plan asks the skills to say that the gate op covers the evidence-shaped case while this edge covers the plan-shaped case, and that is not yet written. Each fix needs a test that fails before it.</p></div>
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics</pre>
     </article>
+<article class="r-fu" data-id="f-des-decision-recommendation-and-edges" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T15:02:00Z" data-recommends-skill="/reckon-build dependency-edge-semantics" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A decision&#x27;s recommendation the lead accepts, and two edges of section-scoped decisions</h4>
+    <div class="r-fu-body"><p>Carried from f-des-section-scoped-decisions after the sections list landed at f300cd33. (1) An optional recommended value with recommended_by, which the lead accepts in one action and which never becomes the choice by default: an unanswered recommendation stays open and blocking. (2) Review finding: at roadmap.py:2371 a decision scoped to a section the plan never declares (a typo, or a later rename) enters decision_section_blockers unchecked. Refuse it or report it. (3) Review finding: is_blocked (roadmap.py:2287) no longer counts a scoped open decision, while the persisted-blocked fallback at :2259 still tests the unfiltered list, so a plan persisted blocked by only a scoped decision reads inconsistently. Each needs a test that fails before it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-s2-landed" data-who="reckon-ship" data-when="2026-08-26">
@@ -715,7 +721,7 @@
     <div class="r-comment-body"><p>review stored at 00884e07: total 92, zero added failures; one field-shape finding (per-section ready is a constant where the roadmap's is a verdict)</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T110303524434-review-of-malformed-section-map-is-named" data-who="reckon-build" data-when="2026-09-28T11:33:56.890Z">
-    <div class="r-comment-body"><p>review stored at 5bb94009: total 98, zero added failures; one finding, the manifest&#x27;s tests field states the gate as a template</p></div>
+    <div class="r-comment-body"><p>review stored at 5bb94009: total 98, zero added failures; one finding, the manifest's tests field states the gate as a template</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260915T054942427549-a-followup-naming-a-terminal-foreign-plan-is-reported" data-who="skill-verb-surface" data-when="2026-09-15T08:50:59.180Z">
     <div class="r-comment-body"><p>reckon audit now reports a followup naming a foreign plan in a terminal state, with three distinct codes for terminal, unmounted and missing targets, so an obligation invisible to both projects' roadmaps becomes a finding. Count over the registered mounts stated as 2. Gate 7 passed with 5 new tests; test_schema 1282 passed; 75 passed across the doccheck-importing files. Two failures in test_provenance and test_mcp_recovery were verified pre-existing by reproducing them at base with pristine doccheck.py installed, so zero added. Its manifest is unreadable to the parser because it reports status 'done', which is outside the recognised set, so commit and gate evidence are supplied from independent verification.</p></div>
