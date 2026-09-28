@@ -1,0 +1,323 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "44d6a1214c83727eebe79fb4b97cbadf6d3d413d",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 9108342,
+      "input_tokens_cumulative": 9108342,
+      "output_tokens": 84210,
+      "output_tokens_cumulative": 84210,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": null,
+  "commit_resolution": null,
+  "commits": [],
+  "completed_at": "2026-09-28T14:28:28.572Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T13:35:59Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest -p",
+    "override": false,
+    "role": "test",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "skills/reckon-ship/…",
+    "skills/reckon-build/…;",
+    "tests/test_discard_removes_an_empty_worktree.py",
+    "tests/test_discard_releases_a_clean_worktree.py",
+    "shutil.which",
+    "reckon/worker_shims"
+  ],
+  "gate": "not-run",
+  "gate_check": null,
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.68,
+    "plan": "a-dispatch-returns-without-its-worker",
+    "reason": "gate-not-passing",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T14:35:47.610614+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T13:35:47Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 1,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 1,
+    "mean_context": 120000,
+    "observed_at": "2026-09-28T13:35:46Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T14:28:28.572Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T133546218925-s21-audit-dispatch/manifest.md",
+  "member": "disposable-r-20260928T133546218925-s21-audit-dispatch",
+  "negative_control": {
+    "reason": "node-writes-no-test-path",
+    "verdict": "exempt"
+  },
+  "no_commit": "a read-only audit delivers its report under crew/reports and commits nothing",
+  "node": "s21-audit-dispatch",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 391,
+          "cached_input_tokens": 646333,
+          "input_tokens": 646728,
+          "output_tokens": 639,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 647367,
+          "uncached_input_tokens": 4
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+      "session_id": "s21-coord"
+    },
+    "done_when": "Read-only currency audit of S21 plans against reckon main at 76e1bf938b1bf16cd18618cd03f742f264f079eb (run everything in your own worktree at that revision; do not use the main checkout). Plans in this node: a-dispatch-returns-without-its-worker, a-crew-process-ends-with-its-owner.\n\nFor each plan, read its plan HTML at that revision (the file docs/plans/ named by the slug, plus .html) including its plan-section-declarations meta, every h2 section, every open followup (article.r-fu with data-status=\"open\"), every gate, and its depends_on/blocks/after/informs metas. Then produce one verdict per item, where an item is: every section declared implementable, every section with no declaration, every open followup, and every gate.\n\nVerdicts and the evidence each requires:\n- done: the code that carries it (file path and line range at the revision), the commit that landed it (from git log/blame, full sha), and a test at the revision that asserts it. Run that test file at the revision with `/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp (a directory outside any git repository) followed by the test file`, logged under your run directory with a header naming revision, tree and the literal command, ending with a line EXIT= followed by the exit status. A behaviour with code but no passing test that asserts it is partly-done, not done.\n- partly-done: what landed (with the evidence above) and exactly what is missing.\n- still-required: what is missing at the revision, concretely (the function, file or test that does not exist or does not do it), and whether the item's stated premise still holds at the revision.\n- superseded: the landed mechanism that replaced it (commit sha and file), and why the item's goal is met or moot.\n- stale-wording: the item is still wanted but its text names something that no longer exists or has moved; say what it should name.\nFor a gate, say whether its measure is satisfied at the revision, with the same evidence standard as done.\n\nDAG check, per plan: for every depends_on, blocks, after and informs target and every gate, say whether the target exists, whether it is still open (read its plan-status and declarations), and whether the relation still holds given your verdicts. Name any relation that should be removed, added, or changed to a gate or an after edge, with a one-line reason.\n\nFor every still-required or partly-done item, give a proposed done-when in one or two sentences, the files it would touch, and an estimate in worker-hours.\n\nDeliver two files and nothing else outside your run directory: /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-audit-dispatch.json (a list of objects {plan, item, kind: section|followup|gate|relation, title, verdict, evidence: {paths, commit, test, test_log, exit_status}, missing, proposal, files, hours}) and /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-audit-dispatch.md (a readable summary table per plan, then the DAG findings). This is a read-only node: change no file in the repository, commit nothing, and never edit plan HTML. Your manifest's commits line names the base sha with the reason (read-only). Tests are fast and you are on the fleet node, so run them in place, bounded to the test files you cite. Stop once both files are written and the manifest reads complete.",
+    "estimated_hours": null,
+    "goal": "Audit a-dispatch-returns-without-its-worker and a-crew-process-ends-with-its-owner against main: a verdict with code and test evidence for every implementable section, open followup, gate and relation",
+    "id": "s21-audit-dispatch",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T13:35:47Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 1,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 1,
+      "mean_context": 120000,
+      "observed_at": "2026-09-28T13:35:46Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T133546218925-s21-audit-dispatch/manifest.md",
+    "negative_control": "",
+    "plan": "a-dispatch-returns-without-its-worker",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "test",
+    "section": "",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-audit-dispatch.json",
+      "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-audit-dispatch.md",
+      "docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html",
+      "docs/figures/a-dispatch-returns-without-its-worker",
+      "docs/plans/a-dispatch-returns-without-its-worker.html"
+    ]
+  },
+  "orientation_input_tokens": 5673789.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "s21-audit-dispatch",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T13:35:54.544083+00:00",
+    "score": 0.625,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-dispatch-returns-without-its-worker",
+  "plan_impl_at_dispatch": 0.68,
+  "promoted_revision": "44d6a1214c83727eebe79fb4b97cbadf6d3d413d",
+  "release": {
+    "process_signalled": false,
+    "process_withheld": "process is not alive",
+    "worktree_audit": {
+      "counts": {
+        "dirty": 0,
+        "disposable": 0,
+        "integrated": 0,
+        "live-referenced": 0,
+        "retained-for-resume": 0,
+        "unintegrated": 0
+      },
+      "worktrees": [
+        {
+          "available": false,
+          "detail": "tree is no longer available",
+          "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/s21-audit-dispatch"
+        }
+      ]
+    },
+    "worktree_released": true
+  },
+  "resume_waiver": null,
+  "review": null,
+  "role": "test",
+  "run_id": "r-20260928T133546218925-s21-audit-dispatch",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "",
+  "session_harness": "claude",
+  "session_id": "ac7fe286-b562-4f6a-9433-641933ae5cca",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 9442812,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 3126.74,
+    "generated_tokens": 102737,
+    "generation_seconds": 2986.375,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.6,
+    "machine_seconds": 140.365,
+    "peak_input_tokens": 166209,
+    "tokens_per_second": 34.4,
+    "wall_tokens_per_second": 32.86
+  },
+  "time_budget": "60m",
+  "tool_steps": 92.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 3149,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T14:28:29Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T13:36:18Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T133546218925-s21-audit-dispatch",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 14720,
+    "worker_pid": 1566011
+  },
+  "worker_seconds": 3118,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
