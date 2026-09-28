@@ -435,26 +435,11 @@ def test_the_real_follower_directory_is_untouched(home) -> None:
     assert follow_checkpoint.checkpoint_path(PROJECT, SESSION).exists()
 
 
-# ── The pane's memory across a re-arm ───────────────────────────────────────
-#
-# A re-arm starts with an empty pane, so without a log of what was already drawn
-# the reader's view empties every time the host re-arms it. The log holds each
-# rendered row's own bytes, the stamp it carried and the run and state it drew,
-# and a re-arm replays those rows above its own fresh ones in one write. Each
-# replayed row carries its own clock and falls straight onto the split it
-# restored.
-#
-# `_follow_replay_visible` gates that replay on `stdout.isatty()`, so what the
-# re-arm prints depends on who is reading:
-#
-#   * stdout is a terminal — `_follow_history_burst` composes one string holding
-#     a single dim frame line that names the rows as earlier history, then the
-#     replayed rows rendered dim, then the live rows. No separator line follows
-#     the replay: the frame line alone marks where history ends.
-#   * stdout is not a terminal, as under the host's line-batching Monitor —
-#     `_follow_history_burst` is never reached, so the re-arm prints no frame
-#     line and no replayed rows, only the live rows. A pipe has no scrollback to
-#     restore, and a replayed row would arrive there as a fresh transition.
+# On re-arm, _follow_history_burst composes the history burst: on a
+# terminal it returns one dim frame line followed by the replayed history
+# rows, also dim; under a Monitor (stdout is not a terminal) it returns
+# nothing. The burst never contains live rows. Live rows are written
+# afterwards, one per transition, by the follow loop.
 
 HISTORY_HEADER = "── history"
 HISTORY_SEPARATOR = "── re-armed"
