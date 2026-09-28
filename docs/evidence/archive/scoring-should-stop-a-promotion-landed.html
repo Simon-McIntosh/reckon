@@ -1748,6 +1748,114 @@ count, ids: (1, ['../../home/ITER/mcintos/Code/.reckon-worktrees/w/tests/test_ga
     node measures its own change only; verifying the merged result belongs to a separately
     dispatched test node.</p>
   </section>
+  <section id="canonical-id-edges">
+    <h2>Two edges of the canonical node id reduction</h2>
+
+    <p><strong>Defect, from the review of the reduction itself.</strong> The review of
+    <code>added-failures-compare-canonical-node-ids</code>
+    (<code>r-20260927T185552162561</code>, head <code>d2beb55a</code>, scores 18 to 20)
+    recorded two findings it could not measure in a live run, both in
+    <code>reckon/crew/review.py</code>. <strong>First:</strong>
+    <code>canonical_node_id</code> reduced <em>every</em> spelling onto its last
+    <code>tests</code> component, so two distinct ids whose paths differ only above
+    a component that is itself named <code>tests</code> — <code>tests/x.py::t</code>
+    against <code>pkg/tests/x.py::t</code> — collapsed into one id, and an added
+    failure under one was not counted against a base log reporting the other. That
+    is a silent under-count, the direction opposite to the phantom the reduction
+    exists to remove. <strong>Second:</strong> <code>_retires_id</code> matched
+    retirement prose verbatim against ids that now arrive canonical, so a manifest
+    naming an added id with the prefix its own shifted gate log printed no longer
+    retired it, and the total was capped at
+    <code>ADDED_FAILURES_TOTAL_CAP</code> (5) where the reviewer had scored 90.</p>
+
+    <p><strong>Both reproduce at the base revision <code>bbd2c059</code>.</strong> The
+    base arm — that revision's module with the head test files copied in, so its
+    failures are the cases asserting behaviour the base lacks and nothing else —
+    reports <strong>3 failed, 14 passed, exit 1</strong>
+    (<code>base-arm-scratch.log</code>). The two required cases fail on their own
+    assertions:</p>
+
+    <pre>E  AssertionError: the head's tests/test_gate.py::test_alpha is not the pkg/tests/… test
+   the base log reports; merging them reports an added failure as none
+E  assert 0 == 1
+
+E  AssertionError: the manifest retired the added id by name, so the total must not be
+   capped below the added-failures cap
+E  assert 5 == 90</pre>
+
+    <p><strong>Fix.</strong> Only a spelling written from a working directory is
+    reduced, because only there is the part above the anchor the working
+    directory's contribution rather than part of the path: a path that is absolute
+    or opens with <code>.</code> is reduced onto its last <code>tests</code>
+    component, and a plain relative spelling is kept whole
+    (<code>reckon/crew/review.py:515</code>, <code>:518</code>). The retirement match
+    compares canonical forms on both sides (<code>:696</code>): each whitespace token
+    of the prose is trimmed of the punctuation the sentence wraps it in
+    (<code>:680</code>) and reduced through the same function, and a token is compared
+    whole so a shorter id is not retired by a longer one containing it. The
+    <code>::</code> segments and parametrisation brackets are untouched on both
+    paths, because they are what tells apart two tests sharing a file.</p>
+
+    <figure>
+      <img src="/reckon/figures/scoring-should-stop-a-promotion/canonical_id_edges.png" alt="Three rows through one rule. A spelling written from a working directory — absolute, or opening with . or .. — is reduced onto the last tests component; a plain relative spelling is kept whole. Row 1: two spellings of tests/x.py::t, one at the repository root and one with the shifted prefix, both reduce to one id, so the count is 0 and the total is uncapped. Row 2: pkg/tests/x.py::t is a plain relative spelling and stays a second id, so a failure under it is counted, count 1. Row 3: retirement prose naming tests/x.py::t under the shifted spelling matches the canonical id, so the total stays 90 rather than being capped at 5.">
+    </figure>
+
+    <table>
+      <thead><tr><th>Case</th><th>Base log id</th><th>Head log id</th><th>Count</th></tr></thead>
+      <tbody>
+        <tr><td>one test, two spellings (still collapses)</td><td><code>tests/x.py::t</code></td><td><code>…/tests/x.py::t</code></td><td>0</td></tr>
+        <tr><td>a package's nested <code>tests</code> directory</td><td><code>pkg/tests/x.py::t</code></td><td><code>tests/x.py::t</code></td><td>1, and 1 in the reverse direction</td></tr>
+        <tr><td>a nested id under the same file name</td><td><code>tests/test_gate.py::test_alpha</code></td><td><code>pkg/tests/test_gate.py::test_alpha</code></td><td>1</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Focused gate.</strong> The two measured files in one invocation report
+    <strong>17 passed, exit 0</strong> at <code>d444a159</code>
+    (<code>head-arm-gate.log</code>), whose header names the revision, the tree, the
+    module the run imported, the working directory it resolved from and the
+    command. The file gains three cases: the distinct-prefix pair above, the
+    shifted-prefix retirement, and the two halves of the rule asserted side by
+    side. The pre-existing shifted-arm case — one id printed two ways collapsing
+    to one — is unchanged and still passes.</p>
+
+    <p><strong>Declared negative control.</strong> The head revision with one
+    textual mutation: the working-directory guard removed, so the anchor on the
+    last <code>tests</code> component applies to every spelling again. In the
+    scratch tree the distinct-prefix case fails, and so does the side-by-side
+    case, which is the same assertion in another form:</p>
+
+    <table>
+      <thead><tr><th>State</th><th>Result over the two files</th><th>What it establishes</th></tr></thead>
+      <tbody>
+        <tr><td>Head tree, no mutation</td><td>17 passed; exit 0</td><td>The nested pair stays two ids, and the retirement matches.</td></tr>
+        <tr><td>Working-directory guard removed</td><td>2 failed, 15 passed; exit 1</td><td>The nested pair collapses again and the distinct-prefix case fails.</td></tr>
+      </tbody>
+    </table>
+    <p>The red log's first line repeats the declared mutation verbatim; it is
+    <code>negative-control-last-tests-anchor.log</code> in the run directory. The
+    mutation was applied to the scratch copy only: <code>reckon/crew/review.py</code>
+    in the worktree holds the guard it committed at <code>d444a159</code>.</p>
+
+    <p><strong>Lint.</strong> <code>ruff check --no-cache --output-format=concise</code>
+    reports <strong>0 findings</strong> on both staged paths and
+    <code>ruff format --check</code> reports both formatted. The new test file has no
+    base revision to compare against; the base copy of <code>review.py</code> is
+    clean at 0 as well.</p>
+
+    <p><strong>Scope and what remains.</strong> Only <code>reckon/crew/review.py</code>
+    and the two-case extension of <code>tests/test_review_node_id_canonical_form.py</code>
+    changed in the measured commit; the count's other reader,
+    <code>tests/test_review_counts_added_failures.py</code>, is measured but
+    unmodified. Two residual shapes are recorded rather than repaired: a gate arm
+    that runs from an <em>ancestor</em> of the count's repository prints a plain
+    unreduced prefix (<code>Code/repo/tests/x.py::t</code>) and is not redressed,
+    because a plain relative path carries nothing that distinguishes an ancestor
+    prefix from a package directory; and a manifest that retires an id by naming
+    <code>pkg/tests/x.py::t</code> does not retire <code>tests/x.py::t</code>,
+    which is correct. Neither is measured in a live run, and neither can merge two
+    ids. This node measures its own change only; verifying the merged result
+    belongs to a separately dispatched test node.</p>
+  </section>
 </main>
 </body>
 </html>
