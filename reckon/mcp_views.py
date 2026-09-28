@@ -1586,6 +1586,46 @@ def _authored_headings(soup: BeautifulSoup) -> list[Tag]:
     return headings
 
 
+def _record_text_response(
+    selector: ResourceSelector,
+    version: int,
+    data: dict[str, Any],
+    *,
+    section: str | None,
+    html_text: str | None,
+) -> dict[str, Any]:
+    """Serve a cumulative evidence record's whole text through the text view.
+
+    A record's fragments are appended after the document rather than into one
+    of its sections, so a section read cannot carry the anchors they hold. The
+    record is therefore served whole — the composed bytes, or the record's own
+    bytes when composition failed — in the ``html``/``text`` fields the text
+    view already uses for a plan's authored section.
+    """
+
+    if isinstance(section, str) and section.strip():
+        raise ViewRequestError(
+            "section_not_applicable",
+            "An evidence record is served whole, not one section at a time.",
+            "Drop the section argument to read the record.",
+        )
+    text = html_text or ""
+    return {
+        "resource": selector.as_dict(),
+        "version": version,
+        "view": "section",
+        "section": {
+            "id": selector.id,
+            "heading": data.get("title") or selector.id,
+            "text": " ".join(BeautifulSoup(text, "html.parser").stripped_strings),
+            "html": text,
+            "declaration": None,
+            "record": None,
+            "comments": [],
+        },
+    }
+
+
 def _authored_heading_html(heading: Tag) -> str:
     """Render a heading without opt-in typed-record attributes."""
 
@@ -2457,13 +2497,22 @@ def resource_view(
             "pagination": pagination,
         }
     elif selected == "section":
-        result = _section_response(
-            selector,
-            version,
-            data,
-            section=section,
-            html_text=html_text,
-        )
+        if selector.type == "evidence":
+            result = _record_text_response(
+                selector,
+                version,
+                data,
+                section=section,
+                html_text=html_text,
+            )
+        else:
+            result = _section_response(
+                selector,
+                version,
+                data,
+                section=section,
+                html_text=html_text,
+            )
     elif selected == "version":
         result = {
             "resource": selector.as_dict(),

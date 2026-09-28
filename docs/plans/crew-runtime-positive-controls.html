@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="112">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="115">
 </head>
 <body>
   <main class="plan-doc">
@@ -1100,6 +1100,43 @@
     whose name must match its contents, and a presented citation that must be refused rather than filtered
     &mdash; are carried in the followup rather than folded in here, because each is a separate property and this
     section owns one.</p>
+    <p><strong>Landed 2026-09-28 at <code>1e18eb08</code>, reverted on main, and re-landed at
+    <code>3cff187d</code> over <code>63bb1b3c</code>, across <code>reckon/crew/promotion.py</code> and the new
+    <code>tests/test_control_gate_checks_facts.py</code>.</strong> The gate reads the two facts and never compares
+    the declaration with the log's text. Missing facts never admit a control: the exit fact is the log's terminal
+    <code>EXIT=&lt;n&gt;</code> record alone, so a log carrying no record &mdash; or one reading zero &mdash; is
+    refused; the added-failure fact is the log's canonical failing test ids minus the baseline's
+    <code>failure_ids</code>, so a log naming no failing test id, or only ids the baseline already fails, is
+    refused. The verdict row carries the decoded facts (<code>control_exit_status</code>,
+    <code>control_failure_ids</code>, <code>baseline_failure_ids</code>, <code>added_failure_ids</code>) and the
+    declaration beside the resolved log path, so the human comparison is available where the decision is read. The
+    first landing inferred each fact from a runner's bare failing count where a record was absent; that admitted
+    fact-lacking logs, turned four existing tests red on main, and is why the rule is now the stricter one.
+    Measured at the re-land: the case file's seven cases (three of them the missing-fact refusals) fail against the
+    base revision <code>a4525840</code> (7 failed, exit 1), where the seven-file population is green (53 passed,
+    exit 0; green at every origin/main head measured mid-attempt, <code>1e520954</code> then
+    <code>27b4def6</code>), and the eight files pass at head (60 passed, exit 0) and again on a per-file
+    resolution of this branch onto <code>27b4def6</code>; the declared mutation &sect;20 names, the
+    verbatim substring admission restored in a scratch copy, reds all seven with the mutation verbatim on the
+    mutation log's first line. The fixture collision the first landing left open is settled by the same rule: the
+    fixtures behind the four red tests are fact-lacking, so they are refused under it too, every expectation on the
+    refusal side holds unchanged, and the fixture that asserts admission now carries the facts admission reads.
+    The four repairs and the one fixture repaired beyond the granted write paths &mdash; required for the gate to
+    exit green, and disclosed here &mdash; are enumerated in
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s20">&sect;20 landed</a>.</p>
+    <figure>
+      <img src="/reckon/figures/crew-runtime-positive-controls/control-gate-facts.svg"
+        alt="The control's log is read for two facts. Fact one, that the run failed: a terminal EXIT record other
+        than zero, and nothing stands in for it — a log with no record, or one reading zero, is refused however it
+        is worded. Fact two, that something broke: at least one canonically-identified test the log marks FAILED is
+        absent from the baseline's failure ids, and a log naming no failing id, or only ids the baseline already
+        fails, is refused. A control surviving both is admitted with the verdict matched, and its log text is never
+        compared with the declaration, which stays on the node record and is printed beside the log path for the
+        reader.">
+      <figcaption>The two facts and the three outcomes. The refusals are the two the old comparison could not make
+      reliably: a pasted declaration over a green run, and a control that failed only what the baseline already
+      failed.</figcaption>
+    </figure>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -1229,10 +1266,11 @@
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls — land the two remaining promotion.py changes in order: replace the verbatim negative-control match with a gate on the control&#x27;s exit code and failure-set delta, then resolve every cited identifier against the repository before recording it. Dispatch only when reckon/crew/promotion.py carries no live claim.</pre>
     <p class="r-fu-outcome">The cited-identifier half has landed and is on main at merge e147cbed: promotion resolves every identifier a manifest cites against the repository and refuses one that resolves to no object, verified in HEAD by the markers the change introduced rather than by the commit being reachable. The node's own file is 10 passed exit 0 at the delivered tree; the wider population is 1 failed 136 passed at head against the identical failure id and count at base, so no failure is added; the declared mutation reddens exactly the three refusal cases with the declaration verbatim on the red log's first line. Independent review 86/100. The verbatim-match half has NOT landed and is carried forward, together with four findings this node produced about its own record. Three are the review's: no gate log's first line names the revision, tree or command the template this plan landed requires; the case at tests/test_cited_identifier_resolves.py:369 passes under the declared mutation because a fabricated citation left unrefused still trips the worktree-head guard, so it would not catch a regression; and the presented-commit branch still drops an unresolvable citation silently, pinned by a test outside this node's fence. The fourth was found while assembling the promotion citation: gate-head-new-file.log carries the population plus the new file rather than the file alone, so the ten-passed claim rested only on the post-revert control log. The manifest's test_logs field cited four logs at a root where none existed and has been repaired to the paths that resolve, each read back, with the delivered copy kept beside it.</p>
     </article>
-<article class="r-fu" data-id="f-crpc-a-control-is-judged-by-what-it-did" data-status="open" data-written-by="ship-crpc-20260921" data-written-at="2026-09-23" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-crpc-a-control-is-judged-by-what-it-did" data-status="resolved" data-written-by="ship-crpc-20260921" data-written-at="2026-09-23" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="2026-09-28T12:29:45+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Replace the verbatim control match, and make the cases and logs say which guard fired</h4>
     <div class="r-fu-body"><p>One change and four repairs, all in or around the promotion gate.</p><p><strong>The guard checks facts, not wording.</strong> <code>_require_declared_negative_control</code> still compares the declaration against the log's text. Twelve sound controls have been refused by it and none caught, and pasting the declaration into the log satisfies it while adding no evidence. Gate instead on the two facts a guard can verify without reading any wording: the control run exits non-zero, and its failure set differs from the baseline's. Keep the declaration on the node record and print it beside the log so a person judges the match.</p><p><strong>A case must say which guard fired.</strong> The case at <code>tests/test_cited_identifier_resolves.py:369</code> passes under the declared mutation, because an unrefused citation still trips the worktree-head guard and the assertion holds either way. Assert the refusal that is under test, not an exit code any refusal would produce.</p><p><strong>A gate log names its tree on line one.</strong> None of the logs this plan's own nodes produced carries the revision, tree and command on the first line, although the manifest template requires it. The requirement is stated and unchecked, which is the shape that decays.</p><p><strong>A log's name must match its contents.</strong> A log called for the new file alone carried the whole population, so a claim about the file rested on a different log than the one cited.</p><p><strong>The presented-commit branch still drops silently.</strong> An unresolvable citation presented beside a commit is filtered away rather than refused, pinned as intended silence by a test outside the last node's fence; it must land with that file.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls — replace the verbatim negative-control match with a gate on the control&#x27;s exit status and failure-set delta, repair the non-discriminating case and the presented-commit branch, and make gate logs name their revision on line one. Dispatch only when reckon/crew/promotion.py carries no live claim.</pre>
+    <p class="r-fu-outcome">The guard landed at a9df0e39: a control is admitted by its run exiting non-zero with at least one failure the baseline lacks, and a log with no recorded exit or failing ids never admits. The first landing (739d56b9) turned four tests red and was reverted at 680193b4. The re-land (run r-20260928T060540883209, review 89, zero added failures across the eight negative-control files) updates those tests where they encoded the wording rule. The four repairs named here, and the stale prompt template, move to f-crpc-control-gate-repairs.</p>
     </article>
 <article class="r-fu" data-id="f-crpc-a-launch-failure-leaves-a-record" data-status="resolved" data-written-by="ship-crpc-20260921" data-written-at="2026-09-23" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="2026-09-23T07:27:16+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A launch failure leaves something a later reader can find</h4>
@@ -1266,6 +1304,16 @@
     <h4 class="r-fu-title">A path the dispatcher grants is checked for conflict like one the caller named</h4>
     <div class="r-fu-body"><p><code>crew dispatch</code> appends plan, evidence and figure paths to a node's write paths as <em>granted</em>, and the live-claim conflict check never compares them. So two concurrent runs are routinely handed <strong>the same file</strong>, each told to append its landing record to it, and the dry run reports <code>live_conflicts: []</code> while the other run's pointer already claims all three paths.</p><p>Reported from imas-efit with two measured instances, and <strong>far wider than reported when checked here</strong>. At the moment of writing, <strong>33 paths are claimed by more than one live run</strong> across this project. Three runs hold every path of one plan; four hold every path of another — its plan HTML, its cumulative evidence record and its figures directory — and <code>crew(view="scopes")</code> lists them all in <code>claim_map</code> while still reporting <code>conflicts: []</code>. This is a standing fleet condition rather than an incident.</p><p>The exposure is the cumulative evidence record, because it is the one file every node on a plan is told to append to. A whole-file write from either holder takes the other's landed record, and the loss is silent: the writer sees a successful write and the reader sees a coherent document with one section missing. That has already happened once on this workstation, measured at 425 deletions against 96 lines of the writer's own.</p><p><strong>Done when</strong> a granted path is a claim like any other: a dispatch whose granted paths collide with a live pointer's claims reports them in <code>live_conflicts</code> and in <code>conflicts</code>, naming both runs and the shared paths; a dispatch whose caller-named paths collide behaves as it does today; and a path granted to a run that has since been promoted is not reported, since a released claim is not a conflict. The declared mutation compares only caller-named paths again, and the case asserting a granted collision is reported must then be observed to fail.</p><p>Until it is checked, the hand mitigation is the one imas-efit adopted: merge holders of a shared path one at a time, and require <code>git diff HEAD~1 HEAD -- &lt;path&gt; | grep -c '^-[^-]'</code> to read 0 after each merge, which catches a whole-file write that deleted a predecessor's record.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls — compare dispatcher-granted paths against live claims as caller-named paths already are, so two concurrent runs are never handed the same cumulative evidence record with conflicts reported empty.</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-control-gate-repairs" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T12:35:00Z" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The four repairs around the control gate, and a prompt that still teaches the old rule</h4>
+    <div class="r-fu-body"><p>Carried from f-crpc-a-control-is-judged-by-what-it-did after the guard landed. (1) The case at tests/test_cited_identifier_resolves.py:369 asserts an exit code that any refusal produces; make it assert the refusal under test. (2) A gate log names its revision, tree and command on line one, which the manifest template requires and nothing checks. (3) A log's name matches its contents. (4) The presented-commit branch still drops an unresolvable citation silently. (5) Added by the re-land's review: reckon/crew/prompts.py:438 and the declaration block handed to a node still say the log's first line must repeat the declared mutation verbatim, which is the rule the gate no longer applies.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-exit-record-forms" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T13:33:00Z" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The fact gate reads only EXIT=, and workers write other forms</h4>
+    <div class="r-fu-body"><p>Within hours of the fact gate landing at a9df0e39, two sound controls from nodes dispatched before it were refused for recording no exit. One (name-the-ended-turn-in-its-reason) had FAILED ids but no exit line; it was re-run with EXIT=1. The other (a-sub-floor-dimension-is-an-obligation) recorded its exit as 'arm_exit=1', beside four FAILED ids and pytest's '4 failed, 3 passed'; its promotion waived the control with those facts stated. Either the gate reads the exit forms workers actually write (EXIT=, exit=, arm_exit=, 'gate exit: N'), or the manifest template and the dispatch prompt require the one form it reads. This extends the prompt repair already listed in f-crpc-control-gate-repairs.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -1508,6 +1556,9 @@
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20260928T073255728045-review-of-the-control-gate-checks-facts-not-words" data-who="reckon-build" data-when="2026-09-28T08:43:23.886Z">
     <div class="r-comment-body"><p>review stored at 63bb1b3c: scores 18-19; one record-level finding, an added-failure id named only by its tail so the retirement matcher does not retire it</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20260928T114813176869-review-of-the-control-gate-checks-facts-not-words" data-who="reckon-build" data-when="2026-09-28T12:39:16.627Z">
+    <div class="r-comment-body"><p>re-review stored at f1d9ee97: total 89, zero added failures; the prompt template still teaching the wording rule is queued as f-crpc-control-gate-repairs, and the fixture's EXIT line was accepted at promotion</p></div>
 </div>
 </section>
 </main>

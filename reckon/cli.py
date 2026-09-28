@@ -4405,7 +4405,15 @@ def _ledger_module():
     multiple=True,
     help="Commit the run landed; repeat for each.",
 )
-@click.option("--outcome", default="", help="One line on what the run produced.")
+@click.option(
+    "--outcome",
+    default="",
+    help=(
+        "One line on what the run produced. Required for a non-passing gate "
+        "except on a review run, whose stored review's total score and finding "
+        "count supply the summary when this is omitted."
+    ),
+)
 @click.option(
     "--no-commit",
     default="",
@@ -4528,7 +4536,9 @@ def _ledger_module():
     help=(
         "Promote a passing implement or test run whose plan impl did not move "
         "since dispatch, and record why it did not. Worded as a reason you give, "
-        "not a rebuke: some landings legitimately do not move the plan."
+        "not a rebuke: some landings legitimately do not move the plan. A "
+        "corrective run — one dispatched as a resume or redispatch — is exempt "
+        "and needs no flag."
     ),
 )
 @click.option(

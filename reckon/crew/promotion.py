@@ -962,6 +962,70 @@ def _require_runnable_gate_command(
     )
 
 
+def _paths_differing_between(
+    repository: Path,
+    integrated: str,
+    checkout: str,
+    changed_paths: Sequence[str] | None,
+) -> list[str] | None:
+    """Return the run's changed paths whose content differs between two revisions.
+
+    ``None`` reports the paths as unknown, from either route: a caller that
+    states no paths cannot establish that the commits after the merge leave
+    that work untouched, and a comparison that cannot be taken reports the same
+    unknown rather than an empty result, because a failed probe establishes
+    nothing. An empty list means the comparison ran and every stated path is
+    identical between the two revisions, the condition under which a checkout
+    past the merge may still be measured.
+    """
+    if changed_paths is None:
+        return None
+    paths = [str(path) for path in changed_paths if str(path).strip()]
+    if not paths:
+        return []
+    probe = _git(
+        repository,
+        "diff",
+        "--name-only",
+        integrated,
+        checkout,
+        "--",
+        *paths,
+        check=False,
+    )
+    if probe.returncode:
+        return None
+    return [line.strip() for line in probe.stdout.splitlines() if line.strip()]
+
+
+def _cited_changed_paths(repository: Path, commits: Any) -> tuple[str, ...] | None:
+    """The repository paths a run's own cited commits changed, or None.
+
+    Read from each cited commit's own diff against its first parent, in the
+    checkout the re-run will measure, so a merge charges the paths it resolved
+    rather than the branch's whole span. A citation that does not resolve
+    leaves the paths unknown — the caller then refuses a checkout past the
+    integrated revision rather than guessing which paths are safe to ignore.
+    """
+    revisions = [str(commit) for commit in (commits or ()) if str(commit).strip()]
+    if not revisions:
+        return None
+    paths: list[str] = []
+    seen: set[str] = set()
+    for revision in revisions:
+        probe = _git(
+            repository, "diff", "--name-only", f"{revision}^", revision, check=False
+        )
+        if probe.returncode:
+            return None
+        for line in probe.stdout.splitlines():
+            path = line.strip()
+            if path and path not in seen:
+                seen.add(path)
+                paths.append(path)
+    return tuple(paths)
+
+
 def _merged_gate_finding(
     base_verdict: str,
     integrated_verdict: str,
@@ -1009,21 +1073,30 @@ def rerun_gate_at_integrated_revision(
     integrated_revision: str = "HEAD",
     timeout_seconds: float = 300.0,
     command: str | None = None,
+    changed_paths: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     """Re-run one gate against the tree that ships, and compare its verdict.
 
     A worker's gate runs against the base revision its worktree branched from,
-    so a contract that lands after that base never binds the worker's run: the
-    run is legitimately green, nothing re-checks the merged tree, and the merge
-    turns the primary branch red. This re-runs the gate's own command against a
-    repository on the integrated revision — the tree the coordinator is about
-    to push — and reports whether a base-green gate still holds there.
+    so a coordinator may name the merged revision while the checkout has moved
+    on past it: bookkeeping commits land on the branch, and refusing every
+    checkout that is not exactly the integrated revision sends the coordinator
+    to re-check-out a tree the gate does not depend on. The re-run therefore
+    also accepts a checkout the integrated revision is an ancestor of, but only
+    when none of the run's own changed paths differs between the two — the
+    extra commits are then unable to change what the gate measures. A checkout
+    whose extra commits touch one of those paths is refused, and a checkout
+    whose paths cannot be compared at all is refused too — whether the run
+    states no paths or the comparison itself fails — because an unknown scope
+    is not an empty one. ``changed_paths_differing`` reports the comparison's
+    result: the differing paths, an empty list for a comparison that ran and
+    found none, and null for one that was never taken.
 
-    The command is executed only when the repository actually sits on the
-    integrated revision: a run against any other tree verifies the wrong tree,
-    so it never executes and the reason is stated. The base verdict is taken as
-    given — it is the gate the run already recorded, which this check tests
-    rather than re-creates.
+    The command is executed only when the repository's tree is acceptable: a
+    run against any other tree verifies the wrong tree, so it never executes
+    and the reason is stated. The base verdict is taken as given — it is the
+    gate the run already recorded, which this check tests rather than
+    re-creates.
 
     A gate that did not run, or did not finish within the bound, is reported
     as ``not-run`` with its reason, never as passed: an unmeasured re-run must
@@ -1048,14 +1121,26 @@ def rerun_gate_at_integrated_revision(
     command_source = "option" if supplied else ("stored" if stored_command else None)
     integrated = _commit_canonical_id(repository, str(integrated_revision))
     checkout = _commit_canonical_id(repository, "HEAD")
+    on_integrated = bool(integrated and checkout and integrated == checkout)
+    descends = bool(
+        not on_integrated
+        and integrated
+        and checkout
+        and _revision_is_ancestor(repository, integrated, checkout)
+    )
+    differing = (
+        _paths_differing_between(repository, integrated, checkout, changed_paths)
+        if descends
+        else None
+    )
     report: dict[str, Any] = {
         "base_verdict": base,
         "integrated_verdict": "not-run",
         "integrated_revision": integrated or str(integrated_revision),
         "checkout_revision": checkout or "",
-        "checkout_on_integrated_revision": bool(
-            integrated and checkout and integrated == checkout
-        ),
+        "checkout_on_integrated_revision": on_integrated,
+        "checkout_descends_from_integrated_revision": descends,
+        "changed_paths_differing": list(differing) if differing is not None else None,
         "gate_command": command or None,
         "gate_command_source": command_source,
         "ran": False,
@@ -1082,12 +1167,33 @@ def rerun_gate_at_integrated_revision(
         )
     elif not checkout:
         reason = "the repository has no resolvable HEAD to run the gate against"
-    elif checkout != integrated:
+    elif not on_integrated and not descends:
         reason = (
             f"the checkout is at {checkout[:12]}, not the integrated revision "
-            f"{integrated[:12]}: a gate run here would verify the wrong tree. "
-            "Check the integrated revision out, or name the revision the "
-            "checkout actually carries"
+            f"{integrated[:12]}, and does not descend from it: a gate run here "
+            "would verify the wrong tree. Check the integrated revision out, "
+            "or name the revision the checkout actually carries"
+        )
+    elif not on_integrated and differing is None:
+        reason = (
+            f"the checkout is at {checkout[:12]}, past the integrated revision "
+            f"{integrated[:12]}, and the run's changed paths could not be "
+            "compared between the two: either the run does not state what it "
+            "changed or the comparison could not be taken, and an unknown "
+            "comparison is not an empty one, so nothing establishes that the "
+            "commits after the merge leave what the gate measures untouched. A "
+            "gate run here would verify the wrong tree. Check the integrated "
+            "revision out, or state the paths the run changed"
+        )
+    elif not on_integrated and differing:
+        reason = (
+            f"the checkout is at {checkout[:12]}, past the integrated revision "
+            f"{integrated[:12]}, and the commits between them change "
+            + ", ".join(differing[:5])
+            + ": a gate run here would verify the wrong tree, because this "
+            "run's merge moved past paths the gate measures. Check the "
+            "integrated revision out, or re-run the gate on a checkout whose "
+            "changed paths are unchanged"
         )
     else:
         reason = None
@@ -1182,6 +1288,7 @@ def record_gate_rerun_at_integrated_revision(
         integrated_revision=integrated_revision,
         timeout_seconds=timeout_seconds,
         command=command,
+        changed_paths=_cited_changed_paths(checkout, row.get("commits")),
     )
     record_path = ledger.run_path(project, run_id, ledger_root)
     if record_path.is_file():
@@ -2896,6 +3003,73 @@ def _unreviewed_refusal(
     )
 
 
+def _review_outcome_summary(stored: Mapping[str, Any]) -> str:
+    """Summarise a stored review as the outcome a promotion records.
+
+    The two figures are the ones a review run's own deliverable carries — the
+    total the five dimensions sum to and the count of findings — so the summary
+    is derived from the record rather than restated by hand. A review whose
+    score is withheld (an unparsed or dimension-incomplete record) has no total
+    to name, and a summary that invented one would read as a measured score.
+    """
+    total = stored.get("total")
+    findings = stored.get("findings")
+    count = len(findings) if isinstance(findings, Sequence) else 0
+    if isinstance(total, bool) or not isinstance(total, (int, float)):
+        return f"review stored with no total score; {count} finding(s)"
+    return f"review scored {int(total)}, {count} finding(s)"
+
+
+def _resolve_promotion_outcome(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    verdict: str,
+    outcome: str = "",
+) -> str:
+    """Return the outcome text a promotion records, defaulting a review run's.
+
+    A non-passing gate must land with a summary of what failed or why the
+    evidence could not be produced, so an empty outcome is refused. A review
+    run's summary already exists in its deliverable, so the demand is met from
+    the stored review's total score and finding count instead of requiring the
+    operator to restate a figure the review store holds. Every other run still
+    refuses, and a review run with no readable stored review refuses too,
+    because a summary composed from nothing would read as evidence.
+    """
+    supplied = str(outcome).strip()
+    if verdict == "passed" or supplied:
+        return supplied
+    from reckon.crew import recovery
+
+    if not recovery._is_review_run(record):
+        raise CrewError(
+            "a non-passing gate requires --outcome; write what failed or why "
+            "the evidence could not be produced"
+        )
+    project = str(record.get("project") or "")
+    delivered = recovery._delivered_review_record(record, project)
+    if delivered is None:
+        raise CrewError(
+            f"run {run_id!r} is a review run whose stored review cannot be "
+            "read, so --outcome has no default to take; store the review or "
+            "write what failed or why the evidence could not be produced"
+        )
+    _, path = delivered
+    try:
+        stored = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        stored = None
+    if not isinstance(stored, Mapping):
+        raise CrewError(
+            f"run {run_id!r} is a review run whose stored review at {path} "
+            "does not parse, so --outcome has no default to take; store the "
+            "review or write what failed or why the evidence could not be "
+            "produced"
+        )
+    return _review_outcome_summary(stored)
+
+
 def complete(
     run_id: str,
     *,
@@ -2929,11 +3103,6 @@ def complete(
             f"{', '.join(ledger.GATE_VERDICTS)}; a gate whose evidence could "
             "not be produced is 'not-run'"
         )
-    if verdict != "passed" and not str(outcome).strip():
-        raise CrewError(
-            "a non-passing gate requires --outcome; write what failed or why "
-            "the evidence could not be produced"
-        )
     classification = str(failure_classification).strip().lower()
     if verdict == "failed" and classification not in ledger.FAILURE_CLASSIFICATIONS:
         raise CrewError(
@@ -2945,6 +3114,12 @@ def complete(
     commit_list = tuple(str(sha) for sha in commits if str(sha).strip())
     with _pointer_lock(run_id):
         record = read_pointer(run_id)
+        # A review run's outcome is the review it stored, so the operator's
+        # hand is not the only source for a non-passing gate's summary; the
+        # refusal below stands for every run with no stored review to read.
+        outcome = _resolve_promotion_outcome(
+            run_id, record, verdict=verdict, outcome=outcome
+        )
         # A promotion writes the ledger row into the project's own mount, so
         # the repository is resolved from that mount before anything is
         # written: a checkout named from elsewhere is refused, and a run whose
@@ -3988,6 +4163,10 @@ def _plan_remaining_sections(state: Mapping[str, Any]) -> list[str]:
 
 _IMPL_MOVE_ENFORCED_ROLES = frozenset({"implement", "test"})
 _IMPL_MOVE_EXEMPT_CLASSIFICATIONS = frozenset({"negative-result", "correct-refusal"})
+# A run that continues earlier work inherits that work's plan movement: the
+# impl the plan gained belongs to the dispatch the retry corrects, so demanding
+# it move again charges a second node for one advance.
+_IMPL_MOVE_CORRECTIVE_ATTEMPT_KINDS = frozenset({"resume", "redispatch"})
 
 
 def _require_impl_moved(
@@ -4029,6 +4208,11 @@ def _require_impl_moved(
     if str(failure_classification).strip().lower() in _IMPL_MOVE_EXEMPT_CLASSIFICATIONS:
         check["verdict"] = "exempt"
         check["reason"] = f"failure-classification:{failure_classification}"
+        return check
+    attempt_kind = str(record.get("attempt_kind") or "").strip().lower()
+    if attempt_kind in _IMPL_MOVE_CORRECTIVE_ATTEMPT_KINDS:
+        check["verdict"] = "exempt"
+        check["reason"] = f"corrective-run:{attempt_kind}"
         return check
 
     if str(gate).strip().lower() != "passed":
@@ -4096,6 +4280,36 @@ def _negative_control_log_text(
         return None, str(path)
 
 
+def _control_failure_ids(log_text: str) -> set[str]:
+    """The failing tests a control log names, as canonical node ids.
+
+    Only the ids the log enumerates are a fact: a runner's summary saying how
+    many tests failed states that something did fail, not which test, and the
+    comparison needs the identity rather than the tally. The log's own short
+    summary marks them FAILED or ERROR, read through the review module's reader
+    so both sides of the comparison are canonical.
+    """
+    return review_module._pytest_failure_ids(log_text)
+
+
+def _baseline_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str]:
+    """The failing tests the manifest records for the baseline.
+
+    The baseline is the arm the control is compared against: a control shows
+    something broke only by failing a test that was not already failing. A run
+    that recorded no baseline observation has nothing on record as failing, so
+    every failure its control names is one the baseline does not.
+    """
+    observation = None if manifest is None else manifest.get("baseline_suite")
+    if not isinstance(observation, Mapping):
+        return set()
+    return {
+        review_module.canonical_node_id(str(test_id).strip())
+        for test_id in observation.get("failure_ids") or ()
+        if str(test_id).strip()
+    }
+
+
 def _require_declared_negative_control(
     run_id: str,
     record: Mapping[str, Any],
@@ -4105,16 +4319,26 @@ def _require_declared_negative_control(
     manifest_path: str,
     waiver_reason: str = "",
 ) -> dict[str, Any]:
-    """Refuse a passing gate on a check whose red log is not delivered.
+    """Refuse a passing gate on a check whose red log shows nothing break.
 
     A node whose write paths include a test file declares the mutation that
     check must fail against. The declaration is discharged at promotion by a
     manifest that carries the path to the log that mutation produced: the pair
-    of logs is the positive and negative control of one measurement, and the
-    red log must name the declared mutation rather than merely be a run that
-    failed for something else. A declaration of ``none`` with its reason is an
-    explicit escape rather than a silent one, so it is recorded on the row
-    rather than refused.
+    of logs is the positive and negative control of one measurement.
+
+    The log is judged on two facts about the run it captured, not on how it is
+    worded: the run's terminal record exited non-zero, and the log names at
+    least one failing test id the baseline does not fail. Neither fact is
+    inferred — a log with no exit record and a log naming no failing test id
+    each state too little to admit the control, and a bare failing count is not
+    evidence that either fact holds. Wording cannot carry either fact, so a
+    declaration pasted into a log whose run exited zero is refused, and neither
+    can a log whose run merely repeated the failures the baseline already had.
+    The declaration stays on the node record and on the verdict row beside the
+    log path, so a person compares the two — the instrument for *is this the
+    right mutation*, which no comparison of text can be. A declaration of
+    ``none`` with its reason is an explicit escape rather than a silent one, so
+    it is recorded on the row rather than refused.
     """
 
     check: dict[str, Any] = {"verdict": "exempt"}
@@ -4178,20 +4402,51 @@ def _require_declared_negative_control(
             "Write the red log where the manifest can be read alongside it and "
             "name that path"
         )
-    if declaration not in text:
+    control_ids = _control_failure_ids(text)
+    baseline_ids = _baseline_suite_failure_ids(manifest)
+    added = sorted(control_ids - baseline_ids)
+    recorded_exit = _recorded_exit_status(text)
+    check["control_exit_status"] = recorded_exit
+    check["control_failure_ids"] = sorted(control_ids)
+    check["baseline_failure_ids"] = sorted(baseline_ids)
+    check["added_failure_ids"] = added
+    # Both facts have to come from something only the run could have written: a
+    # log with no EXIT record says nothing about whether its command failed,
+    # and one naming no failing test id says nothing about what broke. Neither
+    # is inferred — a failing count and a repeated declaration together are
+    # exactly the shape the removed wording rule could not tell from a
+    # measurement — so an unrecorded fact refuses the declaration rather than
+    # admitting it.
+    if recorded_exit is None:
+        unexplained = "it records no EXIT status, so whether its run failed is unknown"
+    elif recorded_exit == 0:
+        unexplained = "it records EXIT=0, so its run did not fail"
+    elif not control_ids:
+        unexplained = "it names no failing test id, so what broke is unknown"
+    elif not added:
+        unexplained = (
+            "it adds no failure to the baseline's: every test it names "
+            f"({', '.join(sorted(control_ids))}) is one the baseline already fails"
+        )
+    else:
+        unexplained = ""
+    if unexplained:
+        refusal = (
+            f"run {run_id!r} declares the mutation {declaration!r} but the log at "
+            f"{resolved!r} shows no failed control run: {unexplained}. A control "
+            "is admitted on its facts alone — a non-zero exit record and at least "
+            "one failing test id the baseline does not fail — and neither fact is "
+            "inferred from the log's wording or from a bare failing count. Re-run "
+            "the declared mutation and keep the log it produced, with the "
+            "capture's EXIT=<n> record and the runner's own list of which tests "
+            "failed, or use --waive-negative-control REASON to record why the "
+            "control may be accepted without it"
+        )
         if waiver_reason:
             check["verdict"] = "waived"
             check["reason"] = waiver_reason
             return check
-        raise CrewError(
-            f"run {run_id!r} declares the mutation {declaration!r} but the log at "
-            f"{resolved!r} does not name it, so the log is a failure for some other "
-            "reason and not the negative control of this check. Record the log the "
-            "declared mutation produced with its first line repeating that mutation "
-            "verbatim, correct the declaration to the mutation the log shows, "
-            "or use --waive-negative-control REASON to record why the mismatch "
-            "may be accepted"
-        )
+        raise CrewError(refusal)
     check["verdict"] = "matched"
     return check
 

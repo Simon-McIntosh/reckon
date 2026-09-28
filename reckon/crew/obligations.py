@@ -1,9 +1,19 @@
 """Derive the work one coordinator session still owes.
 
 The recovery classifier owns each live run's state and remedy.  This module
-only projects those rows into coordinator duties, adds the two duties whose
+only projects those rows into coordinator duties, adds the duties whose
 evidence lives outside live pointers, and reports the closure figure from the
 drain view.  No obligation state is persisted here.
+
+One of those duties is derived rather than projected: a stored review whose
+dimension sits below the floor flight configuration declares for it is a
+finding that must be answered before the session can close cleanly over it.
+The finding is never folded into the review's total — it is reported beside
+it, for the run the review is about, until a disposition in the closed set is
+recorded against the dimension on the stored record itself. The disposition
+vocabulary, and the read-back that decides whether a finding still stands,
+live with the review store (:mod:`reckon.crew.review`); this module only
+reports what is still owed.
 """
 
 from __future__ import annotations
@@ -16,6 +26,7 @@ from typing import Any
 
 from reckon import _store, flight, ledger
 from reckon.crew import recovery, runs
+from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, parse_duration
 from reckon.crew.routing import _registered_worktrees
 
@@ -26,6 +37,11 @@ CLASSIFICATION_DUTY_KINDS = {
     INTERRUPTED_RUN_PHASE: "turn-ended-early",
 }
 RECOVERY_CLASSIFICATION_DUTY_KINDS = {"needs-help": "needs-help"}
+
+# A duty kind whose evidence is a stored review rather than a live run's state:
+# the row is owed while the dimension carries no disposition, and it names the
+# run the review is about rather than the reviewing run.
+SUB_FLOOR_DUTY_KIND = "review-dimension-sub-floor"
 
 
 def _utc_now() -> datetime:
@@ -231,6 +247,90 @@ def _held_worktrees(
     return items
 
 
+def _reviewed_tree(pointer: Mapping[str, Any]) -> Path | None:
+    """The tree a stored review of this run must describe, when the pointer names one.
+
+    A pointer carrying no readable tree field yields nothing rather than the
+    current directory: the empty string resolves to ``.``, which would have the
+    reader select a review against whatever repository the caller happens to
+    stand in, and report a finding against a revision belonging to something
+    else. No tree means the selection falls back to the newest stored record
+    rather than a revision comparison the caller cannot honestly make.
+    """
+    for key in ("worktree", "repo"):
+        value = str(pointer.get(key) or "").strip()
+        if not value:
+            continue
+        path = Path(value).expanduser()
+        if path.is_dir():
+            return path
+    return None
+
+
+def _sub_floor_items(
+    project: str,
+    session: str,
+    floors: Mapping[str, Any],
+    *,
+    now: datetime,
+) -> list[dict[str, Any]]:
+    """Return one duty per undisposed review dimension below its declared floor.
+
+    The review is selected through the same rule the classifier and the
+    promotion gate use (:func:`reckon.crew.recovery.select_review_for_head`),
+    so a record describing a superseded revision cannot stand in for the
+    current one. Each row names the run the review is about — the run whose
+    work carries the low dimension — and carries the dimension, the score it
+    was given and the floor it fell below, so a reader can see the finding
+    without opening the record.
+
+    A review with no floor declared for the dimension, and a dimension already
+    answered by a disposition in the closed set, produce nothing. The total is
+    not consulted: a high total over four strong dimensions does not retire a
+    fifth one that sits below its floor, which is the case this duty exists
+    for.
+    """
+    if not floors:
+        return []
+    items: list[dict[str, Any]] = []
+    for pointer in runs.list_live(project=project):
+        if str(pointer.get("session") or "") != session:
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id:
+            continue
+        tree = _reviewed_tree(pointer)
+        record, _described = recovery.select_review_for_head(
+            project,
+            run_id,
+            recovery._reviewed_run_head(pointer) if tree is not None else "",
+            tree=tree,
+        )
+        if not record:
+            continue
+        node = pointer.get("node") or {}
+        items.extend(
+            {
+                "kind": SUB_FLOOR_DUTY_KIND,
+                "run_id": run_id,
+                "node": str(node.get("id") or run_id),
+                "plan": str(node.get("plan") or ""),
+                "age_seconds": _seconds_since(record.get("timestamp"), now=now),
+                "dimension": finding["dimension"],
+                "score": finding["score"],
+                "floor": finding["floor"],
+                "next_command": (
+                    f"dispose {finding['dimension']} scored "
+                    f"{finding['score']} against a floor of {finding['floor']} "
+                    f"on run {run_id}: folded with the dispatched node's id, or "
+                    "exempted with the recorded reason"
+                ),
+            }
+            for finding in review_module.sub_floor_dimensions(record, floors)
+        )
+    return items
+
+
 def obligations(project: str, session: str) -> dict[str, Any]:
     """Return every current duty owed by one coordinator session.
 
@@ -271,6 +371,14 @@ def obligations(project: str, session: str) -> dict[str, Any]:
         if kind:
             items.append(_live_item(row, kind=kind, now=now))
 
+    items.extend(
+        _sub_floor_items(
+            project,
+            session,
+            review_module.declared_dimension_floors(config),
+            now=now,
+        )
+    )
     items.extend(_held_worktrees(project, session, now=now))
     items.sort(
         key=lambda item: (

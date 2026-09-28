@@ -5321,14 +5321,17 @@ def _watch_verdict(
     elif ended_without_manifest:
         # The classifier's clause for this pointer is about the commits that
         # survived the process; this state is about the end itself, so the
-        # reading names the result record that says the turn concluded.
+        # reading names the result record that says the turn ended. The end is
+        # the clause's own first words because the row is cut to its head: a
+        # reader who sees only that much still learns which end this was, and
+        # the remedy that follows from it.
         recovery_classification = "ended-without-manifest"
         recovery_verb = RECOVERY_VERBS["ended-without-manifest"]
         lifting_condition = None
         detail = (
-            "the worker's process ended after a successful result record and no "
-            "terminal manifest followed; the turn concluded and the run is "
-            "resumable rather than stalled"
+            "turn ended: the worker's process exited after a successful result "
+            "record and no terminal manifest followed; the run is resumable "
+            "rather than stalled"
         )
     elif state == "stalled":
         recovery_classification = "stalled"

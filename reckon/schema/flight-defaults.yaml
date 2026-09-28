@@ -98,6 +98,20 @@ gates:
   enforce: strict
   require_evidence: true
   on_fail: hold
+  # A review dimension at or below half its scale is the shape the measured
+  # pair took — totals of 79 and 78 each carrying a durability of 5 against
+  # 17-to-20 on every other dimension — so half the scale is the floor a fresh
+  # install reads a stored score against. Averaging is what made that 5
+  # disappear inside a passing total; these floors are what keeps a later one
+  # visible as a finding that needs a disposition. A host or project layer
+  # retunes any dimension's floor, and omitting a dimension leaves it with no
+  # floor at all.
+  dimension_floors:
+    goal_fidelity: 10
+    evidence: 10
+    scope_discipline: 10
+    durability: 10
+    fit: 10
 
 # A run is sized to its risk at completion. Source changes earn a review; a
 # small source diff whose spec level fixes the done-when earns a light one; a

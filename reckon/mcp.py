@@ -744,8 +744,10 @@ def _read_plan(
             workflow, ``history`` paginates prior workflow, ``version`` returns
             only typed identity and the concurrency token, ``raw`` returns the
             lossless storage state, ``section`` returns one authored h2 section
-            selected by its ``section`` identity, and ``schema`` describes the
-            response plus the selected resource's storage schema. Full followup
+            for a plan, or the whole composed text of a cumulative evidence
+            record (a ``section`` argument on a record is refused with
+            ``section_not_applicable``), and ``schema`` describes the response
+            plus the selected resource's storage schema. Full followup
             prompts require ``view="detail", include_prompts=True``.
 
       read_plan(project)                 [slug omitted/None]
@@ -984,11 +986,15 @@ def _read_plan_tool(
 
     ``view`` names the response shape for a typed resource read: ``'summary'``
     (the default), ``'detail'``, ``'history'``, ``'version'``, ``'raw'``,
-    ``'schema'`` and ``'section'``. ``view='section'`` returns one authored h2
-    section selected by its ``section`` argument (the section id),
-    and refuses with ``section_not_found`` when that id is absent. Request
-    ``view='raw'`` explicitly for the lossless storage response. The explicit
-    legacy schema injector remains unchanged for callers using ``with_schema``.
+    ``'schema'`` and ``'section'``. For a plan, ``view='section'`` returns one
+    authored h2 section selected by its ``section`` argument (the section id),
+    and refuses with ``section_not_found`` when that id is absent. A cumulative
+    evidence record is served whole rather than section by section: it returns
+    the record's composed text, or the record's own bytes with a warning on the
+    response when composition failed, and a ``section`` argument on a record is
+    refused with ``section_not_applicable``. Request ``view='raw'`` explicitly
+    for the lossless storage response. The explicit legacy schema injector
+    remains unchanged for callers using ``with_schema``.
     """
 
     selected_view = view
