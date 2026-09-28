@@ -1545,6 +1545,7 @@ def preflight(
     | None = None,
     windows: Mapping[str, Any] | None = None,
     ready: Iterable[Mapping[str, Any]] = (),
+    records: Iterable[Mapping[str, Any]] | None = None,
     document: Mapping[str, Any] | None = None,
     document_path: str | Path | None = None,
 ) -> dict[str, Any]:
@@ -1689,7 +1690,13 @@ def preflight(
         "resume_after_seconds": min(waits) if waits else None,
         "resume_at": _earliest_reset(held),
     }
-    report["groups"] = group_pace(config, windows=windows, ready=ready, now=moment)
+    report["groups"] = group_pace(
+        config,
+        windows=windows,
+        ready=ready,
+        records=_runway_records(project, records, root=root),
+        now=moment,
+    )
     if window_sources:
         # Name the source only where a figure exists to name one for. A report
         # with no reading at all -- a backend the document and the records both
@@ -1886,9 +1893,262 @@ def _group_allowance(
     return pace_module.allowance_for_group(reading, config=config).as_dict()
 
 
+def _runway_records(
+    project: str,
+    records: Iterable[Mapping[str, Any]] | None,
+    *,
+    root: str | Path | None,
+) -> list[Mapping[str, Any]]:
+    """The run records a runway is priced from, read here when none are given.
+
+    A caller may price the runway from its own records, which is what lets a test
+    hand a synthetic ledger rather than reach for this host's committed one. When
+    it names none, the committed records are read once from the same project the
+    hold already reads, so the figure rests on the ledger the rest of the
+    pre-flight rests on. A ledger that cannot be read prices nothing rather than
+    raising: the runway is an addition to the hold decision, and a missing ledger
+    must not take the hold down with it.
+    """
+    if records is not None:
+        return list(records)
+    try:
+        return list(ledger.runs(project, root))
+    except ledger.LedgerError:
+        return []
+
+
+def _priced_run_cost(row: Mapping[str, Any]) -> float | None:
+    """The weekly quota a run's own receipt measured, in percent, or ``None``.
+
+    A run's cost is the utilisation its receipt recorded on the seven-day window
+    when it was harvested, in the same whole percent the receipt writes, so the
+    mean of those figures is the aggregate a plateau of integer points still
+    supports. A receipt naming no weekly row, or one whose figure is not a
+    number, prices nothing rather than a zero.
+    """
+    receipt = row.get("lane_receipt")
+    if not isinstance(receipt, Mapping):
+        return None
+    windows = receipt.get("quota_windows")
+    if not isinstance(windows, list):
+        return None
+    for window in windows:
+        if not isinstance(window, Mapping):
+            continue
+        if window.get("window_minutes") != WEEKLY_WINDOW_MINUTES:
+            continue
+        used = window.get("used_percent")
+        if isinstance(used, bool) or not isinstance(used, (int, float)):
+            return None
+        return float(used)
+    return None
+
+
+def _priced_runs(
+    rows: Iterable[Mapping[str, Any]],
+    members: Iterable[str],
+    *,
+    moment: datetime,
+) -> list[tuple[str, str, datetime, float]]:
+    """Every priced run of this wallet's members inside the trailing week.
+
+    One tuple per run: its backend, its role, the moment its cost was observed,
+    and the receipt's weekly figure in percent. Only a run whose backend declares
+    the wallet is read, and only one whose own durable stamp places it inside the
+    trailing week -- a receipt from outside the horizon measures a window that has
+    already reset. The stamp is the record's own, read through the one reader that
+    names it, so every surface that ages a run ages it the same way.
+    """
+    horizon = moment - timedelta(days=RUNWAY_TRAILING_DAYS)
+    allowed = set(members)
+    priced: list[tuple[str, str, datetime, float]] = []
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        backend = _run_backend(row)
+        if backend not in allowed:
+            continue
+        cost = _priced_run_cost(row)
+        if cost is None:
+            continue
+        observed = _run_observed_at(row)
+        if observed is None or observed < horizon:
+            continue
+        priced.append((backend, str(row.get("role") or ""), observed, cost))
+    return priced
+
+
+def _unmeasured_runway(
+    group: str,
+    reason: str,
+    *,
+    remaining_pct: float | None = None,
+    week: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """A runway no figure could be derived for, as an explicit absence.
+
+    ``runs_remaining`` and the mean cost are ``None`` rather than zero: zero runs
+    remaining reads as a spent week and refuses every wave, which is the same
+    substitution this module refuses for a hold and for a pace. The remaining
+    window is carried when it could be read, because the window *was* measured
+    even when nothing divides it, and the reason string says which input was
+    missing.
+    """
+    return {
+        "group": group,
+        "state": UNKNOWN,
+        "reason": reason,
+        "remaining_pct": remaining_pct,
+        "mean_run_cost_pct": None,
+        "priced_runs": 0,
+        "runs_remaining": None,
+        "resets_at": None if week is None else week.get("resets_at"),
+        "observed_at": None if week is None else week.get("observed_at"),
+        "age_seconds": None if week is None else week.get("age_seconds"),
+        "mean_observed_at": None,
+        "mean_age_seconds": None,
+        "drain_deadline_hours": None,
+        "by_role": {},
+        "quantisation_pct": None,
+    }
+
+
+def _group_runway(
+    group: str,
+    members: Iterable[str],
+    clocks: Mapping[str, Mapping[str, Any]],
+    rows: Iterable[Mapping[str, Any]],
+    config: Mapping[str, Any] | None,
+    *,
+    moment: datetime,
+) -> dict[str, Any]:
+    """Runs remaining in the wallet's week, from the week's mean run cost.
+
+    The figure is the group's remaining seven-day window divided by the mean
+    per-run quota cost over the trailing seven days: two quantities of one weekly
+    window, so the quotient is a count of runs. The remaining window is the
+    seven-day clock the group's pace already reads, so runway and pace place the
+    group in the same week rather than in two; the deadline is
+    :func:`reckon.crew.pace.drain_deadline`'s, and the membership is the declared
+    group's, neither restated here. The mean comes from the committed run records'
+    own receipts, and the figure reports the age of both inputs rather than a
+    single fresh one.
+
+    The mean is an aggregate of whole percentage points and the quantisation rides
+    the figure rather than being dropped, so a reader never mistakes it for an
+    exact count. A figure resting on fewer than one priced run is unmeasured
+    rather than zero, and a mean that measured exactly zero is unmeasured too,
+    because no finite number of runs divides a window by a zero cost.
+    """
+    week = clocks[CLOCK_SEVEN_DAY]
+    if week["state"] != OBSERVED:
+        return _unmeasured_runway(
+            group,
+            "the group's weekly clock was not read, so no remaining window "
+            "divides the mean run cost",
+        )
+    week_utilisation = float(week["utilisation"])
+    remaining_pct = max(0.0, 1.0 - week_utilisation) * 100.0
+    priced = _priced_runs(rows, members, moment=moment)
+    if not priced:
+        return _unmeasured_runway(
+            group,
+            "no run recorded a weekly quota cost in the trailing seven days, so "
+            "there is no mean per-run cost to divide the remaining window",
+            remaining_pct=remaining_pct,
+            week=week,
+        )
+    mean_cost = sum(cost for _backend, _role, _observed, cost in priced) / len(priced)
+    if mean_cost <= 0.0:
+        return _unmeasured_runway(
+            group,
+            "the trailing week's mean per-run cost measured zero, so no finite "
+            "run count divides the remaining window",
+            remaining_pct=remaining_pct,
+            week=week,
+        )
+    drain_hours = pace_module.drain_deadline(
+        pace_module.GroupReading(
+            group=group, utilisation=week_utilisation, elapsed_hours=0.0
+        ),
+        pace_module.policy(config),
+    )
+    by_role: dict[str, dict[str, Any]] = {}
+    for role in sorted({role for _backend, role, _observed, _cost in priced}):
+        role_costs = [
+            cost for _backend, run_role, _observed, cost in priced if run_role == role
+        ]
+        role_mean = sum(role_costs) / len(role_costs)
+        by_role[role] = {
+            "mean_run_cost_pct": role_mean,
+            "runs_remaining": (None if role_mean <= 0.0 else remaining_pct / role_mean),
+            "priced_runs": len(role_costs),
+        }
+    newest = max(observed for _backend, _role, observed, _cost in priced)
+    week_observed = _parse_stamp(week.get("observed_at"))
+    return {
+        "group": group,
+        "state": OBSERVED,
+        "reason": None,
+        "remaining_pct": remaining_pct,
+        "mean_run_cost_pct": mean_cost,
+        "priced_runs": len(priced),
+        "runs_remaining": remaining_pct / mean_cost,
+        "resets_at": week.get("resets_at"),
+        "observed_at": None if week_observed is None else _iso(week_observed),
+        "age_seconds": week.get("age_seconds"),
+        "mean_observed_at": _iso(newest),
+        "mean_age_seconds": (moment - newest).total_seconds(),
+        "drain_deadline_hours": drain_hours,
+        "by_role": by_role,
+        "quantisation_pct": 1.0,
+    }
+
+
+def _wave_refusal(runway: Mapping[str, Any], node_count: int) -> dict[str, Any] | None:
+    """Refuse a wave whose projected cost outruns the wallet's remaining week.
+
+    The projection is the wave's own node count against the mean per-run cost,
+    both in the unit the runway divides. A wave that fits inside the remaining
+    window is admitted; one that does not would run past the reset, so it is
+    refused before a worktree exists to reclaim. A runway nothing priced projects
+    nothing, and absence of a signal never holds a wave -- the same rule the hold
+    reads. The refusal names the runs remaining and the reset time, because those
+    two figures are what let a coordinator size the wave and time its retry.
+    """
+    if node_count <= 0 or runway.get("state") != OBSERVED:
+        return None
+    mean_cost = runway.get("mean_run_cost_pct")
+    remaining = runway.get("remaining_pct")
+    runs = runway.get("runs_remaining")
+    if mean_cost is None or remaining is None or runs is None:
+        return None
+    projected = node_count * float(mean_cost)
+    if projected <= float(remaining):
+        return None
+    reset = runway.get("resets_at") or "an unstated reset"
+    return {
+        "refused": True,
+        "node_count": node_count,
+        "projected_cost_pct": projected,
+        "remaining_pct": float(remaining),
+        "mean_run_cost_pct": float(mean_cost),
+        "runs_remaining": float(runs),
+        "resets_at": runway.get("resets_at"),
+        "withheld": [],
+        "reason": format_refusal(
+            "D02",
+            f"the wave's {node_count} ready node(s) project {projected:g}% of the "
+            f"weekly window against {float(remaining):g}% remaining -- "
+            f"{float(runs):.2f} runs remain before the weekly reset at {reset}",
+        ),
+    }
+
+
 def _group_bar(
     clocks: Mapping[str, Mapping[str, Any]],
     ready: Iterable[Mapping[str, Any]],
+    runway: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Judge a stated ready set against the group's five-hour fill.
 
@@ -1956,6 +2216,17 @@ def _group_bar(
         else:
             held.append(name)
 
+    # The five-hour bar judges one node's fill; the runway judges the whole wave
+    # against the week. A wave projected past the reset is refused here, before a
+    # worktree exists to reclaim, and the node it would have admitted is moved
+    # into ``held`` rather than silently dropped -- a ready node missing from the
+    # admitted set is the failure a pre-flight exists to prevent.
+    refusal = None if runway is None else _wave_refusal(runway, len(recommendations))
+    if refusal is not None:
+        refusal["withheld"] = [entry["name"] for entry in admitted]
+        held.extend(entry["name"] for entry in admitted)
+        admitted = []
+
     return {
         "window_fill": fill,
         "state": five["state"],
@@ -1964,6 +2235,8 @@ def _group_bar(
         "split": split,
         "held": held,
         "undecided": undecided,
+        "runway": runway,
+        "refusal": refusal,
     }
 
 
@@ -1972,6 +2245,7 @@ def group_pace(
     *,
     windows: Mapping[str, Any] | None = None,
     ready: Iterable[Mapping[str, Any]] = (),
+    records: Iterable[Mapping[str, Any]] = (),
     now: datetime | None = None,
 ) -> list[dict[str, Any]]:
     """Report the pace of every declared budget group, one entry each.
@@ -2033,6 +2307,7 @@ def group_pace(
             period: _clock(reading, period)
             for period in (CLOCK_FIVE_HOUR, CLOCK_SEVEN_DAY)
         }
+        runway = _group_runway(group, members, clocks, records, config, moment=moment)
         report.append(
             {
                 "group": group,
@@ -2041,7 +2316,7 @@ def group_pace(
                 "state": OBSERVED if freshest is not None else UNKNOWN,
                 "clocks": clocks,
                 "allowance": _group_allowance(group, clocks, config, moment=moment),
-                "bar": _group_bar(clocks, nodes_by_group[group]),
+                "bar": _group_bar(clocks, nodes_by_group[group], runway),
             }
         )
     return report
@@ -2168,6 +2443,18 @@ def pace_row(
 # guessed onto a clock: a window nobody can name is not a reading this reader
 # may place.
 WINDOW_MINUTES_CLOCK = {300: CLOCK_FIVE_HOUR, 10080: CLOCK_SEVEN_DAY}
+
+# The weekly window a run's own receipt prices it against. A receipt keys its rows
+# by length in minutes, so this length selects the seven-day row from a committed
+# run record; a receipt naming only a shorter window supplies no weekly cost and
+# does not enter the mean.
+WEEKLY_WINDOW_MINUTES = 10080
+
+# How far back a run's receipt is priced into the mean per-run cost. It is the
+# weekly window's own length: a run older than the horizon belongs to a window
+# that has already reset, so its cost describes a budget the group no longer
+# holds.
+RUNWAY_TRAILING_DAYS = 7
 
 # How many of a backend's newest runs are opened looking for a window-carrying
 # stream. Most streams carry no window at all, so the newest run is not always
