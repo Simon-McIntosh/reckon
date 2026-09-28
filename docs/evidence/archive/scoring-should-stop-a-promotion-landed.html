@@ -1856,6 +1856,62 @@ E  assert 5 == 90</pre>
     ids. This node measures its own change only; verifying the merged result
     belongs to a separately dispatched test node.</p>
   </section>
+
+  <section id="canonical-id-edges-repair">
+    <h2>A comma-joined retirement, and the repository-name prefix</h2>
+
+    <p><strong>Defect, from the review of the repair.</strong> The review of the
+    canonical reduction (<code>r-20260928T061644812985</code>, head
+    <code>a2cfcf09</code>, scores 18 to 19) found three things to repair in that
+    node, and the first was introduced by the repair itself. The retirement
+    match had come to split prose on whitespace alone, so a manifest retiring
+    two ids joined by punctuation with no space —
+    <code>tests/x.py::t1,tests/y.py::t2</code> — retired neither, where the
+    verbatim match it replaced retired both. The second was a residual shape the
+    first round had recorded and left unrepaired: the reduction applied only to
+    a spelling opening with an absolute or dot component, so a head arm invoked
+    from the repository's parent printed
+    <code>reckon/tests/x.py::t</code> against the base log's
+    <code>tests/x.py::t</code> and read as an arm-added failure. Third, the two
+    arm logs sat as prose in the manifest's <code>test_logs</code> field rather
+    than under <code>baseline_suite</code> and <code>after_suite</code>, which
+    is where the read path that annotates a review measures the added-failure
+    count.</p>
+
+    <p><strong>Repair.</strong> The retirement sentence is now split on the
+    separators a manifest's own list fields use — commas and whitespace, through
+    the <code>_PROSE_TOKEN_SPLIT_RE</code> constant beside the edge-character
+    set — before each token is trimmed of the punctuation the sentence wraps it
+    in and reduced through <code>canonical_node_id</code>. The reduction drops a
+    leading component equal to the repository's own directory name, which is
+    what an arm invoked from the repository's parent contributed, while a plain
+    relative spelling — a package keeping its own <code>pkg/tests/</code>
+    directory — is still kept whole. The directory name is read from the
+    module's own location rather than written down, because a checkout sits
+    under whatever name it was created with: in the main checkout this case is
+    literally <code>reckon/tests/x.py::t</code>, in a worktree it is that node's
+    name.</p>
+
+    <p><strong>The reviewed head measured against the repaired tests.</strong>
+    The reviewed head's module (<code>a2cfcf09</code>) with the repaired test
+    file, over both measured files: <strong>2 failed, 17 passed, exit 1</strong>
+    — the two cases this repair adds, and only those. That log's header names
+    the revision, the tree and the imported module, and its failure text carries
+    the capped total (<code>assert 5 == 90</code>) the comma-joined sentence
+    produced. The gate at the repair commit <code>1f838f08</code> reports
+    <strong>19 passed, exit 0</strong>, the same two files in one invocation.
+    Ruff reports <strong>0 findings</strong> on both changed paths, both
+    formatted.</p>
+
+    <p><strong>What the manifest now carries.</strong> The two arm logs are
+    recorded under <code>baseline_suite</code> and <code>after_suite</code> as
+    the contract's JSON objects — revision, command, exit status, log path,
+    completion and the ids the log reports — so the read path that annotates a
+    review from the reviewed run's own manifest derives the added-failure count
+    from them rather than from prose. The base arm's three failures are the
+    cases this node's own tests assert at the base revision; the head log
+    reports none, so the difference is empty.</p>
+  </section>
 </main>
 </body>
 </html>
