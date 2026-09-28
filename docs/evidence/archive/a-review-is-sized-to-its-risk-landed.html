@@ -52,8 +52,13 @@
         <code>.jsx</code> fixture resolve <code>none</code> instead of <code>full</code>
         (<code>runs/…-review-tier-resolver/negative_control.log</code>).</li>
       <li>The promotion seam that consumes the tier — <code>_require_review_waiver</code> in
-        <code>reckon/crew/promotion.py</code> — and the ledger row field are the section's second node, not this
-        one; the resolver and the flight key land here and are ready for it.</li>
+        <code>reckon/crew/promotion.py</code> — and the lack of a ledger row field are the section's second node,
+        not this one; the resolver and the flight key land here and are ready for it.</li>
+      <li>Review repair, commit <code>c45e7bac</code>: dropped two unread constants (<code>TIERS</code> and
+        <code>ESCALATED_TIER</code> — the escalation belongs to the flight key's light budget once a caller reads
+        it) and rewrote the fixture comment to name <code>review_tier()</code> and its inputs rather than a plan
+        section. Gate re-run at <code>c45e7bac</code>: 103 passing across <code>tests/test_review_tiers.py</code>
+        and <code>tests/test_flight.py</code>, exit 0.</li>
     </ul>
   </section>
 
