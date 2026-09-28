@@ -1,0 +1,403 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "76e1bf938b1bf16cd18618cd03f742f264f079eb",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 12416257,
+      "input_tokens_cumulative": 12416257,
+      "output_tokens": 64175,
+      "output_tokens_cumulative": 64175,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 421,
+    "files": 5,
+    "removed": 3
+  },
+  "commit_resolution": null,
+  "commits": [
+    "106e4bbbbc9583b971b41e984e92ea03ffb4b637",
+    "8c97ac82cdb857fb98ea916a133a01adec4b6ce6"
+  ],
+  "completed_at": "2026-09-28T14:11:45.980Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T13:22:23Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_velocity_session_continuity.py tests/test_velocity.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132206165795-session-continuity-share-per-lane-day/gate-head.log"
+  },
+  "impl_move": {
+    "at_complete": 0.56,
+    "at_dispatch": 0.67,
+    "plan": "the-fleet-reports-its-velocity",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T14:12:07.346153+00:00",
+    "horizon_seconds": 3000,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T13:22:07Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 24,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 3,
+    "mean_context": 120000,
+    "observed_at": "2026-09-28T13:21:43Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T14:11:45.980Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132206165795-session-continuity-share-per-lane-day/manifest.md",
+  "member": "disposable-r-20260928T132206165795-session-continuity-share-per-lane-day",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_velocity_session_continuity.py::test_same_task_resume_is_not_counted"
+    ],
+    "baseline_failure_ids": [],
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_velocity_session_continuity.py::test_same_task_resume_is_not_counted"
+    ],
+    "declaration": "count a same-task resume as continuing another task's session in reckon/velocity.py; the same-task case must then fail",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132206165795-session-continuity-share-per-lane-day/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132206165795-session-continuity-share-per-lane-day/negative-control.log",
+    "test_paths": [
+      "tests/test_velocity_session_continuity.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "session-continuity-share-per-lane-day",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2707,
+          "cached_input_tokens": 276654,
+          "input_tokens": 279363,
+          "output_tokens": 402,
+          "reasoning_output_tokens": 19,
+          "total_tokens": 279765,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "reckon/velocity.py reports, per lane and day, the share of all dispatches that continued another task's session. A dispatch continued another task's session when its recorded session_id equals that of an earlier run whose (project, plan, node) differs. The denominator is every dispatch in that lane and day, as the plan's section s4 says. The lane comes from the existing lane() function, not a second family list. A dispatch with no recorded session_id is counted as unmeasured beside the share, never as fresh. tests/test_velocity_session_continuity.py synthesises run rows: a same-task resume, which is not counted; a cross-task continuation, which is counted; a missing session_id, which is counted unmeasured; and two lanes on two days. It asserts the per-lane-day shares and passes at exit 0, as does tests/test_velocity.py. A recorded measurement, which is not a test, runs the reading over reckon's committed run records for 2026-09-20 to 2026-09-27. It logs the per-lane-day shares, and states beside them the before and after figures in docs/research/data/codex-resume-burn.json and codex-resume-burn-after.json with any disagreement explained. The manifest cites that log. The manifest records base and head arms of the two test files, each log header printing its revision and reckon.__file__, and cites the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-quota-runway/reuse-map.md section 4 for lane, capture_project and measure, re-derived at its own base. The declared negative control is applied, the same-task case is observed to fail, and that log's absolute path is in the manifest with an EXIT= line and the FAILED test id.",
+    "estimated_hours": null,
+    "goal": "Report per lane and day the share of dispatches that continued another task's session",
+    "id": "session-continuity-share-per-lane-day",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T13:22:07Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 24,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 3,
+      "mean_context": 120000,
+      "observed_at": "2026-09-28T13:21:43Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132206165795-session-continuity-share-per-lane-day/manifest.md",
+    "negative_control": "count a same-task resume as continuing another task's session in reckon/velocity.py; the same-task case must then fail",
+    "plan": "the-fleet-reports-its-velocity",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§4",
+    "spec_level": "guided",
+    "time_budget": "50m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/velocity.py",
+      "tests/test_velocity_session_continuity.py",
+      "docs/evidence/archive/the-fleet-reports-its-velocity-landed.html",
+      "docs/figures/the-fleet-reports-its-velocity",
+      "docs/plans/the-fleet-reports-its-velocity.html"
+    ]
+  },
+  "orientation_input_tokens": 1992621.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "session-continuity-share-per-lane-day",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T13:22:14.363328+00:00",
+    "score": 0.6625,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-fleet-reports-its-velocity",
+  "plan_impl_at_dispatch": 0.67,
+  "promoted_revision": "8c97ac82cdb857fb98ea916a133a01adec4b6ce6",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 16,
+      "fit": 17,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 90
+  },
+  "role": "implement",
+  "run_id": "r-20260928T132206165795-session-continuity-share-per-lane-day",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§4",
+  "session_harness": "claude",
+  "session_id": "e673fccb-be24-4f16-88ab-03e53fac01e5",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 6,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 12584212,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2938.806,
+    "generated_tokens": 69561,
+    "generation_seconds": 2364.62,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.7,
+    "machine_seconds": 574.186,
+    "peak_input_tokens": 166655,
+    "tokens_per_second": 29.42,
+    "wall_tokens_per_second": 23.67
+  },
+  "time_budget": "50m",
+  "tool_steps": 112.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 1326,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-28T12:35:12Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-28T12:13:29Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260928T121255203668-triage-pending-plans-first-batch",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 10731,
+          "worker_pid": 1280849
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 2818,
+        "log_fresh": false,
+        "manifest_commits": [
+          "7e6262ca"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "dd9f8b9e8b4a23e591935be1f81d2b28b6fa1a1880e3eeab21adb3145de8bf25",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T121255203668-triage-pending-plans-first-batch/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan open-work-is-capped --section '§2' --role review --spec-level exact --node review-of-triage-pending-plans-first-batch --goal 'attach an independent review to run r-20260928T121255203668-triage-pending-plans-first-batch' --done-when 'the review for r-20260928T121255203668-triage-pending-plans-first-batch stores a parsed record scoring all 5 dimensions in the range 0..20, carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T121255203668-triage-pending-plans-first-batch.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T121255203668-triage-pending-plans-first-batch.at-7e6262ca66947cd4764d81bf55d61fc96ec5d65f.json --time-budget 60m --session s25-coord --allow-unreconciled-runs --local",
+        "node": "triage-pending-plans-first-batch",
+        "phase": "starting",
+        "plan": "open-work-is-capped",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260928T121255203668-triage-pending-plans-first-batch",
+        "session": "s25-coord",
+        "terminal_age_seconds": 2842,
+        "terminal_at": "2026-09-28T12:34:48Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/triage-pending-plans-first-batch"
+      }
+    ]
+  },
+  "wall_seconds": 2962,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T14:11:46Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T13:22:43Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T132206165795-session-continuity-share-per-lane-day",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 11496,
+    "worker_pid": 1528941
+  },
+  "worker_seconds": 2930,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
