@@ -175,10 +175,11 @@
         (<code>thread.started</code>) and folds each thread to its newest measured attempt, because a resume re-enters the
         thread and its stream restates that thread's cumulative usage; a stream declaring no identity is its own thread and
         is summed. <code>run_streams</code> now also gathers <code>lane-change-N.jsonl</code>, so a lane change &mdash; a
-        second thread &mdash; is counted instead of dropped. The per-attempt delta rule stays
-        <code>ledger.per_run_budget</code>, reused rather than copied. Over the eight single-thread codex lineage runs in
+        second thread &mdash; is counted instead of dropped. The per-attempt delta rule stays in
+        <code>ledger.per_run_budget</code>, extended rather than copied: an unmeasured prior attempt
+        now leaves the interval unknown instead of being subtracted as a zero. Over the eight single-thread codex lineage runs in
         the reuse map (§2 table), the fold prices each within 0.1% of its rollout total (three-attempt run 1.0003) against
-        227% summed. Six tests in the node's file pass, alongside the metering and ledger suites; base 68, head 74, no added failures.
+        227% summed. Eight tests in the node's file pass, alongside the metering and ledger suites; base arm 69 passed with the five new-behaviour tests failing, head arm 76 passed, no added failures.
         The declared control &mdash; summing every stream's cumulative reading again &mdash; reddens the three-stream case.
         Full record:
         <a href="/reckon/evidence/archive/the-fleet-reports-its-velocity-landed#s4-resumed-burn-prices-per-thread">§4 landed</a>.</p>
