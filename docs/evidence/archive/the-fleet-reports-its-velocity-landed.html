@@ -108,6 +108,64 @@
       then reads 19 additions against the fixture's 9 and fails. Logs:
       <code>parity-check.log</code> and <code>negative-control.log</code>.</p>
     </section>
+  <section id="s3-coordinator-cost-per-landed-node">
+      <h2>&sect;3 &mdash; Coordinator cost per landed node</h2>
+      <p>Commits <code>e2fc9f03</code>, <code>280d7fa9</code>, <code>118b06ba</code> and
+      <code>474d8119</code> extend
+      <code>reckon/velocity.py</code> with a <code>coordinator_cost</code> section. Each landed
+      node names its coordinator's runtime session, so nodes are grouped by the session that
+      directed them; the section then divides that session's assistant responses, logical input,
+      separately reported cache-read share and output tokens by the nodes it landed in the window.
+      Runs whose node carries no runtime session id enter an explicit unattributed bucket. The
+      transcript accounting is ported from the review's census and the module imports nothing from
+      <code>docs/</code>.</p>
+      <p><strong>Done when (recorded measurement).</strong> The section was run in place on this
+      node at the module revision <code>118b06ba</code> over the window
+      <code>2026-09-12T00:00:00Z</code> to <code>2026-09-26T10:00:00Z</code> and every per-session
+      figure compared with <code>overhead.json</code>: <strong>52 of 52 comparable sessions within
+      1%</strong> (0 field checks outside tolerance).</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-reports-its-velocity/coordinator-cost-per-landed-node.png"
+          alt="Input tokens per landed node for each coordinator session, marker area proportional to assistant responses and colour to the cache-read share, beside a histogram of the cache-read share">
+        <figcaption>Input tokens per landed node against the nodes a session landed, and the
+        cache-read share of that input.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Census</th><th>Section</th></tr></thead>
+        <tbody>
+          <tr><td>Sessions</td><td>52</td><td>52</td></tr>
+          <tr><td>Sessions without a transcript</td><td>14</td><td>14</td></tr>
+          <tr><td>Landed nodes</td><td>2182</td><td>2182</td></tr>
+          <tr><td>Assistant responses</td><td>38699</td><td>38699</td></tr>
+          <tr><td>Input tokens</td><td>20,375,175,527</td><td>20,375,175,527</td></tr>
+          <tr><td>Cache read (reported separately)</td><td>20,179,819,699</td><td>20,179,819,699</td></tr>
+          <tr><td>Output tokens</td><td>28,029,284</td><td>28,029,284</td></tr>
+          <tr><td>Gate at <code>474d8119</code></td><td>15 passed, exit 0</td><td>&mdash;</td></tr>
+          <tr><td>Negative control (cache-read fold)</td><td>1 failed, exit 1</td><td>&mdash;</td></tr>
+          <tr><td>Negative control (receipt rule)</td><td>2 failed, exit 1</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Sessions outside tolerance: none.</strong> An earlier measurement over this window
+      differed in landed count on six sessions (five by a single node, one by 22, against a
+      denominator that counted only the in-window promote commit). The section now counts a landed
+      node by the census's own rule: a first-parent in-window <code>promote(&lt;run&gt;):</code>
+      commit, a committed promoted revision, or a promotion receipt the coordinator transcript
+      records. The receipt counts only when the shell word after <code>crew</code> is the verb
+      (<code>complete</code> or <code>promote</code>), so prose inside a goal or a resume advice
+      never classifies a call, and a printed <code>Error:</code> line is read as a failure rather
+      than a clipped success. Reading the receipt by that rule moved the last two residual sessions
+      onto the census's count; every total above now matches it exactly.</p>
+      <p><code>tests/test_velocity_coordinator_cost.py</code> builds its transcripts and run rows
+      under <code>tmp_path</code>. It asserts the repeated-response dedupe, the cache-read share as
+      its own figure, the per-landed-node division, the unattributed bucket, that a session with no
+      transcript reports null rather than zero, and that the measurement entry point runs without a
+      transcript root. Two fixtures bind the receipt rule: a dispatch whose goal text names a
+      promotion must not classify as one, and a refused promotion printing an
+      <code>Error:</code> line must not read as a landing through its clipped tail; both fail when
+      the pre-repair receipt rule is restored, which is recorded as the second declared negative
+      control. Logs: <code>measurement3.log</code>, <code>tests4.log</code>,
+      <code>negative_control4.log</code>, <code>negative_control_receipts2.log</code>.</p>
+    </section>
   </main>
 </body>
 </html>

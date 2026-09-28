@@ -33,6 +33,7 @@ import datetime as dt
 import hashlib
 import json
 import re
+import shlex
 import sqlite3
 import statistics
 import subprocess
@@ -43,23 +44,38 @@ from reckon.path_classes import file_class, path_class
 __all__ = [
     "CLASSES",
     "LANES",
+    "TOKEN_KEYS",
     "capture",
     "capture_project",
     "compact_summary",
+    "coordinator_cost",
     "distribution",
     "file_class",
     "measure",
     "path_class",
+    "promotion_receipts",
     "ratio",
     "recover_ledger_clocks",
     "replay",
+    "session_usage",
+    "transcript_index",
     "velocity",
 ]
 
 CODE = Path("/home/ITER/mcintos/Code")
 RUN_STORE = Path("/home/ITER/mcintos/.config/reckon/crew/run_store.db")
+TRANSCRIPT_ROOT = Path.home() / ".claude" / "projects"
 START = "2026-09-12T00:00:00Z"
 END = "2026-09-26T10:00:00Z"
+# Logical input is the sum of the first three keys measured per response; the
+# cache-read share stays visible rather than folded into the uncached figure.
+TOKEN_KEYS = (
+    "uncached_input_tokens",
+    "cache_creation_input_tokens",
+    "cache_read_input_tokens",
+    "input_tokens",
+    "output_tokens",
+)
 PROJECTS = {
     "reckon": "main",
     "imas-ambix": "main",
@@ -300,6 +316,7 @@ def capture_project(
             seen.add(sha)
             introduction[sha] = c["sha"]
             pending.extend(graph[sha]["parents"])
+    first_parent = set(first)
     promotions = collections.defaultdict(list)
     for sha, data in graph.items():
         match = re.match(r"promote\((r-[^)]+)\)", data["subject"])
@@ -309,6 +326,10 @@ def capture_project(
                     "sha": sha,
                     "epoch": data["epoch"],
                     "landing_sha": introduction.get(sha),
+                    "first_parent": sha in first_parent,
+                    "colon_subject": bool(
+                        re.match(r"promote\(r-[^)]+\):", data["subject"])
+                    ),
                 }
             )
     sources = dict.fromkeys(records, "committed_primary_snapshot")
@@ -677,6 +698,399 @@ def union_seconds(intervals):
     return total
 
 
+def transcript_index(root):
+    """Map each recorded session id to its transcript files under ``root``.
+
+    A session's records can be spread across more than one project directory,
+    so every ``*.jsonl`` whose stem is the session id is collected, in a stable
+    path order. A root that does not exist yields an empty index rather than an
+    error, so a machine without transcripts reports a missing session.
+    """
+    index = collections.defaultdict(list)
+    root = Path(root)
+    if not root.is_dir():
+        return index
+    for directory in sorted(root.iterdir()):
+        if directory.is_dir():
+            for path in directory.glob("*.jsonl"):
+                index[path.stem].append(path)
+    for paths in index.values():
+        paths.sort()
+    return index
+
+
+def session_usage(paths, *, window_start=START, window_end=END):
+    """Assistant responses and token volume for one coordinator session.
+
+    An assistant response is an API response deduplicated by ``message.id``; a
+    repeated response — a streaming snapshot that grew between reads — keeps the
+    maximum value per usage key rather than being summed again, so re-reading a
+    transcript cannot inflate volume. Logical input is uncached input plus cache
+    creation plus cache read, and the cache-read share is reported on its own
+    rather than folded into the uncached figure. Records outside the window and
+    sidechain records are excluded.
+    """
+    start, end = stamp(window_start), stamp(window_end)
+    turns = {}
+    records = duplicates = 0
+    for path in paths:
+        with Path(path).open("r", errors="replace") as stream:
+            for line in stream:
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if record.get("isSidechain"):
+                    continue
+                when = stamp(record.get("timestamp"))
+                if when is None or not start <= when <= end:
+                    continue
+                if record.get("type") not in (
+                    "assistant",
+                    "user",
+                    "attachment",
+                    "system",
+                ):
+                    continue
+                records += 1
+                if record.get("type") != "assistant":
+                    continue
+                message = record.get("message") or {}
+                mid = message.get("id") or record.get("uuid")
+                if not mid:
+                    raise ValueError(f"assistant response without identity in {path}")
+                usage = message.get("usage") or {}
+                if mid in turns:
+                    duplicates += 1
+                    turn = turns[mid]
+                    for key, value in usage.items():
+                        if isinstance(value, int):
+                            turn[key] = max(turn.get(key, 0), value)
+                else:
+                    turns[mid] = {
+                        key: value
+                        for key, value in usage.items()
+                        if isinstance(value, int)
+                    }
+    tokens = dict.fromkeys(TOKEN_KEYS, 0)
+    for turn in turns.values():
+        tokens["uncached_input_tokens"] += turn.get("input_tokens", 0)
+        tokens["cache_creation_input_tokens"] += turn.get(
+            "cache_creation_input_tokens", 0
+        )
+        tokens["cache_read_input_tokens"] += turn.get("cache_read_input_tokens", 0)
+        tokens["output_tokens"] += turn.get("output_tokens", 0)
+    tokens["input_tokens"] = sum(tokens[key] for key in TOKEN_KEYS[:3])
+    return {
+        "assistant_responses": len(turns),
+        "in_window_records": records,
+        "duplicate_responses": duplicates,
+        "tokens": tokens,
+    }
+
+
+def _json_objects(text):
+    """Decode whole outer JSON objects in tool-result text, in order."""
+    decoder = json.JSONDecoder()
+    offset = 0
+    while (start := text.find("{", offset)) >= 0:
+        try:
+            obj, end = decoder.raw_decode(text, start)
+        except json.JSONDecodeError:
+            offset = start + 1
+            continue
+        offset = end
+        if isinstance(obj, dict):
+            yield obj
+
+
+def _receipt_objects(text):
+    """Protocol receipts in a tool result, tolerant of clipped output.
+
+    A receipt is an object carrying a boolean ``ok``. Results are often clipped
+    after a few hundred bytes, so a bare ``"ok": true`` marker or an
+    ``already_promoted`` line still counts, while a quiet shell never does. A
+    printed ``Error:`` line is a failure receipt, and its presence suppresses the
+    clipped-marker fallback — a run whose command refused must not also read as a
+    success because its clipped tail happened to carry ``"ok": true``.
+    """
+    receipts = [obj for obj in _json_objects(text) if isinstance(obj.get("ok"), bool)]
+    for line in text.splitlines():
+        if not line.startswith("{") or "'ok':" not in line:
+            continue
+        try:
+            obj = ast.literal_eval(line)
+        except (ValueError, SyntaxError):
+            continue
+        if isinstance(obj, dict) and isinstance(obj.get("ok"), bool):
+            receipts.append(obj)
+    receipts.extend(
+        {"ok": False} for _ in re.findall(r"^Error: (.+)$", text, re.MULTILINE)
+    )
+    if not receipts:
+        receipts.extend(
+            {"ok": match.group(1) == "true"}
+            for match in re.finditer(r'"ok"\s*:\s*(true|false)', text)
+        )
+        if not receipts and re.search(
+            r'^\s*\{\s*"already_promoted"\s*:\s*(true|false)', text, re.MULTILINE
+        ):
+            receipts.append({"ok": True, "already_promoted": True})
+    return receipts
+
+
+PROMOTION_VERBS = frozenset({"complete", "promote"})
+RUN_ID = re.compile(r"r-\d{8}T\d+-[a-zA-Z0-9_.-]+")
+
+
+def _shell_tokens(command):
+    """Split a shell command the way the shell would, keeping ``_promote`` and
+    like as single tokens and breaking on ``;``/``|``/``&&``; an empty list on a
+    malformed command rather than raising."""
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        return list(lexer)
+    except ValueError:
+        return []
+
+
+def _crew_verbs(command):
+    """The verb token immediately following each ``crew`` token.
+
+    Reading the token after ``crew`` rather than searching the whole command is
+    what keeps prose inside a goal or a resume advice from classifying a dispatch
+    or a resume as a promotion.
+    """
+    tokens = _shell_tokens(command)
+    return {
+        tokens[index + 1] for index, word in enumerate(tokens[:-1]) if word == "crew"
+    }
+
+
+def _literal_flag(command, flag):
+    """The one value of a ``--flag value`` pair, else None.
+
+    An interpolated value (``$RUN``) or a repeated flag is ambiguous and refused,
+    because the caller reads a plan identifier off it and a guess would attribute
+    a landing to the wrong node.
+    """
+    tokens = _shell_tokens(command)
+    values = {
+        tokens[index + 1] for index, word in enumerate(tokens[:-1]) if word == flag
+    }
+    return (
+        next(iter(values))
+        if len(values) == 1 and not any("$" in v for v in values)
+        else None
+    )
+
+
+def promotion_receipts(paths, *, window_start=START, window_end=END):
+    """Run ids a coordinator session's transcript records as successfully promoted.
+
+    A call counts only when the token following ``crew`` is a promotion verb, so
+    prose inside a goal or a resume advice never classifies a call. Only a result
+    that reports success counts. The run id is read from the receipt, or from an
+    unquoted ``--run`` flag when the receipt omits it. This is the transcript-side
+    landing source: a node can be promoted without leaving a promote commit, and
+    the receipt is the only record of it.
+    """
+    start, end = stamp(window_start), stamp(window_end)
+    landed = set()
+    for path in paths:
+        uses, results = {}, {}
+        with Path(path).open("r", errors="replace") as stream:
+            for line in stream:
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if record.get("isSidechain"):
+                    continue
+                when = stamp(record.get("timestamp"))
+                if when is None or not start <= when <= end:
+                    continue
+                content = (record.get("message") or {}).get("content")
+                if not isinstance(content, list):
+                    continue
+                for block in content:
+                    if not isinstance(block, dict):
+                        continue
+                    if block.get("type") == "tool_use" and block.get("name") == "Bash":
+                        uses[block["id"]] = str(
+                            (block.get("input") or {}).get("command") or ""
+                        )
+                    elif block.get("type") == "tool_result":
+                        text = block.get("content")
+                        if isinstance(text, list):
+                            text = "\n".join(
+                                str(part.get("text", ""))
+                                for part in text
+                                if isinstance(part, dict)
+                            )
+                        results[block.get("tool_use_id")] = str(text or "")
+        for uid, command in uses.items():
+            if not _crew_verbs(command) & PROMOTION_VERBS:
+                continue
+            tokens = _shell_tokens(command)
+            if "--help" in tokens or "--dry-run" in tokens:
+                continue
+            result = results.get(uid)
+            if result is None:
+                continue
+            for obj in _receipt_objects(result):
+                if not obj.get("ok"):
+                    continue
+                run = obj.get("run_id") or (obj.get("record") or {}).get("run_id")
+                if not run:
+                    flag = _literal_flag(command, "--run")
+                    run = flag if flag and RUN_ID.fullmatch(flag) else None
+                if run:
+                    landed.add(run)
+    return landed
+
+
+def _landed_in_window(run, receipts, start, end):
+    """Census landed rule: an in-window promote commit, a committed marker, or a receipt.
+
+    The promote commit must be on the primary first parent and carry the
+    ``promote(<run>):`` colon subject; a bare ``promote(<run>)`` merged in from a
+    branch is not a landing on the primary line. A committed ``promoted_revision``
+    in the pinned ledger proves a promotion no later than the cutoff. A promotion
+    receipt in the coordinator transcript covers a node promoted without either.
+    """
+    for promotion in run.get("promotion_commits") or []:
+        epoch = promotion.get("epoch")
+        if epoch is None or not start <= epoch <= end:
+            continue
+        if promotion.get("first_parent") and promotion.get("colon_subject"):
+            return True
+    if run.get("promoted_revision") and (
+        run.get("record_source") == "committed_primary_snapshot"
+    ):
+        return True
+    return run.get("run_id") in receipts
+
+
+def coordinator_cost(
+    runs,
+    *,
+    transcript_root=None,
+    window_start=START,
+    window_end=END,
+):
+    """Divide each coordinator session's work by the nodes it landed.
+
+    ``runs`` is the cohort of candidate nodes; each row carries its
+    ``coordinator`` identity from the run record and is duplicated verbatim. A row
+    is counted as landed when the census rule holds: an in-window promote commit
+    on the primary first parent with a ``promote(<run>):`` colon subject, or a
+    committed ``promoted_revision`` in the pinned ledger, or a successful
+    promotion receipt in the coordinator transcript. Rows whose
+    ``node_definition.coordinator.runtime_session_id`` is absent fall into an
+    explicit unattributed bucket keyed by project and recorded session label, so
+    unattributed work is counted rather than silently dropped. A session's
+    assistant responses, input tokens, the separately reported cache-read share
+    and output tokens are divided by its landed-node count; a session whose
+    transcript is absent reports null for those figures rather than zero.
+    """
+    groups = collections.defaultdict(list)
+    attributions = {}
+    for run in runs:
+        coordinator = run.get("coordinator") or {}
+        session = coordinator.get("runtime_session_id") or ""
+        if session:
+            key, attribution = session, "recorded"
+        else:
+            key = "unattributed:{}:{}".format(
+                run.get("project") or "?", coordinator.get("session_id") or "unknown"
+            )
+            attribution = "unattributed"
+        groups[key].append(run)
+        attributions[key] = attribution
+    index = transcript_index(transcript_root) if transcript_root is not None else {}
+    start, end = stamp(window_start), stamp(window_end)
+    sessions = []
+    for key, items in sorted(groups.items()):
+        paths = index.get(key, []) if transcript_root is not None else []
+        receipts = (
+            promotion_receipts(paths, window_start=window_start, window_end=window_end)
+            if paths
+            else set()
+        )
+        landed = sum(1 for run in items if _landed_in_window(run, receipts, start, end))
+        row = {
+            "session_id": key,
+            "attribution": attributions[key],
+            "projects": sorted({str(run.get("project") or "") for run in items}),
+            "landed_nodes": landed,
+        }
+        usage = None
+        if transcript_root is None:
+            row["transcript_status"] = "unread"
+        elif not index.get(key):
+            row["transcript_status"] = "missing"
+        else:
+            usage = session_usage(
+                index[key], window_start=window_start, window_end=window_end
+            )
+            row["transcript_status"] = (
+                "captured" if usage["in_window_records"] else "empty-window"
+            )
+        if row["transcript_status"] == "captured":
+            row["assistant_responses"] = usage["assistant_responses"]
+            row["tokens"] = usage["tokens"]
+            row["assistant_responses_per_landed_node"] = ratio(
+                usage["assistant_responses"], landed
+            )
+            row["tokens_per_landed_node"] = {
+                name: ratio(value, landed) for name, value in usage["tokens"].items()
+            }
+        else:
+            row["assistant_responses"] = None
+            row["tokens"] = None
+            row["assistant_responses_per_landed_node"] = None
+            row["tokens_per_landed_node"] = None
+        sessions.append(row)
+    recorded = [row for row in sessions if row["attribution"] == "recorded"]
+    captured = [row for row in recorded if row["transcript_status"] == "captured"]
+    denominator = sum(row["landed_nodes"] for row in captured)
+    totals = {
+        "sessions": len(sessions),
+        "sessions_with_transcript": len(captured),
+        "sessions_without_transcript": len(recorded) - len(captured),
+        "unattributed_sessions": sum(
+            row["attribution"] == "unattributed" for row in sessions
+        ),
+        "unattributed_landed_nodes": sum(
+            row["landed_nodes"]
+            for row in sessions
+            if row["attribution"] == "unattributed"
+        ),
+        "landed_nodes": sum(row["landed_nodes"] for row in sessions),
+        "landed_nodes_with_transcript": denominator,
+        "assistant_responses": sum(row["assistant_responses"] for row in captured),
+        "tokens": {
+            name: sum(row["tokens"][name] for row in captured) for name in TOKEN_KEYS
+        },
+        "transcript_status": dict(
+            sorted(
+                collections.Counter(
+                    row["transcript_status"] for row in recorded
+                ).items()
+            )
+        ),
+    }
+    totals["assistant_responses_per_landed_node"] = ratio(
+        totals["assistant_responses"], denominator
+    )
+    totals["tokens_per_landed_node"] = {
+        name: ratio(value, denominator) for name, value in totals["tokens"].items()
+    }
+    return {"sessions": sessions, "totals": totals}
+
+
 def commit_class(c):
     if len(c["parents"]) > 1:
         return "merge"
@@ -691,7 +1105,13 @@ def commit_class(c):
 
 
 def measure(
-    snapshot, *, window_start=START, window_end=END, projects=None, weekly_cells=None
+    snapshot,
+    *,
+    window_start=START,
+    window_end=END,
+    projects=None,
+    weekly_cells=None,
+    transcript_root=None,
 ):
     if projects is None:
         projects = PROJECTS
@@ -1210,7 +1630,26 @@ def measure(
             "coordinator_hours": "Union of dispatch-to-completion intervals per recorded coordinator session, summed across sessions. This is time with workers dispatched, not measured coordinator CPU or interaction time. Day cells are promotion-day cohorts, not time sliced exposure.",
             "daily": "Run rows grouped by promotion event UTC day; lines by primary landing committer UTC day; every project/day/lane combination is emitted, including zero populations.",
             "quantiles": "Median and linearly interpolated percentile at (n-1)*p; missing denominator explicitly recorded.",
+            "coordinator_cost": "Per coordinator session named by a landed run's node_definition.coordinator.runtime_session_id: assistant responses and logical input, the separately reported cache-read share and output tokens, each divided by the nodes that session landed. A node is landed when it has an in-window promote commit on the primary first parent with a colon subject, or a committed promoted_revision in the pinned ledger, or a successful promotion receipt in the coordinator transcript. The cohort is every run dispatched in the window or promoted in it. A run with no runtime session id enters an explicit unattributed bucket; a session with no transcript reports null rather than zero.",
         },
+        "coordinator_cost": coordinator_cost(
+            [
+                run
+                for run in all_runs
+                if (
+                    (stamp(run.get("dispatched_at")) is not None)
+                    and start <= stamp(run.get("dispatched_at")) <= end
+                )
+                or any(
+                    promotion.get("epoch") is not None
+                    and start <= promotion["epoch"] <= end
+                    for promotion in run["promotion_commits"]
+                )
+            ],
+            transcript_root=transcript_root,
+            window_start=window_start,
+            window_end=window_end,
+        ),
         "positive_controls": positive_controls(),
         "coverage": coverage,
         "august_baseline": snapshot.get("august_baseline"),
@@ -1246,6 +1685,7 @@ def compact_summary(full, weekly_cells, *, artifacts=None):
             "by_project",
             "by_lane",
             "by_day",
+            "coordinator_cost",
         )
     }
     summary["by_week"] = weekly_cells
@@ -1350,6 +1790,7 @@ def velocity(
     code_root=CODE,
     run_store_db=RUN_STORE,
     baseline=None,
+    transcript_root=TRANSCRIPT_ROOT,
 ):
     """Measure a caller-named window and return the compact summary."""
     projects = PROJECTS if projects is None else projects
@@ -1368,5 +1809,6 @@ def velocity(
         window_end=end,
         projects=projects,
         weekly_cells=weekly_cells,
+        transcript_root=transcript_root,
     )
     return compact_summary(result, weekly_cells)
