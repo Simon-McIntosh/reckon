@@ -241,6 +241,106 @@ def test_a_promotion_receipt_lands_a_node_without_a_commit(tmp_path: Path):
     }
 
 
+def test_a_dispatch_whose_goal_names_a_promotion_does_not_land(tmp_path: Path):
+    # The verb is the shell word after ``crew``, so a goal that happens to
+    # mention a promotion is still a dispatch; a whole-command word search would
+    # read it as a promotion and land the node twice.
+    root = tmp_path / "projects"
+    _write_transcript(
+        root,
+        SESSION,
+        [
+            {
+                "type": "assistant",
+                "timestamp": AT,
+                "message": {
+                    "id": "msg-goal",
+                    "usage": {"input_tokens": 1, "output_tokens": 1},
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": "t1",
+                            "name": "Bash",
+                            "input": {
+                                "command": (
+                                    "reckon crew dispatch --run r-7 --project sample "
+                                    '--goal "promote the node once the gate is green"'
+                                )
+                            },
+                        }
+                    ],
+                },
+            },
+            {
+                "type": "user",
+                "timestamp": AT,
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": "t1",
+                            "content": '{"ok": true, "run_id": "r-7"}',
+                        }
+                    ]
+                },
+            },
+        ],
+    )
+    paths = velocity.transcript_index(root)[SESSION]
+    assert velocity.promotion_receipts(paths) == set()
+
+
+def test_a_refused_promotion_does_not_land(tmp_path: Path):
+    # A refused promotion prints an Error: line; that failure must suppress the
+    # clipped-marker fallback, or the refusal would read as a landing.
+    root = tmp_path / "projects"
+    refused = "r-20260920T120000000-abc-refused"
+    _write_transcript(
+        root,
+        SESSION,
+        [
+            {
+                "type": "assistant",
+                "timestamp": AT,
+                "message": {
+                    "id": "msg-refused",
+                    "usage": {"input_tokens": 1, "output_tokens": 1},
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": "t1",
+                            "name": "Bash",
+                            "input": {
+                                "command": (
+                                    f"reckon crew complete --run {refused} --project sample"
+                                )
+                            },
+                        }
+                    ],
+                },
+            },
+            {
+                "type": "user",
+                "timestamp": AT,
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": "t1",
+                            "content": (
+                                "Error: run is not ready to complete\n"
+                                '{"run": "step", "ok": true'
+                            ),
+                        }
+                    ]
+                },
+            },
+        ],
+    )
+    paths = velocity.transcript_index(root)[SESSION]
+    assert velocity.promotion_receipts(paths) == set()
+
+
 def test_a_promotion_off_the_first_parent_does_not_land():
     runs = [
         {

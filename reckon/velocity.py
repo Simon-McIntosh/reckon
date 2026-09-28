@@ -863,7 +863,9 @@ def _crew_verbs(command):
     or a resume as a promotion.
     """
     tokens = _shell_tokens(command)
-    return {tokens[index + 1] for index, word in enumerate(tokens[:-1]) if word == "crew"}
+    return {
+        tokens[index + 1] for index, word in enumerate(tokens[:-1]) if word == "crew"
+    }
 
 
 def _literal_flag(command, flag):
@@ -874,8 +876,14 @@ def _literal_flag(command, flag):
     a landing to the wrong node.
     """
     tokens = _shell_tokens(command)
-    values = {tokens[index + 1] for index, word in enumerate(tokens[:-1]) if word == flag}
-    return next(iter(values)) if len(values) == 1 and not any("$" in v for v in values) else None
+    values = {
+        tokens[index + 1] for index, word in enumerate(tokens[:-1]) if word == flag
+    }
+    return (
+        next(iter(values))
+        if len(values) == 1 and not any("$" in v for v in values)
+        else None
+    )
 
 
 def promotion_receipts(paths, *, window_start=START, window_end=END):
