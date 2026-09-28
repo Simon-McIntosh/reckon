@@ -2381,6 +2381,36 @@ def _follow_watch_lines(
         str(run_id): str(state)
         for run_id, state in dict(resume_state.get("reported") or {}).items()
     }
+    # The follower's row policy holds a row that can open a noise pair and
+    # prints it only if the pair does not complete. It is fed each row this
+    # follower would otherwise print and answers with what reaches the pane;
+    # the attach checkpoint's remembered states seed it so a re-arm neither
+    # re-announces the fleet nor re-derives a baseline.
+    from reckon.crew import ticker as ticker_module
+
+    policy = ticker_module.RowPolicy()
+    for _run_id, _state in reported.items():
+        policy.seed(_run_id, _state)
+
+    def _policy_forward(row: Mapping[str, Any] | None) -> Iterable[Mapping[str, Any]]:
+        """Rows the policy prints for one delivered row, released openers included."""
+        if row is None:
+            return ()
+        return policy.feed(row, now=clock())
+
+    def _policy_flush() -> Iterable[Mapping[str, Any]]:
+        """Openers whose hold window has closed, printed about a window late."""
+        return policy.flush(now=clock())
+
+    def _policy_release_all() -> Iterable[Mapping[str, Any]]:
+        """Everything still held when this pane has no further second to wait.
+
+        An arming that ends has no window left to give a held opener, so the
+        pair did not complete inside anything this pane could observe — which is
+        the case the row prints for. Releasing here is what keeps a stop or a
+        lifetime expiry from dropping a run's only row for that state.
+        """
+        return policy.flush(now=float("inf"))
 
     started_at = clock()
     lifetime_deadline = (
@@ -2651,8 +2681,8 @@ def _follow_watch_lines(
         if mode == "baseline":
             for event in cursor["baseline"]:
                 selected = _emit(event)
-                if selected is not None:
-                    yield selected
+                for printed in _policy_forward(selected):
+                    yield printed
         else:
             # A continuation picks the stream up where the previous arming left
             # it: at the recorded offset for a file that has only advanced, or
@@ -2731,8 +2761,8 @@ def _follow_watch_lines(
                 if line:
                     event = runs.parse_stream_line(line)
                     selected = None if event is None else _emit(event)
-                    if selected is not None:
-                        yield selected
+                    for printed in _policy_forward(selected):
+                        yield printed
                     _tick(
                         stream_path=stream_path,
                         offset=stream.tell(),
@@ -2746,6 +2776,8 @@ def _follow_watch_lines(
                 # defect at the other end of the pipe, so both endings drain
                 # the stream first.
                 if _stopped():
+                    for printed in _policy_release_all():
+                        yield printed
                     return
                 if not runs.producer_live(project):
                     break
@@ -2754,6 +2786,12 @@ def _follow_watch_lines(
                     offset=stream.tell(),
                     identity=stream_file_identity,
                 )
+                # A held opener is released on elapsed time, not on the next
+                # row, so the wait pass is where its window can close while the
+                # fleet is quiet. Without this a held row would wait for a
+                # later transition that may never come.
+                for printed in _policy_flush():
+                    yield printed
                 if lifetime_elapsed or consumer_gone:
                     break
                 # The gate is time-based, so calling it from the wait pass as
@@ -2761,6 +2799,9 @@ def _follow_watch_lines(
                 # a producer is up; the outer loop only iterates after attach.
                 _sweep_on_cadence()
                 sleeper(poll_interval)
+
+    for printed in _policy_release_all():
+        yield printed
 
     if lifetime_elapsed:
         yield _follower_end_event(

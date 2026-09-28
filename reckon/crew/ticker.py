@@ -848,6 +848,229 @@ def settled_at_attach(event: Mapping[str, Any]) -> bool:
     return str(event.get("to_state") or "") in SETTLED_STATES
 
 
+# ── The follower's row policy ───────────────────────────────────────────────
+#
+# The 2026-09-25 signal audit (docs/research/follower-signal-audit.html) sorts
+# every transition kind a follower can emit into four classes. A *coordinator*
+# row is a transition that leaves the orchestrator a duty, so it always prints,
+# carrying the plain reason that says what the duty is. An *observer* row
+# explains the shape of the fleet without creating work, so it prints unmarked.
+# A *counter* row has no transition, so it moves the standing counter alone and
+# never prints. A *noise* row is a re-derivation of a state already on screen or
+# one side of a launch flicker, an exit phantom or a stall flap, and is dropped.
+#
+# The three noise pairs are held rather than blacklisted, because a blacklist
+# would also hide a genuine abandonment, block or stall that lacks its recovery
+# evidence. The row that opens a pair is withheld for a hold window; if the pair
+# completes inside that window both sides are the noise and neither prints, and
+# otherwise the opener prints late. A stall that does not recover, an
+# abandonment that does not revert and a block whose worker survives are
+# therefore still coordinator-visible.
+
+ROW_COORDINATOR = "coordinator"
+ROW_OBSERVER = "observer"
+ROW_COUNTER = "counter"
+
+# The transition kinds the audit classes as coordinator: the row owes a duty
+# once the noise hold has been applied. A kind absent here is observer context.
+COORDINATOR_KINDS = frozenset(
+    {
+        ("abandoned", "complete"),
+        ("abandoned", "unreadable"),
+        ("blocked", "complete"),
+        ("complete", "blocked"),
+        ("complete", "completed_unpromoted"),
+        ("complete", "stalled"),
+        ("completed_unpromoted", "blocked"),
+        ("completed_unpromoted", "complete"),
+        ("dispatched", "blocked"),
+        ("dispatched", "complete"),
+        ("dispatched", "completed_unpromoted"),
+        ("dispatched", "stalled"),
+        ("dispatched", "waiting"),
+        ("stalled", "blocked"),
+        ("unreadable", "blocked"),
+        ("unreadable", "complete"),
+        ("waiting", "blocked"),
+        ("working", "blocked"),
+        ("working", "complete"),
+        ("working", "completed_unpromoted"),
+        ("working", "stalled"),
+        ("working", "unreadable"),
+        ("working", "waiting"),
+    }
+)
+
+# The holdable noise pairs, keyed by the kind that opens them: the resolution
+# kind that completes the pair, and the window the opener is withheld for. The
+# launch window is the grace a dispatch gets before its first abandonment is
+# believed; the exit and stall windows are the span in which the completing
+# receipt is looked for. A pair whose two sides sit further apart than its
+# window is a real event and the opener prints.
+NOISE_PAIRS: dict[tuple[Any, Any], tuple[tuple[str, str], float]] = {
+    ("dispatched", "abandoned"): (("abandoned", "working"), 90.0),
+    ("working", "blocked"): (("blocked", "completed_unpromoted"), 300.0),
+    ("working", "stalled"): (("stalled", "working"), 300.0),
+}
+
+# A noise pair's resolution on its own carries no duty: the opener already told
+# the reader the run left, and this side only closes it.
+NOISE_RESOLUTIONS = frozenset(
+    resolution for resolution, _ in NOISE_PAIRS.values()
+)
+
+
+def transition_class(from_state: Any, to_state: Any) -> str:
+    """Whether a transition is a coordinator duty, observer context or a counter.
+
+    The audit assigns the class per kind, after the noise predicate. The noise
+    kinds answer here as coordinator or observer, because whether they print is
+    decided by the hold and not by the kind alone; a caller wants this for the
+    row it is about to hand to ``RowPolicy``, which is where the hold is applied.
+    """
+    if from_state is not None and from_state == to_state:
+        return ROW_COUNTER
+    if (from_state, to_state) in COORDINATOR_KINDS:
+        return ROW_COORDINATOR
+    return ROW_OBSERVER
+
+
+class RowPolicy:
+    """Hold a row that can open a noise pair; print it only if the pair does not.
+
+    One instance follows one pane. It remembers the state last put on screen for
+    each run, which is what turns a re-derivation of a known state into a
+    counter update rather than a second row, and it keeps at most one withheld
+    opener per run while that opener's window is open.
+    """
+
+    def __init__(self) -> None:
+        self._reported: dict[str, str] = {}
+        # run_id -> (deadline, opener event). A run carries one opener at most:
+        # a second hold for the same run is a different kind of noise, and the
+        # first opener is released before the second is considered.
+        self._held: dict[str, tuple[float, Mapping[str, Any]]] = {}
+
+    def seed(self, run_id: str, state: str) -> None:
+        """Remember a state the pane already shows, before this pane's first row.
+
+        A re-arm restores the states the previous pane drew, so the policy must
+        start from that memory: without it a re-derived baseline for a run the
+        reader has already seen would print as a fresh transition, which is the
+        noise the counter-only rule exists to keep off the pane.
+        """
+        if run_id and state:
+            self._reported[str(run_id)] = str(state)
+
+    def _release_expired(self, now: float, out: list[Mapping[str, Any]]) -> None:
+        """Print every opener whose hold window has passed uncompleted."""
+        for run_id in [
+            run_id
+            for run_id, (deadline, _) in self._held.items()
+            if deadline <= now
+        ]:
+            _, opener = self._held.pop(run_id)
+            out.append(opener)
+
+    def feed(
+        self, event: Mapping[str, Any], *, now: float
+    ) -> list[Mapping[str, Any]]:
+        """Take one delivered row and return the rows that should print for it."""
+        out: list[Mapping[str, Any]] = []
+        self._release_expired(now, out)
+
+        run_id = str(event.get("run_id") or "")
+        from_state = event.get("from_state")
+        to_state = str(event.get("to_state") or "")
+        kind = (from_state, to_state)
+
+        # The withheld opener is resolved first: a resolution row completes the
+        # pair whatever else the row means, so the hold is checked before any
+        # rule that could suppress or postpone the row.
+        held = self._held.pop(run_id, None) if run_id else None
+        if held is not None:
+            opener = held[1]
+            opener_kind = (opener.get("from_state"), opener.get("to_state"))
+            if kind == NOISE_PAIRS.get(opener_kind, ((None, None), 0.0))[0]:
+                # The pair completed inside the window: both sides are noise.
+                if run_id:
+                    self._reported[run_id] = to_state
+                return out
+            # The pair did not complete, so the opener was a real event after
+            # all; it prints late, and this row is handled on its own account.
+            out.append(opener)
+
+        # A same-state rewrite carries no transition, so it moves the counter
+        # block alone and never prints a row.
+        if from_state is not None and from_state == to_state:
+            if run_id:
+                self._reported[run_id] = to_state
+            return out
+
+        # A row restating the state the pane already shows is a
+        # re-derivation rather than news, so it is silent — unless it declares
+        # an external wait, whose condition the coordinator must be able to
+        # read even when its state word repeats. A suppressed duty is the
+        # failure this policy exists to prevent, so the exemption is on the
+        # duty's own evidence rather than on the kind alone.
+        if (
+            run_id
+            and self._reported.get(run_id) == to_state
+            and not declares_a_wait(event)
+        ):
+            return out
+
+        if run_id and kind in NOISE_PAIRS:
+            _, window = NOISE_PAIRS[kind]
+            self._held[run_id] = (now + window, event)
+            return out
+
+        if kind in NOISE_RESOLUTIONS:
+            if run_id:
+                self._reported[run_id] = to_state
+            return out
+
+        if run_id:
+            self._reported[run_id] = to_state
+        out.append(event)
+        return out
+
+    def flush(self, *, now: float) -> list[Mapping[str, Any]]:
+        """Print every opener still held whose window has closed by ``now``."""
+        out: list[Mapping[str, Any]] = []
+        self._release_expired(now, out)
+        return out
+
+
+def row_moment(event: Mapping[str, Any]) -> float:
+    """The epoch a row carried, which is what a replay measures windows against."""
+    text = str(event.get("observed_at") or "")
+    try:
+        return datetime.fromisoformat(text).timestamp()
+    except ValueError:
+        return 0.0
+
+
+def replay_row_policy(
+    events: Iterable[Mapping[str, Any]],
+    *,
+    clock=row_moment,
+) -> list[Mapping[str, Any]]:
+    """Print an ordered stream the way one follower would under this policy.
+
+    The audit's done-when replays a recorded watch stream through the follower's
+    row policy, so the same object that decides a live pane's rows answers here:
+    the counter-only rewrites, the held noise pairs, and the pass-through of the
+    coordinator and observer rows the pane prints.
+    """
+    policy = RowPolicy()
+    printed: list[Mapping[str, Any]] = []
+    for event in events:
+        printed.extend(policy.feed(event, now=clock(event)))
+    printed.extend(policy.flush(now=float("inf")))
+    return printed
+
+
 def declares_a_wait(event: Mapping[str, Any]) -> bool:
     """Whether the row's run declared an external condition to wait on.
 
