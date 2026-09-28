@@ -30,7 +30,7 @@ import os
 import re
 import struct
 import termios
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
 from numbers import Real
 from typing import Any
@@ -873,6 +873,15 @@ ROW_COUNTER = "counter"
 
 # The transition kinds the audit classes as coordinator: the row owes a duty
 # once the noise hold has been applied. A kind absent here is observer context.
+#
+# The list is the audit's own, in two parts. Every kind the census table
+# (docs/research/follower-signal-audit.html, the policy class column) marks
+# ``coordinator`` is here, and so are the three kinds that open a held noise
+# pair — they are classed ``drop`` in that column, but the policy section says a
+# block, a stall or an abandonment that lacks its recovery evidence stays
+# coordinator-visible, and the hold is exactly what decides that. A kind the
+# audit does not name belongs to its catch-all rule rather than to this set, so
+# the set is pinned against the document rather than grown by taste.
 COORDINATOR_KINDS = frozenset(
     {
         ("abandoned", "complete"),
@@ -883,12 +892,12 @@ COORDINATOR_KINDS = frozenset(
         ("complete", "stalled"),
         ("completed_unpromoted", "blocked"),
         ("completed_unpromoted", "complete"),
+        ("dispatched", "abandoned"),
         ("dispatched", "blocked"),
         ("dispatched", "complete"),
         ("dispatched", "completed_unpromoted"),
         ("dispatched", "stalled"),
         ("dispatched", "waiting"),
-        ("stalled", "blocked"),
         ("unreadable", "blocked"),
         ("unreadable", "complete"),
         ("waiting", "blocked"),
@@ -1036,6 +1045,82 @@ class RowPolicy:
         return out
 
 
+class PaneRowPath:
+    """The follower's own row path: which of its events reach the pane.
+
+    One instance follows one pane, and it is the whole of what a follower does
+    between an event it read and a row a reader sees: the follower's own
+    selection, the row policy that decides which rows print, and the memory of
+    the states the pane was actually shown. The follower holds one of these, and
+    a replay drives the same class, so the rows a measurement counts are the
+    rows the pane prints and not a second implementation's opinion of them.
+
+    The memory is written when a row prints, never when one is withheld: a held
+    opener has not reached the pane, so a re-arm must re-evaluate it rather than
+    read it as delivered. That is why the memory lives here, at the point a row
+    is released, and not at the point a row is selected.
+    """
+
+    def __init__(
+        self,
+        *,
+        selects: Callable[[Mapping[str, Any]], bool] | None = None,
+        reported: Mapping[str, str] | None = None,
+    ) -> None:
+        self._selects = selects
+        self.reported: dict[str, str] = {
+            str(run_id): str(state) for run_id, state in dict(reported or {}).items()
+        }
+        self._policy = RowPolicy()
+        for run_id, state in self.reported.items():
+            self._policy.seed(run_id, state)
+
+    def remember(self, run_id: Any, state: Any) -> None:
+        """Note a state the pane already shows, keeping any memory it has.
+
+        A re-arm restores what the pane drew from the log when the checkpoint is
+        gone, and a run the checkpoint does name must keep the checkpoint's
+        word, so this never overwrites.
+        """
+        key, value = str(run_id or ""), str(state or "")
+        if not key or not value or key in self.reported:
+            return
+        self.reported[key] = value
+        self._policy.seed(key, value)
+
+    def reseed(self, reported: Mapping[str, str] | None) -> None:
+        """Replace the remembered states, as a continuation restores them."""
+        self.reported = {
+            str(run_id): str(state) for run_id, state in dict(reported or {}).items()
+        }
+        self._policy = RowPolicy()
+        for run_id, state in self.reported.items():
+            self._policy.seed(run_id, state)
+
+    def _remember(self, rows: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+        """Record each released row's state, then hand the rows on unchanged."""
+        printed = list(rows)
+        for row in printed:
+            run_id = str(row.get("run_id") or "")
+            if run_id:
+                self.reported[run_id] = str(row.get("to_state") or "")
+        return printed
+
+    def feed(
+        self, event: Mapping[str, Any] | None, *, now: float
+    ) -> list[Mapping[str, Any]]:
+        """The rows the pane receives for one event this follower read."""
+        if event is None:
+            return []
+        if self._selects is not None and not self._selects(event):
+            return []
+        return self._remember(self._policy.feed(event, now=now))
+
+    def flush(self, *, now: float) -> list[Mapping[str, Any]]:
+        """Openers whose hold window has closed, released to the pane."""
+        return self._remember(self._policy.flush(now=now))
+
+
 def row_moment(event: Mapping[str, Any]) -> float:
     """The epoch a row carried, which is what a replay measures windows against."""
     text = str(event.get("observed_at") or "")
@@ -1049,19 +1134,22 @@ def replay_row_policy(
     events: Iterable[Mapping[str, Any]],
     *,
     clock=row_moment,
+    selects: Callable[[Mapping[str, Any]], bool] | None = None,
 ) -> list[Mapping[str, Any]]:
-    """Print an ordered stream the way one follower would under this policy.
+    """Print an ordered stream the way one follower's own row path would.
 
-    The audit's done-when replays a recorded watch stream through the follower's
-    row policy, so the same object that decides a live pane's rows answers here:
-    the counter-only rewrites, the held noise pairs, and the pass-through of the
-    coordinator and observer rows the pane prints.
+    The audit's done-when replays a recorded watch stream, so the measurement is
+    taken through :class:`PaneRowPath` — the same object a live follower feeds —
+    rather than through the policy alone: a row the follower would never have
+    offered the policy is not a row this can count. ``selects`` is that
+    follower's own selection, and a caller measuring a real follower passes the
+    same selection function the follower was built with.
     """
-    policy = RowPolicy()
+    path = PaneRowPath(selects=selects)
     printed: list[Mapping[str, Any]] = []
     for event in events:
-        printed.extend(policy.feed(event, now=clock(event)))
-    printed.extend(policy.flush(now=float("inf")))
+        printed.extend(path.feed(event, now=clock(event)))
+    printed.extend(path.flush(now=float("inf")))
     return printed
 
 

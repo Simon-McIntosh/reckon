@@ -2326,6 +2326,32 @@ def _follow_resume_plan(
     return "restart", 0, recorded
 
 
+def follower_row_path(
+    *,
+    session: str | None = None,
+    observed: Iterable[str] = (),
+    run_ids: Iterable[str] = (),
+    reported: Mapping[str, str] | None = None,
+):
+    """The row path a follower runs on, for a reader that has to measure one.
+
+    A replay that drove the policy directly would count rows the follower never
+    offered it. This builds the very object the follower feeds — the same
+    selection function, the same policy, the same memory — so a measurement
+    taken through it is the pane's own answer rather than a second opinion.
+    """
+    from reckon.crew import ticker as ticker_module
+
+    observed_sessions = frozenset(observed)
+    selected_runs = tuple(run_ids)
+    return ticker_module.PaneRowPath(
+        selects=lambda event: _follow_selects(
+            event, session=session, observed=observed_sessions, run_ids=selected_runs
+        ),
+        reported=reported,
+    )
+
+
 def _follow_watch_lines(
     project: str,
     *,
@@ -2377,40 +2403,18 @@ def _follow_watch_lines(
     selected_runs = tuple(run_ids)
     observed_sessions = frozenset(observed)
     resume_state = dict(resume or {})
-    reported = {
-        str(run_id): str(state)
-        for run_id, state in dict(resume_state.get("reported") or {}).items()
-    }
-    # The follower's row policy holds a row that can open a noise pair and
-    # prints it only if the pair does not complete. It is fed each row this
-    # follower would otherwise print and answers with what reaches the pane;
-    # the attach checkpoint's remembered states seed it so a re-arm neither
-    # re-announces the fleet nor re-derives a baseline.
-    from reckon.crew import ticker as ticker_module
-
-    policy = ticker_module.RowPolicy()
-    for _run_id, _state in reported.items():
-        policy.seed(_run_id, _state)
-
-    def _policy_forward(row: Mapping[str, Any] | None) -> Iterable[Mapping[str, Any]]:
-        """Rows the policy prints for one delivered row, released openers included."""
-        if row is None:
-            return ()
-        return policy.feed(row, now=clock())
-
-    def _policy_flush() -> Iterable[Mapping[str, Any]]:
-        """Openers whose hold window has closed, printed about a window late."""
-        return policy.flush(now=clock())
-
-    def _policy_release_all() -> Iterable[Mapping[str, Any]]:
-        """Everything still held when this pane has no further second to wait.
-
-        An arming that ends has no window left to give a held opener, so the
-        pair did not complete inside anything this pane could observe — which is
-        the case the row prints for. Releasing here is what keeps a stop or a
-        lifetime expiry from dropping a run's only row for that state.
-        """
-        return policy.flush(now=float("inf"))
+    # The follower's own row path: the filter that decides which events are
+    # this follower's, the policy that holds a row opening a noise pair, and
+    # the memory of the states the pane was actually shown. It is the object
+    # the checkpoint stores and a re-arm restores, so a row it withholds is not
+    # in that memory and a re-arm re-evaluates it instead of believing it was
+    # delivered.
+    path = follower_row_path(
+        session=session,
+        observed=observed_sessions,
+        run_ids=selected_runs,
+        reported=resume_state.get("reported"),
+    )
 
     started_at = clock()
     lifetime_deadline = (
@@ -2517,7 +2521,9 @@ def _follow_watch_lines(
             None
             if resolved_identity is None
             else (resolved_identity.get("dev"), resolved_identity.get("ino")),
-            tuple(sorted((str(key), str(value)) for key, value in reported.items())),
+            tuple(
+                sorted((str(key), str(value)) for key, value in path.reported.items())
+            ),
         )
         if place == written_place and follow_checkpoint.exists(project, session):
             return
@@ -2527,7 +2533,7 @@ def _follow_watch_lines(
                 session,
                 stream_path=stream_path,
                 offset=offset,
-                reported=reported,
+                reported=path.reported,
                 identity=identity,
             )
         except OSError:
@@ -2544,7 +2550,7 @@ def _follow_watch_lines(
         if on_poll is not None:
             on_poll(
                 {
-                    "reported": dict(reported),
+                    "reported": dict(path.reported),
                     "stream_path": str(stream_path) if stream_path else "",
                     "offset": offset,
                 }
@@ -2553,20 +2559,6 @@ def _follow_watch_lines(
             _record_checkpoint(stream_path, offset, identity=identity)
         _check_lifetime()
         _check_consumer()
-
-    def _emit(event: Mapping[str, Any]):
-        """Return the event when it is both this follower's and news."""
-        if not _follow_selects(
-            event, session=session, observed=observed_sessions, run_ids=selected_runs
-        ):
-            return None
-        run_id = str(event.get("run_id") or "")
-        state = str(event.get("to_state") or "")
-        if run_id and not event.get("legacy"):
-            if reported.get(run_id) == state:
-                return None
-            reported[run_id] = state
-        return event
 
     from reckon.crew.resumption import DEFAULT_SWEEP_SECONDS
 
@@ -2680,33 +2672,32 @@ def _follow_watch_lines(
         )
         if mode == "baseline":
             for event in cursor["baseline"]:
-                selected = _emit(event)
-                for printed in _policy_forward(selected):
+                for printed in path.feed(event, now=clock()):
                     yield printed
         else:
             # A continuation picks the stream up where the previous arming left
             # it: at the recorded offset for a file that has only advanced, or
             # at the file's own start when it was replaced or truncated — with
-            # the runs already reported sitting in ``reported`` either way, so
-            # only what moved is delivered and nothing is re-announced.
+            # the states the pane already showed restored either way, so only
+            # what moved is delivered and nothing is re-announced.
             cursor["offset"] = offset
-            reported.clear()
-            reported.update(recorded)
+            path.reseed(recorded)
             if first_attach:
                 # Continue each run's chain from what the pane last showed it,
                 # for the runs the checkpoint does not name. The checkpoint is
                 # the primary carrier and is read first; the log is the memory
                 # for a re-arm whose checkpoint is gone, so a run renders
                 # ``abandoned → working`` rather than restarting from a state
-                # the reader never saw. ``setdefault`` keeps the checkpoint's
-                # word when both carry one. This runs on a reload too: the
+                # the reader never saw. A state the checkpoint already names
+                # keeps the checkpoint's word, so the log cannot overwrite it.
+                # This runs on a reload too: the
                 # replacement image's grid starts empty, so it needs the same
                 # memory a re-arm does, or the first row it draws falls back to
                 # the producer's own ``from_state``.
                 for run_id, state in follow_checkpoint.seed_states(
                     follow_checkpoint.read_history(project, session)
                 ).items():
-                    reported.setdefault(run_id, state)
+                    path.remember(run_id, state)
             # The pane's own line, before the gap's: a restored history or the
             # format switch, never a run's row and never a baseline re-derived
             # from the fleet as it stands now. It carries the remembered states
@@ -2719,7 +2710,7 @@ def _follow_watch_lines(
                     ),
                     "project": project,
                     "session": session or "",
-                    "reported": dict(reported),
+                    "reported": dict(path.reported),
                 }
         # Left behind before the first read rather than after the first line:
         # an arming that starts against a quiet stream and then ends has still
@@ -2760,8 +2751,7 @@ def _follow_watch_lines(
                 line = stream.readline()
                 if line:
                     event = runs.parse_stream_line(line)
-                    selected = None if event is None else _emit(event)
-                    for printed in _policy_forward(selected):
+                    for printed in path.feed(event, now=clock()):
                         yield printed
                     _tick(
                         stream_path=stream_path,
@@ -2776,7 +2766,7 @@ def _follow_watch_lines(
                 # defect at the other end of the pipe, so both endings drain
                 # the stream first.
                 if _stopped():
-                    for printed in _policy_release_all():
+                    for printed in path.flush(now=float("inf")):
                         yield printed
                     return
                 if not runs.producer_live(project):
@@ -2790,7 +2780,7 @@ def _follow_watch_lines(
                 # row, so the wait pass is where its window can close while the
                 # fleet is quiet. Without this a held row would wait for a
                 # later transition that may never come.
-                for printed in _policy_flush():
+                for printed in path.flush(now=clock()):
                     yield printed
                 if lifetime_elapsed or consumer_gone:
                     break
@@ -2800,7 +2790,7 @@ def _follow_watch_lines(
                 _sweep_on_cadence()
                 sleeper(poll_interval)
 
-    for printed in _policy_release_all():
+    for printed in path.flush(now=float("inf")):
         yield printed
 
     if lifetime_elapsed:
