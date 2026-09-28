@@ -14,40 +14,60 @@
     "liveness": "reckon.crew.death_census.pointer_process_alive on the live pointer",
     "effort_is_not_a_calibration_axis_here": "the lane's endpoint ignores thinking budgets, so the review reflex's effort is the lane's declared one",
     "streams_root": "/home/ITER/mcintos/.config/reckon/crew/runs",
-    "scan_time_utc": "2026-09-28T06:40:15Z"
+    "measurement_script": "docs/research/scripts/scan_local_lane_deaths.py",
+    "invocation": "timeout 1200 <venv>/bin/python docs/research/scripts/scan_local_lane_deaths.py --out docs/research/data/local-lane-deaths.json",
+    "scan_time_utc": "2026-09-28T08:16:33Z"
   },
   "before": {
     "window": {
       "start": "2026-09-02T13:32:33.973Z",
-      "end": "2026-09-28T06:12:13.382Z"
+      "end": "2026-09-28T08:05:00.604Z"
     },
     "population": {
-      "run_directories_scanned": 6276,
-      "runs_on_local_lane": 2474,
-      "attempts_on_local_lane": 3340,
-      "review_attempts": 1059
+      "run_directories_scanned": 6290,
+      "runs_on_local_lane": 2486,
+      "runs_on_local_lane_with_streams": 2484,
+      "attempts_on_local_lane": 3354,
+      "review_attempts_all_efforts": 1066
     },
     "review_effort": "xhigh",
     "deaths": {
-      "at_review_effort": 297,
-      "all_roles": 485,
-      "rate_at_review_effort": 0.2805,
-      "view": "attempt"
+      "view": "attempt",
+      "headline": {
+        "population": "review role at the lane's declared review effort",
+        "role": "review",
+        "effort": "xhigh",
+        "count": 299,
+        "attempts": 1018,
+        "rate": 0.2937
+      },
+      "review_role_all_efforts": {
+        "population": "review role at every declared effort",
+        "count": 300,
+        "attempts": 1066,
+        "rate": 0.2814
+      },
+      "all_roles": {
+        "population": "every role at every effort",
+        "count": 488
+      }
     },
     "trailing": {
       "trailing_1d": {
         "from": "2026-09-28",
         "to": "2026-09-28",
-        "review_attempts": 10,
-        "review_deaths": 3,
-        "rate": 0.3
+        "population": "review role at every declared effort",
+        "review_attempts": 17,
+        "review_deaths": 6,
+        "rate": 0.3529
       },
       "trailing_7d": {
         "from": "2026-09-22",
         "to": "2026-09-28",
-        "review_attempts": 708,
-        "review_deaths": 225,
-        "rate": 0.3178
+        "population": "review role at every declared effort",
+        "review_attempts": 715,
+        "review_deaths": 228,
+        "rate": 0.3189
       }
     },
     "positive_control": {
@@ -81,22 +101,22 @@
       {
         "role": "implement",
         "effort": "high",
-        "attempts": 1809,
-        "completed": 1656,
+        "attempts": 1814,
+        "completed": 1661,
         "dead": 153,
         "running": 0,
         "unreadable": 0,
-        "death_rate": 0.0846
+        "death_rate": 0.0843
       },
       {
         "role": "review",
         "effort": "xhigh",
-        "attempts": 1011,
-        "completed": 715,
-        "dead": 296,
+        "attempts": 1018,
+        "completed": 719,
+        "dead": 299,
         "running": 0,
         "unreadable": 0,
-        "death_rate": 0.2928
+        "death_rate": 0.2937
       },
       {
         "role": "investigate",
@@ -111,12 +131,12 @@
       {
         "role": "implement",
         "effort": "xhigh",
-        "attempts": 104,
-        "completed": 100,
+        "attempts": 106,
+        "completed": 102,
         "dead": 4,
         "running": 0,
         "unreadable": 0,
-        "death_rate": 0.0385
+        "death_rate": 0.0377
       },
       {
         "role": "documentation",
@@ -296,11 +316,18 @@
         "review": 4
       },
       "2026-09-28": {
-        "review": 3
+        "review": 6
       }
     },
+    "role_attribution": {
+      "runs_on_local_lane": 2486,
+      "runs_with_streams": 2484,
+      "prompt_declares_role": 2484,
+      "prompt_silent_fell_back_to_ledger": 0,
+      "disagreements_recorded": 0
+    },
     "role_attribution_disagreements": [],
-    "review_deaths_detail": [
+    "review_deaths_all_efforts": [
       {
         "run_id": "r-20260906T131105071033-pfs-shape-inverse-review",
         "attempt": "stream",
@@ -3567,20 +3594,53 @@
         "record_count": 10975,
         "signal_name": "SIGTERM",
         "ended_during": "working"
+      },
+      {
+        "run_id": "r-20260928T051925840382-review-of-coordinator-cost-per-landed-node",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "xhigh",
+        "last_at": "2026-09-28T05:21:54.203Z",
+        "last_record_type": "system",
+        "record_count": 1183,
+        "signal_name": "SIGTERM",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20260928T051925840382-review-of-coordinator-cost-per-landed-node",
+        "attempt": "resume-1",
+        "role": "review",
+        "effort": "xhigh",
+        "last_at": "2026-09-28T07:04:45.166Z",
+        "last_record_type": "assistant",
+        "record_count": 34025,
+        "signal_name": "SIGTERM",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20260928T063231222971-review-of-fenced-codex-can-persist-its-login",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "xhigh",
+        "last_at": "2026-09-28T06:35:18.458Z",
+        "last_record_type": "system",
+        "record_count": 5222,
+        "signal_name": "SIGTERM",
+        "ended_during": "working"
       }
     ],
     "review_cell": {
       "role": "review",
-      "effort": "medium",
-      "attempts": 2,
-      "completed": 2,
-      "dead": 0,
+      "effort": "xhigh",
+      "attempts": 1018,
+      "completed": 719,
+      "dead": 299,
       "running": 0,
       "unreadable": 0,
-      "death_rate": 0.0
+      "death_rate": 0.2937
     }
   },
   "after": null,
   "after_state": "not_produced",
-  "after_unavailable_reason": "the review-reliability repair has not landed. Its home is a-review-dies-where-nobody-is-looking section 9, whose section declaration reads implementable and whose driving followup f-ardwnil-002 is open; no post-repair window exists to measure."
+  "after_unavailable_reason": "the repair that would create a post-repair window has not landed: the review-reliability work that owns it is declared implementable with its driving followup still open, so no attempt in the corpus ran against a repaired lane."
 }

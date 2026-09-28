@@ -34,10 +34,35 @@ def _stated() -> dict:
 def test_the_before_block_states_a_non_zero_death_count() -> None:
     before = _stated()["before"]
     deaths = before["deaths"]
-    assert deaths["at_review_effort"] > 0, "a zero death count is not a measurement"
+    headline = deaths["headline"]
     assert deaths["view"] == "attempt"
-    assert before["population"]["review_attempts"] >= deaths["at_review_effort"]
+    assert headline["count"] > 0, "a zero death count is not a measurement"
+    assert headline["population"], "a count with no named population is not a number"
+    assert before["population"]["review_attempts_all_efforts"] >= headline["count"]
     assert before["window"]["start"] and before["window"]["end"]
+
+
+def test_the_headline_count_equals_its_declared_effort_cell() -> None:
+    """The headline is one population, and its cell must sum to it.
+
+    A headline that pooled roles or efforts reads as the effort cell beside it
+    while counting something else — the state this file was in when the
+    headline was the review role at every effort against an xhigh cell
+    holding one fewer.
+    """
+    before = _stated()["before"]
+    headline = before["deaths"]["headline"]
+    cell = next(
+        c
+        for c in before["cells"]
+        if c["role"] == headline["role"] and c["effort"] == headline["effort"]
+    )
+    assert headline["count"] == cell["dead"], (
+        f"headline counts {headline['count']} for "
+        f"{headline['role']}/{headline['effort']} but that cell holds {cell['dead']}"
+    )
+    assert headline["attempts"] == cell["attempts"]
+    assert headline["rate"] == cell["death_rate"]
 
 
 def test_the_before_block_names_the_lane_and_the_effort_it_measured() -> None:
@@ -80,7 +105,8 @@ def test_an_after_block_carries_the_same_shape_when_one_exists() -> None:
             "an unstated after-rate must say what it is waiting on"
         )
         return
-    assert after["deaths"]["at_review_effort"] > 0
+    assert after["deaths"]["headline"]["count"] > 0
+    assert after["deaths"]["headline"]["population"]
     control = after["positive_control"]
     assert control is not None
     assert control["classification"] == "dead"

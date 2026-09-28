@@ -100,15 +100,18 @@
       enabled by default only once the after-rate is stated. Until then it warns and records rather
       than refusing, which still removes the silent case without stopping the reviews.</p>
       <p><strong>Landed 2026-09-28 — the before-rate is stated, from the runs' own streams.</strong>
-      Over 2026-09-02T13:32Z to 2026-09-28T06:12Z, 3340 attempts ran on the locally served lane
-      (<code>clive</code> / <code>deepseek-v4.1-flash</code>); <strong>297 of 1059 review-role
-      attempts died mid-turn at the effort the review reflex uses — 28.05%</strong>, against 153 of
-      1809 implement attempts at 8.5%. The trailing seven days are worse, not better: 225 of 708
-      (31.8%). A death is read from the attempt's own stream — a stream whose last record is
+      Over 2026-09-02T13:32Z to 2026-09-28T08:05Z, 3354 attempts ran on the locally served lane
+      (<code>clive</code> / <code>deepseek-v4.1-flash</code>); <strong>299 of 1018 review attempts
+      at <code>xhigh</code> — the effort the review reflex uses — died mid-turn, 29.4%</strong>,
+      against 153 of 1814 implement attempts at <code>high</code>, 8.4%. Every figure names its
+      population: the review role at every declared effort is 300 of 1066 (28.1%), and every role at
+      every effort is 488 deaths in 3354. The trailing seven days are worse, not better: 228 of 715
+      review attempts (31.9%). A death is read from the attempt's own stream — a stream whose last record is
       anything other than the harness's <code>result</code> record, for a run whose process is
       gone — with both directions on one run as controls, since a classifier anchored on the
       record's opening bytes once read all 3336 attempts as dead. The measurement is
-      <code>docs/research/data/local-lane-deaths.json</code>, its gate is
+      <code>docs/research/data/local-lane-deaths.json</code>, written by the committed
+      <code>docs/research/scripts/scan_local_lane_deaths.py</code>, its gate is
       <code>tests/test_the_local_lane_death_rate_is_stated.py</code>, and the account is
       <a href="/reckon/research/local-lane-death-rate">The Local Lane Death Rate</a>. Full record:
       <a href="/reckon/evidence/archive/the-orchestrator-lane-is-not-a-worker-lane-landed#s4">§4 landed

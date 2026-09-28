@@ -21,11 +21,13 @@
 
     <p><strong>Three in ten review attempts on the locally served lane end with nothing they
     were asked to produce, and the runs' own streams say so.</strong> Over the 26 days to
-    2026-09-28, 297 of 1059 review-role attempts on the <code>clive</code> lane ended
-    mid-turn: the process was gone and its stream carried no <code>result</code> record.
-    The same lane killed implement attempts at 8%. That gap is the reason sessions moved
-    their review reflex onto the orchestrator lane, and it is the number this record
-    exists to state.</p>
+    2026-09-28, 299 of 1018 review attempts at <code>xhigh</code> — the effort this lane
+    declares for the review reflex — ended mid-turn on the <code>clive</code> lane: the
+    process was gone and its stream carried no <code>result</code> record. Counting the
+    review role at every declared effort gives 300 of 1066 (28.1%), and the same lane
+    killed implement attempts at every effort at 161 of 1969 (8.2%). That gap is the
+    reason sessions moved their review reflex onto the orchestrator lane, and it is the
+    number this record exists to state.</p>
 
     <p><strong>Why it is a record rather than a footnote.</strong> The plan that fences
     background work off the orchestrator lane gates its own default on this figure:
@@ -41,8 +43,9 @@
       <p><strong>The population is the runs' own attempt streams.</strong> Every run
       directory under <code>~/.config/reckon/crew/runs/</code> holds one stream per attempt:
       <code>stream.jsonl</code> for the first, <code>resume-N.jsonl</code> for each later
-      one. 6276 run directories were enumerated, 2474 were recorded on the local lane
-      (<code>backend: clive</code> in the ledger), and they carry 3340 attempts.</p>
+      one. 6290 run directories were enumerated, 2486 were recorded on the local lane
+      (<code>backend: clive</code> in the ledger), and the 2484 of those carrying streams
+      hold 3354 attempts.</p>
 
       <p><strong>A death is a stream that stops without a result.</strong> The harness
       writes a top-level <code>{"type":"result"}</code> record when a turn reaches its end.
@@ -50,6 +53,13 @@
       alive, is an attempt that died mid-turn. No summary, rollup or ledger field was read
       for this classification — the streams were read directly, and the ledger supplied only
       the run's recorded backend, role and effort.</p>
+
+      <p><strong>Two populations, named wherever they appear.</strong> The headline death
+      count is <em>the review reflex's own configuration</em> — the review role at the effort
+      this lane declares for reviews. Review attempts dispatched at any other effort are
+      counted in the role-wide figure beside it, and never pooled into the headline: a count
+      that mixes populations reads as the effort cell it sits beside while counting something
+      else, which is the defect this page was corrected for.</p>
 
       <p><strong>Two views, and they are not the same number.</strong> The <em>attempt</em>
       view counts every stream as one observation, which is the event the plan is about: an
@@ -59,24 +69,32 @@
       the terminal view sits in the same data file and is the convention
       <code>reckon.crew.death_census</code> documents.</p>
 
-      <p><strong>The script and its output both persist.</strong> The scanner is
-      <code>scan_local_lane_deaths.py</code> in this run's directory under
-      <code>~/.config/reckon/crew/runs/</code>, the measurement it wrote is the committed
-      file <code>docs/research/data/local-lane-deaths.json</code>, and the assertions over
-      that file live in <code>tests/test_the_local_lane_death_rate_is_stated.py</code>.</p>
+      <p><strong>The script and its output both persist, and the script is versioned.</strong>
+      The scan is produced by <code>docs/research/scripts/scan_local_lane_deaths.py</code>,
+      committed beside this page, invoked as
+      <code>timeout 1200 &lt;venv&gt;/bin/python docs/research/scripts/scan_local_lane_deaths.py
+      --out docs/research/data/local-lane-deaths.json</code>. The corpus parses at roughly
+      55 MB/s, so a full pass takes minutes and the bound is what stops a runaway scan holding
+      the node. The measurement it writes is the committed file
+      <code>docs/research/data/local-lane-deaths.json</code> — which names the script that
+      produced it, and the moment of the scan — and the assertions over that file live in
+      <code>tests/test_the_local_lane_death_rate_is_stated.py</code>. The figure below is
+      drawn from that same file by
+      <code>docs/research/scripts/plot_local_lane_deaths.py</code>, also committed, so the
+      chart and the number a fence reads cannot drift apart.</p>
     </section>
 
     <section id="s2" data-reckon="section">
       <h2>§2 — The before-rate</h2>
 
-      <p><strong>Window and population.</strong> 2026-09-02T13:32Z to 2026-09-28T06:12Z,
+      <p><strong>Window and population.</strong> 2026-09-02T13:32Z to 2026-09-28T08:05Z,
       the whole life of the local lane's recorded history, closed at the moment of the scan.
-      Population: 2474 local-lane runs, 3340 attempts, of which 1059 are review-role
-      attempts.</p>
+      Population: 2486 local-lane runs carrying 3354 attempts, of which 1066 are review-role
+      attempts and 1018 are review attempts at <code>xhigh</code>.</p>
 
       <figure>
         <img src="/reckon/figures/the-orchestrator-lane-is-not-a-worker-lane/deaths-per-day-by-role.png"
-             alt="Left: stacked bars of mid-turn deaths per day from 2026-09-03 to 2026-09-28, coloured by role, peaking at 80 deaths on 2026-09-25 of which 72 are review. Right: death rate by role — review 28.0% of 1059 attempts, test 9.0% of 78, investigate 8.0% of 137, implement 8.2% of 1962, documentation 7.8% of 103."
+             alt="Left: stacked bars of mid-turn deaths per day from 2026-09-03 to 2026-09-28, coloured by role, peaking at 80 deaths on 2026-09-25 of which 72 are review. Right: death rate by role — review 28.1% of 1066 attempts, test 9.0% of 78, investigate 8.8% of 137, implement 8.2% of 1969, documentation 7.8% of 103."
              style="max-width:100%;height:auto">
         <figcaption>Mid-turn deaths read from the runs' own streams, 2026-09-02 to 2026-09-28,
         on the <code>clive</code> lane, <code>deepseek-v4.1-flash</code>,
@@ -84,9 +102,12 @@
         role, all efforts pooled, with the count behind each rate.</figcaption>
       </figure>
 
-      <p><strong>The rate at the review reflex's effort is 28.05%.</strong> 297 deaths in
-      1059 attempts. The chart's headline rounds this to 28%. Split by the effort the run
-      was dispatched at:</p>
+      <p><strong>The rate at the review reflex's effort is 29.4%.</strong> 299 deaths in
+      1018 review attempts at <code>xhigh</code> — the population the chart's headline and
+      the data file's <code>deaths.headline</code> both count, and the one the fence reads.
+      The review role at every effort is 300 deaths in 1066 attempts (28.1%), and every
+      role at every effort is 488 deaths in 3354. Split by role and the effort the run was
+      dispatched at:</p>
 
       <table>
         <caption>Attempt-view deaths on the local lane by role and declared effort,
@@ -95,24 +116,32 @@
           <tr><th>Role</th><th>Effort</th><th>Attempts</th><th>Deaths</th><th>Death rate</th></tr>
         </thead>
         <tbody>
-          <tr><td>review</td><td>xhigh</td><td>1011</td><td>296</td><td>29.3%</td></tr>
+          <tr><td>review</td><td>xhigh</td><td>1018</td><td>299</td><td>29.4%</td></tr>
           <tr><td>review</td><td>high</td><td>46</td><td>1</td><td>2.2%</td></tr>
           <tr><td>review</td><td>medium</td><td>2</td><td>0</td><td>0.0%</td></tr>
-          <tr><td>implement</td><td>high</td><td>1809</td><td>153</td><td>8.5%</td></tr>
+          <tr><td>implement</td><td>high</td><td>1814</td><td>153</td><td>8.4%</td></tr>
           <tr><td>implement</td><td>medium</td><td>49</td><td>4</td><td>8.2%</td></tr>
-          <tr><td>implement</td><td>xhigh</td><td>104</td><td>4</td><td>3.8%</td></tr>
+          <tr><td>implement</td><td>xhigh</td><td>106</td><td>4</td><td>3.8%</td></tr>
           <tr><td>investigate</td><td>xhigh</td><td>133</td><td>12</td><td>9.0%</td></tr>
           <tr><td>documentation</td><td>xhigh</td><td>103</td><td>8</td><td>7.8%</td></tr>
           <tr><td>test</td><td>xhigh</td><td>77</td><td>7</td><td>9.1%</td></tr>
+          <tr><td>five further cells</td><td>—</td><td>8</td><td>0</td><td>0.0%</td></tr>
         </tbody>
       </table>
 
+      <p>The headline is the review/<code>xhigh</code> row and nothing else: read it there
+      and the table sums to it. The last row is the five cells too small to carry a rate —
+      <code>cleanup</code> at <code>xhigh</code>, <code>investigate</code> at
+      <code>high</code> and <code>medium</code>, <code>review</code> at
+      <code>medium</code>, <code>test</code> at <code>high</code> — 8 attempts between
+      them, none of which died.</p>
+
       <p><strong>Recent windows are worse, not better.</strong> Trailing seven days
-      (2026-09-22 to 2026-09-28): 225 review deaths in 708 attempts, 31.8%. Trailing day:
-      3 in 10. The rate is not decaying on its own, and the two heaviest days on the chart —
-      2026-09-25 with 80 deaths (72 of them review) and 2026-09-02's successors through
-      09-26 — are the recent ones. The lane was not improving while sessions were migrating
-      their reviews off it.</p>
+      (2026-09-22 to 2026-09-28): 228 review deaths in 715 attempts, 31.9%. Trailing day:
+      6 in 17, 35%. The rate is not decaying on its own, and the two heaviest days on the
+      chart — 2026-09-25 with 80 deaths (72 of them review) and 2026-09-18 with 65 — are
+      the recent ones. The lane was not improving while sessions were migrating their
+      reviews off it.</p>
 
       <p><strong>What this figure is for.</strong> It is the before block: a fence that
       refuses background work on the orchestrator lane is only defensible once the
@@ -125,7 +154,7 @@
     lane: the endpoint ignores thinking budgets, so <code>xhigh</code> and <code>high</code>
     are dispatch declarations rather than two experimental conditions. The review reflex and
     the implement role are therefore close to collinear in this data — reviews run at the
-    declared maximum, implements mostly at <code>high</code> — and the 28%-against-8% gap
+    declared maximum, implements mostly at <code>high</code> — and the 29%-against-8% gap
     should be read as <em>the review reflex's configuration dies far more often</em>, not as
     an isolated effect of effort. The one cell that separates them points the other way:
     implement at <code>xhigh</code> died at 3.8%, so the role, not the effort alone, carries
@@ -245,7 +274,10 @@
         <li><strong>Role comes from the dispatch prompt.</strong> The run's own
         <code>prompt.txt</code> declares its role; the ledger row is the fallback where the
         prompt is absent, and disagreements between the two are recorded in the data file
-        rather than silently resolved.</li>
+        rather than silently resolved. On this corpus the two sources did not disagree:
+        all 2484 local-lane runs carrying streams declared a role in the prompt, and none
+        contradicted its ledger row — the file's <code>role_attribution</code> block carries
+        those counts so a reader can check the claim rather than take it.</li>
       </ul>
     </section>
 
