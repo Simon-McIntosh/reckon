@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="open-work-is-capped">
+  <meta name="plan-title" content="Open Work Is Capped">
+  <meta name="plan-summary" content="reckon opened 58 plans and closed 7 in two weeks, and half the fleet works on reckon itself; a project holds bounded open work and closes before it opens.">
+  <meta name="plan-evidence-for" content="open-work-is-capped">
+  <meta name="plan-verifies" content="§2 Triage the pending reckon plans">
+  <meta name="plan-commits" content="">
+  <meta name="plan-artifacts" content="/reckon/figures/open-work-is-capped/triage-first-batch.svg">
+  <meta name="plan-recorded-at" content="2026-09-28">
+  <meta name="plan-verdict" content="delivered">
+  <meta name="plan-environment" content="main af915bc0 (source identical at worktree ac9d7967), read by opening each section's named files">
+  <meta name="plan-tags" content="crew,reckon-tooling,triage">
+  <title>Open Work Is Capped — first triage batch | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="triage-first-batch-summary">First triage batch — seventeen pending plans</h2>
+    <p>This record carries the first batch of the §2 triage: the seventeen pending reckon plans named in the
+      dispatch. Each row reads, from the code at head, how many of the plan's declared implementable sections have
+      their deliverable present; the coordinator session that last dispatched against it, marked live where a run is
+      in flight; a proposed disposition; and a one-line reason. <strong>Nothing was closed or edited in any plan by
+      this record.</strong> The batch's keep count is 13, so the lead can sum four batches against the locked limit
+      of 25 pending plans (<code>wip-limit-value</code>).</p>
+    <p><strong>Instrument.</strong> The fraction counts a section present only when the file and symbol that
+      implement its deliverable were opened and found at head — never the plan's stored <code>impl</code>. A section
+      whose declarations classify as <code>deferred</code> or <code>done</code> is not counted (the plan's
+      <code>plan-section-declarations</code> meta, defaulting to <code>implementable</code> when a section is
+      absent). Named test files were found to be an unreliable instrument — several landed features carry different
+      test names — so presence is read from the implementing symbol.</p>
+
+    <figure>
+      <img src="/reckon/figures/open-work-is-capped/triage-first-batch.svg"
+           alt="Horizontal bars, one per triaged plan, showing the fraction of declared implementable sections verified present at head; filled portion is present, outlined remainder is declared but not found. Coloured by proposed disposition: keep, merge, close.">
+      <figcaption>Deliverable presence per triaged plan at main HEAD. The two fully-present plans are proposed
+        close; the two with no implementable sections found are proposed merge into a plan that already owns the
+        same work.</figcaption>
+    </figure>
+
+    <section id="triage-first-batch" data-reckon="evidence">
+      <h3>Batch 1 — rows</h3>
+      <p>Read at main <code>af915bc0</code>; the worktree head <code>ac9d7967</code> is source-identical (its
+        diff against main is plan/evidence and a review record only). Each fraction is <em>sections present /
+        declared implementable sections checked</em>.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Plan</th>
+            <th>Present / checked (citations)</th>
+            <th>Last coordinator (live?)</th>
+            <th>Disposition</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>a-brief-should-not-cost-what-it-names</td>
+            <td>0 / 4 — no implementing symbol found at head</td>
+            <td>none dispatched (draft)</td>
+            <td><strong>merge</strong> into a-refusal-is-about-the-work</td>
+            <td>A draft with no runs ever; its subject — a brief naming a cost it does not spend — is the same
+              reading the refusal plan already owns.</td>
+          </tr>
+          <tr>
+            <td>a-crew-process-ends-with-its-owner</td>
+            <td>3 / 9 — reckon/cli.py:_needs_you_runs; reckon/crew/promotion.py:_promoted_worker_exit;
+              tests/test_follower_checks_its_owner.py</td>
+            <td>s21-coord, 2026-09-26</td>
+            <td>keep</td>
+            <td>Partial: the follower/owner binding and worker-exit recording landed, the remaining sections do
+              not.</td>
+          </tr>
+          <tr>
+            <td>a-cutover-is-measured-against-its-baseline</td>
+            <td>0 / 2 — no implementing symbol found at head</td>
+            <td>s21-scope-20260923, 2026-09-23</td>
+            <td>keep</td>
+            <td>Nothing landed; the cutover-baseline measurement has no implementation yet.</td>
+          </tr>
+          <tr>
+            <td>a-dispatch-returns-without-its-worker</td>
+            <td>3 / 5 — reckon/crew/dispatch.py:_spawn_through_fleet; dispatch.py worker-exit record;
+              tests/test_dispatch_spawns_through_the_fleet.py</td>
+            <td>s21-coord, 2026-09-25</td>
+            <td>keep</td>
+            <td>Partial: spawn-through-fleet and the exit record exist; reckon/crew/summary.py:max_concurrent_runs
+              still caps concurrent runs, so the return-without-worker section is absent.</td>
+          </tr>
+          <tr>
+            <td>a-dry-run-must-resolve-what-the-real-call-resolves</td>
+            <td>0 / 3 — no implementing symbol found at head</td>
+            <td>none dispatched (draft)</td>
+            <td><strong>merge</strong> into a-refusal-is-about-the-work</td>
+            <td>Draft with no runs; a dry run resolving the same call the real one does is the mismatch the
+              refusal plan already reads.</td>
+          </tr>
+          <tr>
+            <td>a-follower-keeps-your-work-in-view</td>
+            <td>1 / 4 — reckon/hooks/worker_message_guard.py (owner-session scoping)</td>
+            <td>ship-s20-20260923, 2026-09-23</td>
+            <td>keep</td>
+            <td>One section landed; the follower's view of in-flight work is only partly implemented
+              (test_follow_replays_the_gap.py absent).</td>
+          </tr>
+          <tr>
+            <td>a-follower-outlives-its-monitor</td>
+            <td>0 / 2 — no implementing symbol found at head</td>
+            <td>ship-s20-20260923, 2026-09-23</td>
+            <td>keep</td>
+            <td>Nothing landed; the follower still dies with its monitor.</td>
+          </tr>
+          <tr>
+            <td>a-landing-beat-needs-no-hand-edit</td>
+            <td>0 / 2 — no implementing symbol found at head</td>
+            <td>s23-coord, 2026-09-25</td>
+            <td>keep</td>
+            <td>Nothing landed; the landing beat still needs a hand edit.</td>
+          </tr>
+          <tr>
+            <td>a-landing-record-never-conflicts</td>
+            <td>1 / 2 — reckon/evidence.py:compose_landed_record</td>
+            <td>crew-review-0926, 2026-09-26 · <strong>LIVE</strong> s25-coord</td>
+            <td>keep</td>
+            <td>A run is in flight against it now; the record-composition half landed, the conflict-free append
+              half did not.</td>
+          </tr>
+          <tr>
+            <td>a-lane-can-say-where-it-stands</td>
+            <td>0 / 0 — no declared implementable sections</td>
+            <td>ship-budget-20260921, 2026-09-21</td>
+            <td><strong>close</strong></td>
+            <td>Every declared section is done or deferred; the lane status surface ships, so this is proposed
+              close with a one-sentence landed summary.</td>
+          </tr>
+          <tr>
+            <td>a-live-worker-can-be-reached</td>
+            <td>2 / 3 — reckon/hooks/worker_message_guard.py; tests/test_mcp_reads_have_deadlines.py</td>
+            <td>rca-worker-channel-20260915, 2026-09-15</td>
+            <td>keep</td>
+            <td>Partial: the refusal on messaging a live worker and the read deadline landed, the reach path does
+              not.</td>
+          </tr>
+          <tr>
+            <td>a-page-load-reads-each-file-once</td>
+            <td>0 / 1 — no implementing symbol found at head</td>
+            <td>page-load-20260923, 2026-09-24</td>
+            <td>keep</td>
+            <td>Nothing landed; the per-file read cache for a page load is absent.</td>
+          </tr>
+          <tr>
+            <td>a-placement-with-no-reservation-mints-one-per-worker</td>
+            <td>1 / 1 — reckon/crew/placement.py:reservation_options</td>
+            <td>s21-scope-20260923, 2026-09-23</td>
+            <td><strong>close</strong></td>
+            <td>The sole declared section is present at head; proposed close with a one-sentence landed summary.</td>
+          </tr>
+          <tr>
+            <td>a-plan-is-reviewed-before-it-is-built</td>
+            <td>1 / 2 — reckon/crew/plan_review.py:store_plan_review; tests/test_plan_review_gate.py</td>
+            <td>s21-coord, 2026-09-26</td>
+            <td>keep</td>
+            <td>Partial: the review store and gate landed; a section remains.</td>
+          </tr>
+          <tr>
+            <td>a-refusal-is-about-the-work</td>
+            <td>1 / 2 — reckon/crew/plan_review.py:PLAN_REVIEW_RUBRICS; tests/test_plan_review_prompt.py</td>
+            <td>crew-review-0926, 2026-09-26 · <strong>LIVE</strong> s25-coord</td>
+            <td>keep</td>
+            <td>A run is in flight against it now; one of two sections landed.</td>
+          </tr>
+          <tr>
+            <td>a-review-can-see-the-figure</td>
+            <td>1 / 3 — reckon/crew/plan_review.py (rubric carrying figure presence)</td>
+            <td>ship-s19-20260922, 2026-09-23</td>
+            <td>keep</td>
+            <td>Partial: the rubric mentions the figure, the review's own reading of it did not land.</td>
+          </tr>
+          <tr>
+            <td>a-review-dies-where-nobody-is-looking</td>
+            <td>5 / 7 — reckon/crew/promotion.py:_remove_discarded_worktree;
+              tests/test_orphaned_follower_releases.py; tests/test_expired_follower_keeps_dispatching.py</td>
+            <td>ship-s19-20260922, 2026-09-23</td>
+            <td>keep</td>
+            <td>Most landed, two sections remain; not yet closeable.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><strong>Batch keep count: 13.</strong> Proposed dispositions across the seventeen: keep 13, merge 2
+        (both into <code>a-refusal-is-about-the-work</code>), close 2. If all proposals were accepted the batch
+        would leave eleven of these seventeen pending, and the two merges would add a row to a plan that is itself
+        live — the lead sums four batches against the limit.</p>
+    </section>
+  </main>
+</body>
+</html>
