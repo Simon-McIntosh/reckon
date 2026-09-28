@@ -124,8 +124,18 @@ def _promote(
 ):
     """Promote one run through the CLI, with ``declared`` as its commits line."""
     manifest = tmp_path / f"{run_id}.manifest.md"
+    # The fixture's runs change no runtime source: the admitted ones cite
+    # root-level text files and the report-only ones cite nothing. A scope
+    # declared empty reads as silence about what changed and is granted the
+    # fuller review, so the manifest names the report artefact the run delivers,
+    # outside the repository — a measured scope that holds no runtime source,
+    # which resolves the run to the tier that owes no review.
     manifest.write_text(
-        f"node: fixture\nstatus: complete\ncommits: {declared}\ntests: done\n",
+        "node: fixture\n"
+        "status: complete\n"
+        f"commits: {declared}\n"
+        f"changed_paths: {tmp_path / (run_id + '-report.md')}\n"
+        "tests: done\n",
         encoding="utf-8",
     )
     pointer = _pointer(
@@ -146,8 +156,6 @@ def _promote(
         "0",
         "--gate-log-path",
         "/durable/citation.log",
-        "--waive-unreviewed-promotion",
-        "the fixture measures the citation check, not the review gate",
     ]
     arguments += ["--commit", *presented] if presented else []
     if no_commit:
