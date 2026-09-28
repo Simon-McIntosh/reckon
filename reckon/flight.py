@@ -1634,6 +1634,7 @@ def _project_roadmap(project: str, docs_dir: Path) -> dict[str, Any]:
             if project_rows and isinstance(project_rows[0], dict)
             else {}
         ),
+        docs_dir=docs_dir,
     )
     themes = {
         str(sprint.get("id")): str(sprint.get("theme") or "")
