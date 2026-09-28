@@ -21,13 +21,13 @@ from __future__ import annotations
 import importlib
 import json
 import os
-import time
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 import reckon.mcp as mcp_module
+from reckon.crew import recovery as recovery_module
 from reckon.crew import runs
 
 # The census module owns the fixture vocabulary and the seeding helpers for one
@@ -39,6 +39,16 @@ obligations_module = mcp_module.obligations_module
 
 PROJECT = census.PROJECT
 SESSION = census.SESSION
+
+# The derivation ages every duty from a wall clock: the classifier measures a
+# run's age against the instant it observes (``recovery._utc_seconds``); the
+# view recomputes the derivation when it is read, so a live clock makes the
+# two payloads a moving target that drifts a whole second whenever the
+# comparison straddles a boundary. Both derivations are pinned to one instant
+# so the equality the test asserts is a fact of the code rather than of how
+# long the first read happened to take.
+OBSERVED_AT = census.OBSERVED_AT
+OBSERVED_EPOCH = OBSERVED_AT.timestamp()
 
 # The two duties the fixture seeds, oldest first: the ready one ages past the
 # missing one so the derivation's oldest-first order is a fact of the seed.
@@ -65,6 +75,8 @@ def config_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         "{}\n", encoding="utf-8"
     )
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: default_home))
+    monkeypatch.setattr(obligations_module, "_utc_now", lambda: OBSERVED_AT)
+    monkeypatch.setattr(recovery_module, "_utc_seconds", lambda: OBSERVED_EPOCH)
     repo = tmp_path / "repo"
     (repo / "docs" / "state" / PROJECT).mkdir(parents=True)
     (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
@@ -116,7 +128,7 @@ def _seed_completed_run(
         }
     )
     runs._write_json(runs.pointer_path(run_id), pointer)
-    stamp = time.time() - age_seconds
+    stamp = OBSERVED_EPOCH - age_seconds
     os.utime(manifest, (stamp, stamp))
     if reviewed:
         census._store_complete_review(run_id, base=head, head=head)
