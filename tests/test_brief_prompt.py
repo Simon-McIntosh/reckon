@@ -49,7 +49,7 @@ NODE = TaskNode(
 
 FOUR_FENCES = ("SCOPE", "TIME", "EVIDENCE", "DELIVERY")
 PLAN_READ_INSTRUCTION = "PLAN     proj:plan-a s3"
-PLAN_LANDING_INSTRUCTION = "Append your landing record to your own section of the plan"
+PLAN_LANDING_INSTRUCTION = "Write your landing record to your own fragment path"
 LANDING_READER_SENTENCE = "Write your landing record and your evidence anchor"
 MANIFEST_CHECK_HEADER = "CONTRACT — CHECK YOUR OWN RECORD BEFORE YOU CLOSE IT"
 
@@ -258,9 +258,11 @@ ROLE     implement
 
 
 CONTRACT — LANDING YOUR RECORD
-  Append your landing record to your own section of the plan and your evidence
-  anchor to the cumulative evidence record; both live in this worktree and both
-  go into your final commit.
+  Write your landing record to your own fragment path and never to the plan:
+  your evidence anchor to your scope's fragment under
+  docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:`
+  line in your manifest in place of a plan edit. The fragment goes into your
+  final commit; promotion lands the `landing:` line on your plan section.
   Use a figure wherever a spatial, plotted or sequential relationship is clearer
   shown than described, under docs/figures/<topic>/ with the project-absolute
   src /<project>/figures/...; never an image of what is naturally a table.
@@ -329,6 +331,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   checkpoint: <when you are recording progress and not setting status to waiting — any worker recording progress at any point, not only a resumed worker whose wait is met: one line recording where work stands and what comes next, so you leave a checkpoint rather than a wait block>
   commits: <sha list>
   changed_paths: <explicit list>
+  landing: <exactly one line recording your landing record; promotion lands it as a comment on your plan section, so do not edit the plan>
   tests: <the gate command that actually ran, and its result — never a template command carrying an unsubstituted placeholder>
   test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; a gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
   measurement_module: <only for a gate or base-arm measurement run in a scratch tree: the absolute path of the module under test as imported — the value the run printed for `module.__file__`>

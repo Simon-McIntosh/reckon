@@ -1301,15 +1301,17 @@ def _shared_landing_paths(
     project: str,
     authority: Mapping[str, Any],
 ) -> set[Path]:
-    """Return the plan file, evidence record and figure topic for this node.
+    """Return the plan file, evidence record and figure topic shared by every node.
 
-    Every node on a plan appends its landing record to its plan section
-    and its evidence anchor to the cumulative evidence record. The plan-owned
-    figure topic is shared for the same reason: each node may illustrate its
-    landing record without needing a scope outside its dispatch grant. Files
-    within that directory remain exclusive claims, so two nodes cannot replace
-    the same rendered artifact. These three repository paths are shared by all
-    plan nodes rather than owned by any one.
+    These three repository paths are landing files every node on a plan would
+    otherwise hold: the plan file, the plan's cumulative evidence record, and the
+    plan-wide figure topic. They are no longer granted by default, because a
+    grant every node holds is exactly the merge conflict the per-node fragment
+    default removes. The set is still computed so a coordinator that declares one
+    of them explicitly keeps it as a non-exclusive claim and is warned, and so
+    the peer-disclosure and conflict machinery keep treating it as shared. Files
+    within the figure topic remain exclusive claims, so two nodes cannot replace
+    the same rendered artifact.
     Resolved absolutely so the exclusive-claim machinery recognises them in
     whichever repository carries the plan. The grant is advisory: a plan that
     cannot be resolved contributes no plan-file path, and the evidence record
@@ -1344,13 +1346,61 @@ def _shared_landing_paths(
     return paths
 
 
+def _landing_fragment_paths(
+    node: TaskNode,
+    *,
+    authority: Mapping[str, Any],
+) -> set[Path]:
+    """Return the fragment paths this node's landing record is written to.
+
+    A plan node's landing scope is its own fragment rather than the plan's
+    shared landing files: its evidence anchor under
+    ``docs/evidence/fragments/<plan>/<node-id>.html`` and its figure topic under
+    ``docs/figures/<plan>/<node-id>/``. Both are keyed by the node id, so two
+    nodes on one plan hold disjoint scopes and their records merge without the
+    add/add conflict a shared record produces, while a redispatch of one node
+    resolves the same fragment and replaces its predecessor's. Resolved
+    absolutely so the exclusive-claim machinery recognises them in whichever
+    repository carries the plan.
+    """
+    plan = authority.get("plan")
+    if not node.plan:
+        return set()
+    if not isinstance(plan, Mapping):
+        return set()
+    try:
+        docs_dir = Path(str(plan["docs"])).expanduser().resolve()
+    except (KeyError, TypeError, ValueError):
+        return set()
+    return {
+        (
+            docs_dir / "evidence" / "fragments" / node.plan / f"{node.id}.html"
+        ).resolve(),
+        (docs_dir / "figures" / node.plan / node.id).resolve(),
+    }
+
+
+def _resolve_declared_path(declared: str, base: Path) -> Path:
+    """Resolve one declared write path against the repository that carries it."""
+    raw = Path(str(declared)).expanduser()
+    return (raw if raw.is_absolute() else base / raw).resolve()
+
+
 def _grant_landing_write_paths(
     node: TaskNode,
     *,
     project: str,
     authority: Mapping[str, Any],
+    warnings: list[str],
 ) -> None:
-    """Declare the shared landing paths in the node's write scope."""
+    """Declare this node's own landing fragment in its write scope.
+
+    The default scope is the node's fragment, so two nodes on one plan hold
+    disjoint scopes. A coordinator that declares one of the plan's shared landing
+    files keeps it — the declaration is granted as written — and is warned,
+    because a path every node on the plan holds is the merge conflict the
+    fragment default removes.
+    """
     plan = authority.get("plan")
     if not isinstance(plan, Mapping):
         return
@@ -1358,8 +1408,17 @@ def _grant_landing_write_paths(
         plan_repo = Path(str(plan["repository"])).expanduser().resolve()
     except (KeyError, TypeError, ValueError):
         return
-    shared = sorted(_shared_landing_paths(node, project=project, authority=authority))
-    for absolute in shared:
+    shared = _shared_landing_paths(node, project=project, authority=authority)
+    if shared:
+        for declared in node.write_paths:
+            if _resolve_declared_path(declared, plan_repo) in shared:
+                warnings.append(
+                    f"declared write path {declared!r} is a landing file shared by "
+                    "every node on this plan; dispatch grants each node its own "
+                    "fragment by default, and this explicit declaration "
+                    "reintroduces the merge conflict"
+                )
+    for absolute in sorted(_landing_fragment_paths(node, authority=authority)):
         try:
             relative = absolute.relative_to(plan_repo)
         except ValueError:
@@ -3260,7 +3319,10 @@ def plan_dispatch(
             run_directory=run_dir(resolved_run_id),
         ):
             _grant_landing_write_paths(
-                node, project=project, authority=resolved_authority
+                node,
+                project=project,
+                authority=resolved_authority,
+                warnings=warnings,
             )
         _require_write_paths_in_authority(node, resolved_authority)
         if node.brief.strip():
