@@ -738,7 +738,12 @@ def session_usage(paths, *, window_start=START, window_end=END):
                 when = stamp(record.get("timestamp"))
                 if when is None or not start <= when <= end:
                     continue
-                if record.get("type") not in ("assistant", "user", "attachment", "system"):
+                if record.get("type") not in (
+                    "assistant",
+                    "user",
+                    "attachment",
+                    "system",
+                ):
                     continue
                 records += 1
                 if record.get("type") != "assistant":
@@ -756,7 +761,9 @@ def session_usage(paths, *, window_start=START, window_end=END):
                             turn[key] = max(turn.get(key, 0), value)
                 else:
                     turns[mid] = {
-                        key: value for key, value in usage.items() if isinstance(value, int)
+                        key: value
+                        for key, value in usage.items()
+                        if isinstance(value, int)
                     }
     tokens = dict.fromkeys(TOKEN_KEYS, 0)
     for turn in turns.values():
@@ -863,8 +870,7 @@ def coordinator_cost(
         "landed_nodes_with_transcript": denominator,
         "assistant_responses": sum(row["assistant_responses"] for row in captured),
         "tokens": {
-            name: sum(row["tokens"][name] for row in captured)
-            for name in TOKEN_KEYS
+            name: sum(row["tokens"][name] for row in captured) for name in TOKEN_KEYS
         },
         "transcript_status": dict(
             sorted(
