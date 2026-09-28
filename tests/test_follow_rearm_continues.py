@@ -439,17 +439,22 @@ def test_the_real_follower_directory_is_untouched(home) -> None:
 #
 # A re-arm starts with an empty pane, so without a log of what was already drawn
 # the reader's view empties every time the host re-arms it. The log holds each
-# rendered row's own bytes, the stamp it carried and the run and state it drew;
-# the re-arm replays those rows above its own fresh ones, in one write. The rows
-# carry their own clocks and fall straight onto the split they restored.
+# rendered row's own bytes, the stamp it carried and the run and state it drew,
+# and a re-arm replays those rows above its own fresh ones in one write. Each
+# replayed row carries its own clock and falls straight onto the split it
+# restored.
 #
-# Only a terminal is handed that replay. A pipe has no scrollback to restore and
-# would read the restored rows as fresh transitions, so the burst is gated on
-# `stdout.isatty()` by `_follow_replay_visible`. When a terminal is watching,
-# `_follow_history_burst` composes the whole replay as one string that opens
-# under one dim frame line naming it as earlier history, each history row
-# beneath it rendered dim too. Nothing frames the burst below — the frame line
-# alone marks the boundary, and every row after it is live.
+# `_follow_replay_visible` gates that replay on `stdout.isatty()`, so what the
+# re-arm prints depends on who is reading:
+#
+#   * stdout is a terminal — `_follow_history_burst` composes one string holding
+#     a single dim frame line that names the rows as earlier history, then the
+#     replayed rows rendered dim, then the live rows. No separator line follows
+#     the replay: the frame line alone marks where history ends.
+#   * stdout is not a terminal, as under the host's line-batching Monitor —
+#     `_follow_history_burst` is never reached, so the re-arm prints no frame
+#     line and no replayed rows, only the live rows. A pipe has no scrollback to
+#     restore, and a replayed row would arrive there as a fresh transition.
 
 HISTORY_HEADER = "── history"
 HISTORY_SEPARATOR = "── re-armed"
