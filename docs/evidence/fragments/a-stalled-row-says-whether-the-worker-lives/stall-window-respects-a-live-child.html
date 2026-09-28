@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>stall window respects a live child — landing record</title>
+<meta name="plan-node" content="stall-window-respects-a-live-child">
+<meta name="plan-parent" content="a-stalled-row-says-whether-the-worker-lives">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0f1115; color: #c9d1d9;
+         font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 32px 24px 64px; }
+  h1 { font-size: 24px; margin: 0 0 4px; color: #e6e6e6; }
+  h2 { font-size: 17px; margin: 32px 0 10px; color: #e6e6e6;
+       border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  p, li { color: #c9d1d9; }
+  code, .path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .sub { color: #8b949e; margin: 0 0 20px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #21262d;
+           vertical-align: top; font-size: 14px; }
+  th { color: #8b949e; font-weight: 600; }
+  .path { color: #79c0ff; word-break: break-all; }
+  .ok { color: #3fb950; }
+  .bad { color: #f85149; }
+  .warn { color: #d29922; }
+  figure { margin: 12px 0 4px; }
+  img { width: 100%; max-width: 980px; border: 1px solid #21262d; border-radius: 6px; }
+  figcaption { color: #8b949e; font-size: 13px; margin-top: 6px; }
+  .note { border-left: 3px solid #d29922; padding: 8px 12px; background: #161b22; margin: 12px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>stall window respects a live child</h1>
+  <p class="sub">landing record · parent plan <strong>a-stalled-row-says-whether-the-worker-lives</strong> §6 ·
+     delivered 2026-09-28 in the node worktree, uncommitted-to-main at the time of writing</p>
+
+  <h2>What a stalled row said before</h2>
+  <p>A run whose worker is alive and holding a job — a build, a scheduler reservation, a probe — writes
+     nothing of its own while the child works. The stall decision compared the run's stream silence
+     against a fixed window (fifteen minutes by default) with nothing else in the comparison, so that
+     run read as <code>stalled</code> while it was working. The remedy the row invites is a resume, and a
+     resume spends a turn to arrive where the run already was.</p>
+
+  <h2>What the reading is now</h2>
+  <p><code>classify_pointer</code> takes one more read beside the liveness read it already took: whether a
+     live process runs under the run's worker. The stall decision then asks for the window that applies
+     to that reading — the operator's window where the worker has nothing running beneath it, and the
+     run's own <code>budget_seconds</code> where a live child is present. The window is the maximum of
+     the two, so a budget shorter than the operator's window never narrows it.</p>
+  <p>Three facts decided the shape of the seam:</p>
+  <ul>
+    <li><strong>One read, not two.</strong> The descendant answer is taken where the worker liveness is
+        taken and is carried on the row as <code>process_descendant_alive</code>, beside
+        <code>process_alive</code>, so the row and the verdicts built from it cannot disagree about
+        which reading they rest on.</li>
+    <li><strong>The pid asked is the worker's, not the pointer's.</strong> A supervised launch writes the
+        supervisor's pid on the pointer while the work happens in the worker it spawned, and a
+        supervisor holds its worker as a child — so asking the pointer's pid would answer "a child
+        lives" for every supervised run and make the narrowing vacuous. Where the run's own worker
+        record names a pid, that pid is the one asked.</li>
+    <li><strong><code>None</code> is not <code>False</code>.</strong> A run launched on another host, or
+        one with no live worker to look under, answers "nothing was asked" and keeps the window. An
+        absence is never reported where no check ran.</li>
+  </ul>
+
+  <figure>
+    <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/stall-window-respects-a-live-child/stall-window-decision.svg"
+         alt="Decision diagram: a quiet row extends its window to the run budget when the worker is alive with a live child under it; every other reading keeps the fifteen-minute window.">
+    <figcaption>The one comparison both surfaces make, and the two readings that reach it. The child list
+      is read one level deep: children are reparented the moment a process exits, so a running grandchild
+      is always listed under a running child.</figcaption>
+  </figure>
+
+  <h2>Both sites that decide a stall</h2>
+  <table>
+    <tr><th>Site</th><th>Change</th></tr>
+    <tr><td><code>reckon/crew/recovery.py</code> · <code>_watch_verdict</code> (ticker path)</td>
+        <td>the ticker's stall comparison reads <code>_stall_window_seconds(row, stall_seconds)</code></td></tr>
+    <tr><td><code>reckon/crew/recovery.py</code> · <code>watch_follow</code> (single-event path)</td>
+        <td>the follower's stall event makes the same comparison against the same function</td></tr>
+  </table>
+  <div class="note">
+    <strong>A third stall comparison exists outside this node's write scope.</strong>
+    <code>reckon/crew/runs.py</code> · <code>_watch_event</code> (behind <code>runs.watch</code>, reached
+    through the <code>reckon/crew.py</code> facade) compares <code>quiet &gt; stall_seconds</code> with no
+    descendant term. It was not named in this node's brief and <code>runs.py</code> is not in this node's
+    declared write paths, so it is reported rather than changed. See <em>follow-ons</em>.
+  </div>
+
+  <h2>Evidence</h2>
+  <table>
+    <tr><th>Arm</th><th>Result</th><th>Log</th></tr>
+    <tr>
+      <td>new test, head</td>
+      <td class="ok">4 passed, EXIT=0</td>
+      <td class="path">/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T180300580029-stall-window-respects-a-live-child/head-new-test.log</td>
+    </tr>
+    <tr>
+      <td>gate, head arm</td>
+      <td><span class="bad">18 failed, 256 passed, EXIT=1</span> — none of the failures is in
+          <code>tests/test_stall_window_respects_a_child.py</code>; they are the same ids the base arm
+          reports (delta below)</td>
+      <td class="path">/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T180300580029-stall-window-respects-a-live-child/after_suite.log</td>
+    </tr>
+    <tr>
+      <td>gate, base arm (revision 58405bd6)</td>
+      <td>the four new cases fail here and only here</td>
+      <td class="path">/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T180300580029-stall-window-respects-a-live-child/baseline_suite.log</td>
+    </tr>
+    <tr>
+      <td>declared negative control</td>
+      <td class="ok">3 failed, 1 passed, EXIT=1 — the two live-child cases fail and the no-child case
+          passes, which is what a mutation that removed only the descendant term must do</td>
+      <td class="path">/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T180300580029-stall-window-respects-a-live-child/negative_control.log</td>
+    </tr>
+    <tr>
+      <td>which source each arm imported</td>
+      <td>the helper this change adds is present at head, absent at the base revision, and present with
+          the window term removed in the mutation tree</td>
+      <td class="path">/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T180300580029-stall-window-respects-a-live-child/tree_resolution.log</td>
+    </tr>
+  </table>
+
+  <h2>The negative control, verbatim</h2>
+  <p><span class="path">negative_control.log</span> line 1 is the declared mutation; line 3 names the module
+     under test and proves the tree; line 4 shows the mutant line. The first case then fails at its first
+     claim:</p>
+  <pre><code>assert baseline["to_state"] == "working", baseline
+E   assert 'stalled' == 'working'</code></pre>
+  <p>The stalled baseline is the exact row this change removes: a run quiet past fifteen minutes with a
+     sleeping child under its worker, published to a coordinator as stalled.</p>
+
+  <h2>Judgment calls a reviewer may want to overturn</h2>
+  <ul>
+    <li><strong><code>max</code> rather than the budget alone.</strong> A run declaring a three-minute
+        budget would otherwise be judged stalled sooner than one declaring nothing, which is the opposite
+        of what the budget is for.</li>
+    <li><strong>The budget is the horizon, not the fence.</strong> The window extends to the run's own
+        declared allowance and no further — past it the run's own fence speaks, not this reading.</li>
+    <li><strong>One level of the child list.</strong> A process's children are reparented when it exits, so
+        a running grandchild always has a running parent listed under the worker; a child the kernel has
+        finished is an unreaped table entry rather than a running process.</li>
+  </ul>
+
+  <h2>Follow-ons</h2>
+  <ul>
+    <li><code>reckon/crew/runs.py</code> · <code>_watch_event</code>: the third stall comparison, outside
+        this node's write paths. It should make the same decision as the two converted sites, or the
+        single-event arm will keep calling a working run stalled.</li>
+    <li>The gate's 18 head-arm failures are unrelated to this node (the base arm reports the same ids) and
+        are not triaged here.</li>
+  </ul>
+</main>
+</body>
+</html>
