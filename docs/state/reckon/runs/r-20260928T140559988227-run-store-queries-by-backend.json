@@ -1,0 +1,411 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "fb7475289c1d5e0230e6c146dc44891b02a23420",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 5672702,
+      "input_tokens_cumulative": 5672702,
+      "output_tokens": 35073,
+      "output_tokens_cumulative": 35073,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 234,
+    "files": 5,
+    "removed": 6
+  },
+  "commit_resolution": null,
+  "commits": [
+    "e26df29ea9b3c6983592767402ba25bca9a076ad",
+    "f57a4758b6e07dbc84db140fe149b574817f0846"
+  ],
+  "completed_at": "2026-09-28T14:33:34.236Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T14:06:17Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/run_store.py:224"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_run_store_backend_query.py tests/test_run_store.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140559988227-run-store-queries-by-backend/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.67,
+    "at_dispatch": 0.67,
+    "plan": "the-fleet-reports-its-velocity",
+    "reason": "impl read 0.67 at dispatch on a six-node denominator; section 4's split into four nodes restated it to 0.56 on nine, and this node's landing moves it back to 0.67, six of nine, so the figure is equal while the landed work grew by one node",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T14:46:01.287838+00:00",
+    "horizon_seconds": 2400,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T14:06:01Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 9,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": -6,
+    "mean_context": 133333,
+    "observed_at": "2026-09-28T14:05:52Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T14:33:34.236Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140559988227-run-store-queries-by-backend/manifest.md",
+  "member": "disposable-r-20260928T140559988227-run-store-queries-by-backend",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_run_store_backend_query.py::test_a_fresh_store_insert_fills_an_indexed_backend_column",
+      "tests/test_run_store_backend_query.py::test_a_legacy_store_is_backfilled_from_its_payload_on_open"
+    ],
+    "baseline_failure_ids": [],
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_run_store_backend_query.py::test_a_fresh_store_insert_fills_an_indexed_backend_column",
+      "tests/test_run_store_backend_query.py::test_a_legacy_store_is_backfilled_from_its_payload_on_open"
+    ],
+    "declaration": "remove backend from QUERY_KEYS in reckon/run_store.py; the legacy-store backfill case must then fail",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140559988227-run-store-queries-by-backend/logs/negative_control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140559988227-run-store-queries-by-backend/logs/negative_control.log",
+    "test_paths": [
+      "tests/test_run_store_backend_query.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "run-store-queries-by-backend",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2876,
+          "cached_input_tokens": 349557,
+          "input_tokens": 352435,
+          "output_tokens": 405,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 352840,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "backend is added to QUERY_KEYS in reckon/run_store.py, so the column, its index, the insert extraction and the migration backfill all derive from that one declaration, as the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-quota-runway/reuse-map.md section 3 describes. No second writer is added in dispatch or promotion. tests/test_run_store_backend_query.py covers two stores under tmp_path. A fresh store has an indexed backend column that insert fills from the record. A store in the legacy shape, where a backend column exists but holds NULL while each payload carries the backend, is backfilled from the payload when opened. The test passes at exit 0, as does the existing run store test file. A recorded measurement, which is not a test, copies ~/.config/reckon/crew/run_store.db into the run directory, opens the copy through the new code, and logs the NULL-backend row count before and after. The manifest cites that log. The live store itself is not opened by any test or by the measurement. The manifest records base and head arms of the two test files, each log header printing its revision and reckon.__file__, with FAILED ids per arm. The declared negative control is applied, the legacy-store backfill case is observed to fail, and that log's absolute path is in the manifest with an EXIT= line and the FAILED test id.",
+    "estimated_hours": null,
+    "goal": "Make the run store carry each run's backend as a queryable column",
+    "id": "run-store-queries-by-backend",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T14:06:01Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 9,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": -6,
+      "mean_context": 133333,
+      "observed_at": "2026-09-28T14:05:52Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140559988227-run-store-queries-by-backend/manifest.md",
+    "negative_control": "remove backend from QUERY_KEYS in reckon/run_store.py; the legacy-store backfill case must then fail",
+    "plan": "the-fleet-reports-its-velocity",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§4",
+    "spec_level": "exact",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/run_store.py",
+      "tests/test_run_store_backend_query.py",
+      "docs/evidence/archive/the-fleet-reports-its-velocity-landed.html",
+      "docs/figures/the-fleet-reports-its-velocity",
+      "docs/plans/the-fleet-reports-its-velocity.html"
+    ]
+  },
+  "orientation_input_tokens": 1101334.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "run-store-queries-by-backend",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T14:06:07.108158+00:00",
+    "score": 0.49375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-fleet-reports-its-velocity",
+  "plan_impl_at_dispatch": 0.67,
+  "promoted_revision": "f57a4758b6e07dbc84db140fe149b574817f0846",
+  "resume_waiver": null,
+  "review": {
+    "absent": [
+      "no consumer of the new column is exercised here: the deliverable is that per-lane queries are answerable without parsing payloads, and this node establishes the column, its index and the backfill; nothing routes a WHERE backend = ? through the store in this change, so an end-to-end per-lane query is untested. The index claim is asserted by EXPLAIN QUERY PLAN, which is the closest check reachable inside the node's declared scope.",
+      "the added-failure derivation a coordinator reads automatically (reckon.crew.review.annotate_review_of_run) reads the reviewed manifest's armed baseline_suite/after_suite fields; this node ran unarmed and its template marks those fields armed-only, so that path reports the count as unmeasured (None) however this stored record reads. The delta in this record was derived by hand from the two arm logs the manifest names under test_logs, using the repository's own added_failures_from_gate_logs, and both raw logs survive on disk.",
+      "the corpus totals are a snapshot taken at review time and move with the fleet: 6233 rows at the node's measurement, 6239 thirteen minutes later, both with the same 26 permanent NULLs. The 22 legacy non-NULL rows and the 26 NULLs are checked on a copy; no sqlite connection in this review opened the live store.",
+      "the base and negative-control scratch trees under /tmp were read and re-run, not restored: /tmp is node-local, so those trees are evidence only for readers on this node."
+    ],
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 20,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 96
+  },
+  "role": "implement",
+  "run_id": "r-20260928T140559988227-run-store-queries-by-backend",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§4",
+  "session_harness": "claude",
+  "session_id": "fa5dc849-7a21-4a6b-8a63-3b57adb179cf",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 4,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 5672702,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 1614.341,
+    "generated_tokens": 35073,
+    "generation_seconds": 1515.637,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 26.9,
+    "machine_seconds": 98.704,
+    "peak_input_tokens": 129285,
+    "tokens_per_second": 23.14,
+    "wall_tokens_per_second": 21.73
+  },
+  "time_budget": "40m",
+  "tool_steps": 59.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 1800,
+        "classification": "promotable",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 1657,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-28T13:19:23Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-28T12:52:07Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260928T125136008338-s25-reuse-map-quota-runway",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 13154,
+          "worker_pid": 1431181
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "promote",
+          "recovery_classification": "promotable",
+          "state": "complete"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 2800,
+        "log_fresh": false,
+        "manifest_commits": [],
+        "manifest_derived": false,
+        "manifest_digest": "b7d28b36d442d27f148222a92d8b17c31d3ff4a0e6fac5984170308baca7c02a",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T125136008338-s25-reuse-map-quota-runway/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew complete --run r-20260928T125136008338-s25-reuse-map-quota-runway --gate <verdict>",
+        "node": "s25-reuse-map-quota-runway",
+        "phase": "starting",
+        "plan": "the-fleet-reports-its-velocity",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "promote",
+        "recovery_classification": "promotable",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": true,
+        "review_status": "parsed",
+        "run_id": "r-20260928T125136008338-s25-reuse-map-quota-runway",
+        "session": "s25-coord",
+        "terminal_age_seconds": 2830,
+        "terminal_at": "2026-09-28T13:18:52Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/s25-reuse-map-quota-runway"
+      }
+    ]
+  },
+  "wall_seconds": 1637,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T14:33:34Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T14:06:36Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T140559988227-run-store-queries-by-backend",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 5866,
+    "worker_pid": 1740353
+  },
+  "worker_seconds": 1564,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
