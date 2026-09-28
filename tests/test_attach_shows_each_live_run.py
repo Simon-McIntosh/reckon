@@ -1,35 +1,37 @@
-"""An arm opens with one row per live run, and shows none of them twice.
+"""Attaching draws the fleet once; a re-arm prints only what moved since.
 
-The orchestrator contract is that attaching is never a blank pane: a follower
-that arms while work exists draws one row per live run, so a reader sees the
-fleet as it stands before the first transition arrives. A re-arm that cannot
-continue its stream used to break that promise — the run policy suppressed each
-baseline row against the state a checkpoint remembered for the run, so the pane
-stayed empty until some run next moved. The inventory is not a re-derivation: a
-state carried in from a checkpoint was never put on this pane, so it cannot
-suppress the row that puts it there. Only a baseline re-derived for a run this
-same arming has already drawn is a repeat, and that is what the policy drops.
+The contract has two halves, and they are easy to confuse. A session's *first*
+arming has no checkpoint to continue, so it opens with one line per live run —
+a reader attaching for the first time is never looking at a blank pane. Every
+*later* arming for that session continues from where the previous one stopped:
+it prints what moved while nothing was attached, and it re-announces nothing it
+has already shown. A re-arm with nothing new is therefore silent, and
+deliberately so — the fleet as it stands is a live read, not a replay.
 
 The cases below drive the follower's own generator against a config home rooted
-in ``tmp_path``, so the rows counted are the rows the pane prints.
+in ``tmp_path``, so the rows counted are the rows the pane prints. The first-
+arming case goes through the real command, because what it measures is the
+attach experience a Monitor actually receives.
 """
 
 from __future__ import annotations
 
+import json
+import os
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
 from reckon import cli, crew
-from reckon.crew import follow_checkpoint, runs
+from reckon.crew import runs
 
 PROJECT = "attach-shows-proj"
 SESSION = "s-attach"
 RUN_A = "r-attach-a"
 RUN_B = "r-attach-b"
-RUN_C = "r-attach-c"
 
-RUNS = (RUN_A, RUN_B, RUN_C)
+RUNS = (RUN_A, RUN_B)
 
 # Long enough for an arming to reach the stream and write its place on a loaded
 # host, short enough that a suite of them stays quick.
@@ -97,146 +99,65 @@ def _arm(**kwargs) -> list[dict]:
     return [event for event in generator if event.get("event") in _FLEET_EVENTS]
 
 
-def _baseline_row(run_id: str, state: str) -> dict:
+def _event(
+    run_id: str,
+    node: str,
+    *,
+    state: str,
+    observed_at: str,
+    event: str = "transition",
+    previous: str | None = None,
+) -> dict:
     return {
         "project": PROJECT,
-        "event": "baseline",
+        "event": event,
         "run_id": run_id,
-        "node": f"node-{run_id}",
+        "node": node,
         "session": SESSION,
-        "from_state": None,
+        "from_state": previous,
         "to_state": state,
         "working": 1,
         "blocked": 0,
         "unpromoted": 0,
-        "observed_at": runs._utc_now(),
+        "observed_at": observed_at,
         "legacy": False,
     }
 
 
-def _stale_checkpoint(stream_path: Path, reported: dict[str, str]) -> None:
-    """A checkpoint that names the runs but cannot continue this stream."""
-    follow_checkpoint.write(
-        PROJECT,
-        SESSION,
-        stream_path=stream_path,
-        offset=0,
-        identity={"dev": 1, "ino": 999999},
-        reported=reported,
+def _replace_stream(stream_path: Path, events: list[dict]) -> None:
+    """Put a fresh stream at the same path, so its identity no longer matches.
+
+    A replaced file has a new inode, which is what the checkpoint compares, so
+    the recorded place names no boundary and the arm cannot continue the stream.
+    """
+    replacement = stream_path.with_name(stream_path.name + ".replacement")
+    replacement.write_text(
+        "".join(f"{json.dumps(event)}\n" for event in events), encoding="utf-8"
     )
+    os.replace(replacement, stream_path)
 
 
-# ── The attach inventory ────────────────────────────────────────────────────
+def _rendered_rows(lines: list[str]) -> list[str]:
+    """The fleet lines a pane would show, without the follower's own trailer."""
+    return [line for line in lines if line.strip() and "follower end" not in line]
 
 
-def test_an_attach_with_live_runs_draws_one_baseline_each(home) -> None:
-    """A re-arm that cannot continue its stream still opens with the fleet.
+# ── The first arming draws the fleet ────────────────────────────────────────
 
-    The checkpoint remembers each run's state, so the arm cannot resume and the
-    policy's state memory is fully populated. The inventory still prints: one
-    baseline per live run, whatever the policy holds, because a state the pane
-    was never shown cannot stand in for the row that shows it.
+
+def test_a_first_arming_under_a_monitor_draws_the_fleet(home, follow_lines) -> None:
+    """A session's first attach opens with one row per live run, no history.
+
+    Driven through the real command, because the measure is the attach
+    experience rather than the generator's yield: a Monitor reads the follower's
+    stdout as a pipe and has no scrollback to restore, so it must receive the
+    fleet and no frame of stored history. With no checkpoint to continue, the
+    arm derives the fleet from the live pointers.
     """
     _live_runs(home, *RUNS)
-    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
-        assert acquired
-        stream_path = Path(seat["stream_path"])
-        crew.list_live(project=PROJECT)
-        _stale_checkpoint(stream_path, dict.fromkeys(RUNS, "working"))
-
-        rows = _arm()
-
-    assert len(rows) == len(RUNS), (
-        f"an attach with {len(RUNS)} live runs draws one baseline each; got {rows!r}"
-    )
-    assert {str(row["run_id"]) for row in rows} == set(RUNS), rows
-    assert all(row["event"] == "baseline" for row in rows), rows
-    assert all(row["from_state"] is None for row in rows), rows
-    assert all(row["to_state"] == "working" for row in rows), rows
-
-
-def test_a_mid_arming_re_derivation_does_not_reprint_a_shown_run(home) -> None:
-    """A baseline re-derived for a run this arming drew is a repeat, not news.
-
-    The pane drew the fleet on its first read. A reload that re-derives the
-    baseline carries the states it has already shown, and the re-derivation must
-    reach no run twice.
-    """
-    _live_runs(home, *RUNS)
-    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
-        assert acquired
-        stream_path = Path(seat["stream_path"])
-        crew.list_live(project=PROJECT)
-        shown = _arm()
-        assert len(shown) == len(RUNS), f"this arm must draw the fleet: {shown!r}"
-
-        # The reload's continuation names a stream that is no longer the one at
-        # this path, so the plan re-derives the baseline — carrying the states
-        # the pane already showed.
-        again = _arm(
-            resume={
-                "reported": dict.fromkeys(RUNS, "working"),
-                "stream_path": str(stream_path.with_name("stream.gone")),
-                "offset": 0,
-            }
-        )
-
-    assert again == [], (
-        f"no run already shown this arming may be printed twice; got {again!r}"
-    )
-
-
-def test_a_reseed_keeps_the_drawn_memory(home) -> None:
-    """A continuation restores the checkpoint's states without un-drawing rows.
-
-    A reseed replaces the pane's state memory with the checkpoint's. It must not
-    also clear what the pane has drawn: a baseline re-derived for a run already
-    on screen is a repeat, and a reseed that forgot it would re-announce the
-    fleet on every continuation.
-    """
-    path = cli.follower_row_path(session=SESSION, run_ids=[RUN_A])
-    baseline = _baseline_row(RUN_A, "working")
-    assert path.feed(baseline, now=1.0) == [baseline]
-    assert path.reported.get(RUN_A) == "working"
-
-    path.reseed({RUN_A: "working"})
-
-    assert path.feed(baseline, now=2.0) == [], (
-        "a reseed must not let a drawn run's baseline print a second time"
-    )
-
-
-def test_a_baseline_for_a_run_never_shown_still_prints_after_a_reseed(home) -> None:
-    """The checkpoint's memory is not the drawn memory.
-
-    A run the checkpoint names, and this pane has not drawn, must still receive
-    its baseline: the restored state cannot stand in for a row the reader has
-    not seen.
-    """
-    path = cli.follower_row_path(session=SESSION, run_ids=[RUN_B])
-    path.reseed({RUN_B: "working"})
-    baseline = _baseline_row(RUN_B, "working")
-    assert path.feed(baseline, now=1.0) == [baseline]
-
-
-# ── The Monitor is handed no history burst ──────────────────────────────────
-
-
-def test_a_monitor_arm_draws_the_fleet_and_no_history_burst(home, follow_lines) -> None:
-    """The fleet report is the attach; the pane history is not a Monitor's.
-
-    A Monitor reads the follower's stdout as a pipe, so it has no scrollback to
-    restore and the stored history would arrive as fresh transitions. The arm
-    that re-derives the fleet must draw the report and nothing framed as
-    history.
-    """
-    from click.testing import CliRunner
-
-    _live_runs(home, *RUNS)
-    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
-        _stale_checkpoint(Path(seat["stream_path"]), dict.fromkeys(RUNS, "working"))
 
         result = CliRunner().invoke(
             cli.crew,
@@ -256,12 +177,95 @@ def test_a_monitor_arm_draws_the_fleet_and_no_history_burst(home, follow_lines) 
         )
         assert result.exit_code == 0, result.output
 
-    # The follower captures its own lines through ``_echo_follow_line``; the
-    # rendered fleet rows are the non-empty ones that name a node.
-    rows = [line for line in follow_lines if line.strip()]
-    assert any(f"node-{RUN_A}" in line for line in rows), (
-        f"the fleet report must reach the Monitor; got {follow_lines!r}"
-    )
+    rows = _rendered_rows(follow_lines)
+    for run_id in RUNS:
+        drawn = [line for line in rows if f"node-{run_id}" in line]
+        assert len(drawn) == 1, (
+            f"a first arming draws one row per live run; {run_id} got {drawn!r}"
+        )
+        assert "working" in drawn[0], drawn[0]
+        assert "→" not in drawn[0], (
+            f"a first attach draws the fleet as it stands, not a transition; got {drawn[0]!r}"
+        )
+
     assert "── history" not in "\n".join(follow_lines), (
         f"a Monitor is handed no history burst; got {follow_lines!r}"
+    )
+
+
+# ── A re-arm prints only what moved ─────────────────────────────────────────
+
+
+def test_a_rearm_that_cannot_continue_emits_only_what_moved(home) -> None:
+    """An arm that cannot continue decides by state, never by re-derivation.
+
+    The stream is replaced between the two arms, so the recorded place names no
+    boundary. The follower falls back to state: it emits the run that differs
+    from its checkpoint and stays quiet about the unchanged one. No run that is
+    merely running is re-announced with a baseline.
+    """
+    _live_runs(home, *RUNS)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+        first = _arm()
+        assert {event["run_id"] for event in first} == set(RUNS), first
+
+        _replace_stream(
+            stream_path,
+            [
+                _event(
+                    RUN_A,
+                    f"node-{RUN_A}",
+                    state="working",
+                    observed_at="2026-01-02T03:04:05+00:00",
+                    event="baseline",
+                ),
+                _event(
+                    RUN_B,
+                    f"node-{RUN_B}",
+                    state="complete",
+                    observed_at="2026-01-02T03:14:15+00:00",
+                    previous="working",
+                ),
+            ],
+        )
+        second = _arm(resume=None)
+
+    moved = [str(event["run_id"]) for event in second]
+    assert moved == [RUN_B], f"only the moved run may print; got {second!r}"
+    assert all(event["event"] != "baseline" for event in second), second
+
+
+def test_a_mid_arming_re_derivation_does_not_reprint_a_shown_run(home) -> None:
+    """A re-derivation carrying states the pane already showed is not news.
+
+    The pane drew the fleet on its first read. A reload that re-derives the
+    baseline carries the states it has already shown, and the re-derivation must
+    reach no run twice.
+    """
+    _live_runs(home, *RUNS)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+        shown = _arm()
+        assert {event["run_id"] for event in shown} == set(RUNS), (
+            f"this arm must draw the fleet: {shown!r}"
+        )
+
+        # The reload's continuation names a stream that is no longer the one at
+        # this path, so the plan re-derives the baseline — carrying the states
+        # the pane already showed.
+        again = _arm(
+            resume={
+                "reported": dict.fromkeys(RUNS, "working"),
+                "stream_path": str(stream_path.with_name("stream.gone")),
+                "offset": 0,
+            }
+        )
+
+    assert again == [], (
+        f"no run already shown this arming may be printed twice; got {again!r}"
     )
