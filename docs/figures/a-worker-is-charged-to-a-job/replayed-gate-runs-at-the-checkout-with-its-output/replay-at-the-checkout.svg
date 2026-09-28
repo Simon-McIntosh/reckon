@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" width="960" height="640" font-family="system-ui, sans-serif" font-size="13" fill="#22303c">
+  <rect x="0" y="0" width="960" height="640" fill="#ffffff"/>
+  <text x="24" y="30" font-size="15" font-weight="600">A replayed gate runs where the checkout is, and keeps what it printed</text>
+
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+      <path d="M0,0 L0,6.4 L8,3.2 z" fill="#5a6b7b"/>
+    </marker>
+  </defs>
+
+  <!-- panel 1: as measured 2026-09-27/28 -->
+  <text x="24" y="64" font-weight="600" fill="#a03028">as measured — the replay pinned a worktree the release step removed</text>
+
+  <rect x="24" y="78" width="270" height="86" rx="6" fill="#f7f9fc" stroke="#3b4a63" stroke-width="1.5"/>
+  <text x="40" y="100" font-weight="600">the row's recorded gate</text>
+  <text x="40" y="122" font-family="ui-monospace, monospace" fill="#3c4a58">env -C &lt;worker-worktree&gt;</text>
+  <text x="40" y="140" font-family="ui-monospace, monospace" fill="#3c4a58">  pytest -q &lt;worker-worktree&gt;/tests/…</text>
+  <text x="40" y="158" fill="#5a6b7b">every path names the tree it was authored in</text>
+
+  <path d="M294,121 L330,121" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="334" y="78" width="240" height="86" rx="6" fill="#fdf6e6" stroke="#9a7b2f" stroke-width="1.5"/>
+  <text x="350" y="100" font-weight="600">promotion released the worktree</text>
+  <text x="350" y="122" fill="#3c4a58">the directory the command names</text>
+  <text x="350" y="140" fill="#3c4a58">no longer exists when the gate is</text>
+  <text x="350" y="158" fill="#3c4a58">replayed at the merged tree</text>
+
+  <path d="M574,121 L610,121" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="614" y="78" width="322" height="86" rx="6" fill="#fbeceb" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="630" y="100" font-weight="600" fill="#a03028">exit 125, recorded as the gate failing</text>
+  <text x="630" y="122" font-family="ui-monospace, monospace" fill="#c0392b">env: '&lt;worktree>/tests/…': No such file</text>
+  <text x="630" y="140" fill="#3c4a58">a gate green at the worker's base reads as</text>
+  <text x="630" y="158" fill="#3c4a58">red at the merge — and the output that would</text>
+
+  <text x="630" y="176" fill="#3c4a58">say so was discarded: only the return code was kept</text>
+
+  <!-- panel 2: the replay now -->
+  <text x="24" y="212" font-weight="600" fill="#2f6b46">the replay now — the recorded roots are rewritten, and the output stays</text>
+
+  <rect x="24" y="226" width="270" height="104" rx="6" fill="#f7f9fc" stroke="#3b4a63" stroke-width="1.5"/>
+  <text x="40" y="248" font-weight="600">the run's release audit</text>
+  <text x="40" y="270" font-family="ui-monospace, monospace" fill="#3c4a58">release.worktree_audit</text>
+  <text x="40" y="288" font-family="ui-monospace, monospace" fill="#3c4a58">  .worktrees[].path</text>
+  <text x="40" y="310" fill="#5a6b7b">the durable record of where the</text>
+  <text x="40" y="326" fill="#5a6b7b">command was authored</text>
+
+  <path d="M294,278 L330,278" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="334" y="226" width="240" height="104" rx="6" fill="#eef6f0" stroke="#2f6b46" stroke-width="1.5"/>
+  <text x="350" y="248" font-weight="600">rewritten, segment by segment</text>
+  <text x="350" y="272" font-family="ui-monospace, monospace" fill="#3c4a58">&lt;worker-worktree&gt; →</text>
+  <text x="350" y="290" font-family="ui-monospace, monospace" fill="#3c4a58">--checkout-path</text>
+  <text x="350" y="312" fill="#5a6b7b">the recorded command text is kept</text>
+  <text x="350" y="328" fill="#5a6b7b">as recorded; the rewrite is what ran</text>
+
+  <path d="M574,278 L610,278" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="614" y="226" width="322" height="104" rx="6" fill="#f0f4f8" stroke="#3b4a63" stroke-width="1.5"/>
+  <text x="630" y="248" font-weight="600">the checkout's own verdict</text>
+  <text x="630" y="270" font-family="ui-monospace, monospace" fill="#2f6b46">passed — the probe wrote its marker</text>
+  <text x="630" y="288" font-family="ui-monospace, monospace" fill="#3c4a58">in the checkout, not in the worktree</text>
+  <text x="630" y="310" fill="#5a6b7b">worktree_roots_rewritten names what moved;</text>
+  <text x="630" y="326" fill="#5a6b7b">a gate that really fails still reports exit 1</text>
+
+  <!-- panel 3: the log beside the run -->
+  <text x="24" y="366" font-weight="600" fill="#3c4a58">and the replay's output lands beside the run, so the verdict can be acted on</text>
+
+  <rect x="24" y="380" width="440" height="196" rx="6" fill="#f7f9fc" stroke="#3b4a63" stroke-width="1.5"/>
+  <text x="40" y="402" font-weight="600">runs/&lt;run-id&gt;/</text>
+  <text x="56" y="426" font-family="ui-monospace, monospace" fill="#5a6b7b">gate.log — the worker's own gate, preserved</text>
+  <text x="56" y="448" font-family="ui-monospace, monospace" fill="#2f6b46">verify-gate.log — written by this replay</text>
+  <text x="72" y="470" font-family="ui-monospace, monospace" fill="#3c4a58"># replayed revision: … (integrated …)</text>
+  <text x="72" y="488" font-family="ui-monospace, monospace" fill="#3c4a58"># cwd of the replay: &lt;checkout&gt;</text>
+  <text x="72" y="506" font-family="ui-monospace, monospace" fill="#3c4a58"># command: env -C &lt;checkout&gt; pytest …</text>
+  <text x="72" y="524" font-family="ui-monospace, monospace" fill="#3c4a58">… FAILED tests/…::test_…</text>
+  <text x="72" y="542" font-family="ui-monospace, monospace" fill="#3c4a58">… the runner's stderr …</text>
+  <text x="72" y="560" font-family="ui-monospace, monospace" fill="#3c4a58">EXIT=1</text>
+
+  <path d="M464,470 L500,470" stroke="#5a6b7b" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="504" y="380" width="432" height="196" rx="6" fill="#eef6f0" stroke="#2f6b46" stroke-width="1.5"/>
+  <text x="520" y="402" font-weight="600">what the report and the row now carry</text>
+  <text x="536" y="428" font-family="ui-monospace, monospace" fill="#3c4a58">log_path: &lt;run-dir&gt;/verify-gate.log</text>
+  <text x="536" y="452" font-family="ui-monospace, monospace" fill="#3c4a58">finding.failure_ids:</text>
+  <text x="552" y="472" font-family="ui-monospace, monospace" fill="#c0392b">["tests/…::test_…"]</text>
+  <text x="536" y="498" font-family="ui-monospace, monospace" fill="#3c4a58">exit_status, integrated_verdict</text>
+  <text x="536" y="522" fill="#5a6b7b">recorded on the run's committed row — the</text>
+  <text x="536" y="540" fill="#5a6b7b">ids come from the log the replay itself wrote,</text>
+  <text x="536" y="558" fill="#5a6b7b">so a red replay is read, not re-measured</text>
+
+  <text x="24" y="602" fill="#5a6b7b">measured: 72 passed + the two new cases red at the base revision; 74 passed at the head; under the declared mutation (the log write removed again) the failing-gate case turns red with log_path: None — 2.8 s, EXIT=1.</text>
+</svg>
