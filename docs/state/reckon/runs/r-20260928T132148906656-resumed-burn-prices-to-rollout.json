@@ -1,0 +1,411 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "76e1bf938b1bf16cd18618cd03f742f264f079eb",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 4628416,
+      "input_tokens_cumulative": 4628416,
+      "output_tokens": 18248,
+      "output_tokens_cumulative": 18248,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 493,
+    "files": 6,
+    "removed": 18
+  },
+  "commit_resolution": null,
+  "commits": [
+    "eaa6adfbc19375589c14feac3f2bd78a570de6cb",
+    "55d36c04679a4dc705e96aa8e6525647bae1d988",
+    "d72ffc3f86102d76083ed683534e5266d493c1bb",
+    "af2abc7377d0ad51a821ec80f0e1f6b1866f48fb",
+    "9c2efe4b274de3036af58ceda86b8a705fe7e984",
+    "ec3a248e9664154849dd7b47f4c9552c03dddbc0"
+  ],
+  "completed_at": "2026-09-28T16:13:35.073Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T13:22:04Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_ledger.py",
+    "reckon/ledger.py",
+    "format/lint"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -rf tests/test_resumed_burn_prices_to_rollout.py tests/test_cumulative_token_accounting.py tests/test_input_token_quantities.py tests/test_rollout_receipt.py tests/test_crew_coordinator_spend.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/logs/gate-head.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.67,
+    "plan": "the-fleet-reports-its-velocity",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T14:21:49.993497+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T13:21:49Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 6,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": 3,
+    "mean_context": 120000,
+    "observed_at": "2026-09-28T13:21:43Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T16:13:35.073Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/manifest.md",
+  "member": "disposable-r-20260928T132148906656-resumed-burn-prices-to-rollout",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[three-attempts]",
+      "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[two-attempts-a]",
+      "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[two-attempts-b]",
+      "tests/test_resumed_burn_prices_to_rollout.py::test_summing_the_attempts_is_the_overcount_the_thread_fold_removes"
+    ],
+    "baseline_failure_ids": [],
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[three-attempts]",
+      "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[two-attempts-a]",
+      "tests/test_resumed_burn_prices_to_rollout.py::test_a_resumed_codex_lineage_prices_within_one_percent_of_its_rollout[two-attempts-b]",
+      "tests/test_resumed_burn_prices_to_rollout.py::test_summing_the_attempts_is_the_overcount_the_thread_fold_removes"
+    ],
+    "declaration": "sum every stream's cumulative reading again in reckon/crew/metering.py _measure_streams; the three-stream case must then fail the 1% bound",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_resumed_burn_prices_to_rollout.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "resumed-burn-prices-to-rollout",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2707,
+          "cached_input_tokens": 276654,
+          "input_tokens": 279363,
+          "output_tokens": 402,
+          "reasoning_output_tokens": 19,
+          "total_tokens": 279765,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "reckon/crew/metering.py folds a run's streams per thread. A resume attempt's cumulative reading supersedes its predecessor's rather than adding to it. A lane-change stream is a different thread and is summed. run_streams also collects lane-change-N.jsonl streams, which it now drops. The per-attempt delta rule stays the one in reckon/ledger.py per_run_budget, extended rather than copied, and UNMEASURED is never turned into zero. tests/test_resumed_burn_prices_to_rollout.py synthesises three codex lineage runs, one with three streams and two with two, shaped like the host runs the reuse map names in its section 6. Each carries rollout token_count records. The test asserts each run prices within 1% of its rollout total, and a lane-change case asserts the lane-change stream is summed, not superseded. It passes at exit 0, as do the existing metering and ledger test files the change reaches. A recorded measurement, which is not a test, runs the corrected fold over the eight single-thread codex lineage runs in the reuse map's section 2 table. It logs each run's ratio to its rollout total, all within 1%, and the manifest cites the log. The manifest records base and head arms of the test files, each log header printing its revision and reckon.__file__, and cites the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-quota-runway/reuse-map.md for _measure_streams, run_streams, per_run_budget and quota_weight, re-derived at its own base. The declared negative control is applied, the three-stream case is observed to fail the 1% bound, and that log's absolute path is in the manifest with an EXIT= line and the FAILED test id.",
+    "estimated_hours": null,
+    "goal": "Price a resumed codex run's burn per attempt so it matches its rollout total",
+    "id": "resumed-burn-prices-to-rollout",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T13:21:49Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 6,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": 3,
+      "mean_context": 120000,
+      "observed_at": "2026-09-28T13:21:43Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T132148906656-resumed-burn-prices-to-rollout/manifest.md",
+    "negative_control": "sum every stream's cumulative reading again in reckon/crew/metering.py _measure_streams; the three-stream case must then fail the 1% bound",
+    "plan": "the-fleet-reports-its-velocity",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§4",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/metering.py",
+      "reckon/ledger.py",
+      "tests/test_resumed_burn_prices_to_rollout.py",
+      "docs/evidence/archive/the-fleet-reports-its-velocity-landed.html",
+      "docs/figures/the-fleet-reports-its-velocity",
+      "docs/plans/the-fleet-reports-its-velocity.html"
+    ]
+  },
+  "orientation_input_tokens": 2843142.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "resumed-burn-prices-to-rollout",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T13:21:55.889844+00:00",
+    "score": 0.6625,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-fleet-reports-its-velocity",
+  "plan_impl_at_dispatch": 0.67,
+  "promoted_revision": "ec3a248e9664154849dd7b47f4c9552c03dddbc0",
+  "resume_waiver": null,
+  "review": null,
+  "review_waiver": {
+    "reason": "review 86 at af2abc73 carried forward: the two commits since are 9c2efe4b, a test adding the unmeasured-prior cost case the review asked for, and ec3a248e, a docs correction of the arms and the base-failure figure; no product source changed after the reviewed head; zero added failures"
+  },
+  "role": "implement",
+  "run_id": "r-20260928T132148906656-resumed-burn-prices-to-rollout",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§4",
+  "session_harness": "claude",
+  "session_id": "154eaca8-b725-42c6-8847-f066e6ecc237",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": 5,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 25400110,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2013.18,
+    "generated_tokens": 140368,
+    "generation_seconds": 1287.197,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.2,
+    "machine_seconds": 725.983,
+    "peak_input_tokens": 164051,
+    "tokens_per_second": 109.05,
+    "wall_tokens_per_second": 69.72
+  },
+  "time_budget": "60m",
+  "tool_steps": 186.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 1326,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-28T12:35:12Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-28T12:13:29Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260928T121255203668-triage-pending-plans-first-batch",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 10731,
+          "worker_pid": 1280849
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 2800,
+        "log_fresh": false,
+        "manifest_commits": [
+          "7e6262ca"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "dd9f8b9e8b4a23e591935be1f81d2b28b6fa1a1880e3eeab21adb3145de8bf25",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T121255203668-triage-pending-plans-first-batch/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan open-work-is-capped --section '§2' --role review --spec-level exact --node review-of-triage-pending-plans-first-batch --goal 'attach an independent review to run r-20260928T121255203668-triage-pending-plans-first-batch' --done-when 'the review for r-20260928T121255203668-triage-pending-plans-first-batch stores a parsed record scoring all 5 dimensions in the range 0..20, carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T121255203668-triage-pending-plans-first-batch.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T121255203668-triage-pending-plans-first-batch.at-7e6262ca66947cd4764d81bf55d61fc96ec5d65f.json --time-budget 60m --session s25-coord --allow-unreconciled-runs --local",
+        "node": "triage-pending-plans-first-batch",
+        "phase": "starting",
+        "plan": "open-work-is-capped",
+        "process_alive": false,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260928T121255203668-triage-pending-plans-first-batch",
+        "session": "s25-coord",
+        "terminal_age_seconds": 2824,
+        "terminal_at": "2026-09-28T12:34:48Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/triage-pending-plans-first-batch"
+      }
+    ]
+  },
+  "wall_seconds": 10291,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T16:13:35Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T15:39:58Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T132148906656-resumed-burn-prices-to-rollout",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 20167,
+    "worker_pid": 2487077
+  },
+  "worker_seconds": 10259,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
