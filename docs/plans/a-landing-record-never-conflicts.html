@@ -159,6 +159,34 @@
       <figcaption>One resolver: the three readers share <code>evidence_record_plan</code>, and the document's own metas
         &mdash; not its filename &mdash; decide whether it composes.</figcaption>
     </figure>
+    <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span> <strong>the composition-failure
+      warning reaches the read_plan response</strong> &mdash; the public <code>read_plan</code> tool now serves a
+      cumulative evidence record whole at the section view, so a caller gets the composed bytes &mdash; or the record's
+      own bytes when composition failed &mdash; together with a response-level warning naming the record and the error.
+      <code>reckon/mcp_views.py</code> gained <code>_record_text_response</code>, which
+      <code>resource_view</code> dispatches to when the selected resource is an evidence record; a plan still reads
+      through <code>_section_response</code> one authored section at a time, and a record read with an explicit
+      <code>section</code> argument is refused with <code>section_not_applicable</code>, because a record's fragments
+      are appended after the document rather than into one of its sections, so a section read cannot carry the anchors
+      they hold. The section view is the only <code>read_plan</code> view that serves a document's text, so with it
+      serving records the warning is reachable on every view that serves a record's text, and the fallback is no longer
+      confined to the <code>_typed_resource_text</code> machinery the previous node wired.
+      <br>Three end-to-end cases in <code>tests/test_read_plan_composes_the_record.py</code> drive
+      <code>_read_plan_tool</code> &mdash; not <code>_append_read_warning</code> directly: a composed record read through
+      the tool carries its fragment and no warning; a record whose composer raises returns the record's own bytes with a
+      response-level warning naming the record and the error, logged as well; and a record with no fragments reads
+      byte-identically. Negative control: dropping the warning from <code>read_plan</code>'s response path makes the
+      end-to-end warning case fail.
+      <br>Evidence arms: a base arm and a head arm of the three test files, each log header printing the revision, the
+      resolved cwd and the served <code>reckon.__file__</code>; base exits 0 with 20 passed, head exits 0 with 23
+      passed, the delta the three new cases.
+      <a href="/reckon/evidence/archive/a-landing-record-never-conflicts-landed#s3">&sect;3 read_plan warning landed</a></p>
+    <figure class="plan-figure">
+      <img src="/reckon/figures/a-landing-record-never-conflicts/view-dispatch.svg"
+           alt="read_plan calls _read_plan_view, which for the section view takes the text and its warning from _typed_resource_text_and_warning; resource_view then dispatches by type — an evidence record reads whole through _record_text_response, a plan reads one authored section through _section_response — and a composition failure carries a warning naming the record and the error on the response's warnings field.">
+      <figcaption>View dispatch: the section view is the text view, and it now serves an evidence record whole, so the
+        composition-failure warning reaches the response a caller receives.</figcaption>
+    </figure>
 
     <h2 id="s4">§4 — Records without fragments are unchanged</h2>
     <div class="section-landed" data-section="s4">
