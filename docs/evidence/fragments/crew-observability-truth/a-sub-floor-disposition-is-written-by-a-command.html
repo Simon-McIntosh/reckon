@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <title>A sub-floor disposition is written by a command — landing record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A sub-floor disposition is written by a command</h1>
+  <p>A coordinator retires a sub-floor review dimension through <code>reckon crew dispose</code>
+  instead of editing the review store by hand. The command writes one entry through
+  <code>record_dimension_disposition</code>, and every refusal is the store's own — so an
+  unknown dimension, a kind outside the closed set, a fold naming no node and an exemption
+  carrying no reason all exit non-zero with nothing written and the obligation row standing.</p>
+
+  <section id="landed">
+    <h2>What landed</h2>
+    <ul>
+      <li><code>reckon/cli.py</code> — a <code>crew dispose</code> subcommand taking
+      <code>--project</code>, <code>--run</code>, <code>--dimension</code>, <code>--kind</code>,
+      and whichever of <code>--node</code> / <code>--reason</code> the kind requires. It writes
+      through <code>review.record_dimension_disposition</code> and re-reads the stored record for the
+      receipt, so the reply repeats what the store now holds rather than what the call intended
+      (<code>reckon/cli.py:3793</code>).</li>
+      <li><code>reckon/crew/review.py</code> — the writer's gate for the closed set is now the
+      reader's own predicate <code>dimension_disposition_valid</code>. A second copy of the
+      vocabulary in the writer could accept a kind the read-back then ignores, which stores a row
+      that reads as answered and stands.</li>
+      <li><code>reckon/crew/review.py:1166</code> — the floor comment that described a floor of zero
+      as reporting every dimension now describes what a floor of zero does.</li>
+      <li><code>tests/test_sub_floor_disposition_has_a_writer.py</code> — 10 cases: the two accepted
+      kinds, five refusals, a hand-planted unknown kind, the shipped floors, and the temporary
+      config home.</li>
+    </ul>
+    <p>Commit <code>857e514c</code>. Paths changed: <code>reckon/cli.py</code>,
+    <code>reckon/crew/review.py</code>, <code>tests/test_sub_floor_disposition_has_a_writer.py</code>.</p>
+  </section>
+
+  <section id="defect">
+    <h2>The recorded defect, reproduced at the base revision</h2>
+    <p>At <code>5636e306</code> the only callers of the writer are its own definition and one test
+    module — no surface an operator can reach:</p>
+    <pre><code>$ git grep -n record_dimension_disposition 5636e306 -- reckon tests
+5636e306:reckon/crew/review.py:1289:def record_dimension_disposition(
+5636e306:tests/test_sub_floor_dimension_is_an_obligation.py:267:    review_module.record_dimension_disposition(
+   … five further call sites, all in that one test module</code></pre>
+    <p>and the command that was supposed to exist refuses by not existing, which is the log line the
+    fold case fails on at the base arm:</p>
+    <pre><code>E         Error: No such command 'dispose'.
+E       assert 2 == 0
+E        +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
+  </section>
+
+  <section id="lifecycle">
+    <h2>The row's two exits, and the gate measured at three revisions</h2>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/a-sub-floor-disposition-is-written-by-a-command/disposition_lifecycle_and_arm_outcomes.png"
+           alt="Left: a stored review whose durability (5) sits below its declared floor (10) while the total passes stands an obligation row; the command accepts a fold naming a node or an exemption recording a reason, retiring the row, and refuses an unknown dimension, an unknown kind, a fold with no node or an exemption with no reason, leaving the row where it was. Right: the gate run at three revisions — base 0 passed 8 failed, the change 48 passed, and a scratch copy with the kind check removed 46 passed 2 failed.">
+      <figcaption>The row the review stands, where each answer sends it, and the gate run at the
+      given base, the change, and a mutated scratch copy.</figcaption>
+    </figure>
+    <table>
+      <thead>
+        <tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>base</td><td><code>5636e306</code></td><td>8 failed, 40 passed — <code>EXIT=1</code></td>
+          <td><code>arms/baseline_suite.log</code></td>
+        </tr>
+        <tr>
+          <td>change</td><td><code>857e514c</code></td><td>48 passed — <code>EXIT=0</code></td>
+          <td><code>arms/after_suite.log</code></td>
+        </tr>
+        <tr>
+          <td>scratch copy, kind check removed</td><td><code>857e514c</code> + mutation</td>
+          <td>2 failed, 46 passed — <code>EXIT=1</code></td>
+          <td><code>arms/negative_control.log</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The gate is the new module plus the existing files that exercise review dispositions or the
+    obligations list (<code>test_sub_floor_dimension_is_an_obligation.py</code>,
+    <code>test_crew_obligations.py</code>, <code>test_mcp_crew_obligations.py</code>,
+    <code>test_obligations_do_not_mislead.py</code>, <code>test_coordinator_obligations_hook.py</code>,
+    <code>test_review_in_flight_by_record_path.py</code>). The base arm's failing set is exactly the
+    new module's command cases; no existing file contributes an added failing id at either arm, so
+    the base arm needs no attribution. Each log opens with the revision, the tree, the command and
+    the imported module's resolved path (<code>review.__file__</code>), so a green log cannot be
+    describing another checkout.</p>
+  </section>
+
+  <section id="refusals">
+    <h2>What the command refuses, and what a refusal leaves behind</h2>
+    <p>Each case exits non-zero, names its refusal in the message, writes nothing, and leaves the
+    row standing:</p>
+    <table>
+      <thead>
+        <tr><th>Invocation</th><th>Refusal</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>--dimension charisma --kind folded --node &lt;id&gt;</code></td><td><code>unknown review dimension</code></td></tr>
+        <tr><td><code>--dimension durability --kind noted --reason shorthand</code></td><td><code>unknown disposition 'noted'</code></td></tr>
+        <tr><td><code>--dimension durability --kind noted</code></td><td><code>unknown disposition 'noted'</code></td></tr>
+        <tr><td><code>--dimension durability --kind folded</code></td><td><code>a folded disposition must name the node it was folded into</code></td></tr>
+        <tr><td><code>--dimension durability --kind exempted</code></td><td><code>an exempted disposition must record its reason</code></td></tr>
+      </tbody>
+    </table>
+    <p>The refusal is asserted through the same entry point the acceptance is, because a refusal that
+    still wrote would be indistinguishable from an accepted call at every later read. The read-back
+    case is asserted on its own as well: the store is reachable by hand, so an entry naming a kind
+    the closed set does not define is not a disposition however complete its other fields look.</p>
+  </section>
+
+  <section id="negative-control">
+    <h2>The negative control</h2>
+    <p>A scratch copy of the change has the kind check removed from
+    <code>dimension_disposition_valid</code>, and the gate run against it fails on exactly the two
+    cases that read the closed set — the unknown-kind call now exits 0 and stores
+    <code>{"kind": "noted", "reason": "shorthand", …}</code>, and the hand-planted entry is now
+    honoured by the read-back. The other 46 cases, including the four refusals the mutation cannot
+    reach, stay green.</p>
+    <pre><code>FAILED …::test_a_refused_disposition_leaves_the_row_standing[unknown-kind-with-a-reason]
+FAILED …::test_a_kind_outside_the_closed_set_is_not_honoured_when_stored
+2 failed, 46 passed in 97.78s (0:01:37)
+EXIT=1</code></pre>
+  </section>
+
+  <section id="comment">
+    <h2>The floor comment</h2>
+    <p>A floor of zero reports nothing, because every stored score is at or above zero — so reading an
+    undeclared floor as zero would claim a standard the configuration never declared while changing
+    no verdict. The sentence said the opposite of what the code does:</p>
+    <p><em>before:</em> “A floor of zero would report every dimension of every review, so the absence
+    of a declared floor is read as the absence of a standard rather than as a standard of
+    nothing.”</p>
+    <p><em>after:</em> “A floor of zero would report nothing, since every stored score is at or above
+    zero — so reading an undeclared floor as zero would claim a standard the configuration never
+    declared while changing no verdict.”</p>
+    <p>No behaviour changed with the sentence: <code>sub_floor_dimensions</code> already skipped a
+    dimension the map does not name.</p>
+  </section>
+
+  <section id="isolation">
+    <h2>The test stands its world up in a temporary config home</h2>
+    <p>The fixture writes mounts, a live pointer, the reviewed run's tree and the stored review under
+    a temporary <code>RECKON_HOME</code>, and patches the derivation's clock. The last case resolves
+    every root the command uses and requires the path it reports inside the temporary home — an
+    absence check against the real home would itself be a read of it. Nothing in this node reads or
+    writes the operator's <code>~/.config/reckon</code>.</p>
+  </section>
+ </main>
+</body>
+</html>
