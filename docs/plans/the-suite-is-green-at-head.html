@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="80">
+<meta name="plan-version" content="81">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1197,10 +1197,11 @@
     <div class="r-fu-body"><p>The S21 currency audit at <code>76e1bf93</code> (report <code>~/.config/reckon/crew/reports/reckon/s21-audit-placement.{json,md}</code>, log <code>sgh_outstanding_ids.log</code>) measured 3 failed and 1552 passed. There are three deterministic failures, not the two that f-sgh-003 names. The third is <code>test_schema::test_cross_project_conformance[reckon:orchestrator-crew-pattern-studies-landed]</code>. reckon's own <code>docs/evidence/archive/orchestrator-crew-pattern-studies-landed.html</code> (landed <code>0efd65e7</code>) cites four shas that resolve in no mounted repository. Unlike the imas-ambix id, this one is within reckon's authority: re-derive each cited sha from its source, or correct the citation. Separately, §3's "fixed waits removed" row is unmet, as the plan's own record notes. Estimate about 4.5 worker-hours.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head</pre>
     </article>
-<article class="r-fu" data-id="f-sgh-test-ledger-red" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-28T16:05:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-sgh-test-ledger-red" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-28T16:05:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-09-28T17:38:01+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">tests/test_ledger.py is red on main: 11 failed, repaired by s25-coord under §2</h4>
     <div class="r-fu-body"><p>s25-coord measured <code>tests/test_ledger.py</code> at <code>1ae39477</code>: 11 failed and 85 passed. The log is under s25's session scratchpad (<code>ledger-main.log</code>). The failures fall into five cause groups:</p><ul><li>(a) Five tests are refused by the newer promotion guard, because their fixtures cite the base sha as their own work.</li><li>(b) One test hits a ScopeConflict on the default fragment scope, <code>docs/evidence/fragments/plan-a/node-a.html</code>, from s25's <code>0e3530ab</code>.</li><li>(c) <code>test_derived_member_guard_spans_work_repositories</code> no longer raises MemberInFlight, probably because of the disposable-worker change.</li><li>(d) <code>test_an_unknown_crew_view_names_every_view_it_has</code> fails because the crew view list grew.</li><li>(e) The rest: completion-promotes-the-pointer, the-crew-tool-reads-the-ledger, and the two pid-signal cases.</li></ul><p><b>Owner:</b> s25-coord dispatches one node that repairs all eleven under this plan's §2, agreed with s21-coord on 2026-09-28. <b>Do not dispatch a second node on <code>tests/test_ledger.py</code>.</b> Resolve this followup from that node's promotion. Each repair must fix the test to the current contract, or fix the code if the test is right, and never delete an assertion to get to green.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
+    <p class="r-fu-outcome">tests/test_ledger.py green on main at 5165e94e: 96 passed, where 1ae39477 failed 11. All eleven were stale expectations against newer contracts, with no product defect: six fixtures now commit real work, one uses its own node id under the fragment scope, and the rest follow the member-in-flight guard, the crew view list, a repository path and the pid-signal cases. No assertion deleted. Review 94, zero added failures.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
