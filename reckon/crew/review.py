@@ -1035,12 +1035,57 @@ def store_review(
     else:
         path = _partial_review_path(project, reviewed_run_id, record, base_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(
-        json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
-    temporary.replace(path)
+    _write_record(path, record)
     return path
+
+
+def stored_record(
+    project: str,
+    reviewed_run_id: str,
+    *,
+    base_dir: str | Path | None = None,
+    reviewed_head_sha: str | None = None,
+) -> tuple[bool, dict[str, Any] | None]:
+    """Return which file the record was read from and the record it holds.
+
+    The selection rule is shared by every reader and by the writer that records
+    a disposition beside the review store's own content: a named head is
+    matched against the record's normalised ``reviewed_head_sha`` rather than
+    trusted from its filename, which keeps older short-sha preservation copies
+    readable, and without a named head the newest record is returned for
+    compatibility with callers that have not yet learned to state the revision
+    they need.
+
+    The record returned is the file's own content, never the read-time
+    annotation :func:`read_review` adds, so a caller that writes the record
+    back does not persist a derived view. The boolean reports whether a record
+    was read from a head-keyed path, which is what a writer needs to keep
+    writing where the reader looked.
+    """
+    directory = review_store_root(base_dir) / project
+    candidates = [review_path(project, reviewed_run_id, base_dir)]
+    if directory.is_dir():
+        candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
+    existing = {path.resolve(): path for path in candidates if path.is_file()}
+    if not existing:
+        return False, None
+
+    records = [
+        (path, json.loads(path.read_text(encoding="utf-8")))
+        for path in existing.values()
+    ]
+    if reviewed_head_sha is not None:
+        named = reviewed_head_sha.strip().lower()
+        for _, record in records:
+            _, _, carried_head, stored_head = carried_revision_pair(record)
+            if not carried_head or not stored_head:
+                continue
+            actual = stored_head.lower()
+            if actual.startswith(named) or named.startswith(actual):
+                return True, record
+        return False, None
+    newest = max(records, key=lambda item: item[0].stat().st_mtime_ns)[1]
+    return False, newest
 
 
 def read_review(
@@ -1065,30 +1110,15 @@ def read_review(
     and one written through :func:`store_review` are read alike, and a reader
     that never calls this function sees the record exactly as it was stored.
     """
-    directory = review_store_root(base_dir) / project
-    candidates = [review_path(project, reviewed_run_id, base_dir)]
-    if directory.is_dir():
-        candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
-    existing = {path.resolve(): path for path in candidates if path.is_file()}
-    if not existing:
+    _, record = stored_record(
+        project,
+        reviewed_run_id,
+        base_dir=base_dir,
+        reviewed_head_sha=reviewed_head_sha,
+    )
+    if record is None:
         return None
-
-    records = [
-        (path, json.loads(path.read_text(encoding="utf-8")))
-        for path in existing.values()
-    ]
-    if reviewed_head_sha is not None:
-        named = reviewed_head_sha.strip().lower()
-        for _, record in records:
-            _, _, carried_head, stored_head = carried_revision_pair(record)
-            if not carried_head or not stored_head:
-                continue
-            actual = stored_head.lower()
-            if actual.startswith(named) or named.startswith(actual):
-                return annotate_review_of_run(record, reviewed_run_id)
-        return None
-    newest = max(records, key=lambda item: item[0].stat().st_mtime_ns)[1]
-    return annotate_review_of_run(newest, reviewed_run_id)
+    return annotate_review_of_run(record, reviewed_run_id)
 
 
 def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
@@ -1123,3 +1153,262 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
         "absent": [str(dimension) for dimension in (record.get("absent") or [])],
         "total": None if total is None else int(total),
     }
+
+
+# ── Floors on the dimensions, and the dispositions that answer them ─────────
+# A total is a sum, so a single dimension far below the others is invisible in
+# it: a review whose durability is 5 of 20 promotes on the same 78 as one whose
+# five dimensions are even. The floor closes that, and it lives in flight
+# configuration under ``gates.dimension_floors``, keyed by dimension name, so
+# the standard a stored score is read against travels with the other gate
+# settings and is readable by whoever is deciding what to do next.
+#
+# A dimension the map does not name carries no floor. A floor of zero would
+# report every dimension of every review, so the absence of a declared floor
+# is read as the absence of a standard rather than as a standard of nothing.
+#
+# A sub-floor dimension is a finding with its own disposition, never a lower
+# total: the total remains the reviewer's arithmetic over what it parsed, and
+# the dimension keeps its own recorded score. The finding stands until a
+# disposition in the closed set below is recorded against that dimension on
+# the same stored record, by the code path that does the deciding.
+
+DIMENSION_FLOORS_KEY = "dimension_floors"
+
+# Where a disposition lives on the stored record. Keyed by dimension name, so
+# one review may carry a folded durability and an exempted fit at once, and
+# each row's own answer is readable without re-deriving it.
+DIMENSION_DISPOSITIONS_KEY = "dimension_dispositions"
+
+# The closed set a disposition may come from. ``folded`` names the dispatched
+# node the finding was folded into; ``exempted`` records the reason it is not
+# being acted on. Nothing else clears a finding: an unrecognised or incomplete
+# entry leaves the row standing rather than silently retiring it, so a session
+# cannot report a clean close over a dimension nobody answered.
+DIMENSION_DISPOSITION_KINDS: tuple[str, ...] = ("folded", "exempted")
+
+
+def _floor_value(entry: Any) -> int | None:
+    """Reduce one declared floor to an integer, or ``None`` when it declares none.
+
+    Both spellings the flight schema accepts are read: the bare integer, and a
+    mapping carrying the floor beside the dimension it names. A value that is
+    not an integer is read as no floor rather than coerced, because a floor
+    derived from an unreadable entry would report findings nobody declared.
+    """
+    if isinstance(entry, bool):
+        return None
+    if isinstance(entry, int):
+        return entry
+    if isinstance(entry, Mapping):
+        value = entry.get("floor")
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value
+    return None
+
+
+def declared_dimension_floors(config: Mapping[str, Any] | None) -> dict[str, int]:
+    """Return the floors a resolved flight config declares, keyed by dimension.
+
+    The map is read from ``gates.dimension_floors`` of the resolved
+    configuration. Only the dimensions this module defines are returned: a key
+    the review schema does not define names nothing to measure, so it is
+    ignored rather than carried as an unreadable floor. A missing section, a
+    missing dimension and an unreadable floor all yield no floor for that
+    dimension, which is the state in which no score can fall below it.
+    """
+    if not isinstance(config, Mapping):
+        return {}
+    gates = config.get("gates")
+    declared = gates.get(DIMENSION_FLOORS_KEY) if isinstance(gates, Mapping) else None
+    if not isinstance(declared, Mapping):
+        return {}
+    floors: dict[str, int] = {}
+    for dimension in REVIEW_DIMENSIONS:
+        floor = _floor_value(declared.get(dimension))
+        if floor is not None:
+            floors[dimension] = floor
+    return floors
+
+
+def dimension_disposition_valid(entry: Any) -> bool:
+    """Whether a recorded disposition answers a sub-floor finding.
+
+    A fold must name the node id the finding was folded into; an exemption must
+    carry its recorded reason. An entry that names neither is not a disposition
+    — it is a row someone meant to fill in — and is treated as undisposed.
+    """
+    if not isinstance(entry, Mapping):
+        return False
+    kind = str(entry.get("kind") or "").strip()
+    if kind == "folded":
+        return bool(str(entry.get("node") or "").strip())
+    if kind == "exempted":
+        return bool(str(entry.get("reason") or "").strip())
+    return False
+
+
+def sub_floor_dimensions(
+    record: Mapping[str, Any] | None,
+    floors: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Return one row per scored dimension that sits below its declared floor.
+
+    Each row is ``{"dimension", "score", "floor"}``, ordered by the schema's
+    own dimension order so a reader sees a stable list across calls. A
+    dimension is absent from the result when it carries no declared floor, when
+    the record scored nothing for it, or when a disposition in the closed set
+    is recorded against it: the first two are not measurable against a floor,
+    and the third has been answered. An undisposed finding stays in the result
+    however high the review's total is, which is the whole point — the total
+    cannot speak for a dimension averaged out of it.
+    """
+    if not isinstance(record, Mapping) or not isinstance(floors, Mapping):
+        return []
+    scores = record.get("scores")
+    if not isinstance(scores, Mapping):
+        return []
+    dispositions = record.get(DIMENSION_DISPOSITIONS_KEY)
+    recorded = dispositions if isinstance(dispositions, Mapping) else {}
+    rows: list[dict[str, Any]] = []
+    for dimension in REVIEW_DIMENSIONS:
+        floor = _floor_value(floors.get(dimension))
+        if floor is None:
+            continue
+        score = scores.get(dimension)
+        if not isinstance(score, int) or isinstance(score, bool):
+            continue
+        if score >= floor:
+            continue
+        if dimension_disposition_valid(recorded.get(dimension)):
+            continue
+        rows.append({"dimension": dimension, "score": score, "floor": floor})
+    return rows
+
+
+def record_dimension_disposition(
+    project: str,
+    reviewed_run_id: str,
+    dimension: str,
+    *,
+    kind: str,
+    node: str | None = None,
+    reason: str | None = None,
+    base_dir: str | Path | None = None,
+    reviewed_head_sha: str | None = None,
+) -> Path:
+    """Record the disposition one sub-floor dimension carries, and return its path.
+
+    The record written beside the review's own content is what
+    :func:`sub_floor_dimensions` reads back: a dimension with a valid entry in
+    the closed set stops producing a row, and one without keeps producing it
+    however often the session is read.
+
+    A fold names the node id through ``node``; an exemption records its reason
+    through ``reason``. Anything else is refused rather than stored: an unknown
+    dimension, a kind outside :data:`DIMENSION_DISPOSITION_KINDS`, a fold
+    naming no node and an exemption carrying no reason all raise
+    :class:`ValueError`. A run with no stored review is refused too — a
+    disposition answers a finding, and there is none to answer.
+
+    The record is written back to the path the review was read from, so a
+    head-keyed review keeps its own file and a disposition recorded against one
+    revision never speaks for another. The write is atomic and preserves every
+    other field, including the reviewer's verbatim text.
+    """
+    dimension_name = str(dimension or "").strip().lower()
+    if dimension_name not in REVIEW_DIMENSIONS:
+        raise ValueError(
+            f"unknown review dimension {dimension!r}; "
+            f"known dimensions are {', '.join(REVIEW_DIMENSIONS)}"
+        )
+    disposition_kind = str(kind or "").strip().lower()
+    if disposition_kind not in DIMENSION_DISPOSITION_KINDS:
+        raise ValueError(
+            f"unknown disposition {kind!r}; "
+            f"allowed kinds are {', '.join(DIMENSION_DISPOSITION_KINDS)}"
+        )
+    named_node = str(node or "").strip()
+    recorded_reason = str(reason or "").strip()
+    if disposition_kind == "folded" and not named_node:
+        raise ValueError("a folded disposition must name the node it was folded into")
+    if disposition_kind == "exempted" and not recorded_reason:
+        raise ValueError("an exempted disposition must record its reason")
+
+    head_keyed, record = stored_record(
+        project,
+        reviewed_run_id,
+        base_dir=base_dir,
+        reviewed_head_sha=reviewed_head_sha,
+    )
+    if record is None:
+        raise ValueError(
+            f"no stored review for run {reviewed_run_id!r} in project "
+            f"{project!r} to record a disposition against"
+        )
+    disposition: dict[str, Any] = {
+        "kind": disposition_kind,
+        "recorded_at": datetime.now(UTC).isoformat(),
+    }
+    if disposition_kind == "folded":
+        disposition["node"] = named_node
+    else:
+        disposition["reason"] = recorded_reason
+    dispositions = record.get(DIMENSION_DISPOSITIONS_KEY)
+    merged = dict(dispositions) if isinstance(dispositions, Mapping) else {}
+    merged[dimension_name] = disposition
+    record[DIMENSION_DISPOSITIONS_KEY] = merged
+
+    path = _stored_record_path(
+        project,
+        reviewed_run_id,
+        head_keyed=head_keyed,
+        record=record,
+        base_dir=base_dir,
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_record(path, record)
+    return path
+
+
+def _stored_record_path(
+    project: str,
+    reviewed_run_id: str,
+    *,
+    head_keyed: bool,
+    record: Mapping[str, Any],
+    base_dir: str | Path | None,
+) -> Path:
+    """Return the path a record selected by :func:`stored_record` occupies.
+
+    A head-keyed record keeps the revision-keyed path it was read from, which
+    the head it carries re-derives. A record selected without a named head is
+    written back onto the revision pair its own fields carry, and falls back to
+    the keyed-by-identity path when the pair is incomplete — the same rule
+    :func:`store_review` applies, so a rewritten record does not move.
+    """
+    _, _, _, head_sha = carried_revision_pair(record)
+    if head_sha:
+        return review_path(
+            project,
+            reviewed_run_id,
+            base_dir,
+            reviewed_head_sha=head_sha,
+        )
+    if head_keyed:
+        return _incomplete_review_path(project, reviewed_run_id, record, base_dir)
+    return _partial_review_path(
+        project,
+        reviewed_run_id,
+        record,
+        base_dir,
+    )
+
+
+def _write_record(path: Path, record: Mapping[str, Any]) -> None:
+    """Write one record to ``path`` atomically, beside any temporary it leaves."""
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(
+        json.dumps(dict(record), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    temporary.replace(path)

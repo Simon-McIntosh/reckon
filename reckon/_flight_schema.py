@@ -323,6 +323,14 @@ class EffortSpelling(ConfiguredBaseModel):
     spelling: Optional[str] = Field(default=None, description="""The display suffix rendered for an effort level's word.""")
 
 
+class DimensionFloor(ConfiguredBaseModel):
+    """
+    One review dimension and the lowest score it may carry and still read as a pass. The name is a key of this inlined map, so a configuration writes the dimension and its floor together and neither can be read apart.
+    """
+    name: str = Field(default=..., description="""Map key for an inlined entry.""")
+    floor: Optional[int] = Field(default=None, description="""Lowest score the dimension this entry names may carry and still read as a pass, on the review schema's own 0..20 scale. A stored score below it is reported as a sub-floor finding until a disposition answers it.""", ge=0)
+
+
 class RoleConfig(ConfiguredBaseModel):
     """
     A routing overlay for one kind of node. Every slot is optional; an unset slot inherits from the selected backend.
@@ -414,6 +422,7 @@ class GateConfig(ConfiguredBaseModel):
     require_evidence: Optional[bool] = Field(default=None, description="""Whether a gate must produce recorded evidence to be considered met.""")
     on_fail: Optional[GateFailureAction] = Field(default=None)
     suite_command: Optional[str] = Field(default=None, description="""Project test-suite command whose presence arms promotion consequence checks. Absent means the project is unarmed; no command is supplied by shipped defaults.""")
+    dimension_floors: Optional[dict[str, Union[int, DimensionFloor]]] = Field(default=None, description="""Lowest score each review dimension may carry and still read as a pass, keyed by dimension name. A stored dimension below its floor is a finding that carries a disposition of its own rather than being folded into the review's total, so a low score cannot be averaged away by four high ones. Declared here beside the other gate settings rather than compiled in, so the standard a stored score was read against is readable by whoever is deciding what to do next. A dimension absent from the map has no floor: an undeclared floor is not a floor of zero, which would report every dimension of every review as a finding. Keys are the review schema's own dimension names; a key it does not define is ignored by the reader.""")
 
 
 class BudgetConfig(ConfiguredBaseModel):
@@ -515,6 +524,7 @@ PlacementRequirement.model_rebuild()
 CatalogConfig.model_rebuild()
 EnvironmentVariable.model_rebuild()
 EffortSpelling.model_rebuild()
+DimensionFloor.model_rebuild()
 RoleConfig.model_rebuild()
 SpecificationRouting.model_rebuild()
 CapabilityClassRouting.model_rebuild()

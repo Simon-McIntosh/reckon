@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560" role="img" aria-labelledby="t d">
+  <title id="t">A stored review dimension below its flight-config floor becomes an obligation row that stands until it is disposed</title>
+  <desc id="d">Top lane, at base: five dimension bars from a stored review scoring 79, with durability at 5 and every other dimension at 18 or 19, and a dashed floor line at 10. Durability falls below the floor, but no code path names a dimension, so the 5 is averaged inside a total that passes. Bottom lane, at the change: the same record produces one obligation row naming the run, the reviewer's assertions, the dimension durability, its score of 5 and the floor of 10, and the total stays 79. The row retires only when one disposition from the closed set is recorded against that dimension on the stored record, folded with the dispatched node id or exempted with the recorded reason; until then it is reported beside the total, never inside it.</desc>
+
+  <style>
+    .bg { fill: #ffffff; }
+    .lane { fill: #f5f6f8; stroke: #c9ccd4; }
+    .bad { fill: #fdecec; stroke: #d98a8a; }
+    .good { fill: #eef6f0; stroke: #8fbf9f; }
+    .t { font-family: sans-serif; font-size: 14px; fill: #23252b; }
+    .small { font-family: sans-serif; font-size: 11.5px; fill: #4a4e57; }
+    .head { font-family: sans-serif; font-size: 15px; font-weight: bold; fill: #23252b; }
+    .badtext { font-family: sans-serif; font-size: 12.5px; fill: #a13b3b; }
+    .goodtext { font-family: sans-serif; font-size: 12.5px; fill: #2f6b41; }
+    .mono { font-family: monospace; font-size: 11px; fill: #23252b; }
+    .bar { fill: #b9c2d0; stroke: #8e99aa; }
+    .barlow { fill: #e8b4b4; stroke: #b55454; }
+    .floor { stroke: #b08a3a; stroke-dasharray: 5 4; stroke-width: 1.4; }
+    .flow { stroke: #6b7180; stroke-width: 1.4; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7180"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="900" height="560"/>
+
+  <text class="head" x="40" y="34">A dimension below its declared floor is a row that must be disposed, and the total is never adjusted</text>
+  <text class="small" x="40" y="54">The record drawn is the shape this plan&#8217;s own landings measured: a total of 79 with durability 5 against 18 and 19 elsewhere. The floor is declared per dimension in flight config.</text>
+
+  <text class="head" x="40" y="92">at base: a stored dimension has no reader</text>
+  <rect class="lane" x="40" y="104" width="820" height="150" rx="6"/>
+
+  <text class="mono" x="60" y="129">goal_fidelity</text>
+  <rect class="bar" x="160" y="116" width="228" height="18" rx="3"/>
+  <text class="small" x="396" y="129">19</text>
+
+  <text class="mono" x="60" y="155">evidence</text>
+  <rect class="bar" x="160" y="142" width="228" height="18" rx="3"/>
+  <text class="small" x="396" y="155">19</text>
+
+  <text class="mono" x="60" y="181">scope_discipline</text>
+  <rect class="bar" x="160" y="168" width="216" height="18" rx="3"/>
+  <text class="small" x="396" y="181">18</text>
+
+  <text class="badtext" x="60" y="207">durability</text>
+  <rect class="barlow" x="160" y="194" width="60" height="18" rx="3"/>
+  <text class="badtext" x="228" y="207">5</text>
+
+  <text class="mono" x="60" y="233">fit</text>
+  <rect class="bar" x="160" y="220" width="216" height="18" rx="3"/>
+  <text class="small" x="396" y="233">18</text>
+
+  <line class="floor" x1="280" y1="110" x2="280" y2="242"/>
+  <text class="small" x="286" y="112" fill="#8a6a24">floor 10 (gates.dimension_floors.durability)</text>
+
+  <text class="head" x="520" y="150" font-size="14">total 79 &#8212; a pass.</text>
+  <text class="small" x="520" y="172">No code path names a dimension after the record is</text>
+  <text class="small" x="520" y="188">stored, so the 5 is averaged inside the total and</text>
+  <text class="small" x="520" y="204">nothing downstream can see it.</text>
+  <text class="badtext" x="520" y="228">the review reads as promotable while durability sits at 5</text>
+
+  <text class="head" x="40" y="292">at the change: the dimension is a row until a disposition answers it</text>
+  <rect class="lane" x="40" y="304" width="820" height="230" rx="6"/>
+
+  <rect class="bar" x="60" y="322" width="360" height="30" rx="5"/>
+  <text class="mono" x="72" y="342">stored review r-&#8230;  durability 5 &#183; total 79</text>
+  <path class="flow" d="M 428 337 L 476 337" marker-end="url(#arrow)"/>
+  <rect class="bad" x="484" y="322" width="356" height="30" rx="5"/>
+  <text class="mono" x="496" y="342">review-dimension-sub-floor  durability 5 &lt; floor 10</text>
+
+  <rect class="bar" x="60" y="372" width="360" height="30" rx="5"/>
+  <text class="mono" x="72" y="392">total is not touched: 79 either way</text>
+  <path class="flow" d="M 428 387 L 476 387" marker-end="url(#arrow)"/>
+  <rect class="good" x="484" y="372" width="356" height="30" rx="5"/>
+  <text class="mono" x="496" y="392">folded &#183; with the dispatched node&#8217;s id</text>
+
+  <rect class="bar" x="60" y="422" width="360" height="30" rx="5"/>
+  <text class="mono" x="72" y="442">a disposition is written on the stored record</text>
+  <path class="flow" d="M 428 437 L 476 437" marker-end="url(#arrow)"/>
+  <rect class="good" x="484" y="422" width="356" height="30" rx="5"/>
+  <text class="mono" x="496" y="442">exempted &#183; with the recorded reason</text>
+
+  <text class="small" x="484" y="470">the closed set: one of these, or the row keeps reporting</text>
+
+  <rect class="good" x="60" y="488" width="780" height="30" rx="5"/>
+  <text class="mono" x="72" y="508">row retires from the session&#8217;s obligations; the next dimension below its floor starts the same way</text>
+</svg>

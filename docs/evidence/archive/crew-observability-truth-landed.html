@@ -2642,6 +2642,73 @@ detail         : ... conflicts with live claim ... held by run
     </figure>
   </section>
 
+  <section id="sub-floor-dimension-is-an-obligation">
+    <h2 id="sub-floor-dimension-is-an-obligation-h">&sect;21 &mdash; a review dimension below its declared floor is an obligation row until it is disposed</h2>
+    <p>Recorded 2026-09-28 by the node that implemented it, landing in
+    <code>reckon/crew/obligations.py</code>, <code>reckon/crew/review.py</code>, the flight
+    schema source with its regenerated Pydantic model and JSON schema, and
+    <code>tests/test_sub_floor_dimension_is_an_obligation.py</code>.</p>
+    <p><strong>What the defect was.</strong> A stored review's total is a sum, and the sum is
+    what made a falling dimension invisible: the score was still on the record, but no code
+    path named a dimension after the record was stored, so a review that passed on total while
+    one dimension sat far below the rest read as promotable everywhere downstream. The fixture
+    draws exactly that shape &mdash; a total of 79 with durability at 5 against 18 and 19
+    elsewhere.</p>
+    <p><strong>The change.</strong> Floors are declared per dimension in flight configuration
+    under <code>gates.dimension_floors</code>, beside the other gate settings: the LinkML source
+    (<code>reckon/schema/flight.yaml</code>), its regenerated model and JSON schema, and a
+    shipped default in <code>flight-defaults.yaml</code>. The obligations report derives one
+    <code>review-dimension-sub-floor</code> row per undisposed dimension below its floor,
+    naming the run, the dimension, the score and the floor, and the total is never adjusted
+    &mdash; the finding is reported beside it. A row retires only through the section's closed
+    set, <code>folded</code> with the dispatched node's id or <code>exempted</code> with the
+    recorded reason, written on the stored record through
+    <code>review.record_dimension_disposition</code>; a kind outside the set, a fold naming no
+    node, and an exemption recording no reason are each refused. The reader selects the review
+    through the shared revision-aware rule (<code>select_review_for_head</code>), so a record
+    describing a superseded revision produces nothing and cannot stand in for the run's current
+    work, and a pointer naming no readable tree yields no revision comparison rather than
+    resolving against whatever directory the caller happens to stand in.</p>
+    <table>
+      <thead><tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr></thead>
+      <tbody>
+        <tr><td>base</td><td><code>9a7b5386</code></td><td>new test + <code>tests/test_crew_obligations.py</code> + <code>tests/test_flight.py</code></td><td>new test <strong>6 failed, 1 passed</strong> (exit 1); obligations 9 passed; flight 87 passed &mdash; <code>gate_exit=1</code></td></tr>
+        <tr><td>change head</td><td><code>c05c0401</code></td><td>same</td><td>new test <strong>7 passed</strong>; obligations 9 passed; flight 87 passed &mdash; <code>gate_exit=0</code>, no skips</td></tr>
+        <tr><td>negative control</td><td>head, reader mutated in a scratch tree</td><td>new test</td><td><strong>4 failed, 3 passed</strong>, exit 1, declared string verbatim on the log's first line</td></tr>
+        <tr><td>schema regeneration</td><td><code>c05c0401</code></td><td>both regeneration tests, explicitly</td><td>both <strong>PASSED</strong> &mdash; the committed model and JSON schema match a fresh generation from the committed source</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Added failing ids:</strong> none &mdash; the baseline's only failing ids are the six
+    assertions of the new test itself, and every one passes at the head. The floor's
+    configuration provenance is asserted rather than assumed: moving the declared floor moves
+    the verdict in both directions, and a raised floor on another dimension surfaces the clean
+    review's <code>fit: 16</code> as a row too, until an exemption with its reason retires
+    it.</p>
+    <p><strong>The negative control</strong>, declared before it ran: &ldquo;make the
+    obligations reader ignore review dimensions in a scratch copy; the durability-5 review must
+    produce no sub-floor row&rdquo;. Run by inserting an early return into
+    <code>_sub_floor_items</code> in the scratch tree, the row-producing assertions failed. Its
+    honest weakness, recorded with the result: the two absence assertions &mdash; a superseded
+    review owes nothing, and an undisposed dimension still reports after a refused disposition
+    &mdash; are vacuous under the mutation by construction, so 4 of the 7 tests carry the
+    control.</p>
+    <p><strong>Evidence on disk</strong>, under
+    <code>~/.config/reckon/crew/runs/r-20260928T115242684086-a-sub-floor-dimension-is-an-obligation/logs/</code>:
+    <code>baseline-gate.log</code>, <code>after-gate.log</code>, <code>baseline-new-test.log</code>,
+    <code>negative-control.log</code>, <code>schema-regeneration.log</code>,
+    <code>baseline_suite.json</code>, <code>after_suite.json</code>, <code>scratch-tree.txt</code>,
+    and the driver <code>run_gate.sh</code> that reproduced every arm in scratch trees.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/sub-floor-dimension-disposition.svg"
+           alt="Two lanes. At base, five dimension bars from a stored review scoring 79: goal_fidelity 19, evidence 19, scope_discipline 18, durability 5 and fit 18, with a dashed floor line at 10. Durability falls below the floor, but no code path names a dimension after the record is stored, so the 5 is averaged inside a total that passes and nothing downstream can see it. At the change, the same record produces one obligations row reading review-dimension-sub-floor, durability 5 below floor 10, while the total stays 79. The row retires only when one disposition from the closed set is recorded on the stored record, folded with the dispatched node's id or exempted with the recorded reason. Until then it keeps reporting."
+           style="max-width:760px;width:100%">
+      <figcaption>A sub-floor dimension is reported beside the total, never folded into it: a
+      total of 79 with durability at 5 passes at base and is a row at the change, until one of
+      the two dispositions answers it.
+      </figcaption>
+    </figure>
+  </section>
+
 </main>
 </body>
 </html>
