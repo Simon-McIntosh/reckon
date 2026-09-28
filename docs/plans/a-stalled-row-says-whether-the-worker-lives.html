@@ -291,6 +291,38 @@
     deleted from the head, the first case emits nothing. The write paths are
     <code>reckon/crew/recovery.py</code> and <code>tests/test_unreadable_names_its_word.py</code>.</p>
 
+    <h3 id="s5-landed">Landed &mdash; node <code>pin-the-unreadable-word-in-its-reason</code></h3>
+    <p><strong>Landed</strong> (<code>aaefa377</code>). No code change was needed: the arm at
+    <code>reckon/crew/recovery.py:4282</code> already refused a present manifest whose status word is
+    outside <code>MANIFEST_STATUSES</code> on a gone process, read it as <code>unreadable</code>, and
+    named it <code>repair</code>. What the reader refuses with is the whole point: the word the parser
+    rejected travels in its own error text, the classifier persists that text into the row's
+    <code>detail</code>, and the ticker composes the pane's reason from that field &mdash; so the row
+    a coordinator reads carries <code>status "ready-for-review" is not a recognised manifest
+    status</code> rather than a bare "cannot be read". Nothing exercised any of it, so the section's
+    promise rested on a reading no test had ever taken.</p>
+    <p><strong>Evidence:</strong> three cases in
+    <code>tests/test_unreadable_names_its_word.py</code> (3 passed, exit 0), each driven through a
+    project watch claim so the assertion is on the published stream. The first opens its baseline on a
+    worker already gone with no manifest at all, writes the <code>ready-for-review</code> manifest
+    between the two observations, and requires exactly one transition, <code>abandoned</code> &rarr;
+    <code>unreadable</code>, carrying <code>ready-for-review</code> in its reason &mdash; because the
+    file's arrival is then the only change between the observations, the transition is the reading
+    that changed rather than a state the baseline already held. The second and third cases require the
+    stream to hold nothing but the baseline while the process lives: a recognised non-terminal word
+    (<code>in-progress</code>) reads as the worker still working, and the unrecognised word is an
+    absence of a verdict rather than a refusal, because a live worker can still rewrite it. Each live
+    case carries its own positive control on the row it read &mdash; the file present, the word taken
+    by name, the process table answering alive &mdash; so neither absence can pass for a reader that
+    never opened the file. Every fixture's clock is aged past the reader's transient windows, so no
+    case depends on the instant it runs. The declared negative control was executed and logged: with
+    the unreadable arm deleted from a copy of the head, the first case fails with no transition
+    emitted &mdash; the failure message prints the stream's whole contents,
+    <code>[('baseline', None, 'abandoned')]</code> &mdash; while the two live cases still pass; the
+    red log's first line is the declared mutation verbatim. Measurements in
+    <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#s5">&sect;5
+    of the landed evidence record</a>.</p>
+
     <h2 id="s6">&sect;6 &mdash; A live worker with a running job is not stalled at fifteen minutes</h2>
     <p>The stall census settled this section's branch: of 12 stalls where the worker process was
     alive, 9 completed without a resume (&sect;1's table). So the stall window for a run whose process
