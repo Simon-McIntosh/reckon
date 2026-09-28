@@ -9,9 +9,9 @@
   <meta name="plan-title" content="The Fleet Reports Its Velocity &mdash; landed evidence">
   <meta name="plan-summary" content="One path classifier in the package returns the same six line classes as the velocity census it was ported from.">
   <meta name="plan-evidence-for" content="the-fleet-reports-its-velocity">
-  <meta name="plan-verifies" content="the-fleet-reports-its-velocity#s2,the-fleet-reports-its-velocity#s5">
-  <meta name="plan-commits" content="85af514b,4d79a470,fe33dbf6">
-  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_work_in_progress.py">
+  <meta name="plan-verifies" content="the-fleet-reports-its-velocity#s2,the-fleet-reports-its-velocity#s4,the-fleet-reports-its-velocity#s5">
+  <meta name="plan-commits" content="85af514b,4d79a470,fe33dbf6,106e4bbb">
+  <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_work_in_progress.py,tests/test_velocity_session_continuity.py">
   <meta name="plan-recorded-at" content="2026-09-27">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -217,6 +217,88 @@
       file instead of the commit that added it; the 58-opened assertion then reads
       <strong>125</strong> and fails. Logs: <code>wip_gate.log</code>,
       <code>negative_control_work_in_progress.log</code>.</p>
+    </section>
+  <section id="s4-session-continuity-share-per-lane-day">
+      <h2>&sect;4 &mdash; Session continuity share per lane and day</h2>
+      <p>Commit <code>106e4bbb</code> adds <code>session_continuity()</code> to
+      <code>reckon/velocity.py</code> and reports, per lane and promotion day, the share of all
+      dispatches that continued another task's session. A dispatch continues another task's
+      session when its recorded <code>session_id</code> equals that of an earlier-dispatched run
+      whose <code>(project, plan, node)</code> differs. Each lane-and-day cell carries the share
+      beside the same-task, fresh and unmeasured counts; a dispatch with no recorded
+      <code>session_id</code> is <em>unmeasured</em> and is never counted fresh and never counted
+      as a continuation. Classification runs over the whole population before any cell is formed,
+      so a continuation is counted in the day it lands even when the run it inherits is in another
+      cell, and the join uses the recorded <code>session_id</code> rather than a second rollout
+      parse.</p>
+      <p><strong>Done when (recorded measurement).</strong> Run over reckon's committed run records
+      at ledger head <code>53e9a944</code> over <code>2026-09-20T00:00:00Z</code> to
+      <code>2026-09-27T23:59:59Z</code>: <strong>982 dispatches, 33 continued, 15 unmeasured,
+      overall share 3.36%</strong>. Every lane and day after 2026-09-24 reports
+      <strong>0.0%</strong>, against the session-reuse switch at 2026-09-23T10:40:20Z. The
+      before/after research figures and the disagreement are stated below the tables.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-reports-its-velocity/session-continuity-share-per-lane-day.png"
+          alt="Cross-task session continuation share per lane and day, 2026-09-20 to 2026-09-27: clive rises to 17.5% on 2026-09-22 then falls to zero after the 2026-09-23 session-reuse switch, while codex, claude and native stay near zero">
+        <figcaption>Cross-task continuation share per lane and promotion day; the dashed line marks
+        the session-reuse switch.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Day</th><th>Lane</th><th>Dispatches</th><th>Continued</th><th>Unmeasured</th><th>Share</th></tr></thead>
+        <tbody>
+          <tr><td>2026-09-20</td><td>clive</td><td>4</td><td>0</td><td>0</td><td>0.000</td></tr>
+          <tr><td>2026-09-21</td><td>clive</td><td>115</td><td>11</td><td>3</td><td>0.096</td></tr>
+          <tr><td>2026-09-21</td><td>codex</td><td>36</td><td>0</td><td>8</td><td>0.000</td></tr>
+          <tr><td>2026-09-22</td><td>claude</td><td>1</td><td>0</td><td>0</td><td>0.000</td></tr>
+          <tr><td>2026-09-22</td><td>clive</td><td>63</td><td>11</td><td>0</td><td>0.175</td></tr>
+          <tr><td>2026-09-23</td><td>claude</td><td>4</td><td>0</td><td>0</td><td>0.000</td></tr>
+          <tr><td>2026-09-23</td><td>clive</td><td>135</td><td>10</td><td>1</td><td>0.074</td></tr>
+          <tr><td>2026-09-23</td><td>codex</td><td>3</td><td>0</td><td>0</td><td>0.000</td></tr>
+          <tr><td>2026-09-24</td><td>clive</td><td>97</td><td>1</td><td>0</td><td>0.010</td></tr>
+          <tr><td>2026-09-24</td><td>codex</td><td>5</td><td>0</td><td>0</td><td>0.000</td></tr>
+          <tr><td>2026-09-24</td><td>native</td><td>3</td><td>0</td><td>3</td><td>0.000</td></tr>
+          <tr><td>2026-09-25</td><td>clive</td><td>278</td><td>0</td><td>0</td><td>0.000</td></tr>
+          <tr><td>2026-09-25</td><td>codex</td><td>38</td><td>0</td><td>0</td><td>0.000</td></tr>
+          <tr><td>2026-09-26</td><td>clive</td><td>180</td><td>0</td><td>0</td><td>0.000</td></tr>
+          <tr><td>2026-09-26</td><td>codex</td><td>6</td><td>0</td><td>0</td><td>0.000</td></tr>
+          <tr><td>2026-09-27</td><td>clive</td><td>13</td><td>0</td><td>0</td><td>0.000</td></tr>
+          <tr><td>2026-09-27</td><td>codex</td><td>1</td><td>0</td><td>0</td><td>0.000</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Window</th><th>Instrument</th><th>Dispatches</th><th>Cross-task</th><th>Share</th></tr></thead>
+        <tbody>
+          <tr><td>Before the switch</td><td><code>codex-resume-burn.json</code> <code>before_window</code></td><td>2933</td><td>1114</td><td>37.98%</td></tr>
+          <tr><td>After the switch</td><td><code>codex-resume-burn-after.json</code> <code>after_window</code></td><td>75</td><td>0</td><td>0.00%</td></tr>
+          <tr><td>Before (09-20&hellip;09-24)</td><td>this view, reckon ledger</td><td>466</td><td>33</td><td>7.08%</td></tr>
+          <tr><td>After (09-25&hellip;09-27)</td><td>this view, reckon ledger</td><td>516</td><td>0</td><td>0.00%</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Comparison with the research figures, and the disagreement.</strong> The two
+      instruments agree on direction and on the switch: reuse is non-zero before 2026-09-23 and
+      collapses to zero after it, and the two <em>after</em> readings agree exactly at 0.00%. They
+      disagree on magnitude before the switch, 37.98% against 7.08%, for two stated reasons.
+      <em>Population</em>: <code>codex-resume-burn.json</code> is codex-only across the whole
+      fleet (3274 codex runs, 1916 sessions), while this view reads reckon's committed run ledger
+      for all lanes and includes claude, native and unattributed rows in the denominator.
+      <em>Instrument</em>: the census joins a run to a prior transcript by the rollout's own
+      <code>thread_id</code> and its <code>task_started</code> boundary (900 s tolerance), while
+      this view joins on the recorded <code>session_id</code> against the run's
+      <code>(project, plan, node)</code>. The census's own <code>session_join</code> check found
+      the two disagree on one of 64 checked runs (<code>63</code> agree), the recorded
+      <code>session_id</code> differing from the stream <code>thread_id</code> there; a join on
+      the recorded id therefore carries a small, bounded undercount, not a silent one. The
+      reference's per-lane 20&ndash;22 Sep figures (local 65/505, claude 20/83, codex 8/114) sit
+      in the same range as this view's clive 09-21 11/115 and 09-22 11/63.</p>
+      <p><strong>Gate and control.</strong> Base arm
+      (<code>76e1bf93</code>): <code>tests/test_velocity.py</code> 5 passed, exit 0; the new
+      <code>tests/test_velocity_session_continuity.py</code> is absent at base. Head arm
+      (<code>106e4bbb</code>): both files 11 passed, exit 0. The declared negative control makes
+      the final branch of <code>session_continuity()</code> yield <code>continued</code> instead
+      of <code>same_task</code>; the same-task case then reads <code>continued == 1</code> against
+      an expected <code>0</code> and fails (<code>1 failed</code>, exit 1). Logs:
+      <code>gate-head.log</code>, <code>gate-base.log</code>, <code>negative-control.log</code>,
+      <code>measurement-reckon-0920-0927.log</code>.</p>
     </section>
   </main>
 </body>
