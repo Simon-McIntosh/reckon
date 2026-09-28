@@ -2753,7 +2753,8 @@ detail         : ... conflicts with live claim ... held by run
     snapshotted without measuring the environment rather than the code.</p>
     <p><strong>Recorded and not repaired</strong>, both outside the node's declared write scope:
     the same empty manifest path also reaches <code>fence_argv</code> at
-    <code>reckon/_backends.py:2532</code>, where <code>Path("").parent</code> resolves to the
+    <code>reckon/_backends.py:2533</code> (base <code>ff0818f6</code>; <code>:2548</code> at the head),
+    where <code>Path("").parent</code> resolves to the
     composing process's directory and is offered to the fence as a writable root; and the dispatch
     layer already knows the run directory (<code>run_dir(run_id)</code>) it could name instead of
     the empty string, which would give such a resume a home under its run rather than none.</p>
@@ -2764,6 +2765,78 @@ detail         : ... conflicts with live claim ... held by run
       <figcaption>An unanchored manifest path made the worktree the home's location. A home now
       exists only under an absolute run directory; a live run's manifest path is absolute, so
       only the resume shape moved.</figcaption>
+    </figure>
+  </section>
+
+  <section id="a-resume-resolves-the-run-manifest-path">
+    <h3>a-resume-resolves-the-run-manifest-path &mdash; commit <code>f0c8db0f</code></h3>
+    <p><strong>What landed.</strong> A launch rebuilt from a live pointer now anchors to the
+    run's own manifest path instead of to whichever directory the rebuilding process happened to
+    stand in. The guard above removed the effect of an unusable path at the harness home, but it
+    left a fenced resume of such a run with <em>no</em> home, and the harness then falls back to
+    the operator's sealed <code>~/.claude</code> or <code>~/.codex</code> and exits
+    <code>Read-only file system</code>. A pointer does not always carry a usable path: the
+    top-level <code>manifest_path</code> is null on the live pointers this node observed, while
+    the node definition recorded beside it still names the absolute path the dispatch composed.
+    </p>
+    <p><strong>The resolution.</strong> <code>resume_plan</code> composes
+    <code>manifest_path=str(record.get("manifest_path") or "")</code> at
+    <code>reckon/crew/dispatch.py:7276</code> (base numbering; the launch call it feeds sits at
+    <code>:7267</code>). That composition now resolves the run's own manifest path in order: the
+    pointer's <code>node.manifest_path</code>, then the run directory's
+    <code>worker.json</code>, then the run directory's own <code>manifest.md</code>, which
+    dispatch already composes as a run's durable manifest and which is absolute by construction.
+    Applied at the three sites that rebuild a launch or its runtime environment from a live
+    pointer &mdash; <code>resume_plan</code>, <code>change_lane</code> and the supervisor spawn
+    path &mdash; and nowhere else in the file; the lane-reading region another node holds was
+    not touched. The worker record this revision's supervisor writes carries no manifest path
+    of its own, so for a pointer that records none the run directory is the answer; the record
+    is still read first and would take precedence if a writer ever records one there.</p>
+    <p><strong>The new test</strong> <code>tests/test_resume_anchors_the_run_harness_home.py</code>
+    composes a fenced dispatch for both dialects from the same absolute manifest, records it as a
+    live pointer whose top-level <code>manifest_path</code> is null and whose
+    <code>node.manifest_path</code> is absolute &mdash; the shape the review identified &mdash;
+    and requires the resumed launch to name the same home string the dispatch named. Both
+    dialects, because they disagree on all three names: clive speaks the claude dialect and reads
+    <code>CLAUDE_CONFIG_DIR</code> for a home it calls <code>harness</code>, codex reads
+    <code>CODEX_HOME</code> for <code>codex-home</code>. Each case also requires the home to be
+    absolute, inside the run directory, outside the worktree, and the worktree to stay empty; a
+    third case requires neither to read nor write outside the test's own temporary home, with
+    <code>RECKON_HOME</code> pointed at it and <code>Path.home</code> at a decoy whose metadata
+    snapshot is asserted unchanged.</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Revision</th><th>Files</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>baseline gate</td><td><code>83ba84af</code></td><td>the twelve files exercising <code>resume_plan</code> plus the harness-home test</td><td>329 passed, <strong>11 failed</strong> &mdash; the same eleven the after arm shows, no added ids</td></tr>
+        <tr><td>after gate</td><td><code>f0c8db0f</code></td><td>the same thirteen plus the new test</td><td><strong>335 passed</strong>, the same 11 failed &mdash; no added failing ids, the six added passes are the new test's cases</td></tr>
+        <tr><td>negative control</td><td><code>83ba84af</code>, scratch tree</td><td>the new test</td><td><strong>4 failed, 2 passed</strong>, exit 1, declared string verbatim on the log's first line, <code>EXIT=1</code> as the last line</td></tr>
+        <tr><td>pre-existing probe</td><td><code>83ba84af</code></td><td>the eleven red ids alone, their own basetemp</td><td><strong>11 failed</strong> &mdash; every red id is red at base independently of the gate</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The eleven pre-existing reds.</strong> Nine in <code>tests/test_crew.py</code> and
+    two in <code>tests/test_session_lives_on_its_run.py</code>, all failing inside the promotion
+    guard that refuses a run citing its own base as landed work
+    (<code>reckon/crew/promotion.py:330</code>, &ldquo;cites &hellip; as its own work, but that is
+    the base it was dispatched against&rdquo;). They are red at the base revision and at this
+    node's head, red solo as well as in the gate, and unrelated to the manifest-path resolution:
+    recorded as a follow-on, not triaged or repaired here, because they sit outside this node's
+    declared write scope.</p>
+    <p><strong>Review corrections carried into this record.</strong> The guard's return line is
+    <code>reckon/_backends.py:1936</code> at base, not <code>:1943</code> as first recorded; the
+    fence grant is at base <code>:2533</code> / head <code>:2548</code>, not <code>:2532</code>;
+    and every gate log now opens with the base revision, the tree and the command it was run
+    with. Logs under
+    <code>~/.config/reckon/crew/runs/r-20260928T133831833557-harness-home-lands-in-the-run-directory/logs/</code>:
+    <code>baseline-gate-resume.log</code>, <code>after-gate-resume.log</code>,
+    <code>negative-control-resume.log</code>, <code>preexisting-reds-baseline.log</code>.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/harness-home-anchoring.svg"
+           alt="Three lanes. At base, a record carrying no manifest path is composed to the parent of the empty string, which is the process working directory; the harness home resolves to the relative folder harness; seeding creates it beside the composing process and the worker, standing in its worktree, resolves the relative variable against the worktree, leaving an untracked harness/ there that the collector reads as dirty. At the guard, the same caller with the same empty manifest path anchors nothing: no home is seeded, no variable is invented, and the worktree stays empty, but a fenced resume of such a run has no home to reach and falls back to the operator's sealed dot directories. At the resolution, the resume reads the manifest path from the node definition the pointer carries, so the home lands under the run directory, absolute, outside the worktree."
+           style="max-width:820px;width:100%">
+      <figcaption>An unanchored manifest path made the worktree the home's location; the guard
+      refused to invent one; the resolution finds the run's own path so the resume reaches the
+      same home the dispatch composed. A live run's manifest path is absolute, so its home
+      resolves under the run directory in every revision.</figcaption>
     </figure>
   </section>
 
