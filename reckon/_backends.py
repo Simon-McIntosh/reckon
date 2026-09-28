@@ -1931,9 +1931,24 @@ def harness_home(dialect_name: str, run_directory: str | Path) -> Path | None:
     a run's sessions are found under the run rather than in the operator's dot
     directory. A dialect with no harness home of its own returns None, and no
     environment is invented for it.
+
+    A run directory that is not absolute anchors nothing, so it returns None
+    too. Such a path is not a location at all: it is whatever directory each
+    process that touches it happens to run in, so the home is created beside
+    the seeding process and the variable that names it resolves against the
+    harness's own working directory — the worktree — putting a run's harness
+    state in the tree the node was dispatched to work in. A caller with no
+    manifest path to derive a home from gets no home, the same as one whose
+    run directory does not exist yet, rather than a home whose location is
+    decided by a working directory.
     """
     declared = _HARNESS_HOME.get(dialect_name)
-    return None if declared is None else Path(run_directory) / declared[1]
+    if declared is None:
+        return None
+    directory = Path(run_directory)
+    if not directory.is_absolute():
+        return None
+    return directory / declared[1]
 
 
 def seed_harness_home(
@@ -2620,7 +2635,10 @@ def launch_plan(
     #
     # A manifest whose directory does not exist is not a live run — a preview
     # composes a plan before anything has been created — so no home is seeded
-    # and no variable is invented for a run that has nowhere to keep it.
+    # and no variable is invented for a run that has nowhere to keep it. A
+    # manifest path that is not absolute names no directory either: its parent
+    # is a working directory, and :func:`harness_home` refuses it for that
+    # reason rather than seeding a home where the seeding process stood.
     run_directory = None if manifest is None else Path(manifest).parent
     # Under the fence the run's write roots are created *before* the harness
     # home is resolved, because the run directory a manifest lands in may not
