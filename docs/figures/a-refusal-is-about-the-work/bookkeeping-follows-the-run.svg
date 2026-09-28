@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" font-family="ui-sans-serif, system-ui, sans-serif">
+  <style>
+    .box { fill: #ffffff; stroke: #334155; stroke-width: 1.5; }
+    .head { fill: #eef2ff; stroke: #4338ca; stroke-width: 1.5; }
+    .accept { fill: #ecfdf5; stroke: #047857; stroke-width: 1.5; }
+    .refuse { fill: #fef2f2; stroke: #b91c1c; stroke-width: 1.5; }
+    .record { fill: #fffbeb; stroke: #b45309; stroke-width: 1.5; }
+    .t { font-size: 12.5px; fill: #0f172a; }
+    .h { font-size: 14px; font-weight: 700; fill: #0f172a; }
+    .s { font-size: 11px; fill: #475569; }
+    .edge { stroke: #334155; stroke-width: 1.4; fill: none; marker-end: url(#a); }
+    .lab { font-size: 10.5px; fill: #475569; }
+  </style>
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <text x="30" y="32" class="h">Bookkeeping follows the run — the fact each refusal now reads instead of a restatement</text>
+  <text x="30" y="52" class="s">Each row: the run's record already carries the fact; the narrowing reads it, and the demand it replaces is struck out.</text>
+
+  <!-- Row 1: corrective attempt -->
+  <text x="30" y="92" class="h">1. A corrective attempt</text>
+  <rect x="30" y="104" width="250" height="76" rx="8" class="record"/>
+  <text x="44" y="128" class="t">record.attempt_kind</text>
+  <text x="44" y="147" class="t">= "resume" | "redispatch"</text>
+  <text x="44" y="168" class="s">the retry continues work that moved the plan</text>
+
+  <rect x="330" y="104" width="280" height="76" rx="8" class="box"/>
+  <text x="344" y="128" class="t">was: demand the plan move again</text>
+  <text x="344" y="148" class="t" style="text-decoration: line-through">--no-impl-change required</text>
+  <text x="344" y="168" class="s">charges a second node for one advance</text>
+
+  <rect x="660" y="104" width="270" height="76" rx="8" class="accept"/>
+  <text x="674" y="128" class="t">now: impl_move = exempt</text>
+  <text x="674" y="148" class="s">reason "corrective-run:&lt;kind&gt;"</text>
+  <text x="674" y="168" class="s">no operator flag</text>
+
+  <line x1="280" y1="142" x2="330" y2="142" class="edge"/>
+  <line x1="610" y1="142" x2="660" y2="142" class="edge"/>
+  <text x="285" y="134" class="lab">read</text>
+
+  <!-- Row 2: review outcome -->
+  <text x="30" y="232" class="h">2. A review run's outcome</text>
+  <rect x="30" y="244" width="250" height="76" rx="8" class="record"/>
+  <text x="44" y="268" class="t">stored review of the reviewed run</text>
+  <text x="44" y="287" class="t">total = 17, findings = 3</text>
+  <text x="44" y="308" class="s">the review's own deliverable</text>
+
+  <rect x="330" y="244" width="280" height="76" rx="8" class="box"/>
+  <text x="344" y="268" class="t">was: --outcome demanded</text>
+  <text x="344" y="288" class="t" style="text-decoration: line-through">a non-passing gate needs a summary</text>
+  <text x="344" y="308" class="s">operator restates a figure already stored</text>
+
+  <rect x="660" y="244" width="270" height="76" rx="8" class="accept"/>
+  <text x="674" y="268" class="t">now: outcome defaults to</text>
+  <text x="674" y="288" class="t">"review scored 17, 3 finding(s)"</text>
+  <text x="674" y="308" class="s">a run with no stored review still refused</text>
+
+  <line x1="280" y1="282" x2="330" y2="282" class="edge"/>
+  <line x1="610" y1="282" x2="660" y2="282" class="edge"/>
+  <text x="285" y="274" class="lab">read</text>
+
+  <!-- Row 3: verify-gate -->
+  <text x="30" y="372" class="h">3. verify-gate on a checkout past the merge</text>
+  <rect x="30" y="384" width="250" height="96" rx="8" class="record"/>
+  <text x="44" y="408" class="t">integrated is an ancestor of HEAD</text>
+  <text x="44" y="427" class="t">and the run's changed paths</text>
+  <text x="44" y="446" class="t">are identical between them</text>
+  <text x="44" y="468" class="s">the extra commits cannot move the gate's tree</text>
+
+  <rect x="330" y="384" width="280" height="96" rx="8" class="box"/>
+  <text x="344" y="408" class="t">was: checkout == integrated, exactly</text>
+  <text x="344" y="428" class="t" style="text-decoration: line-through">else "wrong tree"</text>
+  <text x="344" y="448" class="s">two bookkeeping commits force a re-checkout</text>
+  <text x="344" y="468" class="s">of a tree the gate does not depend on</text>
+
+  <rect x="660" y="384" width="270" height="96" rx="8" class="accept"/>
+  <text x="674" y="408" class="t">now: gate runs (ran = true)</text>
+  <text x="674" y="428" class="s">a differing changed path refuses</text>
+  <text x="674" y="448" class="s">unknown changed paths refuse too</text>
+  <text x="674" y="468" class="s">(an unknown scope is not an empty one)</text>
+
+  <line x1="280" y1="432" x2="330" y2="432" class="edge"/>
+  <line x1="610" y1="432" x2="660" y2="432" class="edge"/>
+  <text x="285" y="424" class="lab">read</text>
+
+  <rect x="30" y="512" width="900" height="96" rx="8" class="refuse"/>
+  <text x="44" y="538" class="h">Still refused — the real defects</text>
+  <text x="44" y="562" class="t">A run with no stored review and no --outcome. A checkout that diverged from the integrated revision, or whose extra commits touch a path the run changed, or whose changed paths cannot be resolved.</text>
+  <text x="44" y="584" class="t">A record that is not a corrective attempt and whose plan did not move.
+    <tspan class="s">The negative control restores the exact-equality check, and the two-commits-past case is refused again.</tspan></text>
+</svg>
