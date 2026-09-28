@@ -209,6 +209,28 @@ class ReviewConfig(ConfiguredBaseModel):
     How a finished run is sized to a review. Declared on the flight config so a host or project layer retunes the tier thresholds without a code change; the resolver reads them from the resolved config.
     """
     tiers: Optional[ReviewTiers] = Field(default=None, description="""The thresholds that size a review to a finished run's risk. The resolver reads them from the resolved flight config so a host or project layer retunes the tiers without a code change.""")
+    suite: Optional[ReviewSuite] = Field(default=None, description="""The project's own suite command and whole-run budget. Absent means the project declares no standing suite, and no run is recorded for it.""")
+
+
+class ReviewSuite(ConfiguredBaseModel):
+    """
+    The project's own suite: the command the coordinator runs once at the merged head, and the whole-run wall-clock budget it is held to. Declared on the flight config so a project names its own suite rather than reckon fixing one.
+    """
+    command: list[str] = Field(default=..., description="""The suite command as an argument vector, run from the checkout root. The first entry is the executable, resolved against the working directory and PATH the run is started in.""")
+    budget: str = Field(default=..., description="""Whole-run wall-clock budget, written as an integer followed by a unit — `s`, `m` or `h`. A run that exceeds it is stopped and recorded as over budget rather than being left to hang.""")
+
+    @field_validator('budget')
+    def pattern_budget(cls, v):
+        pattern=re.compile(r"^[0-9]+[smh]$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid budget format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid budget format: {v}"
+            raise ValueError(err_msg)
+        return v
 
 
 class ReviewTiers(ConfiguredBaseModel):
@@ -517,6 +539,7 @@ class TickerConfig(ConfiguredBaseModel):
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 FlightConfig.model_rebuild()
 ReviewConfig.model_rebuild()
+ReviewSuite.model_rebuild()
 ReviewTiers.model_rebuild()
 BackendConfig.model_rebuild()
 PlacementConfig.model_rebuild()

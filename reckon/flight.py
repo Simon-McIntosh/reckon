@@ -68,8 +68,32 @@ PLAN_REVIEW_GATE_DEFAULT = "report"
 # should still resolve rather than fail on a key it never set.
 REVIEW_KEY = "review"
 REVIEW_TIERS_KEY = "tiers"
+REVIEW_SUITE_KEY = "suite"
 DEFAULT_LIGHT_CHANGED_LINES = 50
 DEFAULT_LIGHT_TIME_BUDGET = "10m"
+
+# The unit each budget suffix is worth in seconds. A budget is written as an
+# integer followed by one of these letters, and the reader converts it once so
+# every caller measures the same run against the same number.
+_BUDGET_UNITS = {"s": 1, "m": 60, "h": 3600}
+
+
+@dataclass(frozen=True)
+class SuiteDeclaration:
+    """A project's declared suite: the command it runs and its whole-run budget.
+
+    ``command`` is an argument vector run from the checkout root; ``budget`` is
+    the wall-clock ceiling, kept as the string the config wrote so a reader can
+    echo the declaration back. :meth:`budget_seconds` is the ceiling as a
+    number of seconds.
+    """
+
+    command: tuple[str, ...]
+    budget: str
+
+    def budget_seconds(self) -> int:
+        """The budget as a whole number of seconds."""
+        return int(self.budget[:-1]) * _BUDGET_UNITS[self.budget[-1]]
 
 
 class FlightConfigError(Exception):
@@ -594,6 +618,49 @@ def review_tier_thresholds(
         else DEFAULT_LIGHT_TIME_BUDGET
     )
     return lines, budget
+
+
+def review_suite(config: Mapping[str, Any] | None) -> SuiteDeclaration | None:
+    """Return the suite a resolved config declares, or ``None`` when it declares none.
+
+    The block is ``review.suite``: an argument vector run from the checkout
+    root, and a budget written as an integer followed by ``s``, ``m`` or ``h``.
+    Absence — no ``review`` block, no ``suite`` key, or an in-process config
+    assembled by hand — is not an error: a project that declares no standing
+    suite simply has none, and the caller records no run for it. A block that
+    is present but malformed is refused by name rather than silently ignored,
+    because a suite that looks declared and never runs is worse than one that
+    was never declared.
+    """
+    review = (config or {}).get(REVIEW_KEY)
+    suite = review.get(REVIEW_SUITE_KEY) if isinstance(review, Mapping) else None
+    if suite is None:
+        return None
+    if not isinstance(suite, Mapping):
+        raise FlightConfigError(
+            "flight config",
+            f"{REVIEW_KEY}.{REVIEW_SUITE_KEY}",
+            "must be a mapping carrying 'command' and 'budget'",
+        )
+    command = suite.get("command")
+    if (
+        not isinstance(command, (list, tuple))
+        or not command
+        or any(not isinstance(part, str) for part in command)
+    ):
+        raise FlightConfigError(
+            "flight config",
+            f"{REVIEW_KEY}.{REVIEW_SUITE_KEY}.command",
+            "must be a non-empty list of strings",
+        )
+    budget = suite.get("budget")
+    if not isinstance(budget, str) or re.fullmatch(r"[0-9]+[smh]", budget) is None:
+        raise FlightConfigError(
+            "flight config",
+            f"{REVIEW_KEY}.{REVIEW_SUITE_KEY}.budget",
+            "must be an integer followed by s, m or h",
+        )
+    return SuiteDeclaration(command=tuple(command), budget=budget)
 
 
 def placement_for(backend: Mapping[str, Any]) -> dict[str, Any] | None:
