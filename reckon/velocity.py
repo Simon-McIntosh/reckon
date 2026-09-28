@@ -33,6 +33,7 @@ import datetime as dt
 import hashlib
 import json
 import re
+import shlex
 import sqlite3
 import statistics
 import subprocess
@@ -808,7 +809,10 @@ def _receipt_objects(text):
 
     A receipt is an object carrying a boolean ``ok``. Results are often clipped
     after a few hundred bytes, so a bare ``"ok": true`` marker or an
-    ``already_promoted`` line still counts, while a quiet shell never does.
+    ``already_promoted`` line still counts, while a quiet shell never does. A
+    printed ``Error:`` line is a failure receipt, and its presence suppresses the
+    clipped-marker fallback — a run whose command refused must not also read as a
+    success because its clipped tail happened to carry ``"ok": true``.
     """
     receipts = [obj for obj in _json_objects(text) if isinstance(obj.get("ok"), bool)]
     for line in text.splitlines():
@@ -820,6 +824,9 @@ def _receipt_objects(text):
             continue
         if isinstance(obj, dict) and isinstance(obj.get("ok"), bool):
             receipts.append(obj)
+    receipts.extend(
+        {"ok": False} for _ in re.findall(r"^Error: (.+)$", text, re.MULTILINE)
+    )
     if not receipts:
         receipts.extend(
             {"ok": match.group(1) == "true"}
@@ -832,14 +839,54 @@ def _receipt_objects(text):
     return receipts
 
 
+PROMOTION_VERBS = frozenset({"complete", "promote"})
+RUN_ID = re.compile(r"r-\d{8}T\d+-[a-zA-Z0-9_.-]+")
+
+
+def _shell_tokens(command):
+    """Split a shell command the way the shell would, keeping ``_promote`` and
+    like as single tokens and breaking on ``;``/``|``/``&&``; an empty list on a
+    malformed command rather than raising."""
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        return list(lexer)
+    except ValueError:
+        return []
+
+
+def _crew_verbs(command):
+    """The verb token immediately following each ``crew`` token.
+
+    Reading the token after ``crew`` rather than searching the whole command is
+    what keeps prose inside a goal or a resume advice from classifying a dispatch
+    or a resume as a promotion.
+    """
+    tokens = _shell_tokens(command)
+    return {tokens[index + 1] for index, word in enumerate(tokens[:-1]) if word == "crew"}
+
+
+def _literal_flag(command, flag):
+    """The one value of a ``--flag value`` pair, else None.
+
+    An interpolated value (``$RUN``) or a repeated flag is ambiguous and refused,
+    because the caller reads a plan identifier off it and a guess would attribute
+    a landing to the wrong node.
+    """
+    tokens = _shell_tokens(command)
+    values = {tokens[index + 1] for index, word in enumerate(tokens[:-1]) if word == flag}
+    return next(iter(values)) if len(values) == 1 and not any("$" in v for v in values) else None
+
+
 def promotion_receipts(paths, *, window_start=START, window_end=END):
     """Run ids a coordinator session's transcript records as successfully promoted.
 
-    Only a Bash call that invokes a crew promotion verb is considered, and only
-    a result that reports success. The run id is read from the receipt, or from
-    a literal ``--run`` flag on the command when the receipt omits it. This is
-    the transcript-side landing source: a node can be promoted without leaving a
-    promote commit, and the receipt is the only record of it.
+    A call counts only when the token following ``crew`` is a promotion verb, so
+    prose inside a goal or a resume advice never classifies a call. Only a result
+    that reports success counts. The run id is read from the receipt, or from an
+    unquoted ``--run`` flag when the receipt omits it. This is the transcript-side
+    landing source: a node can be promoted without leaving a promote commit, and
+    the receipt is the only record of it.
     """
     start, end = stamp(window_start), stamp(window_end)
     landed = set()
@@ -876,9 +923,10 @@ def promotion_receipts(paths, *, window_start=START, window_end=END):
                             )
                         results[block.get("tool_use_id")] = str(text or "")
         for uid, command in uses.items():
-            if not re.search(r"\bcrew\b", command) or not re.search(
-                r"\b(complete|promote)\b", command
-            ):
+            if not _crew_verbs(command) & PROMOTION_VERBS:
+                continue
+            tokens = _shell_tokens(command)
+            if "--help" in tokens or "--dry-run" in tokens:
                 continue
             result = results.get(uid)
             if result is None:
@@ -888,8 +936,8 @@ def promotion_receipts(paths, *, window_start=START, window_end=END):
                     continue
                 run = obj.get("run_id") or (obj.get("record") or {}).get("run_id")
                 if not run:
-                    flag = re.search(r"--run[=\s]+(r-[^\s'\"]+)", command)
-                    run = flag.group(1) if flag else None
+                    flag = _literal_flag(command, "--run")
+                    run = flag if flag and RUN_ID.fullmatch(flag) else None
                 if run:
                     landed.add(run)
     return landed
