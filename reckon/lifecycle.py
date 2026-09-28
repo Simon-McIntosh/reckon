@@ -18,8 +18,23 @@ TERMINAL_STATUSES = frozenset(
 )
 
 
+def is_section_scoped(dep: Any) -> bool:
+    """Whether a dependency row waits on behalf of one section of its plan.
+
+    A resolved ref carries the waiting section's identity only when it was
+    declared as that section's wait, so such a row belongs to the section
+    rather than to the plan.
+    """
+
+    return bool(isinstance(dep, dict) and dep.get("source_section"))
+
+
 def unresolved_dependencies(deps: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Return dependency rows that do not resolve to completed plans."""
+    """Return dependency rows that do not resolve to completed plans.
+
+    Section-scoped rows are left to the section that declares them: folding one
+    in here reports the whole plan blocked by a single section's wait.
+    """
 
     return [
         {
@@ -29,6 +44,7 @@ def unresolved_dependencies(deps: list[dict[str, Any]]) -> list[dict[str, Any]]:
         }
         for dep in deps
         if isinstance(dep, dict)
+        and not is_section_scoped(dep)
         and (not dep.get("found") or dep.get("status") not in COMPLETED_STATUSES)
     ]
 
