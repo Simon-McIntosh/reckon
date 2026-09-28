@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="108">
+<meta name="plan-version" content="109">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -368,10 +368,11 @@
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
     <p class="r-fu-outcome">Landed: follower-prints-only-policy-rows (merged 6f8be09a, re-review 90, 0 added failures by id). The follower applies the audit's row policy. Coordinator rows are always shown, observer rows unmarked, and same-state updates move only the counter block. Each noise pair that still occurs is held for its window and printed only if the pair does not complete. A held row is recorded as reported only once released, so a re-arm inside a hold window re-evaluates it. Replaying the 2026-09-25 stream through the pane's own row path prints fewer than half its rows, with every coordinator row kind kept. The first review (84) found a lost opener on re-arm and untested wiring, and both were fixed before merge.</p>
     </article>
-<article class="r-fu" data-id="f-tfcctf-host-change-test-asserts-its-baseline" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfcctf-host-change-test-asserts-its-baseline" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="2026-09-28T10:19:51+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">The host-change test asserts the baseline row it promises</h4>
     <div class="r-fu-body"><p>The review of <code>follower-survives-a-host-change</code> (93) left two findings. First, the <code>all()</code> assertions at lines 193 and 196 of its test hold vacuously over an empty list of emitted rows. So the test does not assert the one baseline row the done-when names, and a follower that emits nothing would still pass. Assert the row count, then the row's shape. Prove it with a control that suppresses the baseline row, which must turn the test red. Second, the "2 passed" half of the base figure has no single-invocation log in the run directory. Record one. This is a test-only change.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-host-change-test-asserts-its-baseline</pre>
+    <p class="r-fu-outcome">Landed: host-change-test-asserts-its-baseline (merged 8740332e, review 90, 0 added failures by id). The test now asserts exactly one baseline row before the shape checks, and suppressing the baseline row turns it red. The review's minor findings are recorded in the merge message.</p>
     </article>
 <article class="r-fu" data-id="f-tfcctf-rearm-test-comment-matches-the-code" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The re-arm test&#x27;s section comment describes the framed, terminal-only burst</h4>
