@@ -79,6 +79,16 @@
         shows the same outcome for each case, is therefore unmet through the command. One node passes both from the CLI
         and measures the released and never-registered cases through <code>reckon crew dispatch --dry-run</code> itself,
         with a base arm taken at a revision where its test files exist.</p>
+      <p><strong>Landed.</strong> Commit <code>b6b8742a</code> <em>fix(crew): reach the watcher gate on the dispatch
+        dry run</em> makes the command&rsquo;s <code>--dry-run</code> branch pass the caller&rsquo;s session,
+        <code>watch_required=True</code> and the resolved watch override to <code>plan_dispatch</code>, the same three
+        arguments the launching branch passes, and maps <code>WatcherRequired</code> to the
+        <code>watcher-required</code> error key on exit code 8. <code>tests/test_dry_run_reaches_admission.py</code>
+        drives <code>reckon crew dispatch --dry-run</code> through click&rsquo;s runner against a synthesised mount: a
+        released registration proceeds at exit 0 with the re-arm warning in the output, and a session that never
+        registered is refused at exit 8 as <code>watcher-required</code>. Base arm (unpatched <code>cli.py</code> at
+        <code>fb747528</code>) 2 failed, 4 passed; head arm 6 passed, exit 0. Full record:
+        <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed#s3">&sect;3 landed</a>.</p>
     </div>
 
     <h2 id="s4">§4 — Bookkeeping follows the run</h2>
