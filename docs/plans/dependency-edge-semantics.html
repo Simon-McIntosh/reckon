@@ -488,6 +488,39 @@
       </figure>
       <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#source-section-depends">mechanism, base/head arms, negative control and figure</a>.
       Section closure and the driving followup remain for the coordinator.</p>
+      <p><strong>The whole-value defect, 2026-09-28 (the review's second finding):</strong> a
+      <code>plan-section-depends-on</code> value the reader cannot parse as an object — invalid JSON, or
+      JSON that is not an object — returned <code>None</code>, which is also how the reader reports an
+      absent declaration, so every wait the author wrote disappeared with no finding. A malformed
+      <em>entry</em> was already refused by name; the whole value is now carried in the mapping under one
+      key that is not a section identity (<code>&lt;plan-section-depends-on&gt;</code>, which the
+      segment grammar can never produce), so <code>section_dependency_refusals</code> reports it as
+      <code>invalid-section-dependency</code> with the meta and the malformation in the message; edge
+      builders skip the key because it names no section, so no phantom section enters a readiness set
+      and the plan keeps its whole-plan behaviour. A meta carrying no content still reads as no
+      declaration, as does an absent meta.</p>
+      <p><strong>Arms, measured.</strong> Both new cases fail at base with <code>assert None</code>
+      (<code>2 failed</code>, the base tree's own module and cwd resolved in the log header); the gate
+      over <code>tests/test_schema.py tests/test_roadmap.py</code> reads <strong>3 failed / 1659
+      passed</strong> at base and <strong>3 failed / 1661 passed</strong> at head, the same three
+      pre-existing ids — zero added. An end-to-end probe through <code>build_roadmap</code> shows a
+      malformed value as a <code>wiring_findings</code> row naming the plan, the meta and the
+      malformation, with no phantom readiness keys, while the valid-mapping and malformed-entry arms of
+      the same probe show the refusal channel is live in both directions.</p>
+      <p><strong>Declared negative control:</strong> restoring the silent <code>None</code> return in a
+      scratch copy fails the invalid-JSON case, with the declared string as the red log's first line.</p>
+      <figure>
+        <img src="/reckon/figures/dependency-edge-semantics/malformed-section-mapping.svg"
+             alt="Two panels over the same malformed value: before, the reader returns None and every
+                  declared wait is gone with nothing reported; after, the mapping carries the defect
+                  under one non-section key and section_dependency_refusals reports it as
+                  invalid-section-dependency, naming the meta and the malformation.">
+        <figcaption>Both values declare a wait on <code>plan-b#s3</code>; only the reader's handling of
+        a value it cannot parse as an object differs, and that decides whether the defect is reported
+        or silently reads as no declaration at all.</figcaption>
+      </figure>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#unreadable-section-mapping">whole-value refusal arm, its declared negative control and figure</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
     </aside>
 
     <aside id="section-wait-reported-with-its-section">
