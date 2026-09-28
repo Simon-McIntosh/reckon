@@ -439,6 +439,91 @@ def _declares_absent_commits(entry: str) -> bool:
     return head in _MANIFEST_NOTHING
 
 
+# Roles whose run carries no repository work to commit: a review delivers a
+# report and an investigation delivers findings, so a ``commits:`` line that
+# declares an absence is the honest answer and ``none`` is the word for it.
+_COMMITLESS_ROLES: frozenset[str] = frozenset({"review", "investigate"})
+
+# What may follow an absence word for the word to stand alone: the end of the
+# value, whitespace, or a separator a node writes before its prose. A letter or
+# digit after the letters means a longer word that merely begins with them.
+_ABSENCE_BOUNDARY = r"(?:\s|$|[,;:—\-()])"
+
+_FIELD_LINE = re.compile(r"^([A-Za-z_][\w-]*)\s*:\s*(.*)$")
+
+
+def _raw_manifest_field(text: str, key: str) -> str | None:
+    """The value one ``key: value`` field carries, as the node wrote it.
+
+    The parsed manifest cannot answer this question. Its list reader empties a
+    field that holds only an absence word, so ``commits: none, no repository
+    change`` loses the word ``none`` and arrives as ``['no repository change']``
+    — the declaration gone before anything reads it. What the node wrote is the
+    text, so the raw line's value is returned here instead. A JSON manifest
+    shares no such line and returns ``None``; the caller then falls back to the
+    parsed entries, which is all a JSON field ever offered.
+    """
+    if text.lstrip().startswith(("{", "[")):
+        return None
+    for line in text.splitlines():
+        match = _FIELD_LINE.match(line)
+        if match and match.group(1).lower() == key.lower():
+            return match.group(2)
+    return None
+
+
+def _opens_with_an_absence_word(value: str) -> bool:
+    """Whether a raw field value opens with an absence word and then a boundary.
+
+    The word must stand alone — followed by the end of the value, whitespace, or
+    a separator (comma, semicolon, colon, dash, em dash, opening parenthesis).
+    ``nonesuch`` begins with the letters of ``none`` but is a different word, so
+    it is not a declaration and is read as the citation it looks like.
+    """
+    stripped = value.strip()
+    return any(
+        re.match(rf"{re.escape(word)}{_ABSENCE_BOUNDARY}", stripped, re.IGNORECASE)
+        for word in _MANIFEST_NOTHING
+        if word
+    )
+
+
+def _commits_field_declares_absence(
+    manifest_text: str, record: Mapping[str, Any]
+) -> bool:
+    """Whether a commitless run's ``commits`` field declares an absence.
+
+    A report-only node writes one sentence into the field — ``commits: none
+    (review node, no repository change)`` or ``commits: none, no repository
+    change``. The list reader splits the field on commas and empties a field
+    holding only an absence word, so once parsed neither shape still opens with
+    the declaration: the first arrives as ``['none (review node', 'no repository
+    change)']`` and the second as ``['no repository change']``. Read entry by
+    entry, the surviving tail looks like an unresolvable citation and the line
+    has to be blanked by hand — the symptom this recognition removes.
+
+    So the declaration is read from the raw ``commits`` value the node wrote, by
+    its first token: the value declares absence when, after leading whitespace,
+    it opens with one of the absence words the reports module defines and that
+    word stands alone — at the end of the value or before a separator. A value
+    whose first token is anything else, a revision included, is not a
+    declaration.
+
+    The reading is given only to a role that carries no repository work. A role
+    that commits keeps the entry-by-entry reading, so a field opening with
+    ``none`` beside further text is still resolved and still refused when that
+    text names nothing.
+    """
+    from reckon.crew.recovery import _pointer_role
+
+    if _pointer_role(record) not in _COMMITLESS_ROLES:
+        return False
+    raw = _raw_manifest_field(manifest_text, "commits")
+    if raw is None:
+        return False
+    return _opens_with_an_absence_word(raw)
+
+
 def _unresolved_citations(root: Path, entries: Iterable[str]) -> list[str]:
     """The cited identifiers that resolve to no object in the given store.
 
@@ -529,16 +614,19 @@ def _require_gate_evidence(
     tree = Path(str(record.get("worktree") or ""))
     manifest_present, fresh = _manifest_freshness(record)
     delivered: dict[str, Any] = {}
+    delivered_text = ""
     if manifest_present and fresh and tree.is_dir():
         try:
-            delivered = parse_manifest(
-                Path(str(record["manifest_path"])).read_text(encoding="utf-8")
+            delivered_text = Path(str(record["manifest_path"])).read_text(
+                encoding="utf-8"
             )
+            delivered = parse_manifest(delivered_text)
         except (OSError, KeyError, ValueError):
             delivered = {}
     declared = [
         str(sha).strip() for sha in (delivered.get("commits") or []) if str(sha).strip()
     ]
+    declared_absent = _commits_field_declares_absence(delivered_text, record)
 
     presented = [str(sha).strip() for sha in commits if str(sha).strip()]
     if presented:
@@ -586,7 +674,7 @@ def _require_gate_evidence(
     # nothing is the defect this refusal exists for, so it is raised under the
     # citation's own name before the commitless guard below can answer with the
     # broader complaint that no commit was cited at all.
-    unresolved = _unresolved_citations(tree, declared)
+    unresolved = [] if declared_absent else _unresolved_citations(tree, declared)
     if unresolved:
         raise CrewError(
             f"run {run_id!r} cites "
@@ -606,11 +694,15 @@ def _require_gate_evidence(
     # neither a revision nor an omission, and matching a literal "none"
     # would refuse it. Resolving instead of pattern-matching cannot make
     # that mistake.
-    stated = [
-        candidate
-        for candidate in declared
-        if candidate and _commit_resolves_in(tree, candidate)
-    ]
+    stated = (
+        []
+        if declared_absent
+        else [
+            candidate
+            for candidate in declared
+            if candidate and _commit_resolves_in(tree, candidate)
+        ]
+    )
     if stated:
         raise CrewError(
             f"run {run_id!r} has a passing gate and cites no commit, but its "
@@ -1337,6 +1429,30 @@ def record_gate_rerun_at_integrated_revision(
     }
 
 
+def _manifest_cites_a_commit(
+    manifest: Mapping[str, Any], record: Mapping[str, Any], manifest_text: str
+) -> bool:
+    """Whether a manifest's ``commits`` field cites at least one commit.
+
+    The field is free text a worker wrote, and a run with nothing to commit
+    writes a sentence that opens with the declaration word ``none`` — the shape
+    a review delivers. Such a line is not a citation, so it must not answer the
+    commit-for-changed-manifest guard's question: a manifest that names an
+    in-repository path needs the commit that contains it, and a declared absence
+    over one is a contradiction the guard must read as the missing commit it is.
+    An entry that names a commit is a citation; a declared absence is not, and
+    any other value counts as a citation, so an unrecognised spelling is refused
+    rather than silently dropped. A commitless role's raw-field declaration is
+    honoured first, so a sentence whose commas split it into several entries — or
+    whose declaration word the list reader empties — is still read as the single
+    absence it is rather than as a citation list.
+    """
+    if _commits_field_declares_absence(manifest_text, record):
+        return False
+    entries = [str(item).strip() for item in (manifest.get("commits") or ())]
+    return any(entry and not _declares_absent_commits(entry) for entry in entries)
+
+
 def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:
     """True when the manifest's changed_paths declare none in prose.
 
@@ -1415,22 +1531,24 @@ def _require_commit_for_changed_manifest(
     entirely outside it — a report-only or review run — to promote without a
     commit, which is its correct disposition. The chain answers the narrower
     question first: only once a path needs a commit does the absent ``commits``
-    field become the defect.
+    field become the defect. A ``commits`` line that declares its own absence
+    is not a citation, so it does not answer the question either: a run naming an
+    in-repository path while declaring it has no commit is the contradiction this
+    guard exists for, whatever role carried it.
     """
     manifest_present, fresh = _manifest_freshness(record)
     if not manifest_present or not fresh:
         return
     try:
-        manifest = parse_manifest(
-            Path(str(record["manifest_path"])).read_text(encoding="utf-8")
-        )
+        manifest_text = Path(str(record["manifest_path"])).read_text(encoding="utf-8")
+        manifest = parse_manifest(manifest_text)
     except (OSError, KeyError, ValueError):
         return
     if (
         str(manifest.get("status") or "").strip().lower() != "complete"
         or not manifest.get("changed_paths")
         or _prose_changed_paths_name_no_paths(manifest)
-        or manifest.get("commits")
+        or _manifest_cites_a_commit(manifest, record, manifest_text)
         or not _changed_paths_inside_repository(manifest, record)
     ):
         return

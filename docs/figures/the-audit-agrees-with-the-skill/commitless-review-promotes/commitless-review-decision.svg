@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 560" role="img"
+     aria-labelledby="title desc" font-family="system-ui, sans-serif">
+  <title id="title">Where a complete manifest's disposition is decided</title>
+  <desc id="desc">A complete manifest with changed_paths reaches the
+  commit-for-changed-manifest guard. If no named path lies inside the run's own
+  repository the run promotes with commits: [] — the report-only and review
+  case. If a path does lie inside it, the commits field is read: a citation
+  promotes, and a declared absence or a missing field is refused with "manifest
+  field 'commits' is missing", whatever role carried the run.</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3f4756"/>
+    </marker>
+  </defs>
+
+  <style>
+    .box { fill: #ffffff; stroke: #3f4756; stroke-width: 1.5; rx: 8; }
+    .q   { fill: #eef2f9; stroke: #3f4756; stroke-width: 1.5; }
+    .promote { fill: #e7f4ec; stroke: #2f7d4f; stroke-width: 1.5; }
+    .refuse  { fill: #fbeaea; stroke: #a5322f; stroke-width: 1.5; }
+    .lbl { fill: #1d2330; font-size: 15px; }
+    .sm  { fill: #3f4756; font-size: 13px; }
+    .mono { font-family: ui-monospace, monospace; font-size: 12.5px; }
+    .edge { stroke: #3f4756; stroke-width: 1.5; fill: none;
+            marker-end: url(#arrow); }
+  </style>
+
+  <text x="470" y="34" text-anchor="middle" class="lbl"
+        font-size="17" font-weight="600">
+    A complete manifest with changed_paths: where its disposition is decided
+  </text>
+
+  <rect x="300" y="60" width="340" height="52" class="box"/>
+  <text x="470" y="82" text-anchor="middle" class="lbl" font-weight="600">
+    complete manifest with changed_paths
+  </text>
+  <text x="470" y="101" text-anchor="middle" class="sm mono">
+    commits: none (review node, no repository change)
+  </text>
+
+  <path class="edge" d="M470 112 L470 150"/>
+
+  <rect x="300" y="150" width="340" height="58" class="q"/>
+  <text x="470" y="175" text-anchor="middle" class="lbl">
+    does any named path lie inside
+  </text>
+  <text x="470" y="196" text-anchor="middle" class="lbl">
+    the run's own repository?
+  </text>
+
+  <path class="edge" d="M300 179 L140 179 L140 250"/>
+  <text x="152" y="172" class="sm">no</text>
+
+  <path class="edge" d="M640 179 L800 179 L800 250"/>
+  <text x="648" y="172" class="sm">yes</text>
+
+  <rect x="20" y="250" width="240" height="72" class="promote"/>
+  <text x="140" y="281" text-anchor="middle" class="lbl" font-weight="600">
+    promotes, commits: []
+  </text>
+  <text x="140" y="303" text-anchor="middle" class="sm">
+    report-only / review work
+  </text>
+
+  <rect x="680" y="250" width="240" height="58" class="q"/>
+  <text x="800" y="275" text-anchor="middle" class="lbl">
+    does the commits field
+  </text>
+  <text x="800" y="296" text-anchor="middle" class="lbl">
+    cite a commit?
+  </text>
+
+  <path class="edge" d="M680 279 L560 279 L560 350"/>
+  <text x="566" y="272" class="sm">no</text>
+
+  <path class="edge" d="M920 279 L920 350"/>
+  <text x="928" y="272" class="sm">yes</text>
+
+  <rect x="440" y="350" width="240" height="72" class="refuse"/>
+  <text x="560" y="381" text-anchor="middle" class="lbl" font-weight="600">
+    refused
+  </text>
+  <text x="560" y="403" text-anchor="middle" class="sm mono">
+    manifest field 'commits' is missing
+  </text>
+
+  <rect x="810" y="350" width="120" height="72" class="promote"/>
+  <text x="870" y="381" text-anchor="middle" class="lbl" font-weight="600">
+    promotes
+  </text>
+  <text x="870" y="403" text-anchor="middle" class="sm">
+    with the commit
+  </text>
+
+  <rect x="20" y="470" width="900" height="66" class="box"/>
+  <text x="40" y="498" class="sm">
+    The declaration is honoured by where the run's paths lie, not by its role name.
+  </text>
+  <text x="40" y="520" class="sm">
+    A commitless role's whole-field <tspan class="mono">none (…)</tspan> is read
+    before the field is split on commas, so a parenthetical comma no longer
+    leaves the tail looking like a citation.
+  </text>
+</svg>
