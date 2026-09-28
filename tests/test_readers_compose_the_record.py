@@ -6,7 +6,9 @@ composed with its fragments, because a fragment carries the anchors a reader
 is expected to find. A record with no fragments is served and audited exactly
 as the raw file, so nothing is rewritten for the records that predate
 fragments. A record is spelled at either the archived or the live path, and
-both spellings compose. When the ledger cannot be read, both readers fall back
+both spellings compose. Each record names the plan it documents in its own
+``plan-evidence-for`` meta, which is what decides the fragments composed in —
+not the record's filename. When the ledger cannot be read, both readers fall back
 to the record's own bytes and say so, because a record whose fragments are
 hidden by a read failure otherwise looks exactly like one with none.
 """
@@ -40,6 +42,12 @@ RECORD_BYTES = (
     b'  <meta name="plan-evidence-for" content="composed-plan">\n'
     b'</head><body><main class="plan-doc"><h1>Record</h1></main></body></html>\n'
 )
+
+
+def _record_bytes(plan: str) -> bytes:
+    """A record naming ``plan`` in its own metas, which is what composes it."""
+
+    return RECORD_BYTES.replace(b'content="composed-plan"', f'content="{plan}"'.encode())
 
 # A relative <img src> is an audit ERROR (it 404s in the SPA), and it lives
 # only in the fragment, so it is reported iff the fragment was composed in.
@@ -110,11 +118,11 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         )
         record = _record_path(docs, plan, spelling)
         record.parent.mkdir(parents=True, exist_ok=True)
-        record.write_bytes(RECORD_BYTES)
+        record.write_bytes(_record_bytes(plan))
 
     bare = _record_path(docs, BARE_PLAN, "archive")
     bare.parent.mkdir(parents=True, exist_ok=True)
-    bare.write_bytes(RECORD_BYTES)
+    bare.write_bytes(_record_bytes(BARE_PLAN))
 
     mounts_file = tmp_path / "config" / "mounts.json"
     mounts_file.parent.mkdir(parents=True, exist_ok=True)
@@ -160,7 +168,7 @@ def test_the_served_record_is_the_composed_bytes_and_its_etag_tracks_a_fragment(
     try:
         status, body, etag = _get(server.server_port, _record_route(plan, spelling))
         assert status == 200
-        assert body == RECORD_BYTES + _fragment_bytes(node)
+        assert body == _record_bytes(plan) + _fragment_bytes(node)
         assert etag
 
         # A fragment landing after the record was written must be seen, and the
@@ -175,7 +183,7 @@ def test_the_served_record_is_the_composed_bytes_and_its_etag_tracks_a_fragment(
             server.server_port, _record_route(plan, spelling), etag=etag
         )
         assert status == 200
-        assert revalidated == RECORD_BYTES + fragment.read_bytes()
+        assert revalidated == _record_bytes(plan) + fragment.read_bytes()
         assert new_etag != etag
 
         # The new tag revalidates instead of re-downloading.
@@ -202,7 +210,8 @@ def test_audit_file_audits_the_composed_record(
     # composition and not the record's own content. This is the negative
     # control for the assertion above.
     raw_codes = {
-        finding.code for finding in doccheck.audit_html(RECORD_BYTES.decode("utf-8"))
+        finding.code
+        for finding in doccheck.audit_html(_record_bytes(plan).decode("utf-8"))
     }
     assert "img-relative-src" not in raw_codes
 
@@ -214,7 +223,7 @@ def test_a_record_with_no_fragments_is_served_and_audited_byte_identically(
     try:
         status, body, _ = _get(server.server_port, _record_route(BARE_PLAN, "archive"))
         assert status == 200
-        assert body == RECORD_BYTES
+        assert body == _record_bytes(BARE_PLAN)
     finally:
         server.shutdown()
         server.server_close()
@@ -225,7 +234,8 @@ def test_a_record_with_no_fragments_is_served_and_audited_byte_identically(
         finding.fmt() for finding in doccheck.audit_file(record, project=PROJECT)
     ]
     raw = [
-        finding.fmt() for finding in doccheck.audit_html(RECORD_BYTES.decode("utf-8"))
+        finding.fmt()
+        for finding in doccheck.audit_html(_record_bytes(BARE_PLAN).decode("utf-8"))
     ]
     assert composed == raw
 

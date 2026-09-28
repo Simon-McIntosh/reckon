@@ -63,7 +63,11 @@ from urllib.request import urlopen
 
 from reckon import _backends, _plan_html, capabilities, crew, fleet_index, ledger
 from reckon._store import _config_home, _mounts_path, _state_root
-from reckon.evidence import EvidenceSynthesisError, compose_landed_record
+from reckon.evidence import (
+    EvidenceSynthesisError,
+    compose_landed_record,
+    evidence_record_plan,
+)
 from reckon.figures import figure_rows
 from reckon.lifecycle import (
     effective_status,
@@ -2033,25 +2037,6 @@ def _resolve_plan_file(
     return resource.path if resource else None
 
 
-def _evidence_record_plan(target: Path) -> str | None:
-    """Return the plan slug when ``target`` is a cumulative evidence record.
-
-    A record is spelled ``docs/evidence/archive/<plan>-landed.html`` or
-    ``docs/evidence/<plan>-landed.html``; the fragment directory it composes
-    from sits beside both spellings. A path that is not one of those returns
-    None and is served as an ordinary file.
-    """
-
-    if not target.name.endswith("-landed.html"):
-        return None
-    parent = target.parent
-    if parent.name == "archive":
-        parent = parent.parent
-    if parent.name != "evidence":
-        return None
-    return target.name[: -len("-landed.html")]
-
-
 class Handler(BaseHTTPRequestHandler):
     server_version = "reckon-docs/1.0"
     _host: str = "127.0.0.1"
@@ -2732,7 +2717,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send(HTTPStatus.NOT_FOUND, b"not found")
             return
 
-        record_plan = _evidence_record_plan(target)
+        record_plan = evidence_record_plan(target)
         if record_plan is not None:
             self._send_evidence_record(target, project, record_plan)
             return
