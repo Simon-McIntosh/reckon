@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="44">
+<meta name="plan-version" content="45">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -926,15 +926,17 @@ placement path, not as a whole-suite run.</p>
     <div class="r-fu-body"><p>Review of gate-command-must-be-runnable (94): the landing record says three forms pass the new shape check untouched (a quoted <code>-k '(a or b)'</code>, a subshell, a spaced redirection), but only one plain command is exercised as a positive control. The parenthetical-prose rule is exactly the one a quoted pytest expression could trip. Add a table-driven case asserting each of the three is admitted and that a prose parenthetical is still refused. The same review found two record errors: the run named at :693 is credited with a failed merge its own record does not show, and ruff-head.txt is a pre-commit snapshot. Correct both.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-is-charged-to-a-job</pre>
     </article>
-<article class="r-fu" data-id="f-awcj-a-replayed-gate-names-no-worktree" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-27T21:36:00Z" data-recommends-skill="/reckon-build a-worker-is-charged-to-a-job" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awcj-a-replayed-gate-names-no-worktree" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-27T21:36:00Z" data-recommends-skill="/reckon-build a-worker-is-charged-to-a-job" data-resolved-at="2026-09-28T19:13:17+00:00" data-resolved-by="">
     <h4 class="r-fu-title">verify-gate replays a stored command that pins the released worktree, and reads its exit 125 as failed</h4>
     <div class="r-fu-body"><p>The stored gate for r-20260926T192056949404 opened with <code>env -C &lt;worker worktree&gt;</code> and named its tests by worktree path. The release step removed that worktree, so the replay at the integrated head exited 125, which was recorded as the gate failing on the merge. Run from the main checkout through <code>--command</code>, the same gate passed. Either rewrite the worker's worktree root to <code>--checkout-path</code> before replaying, or report a missing directory as not-run rather than failed. The test is a gate whose <code>env -C</code> target no longer exists.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-is-charged-to-a-job</pre>
+    <p class="r-fu-outcome">replayed-gate-runs-at-the-checkout-with-its-output merged at a085bb2c and promoted. verify-gate now rewrites the recorded worker-worktree root to --checkout-path. Shown live: the node's own stored gate named its removed worktree, and verify-gate at main passed with no --command, reporting worktree_roots_rewritten.</p>
     </article>
-<article class="r-fu" data-id="f-awcj-a-replayed-gate-keeps-its-output" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T11:00:00Z" data-recommends-skill="/reckon-build a-worker-is-charged-to-a-job" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awcj-a-replayed-gate-keeps-its-output" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T11:00:00Z" data-recommends-skill="/reckon-build a-worker-is-charged-to-a-job" data-resolved-at="2026-09-28T19:13:17+00:00" data-resolved-by="">
     <h4 class="r-fu-title">verify-gate keeps only the exit code, so a failing re-run cannot be diagnosed</h4>
     <div class="r-fu-body"><p>reckon/crew/promotion.py:1095 runs the replayed gate with capture_output=True (:1098) and keeps only result.returncode (:1100). Neither stdout nor stderr reaches the ledger row or any stored artefact. On 2026-09-28, verify-gate recorded exit 1 for the replay-guards gate at bdada7e5. A dedicated node then measured the same two files green before and after the merge (21 and 22 passed), and the ids behind the exit 1 were unrecoverable. Write the replay's output to a log beside the run, record that log's path on the report, and include the failing ids in the finding. Sibling of f-awcj-a-replayed-gate-names-no-worktree; one node can close both.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-is-charged-to-a-job</pre>
+    <p class="r-fu-outcome">Same node, merged at a085bb2c. The replay keeps its stdout and stderr in verify-gate.log under the run directory, and the result records the path as report.log_path. Shown live on the node's own verify-gate at main.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
