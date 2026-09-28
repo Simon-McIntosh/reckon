@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 470" width="940" height="470" role="img" aria-labelledby="title desc">
+  <title id="title">The velocity view: call path from the crew surface to the shared report layers</title>
+  <desc id="desc">Left panel: crew(view="velocity") takes since (required) and until (defaults to now), refuses by name when since is absent or unparseable, resolves checkouts through the server's mount resolution, and calls velocity.report which composes capture_project, recover_ledger_clocks, measure and compact_summary without re-implementing any measurement logic. Right panel: a windowed history where a commit dated after until is excluded from the derived head.</desc>
+
+  <style>
+    .box { fill: #f7f9fc; stroke: #33507a; stroke-width: 1.5; rx: 6; }
+    .box.entry { fill: #eaf1fb; }
+    .box.gate { fill: #fdf3e3; stroke: #b07a1e; }
+    .box.shared { fill: #eef6ee; stroke: #2f6b3a; }
+    .box.refuse { fill: #fdecec; stroke: #a33; }
+    .lbl { font: 13px/1.3 system-ui, sans-serif; fill: #1b2733; }
+    .lbl.small { font-size: 11.5px; fill: #41506b; }
+    .lbl.mono { font: 12px ui-monospace, monospace; fill: #1b2733; }
+    .ttl { font: 15px system-ui, sans-serif; font-weight: 600; fill: #14233a; }
+    .arrow { stroke: #33507a; stroke-width: 1.6; fill: none; marker-end: url(#head); }
+    .arrow.no { stroke: #a33; stroke-dasharray: 4 3; }
+  </style>
+
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#33507a"/>
+    </marker>
+    <marker id="headno" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#a33"/>
+    </marker>
+  </defs>
+
+  <!-- left panel: call path -->
+  <text class="ttl" x="24" y="28">crew(view="velocity") &#8212; one report function, shared layers</text>
+
+  <rect class="box entry" x="24" y="44" width="300" height="62"/>
+  <text class="lbl mono" x="38" y="66">_crew(project, view="velocity",</text>
+  <text class="lbl mono" x="38" y="84">      since=?, until=?, checkout_path=?)</text>
+  <text class="lbl small" x="38" y="100">project is one name, or "*" for every mount</text>
+
+  <rect class="box gate" x="24" y="132" width="300" height="58"/>
+  <text class="lbl" x="38" y="154">since required; until defaults to now</text>
+  <text class="lbl small" x="38" y="174">stamp(since) is None &#8594; refuse by name</text>
+
+  <rect class="box refuse" x="24" y="216" width="300" height="40"/>
+  <text class="lbl mono" x="38" y="241">error: crew_error &#8212; "since &#8230;"</text>
+
+  <rect class="box" x="24" y="282" width="300" height="58"/>
+  <text class="lbl" x="38" y="304">resolve checkouts through the mount set</text>
+  <text class="lbl small" x="38" y="324">mounted_project_docs() / docs_dir.parent</text>
+
+  <rect class="box shared" x="24" y="366" width="300" height="72"/>
+  <text class="lbl mono" x="38" y="388">velocity.report(checkouts,</text>
+  <text class="lbl mono" x="38" y="406">               start=since, end=until)</text>
+  <text class="lbl small" x="38" y="426">returns compact_summary + by_project_day_lane</text>
+
+  <path class="arrow" d="M174,106 L174,132"/>
+  <path class="arrow no" d="M120,190 L120,216" marker-end="url(#headno)"/>
+  <path class="arrow" d="M174,248 L174,282"/>
+  <path class="arrow" d="M174,340 L174,366"/>
+
+  <!-- right panel: shared layers + window -->
+  <text class="ttl" x="380" y="28">What report() composes &#8212; nothing re-implemented</text>
+
+  <rect class="box shared" x="380" y="44" width="250" height="40"/>
+  <text class="lbl mono" x="394" y="69">capture_project(repo_path=&#8230;)</text>
+
+  <rect class="box shared" x="380" y="94" width="250" height="40"/>
+  <text class="lbl mono" x="394" y="119">recover_ledger_clocks(repos=&#8230;)</text>
+
+  <rect class="box shared" x="380" y="144" width="250" height="40"/>
+  <text class="lbl mono" x="394" y="169">measure(&#8230;)</text>
+
+  <rect class="box shared" x="380" y="194" width="250" height="40"/>
+  <text class="lbl mono" x="394" y="219">compact_summary(&#8230;)</text>
+
+  <path class="arrow" d="M505,84 L505,94"/>
+  <path class="arrow" d="M505,134 L505,144"/>
+  <path class="arrow" d="M505,184 L505,194"/>
+
+  <rect class="box entry" x="380" y="260" width="250" height="72"/>
+  <text class="lbl" x="394" y="284">totals &#215; project &#215; lane &#215; day</text>
+  <text class="lbl small" x="394" y="304">promotions split implementation-class</text>
+  <text class="lbl small" x="394" y="320">against review-or-investigate; review share</text>
+
+  <path class="arrow" d="M505,234 L505,260"/>
+
+  <!-- window illustration -->
+  <text class="ttl" x="668" y="28">The window is load-bearing</text>
+
+  <line x1="680" y1="120" x2="916" y2="120" stroke="#33507a" stroke-width="1.6"/>
+  <line x1="700" y1="120" x2="700" y2="300" stroke="#2f6b3a" stroke-width="1.6" stroke-dasharray="5 4"/>
+  <line x1="820" y1="120" x2="820" y2="300" stroke="#b07a1e" stroke-width="1.6" stroke-dasharray="5 4"/>
+  <text class="lbl small" x="700" y="112" text-anchor="middle">since</text>
+  <text class="lbl small" x="820" y="112" text-anchor="middle">until</text>
+
+  <circle cx="735" cy="120" r="4" fill="#33507a"/>
+  <text class="lbl small" x="735" y="142" text-anchor="middle">in window</text>
+  <circle cx="784" cy="120" r="4" fill="#33507a"/>
+  <circle cx="884" cy="120" r="4" fill="#a33"/>
+  <text class="lbl small" x="884" y="142" text-anchor="middle" fill="#a33">after until</text>
+
+  <rect x="700" y="170" width="120" height="34" fill="#eef6ee" stroke="#2f6b3a"/>
+  <text class="lbl small" x="710" y="192">measured head</text>
+  <path class="arrow" d="M820,154 L820,170"/>
+
+  <rect x="700" y="216" width="216" height="34" fill="#fdecec" stroke="#a33"/>
+  <text class="lbl small" x="710" y="238">excluded until the window widens</text>
+  <path class="arrow no" d="M884,130 L884,216" marker-end="url(#headno)"/>
+
+  <text class="lbl small" x="680" y="278">Test: source lines 9 at day 20,</text>
+  <text class="lbl small" x="680" y="294">16 when until moves to day 30.</text>
+</svg>
