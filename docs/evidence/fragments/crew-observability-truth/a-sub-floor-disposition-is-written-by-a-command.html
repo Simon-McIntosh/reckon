@@ -188,14 +188,15 @@ E        +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
   <section id="pointer-less">
     <h2>A promoted run's revision comes from its own records</h2>
     <p>A run with no live pointer is the ordinary case once it is promoted, and the command read its
-    reviewed head from the tree the pointer named. Absent, that pointer left an empty mapping, an
-    empty mapping is the empty path, and <code>Path("")</code> is <code>.</code> — so the head was
-    resolved by <code>git rev-parse HEAD</code> in whatever repository the operator's shell stood
-    in. Nothing downstream could catch it: the head was a revision, the record selected against it
-    was a stored review, and the entry written into it named a head belonging to something else
-    entirely. The obligations read-back already refuses an empty tree (<code>obligations</code>
-    reads it as no tree at all), so the defect sat in the one step before the reader, where the
-    empty path was still a legal one.</p>
+    reviewed head from the tree the pointer named. With the pointer absent the mapping was empty,
+    an empty mapping is the empty path, and <code>Path("")</code> is <code>.</code> — so the head
+    was resolved by <code>git rev-parse HEAD</code> in whatever repository the operator's shell
+    stood in. Nothing downstream could catch it: the head was a revision, the record selected
+    against it was a stored review, and the entry written into it named a head belonging to
+    something else entirely. The same hazard was already answered in the reader —
+    <code>obligations</code> reads an empty tree as no tree, so the selection falls back rather than
+    comparing revisions a caller cannot honestly make — but the command resolved the head one step
+    earlier, where the empty path was still a legal one.</p>
     <p>The revision is now resolved from the run's own records: the tip the run's ledger row records
     as the revision its promotion landed (<code>promoted_revision</code>), or the head its stored
     review carries. Both are the run's own account of itself, and they agree in the promoted case,
