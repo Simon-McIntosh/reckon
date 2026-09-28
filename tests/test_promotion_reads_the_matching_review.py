@@ -23,7 +23,11 @@ from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "matching-project"
-FILE = "region.txt"
+# Runtime source: a run changing it owes a review, which is the gate these
+# cases exercise. A bare data file at the repository root changes no runtime
+# source and promotes unreviewed whatever the store holds, so it cannot
+# exercise the choice between a matching record and a stale one at all.
+FILE = "reckon/region.py"
 BASE = "1" * 40
 
 
@@ -45,6 +49,7 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (root / FILE).parent.mkdir(parents=True, exist_ok=True)
     (root / FILE).write_text("seed\n", encoding="utf-8")
     for arguments in (
         ("init", "-q", "-b", "main"),
