@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="20">
 <meta name="plan-commits" content="601e51e5,74dc4774,3ff3237b,ee6fb313,fafbbe1f,5ad7eae0,27b4def6,956f91dd,d78ae0f3,5cb0fc39">
 <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,reckon/crew/dispatch.py,reckon/crew/runs.py,tests/test_expired_follower_keeps_dispatching.py">
 <meta name="plan-impl" content="0.33">
@@ -96,15 +96,17 @@
       counts in the coordinator-overhead census; the target is zero, reported as a follow-up measure rather than a
       release gate.</p>
     <div class="section-landed" data-section="s4">
-      <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span></p>
-      <p class="landed-summary">Three narrowings, each named by a test in
-        <code>tests/test_bookkeeping_follows_the_run.py</code> (5 passed): a record whose
-        <code>attempt_kind</code> is resume or redispatch promotes with <code>impl_move</code>
-        exempt; a review run's <code>--outcome</code> defaults to its stored review's total
-        score and finding count; <code>verify-gate</code> accepts a checkout two ledger
-        commits past the merge when no changed path differs, and refuses one where a changed
-        path does. The <code>--repairs</code> declaration this section also named is a later
-        node. Full record:
+      <p><span class="badge badge-shipped">&#10003; promotion half landed 2026-09-28</span> one node remains: the
+        <code>--repairs</code> declaration.</p>
+      <p class="landed-summary">Merged at <code>d287c5bf</code>. Three narrowings, each named by a test in
+        <code>tests/test_bookkeeping_follows_the_run.py</code> (7 passed at the repaired head <code>187ad16f</code>):
+        a record whose <code>attempt_kind</code> is resume or redispatch promotes with <code>impl_move</code>
+        exempt; a review run's <code>--outcome</code> defaults to its stored review's total score and finding
+        count; <code>verify-gate</code> accepts a checkout two ledger commits past the merge when no changed path
+        differs, and refuses one where a changed path differs, where the run's paths are unknown, or where the git
+        probe comparing them fails. The repair round removed a duplicate of an existing helper and closed the
+        failed-probe path, which had let the gate run with no comparison; its control reverts that fix and the
+        probe-failure case fails. Reviews 79, then 93, zero added failures. Full record:
         <a href="/reckon/evidence/archive/a-refusal-is-about-the-work-landed#s4">&sect;4 landed</a>.</p>
     </div>
 
@@ -170,6 +172,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260928T121211195642-review-of-promotion-bookkeeping-follows-the-run" data-who="reckon-build" data-when="2026-09-28T12:49:04.730Z">
     <div class="r-comment-body"><p>review of promotion-bookkeeping-follows-the-run at 0ff4101a: 79, zero added failures, five findings (dead duplicate helper, fail-open on a failed git probe, two untested refusal branches, prose arms) sent back as one repair round</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260928T134656772321" data-who="s25-coord" data-when="2026-09-28T13:50:00.000Z">
+    <div class="r-comment-body"><p>promotion-bookkeeping-follows-the-run merged at d287c5bf after one repair round (reviews 79 then 93, zero added failures). The node's own comment above quotes its pre-repair counts; at the repaired head 187ad16f the file passes 7 and the three-file arm 33, and a second control reverts the failed-probe fix. Section 4 stays open for the --repairs declaration.</p></div>
 </div>
 </section>
 </main>
