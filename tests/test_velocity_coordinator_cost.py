@@ -208,6 +208,7 @@ def test_measure_reports_the_section_without_reading_a_transcript_store(tmp_path
                         "attempt": 1,
                         "lineage": {},
                         "resolved_commits": [],
+                        "unresolved_or_unreachable_commits": [],
                         "commits": [],
                         "coordinator": {"runtime_session_id": SESSION},
                         "promotion_commits": [

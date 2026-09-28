@@ -794,6 +794,7 @@ def coordinator_cost(
     transcript is absent reports null for those figures rather than zero.
     """
     groups = collections.defaultdict(list)
+    attributions = {}
     for run in runs:
         coordinator = run.get("coordinator") or {}
         session = coordinator.get("runtime_session_id") or ""
@@ -805,13 +806,14 @@ def coordinator_cost(
             )
             attribution = "unattributed"
         groups[key].append(run)
+        attributions[key] = attribution
     index = transcript_index(transcript_root) if transcript_root is not None else {}
     sessions = []
     for key, items in sorted(groups.items()):
         landed = len(items)
         row = {
             "session_id": key,
-            "attribution": attribution,
+            "attribution": attributions[key],
             "projects": sorted({str(run.get("project") or "") for run in items}),
             "landed_nodes": landed,
         }
