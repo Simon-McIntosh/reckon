@@ -1,0 +1,347 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "0e091e8d10db44d0307531fc0cdcb4204034fb17",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 7033646,
+      "input_tokens_cumulative": 7033646,
+      "output_tokens": 40835,
+      "output_tokens_cumulative": 40835,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 321,
+    "files": 7,
+    "removed": 2
+  },
+  "commit_resolution": null,
+  "commits": [
+    "2dc81b9a71f806095daef06c7e5fe738bcf0b1d6",
+    "a83e8b09b548010b3a76914acd090deb67f82a93",
+    "a60a3095de01fc9181afbadb3c673e6c3587d713"
+  ],
+  "completed_at": "2026-09-28T18:16:54.147Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-28T15:13:40Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_attach_shows_each_live_run.py tests/test_follow_rearm_continues.py",
+    "exit_status": 1,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T151319429903-attach-shows-each-live-run/gates/after_suite.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 1.0,
+    "plan": "the-fleet-counters-count-the-fleet",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-28T15:58:20.916097+00:00",
+    "horizon_seconds": 2700,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-28T15:13:20Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 17,
+    "binding_observed": "unknown",
+    "detail": "",
+    "headroom": -10,
+    "mean_context": 142857,
+    "observed_at": "2026-09-28T15:13:03Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-28T18:16:54.147Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T151319429903-attach-shows-each-live-run/manifest.md",
+  "member": "disposable-r-20260928T151319429903-attach-shows-each-live-run",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_attach_shows_each_live_run.py::test_a_baseline_for_a_run_never_shown_still_prints_after_a_reseed",
+      "tests/test_attach_shows_each_live_run.py::test_a_monitor_arm_draws_the_fleet_and_no_history_burst",
+      "tests/test_attach_shows_each_live_run.py::test_an_attach_with_live_runs_draws_one_baseline_each"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once",
+      "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+      "tests/test_crew_watch_lifetime.py::test_dispatch_is_admitted_during_the_stale_terminal_window",
+      "tests/test_follow_observes_other_sessions.py::test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three"
+    ],
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_attach_shows_each_live_run.py::test_a_baseline_for_a_run_never_shown_still_prints_after_a_reseed",
+      "tests/test_attach_shows_each_live_run.py::test_a_monitor_arm_draws_the_fleet_and_no_history_burst",
+      "tests/test_attach_shows_each_live_run.py::test_an_attach_with_live_runs_draws_one_baseline_each"
+    ],
+    "declaration": "drop every baseline row on attach, as the row policy does at 6f8be09a",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T151319429903-attach-shows-each-live-run/gates/negative_control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T151319429903-attach-shows-each-live-run/gates/negative_control.log",
+    "test_paths": [
+      "tests/test_attach_shows_each_live_run.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "attach-shows-each-live-run",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1270,
+          "cached_input_tokens": 869290,
+          "input_tokens": 870562,
+          "output_tokens": 1318,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 871880,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+      "session_id": "s23-coord"
+    },
+    "done_when": "the manifest records the reproduction at the dispatch base, a test arms a follower on a synthesised stream with N live runs and no continuable checkpoint and asserts exactly N baseline rows on attach whatever the row policy holds, a second test re-derives the baseline mid-arming (a reload or a checkpoint mismatch) and asserts no run already shown this arming is printed twice, the Monitor-armed follower still writes no history burst, the declared mutation turns the attach test red, zero added failures by id against base across the follow, ticker, watch and row-policy test files, and every gate log sits under the run directory with revision, tree and command headers and paths recorded in baseline_suite and after_suite",
+    "estimated_hours": null,
+    "goal": "a freshly armed follower opens with one line per live run again, as the orchestrator-harness contract at skills/reckon-build/references/orchestrator-harness/claude-code.md line 178 requires, while the row policy still drops a baseline re-derived for runs this arming has already shown, after reproducing at the dispatch base that an arm with live runs prints nothing until the first transition",
+    "id": "attach-shows-each-live-run",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-28T15:13:20Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 17,
+      "binding_observed": "unknown",
+      "detail": "",
+      "headroom": -10,
+      "mean_context": 142857,
+      "observed_at": "2026-09-28T15:13:03Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T151319429903-attach-shows-each-live-run/manifest.md",
+    "negative_control": "drop every baseline row on attach, as the row policy does at 6f8be09a",
+    "plan": "the-fleet-counters-count-the-fleet",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§9",
+    "spec_level": "exact",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/cli.py",
+      "reckon/crew/ticker.py",
+      "tests/test_attach_shows_each_live_run.py",
+      "docs/evidence/fragments/the-fleet-counters-count-the-fleet/attach-shows-each-live-run.html",
+      "docs/figures/the-fleet-counters-count-the-fleet/attach-shows-each-live-run",
+      "skills/reckon-build/references/orchestrator-harness/claude-code.md"
+    ]
+  },
+  "orientation_input_tokens": 6603223.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "attach-shows-each-live-run",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-28T15:13:28.524749+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-fleet-counters-count-the-fleet",
+  "plan_impl_at_dispatch": 1.0,
+  "promoted_revision": "a60a3095de01fc9181afbadb3c673e6c3587d713",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 17,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 92
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260928T151319429903-attach-shows-each-live-run",
+  "scope_acceptances": [
+    {
+      "path": "docs/figures/the-fleet-counters-count-the-fleet/attach-shows-each-live-run.svg",
+      "reason": "2dc81b9a wrote the figure beside its declared directory and a83e8b09 renamed it to attach-shows-each-live-run/pane.svg inside it, so the path is absent from the merged tree"
+    }
+  ],
+  "scope_changed": false,
+  "section": "§9",
+  "session_harness": "claude",
+  "session_id": "f01e3edf-726f-405c-95dc-c3aa37aa6cd4",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 32525057,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2333.614,
+    "generated_tokens": 233224,
+    "generation_seconds": 1107.286,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.0,
+    "machine_seconds": 1226.328,
+    "peak_input_tokens": 163179,
+    "tokens_per_second": 210.63,
+    "wall_tokens_per_second": 99.94
+  },
+  "time_budget": "45m",
+  "tool_steps": 232.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 10994,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-28T18:16:54Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-28T17:37:57Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260928T151319429903-attach-shows-each-live-run",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 46852,
+    "worker_pid": 3150373
+  },
+  "worker_seconds": 10931,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

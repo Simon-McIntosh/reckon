@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="120">
+<meta name="plan-version" content="121">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -508,7 +508,7 @@
     <div class="r-comment-body"><p>the section comment above the pane-history tests now states the history burst's own extent — on a terminal _follow_history_burst returns one dim frame line then the replayed history rows, also dim; under a Monitor (stdout not a terminal) it returns nothing; the burst never contains live rows, which the follow loop writes afterwards one per transition</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260928T165543842176-review-of-rearm-test-comment-matches-the-code" data-who="reckon-build" data-when="2026-09-28T17:34:35.583Z">
-    <div class="r-comment-body"><p>independent review of r-20260928T144802071342-rearm-test-comment-matches-the-code stored parsed at reviews/reckon/r-20260928T144802071342-rearm-test-comment-matches-the-code.at-6cbfec10eaa7ad6a1c5743feeb2aef5c6ae088b4.json — total 85, five dimensions 19/18/20/12/16, no findings, 0 added failures by id over the reviewed run&#x27;s own two gate logs; the comment at tests/test_follow_rearm_continues.py:438-442 now states the burst&#x27;s own extent (a terminal gets one dim frame line then the replayed rows, also dim; a Monitor gets nothing; live rows are written afterwards by the follow loop), and nothing but the comment changed across 40d23d9b..6cbfec10</p></div>
+    <div class="r-comment-body"><p>independent review of r-20260928T144802071342-rearm-test-comment-matches-the-code stored parsed at reviews/reckon/r-20260928T144802071342-rearm-test-comment-matches-the-code.at-6cbfec10eaa7ad6a1c5743feeb2aef5c6ae088b4.json — total 85, five dimensions 19/18/20/12/16, no findings, 0 added failures by id over the reviewed run's own two gate logs; the comment at tests/test_follow_rearm_continues.py:438-442 now states the burst's own extent (a terminal gets one dim frame line then the replayed rows, also dim; a Monitor gets nothing; live rows are written afterwards by the follow loop), and nothing but the comment changed across 40d23d9b..6cbfec10</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260925-row-labels-and-alignment" data-who="reckon-build" data-when="2026-09-25T08:05:00Z">
     <div class="r-comment-body"><p>§6 and §7 come from the lead's 2026-09-25 review of the ticker. <code>a-monitor-row-reads-at-a-glance</code> (S22) is fully landed and covered neither issue. Both write <code>reckon/crew/ticker.py</code>, and ship in the same ticker node as §3–§5 once S21 releases <code>reckon/crew/recovery.py</code>.</p></div>
@@ -557,6 +557,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260928T152931720548-review-of-resume-baseline-feed-is-tested" data-who="reckon-build" data-when="2026-09-28T16:13:19.418Z">
     <div class="r-comment-body"><p>review of run r-20260928T144658725827-resume-baseline-feed-is-tested at head 8fd9d1e4 scored 94 (goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 19), 0 findings and 0 added failures by id; the new test at tests/test_follower_prints_only_policy_rows.py:466 was independently shown to drive the resume baseline feed site at reckon/cli.py:2688 and to fail (1 failed, 18 deselected) when that site yields each event unfed, and the reviewed diff touches only that test file plus its fragment and figure</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20260928T151319429903-attach-shows-each-live-run" data-who="reckon-build" data-when="2026-09-28T18:16:54.147Z">
+    <div class="r-comment-body"><p>The attach contract is now stated and tested where it is read: a session&#x27;s first arming opens with one line per live run and no history burst under a Monitor, a re-arm continues from where the previous arming stopped and prints only what moved, so a re-arm with nothing new is silent, and a live read is the way to ask for the current fleet. No source behaviour changed: reckon/cli.py and reckon/crew/ticker.py are byte-identical to base.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T130204463138-ticker-row-is-one-aligned-transition" data-who="reckon-build" data-when="2026-09-25T13:46:08Z">
     <div class="r-comment-body"><p>each ticker row is one transition, from → to on an aligned arrow with fixed columns on both sides, chained per run on the pane's last shown state, with no action word; 266 passed; review 86, whose three findings (stale width comment at ticker.py:339, a test assertion that cannot fail, and a wrong rendered-case count in the evidence) go to the next ticker node</p></div>
