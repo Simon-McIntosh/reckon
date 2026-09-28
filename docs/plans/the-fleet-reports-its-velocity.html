@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-commits" content="85af514b,997c5539,7c508e7e,4d79a470,a70ad742,c0917d6f,e2fc9f03,30fe8845,280d7fa9,43e971d3,be18adb4,90959463,118b06ba,0b61cc5d,e6b344f3,474d8119,66edfc86,9576896f,2652f39b">
 <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_coordinator_cost.py">
-<meta name="plan-impl" content="0.67">
+<meta name="plan-impl" content="0.78">
 </head>
 <body>
   <main class="plan-doc">
@@ -302,7 +302,10 @@
     <div class="r-comment-body"><p>backend joins QUERY_KEYS in reckon/run_store.py: indexed column in a fresh store, legacy NULL column backfilled from payloads on open; 30 passed at the committed head; control reddens; review 96, zero added failures; merged at 1ff4e8ab</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260928T145013782239-review-of-resumed-burn-prices-to-rollout" data-who="reckon-build" data-when="2026-09-28T15:45:18.378Z">
-    <div class="r-comment-body"><p>the parsed review of r-20260928T132148906656-resumed-burn-prices-to-rollout is stored at both declared paths, byte-identical (12,469 bytes each, verified by cmp), scoring all five dimensions 0..20 (goal_fidelity 18, evidence 15, scope_discipline 19, durability 16, fit 18; total 86), status parsed, six checklist item verdicts, two production call sites, three findings, and added_failure_count 0 with added_failure_ids [] derived with review.added_failures_from_gate_logs over the reviewed run&#x27;s logs/base-arm.log as baseline and logs/gate-head.log as head</p></div>
+    <div class="r-comment-body"><p>the parsed review of r-20260928T132148906656-resumed-burn-prices-to-rollout is stored at both declared paths, byte-identical (12,469 bytes each, verified by cmp), scoring all five dimensions 0..20 (goal_fidelity 18, evidence 15, scope_discipline 19, durability 16, fit 18; total 86), status parsed, six checklist item verdicts, two production call sites, three findings, and added_failure_count 0 with added_failure_ids [] derived with review.added_failures_from_gate_logs over the reviewed run's logs/base-arm.log as baseline and logs/gate-head.log as head</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260928T161630801372" data-who="s25-coord" data-when="2026-09-28T16:17:00.000Z">
+    <div class="r-comment-body"><p>resumed-burn-prices-to-rollout merged at 3a81b93d: a resumed run's streams fold per thread, a resume attempt superseding its predecessor's cumulative reading, and the per-attempt delta stays the one rule in ledger.per_run_budget, now covering cost with unmeasured kept unmeasured. Three synthesised codex lineages price within 1% of their rollout totals. Review 86, carried forward over a test-and-record repair; zero added failures. Seven of nine nodes landed; preflight-reports-runs-remaining is in review.</p></div>
 </div>
 </section>
 </main>
