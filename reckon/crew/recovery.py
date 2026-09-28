@@ -2981,6 +2981,71 @@ def _worker_record_liveness(record: Mapping[str, Any]) -> bool | None:
     return alive
 
 
+def _int_or_none(value: Any) -> int | None:
+    """A recorded number, or None when the record carries none to read."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _worker_record_pid(record: Mapping[str, Any]) -> int | None:
+    """The pid the run's own worker record names, or None when it names none."""
+    data = _worker_record(record)
+    if data is None:
+        return None
+    return _int_or_none(data.get("pid"))
+
+
+def _process_children(pid: Any) -> list[int] | None:
+    """The pids the kernel lists as a process's own children, or None.
+
+    The kernel's child list is read rather than every process's parent field,
+    because one worker's children cost a read each while a host-wide scan costs
+    a read per process on the machine. Every thread's list is read: a child may
+    have been forked by a thread rather than by the process's first one. None
+    answers "could not be read" — the process has gone, or this kernel does not
+    publish the list — and is not the same answer as a process with no
+    children, so a caller never reports an absence it did not observe.
+    """
+    number = _int_or_none(pid)
+    if number is None:
+        return None
+    tasks = Path("/proc") / str(number) / "task"
+    try:
+        thread_ids = [entry.name for entry in tasks.iterdir()]
+    except OSError:
+        return None
+    children: list[int] = []
+    read_any = False
+    for thread_id in thread_ids:
+        try:
+            listed = (tasks / thread_id / "children").read_text()
+        except OSError:
+            continue
+        read_any = True
+        children.extend(int(token) for token in listed.split() if token.isdigit())
+    return children if read_any else None
+
+
+def _live_descendant(pid: Any) -> bool:
+    """Whether a running process has a running process under it.
+
+    A worker waiting on a job — a build, a scheduler reservation, a probe — is
+    a worker whose own stream says nothing while the child does the work, so a
+    live child is the evidence on this host that something is still moving.
+    One level of the child list answers the whole question: a process's
+    children are reparented the moment it exits, so a running grandchild is
+    always listed under a running child, and a child the kernel has finished is
+    a table entry its parent has not yet reaped rather than a process running
+    anything.
+    """
+    children = _process_children(pid)
+    if children is None:
+        return False
+    return any(runs.process_alive(child) is True for child in children)
+
+
 def _process_reading(
     alive: bool | None,
     *,
@@ -3716,9 +3781,11 @@ def classify_pointer(
         if alive is True and expected_start is not None:
             alive = _process_start_time(record.get("pid")) == expected_start
         liveness_proven = True
+        local_reading = True
     else:
         alive = stored_alive
         liveness_proven = False
+        local_reading = False
     # The pointer names the supervisor for a supervised launch while the worker
     # pid lives on the run directory's own worker record. A supervisor that has
     # exited before its worker takes the pointer pid with it — the recorded pid
@@ -3729,6 +3796,24 @@ def classify_pointer(
     if alive is not True and worker_alive is True:
         alive = True
         liveness_proven = True
+    # Whether anything runs under the worker is the second half of the same
+    # question, so it is read here rather than by each consumer: the pid asked
+    # is the process the work happens in, which for a supervised launch is the
+    # worker the supervisor spawned and not the pointer's own pid. A supervisor
+    # holds its worker as a child for as long as it lives, so asking the
+    # pointer's pid whether anything runs below it would answer yes for every
+    # supervised run and tell a reader nothing. A pid is worth asking about
+    # only on the host that issued it: a run launched elsewhere asks nothing,
+    # and the row then carries no descendant reading rather than a foreign
+    # process table's opinion of some other machine's pid.
+    worker_pid: int | None = None
+    if local_reading and alive is True:
+        worker_pid = _worker_record_pid(record) if worker_alive is True else None
+        if worker_pid is None:
+            worker_pid = _int_or_none(record.get("pid"))
+    descendant_alive = (
+        _live_descendant(worker_pid) if worker_pid is not None else None
+    )
     # The run's own supervisor records the worker's exit in the run directory,
     # and that account survives a pointer nobody updates and a pid no machine
     # but the launching one can look up. It is consulted only where the process
@@ -4646,6 +4731,11 @@ def classify_pointer(
         # exists or a live process outranked it.
         "exit_record": ended_exit,
         "process_alive": alive,
+        # Whether a line runs under the worker, carried beside its own liveness
+        # because the two are one reading taken at one seam. None is "nothing
+        # was asked": no pid this host may look at, or no live worker to look
+        # under, so a reader never sees an absence where a check never ran.
+        "process_descendant_alive": descendant_alive,
         # False when the stored answer was carried because the launching host
         # could not be shown to be this host, or there is no pid to ask about.
         # An unproven answer is not death, so a reader needing certainty reads
@@ -5113,6 +5203,33 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
         return False
 
 
+def _stall_window_seconds(row: Mapping[str, Any], stall_seconds: int) -> int:
+    """The window a quiet run is judged against before it reads stalled.
+
+    A run whose worker process is alive with a live process under it is not
+    idle: the child is the job the worker is waiting on — a build, a scheduler
+    reservation, a probe — and the worker's own stream stays silent for as long
+    as the child takes, so the silence says nothing about whether the worker is
+    hung. For that shape the window extends to the run's own time budget, the
+    allowance the run declared for exactly this work; past it the run's own
+    fence speaks. The extension is never a narrowing, so a budget shorter than
+    the window leaves the window where it was.
+
+    A run whose worker has no live process under it keeps the window, and that
+    is the deliberate narrowing: a live worker with nothing running beneath it
+    is the case a stall most often means is hung.
+    """
+    if (
+        row.get("process_alive") is not True
+        or row.get("process_descendant_alive") is not True
+    ):
+        return stall_seconds
+    budget_seconds = _int_or_none(row.get("budget_seconds"))
+    if budget_seconds is None:
+        return stall_seconds
+    return max(stall_seconds, budget_seconds)
+
+
 def _watch_verdict(
     pointer: Mapping[str, Any],
     row: Mapping[str, Any],
@@ -5267,7 +5384,7 @@ def _watch_verdict(
         # can sit in — gating it on "working" alone left a run killed before
         # its phase ever advanced past "starting" permanently exempt.
         quiet = _run_stream_quiet_seconds(pointer, now_seconds=moment)
-        if quiet > stall_seconds:
+        if quiet > _stall_window_seconds(row, stall_seconds):
             # A quiet stream is a hang only when nothing is waiting. An alive
             # worker sitting in a bounded wait — a sleep, a peer read, a task
             # wait, a rejected window, or a rate-limit retry loop — wakes
@@ -6162,7 +6279,7 @@ def watch_follow(
                         # one followed a bounded call no further and is a lost
                         # run the follower must still report.
                         live = row.get("process_alive") is True
-                        if quiet > stall_seconds and (
+                        if quiet > _stall_window_seconds(row, stall_seconds) and (
                             not live or _stall_wait_reason(pointer) is None
                         ):
                             reported_runs.add(run_id)
