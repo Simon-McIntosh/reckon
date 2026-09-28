@@ -169,6 +169,24 @@
       rather than at 157%, and a synthetic wave projected past its reset is refused with the runs-remaining figure in the
       refusal.</p>
 
+    <div class="section-landed" data-node="session-continuity-share-per-lane-day">
+      <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span></p>
+      <p class="landed-summary">At <code>106e4bbb</code>, <code>reckon/velocity.py</code> reports
+        per lane and day the share of all dispatches that continued another task's session: a
+        dispatch continued another task's session when its recorded <code>session_id</code> equals
+        that of an earlier-dispatched run whose <code>(project, plan, node)</code> differs. Each
+        lane-and-day cell carries the share beside the same-task, fresh and unmeasured counts, and
+        a dispatch with no recorded <code>session_id</code> is unmeasured rather than fresh. Run
+        over reckon's committed run records for 2026-09-20 to 2026-09-27 (982 dispatches), the
+        reading reports 33 continued, 15 unmeasured, an overall share of 3.36%, and 0.0% for every
+        lane and day after 2026-09-24. Base 5 passed, head 11 passed, no failures in either arm;
+        the declared control counts a same-task resume as a continuation and reddens the same-task
+        case. Full record:
+        <a href="/reckon/evidence/archive/the-fleet-reports-its-velocity-landed#s4-session-continuity-share-per-lane-day">&sect;4 session continuity</a>.
+        The section awaits coordinator closure: this worker resolves no followup and sets no
+        terminal status.</p>
+    </div>
+
     <h2 id="s5">§5 — Work in progress is visible</h2>
     <div class="section-landed" data-section="s5">
       <p><span class="badge badge-shipped">&#10003; landed 2026-09-28</span></p>
