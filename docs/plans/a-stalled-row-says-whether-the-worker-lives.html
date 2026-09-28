@@ -18,15 +18,15 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-28">
-  <meta name="plan-version" content="44">
+  <meta name="plan-version" content="46">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
-<meta name="plan-impl" content="0.86">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;}">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -492,6 +492,11 @@
     <div class="r-fu-body"><p>Review of resume-offer-waits-while-the-worker-lives (88): the wait-met row now tells the reader the recovery sweep lifts a run only once its process is observed to have ended, but the sweep's only process guard refuses a proven-live process and nothing else (reckon/crew/resumption.py near :596, with reckon/crew/runs.py near :3466). So a run whose liveness is unknown is resumed as though dead, and may duplicate a live worker. Either make the sweep require an observed death (a checked pid found dead or a supervisor-recorded exit, the vocabulary §3 landed), or make the row say what the sweep actually does. Write path: reckon/crew/resumption.py plus a test; it does not touch recovery.py.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
     </article>
+<article class="r-fu" data-id="f-asrswtwl-directory-row-reads-the-derived-phase" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-28" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The crew directory row reads the derived phase, as the live and classifier rows now do</h4>
+    <div class="r-fu-body"><p>From the review of derive-the-row-phase-from-the-stream (total 90). §7 derives the classifier's and live view's phase from the run's newest stream, but <code>reckon/crew/directory.py:78</code> still copies the pointer's stored phase into the directory row, which both the CLI and the MCP directory view render. So one run's <code>phase</code> means the derived phase in one view and the launcher's label in another. Route the directory row through the same derivation, and add a case where a run with an assistant record reads <code>working</code> in the directory. The same review notes that the mtime assertion at <code>tests/test_working_reads_working_at_once.py:273</code> guards nothing, because both files are written by the case itself. Replace it or drop it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-20260923T0405-s4-write-path" data-who="reckon-ship" data-when="2026-09-23T04:05:00Z">
@@ -520,6 +525,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T061028056766-review-of-a-stalled-row-says-whether-the-worker-lives" data-who="reckon-ship" data-when="2026-09-23T08:20:29.822Z">
     <div class="r-comment-body"><p>read-back of a-stalled-row-says-whether-the-worker-lives: 17 material readings; resolved at 6e43bb34 with shared terms, a one-row precedence rule, the in-progress example corrected, and negative controls that delete the head branch</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260928T192937445778-derive-the-row-phase-from-the-stream" data-who="reckon-build" data-when="2026-09-28T20:13:15.553Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/derive-the-row-phase-from-the-stream.html</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T061821455320-review-of-watch-reports-death-at-once" data-who="reckon-build" data-when="2026-09-25T06:55:46.669Z">
     <div class="r-comment-body"><p>review stored: score 90, one finding (64 KiB tail window) routed to a followup</p></div>
@@ -555,7 +563,7 @@
     <div class="r-comment-body"><p>docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/stall-window-respects-a-live-child.html</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T191539246946-review-of-stall-window-respects-a-live-child" data-who="reckon-build" data-when="2026-09-28T19:26:31.063Z">
-    <div class="r-comment-body"><p>an independent review of r-20260928T180300580029-stall-window-respects-a-live-child is stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T180300580029-stall-window-respects-a-live-child.at-e1a7fcf42f62a76b7eeeec731e4bacbd06a49ca2.json — project reckon, reviewed_base_sha 58405bd6eeca722241894b0ad21bce826ab4c433, reviewed_head_sha e1a7fcf42f62a76b7eeeec731e4bacbd06a49ca2, review_run_id r-20260928T191539246946-review-of-stall-window-respects-a-live-child, status parsed, absent [], absent_items [], item_aggregate 6, call_site_count 3, scores goal_fidelity 17 / evidence 18 / scope_discipline 19 / durability 18 / fit 18, total 90, added_failure_count 0 over the reviewed run&#x27;s own two gate logs, two findings.</p></div>
+    <div class="r-comment-body"><p>an independent review of r-20260928T180300580029-stall-window-respects-a-live-child is stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T180300580029-stall-window-respects-a-live-child.at-e1a7fcf42f62a76b7eeeec731e4bacbd06a49ca2.json — project reckon, reviewed_base_sha 58405bd6eeca722241894b0ad21bce826ab4c433, reviewed_head_sha e1a7fcf42f62a76b7eeeec731e4bacbd06a49ca2, review_run_id r-20260928T191539246946-review-of-stall-window-respects-a-live-child, status parsed, absent [], absent_items [], item_aggregate 6, call_site_count 3, scores goal_fidelity 17 / evidence 18 / scope_discipline 19 / durability 18 / fit 18, total 90, added_failure_count 0 over the reviewed run's own two gate logs, two findings.</p></div>
 </div>
 </section>
 </main>
