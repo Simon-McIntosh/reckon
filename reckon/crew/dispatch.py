@@ -5474,54 +5474,69 @@ def ensure_worker_scratch(run_id: str) -> Path:
     return path
 
 
-def remove_worker_scratch(
-    run_id: str, *, recorded_path: str | os.PathLike[str] | None = None
-) -> dict[str, Any]:
-    """Remove one run's scratch directory, printing what it removed.
+def _removable_scratch_target(
+    run_id: str, recorded_path: str | os.PathLike[str] | None
+) -> tuple[Path | None, str]:
+    """The directory a run may remove, or ``None`` and the reason it may not.
 
-    The path removed is ``<scratch root>/<run id>`` by default, or the
-    ``recorded_path`` a dispatch recorded when it created the directory — the
-    directory a later promotion or discard must remove is exactly the one that
-    was made, so it is read from the record rather than re-derived from a run id
-    whose root could have moved. Either way the path is refused unless it is a
-    direct child of the scratch root and names a well-formed run id, so a
-    directory a different run owns, or the scratch root itself, is never in
-    reach. An absent directory is reported rather than raised: a run whose
-    scratch was already reclaimed has nothing left to remove.
+    Every check the removal depends on lives here so it applies whatever path a
+    caller offers. A ``recorded_path`` gets no more reach than the path computed
+    from the run id: it must resolve to a direct child of the resolved scratch
+    root, its final component must equal the validated run id, and it must be a
+    real directory rather than a symlink. A recorded path is therefore only ever
+    allowed to equal ``<scratch root>/<run id>`` — its value is resilience to a
+    root that moved, never a licence to name a directory the run does not own.
     """
-    result: dict[str, Any] = {
-        "scratch_removed": False,
-        "scratch_path": str(recorded_path) if recorded_path else None,
-        "scratch_withheld": "",
-    }
     name = str(run_id or "").strip()
     # A run id is a single path component and is never a parent reference. A
     # separator, an absolute path, or a bare "." / ".." names no scratch
-    # directory this function may remove, so it is withheld rather than joined:
-    # ".." would otherwise resolve to the temp directory itself and be removed.
+    # directory this function may remove: ".." would otherwise resolve to the
+    # temp directory itself and be removed.
     if not name or name in {".", ".."} or Path(name).name != name:
-        result["scratch_withheld"] = "run id names no scratch directory"
-        return result
+        return None, "run id names no scratch directory"
     root = worker_scratch_root()
     path = Path(recorded_path) if recorded_path else root / name
-    result["scratch_path"] = str(path)
-    # The invariant the guard above exists to hold: the directory removed is a
-    # direct child of the scratch root and is not the root itself. Asserted on
-    # the resolved paths because a recorded path may traverse a symlink, and a
-    # resolved parent equal to the resolved root is the only shape that removes
-    # exactly one run's directory.
+    # Checked before the resolve below, because a symlink resolves to its
+    # target and would let a recorded path point anywhere under the root.
+    if path.is_symlink():
+        return None, "scratch path is a symlink"
     resolved_root = root.resolve()
     try:
         resolved_path = path.resolve()
     except OSError:
         resolved_path = path
-    if resolved_path == resolved_root or resolved_path.parent != resolved_root:
-        result["scratch_withheld"] = (
-            "scratch path is not a directory under the scratch root"
-        )
-        return result
+    if resolved_path.parent != resolved_root or resolved_path.name != name:
+        return None, "scratch path is not the directory this run owns"
     if not path.is_dir():
-        result["scratch_withheld"] = "scratch directory is no longer present"
+        return None, "scratch directory is no longer present"
+    return path, ""
+
+
+def remove_worker_scratch(
+    run_id: str, *, recorded_path: str | os.PathLike[str] | None = None
+) -> dict[str, Any]:
+    """Remove one run's scratch directory, printing what it removed.
+
+    The path removed is ``<scratch root>/<run id>``, or the ``recorded_path`` a
+    dispatch recorded when it created the directory — which is accepted only
+    when it names exactly that directory (see ``_removable_scratch_target``), so
+    a record whose scratch field names a different run's directory removes
+    nothing. An absent directory is reported rather than raised: a run whose
+    scratch was already reclaimed has nothing left to remove.
+    """
+    name = str(run_id or "").strip()
+    attempted = (
+        Path(recorded_path)
+        if recorded_path
+        else (worker_scratch_root() / name if name else None)
+    )
+    path, reason = _removable_scratch_target(run_id, recorded_path)
+    result: dict[str, Any] = {
+        "scratch_removed": False,
+        "scratch_path": str(path or attempted) if (path or attempted) else None,
+        "scratch_withheld": reason,
+    }
+    if path is None:
         return result
     try:
         shutil.rmtree(path)

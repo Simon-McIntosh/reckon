@@ -53,6 +53,11 @@ NEGATIVE_CONTROL_MUTATION = (
 )
 NEGATIVE_CONTROL = os.environ.get("RECKON_WORKER_SCRATCH_NEGATIVE") == "1"
 
+# The second declared mutation: trust a recorded scratch path without checking
+# it, so a record naming a different run's directory removes that directory.
+RECORDED_CONTROL_MUTATION = "trust the recorded scratch path without checking it"
+RECORDED_CONTROL = os.environ.get("RECKON_WORKER_SCRATCH_RECORDED_NEGATIVE") == "1"
+
 
 def _git(repository: Path, *arguments: str) -> str:
     result = subprocess.run(
@@ -406,6 +411,85 @@ def test_the_discard_release_fallback_reports_the_scratch(
     assert f"removed worker scratch directory {scratch}" in capsys.readouterr().out
 
 
+def _trust_recorded(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The declared mutation: remove whatever path the record names."""
+    monkeypatch.setattr(
+        dispatch,
+        "_removable_scratch_target",
+        lambda run_id, recorded_path: (
+            Path(recorded_path)
+            if recorded_path
+            else dispatch.worker_scratch_root() / str(run_id),
+            "",
+        ),
+    )
+
+
+def test_a_recorded_path_naming_a_sibling_is_withheld(
+    scratch_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A record naming a different run's directory removes nothing."""
+    if RECORDED_CONTROL:
+        _trust_recorded(monkeypatch)
+    owner = "r-20260928T140800000000-scratch-owner"
+    sibling = _plant_scratch("r-20260928T140810000000-scratch-sibling")
+
+    outcome = dispatch.remove_worker_scratch(owner, recorded_path=str(sibling))
+
+    assert outcome["scratch_removed"] is False
+    assert outcome["scratch_withheld"]
+    assert sibling.is_dir(), "the sibling run's scratch must survive"
+    assert (sibling / "worker-temp.txt").is_file()
+
+
+def test_a_recorded_path_outside_the_root_is_withheld(
+    scratch_root: Path, tmp_path: Path
+) -> None:
+    """A record pointing outside the scratch root removes nothing."""
+    run_id = "r-20260928T140820000000-scratch-outside"
+    outside = tmp_path / "away" / run_id
+    outside.mkdir(parents=True)
+    (outside / "keep.txt").write_text("keep\n", encoding="utf-8")
+
+    outcome = dispatch.remove_worker_scratch(run_id, recorded_path=str(outside))
+
+    assert outcome["scratch_removed"] is False
+    assert outcome["scratch_withheld"]
+    assert outside.is_dir()
+    assert (outside / "keep.txt").is_file()
+
+
+def test_a_recorded_symlink_is_withheld(scratch_root: Path, tmp_path: Path) -> None:
+    """A recorded path that is a symlink removes nothing."""
+    run_id = "r-20260928T140830000000-scratch-symlink"
+    real = tmp_path / "real-scratch"
+    real.mkdir(parents=True)
+    (real / "keep.txt").write_text("keep\n", encoding="utf-8")
+    scratch_root.mkdir(parents=True, exist_ok=True)
+    link = dispatch.worker_scratch_dir(run_id)
+    link.symlink_to(real, target_is_directory=True)
+
+    outcome = dispatch.remove_worker_scratch(run_id, recorded_path=str(link))
+
+    assert outcome["scratch_removed"] is False
+    assert "symlink" in outcome["scratch_withheld"]
+    assert link.is_symlink()
+    assert real.is_dir()
+    assert (real / "keep.txt").is_file()
+
+
+def test_the_normal_recorded_path_is_removed(scratch_root: Path) -> None:
+    """A record naming exactly the run's own directory is removed."""
+    run_id = "r-20260928T140840000000-scratch-recorded-ok"
+    scratch = _plant_scratch(run_id)
+
+    outcome = dispatch.remove_worker_scratch(run_id, recorded_path=str(scratch))
+
+    assert outcome["scratch_removed"] is True
+    assert outcome["scratch_path"] == str(scratch)
+    assert not scratch.exists()
+
+
 # ── The negative control ────────────────────────────────────────────────────
 
 
@@ -458,10 +542,43 @@ def _observed_after(scratch_root: Path, tmp_path: Path) -> list[str]:
     return lines
 
 
+def _observed_recorded_trust(scratch_root: Path, tmp_path: Path) -> list[str]:
+    """Report whether trusting a recorded path removes a sibling run's scratch."""
+    saved = os.environ.get(dispatch.WORKER_SCRATCH_ROOT_ENV)
+    os.environ[dispatch.WORKER_SCRATCH_ROOT_ENV] = str(scratch_root)
+    original = dispatch._removable_scratch_target
+    # The declared mutation, applied directly: the recorded path is removed
+    # without any check, so a record naming another run's directory deletes it.
+    dispatch._removable_scratch_target = lambda run_id, recorded_path: (
+        (Path(recorded_path) if recorded_path else scratch_root / str(run_id)),
+        "",
+    )
+    lines: list[str] = []
+    try:
+        owner = "r-20260928T140900000000-scratch-owner"
+        sibling = _plant_scratch("r-20260928T140910000000-scratch-sibling")
+        dispatch.remove_worker_scratch(owner, recorded_path=str(sibling))
+        lines.append(f"recorded sibling present after removal: {sibling.is_dir()}")
+    finally:
+        dispatch._removable_scratch_target = original
+        if saved is None:
+            os.environ.pop(dispatch.WORKER_SCRATCH_ROOT_ENV, None)
+        else:
+            os.environ[dispatch.WORKER_SCRATCH_ROOT_ENV] = saved
+    return lines
+
+
 if __name__ == "__main__":  # pragma: no cover - reproduces the red log
-    print(NEGATIVE_CONTROL_MUTATION)
-    with tempfile.TemporaryDirectory() as directory:
-        temporary = Path(directory)
-        for line in _observed_after(temporary / "scratch", temporary):
-            print(line)
+    if RECORDED_CONTROL:
+        print(RECORDED_CONTROL_MUTATION)
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            for line in _observed_recorded_trust(temporary / "scratch", temporary):
+                print(line)
+    else:
+        print(NEGATIVE_CONTROL_MUTATION)
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            for line in _observed_after(temporary / "scratch", temporary):
+                print(line)
     sys.exit(0)
