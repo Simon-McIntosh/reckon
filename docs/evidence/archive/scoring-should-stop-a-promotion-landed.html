@@ -1644,6 +1644,110 @@
     measures its own change only; verifying the merged result belongs to a separately
     dispatched test node.</p>
   </section>
+
+  <section id="node-ids-in-one-canonical-form">
+    <h2>Added failures compared in one canonical node id form</h2>
+
+    <p><strong>Defect.</strong> <code>added_failures_from_gate_logs</code> in
+    <code>reckon/crew/review.py</code> read each log's <code>FAILED</code> and
+    <code>ERROR</code> lines and compared the two id sets verbatim. A gate log carries
+    whatever spelling the command that wrote it printed, so a head arm invoked from a
+    different working directory reported its ids with a path prefix
+    (<code>../../home/…/tests/x.py::t</code>, or an absolute one) where the base arm run at
+    the repository root reported <code>tests/x.py::t</code>. One test then read as two, a
+    run that added nothing reported added failures, and the nonzero count capped its total
+    at <code>ADDED_FAILURES_TOTAL_CAP</code> — below the promotion floor, which is the
+    direction the count exists to prevent. Recorded from the review of
+    a-promotion-never-reads-unpromoted (<code>r-20260926T232022357260</code>,
+    2026-09-27), which measured three phantom added failures naming tests green at both
+    revisions and whose base and head id sets are identical once the prefix is stripped.</p>
+
+    <p><strong>Reproduction before the repair.</strong> Two synthesised logs carrying one
+    failing test under the two spellings, read through the production function at the base
+    revision <code>f70c1e1b</code>:</p>
+
+    <pre>base ids: ['tests/test_gate.py::test_alpha']
+head ids: ['../../home/ITER/mcintos/Code/.reckon-worktrees/w/tests/test_gate.py::test_alpha']
+count, ids: (1, ['../../home/ITER/mcintos/Code/.reckon-worktrees/w/tests/test_gate.py::test_alpha'])</pre>
+
+    <p>The count is 1 where it must be 0. The base arm of the gate
+    (<code>base-arm-scratch.log</code>) reproduces the same shape across the whole new
+    file: <strong>8 failed, 6 passed, exit 1</strong>, every failure a case asserting the
+    reduction the base tree does not perform.</p>
+
+    <figure>
+      <img src="/reckon/figures/scoring-should-stop-a-promotion/node_id_canonical_form.png" alt="Three rows. The base arm's FAILED line and the head arm's prefixed FAILED line for the same test both reduce to tests/test_gate.py::test_alpha, so the count is 0 and the total stays uncapped; a head-arm line naming a different test reduces to tests/test_gate.py::test_beta, a second id, so the count is 1 and the total is capped. Measured: count 1 before the reduction, 0 after; the negative control fails eight of nine cases.">
+    </figure>
+
+    <p><strong>Fix.</strong> <code>canonical_node_id</code> reduces a node id to the
+    repository-relative form the comparison uses: the path part — everything before the
+    first <code>::</code> — keeps the sub-path from its last <code>tests</code> component
+    onward, and its separators are normalised to <code>/</code>. The <code>::</code>
+    segments and parametrisation brackets are returned untouched, because they are what
+    tells apart two tests sharing a file. The anchor is that component rather than the
+    worktree root because a gate log does not carry the repository root: the reduction has
+    to work from the log text alone, and it is the directory the prefix cannot shift. An id
+    carrying no <code>tests</code> component cannot be resolved against the repository and
+    is kept verbatim — still compared, under the spelling its own log used, never dropped
+    from the difference. Both logs are read through the function, so the difference is
+    taken over ids rather than over the working directory each arm happened to run in.</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>Base log id</th><th>Head log id</th><th>Count</th></tr></thead>
+      <tbody>
+        <tr><td>same test under two forms</td><td><code>tests/x.py::test_alpha</code></td><td><code>…/tests/x.py::test_alpha</code></td><td>0</td></tr>
+        <tr><td>a test the base never ran</td><td><code>tests/x.py::test_alpha</code></td><td><code>…/tests/x.py::test_beta</code></td><td>1, the head id in canonical form</td></tr>
+        <tr><td>two tests sharing a file</td><td><code>tests/x.py::test_alpha</code></td><td><code>…/tests/x.py::test_beta</code></td><td>1, the second id</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Focused gate.</strong> The two measured files in one invocation,
+    <code>tests/test_review_node_id_canonical_form.py</code> and
+    <code>tests/test_review_counts_added_failures.py</code>, report
+    <strong>14 passed, exit 0</strong> at revision <code>55471aba</code>
+    (<code>head-arm-gate.log</code>). Against the base arm the added-failure set is empty:
+    every failure at the base is a case of the new file, and none of the base's six passing
+    ids fails at the head. That second arm is run as its own exit-0 gate over exactly those
+    six ids — <strong>6 ids, exit 0</strong> (<code>head-gate-over-base-passing-ids.log</code>),
+    the derivation script beside it — so the promotion gate is a run whose id list was read
+    from the base arm's log rather than typed.</p>
+
+    <p><strong>Declared negative control.</strong> In the scratch tree, the head module is
+    copied in and its canonicalisation call reverted, so the two sets are compared
+    verbatim again:</p>
+
+    <table>
+      <thead><tr><th>State</th><th>New file's result</th><th>What it establishes</th></tr></thead>
+      <tbody>
+        <tr><td>Head tree, no mutation</td><td>9 passed; exit 0</td><td>One id under two forms is not an addition.</td></tr>
+        <tr><td>Compared verbatim again</td><td>8 failed; exit 1</td><td>The same test under two id forms counts as added and its assertion fails.</td></tr>
+      </tbody>
+    </table>
+    <p>The red log's first line repeats the declared mutation verbatim; it is
+    <code>negative-control-verbatim-compare.log</code> in the run directory. The mutation
+    also reddens the shifted-spelling read-path case, which asserts the same reduction end
+    to end through <code>select_review_for_head</code>; the required direction is the
+    two-forms case, and it fails. The mutation was applied to the scratch copy only: the
+    worktree's <code>reckon/crew/review.py</code> holds the canonicalisation call it
+    committed at <code>55471aba</code>.</p>
+
+    <p><strong>Lint.</strong> <code>ruff check --no-cache --output-format=concise</code> on
+    both staged paths reports <strong>0 findings</strong>, against a base of 0 for
+    <code>reckon/crew/review.py</code> (measured by running the same command over the
+    base revision's copy), and <code>ruff format --check</code> reports both formatted. The
+    new test file has no base revision to compare against.</p>
+
+    <p><strong>Scope.</strong> The comparison is a set difference over ids, shown above as
+    a table; the figure carries the sequential relation the table cannot — two log
+    spellings in, one id out — so the reduction is visible rather than described.
+    <code>tests/test_review_counts_added_failures.py</code> is measured but unmodified;
+    nothing outside <code>reckon/crew/review.py</code> and the new test file changed. The
+    added ids are now reported in canonical form, so a manifest that retires an id by
+    writing the prefixed spelling would no longer match it — no instance of that is
+    measured, and retirement prose is written from the manifest's own relative ids. This
+    node measures its own change only; verifying the merged result belongs to a separately
+    dispatched test node.</p>
+  </section>
 </main>
 </body>
 </html>

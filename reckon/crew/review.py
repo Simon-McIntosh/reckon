@@ -499,19 +499,58 @@ _MANIFEST_FILE_NAME = "manifest.md"
 _MEASURED_FIELDS = (_BASE_LOG_FIELD, _HEAD_LOG_FIELD)
 
 
+# The path component a node id is reduced to. A gate log does not carry the
+# repository root, so the reduction anchors on the directory the repository
+# keeps its tests under: the component a base arm run at the repository root
+# prints first, and the one a head arm run elsewhere prints after whatever
+# prefix its own working directory contributed.
+_REPO_PATH_ANCHOR = "tests"
+
+
+def canonical_node_id(node_id: str) -> str:
+    """Return a pytest node id in the repository-relative form the count compares.
+
+    A gate log carries whatever spelling the command that wrote it printed, and
+    that command may run from anywhere: a head arm invoked from another working
+    directory reports its summary lines with the path relative to that
+    directory (``../../home/…/tests/x.py``) or with an absolute one, where the
+    base arm run at the repository root reported ``tests/x.py``. Compared
+    verbatim, one test reads as two, and a run that added nothing reads as
+    having added failures — which caps its total below the promotion floor.
+
+    So the path part, everything before the first ``::``, is reduced to the
+    sub-path from the last ``tests`` component onward, and its separators are
+    normalised to ``/``. The ``::`` segments and parametrisation brackets are
+    returned untouched, because they are what tells apart two tests sharing a
+    file. An id carrying no ``tests`` component cannot be resolved against the
+    repository and is kept verbatim: it is still compared, under the spelling
+    its own log used, rather than dropped from the difference.
+    """
+    path, separator, segments = node_id.partition("::")
+    path = path.replace("\\", "/")
+    components = path.split("/")
+    for index in range(len(components) - 1, -1, -1):
+        if components[index] == _REPO_PATH_ANCHOR:
+            path = "/".join(components[index:])
+            break
+    return path + separator + segments
+
+
 def _pytest_failure_ids(log_text: str) -> set[str]:
     """Return the pytest node ids a gate log reports FAILED or ERROR.
 
     A pytest summary line is one node id per line prefixed ``FAILED`` (or
     ``ERROR`` for a collection or setup error). Node ids run to the end of the
     line, so the whole token after the prefix is taken and surrounding
-    whitespace is stripped.
+    whitespace is stripped. Both logs of a difference are read through
+    :func:`canonical_node_id`, so the two sides are compared as ids rather than
+    as the working directory each arm happened to be invoked from.
     """
     ids: set[str] = set()
     for raw in log_text.splitlines():
         match = _GATE_FAILURE_RE.match(raw.strip())
         if match:
-            ids.add(match.group(1))
+            ids.add(canonical_node_id(match.group(1)))
     return ids
 
 
