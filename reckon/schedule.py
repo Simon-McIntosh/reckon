@@ -18,6 +18,8 @@ import math
 from datetime import UTC, datetime
 from typing import Any
 
+from reckon._timestamps import parse_utc
+
 RECORDED_STATUSES = frozenset({"shipped", "done", "superseded", "historical"})
 ACTIVE_STATUSES = frozenset({"active", "in-progress"})
 
@@ -33,15 +35,9 @@ def _as_number(value: Any) -> float | None:
 
 
 def _stamp_millis(stamp: Any) -> float | None:
-    text = str(stamp)
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    try:
-        parsed = datetime.fromisoformat(text)
-    except ValueError:
+    parsed = parse_utc(str(stamp))
+    if parsed is None:
         return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
     return parsed.timestamp() * 1000.0
 
 

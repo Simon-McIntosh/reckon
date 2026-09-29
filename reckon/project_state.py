@@ -30,7 +30,7 @@ from collections.abc import Callable, Iterable, Mapping
 from contextlib import ExitStack, contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -44,6 +44,7 @@ from reckon._schema import (
     parse_plan_ref,
     resolve_plan_ref,
 )
+from reckon._timestamps import parse_utc
 from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
 from reckon.sprint_liveness import sprint_liveness
 
@@ -521,11 +522,8 @@ def _read_resource_unchecked(
 def _review_date(value: Any, field: str) -> str:
     if not isinstance(value, str):
         raise TypeError(f"{field} must be a YYYY-MM-DD date")
-    try:
-        parsed = date.fromisoformat(value)
-    except ValueError as exc:
-        raise ValueError(f"{field} must be a YYYY-MM-DD date") from exc
-    if parsed.isoformat() != value:
+    parsed = parse_utc(value)
+    if parsed is None or parsed.date().isoformat() != value:
         raise ValueError(f"{field} must be a YYYY-MM-DD date")
     return value
 
@@ -635,12 +633,8 @@ def _validate_review(data: dict[str, Any]) -> dict[str, Any]:
         resolved_by = raw.get("resolved_by") or ""
         outcome = raw.get("outcome") or ""
         if resolved_at:
-            try:
-                datetime.fromisoformat(str(resolved_at))
-            except ValueError as exc:
-                raise ValueError(
-                    f"{field}.resolved_at must be an ISO date or datetime"
-                ) from exc
+            if parse_utc(str(resolved_at)) is None:
+                raise ValueError(f"{field}.resolved_at must be an ISO date or datetime")
             resolved_by = _review_text(resolved_by, f"{field}.resolved_by")
             outcome = _review_text(outcome, f"{field}.outcome")
         elif resolved_by or outcome:

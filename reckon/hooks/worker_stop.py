@@ -32,9 +32,10 @@ from __future__ import annotations
 import json
 import os
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from reckon._timestamps import parse_utc
 
 TERMINAL_STATUSES = frozenset({"complete", "blocked", "failed"})
 BLOCK_LIMIT = 3
@@ -119,12 +120,14 @@ def _manifest_predates_attempt(manifest: Path) -> bool:
     raw = os.environ.get("RECKON_ATTEMPT_STARTED_AT", "").strip()
     if not raw or not manifest.is_file():
         return False
+    attempt_started_at = parse_utc(raw)
+    if attempt_started_at is None:
+        return False
     try:
-        attempt_started_at = datetime.fromisoformat(raw)
         return manifest.stat().st_mtime_ns < int(
             attempt_started_at.timestamp() * 1_000_000_000
         )
-    except (OSError, ValueError, OverflowError):
+    except (OSError, OverflowError):
         return False
 
 

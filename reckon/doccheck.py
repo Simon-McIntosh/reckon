@@ -59,6 +59,7 @@ from reckon._store import (
     _section_contract_refusal,
     plan_summary_length,
 )
+from reckon._timestamps import parse_utc
 from reckon.lifecycle import TERMINAL_STATUSES
 
 # Required scalar meta tags for plan-family documents. Research, evidence, and
@@ -209,11 +210,10 @@ def modified_age_days(
 
     if not last_modified:
         return None
-    try:
-        modified = date.fromisoformat(str(last_modified)[:10])
-    except ValueError:
+    parsed = parse_utc(str(last_modified))
+    if parsed is None:
         return None
-    return max(0, ((today or date.today()) - modified).days)
+    return max(0, ((today or date.today()) - parsed.date()).days)
 
 
 def derived_plan_age(
