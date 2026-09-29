@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping
 
 from reckon import _backends, _store, capability, flight, ledger
+from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import bar as bar_module
 from reckon.crew import lane_document as _lane_document
 from reckon.crew import prescription as prescription_module
@@ -397,10 +398,7 @@ def _actionable_budget_hold(
             )
         )
         stamp = state.get("observed_at")
-        try:
-            observed = datetime.fromisoformat(str(stamp))
-        except (TypeError, ValueError):
-            observed = None
+        observed = parse_utc(str(stamp))
         if observed is None:
             timing = (
                 f"the evidence age is unknown against the {bound:g} minute "
@@ -412,9 +410,8 @@ def _actionable_budget_hold(
                 "shelf-life bound disables ageing"
             )
         else:
-            if observed.tzinfo is None:
-                observed = observed.replace(tzinfo=UTC)
-            moment = datetime.fromisoformat(_utc_now())
+            moment = parse_utc(_utc_now())
+            assert moment is not None, "the repository clock is not ISO-8601"
             age_minutes = max(0.0, (moment - observed).total_seconds() / 60.0)
             lifts_at = (observed + timedelta(minutes=bound)).astimezone(UTC)
             lift_stamp = lifts_at.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -2592,11 +2589,8 @@ def _lane_advisory_horizon_seconds(node: TaskNode) -> int:
 
 def _lane_advisory_instant(value: object) -> datetime | None:
     """Parse an ISO instant from a budget reading, or None when unreadable."""
-    if not isinstance(value, str) or not value.strip():
-        return None
-    try:
-        parsed = datetime.fromisoformat(value.strip())
-    except ValueError:
+    parsed = parse_iso(value)
+    if parsed is None:
         return None
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
 
@@ -2752,6 +2746,10 @@ def _lane_reading_carry(
         return _lane_reading_unknown(
             detail="lane document carries no parseable 'observed_at' timestamp"
         )
+    # Retained rather than routed through ``reckon._timestamps.parse_iso``: the
+    # refusal quotes the parser's own exception text, which the shared parser
+    # swallows to return ``None``, and the reading is strict enough to report
+    # why a stamp was rejected.
     try:
         observed = datetime.fromisoformat(stamp)
     except ValueError as exc:
