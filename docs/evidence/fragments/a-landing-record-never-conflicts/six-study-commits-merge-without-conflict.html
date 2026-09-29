@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-record-never-conflicts">
+  <meta name="plan-title" content="Six study commits merge without conflict once the record is a fragment">
+  <meta name="plan-summary" content="Two arms folded with git merge-tree: as-is the six commits conflict on the one shared record path, rewritten to fragments they do not, and the composed record carries all six anchors.">
+  <meta name="plan-evidence-for" content="a-landing-record-never-conflicts">
+  <meta name="plan-recorded-at" content="2026-09-28">
+  <meta name="plan-verdict" content="passed">
+  <title>Six study commits merge without conflict once the record is a fragment | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Six study commits merge without conflict once the record is a fragment</h1>
+
+    <section id="measure">
+      <h2>Two arms, one base</h2>
+      <p>The measure builds two arms from the base <code>457bbec7</code> the six study commits share.
+        Each arm re-applies the six commits' own file changes onto that base, then folds the six
+        together with <code>git merge-tree</code> and counts the conflicted paths under
+        <code>docs/plans</code> and <code>docs/evidence</code>. The <em>before</em> arm takes the
+        commits as they are; the <em>after</em> arm moves each commit's evidence anchor into its own
+        fragment under <code>docs/evidence/fragments/orchestrator-crew-pattern-studies/&lt;node&gt;.html</code>
+        and drops the plan edit (which becomes a <code>landing:</code> line recorded through the
+        versioned write, not a git change).</p>
+
+      <table>
+        <thead><tr><th>Arm</th><th>Conflicted paths under docs/plans and docs/evidence</th><th>Where</th></tr></thead>
+        <tbody>
+          <tr><td>before (as they are)</td><td><strong>1</strong></td><td><code>docs/evidence/archive/orchestrator-crew-pattern-studies-landed.html</code> (add/add: the one shared cumulative record)</td></tr>
+          <tr><td>after (fragment + landing line)</td><td><strong>0</strong></td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+      <p>The six plan edits merge cleanly in the before arm as well: they append to disjoint regions
+        of the plan and <code>git merge-tree</code> auto-merges them. The single conflict is the shared
+        cumulative record, which every commit adds in full, so the two arms differ exactly on the path
+        this plan removes.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-landing-record-never-conflicts/six-study-commits-merge-without-conflict/before-after.svg"
+          alt="Bar chart: before arm 1 conflicted path (the shared record), after arm 0 conflicted paths" style="max-width:100%">
+        <figcaption>Conflicted paths under <code>docs/plans</code> and <code>docs/evidence</code> after
+          folding the six study commits with <code>git merge-tree</code>: one shared add/add conflict
+          as the commits are, none once each anchor is its own fragment.</figcaption>
+      </figure>
+    </section>
+
+    <section id="anchors">
+      <h2>The composed record carries all six anchors</h2>
+      <p><code>reckon.evidence.compose_landed_record</code> over the after arm's folded tree composes the
+        record's own bytes followed by the six fragments. Each anchor is the section id one commit wrote
+        into the shared record; each is found exactly once in the composed bytes.</p>
+      <table>
+        <thead><tr><th>Anchor id</th><th>Study commit</th><th>Found in composed record</th></tr></thead>
+        <tbody>
+          <tr><td><code>velocity</code></td><td><code>9afcdbe0</code></td><td>1</td></tr>
+          <tr><td><code>worker-anatomy-census</code></td><td><code>11fb09a4</code></td><td>1</td></tr>
+          <tr><td><code>coordinator-overhead</code></td><td><code>4413e78a</code></td><td>1</td></tr>
+          <tr><td><code>code-depth</code></td><td><code>77876fa0</code></td><td>1</td></tr>
+          <tr><td><code>nova-flapping</code></td><td><code>e01ec2ad</code></td><td>1</td></tr>
+          <tr><td><code>nova-readiness</code></td><td><code>9cf52140</code></td><td>1</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>No-fragment control:</strong> composing the record's own bytes with the fragment
+          directory absent finds <strong>0</strong> anchors, so the anchor check is shown to see
+          something rather than to always pass.</li>
+        <li><strong>Scratch isolation:</strong> each arm's head commit resolves under the scratch object
+          store and does <em>not</em> resolve against the repository's own store, so the measure wrote
+          nothing to the shared object directory. (A bare object count cannot carry this check: peers
+          commit to that store concurrently.)</li>
+      </ul>
+    </section>
+
+    <section id="provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Script</td><td><code>docs/research/data/landing-record-merge-measure/measure.py</code></td></tr>
+          <tr><td>Base</td><td><code>457bbec7</code></td></tr>
+          <tr><td>Revision run at</td><td><code>687c8cbf</code></td></tr>
+          <tr><td>Module under test (<code>reckon.__file__</code>)</td><td><code>reckon/__init__.py</code> of the checkout run from</td></tr>
+          <tr><td>Log</td><td><code>landing-record-merge-measure.log</code> in the run directory</td></tr>
+        </tbody>
+      </table>
+      <p>The arms are built in a scratch object store outside the checkout
+        (<code>GIT_OBJECT_DIRECTORY</code> under a private temp directory, with the repository's own
+        objects as alternates). A <code>git clone</code> and a sibling worktree are both refused by a
+        crew worker's git guard, which permits a mutating verb only against the run's own worktree;
+        redirecting the object store keeps the resolved repository this run's own while every byte the
+        measure writes lands outside it.</p>
+    </section>
+  </main>
+</body>
+</html>
