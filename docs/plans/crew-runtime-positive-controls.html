@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="130">
+<meta name="plan-version" content="131">
 </head>
 <body>
   <main class="plan-doc">
@@ -1414,6 +1414,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260929T163357787466-review-of-repair-of-strict-arms-refusal-impact-1af8e33fd252" data-who="reckon-build" data-when="2026-09-29T16:53:04.644Z">
     <div class="r-comment-body"><p>review of r-20260929T162400736424-repair-of-strict-arms-refusal-impact-1af8e33fd252 stored at two paths; verdict pass, 96/100 across goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 19; zero findings, so the two off-scope items the repair reported carry forward as follow-ons rather than new work</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260929T160908518777-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8" data-who="reckon-build" data-when="2026-09-29T16:21:45.392Z">
+    <div class="r-comment-body"><p>The baseline reader now validates `failure_ids` the way the head reader does — a list of non-empty strings — so a JSON string is no longer iterated as its characters and a non-iterable no longer raises out of the gate, and an unreadable baseline decides nothing in every shape; the pinned refusal case is restored to the baseline comparison it names (head arm 26 passed EXIT=0, negative control 4 failed EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
