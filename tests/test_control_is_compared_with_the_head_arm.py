@@ -34,6 +34,13 @@ the absence of one. When a manifest records no readable arm of either kind the
 comparison was never made, which admits nothing, so cases (i) and (j) hold one
 unreadable baseline per form and assert the refusal — the control that a
 declared-complete baseline would admit on the same log.
+
+The ``failure_ids`` list is read the same way on both arms — a list of
+non-empty strings — so cases (k) and (l) hold one baseline apart in that
+field's shape alone: in list form it already fails the id the control
+reddens and refuses the control, and any shape that cannot be read as ids —
+a JSON string, a non-iterable, a null, a list carrying a non-string — is
+unreadable and decides nothing rather than deciding as characters.
 """
 
 from __future__ import annotations
@@ -327,3 +334,47 @@ def test_a_declared_complete_baseline_admits_the_same_control(
     assert control["verdict"] == "matched"
     assert control["comparison_arm"] == "baseline_suite"
     assert control["added_failure_ids"] == [PASSED_CASE]
+
+
+def test_a_baseline_that_lists_the_reddened_id_refuses_the_control(
+    tmp_path: Path,
+) -> None:
+    """(k) In list form the baseline already fails the id the control reddens."""
+    with pytest.raises(CrewError) as refusal:
+        _gate(
+            tmp_path,
+            log_text=_red_log(PASSED_CASE),
+            baseline=_arm([PASSED_CASE], revision="1111111"),
+        )
+
+    assert "adds no failure to the baseline" in str(refusal.value)
+
+
+@pytest.mark.parametrize(
+    "failure_ids",
+    [
+        PASSED_CASE,
+        5,
+        None,
+        ["tests/test_guard.py::test_ok", 7],
+    ],
+    ids=["json-string", "non-iterable", "null", "non-string-element"],
+)
+def test_a_baseline_whose_failure_ids_is_not_a_list_of_ids_decides_no_control(
+    tmp_path: Path, failure_ids: object
+) -> None:
+    """(l) An id set that cannot be read as one decides nothing, in every shape.
+
+    The baseline lists the id the control reddens, so read as ids it refuses
+    the control exactly as the list case above does. A value that cannot be
+    read as a list of non-empty strings is unreadable instead: a JSON string
+    would otherwise iterate as its characters and admit the control the list
+    form refuses, and a non-iterable value would raise out of the gate. Either
+    way no comparison is made, and with no head arm recorded it is refused.
+    """
+    baseline = {**_arm([PASSED_CASE], revision="1111111"), "failure_ids": failure_ids}
+
+    with pytest.raises(CrewError) as refusal:
+        _gate(tmp_path, log_text=_red_log(PASSED_CASE), baseline=baseline)
+
+    assert "no readable comparison arm" in str(refusal.value)
