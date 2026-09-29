@@ -1,0 +1,356 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "711647fff3521ced6a1d64f1601f8c9bad4a3dc0",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 14003322,
+      "input_tokens_cumulative": 14003322,
+      "output_tokens": 61781,
+      "output_tokens_cumulative": 61781,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 531,
+    "files": 5,
+    "removed": 16
+  },
+  "commit_resolution": null,
+  "commits": [
+    "9bd25dc25d96371042976ece1fef59c3d931eaf6",
+    "951c93b2b6732a61e020b3deb93bc4d45b208aec"
+  ],
+  "completed_at": "2026-09-29T07:23:17.276Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T06:55:25Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "promotion/role"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_landing_contract_follows_the_grant.py tests/test_role_write_scope.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T065505688984-landing-contract-follows-the-grant/gate-merged-main.log"
+  },
+  "impl_move": {
+    "at_complete": 1.0,
+    "at_dispatch": 0.98,
+    "plan": "a-landing-record-never-conflicts",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T07:40:07.255578+00:00",
+    "horizon_seconds": 2700,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T06:55:07Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 20,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 6,
+    "headroom": 8,
+    "mean_context": 120000,
+    "observed_at": "2026-09-29T06:54:47Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T07:23:17.276Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T065505688984-landing-contract-follows-the-grant/manifest.md",
+  "member": "disposable-r-20260929T065505688984-landing-contract-follows-the-grant",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_landing_contract_follows_the_grant.py::test_a_writable_verifier_reads_the_run_record_carrier_not_the_plan_contract"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_landing_contract_follows_the_grant.py::test_a_writable_verifier_reads_the_run_record_carrier_not_the_plan_contract"
+    ],
+    "declaration": "choose the landing contract on worktree writability alone again; the writable test-role case must then fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T065505688984-landing-contract-follows-the-grant/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T065505688984-landing-contract-follows-the-grant/negative-control.log",
+    "test_paths": [
+      "tests/test_landing_contract_follows_the_grant.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "landing-contract-follows-the-grant",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2237,
+          "cached_input_tokens": 849931,
+          "input_tokens": 852170,
+          "output_tokens": 1913,
+          "reasoning_output_tokens": 427,
+          "total_tokens": 854083,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "The worker prompt states the plan landing contract, which tells a worker to write its evidence fragment and figure directory, only when the node's write paths contain its fragment path. Today reckon/crew/dispatch.py near :4577 chooses the contract on worktree writability alone. So a writable test-role node, whose fence no longer grants the fragment, is still told to write the fragment and the figure directory. After this node, such a node is told instead that its landing: line stays on its run record, the brief carrier's wording that reckon/crew/prompts.py already defines.\n\nThe decision reads the node's resolved write paths at the point where the contract is chosen, and repeats neither the role list nor the fragment path format. The fragment path is compared through the same function dispatch uses to grant it.\n\ntests/test_landing_contract_follows_the_grant.py composes prompts through the dispatch path the role-scope tests use:\n- for an implement node, it asserts the plan landing contract and the fragment path;\n- for a writable test-role node, it asserts that neither appears and that the run-record landing sentence does.\n\nThat file, tests/test_role_write_scope.py and tests/test_small_node_prompt.py keep their base failing ids and add none. The manifest writes baseline_suite and after_suite each as one line of armed JSON: revision, command with no placeholder, exit_status, completed, failure_count, failure_ids, log_path. Every gate log opens with one line naming its revision, tree and command, including the capture's EXIT= line. The declared negative control is applied and observed to fail, and its log's absolute path is in the manifest with an EXIT= line and the FAILED id.",
+    "estimated_hours": null,
+    "goal": "State the plan landing contract in a worker's prompt only when its fence grants the fragment path, so no worker is told to write a path its fence withholds",
+    "id": "landing-contract-follows-the-grant",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T06:55:07Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 20,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 6,
+      "headroom": 8,
+      "mean_context": 120000,
+      "observed_at": "2026-09-29T06:54:47Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T065505688984-landing-contract-follows-the-grant/manifest.md",
+    "negative_control": "choose the landing contract on worktree writability alone again; the writable test-role case must then fail",
+    "plan": "a-landing-record-never-conflicts",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "exact",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/dispatch.py",
+      "reckon/crew/prompts.py",
+      "tests/test_landing_contract_follows_the_grant.py",
+      "docs/evidence/fragments/a-landing-record-never-conflicts/landing-contract-follows-the-grant.html",
+      "docs/figures/a-landing-record-never-conflicts/landing-contract-follows-the-grant"
+    ]
+  },
+  "orientation_input_tokens": 3066641.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "landing-contract-follows-the-grant",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T06:55:13.085667+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-landing-record-never-conflicts",
+  "plan_impl_at_dispatch": 0.98,
+  "promoted_revision": "951c93b2b6732a61e020b3deb93bc4d45b208aec",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 20,
+      "evidence": 19,
+      "fit": 20,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 99
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T065505688984-landing-contract-follows-the-grant",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "3b40194d-190c-4cb0-82e2-7807a754c5f8",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 14171274,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 1648.905,
+    "generated_tokens": 69886,
+    "generation_seconds": 1380.842,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.7,
+    "machine_seconds": 268.063,
+    "peak_input_tokens": 166652,
+    "tokens_per_second": 50.61,
+    "wall_tokens_per_second": 42.38
+  },
+  "time_budget": "45m",
+  "tool_steps": 121.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 1672,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T07:23:17Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T06:55:44Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T065505688984-landing-contract-follows-the-grant",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 9914,
+    "worker_pid": 4124127
+  },
+  "worker_seconds": 1639,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
