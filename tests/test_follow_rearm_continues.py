@@ -428,6 +428,109 @@ def test_a_run_that_moved_in_the_gap_appears_once_with_its_new_state(home) -> No
     assert str(moved_row["observed_at"]) == moved, moved_row
 
 
+def test_a_transition_appended_after_the_replay_is_read_arrives_once(
+    home, monkeypatch
+) -> None:
+    """A line written between the replay's read and the follow is not lost.
+
+    The replay reads to a boundary fixed before it starts, and the read loop then
+    opens at exactly that byte. A transition appended after the replay has read
+    — and before the loop's first read — therefore falls to the loop's side of
+    the boundary and is delivered once. Taking the boundary from the file after
+    the replay instead would place the loop past the new line, so it would be
+    neither replayed nor followed: lost in the gap between the two reads. The
+    append is injected through the stream reader so it lands in exactly that
+    window rather than by racing a thread against it.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+        _arm()
+
+        appended = _iso(time.time() - 60)
+        original = cli._stream_events_upto
+        injected: list[bool] = []
+
+        def append_after_the_replay_read(stream, *, offset, boundary):
+            events = original(stream, offset=offset, boundary=boundary)
+            # The recorded read is the one at offset zero; the replay's own read
+            # is the later one, and it is after that read that the new line must
+            # land — before the read loop opens at the boundary.
+            if offset > 0 and not injected:
+                injected.append(True)
+                _append_stream(
+                    stream_path,
+                    [
+                        _event(
+                            RUN_A,
+                            "node-a",
+                            state="blocked",
+                            observed_at=appended,
+                            previous="working",
+                        )
+                    ],
+                )
+            return events
+
+        monkeypatch.setattr(cli, "_stream_events_upto", append_after_the_replay_read)
+        second = _arm(resume=None)
+
+    assert injected, "the injection must have fired, or this check is vacuous"
+    blocked = [event for event in second if str(event["to_state"]) == "blocked"]
+    assert len(blocked) == 1, (
+        f"the transition appended after the replay's read is delivered exactly "
+        f"once; got {second!r}"
+    )
+    assert str(blocked[0]["observed_at"]) == appended, blocked[0]
+
+
+def test_a_recorded_state_the_live_fleet_denies_is_not_announced(home) -> None:
+    """The live fleet is the authority on a run's state, not the stream's history.
+
+    The stream's last word for RUN_A is ``stalled``, at a stamp in the past, but
+    the live pointer still classifies RUN_A as ``working``. The two disagree, so
+    the replayed row keeps the live state and the fleet's own clock: a row never
+    announces a state the live fleet denies. The stream's stamp is kept only
+    where the stream's last state agrees with the live one.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+
+        stalled = _iso(time.time() - 40 * 60)
+        _append_stream(
+            stream_path,
+            [
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="stalled",
+                    observed_at=stalled,
+                    previous="working",
+                )
+            ],
+        )
+        # The first arming advances the place past the stalled line, so it is
+        # history for the re-arm, not news in its gap.
+        _arm()
+
+        second = _arm(resume=None)
+
+    by_run = {str(event["run_id"]): event for event in second}
+    assert str(by_run[RUN_A]["to_state"]) == "working", (
+        f"the live classification is the authority; got {by_run[RUN_A]!r}"
+    )
+    assert str(by_run[RUN_A]["observed_at"]) != stalled, (
+        f"a state the live fleet denies must not carry the stream's time; got "
+        f"{by_run[RUN_A]!r}"
+    )
+    assert str(by_run[RUN_B]["to_state"]) == "working", by_run[RUN_B]
+
+
 def test_a_rearm_records_its_own_place_for_the_next(home) -> None:
     """The durable checkpoint advances to the stream's end as the fleet is drawn.
 
