@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import mcp, velocity
+from reckon import mcp, mcp_budget, mcp_views, velocity
 
 DAY = 86400
 BASE = int(dt.datetime(2026, 9, 1, tzinfo=dt.UTC).timestamp())
@@ -133,9 +133,12 @@ def _build_alpha(root: Path) -> Path:
     _commit(repo, "promote(r-review)", 6, {})
     # Dated after the window closes; the view derives its head before ``until``,
     # so this commit is unreachable when the window ends at day 20.
-    _commit(repo, "feat: late source", 25, {"src/late.py": "".join(
-        f"x{i}\n" for i in range(7)
-    )})
+    _commit(
+        repo,
+        "feat: late source",
+        25,
+        {"src/late.py": "".join(f"x{i}\n" for i in range(7))},
+    )
     return repo
 
 
@@ -143,7 +146,9 @@ def _build_beta(root: Path) -> Path:
     repo = root / "beta"
     repo.mkdir(parents=True)
     _git(repo, "init", "-q", "-b", BRANCH)
-    _seed(repo, "beta", [_ledger_row("r-impl2", "impl-node-2", "implement", "clive", 4)])
+    _seed(
+        repo, "beta", [_ledger_row("r-impl2", "impl-node-2", "implement", "clive", 4)]
+    )
     _commit(repo, "feat: beta source", 1, {"src/b.py": "m1\nm2\nm3\nm4\n"})
     _commit(repo, "promote(r-impl2)", 5, {})
     return repo
@@ -167,7 +172,9 @@ def fleet(tmp_path: Path, isolated_reckon_home: Path) -> dict[str, Path]:
 
 
 def test_promotions_split_and_review_share_are_hand_computable(fleet):
-    result = mcp._crew("*", view="velocity", since=WINDOW_START, until=WINDOW_END)
+    result = mcp._crew(
+        "*", view="velocity", since=WINDOW_START, until=WINDOW_END, fields=["total"]
+    )
 
     assert result["ok"] is True
     raised = result["total"]["promoted_nodes"]
@@ -179,12 +186,30 @@ def test_promotions_split_and_review_share_are_hand_computable(fleet):
     assert raised["review_share"]["value"] == pytest.approx(1 / 3)
 
 
-def test_a_project_lane_day_cell_carries_its_counts(fleet):
-    result = mcp._crew("*", view="velocity", since=WINDOW_START, until=WINDOW_END)
+def _all_cells() -> list[dict]:
+    """Walk the paged project-lane-day cells to exhaustion."""
+    cells: list[dict] = []
+    cursor = None
+    while True:
+        result = mcp._crew(
+            "*",
+            view="velocity",
+            since=WINDOW_START,
+            until=WINDOW_END,
+            fields=["by_project_day_lane"],
+            limit=100,
+            cursor=cursor,
+        )
+        cells.extend(result["by_project_day_lane"])
+        cursor = result["pagination"]["next_cursor"]
+        if not cursor:
+            return cells
 
+
+def test_a_project_lane_day_cell_carries_its_counts(fleet):
     cells = {
         (cell["project"], cell["day"], cell["lane"]): cell["metrics"]
-        for cell in result["by_project_day_lane"]
+        for cell in _all_cells()
     }
     promotion_day = velocity.iso(BASE + 5 * DAY)[:10]
     cell = cells[("alpha", promotion_day, "claude")]
@@ -215,11 +240,95 @@ def test_the_view_refuses_a_missing_since_by_name(fleet):
     assert "since" in unparseable["detail"]
 
 
+def test_the_default_payload_fits_the_response_ceiling(fleet):
+    result = mcp._crew("*", view="velocity", since=WINDOW_START, until=WINDOW_END)
+
+    # The per-project, per-lane and per-day tables are the default answer; the
+    # cells and every other block are withheld and served only when asked for,
+    # so the default fits the same ceiling the budget module bounds the tool's
+    # answer against.
+    assert set(result) == {
+        "ok",
+        "view",
+        "project",
+        "window",
+        "by_project",
+        "by_lane",
+        "by_day",
+        "by_project_day_lane_count",
+    }
+    assert result["by_project_day_lane_count"] > 0
+    assert "pagination" not in result
+    assert (
+        mcp_budget.serialised_characters(result) <= mcp_budget.DEFAULT_RESPONSE_CEILING
+    )
+
+
+def test_cells_are_served_on_request_and_page_with_limit(fleet):
+    asked = mcp._crew(
+        "*",
+        view="velocity",
+        since=WINDOW_START,
+        until=WINDOW_END,
+        fields=["by_project_day_lane"],
+    )
+
+    assert asked["by_project_day_lane"]
+    assert asked["by_project_day_lane_count"] == asked["pagination"]["total"]
+    assert asked["pagination"]["count"] == mcp_views.DEFAULT_PAGE_SIZE
+    assert asked["pagination"]["count"] < asked["by_project_day_lane_count"]
+
+    first = mcp._crew(
+        "*",
+        view="velocity",
+        since=WINDOW_START,
+        until=WINDOW_END,
+        fields=["by_project_day_lane"],
+        limit=1,
+    )
+    assert len(first["by_project_day_lane"]) == 1
+    assert first["pagination"]["total"] == asked["by_project_day_lane_count"]
+    next_cursor = first["pagination"]["next_cursor"]
+    assert next_cursor
+
+    second = mcp._crew(
+        "*",
+        view="velocity",
+        since=WINDOW_START,
+        until=WINDOW_END,
+        fields=["by_project_day_lane"],
+        limit=1,
+        cursor=next_cursor,
+    )
+    assert len(second["by_project_day_lane"]) == 1
+    assert second["by_project_day_lane"] != first["by_project_day_lane"]
+
+
+def test_a_field_the_view_does_not_serve_is_refused_by_name(fleet):
+    result = mcp._crew(
+        "*",
+        view="velocity",
+        since=WINDOW_START,
+        until=WINDOW_END,
+        fields=["classification"],
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "crew_error"
+    assert "classification" in result["detail"]
+    # The accepted set is named, so a caller that guessed a runs-view field is
+    # told which names this view serves.
+    assert "by_project_day_lane" in result["detail"]
+    assert "total" in result["detail"]
+
+
 def test_a_commit_dated_after_until_is_excluded(fleet):
     windowed = mcp._crew(
-        "*", view="velocity", since=WINDOW_START, until=WINDOW_END
+        "*", view="velocity", since=WINDOW_START, until=WINDOW_END, fields=["total"]
     )
-    extended = mcp._crew("*", view="velocity", since=WINDOW_START, until=LATE_END)
+    extended = mcp._crew(
+        "*", view="velocity", since=WINDOW_START, until=LATE_END, fields=["total"]
+    )
 
     def source_added(payload: dict) -> int:
         return payload["total"]["lines"]["source"]["added"]

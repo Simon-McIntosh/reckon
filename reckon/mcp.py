@@ -128,6 +128,7 @@ from reckon.mcp_views import (
     error_response,
     normalize_selector,
     normalize_view,
+    paginate,
     resource_view,
     roadmap_view,
     storage_schema_for,
@@ -3744,6 +3745,31 @@ def _roadmap_tool(
     )
 
 
+# The velocity view answers with its three aggregate tables by default and
+# serves every other block only when the caller names it through ``fields``.
+# The tables carry full per-cell metrics, so a window of more than a few weeks
+# can be narrowed no further than the block choice: the project-lane-day cells
+# in particular run to hundreds of thousands of characters and are paged.
+_VELOCITY_OPTIONAL_BLOCKS = frozenset(
+    {
+        "total",
+        "provenance",
+        "definitions",
+        "positive_controls",
+        "coverage",
+        "august_baseline",
+        "plans",
+        "by_week",
+        "weekly_definition",
+        "session_continuity",
+        "daily_lane_output",
+        "named_episodes",
+        "coordinator_cost",
+        "by_project_day_lane",
+    }
+)
+
+
 def _crew(
     project: str | None = None,
     view: str = "summary",
@@ -3752,6 +3778,7 @@ def _crew(
     since: str | None = None,
     until: str | None = None,
     limit: int | None = None,
+    cursor: str | None = None,
     candidates: list[dict[str, Any]] | None = None,
     session: str | None = None,
     action: Literal["resume", "session", "resume-ready", "sweep"] | None = None,
@@ -3806,7 +3833,12 @@ def _crew(
     dispatch-to-promotion quantiles, attempts per landed node and the review
     share — by project, by lane, by day and in project-lane-day cells. It takes
     one ``project``, or ``"*"`` for every mounted checkout, and refuses by name
-    when ``since`` is absent; ``until`` defaults to now.
+    when ``since`` is absent; ``until`` defaults to now. The answer is the
+    per-project, per-lane and per-day tables plus the count of the
+    project-lane-day cells. Every other block is served only when the caller
+    names it in ``fields``, and the cells are paged by ``limit`` and ``cursor``
+    like every other crew view's records; an unrecognised field is refused with
+    the accepted set named.
 
     Pass ``session`` — the same id given to ``reckon crew dispatch`` — on
     ``live``: every run row gains ``mine``, and the watcher block reports
@@ -3932,7 +3964,9 @@ def _crew(
                         "it is absent or unparseable"
                     ),
                 }
-            window_end = until if until is not None else velocity_module.iso(time.time())
+            window_end = (
+                until if until is not None else velocity_module.iso(time.time())
+            )
             if velocity_module.stamp(window_end) is None:
                 return {
                     "ok": False,
@@ -3956,12 +3990,53 @@ def _crew(
                         f"project {project!r} has no readable docs directory"
                     )
                 checkouts = {project: str(docs_dir.parent)}
-            return {
+            payload = velocity_module.report(checkouts, start=since, end=window_end)
+            # The per-project, per-lane and per-day tables are the default
+            # answer. The other aggregate blocks are served only when named,
+            # and the project-lane-day cells are the largest of them, so they
+            # are paged like every other crew view's records rather than
+            # returned whole: the count names the size of what is withheld.
+            cells = payload.pop("by_project_day_lane", [])
+            if isinstance(fields, str):
+                requested = [part.strip() for part in fields.split(",")]
+            else:
+                requested = [str(name) for name in (fields or [])]
+            requested = list(dict.fromkeys(name for name in requested if name))
+            unknown = sorted(set(requested) - _VELOCITY_OPTIONAL_BLOCKS)
+            if unknown:
+                return {
+                    "ok": False,
+                    "error": "crew_error",
+                    "project": project,
+                    "view": view,
+                    "detail": (
+                        "unknown velocity fields "
+                        + ", ".join(repr(name) for name in unknown)
+                        + "; optional fields are "
+                        + ", ".join(sorted(_VELOCITY_OPTIONAL_BLOCKS))
+                    ),
+                }
+            response = {
                 "ok": True,
                 "view": view,
                 "project": project,
-                **velocity_module.report(checkouts, start=since, end=window_end),
+                "window": payload["window"],
+                "by_project": payload["by_project"],
+                "by_lane": payload["by_lane"],
+                "by_day": payload["by_day"],
+                "by_project_day_lane_count": len(cells),
             }
+            for name in requested:
+                if name in payload:
+                    response[name] = payload[name]
+            if "by_project_day_lane" in requested:
+                try:
+                    page, pagination = paginate(cells, cursor=cursor, limit=limit)
+                except ViewRequestError as exc:
+                    return error_response(exc.code, exc.message, hint=exc.hint)
+                response["by_project_day_lane"] = page
+                response["pagination"] = pagination
+            return response
         if view == "runs":
             return crew_runs_view(
                 project,
