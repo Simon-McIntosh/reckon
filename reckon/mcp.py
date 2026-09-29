@@ -3472,8 +3472,9 @@ def _edit_plan(
             created_file.unlink(missing_ok=True)
         return {"ok": False, "error": "schema_validation", "details": errors}
 
-    # ── record an override reason on the plan it let through ──
-    if create and wip_override:
+    # ── record an override reason only when it lifted a refusal, so the
+    #    comment never claims a limit that was not reached ──
+    if create and wip_override and limit is not None and pending_count >= limit:
         _record_wip_override(working, wip_override, limit, pending_count)
 
     # ── standalone declaration (authored markup, written to the header) ──
@@ -3639,8 +3640,10 @@ def _edit_plan_tool(
 
     Creating a plan beyond the project's declared pending-plan limit is
     refused, naming the pending plans nearest to closing. Pass
-    ``override_wip_limit=<reason>`` to open the plan anyway; the reason is
-    recorded as a comment on the new plan.
+    ``override_wip_limit=<reason>`` to open the plan anyway. The reason is
+    recorded as a comment only when the override actually lifts a refusal —
+    a create within the limit, or in a project declaring no limit, accepts the
+    override without recording it.
     """
 
     return _edit_plan(

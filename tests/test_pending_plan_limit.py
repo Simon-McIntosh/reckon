@@ -172,3 +172,34 @@ def test_a_project_without_a_declared_limit_is_never_refused(tmp_path: Path):
     result = _create(root, "gamma")
 
     assert result["ok"] is True
+
+
+def _comments(root: Path, slug: str) -> list[dict]:
+    read = mcp_module._read_plan(
+        "sample", slug, checkout_path=str(root), doc_type="plan"
+    )
+    return read["data"]["comments"].get("_top", [])
+
+
+def test_an_override_below_the_limit_writes_no_comment(tmp_path: Path):
+    # limit 2, one pending plan: the override lifts nothing, so it is silent.
+    root = tmp_path / "checkout"
+    _write_project(root, limit=2)
+    _write_plan(root, "alpha", "active", "0.8")
+
+    created = _create(root, "gamma", override_wip_limit="opened early")
+
+    assert created["ok"] is True
+    assert _comments(root, "gamma") == []
+
+
+def test_an_override_on_an_uncapped_project_writes_no_comment(tmp_path: Path):
+    root = tmp_path / "checkout"
+    _write_project(root, limit=None)
+    _write_plan(root, "alpha", "active", "0.8")
+
+    created = _create(root, "gamma", override_wip_limit="opened early")
+
+    assert created["ok"] is True
+    # No comment at all — in particular none naming a null limit.
+    assert _comments(root, "gamma") == []
