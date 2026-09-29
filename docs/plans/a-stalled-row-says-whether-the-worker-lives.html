@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-29">
-  <meta name="plan-version" content="59">
+  <meta name="plan-version" content="60">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -489,10 +489,11 @@
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives — a live worker must never read as dead with retained work</pre>
     <p class="r-fu-outcome">Reproduced at HEAD by live-worker-read-dead-still-reproduces: a host mismatch let list_live's local probe of a foreign pid decide the retained-work interruption, and 20 of 25 pointers were exposed. Repaired by a-foreign-pid-never-reads-dead, merged at 8413ce50 and promoted after two reviews (last total 92, zero added failures). The interruption consumes a liveness reading only when it is proven on this host or backed by an exit record, and sprint_liveness and the directory row use the same gate. verify-gate is green on the merged main. The drain view's remaining probe is f-asrswtwl-drain-view-reads-a-foreign-pid.</p>
     </article>
-<article class="r-fu" data-id="f-asrswtwl-sweep-guard-needs-observed-death" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-asrswtwl-sweep-guard-needs-observed-death" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="2026-09-29T08:20:44+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The resume sweep lifts a run of unknown liveness, though the row promises it waits for an observed end</h4>
     <div class="r-fu-body"><p>Review of resume-offer-waits-while-the-worker-lives (88): the wait-met row now tells the reader the recovery sweep lifts a run only once its process is observed to have ended, but the sweep's only process guard refuses a proven-live process and nothing else (reckon/crew/resumption.py near :596, with reckon/crew/runs.py near :3466). So a run whose liveness is unknown is resumed as though dead, and may duplicate a live worker. Either make the sweep require an observed death (a checked pid found dead or a supervisor-recorded exit, the vocabulary §3 landed), or make the row say what the sweep actually does. Write path: reckon/crew/resumption.py plus a test; it does not touch recovery.py.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
+    <p class="r-fu-outcome">resume-sweep-needs-an-observed-death merged at c4063efe and promoted (review total 99, zero added failures). The sweep lifts a run only after an observed end: a pid this host checks and finds dead, or a supervisor-recorded exit. A run of unknown liveness stays in place with its reason named. Closing this fail-open guard exposed twelve stale lift fixtures in seven test files; they were repaired in the same node, so the gate's head arm carries the base's failing ids exactly. At main the new test and the seven fixture files show only four pre-existing failures, dispatched as met-wait-classification-red-ids.</p>
     </article>
 <article class="r-fu" data-id="f-asrswtwl-directory-row-reads-the-derived-phase" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-28" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="2026-09-28T21:16:33+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The crew directory row reads the derived phase, as the live and classifier rows now do</h4>
@@ -503,6 +504,11 @@
 <article class="r-fu" data-id="f-asrswtwl-drain-view-reads-a-foreign-pid" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The drain view classifies a foreign run from a bare local probe</h4>
     <div class="r-fu-body"><p>From the second review of a-foreign-pid-never-reads-dead (total 92). That node gated list_live, the retained-work interruption, sprint_liveness and the directory row on this-host proof or an exit record. The drain view near <code>reckon/crew/runs.py:1028</code> still writes a bare local probe into the record before classifying it. So for a run launched on another host whose pid number this host happens to hold, the drain row reads <code>process_alive</code> true, and one with an exit record on disk can read abandoned. Route the drain view through the same host-gated reading, and add a foreign-launcher case to <code>tests/test_a_foreign_pid_never_reads_dead.py</code>. Write paths: <code>reckon/crew/runs.py</code> plus that test.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
+    </article>
+<article class="r-fu" data-id="f-asrswtwl-direct-resume-needs-observed-death" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A hand-typed resume waits for an observed end, as the sweep now does</h4>
+    <div class="r-fu-body"><p>From resume-sweep-needs-an-observed-death's follow-ons. The sweep now refuses to lift a run of unknown liveness. A direct <code>reckon crew resume --run</code>, through <code>dispatch.resume_plan</code>, still carries only its own live-process guard, so a hand-typed resume of an unknown-liveness run can still duplicate a live worker. Apply the same observed-end rule there, reusing the host-gated reading. Write paths: <code>reckon/crew/dispatch.py</code> plus a test.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
     </article>
 </section>
