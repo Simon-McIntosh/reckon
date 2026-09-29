@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="50">
+<meta name="plan-version" content="51">
 <meta name="plan-commits" content="85af514b,997c5539,7c508e7e,4d79a470,a70ad742,c0917d6f,e2fc9f03,30fe8845,280d7fa9,43e971d3,be18adb4,90959463,118b06ba,0b61cc5d,e6b344f3,474d8119,66edfc86,9576896f,2652f39b">
 <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_coordinator_cost.py">
 <meta name="plan-impl" content="1.0">
@@ -315,6 +315,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260929T101433419035-velocity-window-test-pins-fourteen-days" data-who="reckon-build" data-when="2026-09-29T10:33:54.915Z">
     <div class="r-comment-body"><p>tests/test_serve_velocity_route.py now pins the served default velocity window to the literal 14 * DAY instead of serve.VELOCITY_DEFAULT_WINDOW_DAYS; green arm 5 passed at head 064f8ffd, and the negative control (constant set to 7) fails that assertion at 604800.0 s against an expected 1209600 +/- 300 s.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260929T103335072549-review-of-velocity-window-test-pins-fourteen-days" data-who="reckon-build" data-when="2026-09-29T11:23:15.132Z">
+    <div class="r-comment-body"><p>the parsed review record for run r-20260929T101433419035-velocity-window-test-pins-fourteen-days (reviewed base 40ef9c7b585bc2b0239a28fba3c5d7f682175e79, reviewed head 064f8ffd4ea1b4babd66b31174ae99f494aa4734) is stored at both fenced paths, byte-identical, 13932 bytes each, sha256 80d186d01b3826af0d7f5e9a0c62b7a5 (prefix); status parsed, all 5 dimensions scored in range 0..20 — goal_fidelity 19, evidence 17, scope_discipline 19, durability 19, fit 19, total 93 — all 6 checklist verdicts present, 2 findings emitted, added_failure_count 0 and added_failure_ids [].</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T051925840382-review-of-coordinator-cost-per-landed-node" data-who="reckon-build" data-when="2026-09-28T07:04:45.166Z">
     <div class="r-comment-body"><p>reviewed coordinator-cost-per-landed-node at be18adb4: 85/100, three findings (miscounted within-1pct figure, landed-node denominator unlike the census, a ruff I001), returned to the node's session as one repair round</p></div>
