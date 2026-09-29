@@ -204,3 +204,128 @@ def test_a_corrupt_entry_is_rebuilt(repo: Path, cache_root: Path):
 
     entry.write_text(json.dumps({"version": 0, "window": {}, "ledger": {}}))
     assert _capture(repo) == cold
+
+
+def _build_repository_with_an_unpromoted_run(root: Path) -> tuple[Path, str, str]:
+    """A repository whose ledger gains a run with no promote commit.
+
+    The run's completed_at falls inside the window and its ledger appearance
+    sits after the base commit, which is exactly the case the ledger-clock
+    recovery exists for and the case its cache must reproduce.
+    """
+    repo = root / PROJECT
+    repo.mkdir(parents=True)
+    _git(repo, "init", "-q", "-b", BRANCH)
+    base = _commit(
+        repo,
+        "chore: seed the ledger",
+        0,
+        {"docs/state/sample/crew.json": json.dumps({"data": {"runs": []}})},
+    )
+    _commit(repo, "feat: add source", 1, {"src/a.py": "l1\nl2\nl3\n"})
+    ledger = {
+        "data": {
+            "runs": [
+                {
+                    "run_id": "r-late",
+                    "node": "late-node",
+                    "plan": "p",
+                    "role": "implement",
+                    "gate": "passed",
+                    "backend": "claude",
+                    "dispatched_at": _iso(2),
+                    "completed_at": _iso(2, 100),
+                    "worker_seconds": 100,
+                    "lineage": {},
+                    "attempt": 1,
+                }
+            ]
+        }
+    }
+    head = _commit(
+        repo,
+        "chore: record the run",
+        2,
+        {"docs/state/sample/crew.json": json.dumps(ledger)},
+    )
+    return repo, base, head
+
+
+def _snapshot(base: str, head: str) -> dict:
+    return {
+        "window": [WINDOW_START, WINDOW_END],
+        "projects": [
+            {
+                "project": PROJECT,
+                "base": base,
+                "head": head,
+                "runs": [
+                    {
+                        "run_id": "r-late",
+                        "completed_at": _iso(2, 100),
+                        "promotion_commits": [],
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def test_the_ledger_clock_recovery_is_cached_value_for_value(
+    tmp_path: Path, cache_root: Path, monkeypatch
+):
+    repo, base, head = _build_repository_with_an_unpromoted_run(tmp_path)
+    calls = []
+    original = velocity.git
+
+    def spy(repo_path, *arguments):
+        if arguments and arguments[0] == "log":
+            calls.append(arguments[0])
+        return original(repo_path, *arguments)
+
+    monkeypatch.setattr(velocity, "git", spy)
+
+    cold = _snapshot(base, head)
+    velocity.recover_ledger_clocks(
+        cold, repos={PROJECT: repo}, start=WINDOW_START, end=WINDOW_END
+    )
+    entry = velocity._ledger_cache_path(repo)
+    assert entry.is_relative_to(cache_root) and entry.is_file()
+    recovered = cold["projects"][0]["runs"][0]["promotion_commits"]
+    assert recovered and recovered[0]["sha"] == head
+    searches = len(calls)
+
+    warm = _snapshot(base, head)
+    velocity.recover_ledger_clocks(
+        warm, repos={PROJECT: repo}, start=WINDOW_START, end=WINDOW_END
+    )
+    # The warm recovery is the cold one, value for value, and it reaches it
+    # without searching the history again.
+    assert warm["projects"][0]["runs"] == cold["projects"][0]["runs"]
+    assert warm["projects"][0]["ledger_clock_recoveries"] == ["r-late"]
+    assert len(calls) == searches
+
+
+def test_a_corrupt_ledger_entry_is_rebuilt(
+    tmp_path: Path, cache_root: Path, monkeypatch
+):
+    repo, base, head = _build_repository_with_an_unpromoted_run(tmp_path)
+    cold = _snapshot(base, head)
+    velocity.recover_ledger_clocks(
+        cold, repos={PROJECT: repo}, start=WINDOW_START, end=WINDOW_END
+    )
+    entry = velocity._ledger_cache_path(repo)
+
+    entry.write_text("{ not json")
+    rebuilt = _snapshot(base, head)
+    velocity.recover_ledger_clocks(
+        rebuilt, repos={PROJECT: repo}, start=WINDOW_START, end=WINDOW_END
+    )
+    assert rebuilt["projects"][0]["runs"] == cold["projects"][0]["runs"]
+
+    entry.write_text(json.dumps({"version": 0, "recoveries": {}}))
+    rebuilt_again = _snapshot(base, head)
+    velocity.recover_ledger_clocks(
+        rebuilt_again, repos={PROJECT: repo}, start=WINDOW_START, end=WINDOW_END
+    )
+    assert rebuilt_again["projects"][0]["runs"] == cold["projects"][0]["runs"]

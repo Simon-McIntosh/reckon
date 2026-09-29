@@ -570,6 +570,47 @@ def _store_captured_history(path, entry):
     write_json_atomically(path, entry, fsync=False, indent=None)
 
 
+LEDGER_CACHE_VERSION = 1
+
+
+def _ledger_cache_path(repo, cache_root=None):
+    """The ledger-clock cache beside a repository's captured-history entry.
+
+    A separate file from the captured history because the two are rebuilt by
+    different walks: the history by the commit census, the clock recovery by a
+    patch-generating log over the ledger path alone.
+    """
+    root = Path(cache_root) if cache_root is not None else _velocity_cache_root()
+    digest = hashlib.sha256(str(Path(repo).resolve()).encode()).hexdigest()
+    return root / (digest + ".ledger.json")
+
+
+def _load_ledger_cache(path):
+    """Return the cached recovery, or None when it cannot be trusted.
+
+    Absent, unreadable, version-mismatched and shapeless entries all read as
+    None, so a corrupt file is rebuilt rather than read as a recovery that was
+    never found.
+    """
+    try:
+        entry = json.loads(Path(path).read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(entry, dict) or entry.get("version") != LEDGER_CACHE_VERSION:
+        return None
+    if not isinstance(entry.get("recoveries"), dict):
+        return None
+    if not isinstance(entry.get("present"), list):
+        return None
+    return entry
+
+
+def _store_ledger_cache(path, entry):
+    from reckon._store import write_json_atomically
+
+    write_json_atomically(path, entry, fsync=False, indent=None)
+
+
 def _first_parent_head(repo, branch, end):
     """The first-parent head a window closes on."""
     return (
@@ -1064,13 +1105,19 @@ def replay(commits):
 
 
 def recover_ledger_clocks(
-    snapshot, *, code_root=CODE, repos=None, start=START, end=END
+    snapshot, *, code_root=CODE, repos=None, start=START, end=END, cache_root=None
 ):
     """Locate the first durable ledger appearance when no promote commit exists.
 
     ``repos`` maps a project name to its checkout path, for a snapshot whose
     projects were captured from arbitrary paths rather than beneath one
     ``code_root``; a project absent from it falls back to ``code_root/project``.
+
+    The search is a patch-generating log over the ledger path, one object read
+    per commit that touches it, so its result is cached beside the captured
+    history — keyed by repository, window base and the head it reached — and a
+    head that has moved is searched only over the range the cache had not yet
+    covered, for the run ids it had not yet placed.
     """
     for project in snapshot["projects"]:
         candidates = {
@@ -1087,49 +1134,82 @@ def recover_ledger_clocks(
             else Path(code_root) / project["project"]
         )
         path = "docs/state/" + project["project"] + "/crew.json"
-        before = json.loads(git(repo, "show", project["base"] + ":" + path))
-        present = {r["run_id"] for r in before.get("data", before).get("runs", [])}
+        cache_path = _ledger_cache_path(repo, cache_root)
+        entry = _load_ledger_cache(cache_path)
+        base, head = project["base"], project["head"]
+        if entry is not None and entry.get("base") == base:
+            present = set(entry["present"])
+            recovered = dict(entry["recoveries"])
+            walked = entry.get("head")
+        else:
+            before = json.loads(git(repo, "show", base + ":" + path))
+            present = {r["run_id"] for r in before.get("data", before).get("runs", [])}
+            recovered, walked = {}, None
         candidates = {rid: row for rid, row in candidates.items() if rid not in present}
         if not candidates:
             continue
-        expression = "|".join(re.escape(rid) for rid in sorted(candidates))
-        raw = git(
-            repo,
-            "log",
-            "--first-parent",
-            "--reverse",
-            "--diff-merges=first-parent",
-            "--format=%x1e%H%x09%ct",
-            "--unified=0",
-            "-p",
-            "-G",
-            expression,
-            project["base"] + ".." + project["head"],
-            "--",
-            path,
-            "docs/state/" + project["project"] + "/runs",
-        )
-        commit, epoch = None, None
-        found = set()
-        for line in raw.split(b"\n"):
-            if line.startswith(b"\x1e"):
-                commit, value = line[1:].decode().split("\t")
-                epoch = int(value)
-            elif line.startswith(b"+"):
-                match = re.search(rb'"run_id"\s*:\s*"([^"]+)"', line)
-                if match and match[1].decode() in candidates:
-                    rid = match[1].decode()
-                    if rid not in found:
-                        candidates[rid]["promotion_commits"] = [
-                            {
-                                "sha": commit,
-                                "epoch": epoch,
-                                "landing_sha": commit,
-                                "source": "first_primary_ledger_appearance_upper_bound",
-                            }
-                        ]
-                        found.add(rid)
+        found = {rid for rid in recovered if rid in candidates}
+        for rid in found:
+            candidates[rid]["promotion_commits"] = recovered[rid]
+        missing = sorted(set(candidates) - found)
+        # An appearance found before the cached head still holds, so only the
+        # ids still missing are searched, over the range the cache had not
+        # reached. A cached head this one does not descend from cannot supply
+        # them, and the walk restarts from the window base.
+        if missing and head != walked:
+            origin = walked if walked and _is_ancestor(repo, walked, head) else base
+            expression = "|".join(re.escape(rid) for rid in missing)
+            raw = git(
+                repo,
+                "log",
+                "--first-parent",
+                "--reverse",
+                "--diff-merges=first-parent",
+                "--format=%x1e%H%x09%ct",
+                "--unified=0",
+                "-p",
+                "-G",
+                expression,
+                origin + ".." + head,
+                "--",
+                path,
+                "docs/state/" + project["project"] + "/runs",
+            )
+            commit, epoch = None, None
+            for line in raw.split(b"\n"):
+                if line.startswith(b"\x1e"):
+                    commit, value = line[1:].decode().split("\t")
+                    epoch = int(value)
+                elif line.startswith(b"+"):
+                    match = re.search(rb'"run_id"\s*:\s*"([^"]+)"', line)
+                    if match and match[1].decode() in candidates:
+                        rid = match[1].decode()
+                        if rid not in found:
+                            appearance = [
+                                {
+                                    "sha": commit,
+                                    "epoch": epoch,
+                                    "landing_sha": commit,
+                                    "source": (
+                                        "first_primary_ledger_appearance_upper_bound"
+                                    ),
+                                }
+                            ]
+                            candidates[rid]["promotion_commits"] = appearance
+                            recovered[rid] = appearance
+                            found.add(rid)
         project["ledger_clock_recoveries"] = sorted(found)
+        _store_ledger_cache(
+            cache_path,
+            {
+                "version": LEDGER_CACHE_VERSION,
+                "repo": str(Path(repo).resolve()),
+                "base": base,
+                "head": head,
+                "present": sorted(present),
+                "recoveries": recovered,
+            },
+        )
         print(
             project["project"],
             "first durable ledger clocks",
