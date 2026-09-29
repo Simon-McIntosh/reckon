@@ -64,10 +64,13 @@ from reckon.crew.dispatch import (
 )
 from reckon.crew.node import CrewError
 from reckon.crew.recovery import (
+    _process_reading,
+    _run_exit_record,
     _stream_refusal_block,
     classify_pointer,
     dispatch_awaiting_reviews,
     external_wait,
+    local_liveness,
     stream_paths_newest_first,
 )
 from reckon.crew.runs import (
@@ -421,9 +424,7 @@ def _stream_session(record: Mapping[str, Any]) -> str:
         if run_id
         else Path(str(record.get("log_path") or ".")).parent
     )
-    for log in stream_paths_newest_first(
-        directory, include=(record.get("log_path"),)
-    ):
+    for log in stream_paths_newest_first(directory, include=(record.get("log_path"),)):
         try:
             backend = _backend_settings(record, None)
             observation = _backends.observe_log(
@@ -601,6 +602,61 @@ def _launcher_refusal(
     if verdict["held"]:
         return _actionable_budget_hold(verdict, config=config)
     return None
+
+
+def _observed_end_refusal(record: Mapping[str, Any]) -> CrewError | None:
+    """The refusal a lift owes a run whose process end nothing observed.
+
+    The sweep acts on nothing but a lane returning or a declared condition
+    terminating, and it is the only actor that starts a worker without a person
+    deciding to. A run whose process still holds the run is refused upstream,
+    but "not known to be alive" is not the same reading as "observed to have
+    ended": a worker on another machine and a pointer that recorded no process
+    at all are both readings in which the worker may still be writing, and a
+    second worker started on one of those collides with the classifier's own
+    promise that the lift waits for an end.
+
+    So the lift requires an observation, and there are exactly two: a pid
+    checked on this host and found dead, or the supervisor's exit record. The
+    reading is composed here through the same three-way vocabulary the row
+    states (``local_liveness`` under ``_process_reading``), so the sweep cannot
+    act on a verdict the reader was never shown, and the reason names the
+    reading it is holding.
+    """
+    alive, liveness_proven = local_liveness(record)
+    exit_record = _run_exit_record(record)
+    # The supervisor's record is an observation of the end, and it is the one a
+    # prompt reader can never have: it outlives a pointer nobody updated and it
+    # stays readable on a machine that never launched the worker. Folding it in
+    # before the reading is what the classifier does for the same evidence, so a
+    # recorded exit reads as an ended process on both surfaces rather than as
+    # the unknown a bare reading of it composes. Where the process table says
+    # the worker is still there the record is an earlier attempt's and does not
+    # apply, which is why the fold is conditional on the living answer.
+    ended_exit = exit_record if exit_record is not None and alive is not True else None
+    if ended_exit is not None:
+        alive = False
+    reading = _process_reading(
+        alive, liveness_proven=liveness_proven, exit_record=ended_exit
+    )
+    if reading == "process gone":
+        return None
+    run_id = str(record.get("run_id") or "")
+    if reading == "alive":
+        # The bare pid probe above can answer not-alive while the work itself is
+        # still running — a supervisor that exits before its worker takes the
+        # pointer's pid with it — so the host-gated reading is asked as well and
+        # can still answer alive here.
+        return CrewError(
+            f"run {run_id!r} reads 'alive' for a lift: the run's own liveness "
+            "reading has not observed the worker's end, and resuming under a "
+            "living worker collides with the worker that holds it"
+        )
+    return CrewError(
+        f"run {run_id!r} is not resumed: the process reading is "
+        f"{reading!r} — no pid was checked dead on this host and no supervisor "
+        "exit was recorded — so nothing observed the end the lift would rest on"
+    )
 
 
 def _refusal_entry(entry: Mapping[str, Any], exc: BaseException) -> dict[str, Any]:
@@ -1176,15 +1232,20 @@ def sweep(
                 }
             )
             continue
+        # The launcher's own guards are consulted here rather than assumed:
+        # `would_resume` claims the launcher would resume, so a record the
+        # launcher would refuse is reported as the refusal it would meet, with
+        # the reason and detail a real sweep would report for it. They are
+        # consulted once, ahead of both branches, and the observed-end gate with
+        # them, so a refusal a real sweep would raise is a refusal the preview
+        # reports and the two modes cannot drift apart.
+        refusal = _launcher_refusal(pointer, config=config)
+        if refusal is None:
+            refusal = _observed_end_refusal(pointer)
+        if refusal is not None:
+            skipped.append(_refusal_entry(entry, refusal))
+            continue
         if dry_run:
-            # The launcher's own guards are consulted here rather than assumed:
-            # `would_resume` claims the launcher would resume, so a record the
-            # launcher would refuse is reported as the refusal it would meet,
-            # with the reason and detail a real sweep would report for it.
-            refusal = _launcher_refusal(pointer, config=config)
-            if refusal is not None:
-                skipped.append(_refusal_entry(entry, refusal))
-                continue
             resumed.append(
                 {
                     **entry,
