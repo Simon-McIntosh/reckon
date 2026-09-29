@@ -1016,17 +1016,25 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
         _partition_session_rows,
         classify_pointer,
         closure_disposition_valid,
+        local_liveness,
     )
 
     rows: list[dict[str, Any]] = []
     for pointer in list_live(project=project):
-        # ``still-working`` is a current liveness claim. Recheck it rather
-        # than letting a historical ``process_alive`` field keep the closure
-        # fence open after a terminal manifest arrives. A pointer with no pid
-        # has no process-table evidence and therefore cannot use that stored
-        # boolean to outrank delivery on disk.
-        current = {**pointer, "process_alive": record_process_alive(pointer)}
-        row = classify_pointer(current)
+        # ``still-working`` is a current liveness claim, so the classification
+        # rechecks it rather than letting a historical ``process_alive`` field
+        # keep the closure fence open after a terminal manifest arrives. The
+        # recheck is the host-gated reading, and only a reading this host
+        # stands behind counts: this host asks the process table only for a run
+        # it launched, and a pid number it happens to hold from another host's
+        # run belongs to some other process. A local probe here would hand that
+        # foreign run a live reading it never earned — the same borrowed life
+        # the directory row and the retained-work clause refuse — and an
+        # unproven answer is carried no further than the row, because the
+        # closure fence turns on whether the worker lives now rather than on
+        # what a pointer's writer recorded at launch.
+        alive, proven = local_liveness(pointer)
+        row = classify_pointer({**pointer, "process_alive": alive if proven else None})
         recorded = pointer.get("closure_disposition")
         disposition = (
             str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
