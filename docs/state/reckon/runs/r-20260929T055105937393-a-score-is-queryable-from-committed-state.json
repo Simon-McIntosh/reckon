@@ -84,6 +84,33 @@
     "reason": "corrective-run:resume",
     "verdict": "exempt"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "210d4acf0db2ffd22206329f12dcce9c7c969eec",
+    "exit_status": null,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": null,
+      "integrated_revision": "210d4acf0db2ffd22206329f12dcce9c7c969eec",
+      "integrated_verdict": "not-run",
+      "message": "the gate passed at the worker's base but reports not-run on the integrated revision 210d4acf0db2: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": "the gate did not finish within the 300s re-run bound"
+    },
+    "gate_command": "TMPDIR=/tmp/a-score-head-tmp PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-score-is-queryable-from-committed-state /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_scores_are_queryable.py tests/test_ledger.py tests/test_review_scoring.py tests/test_crew_scoring_state.py tests/test_crew_runs_view.py tests/test_crew_lanes_view.py tests/test_mcp_tools.py tests/test_derived_figures_reach_a_reader.py --deselect tests/test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker",
+    "gate_command_source": "stored",
+    "integrated_revision": "210d4acf0db2ffd22206329f12dcce9c7c969eec",
+    "integrated_verdict": "not-run",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T055105937393-a-score-is-queryable-from-committed-state/verify-gate.log",
+    "ran": true,
+    "reason": "the gate did not finish within the 300s re-run bound",
+    "timed_out": true,
+    "worktree_roots_rewritten": [
+      "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-score-is-queryable-from-committed-state"
+    ]
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
