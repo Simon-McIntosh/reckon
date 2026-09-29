@@ -2307,8 +2307,10 @@ def protected_paths(home: str | Path | None = None) -> list[Path]:
     the same declaration fences a test's temp home and the operator's real one.
     Main checkouts under ``Code`` are expanded to the immediate children that
     are themselves git repositories, which admits every checkout a worker could
-    reach through the shared editable install while leaving the worktree pool
-    (``Code/.reckon-worktrees``) out — a worker's own tree lives there.
+    reach through the shared editable install. The worktree pool
+    (``Code/.reckon-worktrees``) is named in its own right, so every worktree in
+    it is sealed — a fenced worker may write only its *own* worktree, which
+    :func:`fence_argv` re-binds writable after the pool's read-only overlay.
     """
     root = Path(home) if home is not None else Path.home()
     named = [
@@ -2325,6 +2327,7 @@ def protected_paths(home: str | Path | None = None) -> list[Path]:
         root / ".netrc",
         root / "public",
         root / ".local" / "bin",
+        root / "Code" / ".reckon-worktrees",
     ]
     checkouts = root / "Code"
     if checkouts.is_dir():
