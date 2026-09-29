@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-title" content="The fleet spawn lane carries the dispatcher's crew environment">
+  <meta name="plan-summary" content="The spawn spec carries every variable that relocates crew state, the batch step applies it over its own environment, and dispatch confirms the supervisor survived its first seconds. A real per-run supervisor under a stub batch step with a non-default RECKON_HOME reaches the run; the negative control drops the carry and the dispatch raises CrewError.">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <title>The fleet spawn lane carries the dispatcher's crew environment | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The fleet spawn lane carries the dispatcher's crew environment</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>The allocation's batch step starts each run's supervisor through the
+        <code>spawn</code> verb with its own environment. A per-run supervisor resolves the run it was
+        asked to hold through reckon's crew home, so one started under the batch step's home rather
+        than the dispatcher's finds no run and exits at once &mdash; after the spawn has already been
+        acknowledged. Dispatch then reports a live pid for a worker that never started.</p>
+      <p>Measured on 2026-09-29 in the fleet rehearsal (job <code>1278427</code>): a dispatch with a
+        scratch <code>RECKON_HOME</code> got an acked pid and returned success, while the supervisor
+        read the default <code>~/.config/reckon/crew/live</code>, found no run, and wrote an
+        <code>exit.json</code> reading <code>worker did not spawn: CrewError: no live run</code>. The
+        in-repo gate could not see it because its stub batch step never ran a real supervisor.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-dispatch-returns-without-its-worker/fleet-lane-carries-the-dispatch-environment/before-after.svg"
+          alt="Two rows: before, the batch step starts the supervisor with its own crew home and the supervisor exits without spawning a worker while dispatch returns success; after, the spec carries the dispatcher's crew home, the supervisor reaches the run and dispatch confirms it survived two seconds" style="max-width:100%">
+        <figcaption>The environment the supervisor is started with, before and after the carry. The
+          batch step is the step that outlives the login node, so the dispatcher's configuration has
+          to travel in the spawn spec rather than in the step's own environment.</figcaption>
+      </figure>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>_supervisor_spec</code> writes an <code>environment</code> mapping into the spec
+          carrying the dispatcher's values of every variable that relocates crew state, named once as
+          the module constant <code>CREW_STATE_ENVIRONMENT</code> &mdash; <code>RECKON_HOME</code>,
+          <code>RECKON_STATE_ROOT</code>, <code>RECKON_MOUNTS_PATH</code>,
+          <code>RECKON_FLIGHT_CONFIG</code> and <code>RECKON_RUN_STORE</code>. Only variables that are
+          set are carried: an unset one must arrive absent, not empty, because every reader that falls
+          back on a default resolves those two differently.</li>
+        <li><code>fleet_supervisor.spawn_supervisor</code> applies the spec's <code>environment</code>
+          over the batch step's own environment when starting the argv. A carried environment that is
+          not a mapping, or whose entries are not name/string pairs, raises <code>TypeError</code>
+          rather than being passed on, so a malformed spec cannot smuggle a value the child would
+          misread.</li>
+        <li>Dispatch confirms the supervisor survived its first seconds before reporting success.
+          After the acknowledgement, it waits a bounded window (<code>SUPERVISOR_SURVIVAL_SECONDS</code>,
+          2 s) and raises <code>CrewError</code> if the supervisor has already exited, naming the
+          supervisor's own <code>exit.json</code> detail when one exists. The refusal unwinds through
+          dispatch's launch-failure path, so it leaves no live pointer and no worktree. The check runs
+          on both the fleet branch and the fork branch.</li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><code>tests/test_fleet_lane_carries_the_dispatch_environment.py</code> stands in for the batch
+        step with its FIFO reader, but calls the <em>real</em> <code>spawn_supervisor</code> under an
+        environment whose <code>RECKON_HOME</code> deliberately differs from the dispatcher's. The
+        supervisor it starts is a real per-run supervisor, and the worker beneath it is a stub
+        <code>codex</code> that records its pid and stays alive.</p>
+      <table>
+        <thead><tr><th>Observation</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>spawn spec <code>environment.RECKON_HOME</code></td><td>the <em>dispatcher's</em> home, not the batch step's</td></tr>
+          <tr><td>dispatch return</td><td>the acknowledged supervisor pid</td></tr>
+          <tr><td>the supervisor found the run and spawned the stub worker</td><td>the stub worker's marker file exists, <code>worker.json</code> names the run</td></tr>
+          <tr><td><code>exit.json</code> while dispatch reports the run live</td><td>absent</td></tr>
+        </tbody>
+      </table>
+      <p>The gate: <code>pytest tests/test_fleet_lane_carries_the_dispatch_environment.py
+        tests/test_dispatch_spawns_through_the_fleet.py tests/test_fleet_supervisor.py</code> &mdash;
+        <strong>26 passed</strong>, exit 0.</p>
+
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>Negative control (declared):</strong>
+          <code>spawn_supervisor</code> was mutated to start the argv with <code>dict(environ)</code>
+          &mdash; the batch step's environment alone, dropping the carry. The new dispatch case then
+          <strong>failed</strong> with <code>CrewError: the supervisor for &hellip; exited within 2s of
+          starting: worker did not spawn: CrewError: no live run</code>, and the mutation was reverted.
+          So the carrying is what makes the supervisor reach the run, rather than the case passing
+          whatever the environment.</li>
+        <li><strong>Malformed-spec cases:</strong> a spec whose <code>environment</code> is a list, and
+          one whose value is not a string, each raise <code>TypeError</code> before any child is
+          started.</li>
+        <li><strong>Lint delta:</strong> the three staged paths add no new ruff findings against their
+          base revision.</li>
+      </ul>
+    </section>
+
+    <section id="provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td><td><code>7cc73727</code></td></tr>
+          <tr><td>Gate</td><td><code>pytest tests/test_fleet_lane_carries_the_dispatch_environment.py tests/test_dispatch_spawns_through_the_fleet.py tests/test_fleet_supervisor.py</code></td></tr>
+          <tr><td>Gate log</td><td><code>gate-after.log</code> in the run directory</td></tr>
+          <tr><td>Negative-control log</td><td><code>negative-control-red.log</code> in the run directory</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

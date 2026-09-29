@@ -6348,6 +6348,99 @@ def _write_attempt_artifact(
     return written
 
 
+# The environment variables the supervisor must inherit to find the run it was
+# asked to hold. A per-run supervisor resolves the run through reckon's crew
+# home, so one started with the fleet batch step's own environment reads the
+# node's default home, finds no run, and exits at once -- while the dispatch
+# that asked for it records a live pid and returns success. Carrying these
+# values in the spec is what lets the batch step start the supervisor under the
+# dispatcher's configuration rather than its own.
+#
+#   RECKON_HOME           the crew home: live pointers, manifests, worktrees
+#   RECKON_STATE_ROOT     the state root the crew home resolves under
+#   RECKON_MOUNTS_PATH    the mounts.json naming each project's docs tree
+#   RECKON_FLIGHT_CONFIG  the routing and lane configuration
+#   RECKON_RUN_STORE      the durable run store's database path
+CREW_STATE_ENVIRONMENT = (
+    "RECKON_HOME",
+    "RECKON_STATE_ROOT",
+    "RECKON_MOUNTS_PATH",
+    "RECKON_FLIGHT_CONFIG",
+    "RECKON_RUN_STORE",
+)
+
+# How long dispatch waits, after the supervisor has been started, to confirm it
+# is still running before reporting the run directory's pid as a live worker. A
+# supervisor that cannot find its run exits within milliseconds of starting, so
+# a short window tells a supervisor that reached its run from one that did not
+# without holding a healthy dispatch open.
+SUPERVISOR_SURVIVAL_SECONDS = 2.0
+SUPERVISOR_SURVIVAL_POLL_SECONDS = 0.05
+
+
+def _carried_crew_environment() -> dict[str, str]:
+    """The dispatcher's values of every variable that relocates crew state.
+
+    Only variables that are set are carried: an unset one must arrive at the
+    supervisor as absent rather than as an empty string, which resolves
+    differently from absent in every reader that falls back on a default.
+    """
+    return {
+        name: os.environ[name]
+        for name in CREW_STATE_ENVIRONMENT
+        if os.environ.get(name)
+    }
+
+
+def _supervisor_exit_detail(run_directory: Path) -> str | None:
+    """The detail from the supervisor's exit record, or None while none exists.
+
+    Each attempt clears the canonical exit record before its supervisor starts,
+    so the one read here belongs to the supervisor this dispatch just started
+    rather than to a predecessor's.
+    """
+    try:
+        record = json.loads(
+            (run_directory / EXIT_RECORD_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return None
+    if not isinstance(record, Mapping):
+        return None
+    detail = str(record.get("detail") or "").strip()
+    return detail or "the supervisor exited without recording a detail"
+
+
+def _confirm_supervisor_survived(pid: int, run_directory: Path, run_id: str) -> None:
+    """Fail the dispatch when the supervisor has already exited.
+
+    The batch step acknowledges a spawn as soon as the child exists, so a
+    supervisor that cannot find its run -- because it started under the wrong
+    crew home -- is acknowledged and then exits at once. A dispatch that
+    returned that pid would report a live worker that never started. The
+    supervisor writes its exit record before it ends and ``process_alive``
+    reads a zombie as dead, so a short bounded wait tells a supervisor that
+    reached its run from one that did not.
+    """
+    deadline = time.monotonic() + SUPERVISOR_SURVIVAL_SECONDS
+    while True:
+        detail = _supervisor_exit_detail(run_directory)
+        if detail is not None:
+            raise CrewError(
+                f"the supervisor for {run_id} exited within "
+                f"{SUPERVISOR_SURVIVAL_SECONDS:g}s of starting: {detail}"
+            )
+        if process_alive(pid) is False:
+            raise CrewError(
+                f"the supervisor for {run_id} exited within "
+                f"{SUPERVISOR_SURVIVAL_SECONDS:g}s of starting without writing "
+                "an exit record"
+            )
+        if time.monotonic() >= deadline:
+            return
+        time.sleep(SUPERVISOR_SURVIVAL_POLL_SECONDS)
+
+
 def _supervisor_spec(
     *,
     run_id: str,
@@ -6374,6 +6467,9 @@ def _supervisor_spec(
         "run_id": run_id,
         "run_directory": str(run_directory),
         "repo": str(repo_root),
+        # The variables that relocate crew state, carried so the batch step
+        # starts this supervisor under the dispatcher's home rather than its own.
+        "environment": _carried_crew_environment(),
         "worktree": str(worktree),
         "prompt_path": str(prompt_path),
         "log_path": str(log_path),
@@ -6642,12 +6738,14 @@ def _start_supervisor(spec_path: Path, run_directory: Path, run_id: str) -> int:
     ):
         runtime_dir = _fleet_runtime_dir(fleet)
         if runtime_dir is not None:
-            return _spawn_through_fleet(
+            pid = _spawn_through_fleet(
                 runtime_dir,
                 run_id,
                 spec_path,
                 run_directory / FLEET_SPAWN_ACK_NAME,
             )
+            _confirm_supervisor_survived(pid, run_directory, run_id)
+            return pid
     argv = _supervisor_argv(spec_path=spec_path)
     with open(run_directory / "supervisor.stderr.log", "ab") as errors:
         process = subprocess.Popen(
@@ -6657,6 +6755,7 @@ def _start_supervisor(spec_path: Path, run_directory: Path, run_id: str) -> int:
             stderr=errors,
             start_new_session=True,
         )
+    _confirm_supervisor_survived(process.pid, run_directory, run_id)
     return process.pid
 
 

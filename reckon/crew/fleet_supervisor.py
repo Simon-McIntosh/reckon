@@ -600,6 +600,37 @@ def start_session(
     return 0
 
 
+def _spawn_environment(
+    spec: Mapping[str, Any], environ: Mapping[str, str]
+) -> dict[str, str]:
+    """The environment to start the spec's argv with.
+
+    The batch step's own environment is the base, and the spec's carried
+    ``environment`` is applied over it. A dispatch resolves the run it starts
+    through reckon's crew home, so a supervisor started under the batch step's
+    home rather than the dispatcher's finds no run and exits at once -- after
+    the spawn has been acknowledged, which is the defect this carries the
+    environment to close. A spec whose carried environment is not a mapping, or
+    whose entries are not name/string pairs, is refused rather than passed on,
+    so a malformed spec cannot smuggle a value the child would misread.
+    """
+    child = dict(environ)
+    carried = spec.get("environment")
+    if carried is None:
+        return child
+    if not isinstance(carried, Mapping):
+        raise TypeError(
+            f"supervisor spec environment is {type(carried).__name__}, not a mapping"
+        )
+    for name, value in carried.items():
+        if not isinstance(name, str) or not isinstance(value, str):
+            raise TypeError(
+                f"supervisor spec environment entry {name!r} is not a string pair"
+            )
+        child[name] = value
+    return child
+
+
 def spawn_supervisor(
     run_id: str,
     spec_path: str,
@@ -612,6 +643,10 @@ def spawn_supervisor(
     worker beneath it, while the ending of a session step cannot, so the run
     outlives the coordinator that asked for the dispatch.
 
+    The child starts with this batch step's environment overlaid by the spec's
+    carried ``environment``, so a supervisor dispatched with a non-default crew
+    home resolves the run under that home rather than this step's own.
+
     The acknowledgement is written only after the child exists, so a reader that
     finds ``spawned.json`` is reading the pid of a process that was started
     rather than an intention to start one.
@@ -623,11 +658,12 @@ def spawn_supervisor(
         raise TypeError(f"supervisor spec {spec_path!r} is not a mapping")
     argv = [str(argument) for argument in spec["argv"]]
     run_directory = Path(str(spec.get("run_directory") or spec_file.parent))
+    child_environ = _spawn_environment(spec, environ)
     with open(run_directory / SUPERVISOR_STDERR_NAME, "ab") as errors:
         process = subprocess.Popen(
             argv,
             cwd=spec.get("cwd") or None,
-            env=dict(environ),
+            env=child_environ,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=errors,
