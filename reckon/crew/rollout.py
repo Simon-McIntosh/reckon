@@ -227,6 +227,19 @@ def _quota_readings(
     return readings
 
 
+_ZONE_DESIGNATOR = re.compile(r"(?:[Zz]|[+-]\d{2}:?\d{2})$")
+
+
+def _states_zone(value: str) -> bool:
+    """Whether a stamp's own text names a zone.
+
+    A stamp names its zone by ending in a UTC designator or a numeric offset.
+    The date and time may be separated by ``T`` or a space, so the offset is
+    read from the text's tail rather than from where a ``T`` happens to sit.
+    """
+    return bool(_ZONE_DESIGNATOR.search(value.strip()))
+
+
 def _parse_timestamp(value: object) -> datetime | None:
     """Parse a rollout record's ISO timestamp, tolerating the trailing Z."""
     if not isinstance(value, str):
@@ -237,11 +250,7 @@ def _parse_timestamp(value: object) -> datetime | None:
     # The record's own text names its zone: a stamp that names no zone is
     # returned as written rather than pinned to UTC, while a stated zone is
     # normalised. A date with no time names no zone either.
-    _, separator, tail = value.strip().rpartition("T")
-    zone_stated = bool(separator) and (
-        tail.endswith(("Z", "z")) or "+" in tail or "-" in tail
-    )
-    return moment if zone_stated else moment.replace(tzinfo=None)
+    return moment if _states_zone(value) else moment.replace(tzinfo=None)
 
 
 def _segment_cumulative(readings: Sequence[int]) -> int:

@@ -584,12 +584,19 @@ def watch_event_paths(*, home: Path | None = None) -> list[Path]:
     return sorted(root.glob(f"*{WATCH_EVENT_SUFFIX}"))
 
 
+_ZONE_DESIGNATOR = re.compile(r"(?:[Zz]|[+-]\d{2}:?\d{2})$")
+
+
 def _states_zone(text: str) -> bool:
-    """Whether an ISO stamp names a zone, so a zoneless one is not read as UTC."""
-    _, separator, tail = text.rpartition("T")
-    if not separator:
-        return False
-    return tail.endswith(("Z", "z")) or "+" in tail or "-" in tail
+    """Whether a stamp's own text names a zone.
+
+    A stamp names its zone by ending in a UTC designator or a numeric offset;
+    the date and time may be separated by ``T`` or a space, so the offset is
+    read from the text's tail rather than from where a ``T`` happens to sit. A
+    zoneless stamp is not read as UTC, because a zone invented at the row is
+    indistinguishable downstream from one the producer recorded.
+    """
+    return bool(_ZONE_DESIGNATOR.search(text.strip()))
 
 
 def _normalize_stamp(value: Any) -> tuple[str | None, str]:
