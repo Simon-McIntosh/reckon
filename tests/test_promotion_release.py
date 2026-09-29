@@ -183,6 +183,10 @@ def test_a_clean_ancestor_worktree_and_its_process_are_both_released(
             gate="passed",
             outcome="clean worktree, both released",
             completed_at="2026-09-03T00:05:00Z",
+            review_waiver=(
+                "the fixture exercises worktree and process release on a "
+                "delivered run; the review lifecycle has its own coverage"
+            ),
             root=repository,
         )
 
