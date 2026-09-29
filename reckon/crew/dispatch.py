@@ -8242,9 +8242,12 @@ def change_lane(
             "prompt_path": str(prompt_path),
             "worktree": str(record.get("worktree") or ""),
         }
-    if not launch:
-        return preview
-
+    # The launch path's refusals are read once, ahead of the preview return, so
+    # a --print-only lane change names the refusal a real call would raise. The
+    # resume sweep orders its own gates the same way — both ahead of its dry-run
+    # branch — because a prediction that reads differently from the thing it
+    # predicts is not a prediction. The stop a launch performs is a side effect
+    # and stays below, where a preview cannot reach it.
     if (
         source_launch == "in-harness"
         and record.get("task")
@@ -8254,23 +8257,28 @@ def change_lane(
             f"run {run_id!r} is attached to live harness task {record['task']!r}; "
             "cancel it in that harness before changing backend"
         )
-    if source_launch == "cli":
-        if record_process_alive(record, process_alive) is True:
-            _signal_process_group(int(record["pid"]), record.get("pid_start_time"))
-        else:
-            # "Not known to be alive" is not an observed end. A worker whose
-            # pointer recorded no process, or whose pid this host cannot answer
-            # for, may still be writing, so a fresh worker started over it is
-            # the collision the stop above prevents — the same rule the resume
-            # door applies. The reading is the sweep's own helper rather than a
-            # second composition of it, so what counts as an observed end cannot
-            # drift between the two doors, and the refusal names the reading it
-            # holds.
-            from reckon.crew.resumption import _observed_end_refusal
+    source_process_alive = (
+        source_launch == "cli" and record_process_alive(record, process_alive) is True
+    )
+    if source_launch == "cli" and not source_process_alive:
+        # "Not known to be alive" is not an observed end. A worker whose pointer
+        # recorded no process, or whose pid this host cannot answer for, may
+        # still be writing, so a fresh worker started over it is the collision
+        # the stop below prevents — the same rule the resume door applies. The
+        # reading is the sweep's own helper rather than a second composition of
+        # it, so what counts as an observed end cannot drift between the two
+        # doors, and the refusal names the reading it holds.
+        from reckon.crew.resumption import _observed_end_refusal
 
-            refusal = _observed_end_refusal(record)
-            if refusal is not None:
-                raise refusal
+        refusal = _observed_end_refusal(record)
+        if refusal is not None:
+            raise refusal
+
+    if not launch:
+        return preview
+
+    if source_process_alive:
+        _signal_process_group(int(record["pid"]), record.get("pid_start_time"))
 
     directory.mkdir(parents=True, exist_ok=True)
     prompt_path.write_text(prompt, encoding="utf-8")
