@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="44">
 <meta name="plan-impl" content="0.65">
 </head>
 <body>
@@ -217,7 +217,10 @@
     <div class="r-comment-body"><p>review of run r-20260929T141158362929-supervisor-write-reuses-the-store (base fdb116e212e915cd96cb02835abc98a80f103c26, head 2eda39203b794a5535b4f7ca44aa3f17cec8abd5) stored as a parsed record, 12259 bytes, sha256 e02660d645915ef8c4fa7d99b71084ce13e5bd7503d5bacb0c718e50f3947ac3, at the revision-keyed path and byte-identically at the legacy path beside it — scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 20 (total 96), all six checklist items carried with no dimension absent, added_failure_count 0 with an empty id list derived by the project's own set-difference instrument from the reviewed run's gate_base_arm.log and gate_head_arm.log, two findings (dispatch.py:6217 re-enables owner write under a umask that clears it, measured base 0o400 vs head 0o600 at umask 0o277; the reviewed manifest's declared landing fragment docs/evidence/fragments/a-worker-reuses-before-it-writes/supervisor-write-reuses-the-store.html was never written)</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T141132754558-cli-settings-writer-delegates-the-replace" data-who="reckon-build" data-when="2026-09-29T19:32:39.869Z">
-    <div class="r-comment-body"><p>cli-settings-writer-delegates-the-replace — cli._write_json_atomically keeps its unchanged-bytes early return and both concurrent-edit refusals and delegates the temporary write and rename to reckon._store.write_json_atomically (fsync=False, indent=2, sort_keys=False, ensure_ascii=False, the revision&#x27;s own mode); 9 new tests assert the bytes, both modes, both refusals and no leftover temporary against a replica of the pre-migration writer</p></div>
+    <div class="r-comment-body"><p>cli-settings-writer-delegates-the-replace — cli._write_json_atomically keeps its unchanged-bytes early return and both concurrent-edit refusals and delegates the temporary write and rename to reckon._store.write_json_atomically (fsync=False, indent=2, sort_keys=False, ensure_ascii=False, the revision's own mode); 9 new tests assert the bytes, both modes, both refusals and no leftover temporary against a replica of the pre-migration writer</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260929T193250144358-review-of-cli-settings-writer-delegates-the-replace" data-who="reckon-build" data-when="2026-09-29T20:14:15.980Z">
+    <div class="r-comment-body"><p>review of run r-20260929T141132754558-cli-settings-writer-delegates-the-replace, read at base fdb116e2 and head 6862bd999, is stored at both granted paths and scores goal_fidelity 20, evidence 14, scope_discipline 20, durability 19, fit 19 (total 92, no dimension absent), records added_failure_count 1 with the id tests/test_follower_rearm_shows_nothing_twice.py::test_a_terminal_rearm_shows_the_burst_under_one_frame_line derived by the store&#x27;s own reader from the reviewed run&#x27;s baseline_suite and after_suite gate logs, and files two findings: the 117-file arm population excludes the node&#x27;s own new test file, and the manifest&#x27;s measurement_module/measurement_cwd name the trees of the earlier arms killed at the node time fence rather than the arms the suite records carry.</p></div>
 </div>
 </section>
 </main>
