@@ -1,0 +1,24 @@
+<section id="repair-of-five-ledger-cases-turned-red-f61f41b7aa63">
+  <h2>The five-ledger attribution's provenance claims now hold</h2>
+
+  <p>The module-under-test probe in <code>run_five.sh</code> and <code>bisect_step.sh</code>
+  imported <code>reckon</code> with the driver's cwd, which carries a <code>reckon/</code>
+  package, so every arm's header named that checkout rather than the scratch tree the
+  measured process imported — and the parent worktree has since been removed, so the
+  printed path no longer existed. The probe now passes <code>-P</code>, which omits the
+  cwd from <code>sys.path</code> exactly as pytest does, so it reports the tree the run
+  imported. Every arm was re-run: each case log's header now names
+  <code>/tmp/five-ledger/tree-&lt;label&gt;/reckon/__init__.py</code>, and the bisect
+  boundary is unchanged — 5 passed at <code>57e4ea2e</code>, <code>6d528821</code>,
+  <code>b4c8e07f</code>, <code>bd5f4976</code>, <code>796539e0</code> and
+  <code>51c8d085</code>; 5 failed at <code>467c0aab</code>,
+  <code>87bcae7d</code>, <code>1508c9bc</code>, <code>8ab1f3c7</code> and
+  <code>f61f41b7a</code>.</p>
+
+  <p>The report's claim that <code>467c0aab</code> "differs from it only by the
+  plan-filing commit" was false — the two revisions are 67 commits apart
+  (<code>git rev-list --count 467c0aab..f61f41b7a</code>), a 38-file, +8738/−51 diff — so
+  <code>467c0aab</code> is an interval endpoint, not current main. The sentence now states
+  that measured relation, and both drivers and the report are the delivered artefacts;
+  they are crew artifacts outside git, so this fragment carries the landing.</p>
+</section>
