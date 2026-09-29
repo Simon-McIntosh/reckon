@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-impl" content="0.5">
 </head>
 <body>
@@ -155,6 +155,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T073936801928-pending-plan-limit-warns" data-who="reckon-build" data-when="2026-09-29T08:11:59.112Z">
     <div class="r-comment-body"><p>The pending-plan limit at plan creation is now a warning, not a refusal -- a create at or beyond the declared limit succeeds and its success response carries a warning naming the limit, the pending count and the three pending plans nearest to closing (ranked by impl, highest first); the refusal branch, the override_wip_limit argument and its comment-recording helper are removed, so no plan comment is written in any case. Gate 102 passed at exit 0.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260929T080358131764-review-of-pending-plan-limit-warns" data-who="reckon-build" data-when="2026-09-29T08:56:26.363Z">
+    <div class="r-comment-body"><p>Independent review of run r-20260929T073936801928-pending-plan-limit-warns is stored as one record at both the legacy and the head-keyed fenced paths (plan open-work-is-capped section 3; reviewed base b7f58806, reviewed head d964c467, two commits, 103 insertions and 175 deletions across reckon/mcp-no — corrected: across reckon/mcp.py, tests/test_pending_plan_limit.py and the landing fragment): the record parses with goal_fidelity 19, evidence 19, scope_discipline 20, durability 18 and fit 19 for a total of 95 out of 100, carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs (105 passed at b7f58806 and 102 passed at d964c467, both EXIT=0, both re-run by me), and carries two findings — the real project declares no pending_plan_limit at this head because the previous node&#x27;s landing merge 46fd73e2 dropped the committed config key while keeping its code, so the new warning is unreachable on reckon (outside the reviewed node&#x27;s write fence, reported for the coordinator), and the rewritten fixture is labelled &quot;at its limit&quot; while holding four plans against a limit of three, leaving the equality boundary and the removed-argument signature to my probe rather than the repository.</p></div>
 </div>
 </section>
 </main>
