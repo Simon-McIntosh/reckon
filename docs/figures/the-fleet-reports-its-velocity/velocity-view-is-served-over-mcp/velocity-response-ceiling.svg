@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 520" width="940" height="520" role="img" aria-labelledby="title desc">
+  <title id="title">The velocity response against the crew tool's 80,000-character ceiling</title>
+  <desc id="desc">Two windows measured over the mounted reckon checkout. For each, three bars: the whole payload with the project-lane-day cells, the summary with the cells withheld, and the repaired default of three aggregate tables plus a cell count. A vertical line marks the 80,000-character ceiling that mcp_budget.bound_response enforces. Both whole payloads and the pinned window's cells-withheld summary cross the line; both defaults sit well under it. A note below the axis shows that asking for the cells without a limit still crosses the line: the default plus one default-size page is 80,308 over the two-day window and 138,848 over the pinned one, which is what the receipt's limit suggestion is for.</desc>
+
+  <style>
+    .ttl { font: 15px system-ui, sans-serif; font-weight: 600; fill: #14233a; }
+    .sub { font: 12px system-ui, sans-serif; fill: #41506b; }
+    .grouplbl { font: 13px system-ui, sans-serif; font-weight: 600; fill: #1b2733; }
+    .barlbl { font: 12px ui-monospace, monospace; fill: #1b2733; }
+    .axis { stroke: #8b97a8; stroke-width: 1; }
+    .tick { font: 11px ui-monospace, monospace; fill: #5b687b; }
+    .ceiling { stroke: #a33; stroke-width: 1.6; stroke-dasharray: 5 4; }
+    .ceilinglbl { font: 12px system-ui, sans-serif; font-weight: 600; fill: #a33; }
+    .bar.whole { fill: #b8483f; }
+    .bar.mid { fill: #d9a03c; }
+    .bar.def { fill: #2f6b3a; }
+    .note { font: 12px system-ui, sans-serif; fill: #1b2733; }
+    .notebox { fill: #fdf3e3; stroke: #b07a1e; stroke-width: 1.2; rx: 6; }
+  </style>
+
+  <text class="ttl" x="24" y="28">The velocity payload against the crew tool's response ceiling</text>
+  <text class="sub" x="24" y="47">mcp_budget.DEFAULT_RESPONSE_CEILING = 80,000 characters, measured over the mounted reckon checkout at each window's derived head</text>
+
+  <!-- plot area: x 300..900 maps 0..380000 -->
+  <line class="axis" x1="300" y1="66" x2="300" y2="366"/>
+  <line class="axis" x1="300" y1="366" x2="900" y2="366"/>
+  <g class="tick" text-anchor="middle">
+    <text x="300" y="384">0</text>
+    <text x="458" y="384">100k</text>
+    <text x="616" y="384">200k</text>
+    <text x="774" y="384">300k</text>
+  </g>
+
+  <!-- ceiling at 80000 -> x = 300 + 80000*600/380000 = 426.3 -->
+  <line class="ceiling" x1="426.3" y1="66" x2="426.3" y2="366"/>
+  <text class="ceilinglbl" x="430" y="60">ceiling 80,000</text>
+
+  <!-- two-day group -->
+  <text class="grouplbl" x="24" y="86">2026-09-26 &#8594; 2026-09-28</text>
+  <text class="sub" x="24" y="103">head 53e9a944</text>
+
+  <rect class="bar whole" x="300" y="112" width="162.2" height="24"/>
+  <text class="barlbl" x="470" y="129">whole payload, cells included &#8212; 102,727</text>
+
+  <rect class="bar mid" x="300" y="144" width="81.9" height="24"/>
+  <text class="barlbl" x="390" y="161">cells withheld &#8212; 51,858</text>
+
+  <rect class="bar def" x="300" y="176" width="46.4" height="24"/>
+  <text class="barlbl" x="354" y="193">default &#8212; 29,383</text>
+
+  <!-- pinned group -->
+  <text class="grouplbl" x="24" y="238">2026-09-12 &#8594; 2026-09-26 10:00</text>
+  <text class="sub" x="24" y="255">head 056c08e0</text>
+
+  <rect class="bar whole" x="300" y="264" width="599.4" height="24"/>
+  <text class="barlbl" x="300" y="281" fill="#ffffff">whole payload, cells included &#8212; 379,597</text>
+
+  <rect class="bar mid" x="300" y="296" width="193.8" height="24"/>
+  <text class="barlbl" x="502" y="313">cells withheld &#8212; 122,758, still past the ceiling</text>
+
+  <rect class="bar def" x="300" y="328" width="107.3" height="24"/>
+  <text class="barlbl" x="416" y="345">default &#8212; 67,958</text>
+
+  <!-- the one case that still crosses the line -->
+  <rect class="notebox" x="24" y="398" width="892" height="98"/>
+  <text class="note" x="38" y="421">Asking for the cells without a limit can still cross the line: the default plus one default-size page of them is</text>
+  <text class="note" x="38" y="441">80,308 characters over the two-day window and 138,848 over the pinned one &#8212; a page comes back as its own</text>
+  <text class="note" x="38" y="461">response, so <tspan font-style="italic">limit</tspan> is the narrowing that gets each window under the line. The receipt that reports the</text>
+  <text class="note" x="38" y="481">overflow names <tspan font-style="italic">limit</tspan> and <tspan font-style="italic">fields</tspan> &#8212; both of which this branch accepts.</text>
+</svg>

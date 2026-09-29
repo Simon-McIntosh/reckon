@@ -59,6 +59,7 @@ __all__ = [
     "promotion_receipts",
     "ratio",
     "recover_ledger_clocks",
+    "report",
     "replay",
     "session_continuity",
     "session_usage",
@@ -497,9 +498,20 @@ def plan_cohort(repo, head, *, start=START, end=END, prefix=PLAN_DIRECTORY):
 
 
 def capture_project(
-    project, branch, *, code_root=CODE, start=START, end=END, run_store_db=RUN_STORE
+    project,
+    branch,
+    *,
+    code_root=CODE,
+    repo_path=None,
+    start=START,
+    end=END,
+    run_store_db=RUN_STORE,
 ):
-    repo = Path(code_root) / project
+    # ``repo_path`` names a checkout outright, so a caller holding an arbitrary
+    # path does not have to place it at ``code_root/project``; the ledger key
+    # stays ``project`` either way, because the run state lives under the
+    # project's own name. Without it the historical layout resolves.
+    repo = Path(repo_path) if repo_path is not None else Path(code_root) / project
     head = (
         git(
             repo,
@@ -599,14 +611,20 @@ def capture_project(
     sources = dict.fromkeys(records, "committed_primary_snapshot")
     recovered = []
     database = Path(run_store_db) if run_store_db else None
-    if database is not None and database.exists():
+    # Only a promotion with no committed record needs the fallback store, and a
+    # window whose promotions all carry a record ask it nothing: open it then
+    # only, so a caller reading a self-contained checkout never touches a store
+    # outside it. The rows read are the same either way.
+    missing = sorted(
+        rid
+        for rid in set(promotions) - set(records)
+        if any(
+            stamp(start) <= item["epoch"] <= stamp(end) for item in promotions[rid]
+        )
+    )
+    if database is not None and database.exists() and missing:
         with sqlite3.connect(f"file:{database}?mode=ro", uri=True) as connection:
-            for rid in sorted(set(promotions) - set(records)):
-                if not any(
-                    stamp(start) <= item["epoch"] <= stamp(end)
-                    for item in promotions[rid]
-                ):
-                    continue
+            for rid in missing:
                 hit = connection.execute(
                     "SELECT r.payload,d.detail FROM runs r LEFT JOIN run_details d USING(run_id) WHERE r.run_id=?",
                     (rid,),
@@ -806,8 +824,15 @@ def replay(commits):
     return births
 
 
-def recover_ledger_clocks(snapshot, *, code_root=CODE, start=START, end=END):
-    """Locate the first durable ledger appearance when no promote commit exists."""
+def recover_ledger_clocks(
+    snapshot, *, code_root=CODE, repos=None, start=START, end=END
+):
+    """Locate the first durable ledger appearance when no promote commit exists.
+
+    ``repos`` maps a project name to its checkout path, for a snapshot whose
+    projects were captured from arbitrary paths rather than beneath one
+    ``code_root``; a project absent from it falls back to ``code_root/project``.
+    """
     for project in snapshot["projects"]:
         candidates = {
             run["run_id"]: run
@@ -817,7 +842,11 @@ def recover_ledger_clocks(snapshot, *, code_root=CODE, start=START, end=END):
         }
         if not candidates:
             continue
-        repo = Path(code_root) / project["project"]
+        repo = (
+            Path(repos[project["project"]])
+            if repos and project["project"] in repos
+            else Path(code_root) / project["project"]
+        )
         path = "docs/state/" + project["project"] + "/crew.json"
         before = json.loads(git(repo, "show", project["base"] + ":" + path))
         present = {r["run_id"] for r in before.get("data", before).get("runs", [])}
@@ -1687,6 +1716,10 @@ def measure(
                 "review_investigate": sum(
                     r["role_class"] == "review_investigate" for r in runs
                 ),
+                "review_share": ratio(
+                    sum(r["role_class"] == "review_investigate" for r in runs),
+                    len(runs),
+                ),
                 "by_role": dict(
                     sorted(collections.Counter(r["role"] for r in runs).items())
                 ),
@@ -1753,6 +1786,16 @@ def measure(
                         for r in runs
                         if r["role_class"] == "review_investigate"
                     }
+                ),
+                "review_share": ratio(
+                    len(
+                        {
+                            r["logical_node_id"]
+                            for r in runs
+                            if r["role_class"] == "review_investigate"
+                        }
+                    ),
+                    len({r["logical_node_id"] for r in runs}),
                 ),
             },
             "attempts_per_landed_node": ratio(
@@ -2140,3 +2183,63 @@ def velocity(
         transcript_root=transcript_root,
     )
     return compact_summary(result, weekly_cells)
+
+
+def report(
+    projects,
+    *,
+    start,
+    end,
+    branches=None,
+    run_store_db=RUN_STORE,
+    transcript_root=None,
+    baseline=None,
+):
+    """Measure a caller-named window over caller-named checkouts.
+
+    ``projects`` maps a project name to its checkout path — the shape the MCP
+    and command-line surfaces hold, where a mounted project's docs directory
+    names its repository parent. Each project is measured on ``branches[name]``
+    when given, else on the checkout's own ``HEAD``. The layers are the shared
+    ones: ``capture_project`` per checkout, ``recover_ledger_clocks`` once over
+    the assembled snapshot, then ``measure`` and ``compact_summary``.
+
+    ``transcript_root`` defaults to ``None``, so the coordinator-cost block
+    reports its sessions as an unread transcript rather than walking a
+    coordinator transcript tree the caller did not name — the census entry point
+    ``velocity`` supplies one because the study reads it.
+
+    The returned mapping is the compact summary — no commit census — with the
+    project-by-lane-by-day cells appended, so every quantity the view reports is
+    available by project, by lane, by day and in three-dimensional cells.
+    """
+    branches = branches or {}
+    checkouts = {name: str(path) for name, path in projects.items()}
+    snapshot = {
+        "window": [start, end],
+        "august_baseline": baseline,
+        "projects": [
+            capture_project(
+                name,
+                branches.get(name, "HEAD"),
+                repo_path=path,
+                start=start,
+                end=end,
+                run_store_db=run_store_db,
+            )
+            for name, path in checkouts.items()
+        ],
+    }
+    recover_ledger_clocks(snapshot, repos=checkouts, start=start, end=end)
+    weekly_cells = []
+    full = measure(
+        snapshot,
+        window_start=start,
+        window_end=end,
+        projects=list(checkouts),
+        weekly_cells=weekly_cells,
+        transcript_root=transcript_root,
+    )
+    summary = compact_summary(full, weekly_cells)
+    summary["by_project_day_lane"] = full["by_project_day_lane"]
+    return summary
