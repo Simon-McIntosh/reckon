@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="133">
+<meta name="plan-version" content="134">
 </head>
 <body>
   <main class="plan-doc">
@@ -1423,6 +1423,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260929T164936742734-review-of-template-says-what-completed-holds" data-who="reckon-build" data-when="2026-09-29T17:07:15.391Z">
     <div class="r-comment-body"><p>review of r-20260929T163317812547-template-says-what-completed-holds stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T163317812547-template-says-what-completed-holds.json (head-keyed copy at .at-fe9140e26a5300df503fe8e97d410b149744731b.json), status parsed, scores goal_fidelity 17 / evidence 19 / scope_discipline 20 / durability 18 / fit 19, total 93, added_failure_count 0, one finding at reckon/crew/prompts.py:572</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260929T163317812547-template-says-what-completed-holds" data-who="reckon-build" data-when="2026-09-29T16:48:55.534Z">
+    <div class="r-comment-body"><p>both suite arms of the manifest template in reckon/crew/prompts.py:572-573 now read &quot;completed is true only when the suite ran to its summary line, false otherwise, and null or absent is unreadable&quot;, replacing the one-sided &quot;completed=false is absent evidence&quot;; tests/test_brief_prompt.py asserts the rule on each arm&#x27;s own line of the composed contract (count 2) and on the snapshot literal, and restoring the former lines reddens that assertion (assert 0 == 2); the 22-file gate ran 6 failed, 231 passed at head against 6 failed, 229 passed at base, adding no failure id; fragment at docs/evidence/fragments/crew-runtime-positive-controls/template-says-what-completed-holds.html</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
