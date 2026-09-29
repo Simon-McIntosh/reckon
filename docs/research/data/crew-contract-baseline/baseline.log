@@ -1,34 +1,61 @@
-revision a34a62bbfa3f95be7b996e0f80e842651493745a tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/crew-contract-token-baseline command: docs/research/data/crew-contract-baseline/measure.py
+revision 9522a83338ffa67c6ab0199b946539a73faa9115 tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/crew-contract-token-baseline command: docs/research/data/crew-contract-baseline/measure.py
 transcript root: /home/ITER/mcintos/.claude/projects (read-only)
-selection rule: a session is selected when, on the baseline date, it records at least one reckon-build skill load -- a Skill invocation of reckon-build, an injected SKILL.md body, or a Read of SKILL.md or of a file under reckon-build/references/. The load window ends at the first `reckon crew dispatch` call at or after the first load, or at the end of the transcript when the session never dispatched.
-selection date: 2026-09-26
+selection rule: a session is selected when it records at least one reckon-build skill load on a selected date. A load is a Skill invocation of reckon-build, an injected SKILL.md body, or a whole-file Read of a path under the installed tree /home/ITER/mcintos/.claude/skills/reckon-build. A Read of a repository's own skills/reckon-build/ copy is excluded (that is authoring the skill, not loading it) and so is a partial Read carrying an offset or a limit (that reads a fragment, it does not load the skill). Dates start at the baseline and widen symmetrically until at least five sessions have a complete per-session total.
+per-session step: sum the input tokens of every selected-date load at or before the session's first `reckon crew dispatch` call (end of transcript when the session never dispatched).
 control: True known Skill load seen; quoted transcript rejected
-selected sessions: 5
-  5b2accfd-6ddc-4250-b78f-fb482fefcddc  started 2026-09-26T12:18:48
-  1d1d2f0d-d00a-4244-9ce2-d47d56b14ae8  started 2026-09-26T10:35:51
-  3955c8d2-c817-48fc-81bf-8a29bb14c6cc  started 2026-09-24T19:25:31
-  6f6c5410-a944-473f-8ca9-1f558a522c59  started 2026-09-26T20:42:47
-  e6394022-d8bc-4bba-bd9a-ea5d9895a410  started 2026-09-24T20:36:45
+bracketing control: True load bracketed on its own request (146533), not the earlier one (145712); a loose bracket would have charged 821 tokens of other content that landed in the same turn
+dates used: 2026-09-26, 2026-09-25  (baseline date first, then the neighbouring days added to reach five)
+sessions selected: 10  with a complete per-session total: 5  (target 5, met)
+  1d1d2f0d-d00a-4244-9ce2-d47d56b14ae8  date=2026-09-26  started=2026-09-26T10:35:51  boundary=first-dispatch  total=25904
+  38dec84a-7cb6-4b27-ace6-501cc76dbec0  date=2026-09-25  started=2026-09-25T09:10:58  boundary=first-dispatch  total=25650
+  79d34100-114d-4334-b29d-434783b2e6bf  date=2026-09-25  started=2026-09-25T03:24:56  boundary=end-of-transcript  total=20484
+  b6ff9a12-ea0f-404a-b079-43a915ab9a21  date=2026-09-25  started=2026-09-25T07:24:40  boundary=end-of-transcript  total=19362
+  5b2accfd-6ddc-4250-b78f-fb482fefcddc  date=2026-09-26  started=2026-09-26T12:18:48  boundary=end-of-transcript  total=5889
+  6f6c5410-a944-473f-8ca9-1f558a522c59  date=2026-09-26  started=2026-09-26T20:42:47  boundary=first-dispatch  total=5410  PARTIAL
+  1acc0b99-d993-4ea2-9802-62d0aa28e976  date=2026-09-25  started=2026-09-25T13:48:58  boundary=end-of-transcript  total=0  PARTIAL
+  3955c8d2-c817-48fc-81bf-8a29bb14c6cc  date=2026-09-25  started=2026-09-24T19:25:31  boundary=first-dispatch  total=0  PARTIAL
+  bd47f8f3-7617-4973-86e9-6be0d83c0a53  date=2026-09-25  started=2026-09-24T20:31:34  boundary=first-dispatch  total=0  PARTIAL
+  e6394022-d8bc-4bba-bd9a-ea5d9895a410  date=2026-09-25  started=2026-09-24T20:36:45  boundary=first-dispatch  total=0  PARTIAL
 
 per-session input tokens spent loading the skill before first dispatch:
-  3955c8d2-c817-48fc-81bf-8a29bb14c6cc  boundary=  first-dispatch  total=      0  loads=0 [invoked-skills:SKILL.md=None (context shrank across the load (compaction))]
-      unmeasured: invoked-skills SKILL.md — context shrank across the load (compaction)
-  e6394022-d8bc-4bba-bd9a-ea5d9895a410  boundary=  first-dispatch  total=      0  loads=0 [invoked-skills:SKILL.md=None (context shrank across the load (compaction))]
-      unmeasured: invoked-skills SKILL.md — context shrank across the load (compaction)
-  5b2accfd-6ddc-4250-b78f-fb482fefcddc  boundary=end-of-transcript  total=   5889  loads=1 [Read:worker-verification.md=5889]
-  6f6c5410-a944-473f-8ca9-1f558a522c59  boundary=  first-dispatch  total=   6231  loads=1 [injected-body:SKILL.md=None (no request precedes the load), Read:claude-code.md=6231]
-      unmeasured: injected-body SKILL.md — no request precedes the load
-  1d1d2f0d-d00a-4244-9ce2-d47d56b14ae8  boundary=  first-dispatch  total=  25904  loads=1 [Skill:SKILL.md=25904]
+  1d1d2f0d-d00a-4244-9ce2-d47d56b14ae8  total=  25904  loads=1  [Skill:SKILL.md=25904]
+  38dec84a-7cb6-4b27-ace6-501cc76dbec0  total=  25650  loads=1  [Skill:SKILL.md=25650]
+  79d34100-114d-4334-b29d-434783b2e6bf  total=  20484  loads=1  [Skill:SKILL.md=20484]
+  b6ff9a12-ea0f-404a-b079-43a915ab9a21  total=  19362  loads=2  [Skill:SKILL.md=17427, Skill:SKILL.md=1935]
+  5b2accfd-6ddc-4250-b78f-fb482fefcddc  total=   5889  loads=1  [Read:worker-verification.md=5889]
+  6f6c5410-a944-473f-8ca9-1f558a522c59  total=   5410  loads=1  [injected-body:SKILL.md=None (no request precedes the load), Read:claude-code.md=5410]  PARTIAL
+                                        unmeasured: injected-body SKILL.md — no request precedes the load
+  1acc0b99-d993-4ea2-9802-62d0aa28e976  total=      0  loads=0  [Read:SKILL.md=None (context shrank across the load (compaction))]  PARTIAL
+                                        unmeasured: Read SKILL.md — context shrank across the load (compaction)
+  3955c8d2-c817-48fc-81bf-8a29bb14c6cc  total=      0  loads=0  [invoked-skills:SKILL.md=None (context shrank across the load (compaction))]  PARTIAL
+                                        unmeasured: invoked-skills SKILL.md — context shrank across the load (compaction)
+  bd47f8f3-7617-4973-86e9-6be0d83c0a53  total=      0  loads=0  [invoked-skills:SKILL.md=None (context shrank across the load (compaction))]  PARTIAL
+                                        unmeasured: invoked-skills SKILL.md — context shrank across the load (compaction)
+  e6394022-d8bc-4bba-bd9a-ea5d9895a410  total=      0  loads=0  [invoked-skills:SKILL.md=None (context shrank across the load (compaction))]  PARTIAL
+                                        unmeasured: invoked-skills SKILL.md — context shrank across the load (compaction)
 
-n sessions measured: 3
-median input tokens: 6231.0
-min 5889  max 25904  mean 12674.7
-SKILL.md-only sessions: n 1 median 25904.0
+n sessions with a complete per-session total: 5  (of 10 selected)
+MEDIAN per-session input tokens: 20484.0
+min 5889  max 25904  mean 19457.8
 
-word counts (whitespace-split, the done-when's rule):
-  SKILL.md: 11050 words
+full SKILL.md loads (whole-body loads with an isolated figure):
+  20484 tokens  Skill  79d34100  2026-09-25
+  17427 tokens  Skill  b6ff9a12  2026-09-25
+  1935 tokens  Skill  b6ff9a12  2026-09-25
+  25650 tokens  Skill  38dec84a  2026-09-25
+  25904 tokens  Skill  1d1d2f0d  2026-09-26
+  full SKILL.md load figures: n 5 median 20484.0  max 25904
+  the largest is a first delivery into a context that did not hold the body; the smallest is a re-invocation in a session that had already loaded it, so it is not a comparable full-load figure
+per-reference loads:
+  5889 tokens  worker-verification.md
+  5410 tokens  claude-code.md
+
+word counts (whitespace-split, the done-when's rule). These describe the skill as it stands now, not as it stood on the baseline date, and the file moves: the load figures above come from frozen transcripts, the word counts do not.
+  SKILL.md: 11181 words  (last written 2026-09-29 05:09 UTC)
   references (10 files): 23726 words
-  skill + references: 34776 words
-  ceiling: 12000 words — headroom -22776
-measured at 2026-09-29T04:42:10.698399+00:00
+  skill + references: 34907 words
+  ceiling: 12000 words — headroom -22907
+  tokens per word at the largest full SKILL.md load: 2.32  (25904 tokens / 11181 words)
+  tokens per word at the median full SKILL.md load: 1.83
+measured at 2026-09-29T05:52:03.438442+00:00
 EXIT=0
