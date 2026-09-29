@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" font-family="system-ui, sans-serif" font-size="14">
+  <style>
+    .box { fill: #f7f8fa; stroke: #2b3440; stroke-width: 1.5; rx: 8; }
+    .held { fill: #fdecec; stroke: #b3261e; }
+    .open { fill: #eaf6ec; stroke: #1f7a34; }
+    .note { fill: #fff8e1; stroke: #9a7b00; stroke-dasharray: 5 3; }
+    .lbl { fill: #10161e; }
+    .edge { stroke: #2b3440; stroke-width: 1.5; fill: none; marker-end: url(#a); }
+    .heldedge { stroke: #b3261e; stroke-width: 2; fill: none; marker-end: url(#r); }
+    .openEdge { stroke: #1f7a34; stroke-width: 1.5; fill: none; marker-end: url(#g); }
+    .tag { font-size: 12px; fill: #4a5560; }
+  </style>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#2b3440"/></marker>
+    <marker id="r" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#b3261e"/></marker>
+    <marker id="g" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#1f7a34"/></marker>
+  </defs>
+
+  <text x="30" y="34" font-size="17" font-weight="600">Where the standing suite holds a promotion</text>
+  <text x="30" y="56" class="tag">promotion.complete, beside the review-waiver gate — the tier is the one already resolved, never re-derived</text>
+
+  <rect class="box" x="300" y="80" width="300" height="46" rx="8"/>
+  <text x="450" y="108" text-anchor="middle" class="lbl">review_tier (from what the run changed)</text>
+
+  <path class="edge" d="M600,103 L720,103 L720,150"/>
+  <text x="628" y="96" class="tag">tier = full</text>
+  <rect class="open" x="640" y="150" width="230" height="46" rx="8"/>
+  <text x="755" y="172" text-anchor="middle" class="lbl">proceed — never held</text>
+  <text x="755" y="188" text-anchor="middle" class="tag">a full review reads the run itself</text>
+
+  <path class="edge" d="M300,103 L180,103 L180,150"/>
+  <text x="196" y="96" class="tag">tier = none or light</text>
+  <rect class="box" x="50" y="150" width="260" height="46" rx="8"/>
+  <text x="180" y="178" text-anchor="middle" class="lbl">hold_reason(project, tier)</text>
+
+  <path class="edge" d="M180,196 L180,240"/>
+  <rect class="box" x="60" y="240" width="240" height="34" rx="8"/>
+  <text x="180" y="262" text-anchor="middle" class="tag">latest recorded suite run</text>
+
+  <path class="openEdge" d="M120,274 L120,320"/>
+  <rect class="open" x="20" y="320" width="200" height="76" rx="8"/>
+  <text x="120" y="344" text-anchor="middle" class="lbl">proceed</text>
+  <text x="120" y="364" text-anchor="middle" class="tag">no records · latest passed</text>
+  <text x="120" y="382" text-anchor="middle" class="tag">· latest is a waiver</text>
+
+  <path class="heldedge" d="M240,274 L240,320"/>
+  <rect class="held" x="230" y="320" width="440" height="150" rx="8"/>
+  <text x="450" y="346" text-anchor="middle" class="lbl" font-weight="600">refuse — CrewError</text>
+  <text x="450" y="368" text-anchor="middle" class="tag">latest failed to collect, or overran its budget,</text>
+  <text x="450" y="386" text-anchor="middle" class="tag">with no later waiver</text>
+  <line x1="270" y1="402" x2="630" y2="402" stroke="#b3261e" stroke-dasharray="4 3"/>
+  <text x="450" y="422" text-anchor="middle" class="tag">message names the recorded reason</text>
+  <text x="450" y="440" text-anchor="middle" class="tag">and both ways out:</text>
+  <text x="450" y="460" text-anchor="middle" class="lbl" font-size="12.5" font-family="ui-monospace, monospace">reckon crew suite run --project NAME</text>
+  <text x="450" y="476" text-anchor="middle" class="lbl" font-size="12.5" font-family="ui-monospace, monospace">reckon crew suite waive --project NAME --reason TEXT</text>
+
+  <rect class="note" x="300" y="490" width="570" height="52" rx="8"/>
+  <text x="318" y="512" class="tag">A suite that collected, ran and failed is an ordinary red suite, not a hold</text>
+  <text x="318" y="530" class="tag">(exit 1 is never a hold); only a broken collection or a budget overrun holds.</text>
+</svg>
