@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="121">
+<meta name="plan-version" content="123">
 </head>
 <body>
   <main class="plan-doc">
@@ -1321,10 +1321,11 @@
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
     <p class="r-fu-outcome">control-is-compared-with-the-head-arm merged at 725632ca and promoted (review total 97, zero added failures). A control is now admitted when it exits non-zero with a failing id the head arm passes; the baseline decides only when no head arm is readable. A read-only replay admits all four controls waived on 2026-09-28. The node's own test-first control was admitted at its promotion with no waiver. verify-gate is green at main.</p>
     </article>
-<article class="r-fu" data-id="f-crpc-a-head-arm-without-completed-is-unreadable" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-crpc-a-head-arm-without-completed-is-unreadable" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="2026-09-29T14:59:31+00:00" data-resolved-by="">
     <h4 class="r-fu-title">An after_suite that omits completed is not trusted to decide a control</h4>
     <div class="r-fu-body"><p>From the review of control-is-compared-with-the-head-arm (total 97). The head-arm reader near <code>reckon/crew/promotion.py:4870</code> treats only a literal <code>completed: False</code> as unreadable. An <code>after_suite</code> that omits the key or carries null is therefore read as a completed arm, and it decides the control. The same mapping would be refused on the baseline side. Treat a missing or null <code>completed</code> as unreadable on both arms, so the baseline decides. Add one case per form.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
+    <p class="r-fu-outcome">head-arm-without-completed-is-unreadable merged at e716e030 and promoted (review total 94, zero added failures). A head arm that omits completed, or carries null, is now unreadable, so the baseline decides. The baseline arm is deliberately left lenient: a strict baseline yields an empty reference set that admits every control, and the reviewer's probe confirmed it would redden test_control_gate_checks_facts. verify-gate is green at main (18 passed).</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -1386,7 +1387,10 @@
     <div class="r-comment-body"><p>review of r-20260929T035747361954-control-is-compared-with-the-head-arm: qualified at 97/100 (goal_fidelity 19, evidence 20, scope_discipline 20, durability 19, fit 19) — the head-arm comparison is landed as specified, the negative control fires on it, and the one finding is the head-arm reader's completion spelling; records stored at both declared paths.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260929T130721314494-head-arm-without-completed-is-unreadable" data-who="reckon-build" data-when="2026-09-29T14:21:56.820Z">
-    <div class="r-comment-body"><p>the head-arm reader at `reckon/crew/promotion.py:5088` now asks `completed` as a literal `True`, so an `after_suite` that omits the key or carries null is unreadable and the baseline comparison decides the control; three cases in `tests/test_control_is_compared_with_the_head_arm.py` hold one manifest apart in that key alone, the head arm 54 passed in 18.53s EXIT=0 against the base tree&#x27;s 2 failed, 52 passed in 19.26s EXIT=1; evidence at `docs/evidence/fragments/crew-runtime-positive-controls/head-arm-without-completed-is-unreadable.html`</p></div>
+    <div class="r-comment-body"><p>the head-arm reader at `reckon/crew/promotion.py:5088` now asks `completed` as a literal `True`, so an `after_suite` that omits the key or carries null is unreadable and the baseline comparison decides the control; three cases in `tests/test_control_is_compared_with_the_head_arm.py` hold one manifest apart in that key alone, the head arm 54 passed in 18.53s EXIT=0 against the base tree's 2 failed, 52 passed in 19.26s EXIT=1; evidence at `docs/evidence/fragments/crew-runtime-positive-controls/head-arm-without-completed-is-unreadable.html`</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260929T142230790369-review-of-head-arm-without-completed-is-unreadable" data-who="reckon-build" data-when="2026-09-29T14:58:58.298Z">
+    <div class="r-comment-body"><p>review of r-20260929T130721314494-head-arm-without-completed-is-unreadable stored at the head-keyed path the dispatch granted (at-3817cdf5) and the legacy path, parsed with goal_fidelity 17, evidence 18, scope_discipline 20, durability 19, fit 20, total 94, one finding at reckon/crew/promotion.py:5046</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
