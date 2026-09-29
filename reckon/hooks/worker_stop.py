@@ -35,8 +35,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from reckon._timestamps import parse_utc
-
 TERMINAL_STATUSES = frozenset({"complete", "blocked", "failed"})
 BLOCK_LIMIT = 3
 COUNTER_NAME = ".worker_stop_blocks"
@@ -120,6 +118,12 @@ def _manifest_predates_attempt(manifest: Path) -> bool:
     raw = os.environ.get("RECKON_ATTEMPT_STARTED_AT", "").strip()
     if not raw or not manifest.is_file():
         return False
+    if __package__ in (None, ""):
+        # The registered hook command is this file's own path, so a bare-script
+        # launch has not put the checkout that ships it on sys.path yet.
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from reckon._timestamps import parse_utc
+
     attempt_started_at = parse_utc(raw)
     if attempt_started_at is None:
         return False

@@ -187,14 +187,19 @@ def test_no_fromisoformat_call_remains() -> None:
     assert offenders == {}
 
 
-def test_each_module_reaches_the_shared_parser() -> None:
-    for module in MODULES:
-        tree = ast.parse(Path(module.__file__).read_text())
-        names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
-        attrs = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
-        assert "parse_utc" in names | attrs, module.__name__
+def _parse_utc_import_sources(module: object) -> set[str]:
+    tree = ast.parse(Path(module.__file__).read_text())
+    sources: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and any(
+            alias.name == "parse_utc" for alias in node.names
+        ):
+            sources.add(node.module or "")
+    return sources
 
 
-def test_modules_bind_the_one_shared_parser() -> None:
+def test_each_module_binds_the_one_shared_parser() -> None:
     for module in MODULES:
-        assert module.parse_utc is _timestamps.parse_utc, module.__name__
+        assert _parse_utc_import_sources(module) == {_timestamps.__name__}, (
+            module.__name__
+        )
