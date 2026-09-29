@@ -1,0 +1,4 @@
+<section id="s3">
+    <h2>§3 — the harness-settings writer reuses the shared atomic JSON writer</h2>
+    <p><code>reckon/cli.py:_write_json_atomically</code> keeps its unchanged-bytes early return and both concurrent-edit refusals, then hands the temporary write and rename to <code>reckon/_store.py:write_json_atomically</code> with <code>fsync=False</code>, <code>indent=2</code>, <code>sort_keys=False</code>, <code>ensure_ascii=False</code> and the revision's own mode, so the bytes, the mode and the refusals are unchanged. <code>tests/test_cli_settings_writer_reuses_the_store.py</code> asserts the written bytes, both modes, both refusals and the absence of a leftover temporary against a replica of the pre-migration writer.</p>
+  </section>
