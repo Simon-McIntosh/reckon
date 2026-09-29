@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560" role="img" aria-labelledby="t d">
+  <title id="t">How a stored review score reaches a reader</title>
+  <desc id="d">The committed ledger row holds a review block. The crew scores view reads those rows from the checkout and passes them to review_scores with the plan, node and run_id filters. A parsed review returns its five dimensions and total; a row with no stored review is omitted rather than returned as zeros; a review that never parsed returns its status with empty scores and no total. Dashed at the bottom: at the base revision the reader existed with no caller, so the block was written by every promotion and consulted by nothing.</desc>
+
+  <style>
+    .bg { fill: #ffffff; }
+    .lane { fill: #f5f6f8; stroke: #c9ccd4; }
+    .good { fill: #eef6f0; stroke: #8fbf9f; }
+    .warn { fill: #fdf6ec; stroke: #d9b98a; }
+    .bad { fill: #fdecec; stroke: #d98a8a; }
+    .t { font-family: sans-serif; font-size: 12.5px; fill: #23252b; }
+    .small { font-family: sans-serif; font-size: 11.5px; fill: #4a4e57; }
+    .head { font-family: sans-serif; font-size: 15px; font-weight: bold; fill: #23252b; }
+    .sub { font-family: sans-serif; font-size: 13px; font-weight: bold; fill: #23252b; }
+    .mono { font-family: monospace; font-size: 11px; fill: #23252b; }
+    .warntext { font-family: sans-serif; font-size: 11.5px; fill: #8a6320; }
+    .badtext { font-family: sans-serif; font-size: 11.5px; fill: #a13b3b; }
+    .line { stroke: #7a7f8a; stroke-width: 1.4; fill: none; }
+    .dash { stroke: #a6aab4; stroke-width: 1.4; stroke-dasharray: 5 4; fill: none; }
+  </style>
+
+  <defs/>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#7a7f8a" stroke-width="1.6"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="900" height="560"/>
+
+  <text class="head" x="40" y="34">The committed row is the only input; three row shapes leave the reader three different ways</text>
+  <text class="small" x="40" y="54">A promoted row carries the block its promotion derived. The crew scores view is the caller review_scores never had.</text>
+
+  <rect class="lane" x="40" y="78" width="320" height="176" rx="6"/>
+  <text class="sub" x="56" y="102">committed ledger, one checkout</text>
+  <text class="mono" x="56" y="126">docs/state/&lt;project&gt;/crew.json</text>
+  <text class="mono" x="56" y="148">{ run_id, plan, node, &#8230;</text>
+  <text class="mono" x="56" y="166">  review: { status, scores,</text>
+  <text class="mono" x="56" y="184">            absent, total } }</text>
+  <text class="small" x="56" y="212">read from the checkout named by</text>
+  <text class="small" x="56" y="228">checkout_path; nothing else is consulted</text>
+
+  <line class="line" x1="360" y1="166" x2="424" y2="166" marker-end="url(#a)"/>
+  <text class="small" x="362" y="158">reads</text>
+
+  <rect class="good" x="424" y="78" width="220" height="176" rx="6"/>
+  <text class="sub" x="440" y="102">crew(view="scores")</text>
+  <text class="mono" x="440" y="128">plan=&#8230; node=&#8230; run_id=&#8230;</text>
+  <text class="mono" x="440" y="152">review_scores(rows,</text>
+  <text class="mono" x="440" y="170">              plan, node, run_id)</text>
+  <text class="small" x="440" y="196">each filter binds the row&#8217;s own</text>
+  <text class="small" x="440" y="212">attributes, so a score is read</text>
+  <text class="small" x="440" y="228">against the job that earned it</text>
+
+  <line class="line" x1="644" y1="166" x2="688" y2="120" marker-end="url(#a)"/>
+  <line class="line" x1="644" y1="166" x2="688" y2="196" marker-end="url(#a)"/>
+  <line class="line" x1="644" y1="166" x2="688" y2="272" marker-end="url(#a)"/>
+
+  <rect class="good" x="688" y="78" width="172" height="60" rx="6"/>
+  <text class="mono" x="700" y="100">status: "parsed"</text>
+  <text class="mono" x="700" y="118">5 dimensions + total</text>
+
+  <rect class="warn" x="688" y="166" width="172" height="60" rx="6"/>
+  <text class="warntext" x="700" y="188">review never stored &#8594;</text>
+  <text class="warntext" x="700" y="206">row is left out, not zeros</text>
+
+  <rect class="bad" x="688" y="254" width="172" height="60" rx="6"/>
+  <text class="badtext" x="700" y="276">status: "unparsed" &#8594;</text>
+  <text class="badtext" x="700" y="294">scores {}, total null</text>
+
+  <rect class="lane" x="40" y="292" width="620" height="116" rx="6"/>
+  <text class="sub" x="56" y="316">what the three shapes must not collapse into</text>
+  <text class="t" x="56" y="340">A row of zeros and a row that is absent are different readings: the first says the reviewer</text>
+  <text class="t" x="56" y="360">measured zero, the second says no measurement exists. An unparsed review keeps its status,</text>
+  <text class="t" x="56" y="380">so it reads unlike both. Dropping the guard on the stored block reddens the absence case.</text>
+
+  <rect class="lane" x="40" y="424" width="820" height="76" rx="6"/>
+  <text class="sub" x="56" y="448">at the base revision</text>
+  <rect class="bad" x="56" y="458" width="250" height="26" rx="5"/>
+  <text class="mono" x="68" y="476">review_scores(rows, &#8230;) &#8212; no caller</text>
+  <line class="dash" x1="312" y1="471" x2="396" y2="471"/>
+  <text class="badtext" x="404" y="476">the block was written by every promotion and read by nothing</text>
+
+  <text class="small" x="40" y="528">Gate: the new file plus every existing file covering review_scores or the crew read views, each arm in a scratch tree.</text>
+  <text class="small" x="40" y="546">Control: dropping the stored-block guard reddens nothing else.</text>
+</svg>
