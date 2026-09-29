@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="A delivered run owes the review its tier requires">
+  <meta name="plan-summary" content="Promotion reads the review obligation from the delivery it proceeds on -- the terminal manifest released for this attempt -- so a delivered run whose recorded process is still alive owes its tier's review instead of promoting unreviewed.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,review,evidence">
+  <title>A delivered run owes the review its tier requires | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-live-worker-still-owes-its-review" data-reckon="landed" data-when="2026-09-29">
+  <h2>A delivered run owes the review its tier requires</h2>
+  <p>The review gate in <code>reckon/crew/promotion.py</code> derived
+  <code>review_required</code> from the live pointer's classification alone: <code>scoring</code>,
+  or <code>promotable</code> with a stale review head. A run that has delivered a terminal manifest
+  while its recorded process is still alive classifies as <code>running</code> -- the classifier
+  defers that outcome rather than calling it delivered -- so it matched neither arm. The gate had
+  therefore disarmed itself for exactly those runs: they promoted unreviewed with no waiver, and a
+  waiver offered for one was refused as a waiver of nothing. <code>_require_review_waiver</code> now
+  reads the obligation from the delivery the promotion proceeds on, the terminal manifest released
+  for this attempt (<code>_release_terminal_manifest</code>), so a delivered run owes its tier's
+  review whether or not its process has stopped and <code>--waive-unreviewed-promotion</code> is
+  admitted as the waiver of that obligation.</p>
+  <p>Measured on the worktree at <code>296c44a3c</code>. The five ledger cases named by the brief's
+  report pass (<code>logs/five-cases-after-edit.log</code>, <code>EXIT=0</code>), including
+  <code>test_completion_promotes_the_pointer_into_the_repositorys_ledger</code> and
+  <code>test_promotion_refuses_a_merge_conflicted_ledger</code>, with
+  <code>tests/test_ledger.py</code> unedited. The new case promotes a run whose manifest is terminal
+  and whose recorded pid is the live test process -- so the classifier's <code>running</code> arm is
+  proven from the kernel, not assumed -- and asserts the no-waiver promotion is refused while the
+  waived promotion is admitted. Restoring the classification-only reading in a scratch copy of the
+  head turns that case red with <code>DID NOT RAISE CrewError</code>: the no-waiver case promotes
+  unreviewed instead of being refused
+  (<code>logs/negative-control-classification-only-reading.log</code>).</p>
+  <p>The gate population -- the 34 test files that import <code>reckon.crew.promotion</code> -- ran
+  374 passed at base (<code>logs/gate-base-60708b078.log</code>, <code>EXIT=0</code>); the head arm
+  is recorded in the manifest with its failure ids. One test outside that population is reddened by
+  the change: <code>tests/test_ledger.py::test_a_promoted_record_names_the_member_and_its_session</code>
+  promotes a delivered run at a review tier with no stored review and no waiver, and passing only
+  because the gate was open is the defect this change removes, so it fails at head while passing at
+  base. It lies outside this node's write fence and is reported for a scope widening rather than
+  edited here; the selection criterion is the reason it was missed, not an oversight, because
+  <code>test_ledger.py</code> reaches <code>crew.complete</code> without importing the module by
+  name.</p>
+</article>
+</body>
+</html>
