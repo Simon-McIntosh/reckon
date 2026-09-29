@@ -36,9 +36,12 @@
           fenced run's boundary check reads: the run's own worktree and the repository's
           main checkout. The main checkout stays in the set as a second line behind the
           fence, because a write there goes live for every session on the repository.</li>
-        <li>The launch records whether the fence was composed as
-          <code>record["fenced"] = FENCE_WORKERS</code> in the dispatch record and the
-          supervisor spec.</li>
+        <li>The launch records whether the fence was composed, read from the
+          composed launch plan's own argv rather than from the request to compose
+          one: <code>record["fenced"] = _plan_composed_the_fence(plan)</code> in the
+          dispatch record and the supervisor spec. A cli launch whose plan carries
+          the fence wrapper records <code>True</code>; an in-harness launch, which
+          composes no plan here and no fence argv, records <code>False</code>.</li>
         <li>Both dispatch-side snapshot writes (<code>dispatch.dispatch</code> for the
           inline launch and <code>dispatch._write_boundary_tree_snapshot</code> for the
           supervisor and delegated lanes) pass the two roots when the record is fenced.</li>
@@ -68,11 +71,16 @@
 
     <section id="evidence">
       <h2>Evidence</h2>
-      <p><code>tests/test_boundary_check_reads_two_trees.py</code> (6 passed under the root
+      <p><code>tests/test_boundary_check_reads_two_trees.py</code> (8 passed under the root
         <code>.venv</code> python) drives a temporary repository with fifty registered
         worktrees and a <code>git</code> shim on <code>PATH</code> counting
         <code>status</code> calls:</p>
       <ul>
+        <li>a cli dispatch whose launch plan carries the fence records
+          <code>fenced</code> true and snapshots 2 trees; an in-harness dispatch records
+          <code>fenced</code> false, snapshots the full registry, and its promotion makes
+          that many status calls — both driven through <code>dispatch</code> itself, not
+          a seeded record;</li>
         <li>a fenced snapshot holds 2 trees and makes 2 status calls; an unfenced one holds
           51 and makes 51;</li>
         <li>a fenced promotion makes 2 status calls and an unfenced one 51;</li>
@@ -86,10 +94,20 @@
       </ul>
       <p>The importing-test-file suite over <code>reckon.crew.routing</code>,
         <code>reckon.crew.promotion</code> and <code>reckon.crew.dispatch</code> (
-        <code>pytest -n 8</code>, separate <code>--basetemp</code> per arm) shows
-        <strong>0 added failures</strong> between the base revision and the head: 33
-        failures both arms, the same ids. One failure differed each way and each passes
-        serially on both arms, so the difference is parallel-load flake, not this change.</p>
+        <code>pytest -n 8</code>, separate <code>--basetemp</code> per arm) shows 33
+        failed / 1076 passed / 2 skipped at head against 33 failed / 1070 passed / 2
+        skipped at base. One id differed each way:
+        <code>tests/test_crew.py::test_shadow_inherits_primary_time_budget_instead_of_role_default</code>
+        red at head only, and
+        <code>tests/test_no_member_dispatch_runs_alone.py::test_two_unnamed_reviews_launch_with_disposable_members</code>
+        red at base only. Both pass serially on both arms
+        (<code>suite-flake-check.log</code>). The head-side id matches the shared fixed
+        manifest path the suite plan's section 2 records as making <code>test_shadow_*</code>
+        ids race under <code>xdist</code>: the canonical node helper pins
+        <code>manifest_path</code> to <code>/tmp/node-a-manifest.md</code>, so a
+        concurrent test writing a terminal manifest there inside this test's
+        dispatch-to-complete window makes promotion read a foreign manifest and refuse.
+        It is pre-existing <code>xdist</code> flake, not this change.</p>
     </section>
 
     <section id="landing">
