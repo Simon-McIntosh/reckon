@@ -449,6 +449,16 @@ _COMMITLESS_ROLES: frozenset[str] = frozenset({"review", "investigate"})
 # character after the letters means a longer word that merely begins with them.
 _ABSENCE_BOUNDARY = r"(?!\w)"
 
+# The boundary the ``changed_paths`` field needs, which is tighter because a
+# value there may itself be a path. ``none.txt`` is a filename, not a
+# declaration of none, so after the absence word only the end of the value, a
+# whitespace character, or a single punctuation character that is itself
+# followed by whitespace or the end counts. That keeps the sentence shapes
+# ``none. review only``, ``none, no repository change`` and ``none (the review
+# is the deliverable)`` while refusing ``none.txt``, ``none/dir`` and ``nil.rs``,
+# whose punctuation runs straight into a word character.
+_PATH_ABSENCE_BOUNDARY = r"(?=$|\s|[^\w\s](?:\s|$))"
+
 _FIELD_LINE = re.compile(r"^([A-Za-z_][\w-]*)\s*:\s*(.*)$")
 
 
@@ -490,12 +500,33 @@ def _opens_with_an_absence_word(value: str) -> bool:
     )
 
 
-def _commitless_field_declares_absence(
-    manifest_text: str, record: Mapping[str, Any], key: str
-) -> bool:
-    """Whether a commitless run's ``key`` field declares an absence.
+def _opens_with_a_path_absence_word(value: str) -> bool:
+    """Whether a raw ``changed_paths`` value opens with an absence word.
 
-    A report-only node writes one sentence into the field — ``commits: none
+    The ``changed_paths`` counterpart to ``_opens_with_an_absence_word``, and it
+    is deliberately narrower. A value in this field may itself be a path, so a
+    boundary that accepts any non-word character would read the filename
+    ``none.txt`` as the word ``none`` followed by a full stop — the declaration
+    swallowed, the file's change left with no commit to carry it. The word must
+    therefore end at the end of the value, at whitespace, or at a single
+    punctuation character that is itself followed by whitespace or the end:
+    ``none. review only`` and ``none, no repository change`` still declare, while
+    ``none.txt``, ``none/dir`` and ``nil.rs`` do not.
+    """
+    stripped = value.strip()
+    return any(
+        re.match(rf"{re.escape(word)}{_PATH_ABSENCE_BOUNDARY}", stripped, re.IGNORECASE)
+        for word in _MANIFEST_NOTHING
+        if word
+    )
+
+
+def _commitless_raw_field(
+    manifest_text: str, record: Mapping[str, Any], key: str
+) -> str | None:
+    """One field's raw value when a commitless role wrote the manifest.
+
+    A report-only node writes one sentence into a field — ``commits: none
     (review node, no repository change)``, ``changed_paths: none under the
     repository; the sole deliverable is the report``. The list reader splits the
     field on commas and empties a field holding only an absence word, so once
@@ -503,35 +534,35 @@ def _commitless_field_declares_absence(
     ``['none (review node', 'no repository change)']`` and the second as
     ``['no repository change']``. Read entry by entry, the surviving tail looks
     like an unresolvable citation and the line has to be blanked by hand — the
-    symptom this recognition removes.
+    symptom the raw-field reading removes.
 
-    So the declaration is read from the raw value the node wrote, by its first
-    token: the value declares absence when, after leading whitespace, it opens
-    with one of the absence words the reports module defines and that word
-    stands alone — at the end of the value or before any character that is not a
-    letter, digit or underscore. A value whose first token is anything else, a
-    revision or a path included, is not a declaration.
-
-    The reading is given only to a role that carries no repository work. A role
-    that commits keeps the existing entry-by-entry reading, so a field opening
-    with ``none`` beside further text is still resolved and still refused when
-    that text names nothing.
+    The value is returned only for a role that carries no repository work. A
+    role that commits keeps the existing entry-by-entry reading, so a field
+    opening with ``none`` beside further text is still resolved and still refused
+    when that text names nothing.
     """
     from reckon.crew.recovery import _pointer_role
 
     if _pointer_role(record) not in _COMMITLESS_ROLES:
-        return False
-    raw = _raw_manifest_field(manifest_text, key)
-    if raw is None:
-        return False
-    return _opens_with_an_absence_word(raw)
+        return None
+    return _raw_manifest_field(manifest_text, key)
 
 
 def _commits_field_declares_absence(
     manifest_text: str, record: Mapping[str, Any]
 ) -> bool:
-    """Whether a commitless run's ``commits`` field declares an absence."""
-    return _commitless_field_declares_absence(manifest_text, record, "commits")
+    """Whether a commitless run's ``commits`` field declares an absence.
+
+    The ``commits`` field follows the permissive boundary — the absence word
+    ending at the value edge or at any character that is not a letter, digit or
+    underscore. It is safe here because a commit value cannot be a path: a
+    revision citation either is the declared absence or names a commit, so
+    reading ``none`` before a full stop as the declaration costs nothing, and
+    the shapes a node actually writes (``none.``, ``none (review node)``,
+    ``none under the repository``) all have to be caught.
+    """
+    raw = _commitless_raw_field(manifest_text, record, "commits")
+    return raw is not None and _opens_with_an_absence_word(raw)
 
 
 def _changed_paths_field_declares_absence(
@@ -539,16 +570,19 @@ def _changed_paths_field_declares_absence(
 ) -> bool:
     """Whether a commitless run's ``changed_paths`` field declares an absence.
 
-    The same rule the ``commits`` field follows reads this one: a report-only
-    node writes ``changed_paths: none. review only`` or ``changed_paths: none,
-    no repository change`` and that declares no changed repository path. The
-    list reader cannot answer it — it splits the field on commas and leaves
-    punctuation attached — so the raw value the node wrote is read instead. A
-    field naming a real path does not open with an absence word and is
-    untouched, so the paths it names are still the paths a commit is required
-    for.
+    The same raw-field reading the ``commits`` field uses, but with the tighter
+    path boundary, because a value in this field may itself be a path. That one
+    difference is why the two fields cannot share a single rule: ``none.txt`` is
+    a plausible committed filename whose leading word is ``none``, and the
+    permissive boundary would swallow it as a declaration, letting a run that
+    changed that file promote with no commit and no recorded scope. The path
+    boundary refuses it here, and ``_changed_paths_declare_no_paths`` adds the
+    corroborating check that a first entry naming a file in the promoted tree
+    keeps the field a path list whatever its shape. A field naming a real path
+    that does not open with an absence word is untouched by either.
     """
-    return _commitless_field_declares_absence(manifest_text, record, "changed_paths")
+    raw = _commitless_raw_field(manifest_text, record, "changed_paths")
+    return raw is not None and _opens_with_a_path_absence_word(raw)
 
 
 def _manifest_text(record: Mapping[str, Any]) -> str:
@@ -1720,22 +1754,54 @@ def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:
     )
 
 
+def _first_changed_path_is_a_file(
+    manifest: Mapping[str, Any], record: Mapping[str, Any]
+) -> bool:
+    """Whether the first ``changed_paths`` entry names a file in the run's tree.
+
+    The corroborating half of the declaration reading, and the one that holds
+    even when a value's shape looks like prose. A field whose first entry names a
+    file that exists in the promoted revision's tree is a path list whatever
+    else it resembles, so a run that really changed a file called ``none`` or
+    ``nil`` keeps the path and the commit it requires. A relative entry resolves
+    against the run's repository root, as the manifest's own convention has it,
+    and an absolute entry as written; a run that records no repository has no
+    tree to check and answers no.
+    """
+    items = [str(item).strip() for item in (manifest.get("changed_paths") or ())]
+    if not items or not items[0]:
+        return False
+    root = str(record.get("repo") or record.get("worktree") or "").strip()
+    candidate = Path(items[0]).expanduser()
+    if not candidate.is_absolute():
+        if not root:
+            return False
+        candidate = Path(root).expanduser() / candidate
+    try:
+        return candidate.exists()
+    except OSError:
+        return False
+
+
 def _changed_paths_declare_no_paths(
     manifest: Mapping[str, Any], record: Mapping[str, Any]
 ) -> bool:
     """Whether a manifest's ``changed_paths`` field declares no repository paths.
 
-    Two shapes say it. A prose sentence that opens with the declaration word —
-    the shape ``_prose_changed_paths_name_no_paths`` reads from the parsed list
-    — is a no-paths declaration for any role, so a committing role keeps the
-    entry-by-entry behaviour it has always had. A commitless role additionally
-    gets the raw-field reading its ``commits`` field follows, so ``none. review
-    only`` and ``none, no repository change`` are honoured too: the list reader
-    splits the comma shape and leaves punctuation attached to the full stop, so
-    both would otherwise resolve as paths and be refused. A field that names a
-    real path does not open with an absence word, so a committing role still
-    needs the commit for it.
+    Three tests, in order. A first entry that names a file in the promoted tree
+    settles it as a path list at once — evidence the shape reading cannot
+    overrule, because ``none`` and ``nil`` are plausible filenames and the shape
+    an absence word leaves can be spoofed by a path. A prose sentence that opens
+    with the declaration word — the shape ``_prose_changed_paths_name_no_paths``
+    reads from the parsed list — is a no-paths declaration for any role, so a
+    committing role keeps the entry-by-entry behaviour it has always had. A
+    commitless role additionally gets the raw-field reading its ``commits`` field
+    follows, with the tighter path boundary, so ``none. review only`` and
+    ``none, no repository change`` are honoured while ``none.txt`` and
+    ``nil.rs`` stay the paths they are.
     """
+    if _first_changed_path_is_a_file(manifest, record):
+        return False
     if _prose_changed_paths_name_no_paths(manifest):
         return True
     return _changed_paths_field_declares_absence(_manifest_text(record), record)

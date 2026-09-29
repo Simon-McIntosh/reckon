@@ -53,6 +53,12 @@ RUN_IDS = (
     "r-20260928T100000000019-review-changed-paths-close-paren",
     "r-20260928T100000000020-review-changed-paths-real-path",
     "r-20260928T100000000021-implement-changed-paths-full-stop",
+    "r-20260928T100000000022-review-changed-paths-none-txt",
+    "r-20260928T100000000023-review-changed-paths-nil-rs",
+    "r-20260928T100000000024-review-changed-paths-dash-x-csv",
+    "r-20260928T100000000025-review-changed-paths-full-stop-prose",
+    "r-20260928T100000000026-review-changed-paths-prose-deliverables",
+    "r-20260928T100000000027-review-commits-full-stop-prose",
 )
 
 # The sentence a review writes when it has no repository change to cite, in the
@@ -106,6 +112,33 @@ CHANGED_PATHS_PUNCTUATION_SHAPES = (
     (
         "r-20260928T100000000019-review-changed-paths-close-paren",
         "none (the review is the deliverable)",
+    ),
+)
+
+# A changed_paths value that is a real filename opening with the letters of an
+# absence word. The permissive non-word boundary would read ``none.txt`` as the
+# word ``none`` and a full stop, so a review that changed ``none.txt`` would
+# promote with no commit and no recorded scope. The tighter path boundary and
+# the file-existence check each refuse it. The names are seeded into the
+# repository so the existence check is exercised, not only the shape.
+CHANGED_PATHS_FILENAMES_OPENING_WITH_AN_ABSENCE_WORD = (
+    ("r-20260928T100000000022-review-changed-paths-none-txt", "none.txt"),
+    ("r-20260928T100000000023-review-changed-paths-nil-rs", "nil.rs"),
+    ("r-20260928T100000000024-review-changed-paths-dash-x-csv", "-x.csv"),
+)
+
+# Declarations that carry further text after the absence word: a full stop and
+# an opening word, and a semicolon-delimited prose sentence. Both must still
+# promote on a review once the shape rule is tightened.
+CHANGED_PATHS_DECLARATIONS_WITH_FURTHER_TEXT = (
+    (
+        "r-20260928T100000000025-review-changed-paths-full-stop-prose",
+        "none. no repository path",
+    ),
+    (
+        "r-20260928T100000000026-review-changed-paths-prose-deliverables",
+        "none under the repository; the deliverables are the report, the figure "
+        "and the fragment",
     ),
 )
 
@@ -642,3 +675,109 @@ def test_an_implement_run_refuses_a_full_stop_in_changed_paths(
 
     assert pointer_path(run_id).is_file()
     assert ledger.runs(PROJECT, root=repository) == []
+
+
+@pytest.mark.parametrize(
+    ("run_id", "filename"),
+    CHANGED_PATHS_FILENAMES_OPENING_WITH_AN_ABSENCE_WORD,
+)
+def test_a_changed_path_named_like_an_absence_word_is_still_a_path(
+    repository: Path, tmp_path: Path, run_id: str, filename: str
+) -> None:
+    """A filename that opens with an absence word is a path, not a declaration.
+
+    ``none.txt`` and ``nil.rs`` merely begin with the letters of an absence
+    word, and the permissive boundary the commits field can afford would read
+    each as the word and its punctuation, letting the review promote with no
+    commit and the ledger record no scope. The path boundary refuses the shape,
+    and the first entry naming a file that exists in the promoted tree keeps the
+    field a path list regardless. The review is therefore refused exactly as it
+    was before the absence reading existed, at the dispatch base.
+    """
+    (repository / filename).write_text("changed\n", encoding="utf-8")
+    _git(repository, "add", "--", filename)
+    _git(repository, "commit", "-q", "-m", f"test: change {filename}")
+
+    manifest = _manifest(
+        tmp_path,
+        run_id,
+        changed_paths=filename,
+        commits="none",
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="review",
+        node_id=f"review-of-{PLAN}",
+    )
+
+    with pytest.raises(crew.CrewError, match="manifest field 'commits' is missing"):
+        crew.complete(run_id, gate="passed", root=repository)
+
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+@pytest.mark.parametrize(
+    ("run_id", "changed_paths"),
+    CHANGED_PATHS_DECLARATIONS_WITH_FURTHER_TEXT,
+)
+def test_a_tightened_declaration_shape_still_promotes_on_a_review(
+    repository: Path, tmp_path: Path, run_id: str, changed_paths: str
+) -> None:
+    """The tighter boundary keeps the sentence shapes a node writes.
+
+    A full stop followed by prose and a semicolon-delimited sentence each end
+    the absence word at a boundary the path rule still accepts, so the review
+    promotes with no commit and no hand edit.
+    """
+    manifest = _manifest(
+        tmp_path,
+        run_id,
+        changed_paths=changed_paths,
+        commits=REVIEW_COMMITS_PROSE,
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="review",
+        node_id=f"review-of-{PLAN}",
+    )
+
+    promoted = _promotes(repository, run_id)
+
+    assert promoted["record"]["commits"] == []
+    assert not pointer_path(run_id).exists()
+
+
+def test_the_commits_field_keeps_its_permissive_boundary(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A full stop after the absence word still declares no commit.
+
+    The commits field is not tightened with changed_paths: a commit value cannot
+    be a path, so the permissive boundary is safe there and the shapes a node
+    writes must keep promoting. Changing only the path field is the point.
+    """
+    run_id = RUN_IDS[26]
+    delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
+    manifest = _manifest(
+        tmp_path,
+        run_id,
+        changed_paths=str(delivered),
+        commits="none. no repository change",
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="review",
+        node_id=f"review-of-{PLAN}",
+    )
+
+    promoted = _promotes(repository, run_id)
+
+    assert promoted["record"]["commits"] == []
+    assert not pointer_path(run_id).exists()
