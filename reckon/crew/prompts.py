@@ -569,8 +569,8 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   measurement_cwd: <only for a gate or base-arm measurement run in a scratch tree: the resolved working directory the run resolved from>
   negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. The log's first line repeats the declared mutation verbatim, so a log that failed for any other reason is refused
   negative_control_note: <where an explanation goes: one line of commentary on the red log named above, since that value stands alone; omit when the log is self-explanatory>
-  baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line, false otherwise, and null or absent is unreadable>
-  after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line, false otherwise, and null or absent is unreadable>
+  baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable>
+  after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable>
   failure_attribution: <armed-only, test role JSON {{failure_id: candidate_commit}} for each newly added failure>
   artifacts: <paths plus headline metrics>
   evidence_inputs: <facts the orchestrator needs for writeback>
