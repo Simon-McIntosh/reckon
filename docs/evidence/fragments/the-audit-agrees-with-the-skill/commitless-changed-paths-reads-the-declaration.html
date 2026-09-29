@@ -22,6 +22,19 @@
         base had refused the same manifest. The two fields cannot share one boundary, because only one of
         them can hold a path.
       </p>
+      <p>
+        Review found a second gap in that value, one layer further in. A manifest field whose value is
+        <em>exactly</em> one absence word &mdash; <code>none</code>, <code>nil</code>, <code>n/a</code>,
+        <code>-</code> &mdash; is emptied by <code>parse_manifest</code> before any boundary is consulted,
+        so the guard returned at its first clause and the file-existence check was never reached. A
+        repository that really contained a changed file named <code>none</code> (or <code>nil</code>,
+        <code>n/a</code>, <code>-</code>) with <code>changed_paths: none</code> and
+        <code>commits: none</code> was therefore read as a declaration and promoted with no commit and no
+        scope. The fix decides from the raw field text before the parsed list is consulted: for a
+        commitless role, a stripped <code>changed_paths</code> value that is a single token naming a file
+        in the promoted revision's tree is a path, and the run then needs the commit that contains it, as
+        for any other changed path.
+      </p>
       <figure>
         <img src="/reckon/figures/the-audit-agrees-with-the-skill/commitless-changed-paths-reads-the-declaration/absence-boundaries-by-field.png"
              alt="The commits field uses the permissive non-word boundary; the changed_paths field uses a tighter path boundary and a file-existence check, so none.txt and nil.rs stay paths while none. and none under the repository still declare none.">
@@ -46,34 +59,40 @@
           <tr><td><code>none. no repository path</code></td><td>review</td><td>promotes, no commits</td></tr>
           <tr><td><code>none under the repository; the deliverables are&hellip;</code></td><td>review</td><td>promotes, no commits</td></tr>
           <tr><td><code>none.txt</code>, <code>nil.rs</code>, <code>-x.csv</code> (seeded files)</td><td>review</td><td>refused (manifest field 'commits' is missing)</td></tr>
+          <tr><td><code>none</code> / <code>nil</code> / <code>n/a</code> / <code>-</code> (a file of that exact name is seeded)</td><td>review</td><td>refused (manifest field 'commits' is missing)</td></tr>
+          <tr><td><code>none</code> / <code>nil</code> / <code>n/a</code> / <code>-</code> (no such file exists)</td><td>review</td><td>promotes, no commits</td></tr>
           <tr><td><code>candidate.txt</code> (a real path)</td><td>review</td><td>refused (manifest field 'commits' is missing)</td></tr>
           <tr><td><code>none. no repository change</code></td><td>implement</td><td>refused (manifest field 'commits' is missing)</td></tr>
           <tr><td><code>commits: none. no repository change</code></td><td>review</td><td>promotes &mdash; the commits boundary is unchanged</td></tr>
         </tbody>
       </table>
       <p>
-        <strong>Negative control.</strong> The declared mutation &mdash; <em>read changed_paths with the
-        commits absence boundary, dropping the path-shape and the file-name checks</em> &mdash; reddens the
-        new cases in the order they run: the <code>none.txt</code> case first, then <code>nil.rs</code>,
-        each refused at the dispatch base but promoting under the mutation. The red log is
+        <strong>Negative control.</strong> The declared mutation &mdash; <em>drop the raw-text existence check
+        so a bare changed_paths value is read only from the parsed list</em> &mdash; reddens the bare-value
+        case first: the repository that really contains a changed file called <code>none</code>, with
+        <code>changed_paths: none</code> and <code>commits: none</code>, promotes under the mutation where
+        the head refuses it. The red log is
         <code>negative-control-changed-paths.log</code> under the run directory, whose first line repeats
-        the declared mutation verbatim.
+        the declared mutation verbatim, 4 failed and 4 passed over the targeted cases.
       </p>
       <p>
         <strong>Gate.</strong> The 25 <code>tests/test_*promot*.py</code> files plus
-        <code>tests/test_cited_identifier_resolves.py</code> (26 files) ran at the new head
-        <code>93edeb54</code> and, with <code>promotion.py</code> restored to the dispatch base
-        <code>658ba243</code>, at that base. Head: 249 passed, 0 failed (<code>gate-head.log</code>,
-        <code>-n 6</code>). The new cases are green at the head and red at the base, so the change adds
-        zero failures by id against the base. A full read of the base run is in
-        <code>gate-base.log</code>.
+        <code>tests/test_cited_identifier_resolves.py</code> (26 files) ran with <code>-rf -n 6</code> at
+        the head <code>1d37a921</code> (tree <code>83d9f4ba</code>) and, with <code>promotion.py</code>
+        restored to the dispatch base <code>658ba243</code> (tree <code>22f17d32</code>), at that base.
+        Head: 257 passed, 0 failed (<code>gate-head.log</code>). Base: 8 failed, 249 passed
+        (<code>gate-base.log</code>), and all 8 are this node's own new cases &mdash; four from the
+        path-boundary fix and four bare-value file cases &mdash; so the change adds zero failures by id
+        against the base.
       </p>
     <p>
       <strong>Landing note.</strong> The behaviour is carried by
       <code>reckon/crew/promotion.py</code>: <code>_opens_with_a_path_absence_word</code> holds the
-      tighter boundary, <code>_first_changed_path_is_a_file</code> holds the existence check, and
-      <code>_changed_paths_declare_no_paths</code> composes the two with the prose and committing-role
-      readings. <code>_commits_field_declares_absence</code> keeps the permissive boundary, and both
-      docstrings state which rule each field follows and why they differ.
+      tighter boundary, <code>_changed_path_entries</code> reads the raw field text so a bare value is
+      seen before the parsed list is consulted, <code>_path_exists_in_run_tree</code> holds the
+      existence check, and <code>_changed_paths_declare_no_paths</code> composes them with the prose and
+      committing-role readings. <code>_commitless_raw_field</code> is the shared role gate,
+      <code>_commits_field_declares_absence</code> keeps the permissive boundary, and the docstrings
+      state which rule each field follows and why they differ.
     </p>
 </article>
