@@ -97,7 +97,7 @@ def _ambient_placement_dir() -> Path:
     temporary home instead and the isolation check would pass on the wrong
     directory, so the path is pinned first and carried through the case.
     """
-    return placement.reservation_path(SYNTHETIC_PROJECT).parent
+    return placement.reservation_path().parent
 
 
 def _listing(directory: Path) -> list[str]:
@@ -197,7 +197,7 @@ def test_two_workers_share_one_reservation(
     # The record stays the one reservation, in the temporary home.
     record = placement.read_reservation(SYNTHETIC_PROJECT)
     assert record is not None and record["job_id"] == RESERVATION_ID
-    assert str(placement.reservation_path(SYNTHETIC_PROJECT)).startswith(str(home))
+    assert str(placement.reservation_path()).startswith(str(home))
     # And the ambient config home carries no trace of the run.
     assert _listing(ambient_dir) == ambient
     assert not (ambient_dir / "reservation.json").exists()

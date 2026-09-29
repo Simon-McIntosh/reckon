@@ -238,7 +238,8 @@ def test_the_dispatch_admission_refuses_past_the_roster_cap(
     """The cap is enforced where a dispatch is admitted, not only in a helper."""
     _isolate(monkeypatch, tmp_path)
     placement.publish_reservation({"job_id": "1274051"})
-    occupying = [{"run_id": f"r-{index}"} for index in range(25)]
+    placed = {"placement": {"scheduler": "srun", "options": ["--partition=all"]}}
+    occupying = [{"run_id": f"r-{index}", **placed} for index in range(25)]
 
     with pytest.raises(runs.CrewError) as refused:
         dispatch_module._refuse_over_reservation_roster(_placed_backend(), occupying)
@@ -247,67 +248,91 @@ def test_the_dispatch_admission_refuses_past_the_roster_cap(
     assert "resident memory per worker" in str(refused.value)
 
 
-def test_a_reservation_counts_only_the_workers_of_the_project_that_armed_it(
+def test_the_roster_counts_placed_runs_across_every_project(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """The roster bounds one project's workers, never every project's.
+    """The roster counts the runs actually placed, fleet-wide, not by project.
 
-    Measured 2026-09-23: one project declared a placement, the record it
-    published was host-global, and forty five runs across four repositories
-    were counted against a ceiling of twenty five while exactly one step ran
-    inside the allocation. Dispatch was refused workstation wide for four
-    minutes. The cap was right and its population was not.
+    Before: the count was scoped to the reading project, so a run placed into
+    the one allocation by another project occupied no seat in the roster that
+    admits every project's workers, and a project holding no reservation of its
+    own was unbounded by the reservation its runs actually ran inside.
+
+    After: every run whose record names a placement occupies the one shared
+    roster, and a run that was never placed holds no seat.
+
+    Measured 2026-09-23, the defect this replaces: one project declared a
+    placement, the record it published was host-global, and forty five runs
+    across four repositories were counted against a ceiling of twenty five
+    while exactly one step ran inside the allocation. The cap was right; its
+    population was not.
     """
     _isolate(monkeypatch, tmp_path)
-    placement.publish_reservation({"job_id": "1274051"}, "alpha")
+    placement.publish_reservation({"job_id": "1274051"})
 
-    # Twenty four of alpha's own, and a crowd belonging to other projects.
-    occupying = [
-        {"run_id": f"r-alpha-{index}", "project": "alpha"} for index in range(24)
-    ] + [{"run_id": f"r-beta-{index}", "project": "beta"} for index in range(40)]
-
-    # Alpha is one below its cap, so the foreign forty do not refuse it.
-    dispatch_module._refuse_over_reservation_roster(
-        _placed_backend(), occupying, "alpha"
+    placed = {"placement": {"scheduler": "srun", "options": ["--partition=all"]}}
+    occupying = (
+        [
+            {"run_id": f"r-alpha-{index}", "project": "alpha", **placed}
+            for index in range(12)
+        ]
+        + [
+            {"run_id": f"r-beta-{index}", "project": "beta", **placed}
+            for index in range(12)
+        ]
+        + [{"run_id": f"r-gamma-{index}", "project": "gamma"} for index in range(12)]
     )
 
-    # Its own twenty fifth does.
+    # Twenty four placed runs of two projects sit one below the cap of twenty
+    # five; the twelve runs that were never placed hold no seat.
+    dispatch_module._refuse_over_reservation_roster(_placed_backend(), occupying)
+
+    # The twenty fifth placed run, from either project, is refused.
     with pytest.raises(runs.CrewError) as refused:
         dispatch_module._refuse_over_reservation_roster(
             _placed_backend(),
-            occupying + [{"run_id": "r-alpha-24", "project": "alpha"}],
-            "alpha",
+            [*occupying, {"run_id": "r-beta-12", "project": "beta", **placed}],
         )
     assert "25" in str(refused.value)
 
-    # And beta, holding no reservation of its own, is unbounded by alpha's.
-    dispatch_module._refuse_over_reservation_roster(
-        _placed_backend(), occupying, "beta"
-    )
 
-
-def test_a_host_global_record_belongs_to_no_project(
+def test_the_one_record_is_read_by_every_project(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A pre-project record is read, and bounds nobody by inheritance.
+    """The record one project publishes is the record every project reads.
 
-    An existing host-global record must not silently become every project's
-    reservation on upgrade, which is the fleet-wide ceiling this keying exists
-    to remove. It stays readable so it is not orphaned, and a named project
-    does not fall back to it.
+    Before: a named project read only its own record and deliberately did not
+    fall back to the unkeyed one, so a project that did not hold the allocation
+    resolved nothing and every worker of a host-layer placement fell back to
+    the declared wrapping. After: the record is unkeyed, so a project that
+    never published it still resolves the shared allocation's job id.
     """
     _isolate(monkeypatch, tmp_path)
     placement.publish_reservation({"job_id": "1274051"})
 
     assert placement.read_reservation() is not None
-    assert placement.read_reservation("alpha") is None
+    assert placement.read_reservation("alpha")["job_id"] == "1274051"
+    assert placement.read_reservation("beta")["job_id"] == "1274051"
 
+
+def test_a_placed_backend_is_bounded_by_the_shared_roster(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A placed backend is bounded; the cap is not scoped to a project.
+
+    A project whose runs are placed is bounded by the shared reservation's
+    roster whichever project published the reservation.
+    """
+    _isolate(monkeypatch, tmp_path)
+    placement.publish_reservation({"job_id": "1274051"})
+
+    placed = {"placement": {"scheduler": "srun", "options": ["--partition=all"]}}
     occupying = [
-        {"run_id": f"r-alpha-{index}", "project": "alpha"} for index in range(40)
+        {"run_id": f"r-beta-{index}", "project": "beta", **placed}
+        for index in range(25)
     ]
-    dispatch_module._refuse_over_reservation_roster(
-        _placed_backend(), occupying, "alpha"
-    )
+    with pytest.raises(runs.CrewError):
+        dispatch_module._refuse_over_reservation_roster(_placed_backend(), occupying)
 
 
 def test_an_unplaced_backend_has_no_roster_of_ours(
