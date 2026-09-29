@@ -49,13 +49,13 @@ exercised, and the fragment names each hook script by path.
 from __future__ import annotations
 
 import json
-import os
 import shlex
 import sys
-import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Any
+
+from reckon._store import write_json_atomically
 
 # The two hook scripts the fragment binds. Both ship beside this module, which
 # is how the fragment resolves each absolute path: the snippet names the scripts
@@ -359,7 +359,6 @@ def _write_settings(
     path: Path, payload: dict[str, Any], original: bytes | None
 ) -> None:
     """Write the document atomically, refusing to overwrite a concurrent edit."""
-    encoded = (_render(payload) + "\n").encode()
     if original is None:
         if path.exists():
             raise HookInstallError(
@@ -377,15 +376,17 @@ def _write_settings(
             raise HookInstallError(
                 f"harness settings changed while being updated: {path}"
             )
-        mode = path.stat().st_mode
+        mode = path.stat().st_mode & 0o7777
 
-    temporary = path.with_name(f".{path.name}.reckon-{os.getpid()}-{time.time_ns()}")
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary.write_bytes(encoded)
-        if mode is not None:
-            temporary.chmod(mode)
-        os.replace(temporary, path)
+        write_json_atomically(
+            path,
+            payload,
+            indent=2,
+            sort_keys=False,
+            mode=mode,
+            fsync=False,
+            create_parents=True,
+        )
     except OSError as exc:
-        temporary.unlink(missing_ok=True)
         raise HookInstallError(f"cannot write harness settings {path}: {exc}") from exc

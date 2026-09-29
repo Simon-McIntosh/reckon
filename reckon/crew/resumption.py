@@ -51,6 +51,7 @@ from typing import Any
 
 from reckon import _backends, ledger
 from reckon import budget as budget_module
+from reckon._store import write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew.dispatch import (
     BudgetHold,
@@ -173,13 +174,15 @@ def _write_lane_probe_cache(
     project: str, backend_name: str, observation: Mapping[str, Any]
 ) -> None:
     path = lane_probe_cache_path(project, backend_name)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(f".{os.getpid()}.tmp")
-    temporary.write_text(
-        json.dumps(dict(observation), indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+    write_json_atomically(
+        path,
+        dict(observation),
+        indent=2,
+        sort_keys=True,
+        mode=None,
+        fsync=False,
+        create_parents=True,
     )
-    os.replace(temporary, path)
 
 
 def _normalise_lane_probe(

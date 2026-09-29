@@ -35,6 +35,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from reckon._observations import optional_number
 from reckon._timestamps import parse_utc
 from reckon.crew import staleness
 
@@ -154,7 +155,7 @@ def _as_reading(reading: Mapping[str, Any]) -> staleness.Reading:
     source = reading.get("source")
     state = reading.get("serving_state")
     return staleness.Reading(
-        used_percent=_as_number(reading.get("used_percent")),
+        used_percent=optional_number(reading.get("used_percent")),
         observed_at=_as_moment(reading.get("observed_at")),
         source=source.strip() if isinstance(source, str) else "",
         serving_state=(
@@ -174,13 +175,6 @@ def _absent(value: object) -> bool:
     if value is None:
         return True
     return isinstance(value, str) and not value.strip()
-
-
-def _as_number(value: object) -> float | None:
-    """Return ``value`` as a float, or ``None`` when it is not a number."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    return float(value)
 
 
 def _as_moment(value: object) -> datetime | None:

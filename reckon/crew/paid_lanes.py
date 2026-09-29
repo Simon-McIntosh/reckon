@@ -32,18 +32,17 @@ it is half-written would read a truncated account list as a real absence:
 
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 import shlex
 import sys
-import tempfile
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from reckon._store import write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew import window_reading
 
@@ -496,24 +495,15 @@ def write_document_atomically(
     reader sees either the previous document or the new one, never a half one.
     """
     resolved = document_path(path)
-    resolved.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(document, indent=2) + "\n"
-    with tempfile.NamedTemporaryFile(
-        "w",
-        encoding="utf-8",
-        dir=str(resolved.parent),
-        prefix=f".{resolved.name}.",
-        suffix=".tmp",
-        delete=False,
-    ) as handle:
-        pending_path = Path(handle.name)
-        handle.write(payload)
-    try:
-        os.replace(pending_path, resolved)
-    except BaseException:
-        with contextlib.suppress(OSError):
-            os.unlink(pending_path)
-        raise
+    write_json_atomically(
+        resolved,
+        document,
+        indent=2,
+        sort_keys=False,
+        mode=0o600,
+        fsync=False,
+        create_parents=True,
+    )
     return resolved
 
 

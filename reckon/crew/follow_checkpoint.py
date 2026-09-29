@@ -40,6 +40,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from reckon._store import write_json_atomically
+
 # The record's own schema version, so a later shape change is recognised rather
 # than misread as the current one.
 CHECKPOINT_VERSION = 1
@@ -207,7 +209,6 @@ def write(
     which is correct only for an offset taken from the path itself.
     """
     target = checkpoint_path(project, session)
-    target.parent.mkdir(parents=True, exist_ok=True)
     if identity is not None:
         recorded_identity: Mapping[str, Any] = {
             str(key): value for key, value in dict(identity).items()
@@ -226,12 +227,27 @@ def write(
         "offset": int(offset),
         "reported": {str(k): str(v) for k, v in dict(reported).items()},
     }
-    payload = json.dumps(record, sort_keys=True)
-    _replace_atomically(target, payload)
+    write_json_atomically(
+        target,
+        record,
+        indent=None,
+        sort_keys=True,
+        mode=None,
+        fsync=True,
+        fsync_directory=True,
+        create_parents=True,
+    )
 
 
 def _replace_atomically(target: Path, payload: str) -> None:
-    """Write ``payload`` to ``target`` so a reader sees old or new, never half.
+    """Write a raw text payload so a reader sees old or new, never half.
+
+    Retained rather than moved onto the shared JSON writer: the pane's history
+    is a log of JSON *lines* rewritten as a whole file, which one commit of the
+    document-oriented ``write_json_atomically`` cannot express — that writer
+    emits exactly one JSON value plus a newline. The checkpoint record itself
+    goes through the shared writer; this helper now serves only the history
+    rewrite in :func:`append_history`.
 
     A sibling temporary file carries the bytes and is renamed over the target,
     which is atomic within one directory. The file is flushed and fsynced first
