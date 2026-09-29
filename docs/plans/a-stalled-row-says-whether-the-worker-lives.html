@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-29">
-  <meta name="plan-version" content="87">
+  <meta name="plan-version" content="88">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -679,6 +679,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260929T191753796671-direct-resume-teardown-reads-its-own-home" data-who="reckon-build" data-when="2026-09-29T19:52:03.250Z">
     <div class="r-comment-body"><p>The home fixture in tests/test_direct_resume_needs_an_observed_death.py no longer fingerprints the real crew home before and after each case; the case's crew home is isolated under tmp_path with its resolution assertion unchanged, and the no-write proof is now the absence, read after the case, of the run directories and live pointers named for the run ids this file mints — a path only this test creates that no fleet write can move — gate 14 passed exit 0 at base 62e7fc4b9 and at head 949d6294e, three consecutive head runs 9 passed exit 0 each, negative control 9 errors exit 1 on the resolution assertion</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260929T195220702338-review-of-direct-resume-teardown-reads-its-own-home" data-who="reckon-build" data-when="2026-09-29T20:28:38.621Z">
+    <div class="r-comment-body"><p>Independent review of run r-20260929T191753796671-direct-resume-teardown-reads-its-own-home against base 62e7fc4b9 and head 1a4c99339 stored parsed, five dimensions scored goal_fidelity 19, evidence 18, scope_discipline 19, durability 17, fit 18, total 91, absent dimensions none, added_failure_count 0 with no ids derived from the run&#x27;s own gate-base.log and gate-head.log, one finding: the no-write probe re-derives the real crew home as ~/.config/reckon/crew while reckon&#x27;s resolver falls back to ~/docs-server, so on a legacy-root install the absence reading is taken of a tree the case would not write into.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260928T083019129591-review-of-pin-the-unreadable-word-in-its-reason" data-who="reckon-build" data-when="2026-09-28T09:21:05.311Z">
     <div class="r-comment-body"><p>review stored at 564a3a42: total 94, zero added failures; one finding on a negative-control log's revision field</p></div>
