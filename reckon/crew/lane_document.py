@@ -44,6 +44,13 @@ at the reading's instant under a ``_instant`` key, and the instant value is the
 one that describes the moment the lane observed. The ``withheld`` block is
 deliberately not read: a figure the lane withheld is a figure the lane declined
 to publish as its own, so it stays ``unknown`` here.
+
+The document's load and its achieved rate are read here too, so a key the
+document carries has one reader rather than one per caller: ``read_lane_counts``
+resolves the generating and waiting populations a routing decision weighs, and
+``read_lane_throughput`` reads the block describing the rate the generating
+population achieved, with the vintage and the denominator that make a derived
+figure interpretable.
 """
 
 from __future__ import annotations
@@ -58,6 +65,15 @@ from reckon._timestamps import parse_utc
 
 UNKNOWN = "unknown"
 
+# The document's names for the two populations a routing decision weighs: what
+# the engine is actively generating, and what is queued behind it. A document
+# naming the generating count directly is read as such; the lane's current
+# publication calls it ``running``, the requests occupying the engine, and that
+# is the fallback. Either key absent leaves the count unknown and never zero, so
+# a lane with nothing running and a lane that cannot be measured stay distinct.
+_GENERATING_KEYS = ("generating", "running")
+_WAITING_KEYS = ("waiting",)
+
 # Every field the reader resolves independently. Each maps to the document
 # keys that may carry it, most specific first: the bare key names the rolling
 # figure and the ``_instant`` key the figure the lane took at ``observed_at``.
@@ -65,8 +81,8 @@ UNKNOWN = "unknown"
 # resolves the field.
 _FIELD_KEYS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("headroom", ("headroom", "headroom_instant")),
-    ("running", ("running",)),
-    ("waiting", ("waiting",)),
+    ("running", _GENERATING_KEYS),
+    ("waiting", _WAITING_KEYS),
     (
         "concurrent_requests",
         ("concurrent_requests", "concurrent_requests_instant"),
@@ -94,6 +110,12 @@ SHELF_LIFE_KEY = "suggested_shelf_life_seconds"
 GATE_KEY = "router_generation_gate"
 ADMISSION_KEY = "admission"
 _GATE_FIELDS = ("width", "in_flight", "waiting")
+
+# The block describing the rate the lane's generating population achieved. Its
+# figures are read together with the vintage and the denominator that make a
+# derived rate interpretable; a block carrying none of them still says the lane
+# published no rate rather than a rate of zero.
+_THROUGHPUT_KEY = "throughput"
 
 # What each admission verdict means for a caller deciding whether to send work.
 # A lane publishes congested, full, open or paused, and the reason must name
@@ -358,3 +380,134 @@ def read_lane_document_file(
     if report.get("malformed"):
         report["detail"] = f"lane document {str(resolved_path)!r}: {report['detail']}"
     return report
+
+
+def _resolved_count(
+    payload: Mapping[str, Any], keys: tuple[str, ...]
+) -> int | float | str:
+    """Resolve one of the lane's counts, or ``unknown`` when it published none.
+
+    Zero is a measurement and stays one: a lane publishing ``running: 0`` is a
+    lane with nothing resident, while a document without the key says nothing
+    about its load, and reading the second as the first would report a quiet
+    lane for an unmeasured one.
+    """
+    value = _number(_first_value(payload, keys))
+    return UNKNOWN if value is None else value
+
+
+def read_lane_counts(document: object) -> dict[str, Any]:
+    """Resolve the counts a routing decision weighs, each on its own.
+
+    ``generating`` is the count of requests the lane is actively generating
+    and ``waiting`` the count queued behind them. A document publishing
+    neither spelling of the generating count, or omitting the queue, leaves
+    that count ``unknown`` -- never zero, because a zero is a measurement the
+    document did not make, and a lane nobody is using must not read like a
+    lane nobody can measure. A count the document did publish is carried even
+    though its sibling is ``unknown``: a lane drains its pool and nulls its
+    headroom while work is still running, which is exactly when these two are
+    wanted. A document that is absent or not an object reports both counts
+    ``unknown`` rather than raising.
+    """
+    if not isinstance(document, Mapping):
+        return {"generating": UNKNOWN, "waiting": UNKNOWN}
+    return {
+        "generating": _resolved_count(document, _GENERATING_KEYS),
+        "waiting": _resolved_count(document, _WAITING_KEYS),
+    }
+
+
+def blank_throughput(*, detail: str) -> dict[str, Any]:
+    """The rate carry when no figure could be read, with the reason."""
+    return {
+        "state": UNKNOWN,
+        "mean_tokens_per_second": UNKNOWN,
+        "aggregate_tokens_per_second": UNKNOWN,
+        "runs": UNKNOWN,
+        "observed_at": None,
+        "age_seconds": None,
+        "detail": detail,
+    }
+
+
+def _stamp_age_seconds(stamp: object, *, now: datetime) -> int | None:
+    """Whole seconds between a stamp and ``now``, or None if it is unusable.
+
+    A non-string, an unparsable stamp and one in the future all resolve to
+    None: none of them describes an observation that has already happened.
+    """
+    parsed = _parse_stamp(stamp)
+    if parsed is None:
+        return None
+    seconds = (now - parsed).total_seconds()
+    return int(seconds) if seconds >= 0 else None
+
+
+def read_lane_throughput(
+    document: object,
+    *,
+    reading_stamp: str,
+    reading_age_seconds: int,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Read the rate the lane's generating population achieved.
+
+    The figures describe that population: how much text the lane emitted per
+    second averaged over the runs it served, the same figure aggregated across
+    them, and how many runs it was divided by. The vintage and the denominator
+    travel with the rate because a derived figure loses its meaning without
+    them -- the mean moves as soon as a run joins or leaves the population, so
+    a rate quoted without its denominator cannot be compared against the
+    conditions of its use.
+
+    The block's own ``observed_at`` describes the window the rate was measured
+    over; a block carrying no usable stamp of its own is described by the
+    reading that carries it, whose stamp and whole-second age the caller passes
+    in. As everywhere in this reader the fields degrade one at a time: a lane
+    publishing a mean without a denominator still reports the mean, and the
+    half it did not publish is stated rather than resolved to a zero a reader
+    would take for a measurement. A document publishing no block at all, or not
+    an object, reports ``unknown`` naming the reason and never raises.
+    """
+    absent = (
+        f"lane document publishes no {_THROUGHPUT_KEY!r} block, so the "
+        "rate its generating population achieved is not measured"
+    )
+    if not isinstance(document, Mapping):
+        return blank_throughput(detail=absent)
+    block = document.get(_THROUGHPUT_KEY)
+    if not isinstance(block, Mapping):
+        return blank_throughput(detail=absent)
+    reference = now if now is not None else datetime.now(UTC)
+    if reference.tzinfo is None:
+        reference = reference.replace(tzinfo=UTC)
+    mean = _number(block.get("mean_tokens_per_second"))
+    aggregate = _number(block.get("aggregate_tokens_per_second"))
+    runs = _number(block.get("runs"))
+    block_age = _stamp_age_seconds(block.get("observed_at"), now=reference)
+    block_stamp = reading_stamp if block_age is None else str(block.get("observed_at"))
+    unreadable = [
+        name
+        for name, value in (
+            ("mean_tokens_per_second", mean),
+            ("aggregate_tokens_per_second", aggregate),
+            ("runs", runs),
+        )
+        if value is None
+    ]
+    return {
+        "state": "measured",
+        "mean_tokens_per_second": UNKNOWN if mean is None else mean,
+        "aggregate_tokens_per_second": UNKNOWN if aggregate is None else aggregate,
+        "runs": UNKNOWN if runs is None else runs,
+        "observed_at": block_stamp,
+        "age_seconds": reading_age_seconds if block_age is None else block_age,
+        "detail": (
+            ""
+            if not unreadable
+            else "lane document publishes no numeric "
+            + " or ".join(f"{name!r}" for name in unreadable)
+            + f" in its {_THROUGHPUT_KEY!r} block"
+        ),
+    }

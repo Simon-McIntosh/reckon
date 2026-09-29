@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="lane-counts-read-through-the-lane-document">
+  <meta name="plan-title" content="The lane counts are read through the lane document">
+  <meta name="plan-summary" content="The dispatch payload's generating and waiting counts and its throughput block are now resolved by reckon/crew/lane_document.py, so one document shape has one reader; the module's own running field resolves through the same key list, closing the drift where the dispatch answered a document the module withheld.">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>The lane counts are read through the lane document | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-09-29</p>
+      <h1>The lane counts are read through the lane document</h1>
+      <p class="lead">
+        The advisory carry a dispatch rides on resolved its <code>headroom</code> through
+        <code>reckon/crew/lane_document.py</code> and its <code>generating</code>,
+        <code>waiting</code> and rate from the document's raw keys two lines below. Two
+        readers of one shape agree only until a key moves, and these two had already
+        stopped agreeing: the dispatch accepted a second spelling of the generating count
+        that the module's own field reader rejected, so one dispatch could answer the same
+        question twice and give different figures. The counts and the rate are now read by
+        the module, the dispatch holds none of the document's names, and the module's
+        <code>running</code> field resolves through the same key list.
+      </p>
+    </header>
+
+    <h2 id="drift">&sect;1 &mdash; The second reader, and the drift it had already allowed</h2>
+    <p>
+      At the base revision <code>_lane_reading_carry</code> composed its fresh carry from
+      five reads it owned in <code>reckon/crew/dispatch.py</code>:
+      <code>document.get("mean_context")</code>, <code>"binding_observed"</code>,
+      <code>"observed_at"</code>, <code>"suggested_shelf_life_seconds"</code>, and then the
+      counts and the rate through <code>_lane_count(document, _GENERATING_KEYS)</code>,
+      <code>_lane_count(document, _WAITING_KEYS)</code> and
+      <code>_lane_throughput_carry(document, ...)</code> &mdash; with
+      <code>_GENERATING_KEYS = ("generating", "running")</code>,
+      <code>_WAITING_KEYS = ("waiting",)</code> and
+      <code>_THROUGHPUT_KEY = "throughput"</code> declared beside them
+      (<code>reckon/crew/dispatch.py:2603</code> at base). The headroom directly above them
+      already went through the module
+      (<code>_lane_document.read_lane_document(document).get("headroom")</code>), so one
+      function held both patterns.
+    </p>
+    <p>
+      The drift was not hypothetical. The module's <code>_FIELD_KEYS</code> resolved its
+      <code>running</code> field from <code>("running",)</code> alone, while the dispatch's
+      own list accepted <code>generating</code> first. A document naming its generating
+      population <code>generating</code> therefore arrived as a measured count in the
+      payload and as <code>unknown</code> from
+      <code>read_lane_document(...)["running"]</code>: the reviewer of the predecessor node
+      recorded exactly that pair, and noted that the phase that routes these counts through
+      the module must also add the alias to the module's list "leaves one owner of the
+      document".
+    </p>
+
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/lane-counts-read-through-the-lane-document/lane_reading_owners.svg"
+           alt="Two-panel diagram: at base the lane document is read by the dispatch's own key list and by lane_document.py, which disagree on a document naming its generating count generating; at head one module owns every key, and the dispatch asks it for the counts and the rate, withholding an unpublished count as unknown rather than zero"
+           style="max-width:100%">
+      <figcaption>One document shape, one reader. The upper panel is the base state &mdash;
+      two key lists over one document, and the document in the middle that resolves to two
+      answers. The lower panel is the head state: the module owns every name, the dispatch
+      composes the payload from what the module returns, and each figure degrades on its
+      own to <code>unknown</code> rather than to a zero a reader would take for a
+      measurement.</figcaption>
+    </figure>
+
+    <h2 id="moved">&sect;2 &mdash; What moved, and what stayed identical</h2>
+    <p>
+      <code>reckon/crew/lane_document.py</code> gained the document's load and rate:
+      <code>read_lane_counts(document)</code> resolves the two populations each on its own,
+      <code>read_lane_throughput(document, reading_stamp=..., reading_age_seconds=...,
+      now=...)</code> reads the rate with the vintage and the denominator that make a
+      derived figure interpretable, and <code>blank_throughput(detail=...)</code> is the
+      shape carried when no rate could be read. <code>read_lane_document</code>'s own
+      <code>running</code> field now resolves through the same
+      <code>_GENERATING_KEYS</code> the counts do, so the alias is one list rather than
+      two. <code>reckon/crew/dispatch.py</code> lost <code>_lane_count</code>,
+      <code>_lane_throughput_carry</code>, <code>_lane_age_seconds</code> and the three key
+      constants; <code>_lane_reading_unknown</code> takes its blank rate from
+      <code>blank_throughput</code>, so the unknown shape has one definition too.
+    </p>
+    <table>
+      <thead><tr><th>Carried key</th><th>Resolved by</th><th>When the document is silent</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>generating</code></td>
+          <td><code>lane_document.read_lane_counts</code> &mdash; the document's <code>generating</code>, else its <code>running</code></td>
+          <td><code>unknown</code>, never <code>0</code></td>
+        </tr>
+        <tr>
+          <td><code>waiting</code></td>
+          <td><code>lane_document.read_lane_counts</code> &mdash; the document's <code>waiting</code></td>
+          <td><code>unknown</code>, never <code>0</code></td>
+        </tr>
+        <tr>
+          <td><code>throughput</code></td>
+          <td><code>lane_document.read_lane_throughput</code> &mdash; the block's three figures, its own <code>observed_at</code> when readable and the reading's stamp otherwise</td>
+          <td>a block with <code>state: "unknown"</code> and a <code>detail</code> naming why</td>
+        </tr>
+        <tr>
+          <td><code>headroom</code>, <code>binding_observed</code>, <code>mean_context</code>, <code>observed_at</code>, <code>age_seconds</code>, <code>state</code>, <code>detail</code></td>
+          <td>unchanged &mdash; <code>read_lane_document</code> for the headroom, and the carry's own reads for the rest</td>
+          <td>as before this change</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The values carried are identical for every document the tests use, including the
+      unknown-never-zero rule: a count the document omitted still arrives as
+      <code>unknown</code> and a measured <code>0</code> still arrives as <code>0</code>.
+      One behaviour widened deliberately. The rate block's own stamp is now read by
+      <code>lane_document._parse_stamp</code>, the repository's shared timestamp parser,
+      where the dispatch used <code>datetime.fromisoformat</code> directly, so a naive
+      stamp, an offset stamp and an epoch resolve there as they do everywhere else. No
+      document the tests use carries a rate stamp outside ISO-8601, so no carried value
+      moves.
+    </p>
+
+    <h2 id="evidence">&sect;3 &mdash; What the arms measured</h2>
+    <p>
+      Each arm ran in its own tree with <code>PYTHONPATH</code> naming the tree, and each
+      log's header records <code>module.__file__</code> and the resolved
+      <code>cwd</code>, so the module under test is proven to be that tree's own source
+      rather than whichever revision the shared environment serves. The gate is the new
+      file, the module's own reader tests, and every existing file that exercises the
+      carry: <code>tests/test_lane_reading_carries_counts.py</code>,
+      <code>tests/test_lane_document.py</code>, <code>tests/test_lane_reading_at_dispatch.py</code>,
+      <code>tests/test_lane_readers_share_the_gate_aware_headroom.py</code>,
+      <code>tests/test_local_headroom_counts_the_gate.py</code>,
+      <code>tests/test_lanes_view_shows_local_congestion.py</code>.
+    </p>
+    <table>
+      <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>base</td>
+          <td><code>297c5e79</code> source with the head tests</td>
+          <td><code>1 failed, 40 passed</code>, EXIT=1 &mdash; the reader-agreement case fails with <code>AttributeError</code> because <code>read_lane_counts</code> does not exist at base</td>
+          <td><code>gate/baseline_arm.log</code></td>
+        </tr>
+        <tr>
+          <td>after</td>
+          <td><code>deecf388</code> (<code>6aca6f68</code> the reader move, <code>deecf388</code> the cases)</td>
+          <td><code>41 passed</code>, EXIT=0 &mdash; the base arm's failing id is gone, so the head arm adds no failing id</td>
+          <td><code>gate/head_arm.log</code></td>
+        </tr>
+        <tr>
+          <td>negative control</td>
+          <td><code>deecf388</code> minus the alias in a scratch copy</td>
+          <td><code>1 failed, 4 passed</code>, EXIT=1 &mdash; the alias case fails when <code>_GENERATING_KEYS</code> drops <code>generating</code>, and the other four cases still pass</td>
+          <td><code>gate/negative_control.log</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The alias case passes at base, and the reason belongs with the record: at base the
+      dispatch itself held <code>("generating", "running")</code>, so a document naming the
+      count <code>generating</code> was carried correctly by the old code. The case only
+      becomes load-bearing once the module owns the key list, which is why the negative
+      control is the arm that proves it measures the module's alias rather than the
+      payload's own field name. The reader-agreement case dispatches every document this
+      file publishes &mdash; both counts with a dated rate, one count with none, a rate
+      with no stamp of its own, and the alias &mdash; and re-reads each from the bytes on
+      disk through <code>read_lane_counts</code>, asserting the payload carries the
+      reader's own answer.
+    </p>
+    <p>
+      <code>ruff check</code> and <code>ruff format --check</code> on the four changed
+      paths return byte-identical results at base and at head: seven lint findings, all
+      pre-existing and none on a line this change touches, and one file
+      (<code>reckon/crew/dispatch.py</code>) that ruff would still reformat in seven
+      hunks &mdash; at 479, 4865, 6065, 7185, 7268, 7307 and 7612 in the head tree, the
+      same seven at base with shifted numbers, and all of them outside the region this
+      change touches. No finding is added.
+    </p>
+
+    <h2 id="boundaries">&sect;4 &mdash; Boundaries and open items</h2>
+    <ul>
+      <li>
+        <strong>The document's other names still have two readers.</strong>
+        <code>_lane_reading_carry</code> still reads <code>observed_at</code>,
+        <code>mean_context</code>, <code>binding_observed</code> and
+        <code>suggested_shelf_life_seconds</code> from the document directly. This node's
+        scope was the counts and the rate, and those four were left alone deliberately:
+        routing them through <code>read_lane_document</code> would change the shape and
+        the <code>detail</code> strings that <code>reckon/flight.py</code> and the MCP
+        views consume. Recorded as a follow-on, not a defect of this change.
+      </li>
+      <li>
+        <strong>Four pre-existing failures in the wider lane set.</strong> Running every
+        <code>tests/*lane*.py</code> file plus the dispatch and timestamp suites
+        (349 tests) gives <code>4 failed, 345 passed</code>: three cases in
+        <code>tests/test_lane_advisory_on_dispatch.py</code> and
+        <code>test_crew_lane_agnostic_placement.py::test_adding_a_backend_needs_no_placement_code</code>.
+        All four fail identically against a tree built from <code>297c5e79</code>, so they
+        are present at base and this change neither causes nor fixes them.
+      </li>
+      <li>
+        <strong>The tests touch no real lane state.</strong> The harness points
+        <code>RECKON_HOME</code> at a temporary directory and every lane document a case
+        reads is one the case wrote there; grep finds no reference to the real publication
+        in the test file or its harness, and an mtime snapshot of the real
+        <code>~/.config/reckon/crew/live</code> and <code>crew/runs</code> across a run
+        shows only a concurrent peer run's own files &mdash; no path under any node name
+        this file dispatches (
+        <code>gate/real_state_observation.log</code>). The real lane publication is
+        rewritten every 30&nbsp;s by the lane itself, so its mtime is not an instrument for
+        reads; the grep is.
+      </li>
+      <li>
+        <strong>Files.</strong> <code>reckon/crew/lane_document.py</code> (the readers),
+        <code>reckon/crew/dispatch.py</code> (the carry),
+        <code>tests/test_lane_reading_carries_counts.py</code> (the gate), this fragment
+        and its figure. No other path was written.
+      </li>
+    </ul>
+
+    <h2 id="outcome">&sect;5 &mdash; Outcome</h2>
+    <p>
+      <code>6aca6f68</code> carries the move and <code>deecf388</code> the cases. The
+      document's counts and its rate now have one reader, the dispatch's
+      <code>_lane_reading_carry</code> composes the payload from what that reader returns
+      and holds none of the document's names for them, and a document naming its
+      generating count under either spelling resolves to the same count in the payload and
+      in the module.
+    </p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 620" width="1040" height="620" font-family="Helvetica, Arial, sans-serif">
+  <style>
+    .panel { fill: #ffffff; stroke: #cbd5e0; stroke-width: 1; }
+    .box   { fill: #f7fafc; stroke: #4a5568; stroke-width: 1.4; rx: 6; }
+    .hd    { fill: #e8eef7; stroke: #4a5568; stroke-width: 1.4; rx: 6; }
+    .okhd  { fill: #e6f4ea; stroke: #2f855a; stroke-width: 1.6; rx: 6; }
+    .title { font-size: 15px; font-weight: bold; fill: #1a202c; }
+    .lab   { font-size: 12.5px; fill: #4a5568; }
+    .code  { font-family: "DejaVu Sans Mono", Menlo, monospace; font-size: 13px; fill: #1a202c; }
+    .note  { font-size: 12.5px; fill: #744210; }
+    .good  { font-size: 12.5px; fill: #22543d; }
+    .arr   { stroke: #2b6cb0; stroke-width: 2.2; fill: none; marker-end: url(#head); }
+  </style>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2b6cb0"/>
+    </marker>
+  </defs>
+
+  <rect class="panel" x="10" y="10" width="1020" height="272" rx="8"/>
+  <text class="title" x="30" y="38">Base: one document, two readers, and the drift between them</text>
+
+  <rect class="hd" x="30" y="58" width="330" height="200"/>
+  <text class="title" x="46" y="82">reckon/crew/dispatch.py</text>
+  <text class="lab" x="46" y="102">_lane_reading_carry reads the counts and</text>
+  <text class="lab" x="46" y="120">the rate from the document's raw keys</text>
+  <text class="code" x="46" y="152">_GENERATING_KEYS</text>
+  <text class="code" x="62" y="172">= ("generating", "running")</text>
+  <text class="code" x="46" y="196">_WAITING_KEYS = ("waiting",)</text>
+  <text class="code" x="46" y="220">_THROUGHPUT_KEY = "throughput"</text>
+  <text class="note" x="46" y="244">reads generating, waiting and the rate</text>
+
+  <rect class="hd" x="650" y="58" width="350" height="200"/>
+  <text class="title" x="666" y="82">reckon/crew/lane_document.py</text>
+  <text class="lab" x="666" y="102">read_lane_document resolves headroom</text>
+  <text class="lab" x="666" y="120">and the other published fields</text>
+  <text class="code" x="666" y="152">_FIELD_KEYS</text>
+  <text class="code" x="682" y="172">("running", ("running",))</text>
+  <text class="code" x="666" y="196">("waiting", ("waiting",))</text>
+  <text class="note" x="666" y="244">reads running and waiting, and not the alias</text>
+
+  <rect class="box" x="400" y="96" width="210" height="124"/>
+  <text class="title" x="418" y="122">lane document</text>
+  <text class="code" x="418" y="150">"generating": 11</text>
+  <text class="code" x="418" y="172">"running": 5</text>
+  <text class="lab" x="418" y="196">one shape, two answers</text>
+
+  <path class="arr"  d="M 400 130 L 366 130"/>
+  <path class="arr"  d="M 610 130 L 644 130"/>
+  <text class="note" x="356" y="284">the dispatch answers where the module withholds: the same document resolves 11 in one reader and unknown in the other</text>
+
+  <rect class="panel" x="10" y="300" width="1020" height="308" rx="8"/>
+  <text class="title" x="30" y="328">Head: the document has one reader, and the dispatch asks it</text>
+
+  <rect class="okhd" x="30" y="348" width="420" height="234"/>
+  <text class="title" x="46" y="372">reckon/crew/lane_document.py</text>
+  <text class="lab" x="46" y="392">every key of the document resolved here</text>
+  <text class="code" x="46" y="424">read_lane_document(...)</text>
+  <text class="code" x="46" y="450">read_lane_counts(document)</text>
+  <text class="code" x="46" y="476">read_lane_throughput(document, ...)</text>
+  <text class="code" x="46" y="502">blank_throughput(detail=...)</text>
+  <text class="code" x="46" y="536">_GENERATING_KEYS</text>
+  <text class="code" x="62" y="556">= ("generating", "running")</text>
+
+  <rect class="box" x="640" y="348" width="360" height="234"/>
+  <text class="title" x="656" y="372">reckon/crew/dispatch.py</text>
+  <text class="lab" x="656" y="392">_lane_reading_carry composes the payload</text>
+  <text class="lab" x="656" y="410">and holds none of the document's names</text>
+  <text class="code" x="656" y="442">"generating": counts["generating"]</text>
+  <text class="code" x="656" y="468">"waiting":    counts["waiting"]</text>
+  <text class="code" x="656" y="494">"throughput": read_lane_throughput(...)</text>
+  <text class="good" x="656" y="528">an unpublished count reads unknown,</text>
+  <text class="good" x="656" y="546">never 0, and each field on its own</text>
+  <text class="good" x="656" y="568">a measured 0 stays 0</text>
+
+  <path class="arr" d="M 640 400 L 476 400"/>
+  <path class="arr" d="M 640 460 C 560 460, 540 460, 476 460"/>
+  <path class="arr" d="M 640 512 C 570 512, 540 512, 476 512"/>
+</svg>
