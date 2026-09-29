@@ -1708,7 +1708,10 @@ def test_a_promoted_record_names_the_member_and_its_session(home, repo) -> None:
     _deliver(record)
 
     promoted = crew.complete(
-        record["run_id"], gate="passed", commits=[_commit_work(repo)]
+        record["run_id"],
+        gate="passed",
+        commits=[_commit_work(repo)],
+        review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
     )
 
     assert promoted["record"]["member"] == "worker-a"

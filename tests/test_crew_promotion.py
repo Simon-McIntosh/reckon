@@ -1120,6 +1120,10 @@ def test_a_passing_gate_promotes_whatever_its_session(
         run_id,
         gate="passed",
         outcome="the node landed",
+        review_waiver=(
+            "the fixture exercises promotion plumbing on a delivered run; "
+            "the review lifecycle has its own coverage"
+        ),
         root=repository,
     )
 

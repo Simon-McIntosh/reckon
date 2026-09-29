@@ -3608,7 +3608,11 @@ def _require_review_waiver(
     head is therefore promotable and unreviewed at once, and the head comparison
     — which only this gate makes — is what separates them.
     """
-    from reckon.crew.recovery import REVIEW_ROLE, _pointer_role
+    from reckon.crew.recovery import (
+        REVIEW_ROLE,
+        _pointer_role,
+        _review_dispatch_action,
+    )
 
     role = _pointer_role(record)
     reason = str(waiver_reason).strip()
@@ -3632,8 +3636,21 @@ def _require_review_waiver(
     if unreviewed:
         if reason:
             return {"reason": reason}
+        if delivered and classification not in ("scoring", "promotable"):
+            # A deferred delivery's classification names an action for the run's
+            # own lifecycle — observe it, answer its blocker — rather than one
+            # that produces a review. The refusal asks for a review, so it names
+            # the review dispatch rather than sending the operator to watch a
+            # run that has already delivered.
+            review_action = _review_dispatch_action(record)
         raise CrewError(
-            _unreviewed_refusal(run_id, review_action, promoted_head, stale_head)
+            _unreviewed_refusal(
+                run_id,
+                review_action,
+                promoted_head,
+                stale_head,
+                classification=classification,
+            )
         )
     if reason:
         raise CrewError(
@@ -3682,6 +3699,8 @@ def _unreviewed_refusal(
     review_action: str,
     promoted_head: str,
     stale_head: str,
+    *,
+    classification: str = "scoring",
 ) -> str:
     """State why an unreviewed promotion is refused, naming both revisions.
 
@@ -3690,6 +3709,11 @@ def _unreviewed_refusal(
     stored" goes looking for a record that is already on disk. Naming the
     revision the promotion asserts beside the one the stored record read makes
     the repair obvious: the review must be recomposed against the new head.
+
+    The classification is the one the refusal was reached under, so a delivery
+    that owes a review while its process is still running is reported as the
+    deferred run it is, rather than under the scoring word the gate's other arm
+    usually reaches.
     """
     revision = (
         f"the stored review read revision {stale_head[:12]} and this promotion "
@@ -3699,8 +3723,8 @@ def _unreviewed_refusal(
         else "no complete independent review is stored"
     )
     return (
-        f"run {run_id!r} is classified scoring because {revision}. Produce it "
-        f"with `{review_action}`, or promote anyway with "
+        f"run {run_id!r} is classified {classification} because {revision}. "
+        f"Produce it with `{review_action}`, or promote anyway with "
         "--waive-unreviewed-promotion REASON stating why this run may land "
         "without review"
     )

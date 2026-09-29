@@ -142,8 +142,15 @@ def test_a_delivered_run_whose_worker_is_alive_owes_its_review(home, repo) -> No
 
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", commits=[work])
-    assert "no complete independent review is stored" in str(refusal.value)
-    assert "--waive-unreviewed-promotion" in str(refusal.value)
+    refusal_text = str(refusal.value)
+    assert "no complete independent review is stored" in refusal_text
+    assert "--waive-unreviewed-promotion" in refusal_text
+    # The refusal is reached under the deferred classification, and it must say
+    # so: the scoring word names the gate's other arm, and the observation the
+    # classification itself offers produces no review.
+    assert "is classified running" in refusal_text
+    assert "crew observe" not in refusal_text
+    assert "crew dispatch" in refusal_text and "--role review" in refusal_text
     assert crew.pointer_path(run_id).exists()
 
     promoted = crew.complete(
