@@ -1,4 +1,4 @@
-"""A review's commitless manifest promotes; the same prose never stands in for a commit.
+"""A commitless run promotes when its worktree shows no change, and not otherwise.
 
 Three local-lane reviews wrote a sentence into ``commits:`` —
 ``commits: none (review node; no repository change; ...)`` — because a review
@@ -6,16 +6,24 @@ has no repository work to commit. ``crew complete`` then read the sentence as a
 citation, refused it for not resolving to an object, and the coordinator blanked
 the line by hand each time.
 
-A ``commits:`` value that opens with the declaration word ``none`` is an honest
-statement that the run has no commit, and it is honoured as such for a run whose
-worktree agrees with it. The mirror case is the one that matters for safety: the
-same sentence must not stand in for a commit on a run whose manifest names a
-path inside its own repository, because there the declaration hides work the
-ledger would then say succeeded with nothing pointing at it.
+The mirror case is the one that matters for safety: a run that really changed
+something must not hide it behind a declaration. Deciding that from the prose was
+tried and walked around three times — ``none.txt`` is a filename as plausibly as
+``none`` is a declaration, and each prose shape closed exposed the next one — so
+the decision is taken from the worktree instead.
 
-The fixture runs a repository and a pointer under ``tmp_path`` and asserts
-afterwards that the workstation's real crew pointer directory is untouched,
-because an isolated read does not prove an isolated write.
+For a role that carries no repository work, review or investigate, promotion with
+no commits requires the run's own worktree to show no repository change against
+the run's recorded base sha. That means no commits beyond the base, no tracked
+modification, and no untracked repository file apart from the ``.venv`` symlink
+provisioning plants in every worktree. The declared fields then stand in their
+remaining role: say whether the run *claims* no change, and refuse a run that
+claims an in-repository path while citing no commit.
+
+The fixture runs a repository, a real worktree for the run, and a pointer under
+``tmp_path``, and asserts afterwards that the workstation's real crew pointer
+directory is untouched, because an isolated read does not prove an isolated
+write.
 """
 
 from __future__ import annotations
@@ -31,43 +39,10 @@ from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "commitless-review-fixture"
 PLAN = "commitless-review-target"
-RUN_IDS = (
-    "r-20260928T100000000001-review-commitless",
-    "r-20260928T100000000002-implement-commitless",
-    "r-20260928T100000000003-review-in-repository-path",
-    "r-20260928T100000000004-review-commitless-comma",
-    "r-20260928T100000000005-implement-commitless-comma",
-    "r-20260928T100000000006-review-comma-absence",
-    "r-20260928T100000000007-review-semicolon-absence",
-    "r-20260928T100000000008-review-dash-absence",
-    "r-20260928T100000000009-implement-comma-absence",
-    "r-20260928T100000000010-review-not-a-declaration",
-    "r-20260928T100000000011-review-full-stop-absence",
-    "r-20260928T100000000012-review-en-dash-absence",
-    "r-20260928T100000000013-review-slash-absence",
-    "r-20260928T100000000014-review-close-paren-absence",
-    "r-20260928T100000000015-implement-full-stop-absence",
-    "r-20260928T100000000016-review-changed-paths-prose-absence",
-    "r-20260928T100000000017-review-changed-paths-full-stop",
-    "r-20260928T100000000018-review-changed-paths-comma",
-    "r-20260928T100000000019-review-changed-paths-close-paren",
-    "r-20260928T100000000020-review-changed-paths-real-path",
-    "r-20260928T100000000021-implement-changed-paths-full-stop",
-    "r-20260928T100000000022-review-changed-paths-none-txt",
-    "r-20260928T100000000023-review-changed-paths-nil-rs",
-    "r-20260928T100000000024-review-changed-paths-dash-x-csv",
-    "r-20260928T100000000025-review-changed-paths-full-stop-prose",
-    "r-20260928T100000000026-review-changed-paths-prose-deliverables",
-    "r-20260928T100000000027-review-commits-full-stop-prose",
-    "r-20260928T100000000028-review-bare-none-file",
-    "r-20260928T100000000029-review-bare-nil-file",
-    "r-20260928T100000000030-review-bare-na-file",
-    "r-20260928T100000000031-review-bare-dash-file",
-    "r-20260928T100000000032-review-bare-none-no-file",
-    "r-20260928T100000000033-review-bare-nil-no-file",
-    "r-20260928T100000000034-review-bare-na-no-file",
-    "r-20260928T100000000035-review-bare-dash-no-file",
-)
+RUN_IDS = [
+    f"r-20260928T1000000000{index:02d}-review-worktree-evidence"
+    for index in range(1, 25)
+]
 
 # The sentence a review writes when it has no repository change to cite, in the
 # shape the failing reviews delivered.
@@ -79,96 +54,12 @@ REVIEW_COMMITS_PROSE = (
 # parser splits into several entries.
 COMMA_COMMITS_PROSE = "none (review node, no repository change)"
 
-# A declaration word followed by a separator and prose, with no parenthetical.
-# The parser empties the bare word ``none``, so a field of this shape loses its
-# declaration before anything reads the parsed entries.
-BARE_ABSENCE_SHAPES = (
-    ("r-20260928T100000000006-review-comma-absence", "none, no repository change"),
-    ("r-20260928T100000000007-review-semicolon-absence", "none; review only"),
-    ("r-20260928T100000000008-review-dash-absence", "none - review only"),
-)
-
-# Sentence punctuation after the declaration word: a full stop, an en dash, a
-# slash and a closing parenthesis each end the word, so the value declares an
-# absence and promotes. The word must stand alone, and any character that is
-# not a letter, digit or underscore ends it.
-PUNCTUATION_ABSENCE_SHAPES = (
-    ("r-20260928T100000000011-review-full-stop-absence", "none. review only"),
-    (
-        "r-20260928T100000000012-review-en-dash-absence",
-        "none " + chr(0x2013) + " review only",
-    ),
-    ("r-20260928T100000000013-review-slash-absence", "none/review only"),
-    ("r-20260928T100000000014-review-close-paren-absence", "none) review only"),
-)
-
-# The same absence reading the ``commits`` field follows covers ``changed_paths``
-# for a commitless role: a report-only review writes its no-change declaration
-# in prose and the commit-for-changed-manifest guard must not read a path out of
-# it. A declaration word followed by sentence punctuation promotes. Each shape
-# below would otherwise resolve as an in-repository path and be refused.
-REVIEW_NO_CHANGED_PATHS = (
-    "none under the repository; the sole deliverable is the report"
-)
-
-CHANGED_PATHS_PUNCTUATION_SHAPES = (
-    ("r-20260928T100000000017-review-changed-paths-full-stop", "none. review only"),
-    (
-        "r-20260928T100000000018-review-changed-paths-comma",
-        "none, no repository change",
-    ),
-    (
-        "r-20260928T100000000019-review-changed-paths-close-paren",
-        "none (the review is the deliverable)",
-    ),
-)
-
-# A changed_paths value that is a real filename opening with the letters of an
-# absence word. The permissive non-word boundary would read ``none.txt`` as the
-# word ``none`` and a full stop, so a review that changed ``none.txt`` would
-# promote with no commit and no recorded scope. The tighter path boundary and
-# the file-existence check each refuse it. The names are seeded into the
-# repository so the existence check is exercised, not only the shape.
-CHANGED_PATHS_FILENAMES_OPENING_WITH_AN_ABSENCE_WORD = (
-    ("r-20260928T100000000022-review-changed-paths-none-txt", "none.txt"),
-    ("r-20260928T100000000023-review-changed-paths-nil-rs", "nil.rs"),
-    ("r-20260928T100000000024-review-changed-paths-dash-x-csv", "-x.csv"),
-)
-
-# Declarations that carry further text after the absence word: a full stop and
-# an opening word, and a semicolon-delimited prose sentence. Both must still
-# promote on a review once the shape rule is tightened.
-CHANGED_PATHS_DECLARATIONS_WITH_FURTHER_TEXT = (
-    (
-        "r-20260928T100000000025-review-changed-paths-full-stop-prose",
-        "none. no repository path",
-    ),
-    (
-        "r-20260928T100000000026-review-changed-paths-prose-deliverables",
-        "none under the repository; the deliverables are the report, the figure "
-        "and the fragment",
-    ),
-)
-
-# A bare absence word is also a plausible filename. parse_manifest empties the
-# field, so the parsed list cannot tell a node that declared no path from one
-# that changed a file called none, nil, n/a or -. The raw value can, and each
-# name below is seeded into the repository so the existence check is exercised.
-BARE_ABSENCE_WORD_FILES = (
-    ("r-20260928T100000000028-review-bare-none-file", "none"),
-    ("r-20260928T100000000029-review-bare-nil-file", "nil"),
-    ("r-20260928T100000000030-review-bare-na-file", "n/a"),
-    ("r-20260928T100000000031-review-bare-dash-file", "-"),
-)
-
-# The same bare values with no such file in the tree: the node really declared
-# no path, and the review promotes with no commit.
-BARE_ABSENCE_WORD_NO_FILES = (
-    ("r-20260928T100000000032-review-bare-none-no-file", "none"),
-    ("r-20260928T100000000033-review-bare-nil-no-file", "nil"),
-    ("r-20260928T100000000034-review-bare-na-no-file", "n/a"),
-    ("r-20260928T100000000035-review-bare-dash-no-file", "-"),
-)
+# The ``changed_paths`` values a report-only node writes, none of which names a
+# repository path. Whatever their shape, a review whose worktree is clean
+# promotes under each of them, and a review whose worktree really changed a file
+# called ``none`` is refused under each of them too — the shape is not what
+# decides.
+DECLARED_NO_PATHS = ["none", "none, no repository change", "none. review only"]
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -215,9 +106,9 @@ def real_crew_home_is_not_a_fixture_target() -> None:
 
 @pytest.fixture()
 def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_hook = tmp_path / "config"
-    config_hook.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_hook))
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
     root = tmp_path / "repo"
     _write_plan(root)
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
@@ -230,10 +121,20 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ("commit", "-q", "-m", "test: seed repository"),
     ):
         _git(root, *arguments)
-    (config_hook / "mounts.json").write_text(
+    (config_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
     return root
+
+
+@pytest.fixture()
+def run_tree(repository: Path, tmp_path: Path) -> tuple[Path, str]:
+    """A real worktree at the repository's HEAD, and the base sha it sits on."""
+    base = _git(repository, "rev-parse", "HEAD")
+    tree = tmp_path / "worktrees" / "run"
+    tree.parent.mkdir(parents=True, exist_ok=True)
+    _git(repository, "worktree", "add", "--detach", "--quiet", str(tree), base)
+    return tree, base
 
 
 def _manifest(
@@ -241,7 +142,7 @@ def _manifest(
     run_id: str,
     *,
     changed_paths: str,
-    commits: str,
+    commits: str = "none",
 ) -> Path:
     manifest = tmp_path / "manifests" / f"{run_id}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -257,17 +158,23 @@ def _manifest(
 
 
 def _pointer(
-    repository: Path, run_id: str, manifest: Path, *, role: str, node_id: str
+    repository: Path,
+    run_id: str,
+    manifest: Path,
+    *,
+    role: str,
+    node_id: str,
+    tree: Path,
+    base_sha: str,
 ) -> None:
-    head = _git(repository, "rev-parse", "HEAD")
     _write_json(
         pointer_path(run_id),
         {
             "run_id": run_id,
             "project": PROJECT,
             "repo": str(repository),
-            "worktree": str(repository),
-            "base_sha": head,
+            "worktree": str(tree),
+            "base_sha": base_sha,
             "launch": "in-harness",
             "role": role,
             "backend": "native",
@@ -284,6 +191,62 @@ def _pointer(
     )
 
 
+def _review_run(
+    repository: Path,
+    tmp_path: Path,
+    run_id: str,
+    *,
+    tree: Path,
+    base_sha: str,
+    changed_paths: str,
+    commits: str = "none",
+) -> None:
+    manifest = _manifest(
+        tmp_path, run_id, changed_paths=changed_paths, commits=commits
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="review",
+        node_id=f"review-of-{PLAN}",
+        tree=tree,
+        base_sha=base_sha)
+
+
+def _implement_run(
+    repository: Path,
+    tmp_path: Path,
+    run_id: str,
+    *,
+    tree: Path,
+    base_sha: str,
+    changed_paths: str,
+    commits: str,
+) -> None:
+    manifest = _manifest(
+        tmp_path, run_id, changed_paths=changed_paths, commits=commits
+    )
+    _pointer(
+        repository,
+        run_id,
+        manifest,
+        role="implement",
+        node_id=f"build-{PLAN}",
+        tree=tree,
+        base_sha=base_sha,
+    )
+
+
+def _committed_file(tree: Path, name: str) -> None:
+    """Commit a change to ``name`` inside the run's worktree."""
+    target = tree / name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("changed\n", encoding="utf-8")
+    _git(tree, "add", "--", name)
+    _git(tree, "commit", "-q", "-m", "test: change " + name)
+
+
 def _promotes(repository: Path, run_id: str) -> dict:
     """Promote a fixture run, or fail with the refusal text for the record."""
     try:
@@ -292,22 +255,21 @@ def _promotes(repository: Path, run_id: str) -> dict:
         raise AssertionError(f"run {run_id!r} was refused: {refusal}") from refusal
 
 
-def test_review_declaring_no_commits_promotes(repository: Path, tmp_path: Path) -> None:
-    """A review's ``commits: none (...)`` is read as an empty list, not a citation."""
+def test_a_report_only_review_promotes_over_its_own_deliverable(
+    repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
+) -> None:
+    """A review's deliverable lies outside the repository, so no commit is due."""
+    tree, base_sha = run_tree
     run_id = RUN_IDS[0]
     delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
-    manifest = _manifest(
+    _review_run(
+        repository,
         tmp_path,
         run_id,
+        tree=tree,
+        base_sha=base_sha,
         changed_paths=str(delivered),
         commits=REVIEW_COMMITS_PROSE,
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
     )
 
     promoted = _promotes(repository, run_id)
@@ -316,326 +278,23 @@ def test_review_declaring_no_commits_promotes(repository: Path, tmp_path: Path) 
     assert not pointer_path(run_id).exists()
 
 
-def test_implement_declaring_no_commits_over_its_own_path_is_refused(
-    repository: Path, tmp_path: Path
+@pytest.mark.parametrize("changed_paths", DECLARED_NO_PATHS)
+def test_a_review_declaring_no_paths_promotes_on_a_clean_worktree(
+    repository: Path,
+    tmp_path: Path,
+    run_tree: tuple[Path, str],
+    changed_paths: str,
 ) -> None:
-    """The same prose on a run that names an in-repository path is refused."""
+    """The prose shape is irrelevant when the worktree holds no change."""
+    tree, base_sha = run_tree
     run_id = RUN_IDS[1]
-    manifest = _manifest(
-        tmp_path,
-        run_id,
-        changed_paths="candidate.txt",
-        commits=REVIEW_COMMITS_PROSE,
-    )
-    _pointer(
+    _review_run(
         repository,
-        run_id,
-        manifest,
-        role="implement",
-        node_id=f"build-{PLAN}",
-    )
-
-    with pytest.raises(crew.CrewError, match="manifest field 'commits' is missing"):
-        crew.complete(run_id, gate="passed", root=repository)
-
-    assert pointer_path(run_id).is_file()
-    assert ledger.runs(PROJECT, root=repository) == []
-
-
-def test_a_non_implement_role_cannot_hide_a_change_behind_the_prose(
-    repository: Path, tmp_path: Path
-) -> None:
-    """The declaration does not stand in for a commit over a path inside the repo.
-
-    A review run that names an in-repository path has claimed a repository
-    change, and the review role is exempt from the review gate, so nothing else
-    refuses it: the prose read as a commit lets it promote with the ledger
-    recording a change and no commit pointing at it. The implement case is
-    refused by the review gate when its manifest declares a change, so it alone
-    would not show that the prose itself is refused.
-    """
-    run_id = RUN_IDS[2]
-    manifest = _manifest(
         tmp_path,
         run_id,
-        changed_paths="candidate.txt",
-        commits=REVIEW_COMMITS_PROSE,
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
-    )
-
-    with pytest.raises(crew.CrewError, match="manifest field 'commits' is missing"):
-        crew.complete(run_id, gate="passed", root=repository)
-
-    assert pointer_path(run_id).is_file()
-    assert ledger.runs(PROJECT, root=repository) == []
-
-
-def test_review_declaring_no_commits_with_a_comma_still_promotes(
-    repository: Path, tmp_path: Path
-) -> None:
-    """A parenthetical comma does not split the declaration into citations.
-
-    The manifest parser splits ``commits:`` on commas, so this sentence arrives
-    as two entries and only the first opens with the declaration word. Read
-    entry by entry the tail would be refused as an unresolvable citation, which
-    is the hand edit this removes.
-    """
-    run_id = RUN_IDS[3]
-    delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
-    manifest = _manifest(
-        tmp_path,
-        run_id,
-        changed_paths=str(delivered),
-        commits=COMMA_COMMITS_PROSE,
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
-    )
-
-    promoted = _promotes(repository, run_id)
-
-    assert promoted["record"]["commits"] == []
-    assert not pointer_path(run_id).exists()
-
-
-def test_implement_declaring_no_commits_with_a_comma_is_refused(
-    repository: Path, tmp_path: Path
-) -> None:
-    """A role that commits gets no whole-field reading, so the split tail is refused."""
-    run_id = RUN_IDS[4]
-    manifest = _manifest(
-        tmp_path,
-        run_id,
-        changed_paths="candidate.txt",
-        commits=COMMA_COMMITS_PROSE,
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="implement",
-        node_id=f"build-{PLAN}",
-    )
-
-    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
-        crew.complete(run_id, gate="passed", root=repository)
-
-    assert pointer_path(run_id).is_file()
-    assert ledger.runs(PROJECT, root=repository) == []
-
-
-@pytest.mark.parametrize(("run_id", "commits_text"), BARE_ABSENCE_SHAPES)
-def test_a_bare_absence_shape_promotes_on_a_review(
-    repository: Path, tmp_path: Path, run_id: str, commits_text: str
-) -> None:
-    """A value opening with an absence word then any separator declares absence.
-
-    The list reader empties a field holding only ``none``, so ``none, no
-    repository change`` arrives as ``['no repository change']`` — the declaration
-    gone. It is read from the raw field the node wrote, so the shape promotes
-    without the hand edit.
-    """
-    delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
-    manifest = _manifest(
-        tmp_path,
-        run_id,
-        changed_paths=str(delivered),
-        commits=commits_text,
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
-    )
-
-    promoted = _promotes(repository, run_id)
-
-    assert promoted["record"]["commits"] == []
-    assert not pointer_path(run_id).exists()
-
-
-def test_an_implement_run_refuses_a_bare_absence_shape(
-    repository: Path, tmp_path: Path
-) -> None:
-    """The bare declaration word is not a whole-field absence for a committing role."""
-    run_id = RUN_IDS[8]
-    manifest = _manifest(
-        tmp_path,
-        run_id,
-        changed_paths="candidate.txt",
-        commits="none, no repository change",
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="implement",
-        node_id=f"build-{PLAN}",
-    )
-
-    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
-        crew.complete(run_id, gate="passed", root=repository)
-
-    assert pointer_path(run_id).is_file()
-    assert ledger.runs(PROJECT, root=repository) == []
-
-
-def test_a_word_that_only_begins_with_an_absence_word_is_not_a_declaration(
-    repository: Path, tmp_path: Path
-) -> None:
-    """A longer word is a citation attempt, not a declared absence.
-
-    ``nonesuch`` begins with the letters of ``none``; the absence word must
-    stand alone, so this is refused as the unresolvable citation it is.
-    """
-    run_id = RUN_IDS[9]
-    delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
-    manifest = _manifest(
-        tmp_path,
-        run_id,
-        changed_paths=str(delivered),
-        commits="nonesuch, prose",
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
-    )
-
-    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
-        crew.complete(run_id, gate="passed", root=repository)
-
-    assert pointer_path(run_id).is_file()
-    assert ledger.runs(PROJECT, root=repository) == []
-
-
-@pytest.mark.parametrize(("run_id", "commits_text"), PUNCTUATION_ABSENCE_SHAPES)
-def test_sentence_punctuation_after_the_absence_word_promotes_on_a_review(
-    repository: Path, tmp_path: Path, run_id: str, commits_text: str
-) -> None:
-    """Any non-word character ends the absence word, so the shape promotes.
-
-    The declaration word must stand alone, and a letter, digit or underscore is
-    what would extend it into a different word. A full stop, an en dash, a slash
-    and a closing parenthesis are none of those, so each ends the word and the
-    value declares the absence it opens with.
-    """
-    delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
-    manifest = _manifest(
-        tmp_path,
-        run_id,
-        changed_paths=str(delivered),
-        commits=commits_text,
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
-    )
-
-    promoted = _promotes(repository, run_id)
-
-    assert promoted["record"]["commits"] == []
-    assert not pointer_path(run_id).exists()
-
-
-def test_an_implement_run_refuses_a_full_stop_after_the_absence_word(
-    repository: Path, tmp_path: Path
-) -> None:
-    """The punctuation rule is the commitless reading; a committing role keeps citations."""
-    run_id = RUN_IDS[14]
-    manifest = _manifest(
-        tmp_path,
-        run_id,
-        changed_paths="candidate.txt",
-        commits="none. no repository change",
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="implement",
-        node_id=f"build-{PLAN}",
-    )
-
-    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
-        crew.complete(run_id, gate="passed", root=repository)
-
-    assert pointer_path(run_id).is_file()
-    assert ledger.runs(PROJECT, root=repository) == []
-
-
-def test_a_review_declaring_no_changed_paths_promotes(
-    repository: Path, tmp_path: Path
-) -> None:
-    """Both declarations agree the review changed nothing in the repository.
-
-    A report-only review writes ``commits: none ...`` beside ``changed_paths:
-    none under the repository; the sole deliverable is the report``. The commit
-    declaration is honoured, and the path declaration is read by the same rule,
-    so the run promotes with no commit and no hand edit rather than being
-    refused for naming a path.
-    """
-    run_id = RUN_IDS[15]
-    manifest = _manifest(
-        tmp_path,
-        run_id,
-        changed_paths=REVIEW_NO_CHANGED_PATHS,
-        commits=REVIEW_COMMITS_PROSE,
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
-    )
-
-    promoted = _promotes(repository, run_id)
-
-    assert promoted["record"]["commits"] == []
-    assert not pointer_path(run_id).exists()
-
-
-@pytest.mark.parametrize(("run_id", "changed_paths"), CHANGED_PATHS_PUNCTUATION_SHAPES)
-def test_sentence_punctuation_after_the_declaration_word_in_changed_paths_promotes_on_a_review(
-    repository: Path, tmp_path: Path, run_id: str, changed_paths: str
-) -> None:
-    """A full stop, a comma and a parenthesis in changed_paths each declare none.
-
-    The declaration word must stand alone, and any character that is not a
-    letter, digit or underscore ends it. The list reader splits the comma shape
-    and leaves punctuation attached to the others, so without the raw-field read
-    each would be resolved as an in-repository path and the review refused.
-    """
-    manifest = _manifest(
-        tmp_path,
-        run_id,
+        tree=tree,
+        base_sha=base_sha,
         changed_paths=changed_paths,
-        commits=REVIEW_COMMITS_PROSE,
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
     )
 
     promoted = _promotes(repository, run_id)
@@ -644,27 +303,166 @@ def test_sentence_punctuation_after_the_declaration_word_in_changed_paths_promot
     assert not pointer_path(run_id).exists()
 
 
-def test_a_review_whose_changed_paths_name_a_real_path_keeps_them(
-    repository: Path, tmp_path: Path
+def test_a_review_with_an_empty_changed_paths_promotes_on_a_clean_worktree(
+    repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
 ) -> None:
-    """A field naming a real path does not open with an absence word.
-
-    The absence read is not a licence to drop a path: a review that names an
-    in-repository path must not silently promote over it.
-    """
-    run_id = RUN_IDS[19]
-    manifest = _manifest(
+    """A manifest that names no path at all promotes on a clean worktree."""
+    tree, base_sha = run_tree
+    run_id = RUN_IDS[2]
+    _review_run(
+        repository,
         tmp_path,
         run_id,
+        tree=tree,
+        base_sha=base_sha,
+        changed_paths="",
+    )
+
+    promoted = _promotes(repository, run_id)
+
+    assert promoted["record"]["commits"] == []
+    assert not pointer_path(run_id).exists()
+
+
+def test_a_review_with_commits_prose_promotes_on_a_clean_worktree(
+    repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
+) -> None:
+    """The declaration is honoured when the worktree agrees with it."""
+    tree, base_sha = run_tree
+    run_id = RUN_IDS[3]
+    _review_run(
+        repository,
+        tmp_path,
+        run_id,
+        tree=tree,
+        base_sha=base_sha,
+        changed_paths="none. review only",
+        commits=REVIEW_COMMITS_PROSE,
+    )
+
+    promoted = _promotes(repository, run_id)
+
+    assert promoted["record"]["commits"] == []
+    assert not pointer_path(run_id).exists()
+
+
+def test_a_provisioned_venv_symlink_is_not_a_repository_change(
+    repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
+) -> None:
+    """Every dispatch plants a ``.venv`` symlink; it is not the run's work."""
+    tree, base_sha = run_tree
+    run_id = RUN_IDS[4]
+    _review_run(
+        repository,
+        tmp_path,
+        run_id,
+        tree=tree,
+        base_sha=base_sha,
+        changed_paths="none",
+    )
+    (tree / ".venv").symlink_to(tmp_path / "shared-venv", target_is_directory=True)
+
+    promoted = _promotes(repository, run_id)
+
+    assert promoted["record"]["commits"] == []
+    assert not pointer_path(run_id).exists()
+
+
+@pytest.mark.parametrize("changed_paths", [*DECLARED_NO_PATHS, ""])
+def test_a_review_whose_worktree_committed_a_file_is_refused(
+    repository: Path,
+    tmp_path: Path,
+    run_tree: tuple[Path, str],
+    changed_paths: str,
+) -> None:
+    """The declaration does not cover work the worktree actually holds.
+
+    The file is called ``none`` in every case, and the manifest declares it away
+    under each prose shape and under no value at all. The shape is not what the
+    guard reads: the worktree holds a commit beyond the base, so the run needs the
+    commit that contains it, and it is refused with the path git found.
+    """
+    tree, base_sha = run_tree
+    run_id = RUN_IDS[5]
+    _committed_file(tree, "none")
+    _review_run(
+        repository,
+        tmp_path,
+        run_id,
+        tree=tree,
+        base_sha=base_sha,
+        changed_paths=changed_paths,
+    )
+
+    with pytest.raises(crew.CrewError, match="cites no commit") as refusal:
+        crew.complete(run_id, gate="passed", root=repository)
+
+    assert "none" in str(refusal.value)
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+def test_a_review_with_an_untracked_repository_file_is_refused(
+    repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
+) -> None:
+    """An uncommitted file the run changed is still a change with no commit."""
+    tree, base_sha = run_tree
+    run_id = RUN_IDS[6]
+    (tree / "scratch.txt").write_text("work\n", encoding="utf-8")
+    _review_run(
+        repository,
+        tmp_path,
+        run_id,
+        tree=tree,
+        base_sha=base_sha,
+        changed_paths="none",
+    )
+
+    with pytest.raises(crew.CrewError, match="cites no commit") as refusal:
+        crew.complete(run_id, gate="passed", root=repository)
+
+    assert "scratch.txt" in str(refusal.value)
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+def test_a_review_naming_an_in_repository_path_with_no_commit_is_refused(
+    repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
+) -> None:
+    """A declared in-repository path still needs its commit, worktree or not."""
+    tree, base_sha = run_tree
+    run_id = RUN_IDS[7]
+    _review_run(
+        repository,
+        tmp_path,
+        run_id,
+        tree=tree,
+        base_sha=base_sha,
         changed_paths="candidate.txt",
         commits=REVIEW_COMMITS_PROSE,
     )
-    _pointer(
+
+    with pytest.raises(crew.CrewError, match="manifest field 'commits' is missing"):
+        crew.complete(run_id, gate="passed", root=repository)
+
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+def test_an_implement_run_naming_an_in_repository_path_is_still_refused(
+    repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
+) -> None:
+    """A committing role keeps the guard it has always had, unchanged."""
+    tree, base_sha = run_tree
+    run_id = RUN_IDS[8]
+    _implement_run(
         repository,
+        tmp_path,
         run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
+        tree=tree,
+        base_sha=base_sha,
+        changed_paths="candidate.txt",
+        commits=REVIEW_COMMITS_PROSE,
     )
 
     with pytest.raises(crew.CrewError, match="manifest field 'commits' is missing"):
@@ -675,28 +473,20 @@ def test_a_review_whose_changed_paths_name_a_real_path_keeps_them(
 
 
 def test_an_implement_run_refuses_a_full_stop_in_changed_paths(
-    repository: Path, tmp_path: Path
+    repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
 ) -> None:
-    """The changed_paths absence read is the commitless rule, not a committing role's.
-
-    A role that commits reads ``changed_paths`` as a path list, so a value that
-    opens with the declaration word and then a full stop is a path it must give
-    the commit for, and a manifest with no commit is refused as before.
-    """
-    run_id = RUN_IDS[20]
-    manifest = _manifest(
+    """``changed_paths`` is a path list for a committing role, declaration or not."""
+    tree, base_sha = run_tree
+    run_id = RUN_IDS[9]
+    _implement_run(
+        repository,
         tmp_path,
         run_id,
+        tree=tree,
+        base_sha=base_sha,
         changed_paths="none. no repository change",
         commits="",
     )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="implement",
-        node_id=f"build-{PLAN}",
-    )
 
     with pytest.raises(crew.CrewError, match="manifest field 'commits' is missing"):
         crew.complete(run_id, gate="passed", root=repository)
@@ -705,152 +495,48 @@ def test_an_implement_run_refuses_a_full_stop_in_changed_paths(
     assert ledger.runs(PROJECT, root=repository) == []
 
 
-@pytest.mark.parametrize(
-    ("run_id", "filename"),
-    CHANGED_PATHS_FILENAMES_OPENING_WITH_AN_ABSENCE_WORD,
-)
-def test_a_changed_path_named_like_an_absence_word_is_still_a_path(
-    repository: Path, tmp_path: Path, run_id: str, filename: str
+def test_an_implement_run_whose_commits_do_not_resolve_is_refused(
+    repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
 ) -> None:
-    """A filename that opens with an absence word is a path, not a declaration.
-
-    ``none.txt`` and ``nil.rs`` merely begin with the letters of an absence
-    word, and the permissive boundary the commits field can afford would read
-    each as the word and its punctuation, letting the review promote with no
-    commit and the ledger record no scope. The path boundary refuses the shape,
-    and the first entry naming a file that exists in the promoted tree keeps the
-    field a path list regardless. The review is therefore refused exactly as it
-    was before the absence reading existed, at the dispatch base.
-    """
-    (repository / filename).write_text("changed\n", encoding="utf-8")
-    _git(repository, "add", "--", filename)
-    _git(repository, "commit", "-q", "-m", f"test: change {filename}")
-
-    manifest = _manifest(
+    """A committing role gets no whole-field reading, so the split tail is a citation."""
+    tree, base_sha = run_tree
+    run_id = RUN_IDS[10]
+    _implement_run(
+        repository,
         tmp_path,
         run_id,
-        changed_paths=filename,
-        commits="none",
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
+        tree=tree,
+        base_sha=base_sha,
+        changed_paths="candidate.txt",
+        commits=COMMA_COMMITS_PROSE,
     )
 
-    with pytest.raises(crew.CrewError, match="manifest field 'commits' is missing"):
+    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
         crew.complete(run_id, gate="passed", root=repository)
 
     assert pointer_path(run_id).is_file()
     assert ledger.runs(PROJECT, root=repository) == []
 
 
-@pytest.mark.parametrize(
-    ("run_id", "changed_paths"),
-    CHANGED_PATHS_DECLARATIONS_WITH_FURTHER_TEXT,
-)
-def test_a_tightened_declaration_shape_still_promotes_on_a_review(
-    repository: Path, tmp_path: Path, run_id: str, changed_paths: str
+def test_a_word_that_only_begins_with_an_absence_word_is_not_a_declaration(
+    repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
 ) -> None:
-    """The tighter boundary keeps the sentence shapes a node writes.
-
-    A full stop followed by prose and a semicolon-delimited sentence each end
-    the absence word at a boundary the path rule still accepts, so the review
-    promotes with no commit and no hand edit.
-    """
-    manifest = _manifest(
-        tmp_path,
-        run_id,
-        changed_paths=changed_paths,
-        commits=REVIEW_COMMITS_PROSE,
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
-    )
-
-    promoted = _promotes(repository, run_id)
-
-    assert promoted["record"]["commits"] == []
-    assert not pointer_path(run_id).exists()
-
-
-def test_the_commits_field_keeps_its_permissive_boundary(
-    repository: Path, tmp_path: Path
-) -> None:
-    """A full stop after the absence word still declares no commit.
-
-    The commits field is not tightened with changed_paths: a commit value cannot
-    be a path, so the permissive boundary is safe there and the shapes a node
-    writes must keep promoting. Changing only the path field is the point.
-    """
-    run_id = RUN_IDS[26]
+    """``nonesuch`` begins with the letters of ``none`` but is a citation attempt."""
+    tree, base_sha = run_tree
+    run_id = RUN_IDS[11]
     delivered = tmp_path / "crew" / "reviews" / f"{run_id}.json"
-    manifest = _manifest(
+    _review_run(
+        repository,
         tmp_path,
         run_id,
+        tree=tree,
+        base_sha=base_sha,
         changed_paths=str(delivered),
-        commits="none. no repository change",
-    )
-    _pointer(
-        repository,
-        run_id,
-        manifest,
-        role="review",
-        node_id=f"review-of-{PLAN}",
+        commits="nonesuch, prose",
     )
 
-    promoted = _promotes(repository, run_id)
-
-    assert promoted["record"]["commits"] == []
-    assert not pointer_path(run_id).exists()
-
-
-def _seed_changed_file(repository: Path, name: str) -> None:
-    target = repository / name
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text("changed\n", encoding="utf-8")
-    _git(repository, "add", "--", name)
-    _git(repository, "commit", "-q", "-m", "test: change " + name)
-
-
-@pytest.mark.parametrize(("run_id", "name"), BARE_ABSENCE_WORD_FILES)
-def test_a_bare_absence_word_named_like_a_changed_file_is_still_a_path(
-    repository: Path, tmp_path: Path, run_id: str, name: str
-) -> None:
-    """A bare absence word is a filename when the tree really holds that file.
-
-    ``parse_manifest`` empties ``changed_paths: none`` to ``[]``, so the guard
-    used to stop before the tree was consulted and a review that really changed
-    a file called ``none``, ``nil``, ``n/a`` or ``-`` promoted with no commit.
-    The raw value is read instead, and the run needs the commit as for any other
-    changed path; it is refused exactly as at the dispatch base.
-    """
-    _seed_changed_file(repository, name)
-    manifest = _manifest(tmp_path, run_id, changed_paths=name, commits="none")
-    _pointer(repository, run_id, manifest, role="review", node_id=f"review-of-{PLAN}")
-
-    with pytest.raises(crew.CrewError, match="manifest field 'commits' is missing"):
+    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
         crew.complete(run_id, gate="passed", root=repository)
 
     assert pointer_path(run_id).is_file()
     assert ledger.runs(PROJECT, root=repository) == []
-
-
-@pytest.mark.parametrize(("run_id", "name"), BARE_ABSENCE_WORD_NO_FILES)
-def test_a_bare_absence_word_with_no_such_file_still_declares_none(
-    repository: Path, tmp_path: Path, run_id: str, name: str
-) -> None:
-    """With no file of that name, the bare word is the declaration it reads as."""
-    manifest = _manifest(tmp_path, run_id, changed_paths=name, commits="none")
-    _pointer(repository, run_id, manifest, role="review", node_id=f"review-of-{PLAN}")
-
-    promoted = _promotes(repository, run_id)
-
-    assert promoted["record"]["commits"] == []
-    assert not pointer_path(run_id).exists()

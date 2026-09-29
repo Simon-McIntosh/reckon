@@ -449,16 +449,6 @@ _COMMITLESS_ROLES: frozenset[str] = frozenset({"review", "investigate"})
 # character after the letters means a longer word that merely begins with them.
 _ABSENCE_BOUNDARY = r"(?!\w)"
 
-# The boundary the ``changed_paths`` field needs, which is tighter because a
-# value there may itself be a path. ``none.txt`` is a filename, not a
-# declaration of none, so after the absence word only the end of the value, a
-# whitespace character, or a single punctuation character that is itself
-# followed by whitespace or the end counts. That keeps the sentence shapes
-# ``none. review only``, ``none, no repository change`` and ``none (the review
-# is the deliverable)`` while refusing ``none.txt``, ``none/dir`` and ``nil.rs``,
-# whose punctuation runs straight into a word character.
-_PATH_ABSENCE_BOUNDARY = r"(?=$|\s|[^\w\s](?:\s|$))"
-
 _FIELD_LINE = re.compile(r"^([A-Za-z_][\w-]*)\s*:\s*(.*)$")
 
 
@@ -500,25 +490,92 @@ def _opens_with_an_absence_word(value: str) -> bool:
     )
 
 
-def _opens_with_a_path_absence_word(value: str) -> bool:
-    """Whether a raw ``changed_paths`` value opens with an absence word.
+def _commitless_changed_paths_declares_absence(
+    manifest_text: str, record: Mapping[str, Any]
+) -> bool:
+    """Whether a commitless run's ``changed_paths`` field claims no change.
 
-    The ``changed_paths`` counterpart to ``_opens_with_an_absence_word``, and it
-    is deliberately narrower. A value in this field may itself be a path, so a
-    boundary that accepts any non-word character would read the filename
-    ``none.txt`` as the word ``none`` followed by a full stop — the declaration
-    swallowed, the file's change left with no commit to carry it. The word must
-    therefore end at the end of the value, at whitespace, or at a single
-    punctuation character that is itself followed by whitespace or the end:
-    ``none. review only`` and ``none, no repository change`` still declare, while
-    ``none.txt``, ``none/dir`` and ``nil.rs`` do not.
+    The plain declaration reader, on the same boundary the ``commits`` field
+    uses. A value in this field may itself be a path — ``none.txt`` is a
+    filename as plausibly as ``none`` is a declaration — so any narrower shape
+    rule could only guess which one a value meant, and each guess was answered
+    by the next prose shape that spoofed it. The claim is read here and it is
+    not evidence: whether the claim holds is settled from the worktree, by
+    ``_worktree_repository_changes``.
     """
-    stripped = value.strip()
-    return any(
-        re.match(rf"{re.escape(word)}{_PATH_ABSENCE_BOUNDARY}", stripped, re.IGNORECASE)
-        for word in _MANIFEST_NOTHING
-        if word
+    raw = _commitless_raw_field(manifest_text, record, "changed_paths")
+    return raw is not None and _opens_with_an_absence_word(raw)
+
+
+def _worktree_git_paths(tree: Path, *arguments: str) -> tuple[str, ...] | None:
+    """The path lines one ``git`` call prints in the run's worktree.
+
+    ``None`` when the call cannot be made or fails, which the caller reads as
+    "nothing measurable here" rather than as "no change": a run whose worktree
+    cannot be read is not evidence of a clean one.
+    """
+    if not tree.is_dir():
+        return None
+    completed = subprocess.run(
+        ["git", *arguments],
+        cwd=tree,
+        capture_output=True,
+        text=True,
+        check=False,
     )
+    if completed.returncode:
+        return None
+    return tuple(line for line in completed.stdout.splitlines() if line.strip())
+
+
+# The entries a provisioned worktree always carries and the run did not write.
+# The ``.venv`` symlink is the one the dispatch rule plants in every worktree
+# and it is usually gitignored, which excludes it already; it is named here so a
+# worktree whose ignore rule is a bare ``.venv`` entry is not read as dirty.
+_PROVISIONED_WORKTREE_ENTRIES: frozenset[str] = frozenset({".venv"})
+
+
+def _worktree_repository_changes(record: Mapping[str, Any]) -> tuple[str, ...]:
+    """The repository paths a run's worktree changed against its base sha.
+
+    The path-based declaration rules are gone because no shape rule can tell a
+    path from a declaration in a free-text field: ``none.txt`` is a filename and
+    ``none, no repository change`` opens with the word ``none``, and every
+    attempt to separate them was answered by the next prose shape that spoofed
+    it. So a commitless role's claim to have changed nothing is checked against
+    the worktree itself, which cannot be written to or spoofed by the manifest.
+    Three measurements, taken in the run's own worktree, are unioned:
+
+    * the files the worktree's commits touched between the run's recorded
+      ``base_sha`` and its ``HEAD``,
+    * the tracked files it has modified, staged or not,
+    * the untracked repository files it holds, ignoring what the repository
+      ignores and minus the provisioned ``.venv`` symlink.
+
+    An empty result is the only condition under which a commitless role may
+    promote with no commits. A run that records no base sha or no readable
+    worktree yields the empty tuple, so an unmeasurable run falls through to the
+    manifest check rather than being refused on no evidence — the same silence
+    ``_require_gate_evidence`` keeps when it cannot read the repository.
+    """
+    tree = Path(str(record.get("worktree") or "")).expanduser()
+    base = str(record.get("base_sha") or "").strip()
+    changed: set[str] = set()
+    if base:
+        committed = _worktree_git_paths(tree, "diff", "--name-only", base, "HEAD")
+        if committed:
+            changed.update(committed)
+    modified = _worktree_git_paths(tree, "diff", "--name-only")
+    if modified:
+        changed.update(modified)
+    untracked = _worktree_git_paths(tree, "ls-files", "--others", "--exclude-standard")
+    if untracked:
+        changed.update(
+            path
+            for path in untracked
+            if Path(path).parts and Path(path).parts[0] not in _PROVISIONED_WORKTREE_ENTRIES
+        )
+    return tuple(sorted(changed))
 
 
 def _commitless_raw_field(
@@ -563,26 +620,6 @@ def _commits_field_declares_absence(
     """
     raw = _commitless_raw_field(manifest_text, record, "commits")
     return raw is not None and _opens_with_an_absence_word(raw)
-
-
-def _changed_paths_field_declares_absence(
-    manifest_text: str, record: Mapping[str, Any]
-) -> bool:
-    """Whether a commitless run's ``changed_paths`` field declares an absence.
-
-    The same raw-field reading the ``commits`` field uses, but with the tighter
-    path boundary, because a value in this field may itself be a path. That one
-    difference is why the two fields cannot share a single rule: ``none.txt`` is
-    a plausible committed filename whose leading word is ``none``, and the
-    permissive boundary would swallow it as a declaration, letting a run that
-    changed that file promote with no commit and no recorded scope. The path
-    boundary refuses it here, and ``_changed_paths_declare_no_paths`` adds the
-    corroborating check that a first entry naming a file in the promoted tree
-    keeps the field a path list whatever its shape. A field naming a real path
-    that does not open with an absence word is untouched by either.
-    """
-    raw = _commitless_raw_field(manifest_text, record, "changed_paths")
-    return raw is not None and _opens_with_a_path_absence_word(raw)
 
 
 def _manifest_text(record: Mapping[str, Any]) -> str:
@@ -1754,101 +1791,31 @@ def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:
     )
 
 
-def _path_exists_in_run_tree(name: str, record: Mapping[str, Any]) -> bool:
-    """Whether ``name`` resolves to something that exists in the run's tree.
-
-    A relative name resolves against the run's repository root, as the
-    manifest's own convention has it, and an absolute name as written. A run
-    that records no repository has no tree to check and answers no.
-    """
-    root = str(record.get("repo") or record.get("worktree") or "").strip()
-    candidate = Path(name).expanduser()
-    if not candidate.is_absolute():
-        if not root:
-            return False
-        candidate = Path(root).expanduser() / candidate
-    try:
-        return candidate.exists()
-    except OSError:
-        return False
-
-
-def _changed_path_entries(
-    manifest: Mapping[str, Any], record: Mapping[str, Any]
-) -> tuple[str, ...]:
-    """The ``changed_paths`` entries to judge as declarations of a path.
-
-    Usually the parsed list. But ``parse_manifest`` empties a field whose value
-    is exactly one absence word, so ``changed_paths: none`` arrives as an empty
-    list — and ``none``, ``nil``, ``n/a`` and ``-`` are all plausible filenames
-    a run might really have changed. The parsed list cannot then tell a node
-    that declared no path from one that changed a file of that name, and the
-    guard would stop before the tree is consulted. So for a role that carries no
-    repository work the raw value is read when the parsed list is empty: a value
-    that is a single token naming a file in the run's tree is returned here in
-    the list's place, and the run keeps the path and the commit that contains
-    it. A value of several tokens is a sentence, not a one-word path, and is
-    left to the shape reading.
-    """
-    items = tuple(str(item).strip() for item in (manifest.get("changed_paths") or ()))
-    if items:
-        return items
-    raw = _raw_manifest_field(_manifest_text(record), "changed_paths")
-    if raw is None:
-        return ()
-    token = raw.strip()
-    if not token or any(character.isspace() for character in token):
-        return ()
-    from reckon.crew.recovery import _pointer_role
-
-    if _pointer_role(record) not in _COMMITLESS_ROLES:
-        return ()
-    return (token,) if _path_exists_in_run_tree(token, record) else ()
-
-
-def _first_changed_path_is_a_file(
-    manifest: Mapping[str, Any], record: Mapping[str, Any]
-) -> bool:
-    """Whether the first ``changed_paths`` entry names a file in the run's tree.
-
-    The corroborating half of the declaration reading, and the one that holds
-    even when a value's shape looks like prose. The entries come from
-    ``_changed_path_entries``, so a bare ``changed_paths: none`` the list reader
-    emptied is judged by its raw token too. A first entry naming a file that
-    exists in the promoted revision's tree settles the field as a path list
-    whatever else it resembles, so a run that really changed a file called
-    ``none`` or ``nil`` keeps the path and the commit it requires.
-    """
-    entries = _changed_path_entries(manifest, record)
-    if not entries or not entries[0]:
-        return False
-    return _path_exists_in_run_tree(entries[0], record)
-
-
 def _changed_paths_declare_no_paths(
-    manifest: Mapping[str, Any], record: Mapping[str, Any]
+    manifest: Mapping[str, Any], record: Mapping[str, Any], manifest_text: str
 ) -> bool:
-    """Whether a manifest's ``changed_paths`` field declares no repository paths.
+    """Whether a manifest's ``changed_paths`` field claims no repository paths.
 
-    Three tests, in order. A first entry that names a file in the promoted tree
-    settles it as a path list at once — evidence the shape reading cannot
-    overrule, because ``none`` and ``nil`` are plausible filenames and the shape
-    an absence word leaves can be spoofed by a path. The entries are read
-    through ``_changed_path_entries``, so a bare ``changed_paths: none`` the
-    list reader emptied is judged by its raw token too. A prose sentence that opens
-    with the declaration word — the shape ``_prose_changed_paths_name_no_paths``
-    reads from the parsed list — is a no-paths declaration for any role, so a
-    committing role keeps the entry-by-entry behaviour it has always had. A
-    commitless role additionally gets the raw-field reading its ``commits`` field
-    follows, with the tighter path boundary, so ``none. review only`` and
-    ``none, no repository change`` are honoured while ``none.txt`` and
-    ``nil.rs`` stay the paths they are.
+    One rule, and it reads the claim rather than deciding the question. A field
+    the reader finds empty claims nothing: no value at all, or the bare ``none``
+    the parser's none-values set strips. A prose sentence that opens with the
+    declaration word claims none for any role, which is the shape a report-only
+    node writes. A commitless role's raw value is read beside the parsed list, on
+    the same word boundary the ``commits`` field uses, so a value whose commas the
+    list reader splits still declares what it opens with.
+
+    This says only what the run says about itself. Whether the claim is true is
+    not a matter of prose shape -- ``none.txt`` is a filename as plausibly as
+    ``none`` is a declaration, and each narrower boundary tried here was answered
+    by the next prose shape that spoofed it -- so for a commitless role it is
+    settled from the worktree by ``_worktree_repository_changes`` before this is
+    consulted.
     """
-    if _first_changed_path_is_a_file(manifest, record):
-        return False
+    if not manifest.get("changed_paths"):
+        return True
     if _prose_changed_paths_name_no_paths(manifest):
         return True
-    return _changed_paths_field_declares_absence(_manifest_text(record), record)
+    return _commitless_changed_paths_declares_absence(manifest_text, record)
 
 
 def _changed_paths_inside_repository(
@@ -1872,7 +1839,7 @@ def _changed_paths_inside_repository(
     run records no repository to resolve against, every named path is returned,
     which is the guard's prior behaviour.
     """
-    items = list(_changed_path_entries(manifest, record))
+    items = [str(item).strip() for item in (manifest.get("changed_paths") or ())]
     root = str(record.get("repo") or record.get("worktree") or "").strip()
     if not root:
         return tuple(items)
@@ -1903,17 +1870,27 @@ def _changed_paths_inside_repository(
 def _require_commit_for_changed_manifest(
     run_id: str, record: Mapping[str, Any]
 ) -> None:
-    """Refuse completed repository work whose manifest omits its commit.
+    """Refuse a run whose claim and worktree disagree about a repository change.
 
-    The guard refuses only when the manifest names a changed path that resolves
-    under the run's own repository, leaving a run whose changed_paths lie
-    entirely outside it — a report-only or review run — to promote without a
-    commit, which is its correct disposition. The chain answers the narrower
-    question first: only once a path needs a commit does the absent ``commits``
-    field become the defect. A ``commits`` line that declares its own absence
-    is not a citation, so it does not answer the question either: a run naming an
-    in-repository path while declaring it has no commit is the contradiction this
-    guard exists for, whatever role carried it.
+    Two questions, one rule each. For a role that carries no repository work —
+    review or investigate — the declaring field is not evidence, because no shape
+    in a free-text field separates a filename from a declaration: ``none.txt`` is
+    a path and ``none, no repository change`` opens with the declaration word, and
+    a guard that reads the prose can be walked around by writing the next shape
+    that looks like both. So a commitless role may promote with no commits only
+    when its own worktree shows no repository change against the run's recorded
+    base sha, measured by ``_worktree_repository_changes``; a worktree holding
+    work and a manifest that cites no commit is refused, and the refusal names
+    the paths git found. The declared fields still say whether the run *claims*
+    no change, and that claim is what the second question reads.
+
+    The second question is the older one and is unchanged: the manifest names a
+    changed path that resolves under the run's own repository, so it needs the
+    commit that contains it, and the field is empty or declares an absence. A run
+    whose changed_paths lie entirely outside the repository — a report delivered
+    to the crew reviews directory — promotes without a commit, which is its
+    correct disposition, and a ``commits`` line that declares an absence is not a
+    citation, so it does not answer the question either.
     """
     manifest_present, fresh = _manifest_freshness(record)
     if not manifest_present or not fresh:
@@ -1923,11 +1900,29 @@ def _require_commit_for_changed_manifest(
         manifest = parse_manifest(manifest_text)
     except (OSError, KeyError, ValueError):
         return
+    if str(manifest.get("status") or "").strip().lower() != "complete":
+        return
+    cites_commit = _manifest_cites_a_commit(manifest, record, manifest_text)
+    from reckon.crew.recovery import _pointer_role
+
+    role = _pointer_role(record)
+    if role in _COMMITLESS_ROLES and not cites_commit:
+        changed = _worktree_repository_changes(record)
+        if changed:
+            raise CrewError(
+                f"run {run_id!r} is a {role} run whose worktree has repository "
+                "changes against its base, but its manifest cites no commit. "
+                "Changed paths: " + ", ".join(changed) + ". A commitless role may "
+                "promote with no commits only when its worktree shows no "
+                "repository change: no commits beyond the base, no tracked "
+                "modification, and no untracked repository file apart from the "
+                "provisioned .venv symlink. Cite the commit that contains these "
+                "paths, or pass --no-commit '<why>' to record deliberately that "
+                "they are not being registered"
+            )
     if (
-        str(manifest.get("status") or "").strip().lower() != "complete"
-        or not _changed_path_entries(manifest, record)
-        or _changed_paths_declare_no_paths(manifest, record)
-        or _manifest_cites_a_commit(manifest, record, manifest_text)
+        _changed_paths_declare_no_paths(manifest, record, manifest_text)
+        or cites_commit
         or not _changed_paths_inside_repository(manifest, record)
     ):
         return
@@ -3314,7 +3309,9 @@ def _manifest_repository_paths(record: Mapping[str, Any]) -> tuple[str, ...]:
     run that changed nothing there.
     """
     manifest = _fresh_manifest(record)
-    if manifest is None or _changed_paths_declare_no_paths(manifest, record):
+    if manifest is None:
+        return ()
+    if _changed_paths_declare_no_paths(manifest, record, _manifest_text(record)):
         return ()
     return _changed_paths_inside_repository(manifest, record)
 
@@ -3500,8 +3497,10 @@ def _review_changed_scope(
     declared = _fresh_manifest(record)
     declares_paths = bool(
         declared
-        and _changed_path_entries(declared, record)
-        and not _changed_paths_declare_no_paths(declared, record)
+        and declared.get("changed_paths")
+        and not _changed_paths_declare_no_paths(
+            declared, record, _manifest_text(record)
+        )
     )
     return _manifest_repository_paths(record), None, declares_paths
 
