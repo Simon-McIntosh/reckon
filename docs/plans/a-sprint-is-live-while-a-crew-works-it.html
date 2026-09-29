@@ -20,14 +20,14 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-standalone" content="Replaces a stored scheduling marker with a derived signal; nothing upstream must land first. It supersedes the one-active invariant work-scheduling-surface holds, recorded as a lead directive rather than a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Sprint Is Live While A Crew Works It | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="19">
+<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-version" content="20">
 <meta name="plan-commits" content="6c92861d,0ad5a171">
-<meta name="plan-impl" content="0.75">
+<meta name="plan-impl" content="0.8">
 </head>
 <body>
   <main class="plan-doc">
@@ -316,6 +316,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260928-section-declarations-reconciled" data-who="s23-coord" data-when="2026-09-28">
     <div class="r-comment-body"><p><strong>Section declarations reconciled with the landing evidence.</strong> §5 is declared done: the skill teaches crew-derived liveness (21077dfa), the retired-invariant grep is clean, and 71 skill-contract tests pass. §4 stays open on one clause. The push, <code>active_sprint_id</code> and <code>live_sprint_ids</code> behaviour has landed, but the <code>multiple-active-sprints</code> audit finding is still raised as an error at <code>reckon/mcp.py:2075</code>, and §4's done-when retires it. §3 has not started.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260929-s4-finding-retired" data-who="s23-coord" data-when="2026-09-29">
+    <div class="r-comment-body"><p><strong>§4 is declared done.</strong> Push had already stopped demoting (landed earlier), and active_sprint_id follows the live sprint (<code>tests/test_active_sprint_follows_live_crew.py</code>). <code>multiple-active-sprints-finding-retires</code> merged at <code>aecade28</code> (review 100, no findings). It removes the audit finding, and corrects the push op description that still claimed demotion. <code>tests/test_sprint_push_keeps_both_active.py</code> asserts that two pushed sprints both stay active with no finding. The one existing test that asserted the finding, <code>test_audit_raises_two_active_sprints_at_error_severity</code>, is replaced by <code>test_audit_is_quiet_on_two_active_sprints</code>. The S22 coordinator was told on 2026-09-29 and acknowledged the change.</p></div>
 </div>
 </section>
   </main>
