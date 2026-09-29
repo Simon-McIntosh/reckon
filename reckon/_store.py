@@ -786,17 +786,41 @@ def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
 
 
 _H2_OPEN_RE = re.compile(r"<h2\b[^>]*>", re.IGNORECASE)
-_ID_ATTR_RE = re.compile(
-    r"""\bid\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))""", re.IGNORECASE
-)
+_SECTION_OPEN_RE = re.compile(r"<section\b[^>]*>", re.IGNORECASE)
+_SECTION_CLOSE_RE = re.compile(r"</section\s*>", re.IGNORECASE)
+
+
+def _attr(open_tag: str, name: str) -> str | None:
+    """The value an opening tag declares for one attribute, or None."""
+    pattern = re.compile(
+        rf"""\b{re.escape(name)}\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))""",
+        re.IGNORECASE,
+    )
+    match = pattern.search(open_tag)
+    if match is None:
+        return None
+    return next(group for group in match.groups() if group is not None)
+
+
+def _class_list(open_tag: str) -> list[str]:
+    """The class tokens an opening tag declares."""
+    return (_attr(open_tag, "class") or "").split()
 
 
 def _element_id(open_tag: str) -> str | None:
     """The id an opening tag declares, whatever quote style wraps it."""
-    match = _ID_ATTR_RE.search(open_tag)
-    if match is None:
-        return None
-    return next(group for group in match.groups() if group is not None)
+    return _attr(open_tag, "id")
+
+
+def _is_structural_boundary(open_tag: str) -> bool:
+    """Whether a section open tag ends the preceding section's authored body.
+
+    A landed card and a structured-state region (``data-reckon`` other than the
+    section's own record span) both do; the section's record span does not.
+    """
+    if "section-landed" in _class_list(open_tag):
+        return True
+    return _attr(open_tag, "data-reckon") not in (None, "section")
 
 
 def _section_heading(html_text: str, section_id: str) -> tuple[str, str, int, str]:
@@ -823,23 +847,40 @@ def _section_heading(html_text: str, section_id: str) -> tuple[str, str, int, st
 
 
 def _section_body_end(html_text: str, start: int) -> int:
-    """Where the body under one h2 ends: the next heading, structured-state
-    region, or closing main element, whichever the document reaches first."""
-    from bs4 import BeautifulSoup
-
+    """Where an authored body under one h2 ends: the next heading, landed card
+    or structured-state region, or the closing main element, whichever comes
+    first, so no neighbouring markup is consumed."""
     ends: list[int] = []
     heading = _H2_OPEN_RE.search(html_text, start)
     if heading is not None:
         ends.append(heading.start())
-    for candidate in re.finditer(r"<section\b[^>]*>", html_text[start:], re.IGNORECASE):
-        element = BeautifulSoup(candidate.group(), "html.parser").find("section")
-        if element is not None and element.get("data-reckon") not in {None, "section"}:
-            ends.append(start + candidate.start())
+    for candidate in _SECTION_OPEN_RE.finditer(html_text, start):
+        if _is_structural_boundary(candidate.group()):
+            ends.append(candidate.start())
             break
     closing = re.search(r"</main\s*>", html_text[start:], re.IGNORECASE)
     if closing is not None:
         ends.append(start + closing.start())
     return min(ends) if ends else len(html_text)
+
+
+def _matching_section_close(html_text: str, start: int) -> int | None:
+    """Offset past the ``</section>`` that balances an already-open section."""
+    depth = 1
+    pos = start
+    while True:
+        nxt_open = _SECTION_OPEN_RE.search(html_text, pos)
+        nxt_close = _SECTION_CLOSE_RE.search(html_text, pos)
+        if nxt_close is None:
+            return None
+        if nxt_open is not None and nxt_open.start() < nxt_close.start():
+            depth += 1
+            pos = nxt_open.end()
+            continue
+        depth -= 1
+        pos = nxt_close.end()
+        if depth == 0:
+            return pos
 
 
 def _landed_card_html(open_tag: str, inner_html: str, request: dict[str, str]) -> str:
@@ -865,19 +906,73 @@ def _landed_card_html(open_tag: str, inner_html: str, request: dict[str, str]) -
     )
 
 
+def _landed_card_span(
+    html_text: str, h2_start: int, section_id: str
+) -> tuple[int, int] | None:
+    """The span of a landed card that wraps this heading, or None if authored.
+
+    The span runs from the card's opening ``<section class="section-landed">``
+    to its matching close, so collapsing a section that already carries a card
+    replaces that card in place. A card whose close cannot be found, or whose
+    span would reach across a second heading or a structured-state region, is
+    refused rather than replaced, so a repeat collapse can consume no
+    neighbouring markup and never writes a partial result.
+    """
+    opens = list(_SECTION_OPEN_RE.finditer(html_text, 0, h2_start))
+    if not opens:
+        return None
+    wrapper = opens[-1]
+    if _SECTION_CLOSE_RE.search(html_text, wrapper.end(), h2_start) is not None:
+        return None
+    if "section-landed" not in _class_list(wrapper.group()):
+        return None
+    close_end = _matching_section_close(html_text, wrapper.end())
+    if close_end is None:
+        raise OpError(
+            f"collapse_section: the landed card for {section_id!r} has no closing tag"
+        )
+    span = html_text[wrapper.start() : close_end]
+    if len(_H2_OPEN_RE.findall(span)) != 1:
+        raise OpError(
+            f"collapse_section: cannot determine the extent of {section_id!r} "
+            "unambiguously"
+        )
+    for candidate in _SECTION_OPEN_RE.finditer(span):
+        if candidate.start() == 0:
+            continue
+        if _is_structural_boundary(candidate.group()):
+            raise OpError(
+                f"collapse_section: cannot determine the extent of {section_id!r} "
+                "unambiguously"
+            )
+    return wrapper.start(), close_end
+
+
 def _collapse_authored_section(html_text: str, request: dict[str, str]) -> str:
-    """Replace one h2's authored body with its landed card, keeping the heading."""
+    """Replace one section's rendered extent with its landed card.
+
+    An authored section runs from its h2 to the next heading, landed card or
+    structured-state region, or ``</main>``. A section already rendered as a
+    landed card runs from that card's opening tag to its matching close, so a
+    repeat collapse refreshes the card in place: the heading and its id are
+    kept and there is exactly one card and one closing tag.
+    """
     open_tag, inner_html, open_start, body_start = _section_heading(
         html_text, request["section"]
     )
-    body_end = _section_body_end(html_text, body_start)
-    trailing = re.search(r"\s*\Z", html_text[body_start:body_end])
+    card_span = _landed_card_span(html_text, open_start, request["section"])
+    if card_span is None:
+        extent_start, extent_end = open_start, _section_body_end(html_text, body_start)
+    else:
+        extent_start, extent_end = card_span
+    replaced = html_text[extent_start:extent_end]
+    trailing = re.search(r"\s*\Z", replaced)
     card = _landed_card_html(open_tag, inner_html, request)
     return (
-        html_text[:open_start]
+        html_text[:extent_start]
         + card
         + (trailing.group() if trailing is not None else "")
-        + html_text[body_end:]
+        + html_text[extent_end:]
     )
 
 

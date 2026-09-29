@@ -16,6 +16,8 @@ PROJECT = "sample"
 PLAN = "demo-plan"
 ANCHOR = f"/reckon/evidence/archive/{PLAN}-landed#s2"
 SUMMARY = "Built the thing; suite green."
+ANCHOR_2 = f"/reckon/evidence/archive/{PLAN}-landed#s2-refreshed"
+SUMMARY_2 = "Refreshed after a second pass; the suite is still green."
 
 DECLARATIONS = {"s1": "done", "s2": "implementable"}
 CAPABILITY = {
@@ -53,13 +55,15 @@ AUTHORED = (
 )
 
 
-def _collapse_op(section: str = "s2") -> dict:
+def _collapse_op(
+    section: str = "s2", summary: str = SUMMARY, anchor: str = ANCHOR
+) -> dict:
     """A collapse_section request for one landed section."""
     return {
         "op": "collapse_section",
         "section": section,
-        "summary": SUMMARY,
-        "evidence_anchor": ANCHOR,
+        "summary": summary,
+        "evidence_anchor": anchor,
     }
 
 
@@ -98,6 +102,54 @@ def plan(tmp_path: Path) -> tuple[Path, Path]:
         },
     }
     path.write_text(_plan_html.write_state(AUTHORED, state), encoding="utf-8")
+    return checkout, path
+
+
+THREE_DECLARATIONS = {"s1": "done", "s2": "implementable", "s3": "implementable"}
+THREE_AUTHORED = (
+    '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+    f'<meta name="docs-project" content="{PROJECT}">'
+    '<meta name="reckon-type" content="plan">'
+    '<meta name="plan-standalone" content="fixture wiring reason">'
+    "<title>Demo plan</title></head><body>"
+    '<main class="plan-doc">'
+    '<h2 id="s1">First section</h2><p>First body.</p>'
+    '<h2 id="s2">Second section</h2><p>Second body.</p>'
+    '<h2 id="s3">Third section</h2><p>Third body.</p>'
+    "</main></body></html>"
+)
+
+
+@pytest.fixture()
+def three_section_plan(tmp_path: Path) -> tuple[Path, Path]:
+    checkout = tmp_path / "repo"
+    path = checkout / "docs" / "plans" / f"{PLAN}.html"
+    path.parent.mkdir(parents=True)
+    state = {
+        "project": PROJECT,
+        "type": "plan",
+        "slug": PLAN,
+        "title": "Demo plan",
+        "status": "active",
+        "modified": "2026-09-25",
+        "version": 0,
+        "section_declarations": deepcopy(THREE_DECLARATIONS),
+        "sections": [
+            {
+                "id": section_id,
+                "effort_hours": 1.0,
+                "capability": deepcopy(CAPABILITY),
+                "attempts": 0,
+                "status": status,
+                "links": [],
+            }
+            for section_id, status in THREE_DECLARATIONS.items()
+        ],
+        "followups": [
+            {"id": "next-action", "status": "open", "prompt": f"/reckon-build {PLAN}"}
+        ],
+    }
+    path.write_text(_plan_html.write_state(THREE_AUTHORED, state), encoding="utf-8")
     return checkout, path
 
 
@@ -186,3 +238,59 @@ def test_collapsed_result_passes_audit_doc_without_a_duplicate_header(plan) -> N
 
     assert audit.exit_code == 0, audit.output
     assert "header-duplicate" not in audit.output
+
+
+def test_collapsing_twice_leaves_one_card_with_the_latest_summary(plan) -> None:
+    checkout, path = plan
+    assert _edit(checkout, _collapse_op())["ok"] is True
+
+    result = _edit(checkout, _collapse_op(summary=SUMMARY_2, anchor=ANCHOR_2))
+
+    assert result["ok"] is True, result
+    text = path.read_text(encoding="utf-8")
+    # Exactly one card remains: the first was replaced cleanly, not nested.
+    assert text.count('<section class="section-landed">') == 1
+    assert SUMMARY not in text
+    assert f'<a href="{ANCHOR}">full record</a>' not in text
+    assert SUMMARY_2 in text
+    assert f'<a href="{ANCHOR_2}">full record</a>' in text
+    assert '<h2 id="s2">Second section</h2>' in text
+    audit = CliRunner().invoke(main, ["audit-doc", str(path)])
+    assert audit.exit_code == 0, audit.output
+
+
+@pytest.mark.parametrize("order", [("s2", "s3"), ("s3", "s2")])
+def test_collapsing_a_neighbour_keeps_both_cards(three_section_plan, order) -> None:
+    checkout, path = three_section_plan
+    first, second = order
+    assert _edit(checkout, _collapse_op(first))["ok"] is True
+
+    result = _edit(checkout, _collapse_op(second, summary=SUMMARY_2, anchor=ANCHOR_2))
+
+    assert result["ok"] is True, result
+    text = path.read_text(encoding="utf-8")
+    assert text.count('<section class="section-landed">') == 2
+    assert SUMMARY in text
+    assert SUMMARY_2 in text
+    assert '<h2 id="s2">Second section</h2>' in text
+    assert '<h2 id="s3">Third section</h2>' in text
+    audit = CliRunner().invoke(main, ["audit-doc", str(path)])
+    assert audit.exit_code == 0, audit.output
+
+
+def test_a_card_without_a_closing_tag_is_refused_and_leaves_the_file_unchanged(
+    plan,
+) -> None:
+    checkout, path = plan
+    assert _edit(checkout, _collapse_op())["ok"] is True
+    text = path.read_text(encoding="utf-8")
+    card_close = text.index("</section>", text.index("landed-summary"))
+    malformed = text[:card_close] + text[card_close + len("</section>") :]
+    path.write_text(malformed, encoding="utf-8")
+    before = path.read_text(encoding="utf-8")
+
+    result = _edit(checkout, _collapse_op(summary=SUMMARY_2, anchor=ANCHOR_2))
+
+    assert result["ok"] is False, result
+    assert result["error"] == "op_error"
+    assert path.read_text(encoding="utf-8") == before
