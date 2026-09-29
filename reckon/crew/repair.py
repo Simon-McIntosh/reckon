@@ -285,9 +285,18 @@ def compose_repair_node(
         "done_when": (
             f"the repair for {round_id} commits a change answering each of the "
             f"{len(findings)} finding(s) ({ids}) and its manifest names every "
-            f"finding by id — '{ACTED_ACTION} <id>: <commit>' for a finding it "
-            f"answered and '{DECLINED_ACTION} <id>: <reason>' for one it declines "
+            f"finding by id — `{ACTED_ACTION} <id>: <commit>` for a finding it "
+            f"answered and `{DECLINED_ACTION} <id>: <reason>` for one it declines "
             "— with no finding left unanswered"
+        ),
+        # The scope is composed from the findings, so it names the test files
+        # the review flagged. A node that writes a check declares the mutation
+        # that check must fail against, and the mutation here is the repair's own
+        # change: reverting the commit that answered a finding must make the
+        # check the finding named fail, or the check was never measuring it.
+        "negative_control": (
+            "revert each answering commit in turn and confirm the check the "
+            "finding names fails without it"
         ),
     }
 
