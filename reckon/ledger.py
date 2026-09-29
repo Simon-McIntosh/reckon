@@ -34,7 +34,9 @@ rather than averaging it in silently.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
 import random
 import re
 import subprocess
@@ -779,9 +781,44 @@ def _run_store_location() -> str:
     return str(run_store.store_path())
 
 
+def _replace_run_file(target: Path, text: str) -> None:
+    """Replace a per-run file's contents in one atomic step.
+
+    Writing in place truncates the file before the new bytes land, so a write
+    that fails part-way would leave the file holding a prefix of its own
+    content — a third state agreeing with neither the aggregate row nor the
+    revision it replaced, and one the restore below could no longer put back.
+    A sibling temporary beside the target instead keeps the revision the file
+    already holds intact when the replacement cannot be made, and the
+    temporary is removed so the run store carries no residue.
+    """
+    temporary = target.parent / f".{target.name}.{os.getpid()}.tmp"
+    try:
+        temporary.write_text(text, encoding="utf-8")
+        os.replace(temporary, target)
+    except OSError:
+        with contextlib.suppress(OSError):
+            temporary.unlink()
+        raise
+
+
+def _restore_run_files(snapshots: Sequence[tuple[Path, str]]) -> None:
+    """Put each captured revision back, undoing a partly applied rewrite.
+
+    Called when a later part of the same :func:`write` call fails, so the
+    project never holds a per-run file ahead of an aggregate row that was never
+    written. The reader then finds the copies agreeing at the revision it read
+    before, which is the state it can read, rather than a disagreement no
+    reader may read.
+    """
+    for target, text in snapshots:
+        with contextlib.suppress(OSError):
+            _replace_run_file(target, text)
+
+
 def _keep_run_files_identical(
     project: str, rows: Sequence[Any], root: str | Path | None
-) -> None:
+) -> list[tuple[Path, str]]:
     """Rewrite a per-run file so it equals the aggregate row it copies.
 
     A completed run may be recorded in both the aggregate run list and its own
@@ -791,12 +828,22 @@ def _keep_run_files_identical(
     cannot read, so every written row that already owns a file is re-encoded by
     :func:`serialize_run` here, keeping the two copies byte-identical.
 
+    The caller runs this before the aggregate envelope is written, and applies
+    it as a pair: a per-run file that cannot be rewritten raises here, while
+    the aggregate still holds the revision it read, and any file this call did
+    rewrite is put back first, so a failed write leaves the project readable
+    at its prior revision rather than advanced in one copy and stale in the
+    other. The caller restores the returned snapshots in turn if the envelope
+    write that follows is refused.
+
     A row with no file is left alone: writing one is the layout move
     :func:`_split_project_runs` performs explicitly and commits, not a side
     effect an unrelated write should carry. The file already agreeing with the
     row is also left alone, so a write that changes no run still touches no run
-    file.
+    file. Each replaced file yields the revision it held, which is what
+    :func:`_restore_run_files` puts back.
     """
+    snapshots: list[tuple[Path, str]] = []
     for row in rows:
         if not isinstance(row, Mapping):
             continue
@@ -808,14 +855,20 @@ def _keep_run_files_identical(
         try:
             if not (target.exists() or target.is_symlink()):
                 continue
-            if target.read_text(encoding="utf-8") == encoded:
+            prior = target.read_text(encoding="utf-8")
+            if prior == encoded:
                 continue
-            target.write_text(encoded, encoding="utf-8")
+            _replace_run_file(target, encoded)
         except OSError as exc:
+            _restore_run_files(snapshots)
             raise LedgerError(
                 f"cannot keep run {run_id!r} readable for {project!r}: "
-                f"{target} could not be made identical to its ledger row: {exc}"
+                f"{target} could not be made identical to its ledger row, so "
+                f"the write was abandoned at the revision the ledger already "
+                f"held: {exc}"
             ) from exc
+        snapshots.append((target, prior))
+    return snapshots
 
 
 def write(
@@ -840,6 +893,12 @@ def write(
     the removal is stated where it is performed rather than inferred later
     from an absence. An absent ledger has no members, so creating one from
     empty is unaffected.
+
+    A write that cannot bring every per-run file it must change into line with
+    its aggregate row is abandoned, and the files it had already changed are
+    put back, so a store that refuses one write (a read-only tree, a full
+    disk) leaves the project readable at the revision it held rather than
+    advanced in one copy and stale in the other.
 
     The roster check answers to the version check rather than pre-empting it:
     a write prepared against a version the ledger has moved past is refused
@@ -918,16 +977,31 @@ def write(
         "runs": list(data.get("runs", [])),
         "holds": list(data.get("holds", [])),
     }
+    # The per-run files are made consistent with the rows they copy before the
+    # aggregate envelope advances, never after. If one of them cannot be
+    # rewritten, the write is abandoned while the aggregate still holds the
+    # revision it read, so the reader finds the two copies agreeing rather
+    # than a row the file cannot follow. The reverse order left the aggregate
+    # ahead of its files when a store refused a single write, which is the
+    # disagreement load() refuses the whole project for.
+    snapshots = _keep_run_files_identical(project, payload["runs"], root)
     try:
         version = _store._write_json_envelope(
             path, project, LEDGER_SLUG, payload, expected_version
         )
     except _store.VersionConflict as exc:
+        _restore_run_files(snapshots)
         raise LedgerError(
             f"ledger for {project!r} moved from version {exc.expected} to "
             f"{exc.current} while this write was being prepared; re-read and retry"
         ) from exc
-    _keep_run_files_identical(project, payload["runs"], root)
+    except Exception:
+        # An envelope that could not be written leaves the aggregate at the
+        # revision it read, so the files already brought forward must go back
+        # with it; otherwise this write would hand the reader exactly the
+        # disagreement the order above exists to avoid.
+        _restore_run_files(snapshots)
+        raise
     if commit and obstruction is None:
         _commit_roster_write(
             project, "chore(roster): retire " + ", ".join(dropped), path
