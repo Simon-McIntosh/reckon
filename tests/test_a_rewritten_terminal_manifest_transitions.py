@@ -21,6 +21,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
+from reckon import ledger
 from reckon.crew import recovery
 
 PROJECT = "proj"
@@ -30,6 +33,28 @@ def _run_directory(tmp_path: Path, run_id: str) -> Path:
     directory = tmp_path / "runs" / run_id
     directory.mkdir(parents=True, exist_ok=True)
     return directory
+
+
+@pytest.fixture()
+def ledger_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Move the ledger into the test's temporary directory."""
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    return home
+
+
+def _record_promotion(project: str, run_id: str) -> None:
+    """Write the ledger row a promotion leaves behind when a run lands.
+
+    A departure is not a fact the pointer records: a run that was promoted and a
+    pointer that vanished with nothing behind it look identical from the fleet.
+    The ledger decides which one it was, so a case that models a landing records
+    the row a promotion would have written.
+    """
+    row = ledger.run_path(project, run_id)
+    row.parent.mkdir(parents=True, exist_ok=True)
+    row.write_text(json.dumps({"run_id": run_id}), encoding="utf-8")
 
 
 def _manifest(run_directory: Path) -> Path:
@@ -352,13 +377,16 @@ def test_an_inprogress_manifest_update_stays_silent(tmp_path: Path) -> None:
 
 
 def test_the_rewrite_marker_does_not_leak_into_a_later_departure(
-    tmp_path: Path,
+    tmp_path: Path, ledger_home: Path
 ) -> None:
     """The rewrite is one transition; the run's later promotion stays a promotion.
 
     The marker that distinguishes the rewrite is carried only on the emitted
     record, never on the run's remembered snapshot, so a departure after the
-    rewrite still reads as promoted and not as a second rewrite.
+    rewrite still reads as promoted and not as a second rewrite. A promotion
+    writes a ledger row for the run it lands, so the fixture records that row
+    before the departure: the ledger is the whole of what separates a landed
+    run from a pointer that simply vanished.
     """
     directory = _run_directory(tmp_path, "r-then-promoted")
     manifest = _write(directory, status="failed", commits=[], blockers=["placeholder"])
@@ -381,6 +409,9 @@ def test_the_rewrite_marker_does_not_leak_into_a_later_departure(
     )
     assert len(rewritten) == 1
 
+    # The promotion that follows writes a row; without it the departure below
+    # could only be read as a pointer that vanished with nothing behind it.
+    _record_promotion(PROJECT, "r-then-promoted")
     departed, _ = recovery.fleet_transitions(next_known, {})
     assert len(departed) == 1
     (snapshot, previous, state, counts) = departed[0]
