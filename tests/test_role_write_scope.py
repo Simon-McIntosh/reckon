@@ -520,6 +520,9 @@ def test_a_test_run_that_slipped_through_is_still_refused_at_promotion(
 
 PLAN_FILE = "docs/plans/plan-a.html"
 EVIDENCE_RECORD = "docs/evidence/archive/plan-a-landed.html"
+NODE_ID = "role-scope-node"
+FRAGMENT = f"docs/evidence/fragments/plan-a/{NODE_ID}.html"
+FIGURE = f"docs/figures/plan-a/{NODE_ID}"
 PLAN_SECTION = "landing-fence"
 
 
@@ -557,7 +560,7 @@ READ_ONLY_ROLES_CONFIG = {
 def test_an_implement_role_receives_the_landing_paths_in_its_write_scope(
     home: Path, review_repository: Path
 ):
-    """The dispatch payload carries the plan and evidence paths un-named."""
+    """The dispatch payload carries the node's own fragment and figure paths."""
     deliverable = f"package/{PLAN_SECTION}.py"
     resolution = crew.plan_dispatch(
         node=_node(
@@ -572,9 +575,11 @@ def test_an_implement_role_receives_the_landing_paths_in_its_write_scope(
     )
     assert resolution.validation.ok, resolution.validation.findings
     declared = list(resolution.as_dict()["write_paths"])
-    assert PLAN_FILE in declared
-    assert EVIDENCE_RECORD in declared
+    assert FRAGMENT in declared
+    assert FIGURE in declared
     assert deliverable in declared
+    assert PLAN_FILE not in declared
+    assert EVIDENCE_RECORD not in declared
     assert set(resolution.node.write_paths) == set(declared)
 
 
@@ -598,6 +603,8 @@ def test_a_read_only_role_does_not_receive_the_landing_paths(
     declared = list(resolution.node.write_paths)
     assert PLAN_FILE not in declared
     assert EVIDENCE_RECORD not in declared
+    assert FRAGMENT not in declared
+    assert FIGURE not in declared
 
 
 # The local lane runs a different dialect than the metered codex lane. The
@@ -647,12 +654,14 @@ def test_a_read_only_role_on_the_local_lane_validates_clean(
     declared = list(resolution.node.write_paths)
     assert PLAN_FILE not in declared
     assert EVIDENCE_RECORD not in declared
+    assert FRAGMENT not in declared
+    assert FIGURE not in declared
 
 
 def test_an_implement_role_on_the_local_lane_still_receives_the_landing_paths(
     home: Path, review_repository: Path
 ):
-    """The repo-writing role keeps the landing grant on the local lane too."""
+    """The repo-writing role keeps the fragment grant on the local lane too."""
     deliverable = f"package/{PLAN_SECTION}.py"
     resolution = crew.plan_dispatch(
         node=_node(
@@ -667,10 +676,60 @@ def test_an_implement_role_on_the_local_lane_still_receives_the_landing_paths(
     )
     assert resolution.validation.ok, resolution.validation.findings
     declared = list(resolution.as_dict()["write_paths"])
-    assert PLAN_FILE in declared
-    assert EVIDENCE_RECORD in declared
+    assert FRAGMENT in declared
+    assert FIGURE in declared
     assert deliverable in declared
+    assert PLAN_FILE not in declared
+    assert EVIDENCE_RECORD not in declared
     assert set(resolution.node.write_paths) == set(declared)
+
+
+# A verifier's sandbox can write the worktree — the `test` role is
+# `worktree-full` — so sandbox writability alone would offer it the node's
+# fragment and figure directory. The role predicate withholds them, because a
+# verifier writes only its own delivery and promotion refuses a verifier commit
+# that touches any repository path. Dispatch reads one authority for both, so
+# the grant and the promotion refusal cannot disagree.
+VERIFIER_SANDBOX_CONFIG = {
+    "default_backend": "worker",
+    "backends": {
+        "worker": {
+            "launch": "cli",
+            "command": "codex",
+            "sandbox": "worktree-full",
+            "time_budget": "20m",
+        }
+    },
+    "roles": {
+        "test": {"execution_capable": True, "sandbox": "worktree-full"},
+        "implement": {"execution_capable": True, "sandbox": "worktree-full"},
+    },
+    "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
+}
+
+
+def test_a_verifier_whose_sandbox_can_write_gains_no_landing_paths(
+    home: Path, review_repository: Path
+):
+    """A repository-writing sandbox does not make a verifier a landing role."""
+    run_directory = run_dir("r-verifier-sandbox")
+    resolution = crew.plan_dispatch(
+        node=_node(
+            home,
+            role="test",
+            write_paths=[str(run_directory)],
+            manifest_path=str(run_directory / "manifest.md"),
+        ),
+        config=VERIFIER_SANDBOX_CONFIG,
+        project=PROJECT,
+        repo=review_repository,
+    )
+    assert resolution.validation.ok, resolution.validation.findings
+    declared = list(resolution.node.write_paths)
+    assert FRAGMENT not in declared
+    assert FIGURE not in declared
+    assert PLAN_FILE not in declared
+    assert EVIDENCE_RECORD not in declared
 
 
 def test_the_prompt_contract_gate_tracks_writability_not_the_process_directory(

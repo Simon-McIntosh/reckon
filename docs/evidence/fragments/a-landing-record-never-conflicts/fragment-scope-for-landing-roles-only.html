@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <title>The landing fragment reaches only landing roles | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The landing fragment reaches only landing roles</h1>
+      <p class="lead">A node's default write scope grants its own evidence fragment and figure directory. That grant was keyed on sandbox writability alone, so a verifier role whose sandbox can write the worktree was handed a repository write path it could never land. The grant now reads the same role predicate the promotion refusal reads.</p>
+    </header>
+
+    <section id="the-defect">
+      <h2>The defect: a verifier offered a path it cannot land</h2>
+      <p>The default scope added by section 2 grants <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node-id&gt;.html</code> and <code>docs/figures/&lt;plan&gt;/&lt;node-id&gt;/</code>. The grant sat behind one gate — sandbox writability of the worktree — so any role whose sandbox is <code>worktree-full</code> received it. The <code>test</code> role is <code>worktree-full</code> in the flight defaults, so a verifier was offered a repository write path.</p>
+      <p>Promotion reads a second rule: a test role may not commit any repository path, so a run that wrote the fragment it was handed is refused at promotion. The two rules disagreed. Measured at base <code>29af302f</code>, a <code>test</code>-role dispatch with a <code>worktree-full</code> sandbox carried both paths in its write scope:</p>
+      <pre><code>assert 'docs/evidence/fragments/plan-a/role-scope-node.html' not in [... 'docs/evidence/fragments/plan-a/role-scope-node.html', 'docs/figures/plan-a/role-scope-node']</code></pre>
+      <p>A review or read-only investigate role already lost the paths through the sandbox gate, but only as a side effect of its sandbox; the role rule itself was not consulted.</p>
+    </section>
+
+    <section id="what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/dispatch.py</code> gates the default fragment grant on <code>role_may_write_repository_paths(node.role)</code> as well as <code>_can_write_worktree(...)</code>. <code>role_may_write_repository_paths</code> is the single spelling of "this role may write repository paths" — the same predicate promotion refuses on — so the grant and its refusal read one authority and cannot drift.</li>
+        <li>A role that lands no work in the tree acquires no landing path: the fragment and figure directories are never appended to its <code>write_paths</code>, and its evidence goes in its run directory as before.</li>
+        <li><code>tests/test_role_write_scope.py</code>: the two cases that pinned the retired plan-wide landing paths now assert the node's own fragment and figure paths, and that no shared plan or archive path is granted. A new case pins a writable-sandbox verifier to no landing paths.</li>
+      </ul>
+      <p>The figure <a href="/reckon/figures/a-landing-record-never-conflicts/fragment-scope-for-landing-roles-only/landing-grant-gate.svg">the landing grant before and after: one gate, then two</a> draws the decision the change makes.</p>
+    </section>
+
+    <section id="the-test">
+      <h2>The gate</h2>
+      <ul>
+        <li><code>test_an_implement_role_receives_the_landing_paths_in_its_write_scope</code> — an implement role receives its own <code>docs/evidence/fragments/plan-a/role-scope-node.html</code> and <code>docs/figures/plan-a/role-scope-node</code>, its declared deliverable, and neither <code>docs/plans/plan-a.html</code> nor <code>docs/evidence/archive/plan-a-landed.html</code>.</li>
+        <li><code>test_an_implement_role_on_the_local_lane_still_receives_the_landing_paths</code> — the same on the local-lane dialect, so the grant tracks writability rather than the backend command.</li>
+        <li><code>test_a_read_only_role_does_not_receive_the_landing_paths</code> (review, investigate) and its local-lane twin — neither the shared paths nor the fragment and figure paths appear.</li>
+        <li><code>test_a_verifier_whose_sandbox_can_write_gains_no_landing_paths</code> — the new case: a <code>test</code> role with a <code>worktree-full</code> sandbox still receives no landing path.</li>
+      </ul>
+    </section>
+
+    <section id="negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>grant the fragment path to every role again; the verifier-role case must then fail</em>. Run in a scratch copy of this tree with the guard replaced by an unconditional grant, <code>tests/test_role_write_scope.py -k "verifier or read_only_role"</code> fails 5 of 5 verifier cases, <code>EXIT=1</code>, including <code>test_a_verifier_whose_sandbox_can_write_gains_no_landing_paths</code>. The writable-sandbox verifier case passes in the after arm and turns red only under the mutation, so it is the assertion the guard is measured by.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Declared negative control, unconditional grant</td><td>5 failed / 17 deselected, <code>EXIT=1</code>; first line repeats the declaration verbatim</td><td><code>gate-logs/role-scope-negative-control.log</code></td></tr>
+          <tr><td>Base at <code>29af302f</code>, this gate</td><td>19 failed / 207 passed, <code>EXIT=1</code>; the two implement cases fail there as required, plus 17 pre-existing <code>tests/test_crew.py</code> failures</td><td><code>gate-logs/role-scope-base.log</code></td></tr>
+          <tr><td>This tree at <code>4e82a893</code>, this gate</td><td>16 failed / 211 passed, <code>EXIT=1</code>; zero added failures — the two implement ids clear and no id enters the set, the 16 being the same pre-existing <code>tests/test_crew.py</code> cases</td><td><code>gate-logs/role-scope-after.log</code></td></tr>
+          <tr><td>This tree, <code>tests/test_role_write_scope.py</code> alone</td><td>22 passed, <code>EXIT=0</code></td><td><code>gate-logs/role-scope-file.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Each log header prints its revision, the module under test as imported, and the resolved working directory, so the tree that served each arm is checkable. The <code>tests/test_crew.py</code> failures are present at base and out of this node's declared scope: reported, not triaged.</p>
+      <p>The worker does not resolve the driving followup or change terminal plan state.</p>
+    </section>
+  </main>
+</body>
+</html>
