@@ -82,6 +82,34 @@
     "reason": "impl 0.96 was set before 2026-09-29, when this citation repair and 17 more red ids were folded into section 2; impl is monotonic, so it stays until section 2 closes rather than rising on a denominator that has since grown",
     "verdict": "waived"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "4316ff0f66e6b458ca6d7f6a110b25c6931d6f79",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_schema.py::test_canonical_dump_equals_read_state[full]"
+      ],
+      "integrated_revision": "4316ff0f66e6b458ca6d7f6a110b25c6931d6f79",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 4316ff0f66e6: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_schema.py",
+    "gate_command_source": "stored",
+    "integrated_revision": "4316ff0f66e6b458ca6d7f6a110b25c6931d6f79",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119384060-evidence-citations-resolve/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "timed_out": false,
+    "worktree_roots_rewritten": []
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
