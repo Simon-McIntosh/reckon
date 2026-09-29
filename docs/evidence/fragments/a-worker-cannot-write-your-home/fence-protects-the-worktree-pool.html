@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="The fence's protected set includes the worktree pool">
+  <meta name="plan-summary" content="The fence seals Code/.reckon-worktrees, so a fenced worker writes only its own worktree.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s3">
+  <meta name="plan-commits" content="409e42c8">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fence,worktree">
+  <title>The fence's protected set includes the worktree pool — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="fence-protects-the-worktree-pool" data-reckon="landed" data-when="2026-09-29">
+  <h2>The fence's protected set includes the worktree pool</h2>
+  <p><code>protected_paths</code> names <code>Code/.reckon-worktrees</code>, so the fence overlays it read-only while <code>fence_argv</code> re-binds the run's own worktree writable after that overlay. A fenced stub launched for worktree A writes into A and is refused read-only into sibling worktree B; the declared negative control (pool removed) lands the sibling write. The 15 cited fence test files pass at both arms, 275 passed / 0 failed each.</p>
+</article>
+</body>
+</html>
