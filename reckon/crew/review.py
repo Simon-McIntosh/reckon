@@ -530,13 +530,24 @@ _REPO_PATH_ANCHOR = "tests"
 # left whole rather than reduced onto the anchor.
 _CWD_COMPONENTS = ("", ".", "..")
 
+# The repository root this module lives in. A recorded working directory is a
+# scratch tree — a copy of the repository — so a leading id component that names
+# a real path under this root is part of a repository-relative id rather than
+# the tree's own contribution. An arm run as ``env -C /tmp/pkg`` where the
+# repository holds a ``pkg`` package prints ``pkg/tests/x.py`` for a test that
+# is not the repository's ``tests/x.py``, and the tree's basename only coincides
+# with the leading component; reducing the two onto one spelling would merge a
+# package's own test into the repository's ``tests/`` and hide a failure the
+# head really added. The root is read from this module's own location rather
+# than written down, because a checkout sits under whatever directory it was
+# created in — a worktree under the node's.
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+
 # The directory name the repository occupies. An arm invoked from a directory
 # above the repository prints its summary lines with this component first
 # (``reckon/tests/x.py``) where the arm run at the repository root printed
-# ``tests/x.py``, and the two name one test. The name is read from this
-# module's own location rather than written down, because a checkout sits under
-# whatever directory it was created in — a worktree under the node's.
-_REPO_DIRECTORY_NAME = Path(__file__).resolve().parents[2].name
+# ``tests/x.py``, and the two name one test.
+_REPO_DIRECTORY_NAME = _REPOSITORY_ROOT.name
 
 
 # The separator a recorded working directory is split on. Its components are
@@ -559,6 +570,26 @@ def _recorded_directory_tail(arm_directory: str | Path | None) -> tuple[str, ...
     )
 
 
+def _names_repository_path(component: str) -> bool:
+    """Whether ``component`` names a real path at the repository root.
+
+    A repository-relative id opens with the name of a real repository entry —
+    ``pkg/tests/x.py`` names a package's own test. A scratch tree's own
+    contribution opens with the tree's basename, which is arbitrary
+    (``rcq2-base``). The two are indistinguishable from the id alone when the
+    tree is named like a repository path, so the id is kept whole rather than
+    reduced: reducing a genuine repository-relative id merges a package's own
+    test into the repository's ``tests/`` spelling and hides a failure the head
+    really added, the direction the count exists to prevent.
+    """
+    if not component:
+        return False
+    try:
+        return (_REPOSITORY_ROOT / component).exists()
+    except OSError:
+        return False
+
+
 def _strip_recorded_directory(path: str, arm_directory: str | Path | None) -> str:
     """Return ``path`` without the leading components the arm's own directory contributed.
 
@@ -572,11 +603,19 @@ def _strip_recorded_directory(path: str, arm_directory: str | Path | None) -> st
     (``pkg/tests/x.py``) is untouched and stays a different test. A path the
     strip would empty keeps its own spelling, so an id naming the directory
     itself is still compared rather than reduced to nothing.
+
+    A leading component that names a real path at the repository root is left
+    whole even when it matches the directory's basename: a scratch tree named
+    like a repository path (``env -C /tmp/pkg`` with a ``pkg`` package in the
+    repository) would otherwise reduce a genuine ``pkg/tests/x.py`` onto the
+    repository's ``tests/`` spelling.
     """
     tail = _recorded_directory_tail(arm_directory)
     if not tail:
         return path
     components = path.split(_DIRECTORY_SEPARATOR)
+    if _names_repository_path(components[0]):
+        return path
     for length in range(len(tail), 0, -1):
         if length < len(components) and components[:length] == list(tail[-length:]):
             return _DIRECTORY_SEPARATOR.join(components[length:])
@@ -1093,12 +1132,15 @@ def _arm_directory(manifest_text: str, field: str) -> str | None:
     from, and it is attributed to the arm whose command mentions it — the arm
     that ran elsewhere is left without one rather than given its sibling's tree,
     because the reduction is applied per arm and a directory attributed to the
-    wrong arm reduces that arm's ids.
+    wrong arm reduces that arm's ids. An arm whose suite record names no command
+    at all names no directory either: the manifest's single ``measurement_cwd``
+    is not evidence that this arm ran there, so it is withheld rather than
+    attributed to whichever arm is read first.
     """
     recorded = _recorded_working_directory(manifest_text)
     command = _suite_value(manifest_text, field, _COMMAND_KEY) or ""
     if not command:
-        return recorded
+        return None
     match = _ENV_CHDIR_RE.search(command)
     if match:
         return match.group("directory")

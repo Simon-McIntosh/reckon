@@ -38,6 +38,12 @@ HEAD_SHA = "b" * 40
 # reduction reads the recorded path, and the test never touches the tree.
 SCRATCH = "/tmp/rcq2-base"  # noqa: S108 — fixture path a scratch arm printed, never opened
 
+# A scratch tree whose basename coincides with a genuine repository path — the
+# repository holds a ``pkg`` package, and the id ``pkg/tests/x.py`` is that
+# package's own test rather than the tree's contribution. Nothing resolves this
+# tree on disk either; only the repository the module lives in is read.
+SCRATCH_NAMED_LIKE_A_PATH = "/tmp/pkg"  # noqa: S108 — fixture path, never opened
+
 REPO_IDS = ["tests/test_alpha.py::test_alpha", "tests/test_beta.py::test_beta"]
 PACKAGE_ID = "pkg/tests/test_gate.py::test_alpha"
 REPO_TESTS_ID = "tests/test_gate.py::test_alpha"
@@ -64,17 +70,17 @@ def _log(*failed: str) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _suite(log_path: str, command: str) -> str:
-    return json.dumps(
-        {
-            "revision": HEAD_SHA,
-            "command": command,
-            "exit_status": 1,
-            "log_path": log_path,
-            "failure_ids": [],
-            "completed": True,
-        }
-    )
+def _suite(log_path: str, command: str | None) -> str:
+    observation = {
+        "revision": HEAD_SHA,
+        "exit_status": 1,
+        "log_path": log_path,
+        "failure_ids": [],
+        "completed": True,
+    }
+    if command is not None:
+        observation["command"] = command
+    return json.dumps(observation)
 
 
 def _annotated_record(
@@ -83,7 +89,8 @@ def _annotated_record(
     *,
     base_ids: list[str],
     head_ids: list[str],
-    base_command: str = BASE_COMMAND,
+    base_command: str | None = BASE_COMMAND,
+    head_command: str | None = HEAD_COMMAND,
     extra: str = "",
 ) -> dict:
     """Write the two arms and read them back through the promotion's own path."""
@@ -99,7 +106,7 @@ def _annotated_record(
         "status: complete\n"
         f"{extra}"
         f"baseline_suite: {_suite('base.log', base_command)}\n"
-        f"after_suite: {_suite('head.log', HEAD_COMMAND)}\n",
+        f"after_suite: {_suite('head.log', head_command)}\n",
         encoding="utf-8",
     )
 
@@ -177,3 +184,66 @@ def test_a_package_tests_id_stays_distinct_from_the_repository_tests(
         "the base log reports; merging them loses a real added failure"
     )
     assert review["added_failure_ids"] == [REPO_TESTS_ID]
+
+
+def test_a_scratch_tree_named_like_a_repository_path_leaves_that_path_whole(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A tree whose basename names a repository path does not reduce that path.
+
+    The base arm's ``pkg/tests/test_gate.py`` is a genuine repository-relative
+    id — the repository holds a ``pkg`` package — and the head's
+    ``tests/test_gate.py`` is a different test the head alone reports. The
+    tree's basename coincides with the id's leading component, so a reduction
+    keyed on the basename alone would strip ``pkg`` and merge the two onto the
+    repository anchor, reporting the added failure as none.
+    """
+    repository = tmp_path / "repo"
+    (repository / "pkg" / "tests").mkdir(parents=True)
+    monkeypatch.setattr(review_module, "_REPOSITORY_ROOT", repository)
+
+    review = _annotated_record(
+        tmp_path,
+        monkeypatch,
+        base_ids=[PACKAGE_ID],
+        head_ids=[REPO_TESTS_ID],
+        base_command=(
+            f"env -C {SCRATCH_NAMED_LIKE_A_PATH} python -m pytest {PACKAGE_ID}"
+        ),
+    )
+
+    assert review["added_failure_count"] == 1, (
+        "pkg/tests/test_gate.py::test_alpha is a real repository path, not the "
+        "scratch tree's contribution; reducing it merges a package's own test "
+        "into the repository's tests/ and hides a real added failure"
+    )
+    assert review["added_failure_ids"] == [REPO_TESTS_ID]
+
+
+def test_a_measurement_directory_without_an_arm_command_is_not_attributed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The manifest's ``measurement_cwd`` is withheld from an arm that names no command.
+
+    Neither suite record names a ``command``, so the manifest's single
+    ``measurement_cwd`` is not evidence that either arm ran in that tree.
+    Attributing it to the head arm would reduce the head log's ids against the
+    base arm's tree, merging them onto the base's spelling and reporting the
+    added failure as none — the base arm's tree read as the head's.
+    """
+    review = _annotated_record(
+        tmp_path,
+        monkeypatch,
+        base_ids=["tests/test_alpha.py"],
+        head_ids=[_prefixed("tests/test_alpha.py", SCRATCH)],
+        base_command=None,
+        head_command=None,
+        extra=f"measurement_cwd: {SCRATCH}\n",
+    )
+
+    assert review["added_failure_count"] == 1, (
+        "no arm names a command, so neither may be reduced against the "
+        "manifest's single measurement_cwd; withholding it leaves the head "
+        "log's own spelling intact"
+    )
+    assert review["added_failure_ids"] == [_prefixed("tests/test_alpha.py", SCRATCH)]
