@@ -7785,6 +7785,21 @@ def resume_plan(
     )
     if verdict["held"]:
         raise _actionable_budget_hold(verdict, config=config)
+    # A second worker on one run is the collision this refuses, and a hand-typed
+    # resume starts a worker exactly as the sweep does. The guard above refuses
+    # only a process this host found alive, so a run whose end nothing observed —
+    # a worker on another machine, or a pointer that never recorded a process —
+    # would otherwise be resumed as though its worker were dead. The reading is
+    # the sweep's own helper rather than a second composition of it, so what
+    # counts as an observed end cannot drift between the two doors, and the
+    # refusal names the reading it is holding. Consulted after the launcher's
+    # other guards, so the reason reported for a run that fails several is the
+    # one the sweep would report for it as well.
+    from reckon.crew.resumption import _observed_end_refusal
+
+    observed_end = _observed_end_refusal(record)
+    if observed_end is not None:
+        raise observed_end
     backend.setdefault("sandbox", record.get("sandbox"))
     # The plan is built — and its executable resolved — before anything is
     # written, so an unresolvable backend refuses a resume exactly as it
