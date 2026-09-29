@@ -1,0 +1,378 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 3,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "fc6c5ecb5f953f3f68d138f7728e3249571efd47",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 233010,
+      "input_tokens_cumulative": 233010,
+      "output_tokens": 9422,
+      "output_tokens_cumulative": 9422,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 794,
+    "files": 8,
+    "removed": 58
+  },
+  "commit_resolution": null,
+  "commits": [
+    "b0809e30aa6b7bdc92a444ecffdc0abd31fa10f0",
+    "03b5131a77ff2c74074170ce558be651a03a2e30",
+    "2eabd341567d85afcd513d99eb413c08b08315ca"
+  ],
+  "completed_at": "2026-09-29T05:41:25.451Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T02:54:57Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/crew/dispatch.py",
+    "tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "RECKON_RUN_ID= PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-foreign-pid-never-reads-dead /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_foreign_pid_never_reads_dead.py tests/test_a_live_run_never_reads_dead.py tests/test_stalled_row_names_liveness.py tests/test_sprint_liveness.py tests/test_crew_directory.py tests/test_directory_row_reads_the_derived_phase.py --deselect tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T025436655393-a-foreign-pid-never-reads-dead/gate-head-deselect.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 1.0,
+    "plan": "a-stalled-row-says-whether-the-worker-lives",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T03:54:38.203605+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T02:54:38Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 8,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 2,
+    "headroom": 2,
+    "mean_context": 120000,
+    "observed_at": "2026-09-29T02:54:30Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T05:41:25.451Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T025436655393-a-foreign-pid-never-reads-dead/manifest.md",
+  "member": "disposable-r-20260929T025436655393-a-foreign-pid-never-reads-dead",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_foreign_pid_never_reads_dead.py::test_a_run_launched_elsewhere_is_not_read_interrupted_with_retained_work"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_a_foreign_pid_never_reads_dead.py::test_the_directory_row_does_not_read_a_foreign_pid_as_alive",
+      "tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word",
+      "tests/test_sprint_liveness.py::test_a_local_run_is_read_through_its_own_process"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_foreign_pid_never_reads_dead.py::test_a_run_launched_elsewhere_is_not_read_interrupted_with_retained_work"
+    ],
+    "declaration": "restore the ungated list_live liveness write in a scratch copy; case F must fail with dead-pid-with-retained-work",
+    "head_failure_ids": [
+      "tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T025436655393-a-foreign-pid-never-reads-dead/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T025436655393-a-foreign-pid-never-reads-dead/negative-control.log",
+    "test_paths": [
+      "tests/test_a_foreign_pid_never_reads_dead.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-foreign-pid-never-reads-dead",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 389,
+          "cached_input_tokens": 580044,
+          "input_tokens": 580437,
+          "output_tokens": 639,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 581076,
+          "uncached_input_tokens": 4
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "tests/test_a_foreign_pid_never_reads_dead.py builds, in a temporary crew home, case F (a pointer whose launcher_host is a different host, with a fresh stream plus one commit beyond base) read through list_live then the watcher snapshot, asserting it is not interrupted with dead-pid-with-retained-work; plus case H (a foreign record whose worker.json names a live local pid), asserting it does not read alive with liveness_proven true. It carries three further cases: a local launcher_host with a truly absent pid still emits the retained-work interruption; a foreign record with an exit record still reads process gone through the exit-record route; a fingerprint of the real crew home before versus after shows it untouched. Case F fails at the base revision (logged) and passes at the head. The negative control, in a scratch copy, restores the ungated list_live write; case F fails, with the mutation on the red log's first line and an EXIT= line after pytest's output. The gate is the new test plus tests/test_a_live_run_never_reads_dead.py plus tests/test_stalled_row_names_liveness.py; both arms are recorded as one JSON object each under baseline_suite and after_suite (revision, command, exit_status, one log_path, failure_ids), each log ending in an EXIT= line, with the head arm adding no failing id. ruff check plus ruff format --check on the changed paths add no finding against the base.",
+    "estimated_hours": null,
+    "goal": "Plan a-stalled-row-says-whether-the-worker-lives, followup f-asrswtwl-live-worker-read-dead: a pid this host never issued cannot make a live worker read dead-pid-with-retained-work. Read the followup in docs/plans/a-stalled-row-says-whether-the-worker-lives.html with sections 4 plus 8 of /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/live-worker-read-dead-still-reproduces/report.md, which reproduce it at HEAD as cases F, H. list_live in reckon/crew/runs.py (near :509) re-derives liveness by probing the pid on the reading host, storing it where the classifier in reckon/crew/recovery.py reads another observer's answer, so the retained-work interruption (near :3620) fires for a worker launched on another host. Make the fleet read keep its re-derived fact out of that key, with the interruption arm consuming a liveness reading only when it is proven on this host or backed by an exit record.",
+    "id": "a-foreign-pid-never-reads-dead",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T02:54:38Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 8,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 2,
+      "headroom": 2,
+      "mean_context": 120000,
+      "observed_at": "2026-09-29T02:54:30Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T025436655393-a-foreign-pid-never-reads-dead/manifest.md",
+    "negative_control": "restore the ungated list_live liveness write in a scratch copy; case F must fail with dead-pid-with-retained-work",
+    "plan": "a-stalled-row-says-whether-the-worker-lives",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/runs.py",
+      "reckon/crew/recovery.py",
+      "tests/test_a_foreign_pid_never_reads_dead.py",
+      "docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/a-foreign-pid-never-reads-dead.html",
+      "docs/figures/a-stalled-row-says-whether-the-worker-lives/a-foreign-pid-never-reads-dead"
+    ]
+  },
+  "orientation_input_tokens": 5044651.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "a-foreign-pid-never-reads-dead",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T02:54:48.487589+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-stalled-row-says-whether-the-worker-lives",
+  "plan_impl_at_dispatch": 1.0,
+  "promoted_revision": "2eabd341567d85afcd513d99eb413c08b08315ca",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 19,
+      "fit": 18,
+      "goal_fidelity": 18,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 92
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T025436655393-a-foreign-pid-never-reads-dead",
+  "scope_acceptances": [
+    {
+      "path": "reckon/crew/directory.py",
+      "reason": "the first review found the directory row still passed a foreign pid as alive; the same host gate applies; reviewed at 2eabd341"
+    },
+    {
+      "path": "reckon/sprint_liveness.py",
+      "reason": "the first review found a regression there: the repaired fleet read no longer fills process_alive, so sprint rows must derive liveness through the same host gate; reviewed at 2eabd341"
+    },
+    {
+      "path": "tests/test_sprint_liveness.py",
+      "reason": "holds the regression case for the sprint_liveness change"
+    }
+  ],
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "cb635745-eabc-46f6-8f09-1b74c9e075d2",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 42046757,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 440.0,
+    "generated_tokens": 352759,
+    "generation_seconds": 426.71,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 16.9,
+    "machine_seconds": 13.29,
+    "peak_input_tokens": 81320,
+    "tokens_per_second": 826.69,
+    "wall_tokens_per_second": 801.73
+  },
+  "time_budget": "60m",
+  "tool_steps": 210.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 9988,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 3,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T05:41:26Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T05:34:01Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T025436655393-a-foreign-pid-never-reads-dead",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 75793,
+    "worker_pid": 2816534
+  },
+  "worker_seconds": 9919,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
