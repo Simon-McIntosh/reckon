@@ -1,0 +1,352 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "db6726ee01c07c329554f96b4c263623909c2f5c",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 8202597,
+      "input_tokens_cumulative": 8202597,
+      "output_tokens": 47915,
+      "output_tokens_cumulative": 47915,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 192,
+    "files": 3,
+    "removed": 21
+  },
+  "commit_resolution": null,
+  "commits": [
+    "5352a25c7cf674ae3a3ea62be8c9daa66bf2cf82",
+    "4466f2c8a386d73fec26d7a9025bbf84cc363b68"
+  ],
+  "completed_at": "2026-09-29T13:53:15.998Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T13:08:47Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/crew/promotion.py;",
+    "~3027-3040/3085-3090"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q -p no:cacheprovider -n 4 tests/test_promotion_timestamps_reuse_the_parser.py tests/test_reflex_dispatches_one_repair.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130827936760-promotion-timestamps-reuse-the-parser/merge-gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.5,
+    "at_dispatch": 0.4,
+    "plan": "a-worker-reuses-before-it-writes",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T13:53:29.534368+00:00",
+    "horizon_seconds": 2700,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T13:08:29Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 27,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 13,
+    "headroom": 1,
+    "mean_context": 135385,
+    "observed_at": "2026-09-29T13:08:02Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T13:53:15.998Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130827936760-promotion-timestamps-reuse-the-parser/manifest.md",
+  "member": "disposable-r-20260929T130827936760-promotion-timestamps-reuse-the-parser",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_promotion_timestamps_reuse_the_parser.py::test_reader_keeps_its_recorded_output[assume_utc_if_naive-naive]"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_promotion_timestamps_reuse_the_parser.py::test_reader_keeps_its_recorded_output[assume_utc_if_naive-naive]"
+    ],
+    "declaration": "make _assume_utc_if_naive return a naive stamp unchanged; the naive-stamp row of its table must fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130827936760-promotion-timestamps-reuse-the-parser/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130827936760-promotion-timestamps-reuse-the-parser/negative-control.log",
+    "test_paths": [
+      "tests/test_promotion_timestamps_reuse_the_parser.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "promotion-timestamps-reuse-the-parser",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1352,
+          "cached_input_tokens": 264222,
+          "input_tokens": 265576,
+          "output_tokens": 1525,
+          "reasoning_output_tokens": 567,
+          "total_tokens": 267101,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "no datetime.fromisoformat call remains in reckon/crew/promotion.py, or any that remains is named in the test as a retained exception with the input on which the shared parser would differ; a new test tests/test_promotion_timestamps_reuse_the_parser.py holds a behaviour table per reader, with rows for a Z stamp, an offset stamp, a naive stamp, an empty string, a malformed string and a numeric value, expected values taken from the base revision's functions, asserted at head. Base and head arms over every tests/ file that imports reckon.crew.promotion run with -n 4 and a separate --basetemp under /tmp each, both logs end with an EXIT= line, and the head adds no failing test id; each arm's basetemp is deleted after its FAILED ids are read",
+    "estimated_hours": null,
+    "goal": "move the three timestamp readers in reckon/crew/promotion.py (_elapsed_seconds, _assume_utc_if_naive and the stream-event timestamp loop that keeps only zone-aware stamps) onto reckon._timestamps.parse_utc or parse_iso, keeping each reader's current results",
+    "id": "promotion-timestamps-reuse-the-parser",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T13:08:29Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 27,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 13,
+      "headroom": 1,
+      "mean_context": 135385,
+      "observed_at": "2026-09-29T13:08:02Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130827936760-promotion-timestamps-reuse-the-parser/manifest.md",
+    "negative_control": "make _assume_utc_if_naive return a naive stamp unchanged; the naive-stamp row of its table must fail",
+    "plan": "a-worker-reuses-before-it-writes",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "exact",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/promotion.py",
+      "tests/test_promotion_timestamps_reuse_the_parser.py",
+      "docs/evidence/fragments/a-worker-reuses-before-it-writes/promotion-timestamps-reuse-the-parser.html",
+      "docs/figures/a-worker-reuses-before-it-writes/promotion-timestamps-reuse-the-parser"
+    ]
+  },
+  "orientation_input_tokens": 2322263.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "promotion-timestamps-reuse-the-parser",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T13:08:35.717688+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-worker-reuses-before-it-writes",
+  "plan_impl_at_dispatch": 0.4,
+  "promoted_revision": "4466f2c8a386d73fec26d7a9025bbf84cc363b68",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 19,
+      "goal_fidelity": 18,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 94
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T130827936760-promotion-timestamps-reuse-the-parser",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "bd389f69-9e08-4543-9640-59575aecfbf3",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 8202597,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2646.485,
+    "generated_tokens": 47915,
+    "generation_seconds": 1771.923,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 29.4,
+    "machine_seconds": 874.562,
+    "peak_input_tokens": 141012,
+    "tokens_per_second": 27.04,
+    "wall_tokens_per_second": 18.11
+  },
+  "time_budget": "45m",
+  "tool_steps": 80.0,
+  "unreconciled_override": null,
+  "wall_seconds": 2668,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T13:53:16Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T13:09:05Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T130827936760-promotion-timestamps-reuse-the-parser",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 10040,
+    "worker_pid": 143681
+  },
+  "worker_seconds": 2637,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

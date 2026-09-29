@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="33">
-<meta name="plan-impl" content="0.45">
+<meta name="plan-version" content="35">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -150,6 +150,9 @@
 <div class="r-comment" data-section="s2" data-id="c-20260929T101000-reuse-state" data-who="s25-coord" data-when="2026-09-29T10:10:00Z">
     <div class="r-comment-body"><p>State at main 58d65ae2, so this plan's impl reflects what has landed:</p><ul><li><strong>Section 2, one timestamp parser.</strong> <code>reckon/_timestamps.py:parse_utc</code> and <code>parse_iso</code>, its zone-preserving view, are on main. The readers of batches A to D, 38 callers across the crew modules, the top-level modules, <code>_backends</code>, <code>budget</code>, <code>metering</code>, <code>ticker</code>, <code>cli</code>, <code>flight</code>, <code>ledger</code>, <code>mcp_views</code>, <code>serve</code> and <code>velocity</code>, are migrated behind base-recorded behaviour tables. A caller with different semantics is kept as a named exception. The deferred readers in <code>dispatch.py</code> (4), <code>promotion.py</code> (3) and <code>recovery.py</code> (5) remain, now that peer claims on those files have released.</li><li><strong>Section 3, one writer and one decoder.</strong> <code>write_json_atomically</code> carries indent, sort_keys, mode, directory fsync and ensure_ascii. Two waves moved 15 writers and 4 decoders onto it. Three writers remain: <code>runs._write_json</code>, <code>dispatch._supervisor_write</code> and <code>cli._write_json_atomically</code>. The <code>metering.run_streams</code> consolidation of the stream enumeration in promotion and the ledger is not started.</li><li><strong>Sections 4 and 5</strong> are not started. Section 5's gate has now passed.</li></ul></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260929T130827936760-promotion-timestamps-reuse-the-parser" data-who="reckon-build" data-when="2026-09-29T13:53:15.998Z">
+    <div class="r-comment-body"><p>The three timestamp readers in reckon/crew/promotion.py now read reckon._timestamps (_elapsed_seconds via parse_utc, _assume_utc_if_naive via parse_iso, and the stream-event loop now the named _zone_aware_stream_timestamp via parse_iso), keeping each reader&#x27;s policy; zero fromisoformat calls remain, 20 new table tests pass, and the gate over the 38 tests/ files importing reckon.crew.promotion shows base 391 passed EXIT=0 vs head 411 passed EXIT=0 with no added failing id.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:04:52.771Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder stored under the crew review store as a parsed record (goal_fidelity 16, evidence 15, scope_discipline 20, durability 16, fit 19; total 86) with three findings</p></div>
 </div>
@@ -196,7 +199,7 @@
     <div class="r-comment-body"><p>stopped by the coordinator one minute after dispatch, with no commit or edit in its worktree: s23's follow-reads-whole-lines claimed reckon/cli.py 34 s earlier, and the dispatch scope check admitted both claims; the same work will be dispatched under a new node once that claim releases</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T132120460206-review-of-runs-pointer-writer-reuses-the-store" data-who="reckon-build" data-when="2026-09-29T14:05:20.420Z">
-    <div class="r-comment-body"><p>review of run r-20260929T122631754373-runs-pointer-writer-reuses-the-store stored as a parsed record at the revision-keyed path and byte-identically at the legacy path beside it — scores goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 19 (total 94, no dimension absent), added_failure_count 4 with its four ids derived by my own reader from the run&#x27;s gate_baseline_arm.log and gate_after_suite_head.log, three findings (manifest.md:10&#x27;s head probe figure not reproducible across two head samples of the same command, manifest.md population of 124 files with no list beside it against my AST count of 171, negative_control.log:2 naming recknon/crew/runs.py which does not exist)</p></div>
+    <div class="r-comment-body"><p>review of run r-20260929T122631754373-runs-pointer-writer-reuses-the-store stored as a parsed record at the revision-keyed path and byte-identically at the legacy path beside it — scores goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 19 (total 94, no dimension absent), added_failure_count 4 with its four ids derived by my own reader from the run's gate_baseline_arm.log and gate_after_suite_head.log, three findings (manifest.md:10's head probe figure not reproducible across two head samples of the same command, manifest.md population of 124 files with no list beside it against my AST count of 171, negative_control.log:2 naming recknon/crew/runs.py which does not exist)</p></div>
 </div>
 </section>
 </main>
