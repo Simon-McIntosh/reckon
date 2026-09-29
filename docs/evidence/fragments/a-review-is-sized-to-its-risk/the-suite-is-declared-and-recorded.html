@@ -13,7 +13,7 @@
   <meta name="plan-recorded-at" content="2026-09-29">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktree; gates run against the root environment's interpreter">
-  <meta name="plan-commits" content="a366947c,5caf7559,6f97c185">
+  <meta name="plan-commits" content="a366947c,5caf7559,6f97c185,468a24ba">
   <meta name="plan-artifacts" content="reckon/crew/standing_suite.py,tests/test_standing_suite.py,reckon/flight.py,reckon/_flight_schema.py,reckon/schema/flight.yaml,docs/_shared/flight.schema.json,docs/state/reckon/flight.yaml">
   <meta name="plan-reviewed-by" content="r-20260928T233552756785">
   <title>The suite is declared and recorded — landed evidence | reckon</title>
@@ -147,13 +147,13 @@
         </tr>
         <tr>
           <td>head</td>
-          <td><code>6f97c185</code>, committed head</td>
+          <td><code>468a24ba</code>, committed head</td>
           <td>pytest -q tests/test_standing_suite.py tests/test_flight.py</td>
           <td>95 passed, 2 skipped — <code>EXIT=0</code>, no FAILED ids</td>
         </tr>
         <tr>
           <td>negative control</td>
-          <td><code>6f97c185</code> with <code>hold_reason</code> mutated to return
+          <td><code>468a24ba</code> with <code>hold_reason</code> mutated to return
           <code>None</code> whenever the latest record has <code>collection_failed</code></td>
           <td>pytest -q tests/test_standing_suite.py::test_a_collection_failure_is_recorded_and_holds_none_and_light</td>
           <td><code>EXIT=1</code>, <code>1 failed</code> — the test fails as required</td>
@@ -172,6 +172,9 @@
     the hold; a waiver lifting the hold; a run past its budget being stopped with its whole process
     group gone; an unresolvable checkout root raising rather than reading as no hold; and the
     record landing under the project's state tree.</p>
+    <p>The head and control arms were run at <code>468a24ba</code>. The commit carrying this fragment
+    changes only this document, so the source the arms measured is the source the fragment
+    describes.</p>
     <p>The full project suite was <strong>not</strong> run by this node; the wave close runs it once
     at the merged head, and that declaration is this node's own subject.</p>
   </section>
