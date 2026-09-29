@@ -20,16 +20,16 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
   <meta name="plan-standalone" content="Changes the default write scope and the read path of the cumulative record; it consumes no other plan&#x27;s evidence, and the plans that author records keep working unchanged.">
   <title>A Landing Record Never Conflicts | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="34">
+<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-version" content="35">
 <meta name="plan-commits" content="a69f554f,5bb66c48,41bc0eea,380dcd14,cf9160ff,32d932b2,53ceb356,cc44c453,65f5a378,3157768e,8602efcf,16ca61e7,d85fba28,6cdc5b8d,65c03d26,18719f5d,d41e0231">
 <meta name="plan-artifacts" content="reckon/evidence.py,tests/test_evidence_record_composition.py,reckon/serve.py,reckon/doccheck.py,tests/test_readers_compose_the_record.py,reckon/mcp.py,tests/test_read_plan_composes_the_record.py,reckon/crew/promotion.py,tests/test_promotion_writes_the_landing_line.py">
-<meta name="plan-impl" content="0.88">
+<meta name="plan-impl" content="0.95">
 </head>
 <body>
   <main class="plan-doc">
@@ -247,10 +247,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-alrnc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alrnc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="2026-09-29T03:57:51+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Give each node its own record fragment</h4>
     <div class="r-fu-body"><p>One invocation builds the plan: the coordinator dispatches §2 (dispatch scope and prompt) and §3 (composition and promotion) as separate nodes in parallel, and §4 after §3.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-record-never-conflicts</pre>
+    <p class="r-fu-outcome">All four sections have landed. §2's default scope gives each node its own fragment and figure directory. §3 composes the record at read time, and its measure (six-study-commits-merge-without-conflict, merged at cd8d3171) shows the before arm conflicting on one path under docs/evidence and the after arm on none, with all six anchors composed once; the measure was rerun at merged main 5544d01b and exits 0. §4 leaves records without fragments unchanged. One regression from §2 stays open and carries the next followup.</p>
+    </article>
+<article class="r-fu" data-id="f-alrnc-002" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-29T04:00:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Grant fragment paths to landing roles only</h4>
+    <div class="r-fu-body"><p>§2's default scope grants the fragment and figure paths to every role, so a verifier role receives repository write paths it must not have. Two tests in <code>tests/test_role_write_scope.py</code> fail at main because of it: <code>test_an_implement_role_receives_the_landing_paths_in_its_write_scope</code> and <code>test_an_implement_role_on_the_local_lane_still_receives_the_landing_paths</code>. The repair gives the default fragment scope only to roles that land work in the tree, and reconciles those two tests with the section's rule.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-record-never-conflicts §2</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
