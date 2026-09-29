@@ -17,8 +17,8 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-modified" content="2026-09-28">
-  <meta name="plan-version" content="107">
+  <meta name="plan-modified" content="2026-09-29">
+  <meta name="plan-version" content="108">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -1177,6 +1177,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260928T0700-the-fleet-allocation-is-held-from-reckon" data-who="s21-coord" data-when="2026-09-28T07:00:00Z">
     <div class="r-comment-body"><p>Follow-on to c-20260928T0630-the-fleet-runs-from-reckon, also landed by imas-ambix-67: the fleet allocation itself is now held and read from reckon (merge <code>15390017</code>, commit <code>8ec5619d</code>). <code>reckon/crew/fleet_node.py</code> adds <code>reckon fleet-node hold [--submit]|status|place -- &lt;cmd&gt;</code>, and <code>reckon fleet</code> remains the rollup. The allocation keeps its shape: an exclusive rigel node, no wall clock, running <code>~/.local/bin/fleet-supervisor</code>, at 26 cores and 96G. <code>FLEET_PARTITION</code>, <code>FLEET_ACCOUNT</code>, <code>FLEET_CPUS</code> and <code>FLEET_MEMORY</code> override it.</p><p>New jobs carry the job name and comment <code>reckon-fleet</code>, and an allocation under the earlier <code>ambix-fleet</code> comment is still found. Two such jobs exist today, 1276262 (a reservation on clu-2002) and 1277272 (the session host). <code>status</code> lists both and marks the one the fleet record names, and <code>place</code> targets that one. <code>tests/test_fleet_node.py</code> and <code>tests/test_fleet_supervisor.py</code> report 52 passed at the merge. dotfiles <code>e0cffd3</code> points cx's hold at the new command, and the imas-ambix fleet commands are being removed.</p><p>Verified on origin/main: both commits are reachable, <code>fleet_node.py</code> carries the four overrides and both job comments, and both test files are present. I did not re-run the 52-passed figure; it is imas-ambix-67's.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20260929T0640-onnode-owner" data-who="s21-coord" data-when="2026-09-29T04:40:00Z">
+    <div class="r-comment-body"><p><b>Operator decision, 2026-09-29.</b> imas-ambix-67 does the on-node half of §10, because it moved the fleet supervisor into reckon. The work is to run the batch-step supervisor as the live allocation's step with <code>RECKON_FLEET_SPAWN</code> set, prove a worker launches from it, and prove a <code>scancel</code> of the step id reaps it. It touches the live allocation, so it is planned around in-flight workers. <b>A fresh S21 session should not dispatch this half.</b> It should dispatch §4, §6 and §8 per f-adrwiw-remaining-after-audit. When imas-ambix reports its evidence, §10 is declared done, and that opens gate g-tllitd-8 on the-local-lane-is-the-default §8.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260924T213000-discard-leaves-worktree" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
     <div class="r-comment-body">Evidence for this section, 2026-09-24 23:19. crew discard of r-20260924T211759945494-review-of-the-fleet-supervisor-lives-in-reckon removed its pointer but left its worktree, which was clean and at an integrated head. So redispatching the same node id was refused with 'worktree creation failed: worktree path already exists'. The coordinator removed the worktree by hand with a plain `git worktree remove`. The follower then labelled the discarded run 'promoted'. That label is owned by the-fleet-counters-count-the-fleet §3. The discarded run was itself a review-reflex launch with launch in-harness, backend native and pid null in a Claude Code coordinator session that never asked for in-harness. Nothing would ever have run it, yet it held the review's scope claim.</div>

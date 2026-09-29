@@ -22,9 +22,9 @@
   <title>The Suite Is Green At Head | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
+<meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="87">
+<meta name="plan-version" content="88">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1209,6 +1209,11 @@
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
     <p class="r-fu-outcome">receipt-rollback-classification-red merged at 81dac084 and promoted (review total 91, zero added failures). All four ids pass at main: verify-gate re-ran the three test files at main with exit 0. Each was a stale assertion against a deliberately changed contract, not a product defect. No assertion was deleted, and nothing under reckon/ changed. The control waiver cites f-crpc-a-test-first-baseline-refuses-a-sound-control.</p>
     </article>
+<article class="r-fu" data-id="f-sgh-browser-tests-skip-without-a-browser" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-29T04:40:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Browser tests skip with a stated reason where no headless browser exists</h4>
+    <div class="r-fu-body"><p><b>Operator decision, 2026-09-29.</b> <code>test_spa_module_scope</code> and the other headless-browser tests should skip with a stated reason when no browser binary exists, and run where one does. They are neither made mandatory on the fleet node nor moved to another host.</p><p>Done when every browser-driven test resolves its browser once, skips with a reason that names the missing binary when none resolves, and still runs and asserts where one does. A negative control proves the skip is not vacuous: with a stub browser on PATH, the test runs and fails on a planted defect. Nothing under <code>reckon/</code> changes.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-20260924T1955-fixtures" data-who="reckon-build" data-when="2026-09-24T19:55:00Z">
@@ -1381,6 +1386,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260928T200639659711-review-of-receipt-rollback-classification-red" data-who="reckon-build" data-when="2026-09-28T20:30:52.903Z">
     <div class="r-comment-body"><p>the review record for r-20260928T193532461213-receipt-rollback-classification-red is stored at ...at-0b8fe1be9b5d4fb900d7526edd2f188a2495ca64.json and its byte-identical legacy twin, status parsed, total 91 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 16), six of six checklist items, three findings, added_failure_count 0 with added_failure_ids [].</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260929T0640-operator-decisions" data-who="s21-coord" data-when="2026-09-29T04:40:00Z">
+    <div class="r-comment-body"><p><b>Operator decisions on f-sgh-003, 2026-09-29.</b></p><ul><li><b>The imas-ambix foreign sha is fixed at its source.</b> imas-ambix-67 has been asked to correct the <code>da64c5cb</code> citation in its <code>dsv41-flash-four-card-throughput-landed</code> record. The cross-project check stays. f-sgh-003 resolves once that test is green.</li><li><b>Browser tests skip without a browser, with the reason recorded.</b> See f-sgh-browser-tests-skip-without-a-browser.</li></ul><p>Two repairs by other coordinators are also in flight or landed under this section: f-sgh-test-ledger-red (s25-coord) and f-sgh-receipt-rollback-classification-red (s22-coord, landed at <code>81dac084</code>).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
