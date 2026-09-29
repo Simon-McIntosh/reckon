@@ -1,0 +1,103 @@
+<article class="landed-report" data-run-id="r-20260929T050438982778-commitless-changed-paths-reads-the-declaration">
+  <h3>commitless-changed-paths-reads-the-declaration &mdash; the worktree, not the declaration, decides</h3>
+  <p>
+    A deterministic commitless run &mdash; a review or an investigate node &mdash; has no repository
+    work to commit, so it writes <code>commits: none</code> and a <code>changed_paths</code> value
+    that names an artefact outside the repository or declares no path at all. <code>crew complete</code>
+    read those fields as a commit citation and refused the run, and the coordinator blanked the line by
+    hand each time.
+  </p>
+  <p>
+    Three attempts read the declaration to decide, and each was walked around, because no shape rule can
+    tell a filename from a declaration in a free-text field:
+  </p>
+  <ul>
+    <li>The first recognised <code>none</code> only when the parsed list item ended at a space or the end
+      of the value, so a declaration followed by sentence punctuation (<code>none under the
+      repository;</code>) survived as a path and the manifest was refused.</li>
+    <li>The second read <code>changed_paths</code> through the boundary <code>commits</code> uses, which
+      accepts any non-word character after the absence word. A review that really changed a file called
+      <code>none.txt</code> was then read as declaring an absence, while the path reader resolved the same
+      field to <code>('none.txt',)</code> &mdash; the two readings disagreed about one field.</li>
+    <li>The third added a file-existence check for a bare value, but the path-entry reader returned the
+      parsed entries whenever they were non-empty, so <code>changed_paths: none, no repository
+      change</code> arrived as a survivor entry and the token <code>none</code> was never tested. A
+      repository that really committed a file named <code>none</code> promoted with no commit where the
+      dispatch base had refused.</li>
+  </ul>
+  <p>
+    The rule now decides from evidence. For a role that carries no repository work, promotion with no
+    commits requires the run's own worktree to show no repository change against the base sha recorded
+    at dispatch: no commit beyond the base, no tracked modification, and no untracked file apart from the
+    <code>.venv</code> symlink that provisioning plants in every worktree. A worktree that holds work
+    needs the commit that contains it, and a run whose worktree holds work is refused with the paths git
+    reported. The declaration then keeps only its remaining role: it says whether the run <em>claims</em>
+    no change, and a manifest that names a path under the run's own repository still needs the commit
+    that contains it.
+  </p>
+  <p>
+    A refusal is not a dead end. The coordinator may pass <code>--no-commit '&lt;why&gt;'</code>, the
+    same override the gate-evidence guard takes, and the run then promotes with the paths git found
+    recorded on the ledger as <code>no_commit_uncommitted_paths</code> beside the reason. The ledger row
+    therefore says <em>which</em> uncommitted repository work was declined a commit, not merely that one
+    was. No manifest text reaches this path &mdash; the reason is read from the command line &mdash; so a
+    worker cannot declare its own changes away.
+  </p>
+  <figure>
+    <img src="/reckon/figures/the-audit-agrees-with-the-skill/commitless-changed-paths-reads-the-declaration/change-decision-from-the-worktree.png"
+         alt="A commitless role with commits: none is measured against its recorded base sha; an empty measurement promotes, a non-empty one is refused unless --no-commit was given, in which case the paths are recorded.">
+    <figcaption>
+      The measurement is the decision. The worktree is read against the recorded base sha; an empty
+      result is the only condition under which a commitless role promotes with no commits, and a
+      non-empty one is refused naming the paths unless the coordinator passed <code>--no-commit</code>,
+      which records them instead.
+    </figcaption>
+  </figure>
+  <table>
+    <caption>Shapes exercised by <code>tests/test_commitless_review_promotes.py</code></caption>
+    <thead>
+      <tr><th>Worktree</th><th>Declaration</th><th>Role</th><th>Outcome</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>clean</td><td>a report path outside the repository, <code>commits</code> prose</td><td>review</td><td>promotes, no commits</td></tr>
+      <tr><td>clean</td><td><code>changed_paths</code> of <code>none</code> / <code>none, no repository change</code> / <code>none. review only</code>, and empty</td><td>review</td><td>promotes &mdash; the prose shape is irrelevant when nothing changed</td></tr>
+      <tr><td>clean, <code>.venv</code> symlink present</td><td><code>none</code></td><td>review</td><td>promotes &mdash; the provisioning symlink is not the run's work</td></tr>
+      <tr><td>a commit adds a file named <code>none</code></td><td><code>changed_paths</code> one of five prose shapes or empty, <code>commits: none</code></td><td>review</td><td>refused &mdash; cites no commit; git's path is named</td></tr>
+      <tr><td>an untracked <code>scratch.txt</code></td><td><code>none</code></td><td>review</td><td>refused &mdash; cites no commit</td></tr>
+      <tr><td>an untracked <code>keep.txt</code>, no override</td><td><code>none</code></td><td>investigate</td><td>refused &mdash; names <code>keep.txt</code></td></tr>
+      <tr><td>clean</td><td><code>candidate.txt</code>, <code>commits</code> prose</td><td>review</td><td>refused &mdash; the manifest field 'commits' is missing</td></tr>
+      <tr><td>clean</td><td><code>candidate.txt</code>, <code>commits</code> prose</td><td>implement</td><td>refused &mdash; the committing role's guard is unchanged</td></tr>
+      <tr><td>clean</td><td><code>none. no repository change</code>, <code>commits</code> empty</td><td>implement</td><td>refused &mdash; a committing role reads <code>changed_paths</code> as a path list</td></tr>
+      <tr><td>clean</td><td><code>candidate.txt</code>, <code>commits: none, no repository change</code></td><td>implement</td><td>refused &mdash; does not resolve to an object</td></tr>
+      <tr><td>clean</td><td>a report path, <code>commits: nonesuch, prose</code></td><td>review</td><td>refused &mdash; a word that only begins with an absence word is a citation attempt</td></tr>
+    </tbody>
+  </table>
+  <p>
+    <strong>Negative control.</strong> The declared mutation &mdash; <em>skip the worktree evidence
+    check</em> &mdash; reddens the committed-<code>none</code> case first: with the check skipped, a
+    review whose worktree really committed a file named <code>none</code> promotes under each of
+    <code>none</code>, <code>none, no repository change</code>, <code>none. review only</code>, and an
+    empty <code>changed_paths</code>, together with the untracked-file case &mdash; 5 failed and 12
+    passed over the targeted cases. The red log is
+    <code>negative-control-worktree-evidence.log</code> under the run directory, whose first line repeats
+    the declared mutation verbatim; the mutated source was restored in a <code>finally</code> block.
+  </p>
+  <p>
+    <strong>Gate.</strong> The 25 <code>tests/test_*promot*.py</code> files plus
+    <code>tests/test_cited_identifier_resolves.py</code> (26 files) ran with <code>-rf -n 6</code> at the
+    head <code>3005ac1a</code>: 240 passed, 0 failed (<code>gate-head.log</code>). A base arm was not
+    run this attempt; the head is green, so the change adds zero failures by id.
+  </p>
+  <p>
+    <strong>Landing note.</strong> The behaviour is carried by <code>reckon/crew/promotion.py</code>:
+    <code>_worktree_git_paths</code> runs the git reads, <code>_worktree_repository_changes</code>
+    measures the worktree against the recorded base sha (commits beyond base &cup; tracked modifications
+    &cup; untracked, minus <code>_PROVISIONED_WORKTREE_ENTRIES</code>), and
+    <code>_require_commit_for_changed_manifest</code> refuses a commitless run whose worktree holds work,
+    returning the paths instead when a <code>no_commit_reason</code> is given. <code>complete</code>
+    passes the reason through and <code>_complete_locked</code> records
+    <code>no_commit_uncommitted_paths</code>. For <code>changed_paths</code>,
+    <code>_changed_paths_declare_no_paths</code> now reads only the claim; the path-absence boundary, the
+    path-entry reader, the tree-existence helper, and the first-path file test are gone.
+  </p>
+</article>
