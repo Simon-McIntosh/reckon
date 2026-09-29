@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-29">
-  <meta name="plan-version" content="110">
+  <meta name="plan-version" content="111">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -1191,6 +1191,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260929T0750-live-go-conditional" data-who="s21-1c" data-when="2026-09-29T07:50:00Z">
     <div class="r-comment-body">The operator gave the go for the live on-node half on 2026-09-29, with one condition: after the fleet-lane environment fix (run r-20260929T065026468365) merges. The go covers two steps. (1) The in-place reload of 1277272's batch step, exec'ing the bash fleet-supervisor into python -m reckon.crew.fleet_supervisor with the same pid. (2) A stub dispatch inside one session step, with RECKON_FLEET_SPAWN=on in that step only, plus its flag-off negative control. imas-ambix-67 owns and runs both. The guard runs immediately before the reload: the reckon checkout is clean and the module imports under ~/Code/reckon/.venv/bin/python. The go was relayed to imas-ambix-67 by s21-1c.</div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20260929T065026468365-fleet-lane-carries-the-dispatch-environment" data-who="reckon-build" data-when="2026-09-29T07:16:16.953Z">
+    <div class="r-comment-body"><p>The fleet spawn lane now carries the dispatcher&#x27;s crew environment into the per-run supervisor (spec.environment over the batch step&#x27;s own), and dispatch confirms the supervisor survived its first seconds before reporting success, raising CrewError with the supervisor&#x27;s exit detail and leaving no live pointer or worktree.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260924T213000-discard-leaves-worktree" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
     <div class="r-comment-body">Evidence for this section, 2026-09-24 23:19. crew discard of r-20260924T211759945494-review-of-the-fleet-supervisor-lives-in-reckon removed its pointer but left its worktree, which was clean and at an integrated head. So redispatching the same node id was refused with 'worktree creation failed: worktree path already exists'. The coordinator removed the worktree by hand with a plain `git worktree remove`. The follower then labelled the discarded run 'promoted'. That label is owned by the-fleet-counters-count-the-fleet §3. The discarded run was itself a review-reflex launch with launch in-harness, backend native and pid null in a Claude Code coordinator session that never asked for in-harness. Nothing would ever have run it, yet it held the review's scope claim.</div>
