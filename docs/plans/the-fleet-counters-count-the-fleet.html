@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="127">
+<meta name="plan-version" content="128">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -386,10 +386,11 @@
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-resume-baseline-feed-is-tested</pre>
     <p class="r-fu-outcome">Landed: resume-baseline-feed-is-tested (merged 4a38ea02, promoted 97cbd2b7, review 94, 0 added failures by id). A committed test drives an arming whose checkpoint no longer matches the stream and asserts that a row the pane already showed is not printed again. Bypassing the resume baseline feed site turns it red. Its evidence fragment was withdrawn at ae10dc0b because the reader refused the fragments path. Its content is at 8fd9d1e4, to be restored once the reader accepts fragments.</p>
     </article>
-<article class="r-fu" data-id="f-tfcctf-rearm-replays-the-fleet-with-recorded-times" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfcctf-rearm-replays-the-fleet-with-recorded-times" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="2026-09-29T09:37:05+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">Every arming replays one row per live run at its recorded time</h4>
     <div class="r-fu-body"><p>Land the lead's 2026-09-29 ruling. Every arming of <code>crew follow</code>, first or re-arm, draws one row per live run. Each row is stamped with the recorded time the run entered its current state, the rows are in time order, and no run appears twice in one arming. The silent re-arm cases in <code>tests/test_follow_rearm_continues.py</code> and the attach paragraph in the orchestrator-harness reference move to this contract.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
+    <p class="r-fu-outcome">rearm-replays-the-fleet-with-recorded-times merged at 22b36271 (re-review 87, zero added failures by id). Every arming now draws one row per live run in time order, with no run twice. The follow offset is fixed before the replay reads. The live classification stays the authority on state. The four regressions the first review found were fixed in code, with the tests unmodified. Two follow-ons remain before §9 closes: f-tfcctf-replay-stamps-the-state-entry-time and follow-boundary-snaps-to-a-line (in flight).</p>
     </article>
 <article class="r-fu" data-id="f-tfcctf-a-resumed-run-counts-as-working" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">A resumed run with a live worker counts as working, not unpromoted</h4>
@@ -399,6 +400,11 @@
 <article class="r-fu" data-id="f-tfcctf-noise-pair-case-is-deterministic" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The noise-pair row-policy case passes deterministically</h4>
     <div class="r-fu-body"><p>Reported by the S25 coordinator on 2026-09-29. <code>tests/test_follower_prints_only_policy_rows.py::test_a_noise_pair_prints_nothing_through_the_followers_own_rows</code> fails 2 of 10 runs alone at main (75fdee2a). The case landed with this plan's §9b filter, <code>follower-prints-only-policy-rows</code>. It also appeared among the five added failures in the first review of <code>rearm-replays-the-fleet-with-recorded-times</code>, so a flake there can be read as a regression, or can hide one. Done when the source of nondeterminism is named: a timing window, a shared temp directory, or the environment. The case passes 50 of 50 isolated runs and 50 of 50 runs under <code>-n 8</code>, logs recorded, and no assertion is loosened or removed to get there.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
+    </article>
+<article class="r-fu" data-id="f-tfcctf-replay-stamps-the-state-entry-time" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A replayed row carries the time its run entered its state, not the last re-baseline</h4>
+    <div class="r-fu-body"><p>Measured on the first arming after 22b36271 (2026-09-29, 11:34 local). The replay stamped <code>review-of-rearm-replays-the-fleet-with-recorded-times</code> at 11:30:33, but the run entered <code>working</code> at 10:18:06. The producer re-emits a <code>baseline</code> event for every live run about every 25 minutes: at 08:24, 08:49, 09:12 and 09:30 UTC for this run. <code>_recorded_fleet_times</code> keeps the last event naming a run, so the stamp is the latest re-baseline rather than the entry time. The lead asked for correct timestamps. Done when the replay stamps each row with the observed_at of the first event in the run's trailing sequence of events whose to_state equals its current state, so a re-emitted baseline never resets it. A test with a transition into working followed by three re-baselines asserts that the row carries the transition's time. The declared mutation, keeping the last event, fails.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
     </article>
 </section>
