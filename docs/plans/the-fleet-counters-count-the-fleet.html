@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="132">
+<meta name="plan-version" content="133">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -603,7 +603,10 @@
     <div class="r-comment-body"><p>The follow boundary snaps to the byte after the last newline before the replay reads (reckon/cli.py:_follow_boundary replaces the raw stream_path.stat().st_size), so a record the producer is still writing is read whole and once by the follow loop; the new test tests/test_follow_rearm_continues.py::test_a_record_half_written_at_the_boundary_is_delivered_once_whole passes both boundary cases (2 passed) and the declared raw-size mutation fails it (1 failed)</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260929T112614918262-review-of-follow-boundary-snaps-to-a-line" data-who="reckon-build" data-when="2026-09-29T12:25:57.166Z">
-    <div class="r-comment-body"><p>the independent review of run r-20260929T093259536095-follow-boundary-snaps-to-a-line (reviewed base 8fa5ce749f5fa2e61126afe7c0c3d5c2a8d2631d, reviewed head b1ebba90c676d13509ceb158743020f38e414d88) is stored at both fenced paths, byte-identical, 19381 bytes each, sha256 prefix d2390b44472c07a2; status parsed, all 5 dimensions scored in range 0..20 — goal_fidelity 17, evidence 16, scope_discipline 18, durability 18, fit 17, total 86 — all 6 checklist verdicts present, 4 findings emitted, added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite/after_suite gate logs.</p></div>
+    <div class="r-comment-body"><p>the independent review of run r-20260929T093259536095-follow-boundary-snaps-to-a-line (reviewed base 8fa5ce749f5fa2e61126afe7c0c3d5c2a8d2631d, reviewed head b1ebba90c676d13509ceb158743020f38e414d88) is stored at both fenced paths, byte-identical, 19381 bytes each, sha256 prefix d2390b44472c07a2; status parsed, all 5 dimensions scored in range 0..20 — goal_fidelity 17, evidence 16, scope_discipline 18, durability 18, fit 17, total 86 — all 6 checklist verdicts present, 4 findings emitted, added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite/after_suite gate logs.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20260929T122636189413-replay-stamps-the-state-entry-time" data-who="reckon-build" data-when="2026-09-29T13:12:57.677Z">
+    <div class="r-comment-body"><p>_recorded_fleet_times now stamps each replayed row with the earliest recorded time in the unbroken trailing run of events whose to_state equals the run&#x27;s current state, so a re-emitted baseline no longer moves the stamp to the latest re-emission (2 new cases pass; the declared last-event mutation fails; selection delta 0 added failures by id, base 332 passed / head 334 passed).</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T130204463138-ticker-row-is-one-aligned-transition" data-who="reckon-build" data-when="2026-09-25T13:46:08Z">
     <div class="r-comment-body"><p>each ticker row is one transition, from → to on an aligned arrow with fixed columns on both sides, chained per run on the pane's last shown state, with no action word; 266 passed; review 86, whose three findings (stale width comment at ticker.py:339, a test assertion that cannot fail, and a wrong rendered-case count in the evidence) go to the next ticker node</p></div>
