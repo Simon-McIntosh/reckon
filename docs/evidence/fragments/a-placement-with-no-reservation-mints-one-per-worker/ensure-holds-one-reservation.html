@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en-locale">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-placement-with-no-reservation-mints-one-per-worker">
+  <meta name="plan-title" content="A Placement With No Reservation Mints One Per Worker — ensure holds one reservation">
+  <meta name="plan-summary" content="ensure_reservation now holds the one shared placement reservation under a cross-process claim, so a race of separate dispatches produces one allocation rather than one each, and an unaskable liveness probe reads as unknown rather than as a released reservation.">
+  <meta name="plan-evidence-for" content="a-placement-with-no-reservation-mints-one-per-worker">
+  <meta name="plan-verdict" content="qualified">
+  <title>Ensure holds one reservation | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>ensure holds one reservation</h1>
+  <p>The whole read-decide-hold-publish sequence in <code>reckon/crew/placement.py</code> now runs under a POSIX
+    advisory file lock beside the record (<code>reservation.lock</code> in the crew home), an operation atomic
+    between processes. A racer blocked on the lock reads the record the winner published, so four separate
+    processes starting from no record ask for exactly one allocation. The liveness probe is three-valued: held,
+    released, or unaskable, and only <em>released</em> replaces the record; an unaskable probe waits and re-asks
+    within a bound and submits nothing.</p>
+
+  <h2>Gate</h2>
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>18d6c2dd</code></td><td>1 failed, 195 passed, EXIT=1</td></tr>
+      <tr><td>head</td><td><code>a269887f</code></td><td>1 failed, 199 passed, EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>Added failures: <strong>none</strong> — the single failure
+    (<code>test_a_rewritten_terminal_manifest_transitions.py::test_the_rewrite_marker_does_not_leak_into_a_later_departure</code>)
+    is identical in both arms and predates this change. The four head-only passes are this node's test file. The new
+    file holds one allocation across four racing processes, treats an unaskable probe as unknown, never replaces a
+    live allocation, and replaces a released one once; each case runs against a recording scheduler on the PATH in a
+    temporary crew home, and no real scheduler verb runs.</p>
+
+  <h2>Negative control</h2>
+  <p>The declared mutation — the cross-process claim replaced with a lock held only inside one process — was applied
+    in a scratch tree extracted from the head revision. Case 1 then logs four allocation-obtaining requests and fails
+    (EXIT=1): <code>assert 4 == 1</code>.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li>Head arm log: <code>logs/tests-head.log</code>.</li>
+    <li>Base arm log: <code>logs/tests-base.log</code>.</li>
+    <li>Negative-control log: <code>logs/negative-control.log</code>, first line the declared mutation verbatim.</li>
+  </ul>
+ </main>
+</body>
+</html>
