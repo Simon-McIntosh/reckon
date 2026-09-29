@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-29">
-  <meta name="plan-version" content="72">
+  <meta name="plan-version" content="73">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -513,9 +513,15 @@
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
     <p class="r-fu-outcome">direct-resume-needs-an-observed-death merged at 2248e214 and promoted (review total 94, zero added failures, including tests/test_crew_lane_change.py). resume_plan now refuses a run of unknown liveness, applying the sweep's observed-end rule. Closing the guard reddened 22 fixtures across nine test files, which were repaired in the same node. At main one teardown check in the new test failed because the real crew home's directory mtime moves with live fleet writes; an automatic repair node is on it.</p>
     </article>
-<article class="r-fu" data-id="f-asrswtwl-lane-change-resume-needs-observed-death" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-asrswtwl-lane-change-resume-needs-observed-death" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="2026-09-29T16:47:08+00:00" data-resolved-by="">
     <h4 class="r-fu-title">crew resume --backend waits for an observed end before changing lane</h4>
     <div class="r-fu-body"><p>From the review of direct-resume-needs-an-observed-death (total 94). <code>crew resume --run &lt;id&gt; --backend &lt;lane&gt;</code> returns from the CLI through <code>change_lane</code> (<code>reckon/cli.py</code> near :4535–:4544) before <code>resume_plan</code> is consulted. <code>change_lane</code> stops an existing worker only when <code>record_process_alive</code> proves it alive, so a lane change of an unknown-liveness run can still duplicate a live worker. Apply the same observed-end rule on that route, reusing the resume sweep's helper. Write paths: <code>reckon/cli.py</code> plus a test.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
+    <p class="r-fu-outcome">repair-of-direct-resume-needs-an-observed-death merged at 9dddeeb3 and promoted (review 86). change_lane in reckon/crew/dispatch.py, reached by crew resume --backend and crew redispatch, now refuses a run whose end nothing observed, through the resume sweep's own _observed_end_refusal helper. Zero added failures: base 3 failed, head 2 failed, none new. The stored added-failure count of 2 is a scratch-tree id-prefix artifact, filed as f-ssp-an-arm-run-from-a-scratch-tree-keeps-its-ids. The control was waived only because both arms omit completed; its log exits 1 on the case the head passes. At merged main, verify-gate shows only the two test_session_lives_on_its_run.py failures present in both arms. The review's four findings (a stub-driven case, a print-only preview ahead of the guard, and two record figures) went to the reflex repair r-20260929T163935832766.</p>
+    </article>
+<article class="r-fu" data-id="f-asrswtwl-session-resume-cases-fail-at-main" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The two promoted-session resume cases fail at main</h4>
+    <div class="r-fu-body"><p><code>tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]</code> and <code>[True]</code> fail at base 9c2daf02, at head f86b93f4 and at merged main (verify-gate of r-20260929T144906489940). The file's fixtures were changed by d6dcefb3, the direct-resume node's observed-end fixture commit, so these may be that node's regression. Establish the first revision where they fail, then repair the cause. Wait for the reflex repair r-20260929T163935832766 to release the file before dispatching.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
     </article>
 </section>
