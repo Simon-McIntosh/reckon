@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-commits" content="6c92861d,0ad5a171">
 <meta name="plan-impl" content="0.8">
 </head>
@@ -307,6 +307,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260926T105423525068-review-of-roadmap-docstring-names-the-focus-home" data-who="reckon-build" data-when="2026-09-26T12:03:55.240Z">
     <div class="r-comment-body"><p>review stored at head d055e80c, total 79; its two findings concern how the node recorded its gate command, not the code; the reviewed run was merged and promoted</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260929T190249974220-multiple-active-sprints-finding-retires" data-who="reckon-build" data-when="2026-09-29T19:27:38.628Z">
+    <div class="r-comment-body"><p>fix(audit): retire the multiple-active-sprints finding — reckon/mcp.py no longer raises &quot;multiple active sprints&quot; for two active sprints and the push op description no longer claims it demotes the previously active sprint; existing test test_audit_raises_two_active_sprints_at_error_severity is replaced by test_audit_is_quiet_on_two_active_sprints in tests/test_sprint_push_status.py, and a new end-to-end tests/test_sprint_push_keeps_both_active.py pushes two sprints on a synthetic distributed project under a temporary config home, asserts both keep active and the isolated audit reports no multiple-active-sprints finding; gate 187 passed, 0 added failures vs base 186, and restoring the finding fails the new test</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260925T090127451654-review-of-sprint-skill-teaches-liveness" data-who="reckon-build" data-when="2026-09-25T09:55:12.317Z">
     <div class="r-comment-body"><p>review of sprint-skill-teaches-liveness at a29717dd scored 77/100: the skill teaches live_sprint_ids and a liveness-derived active_sprint_id before either exists in code (closed by active-sprint-follows-the-live-crew); the push contradiction is resolved on main; the manifest's base sha is truncated and two changed_paths are misnamed</p></div>
