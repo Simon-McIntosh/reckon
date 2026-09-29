@@ -47,6 +47,7 @@ _RACE_CHILD = '''\
 
 from __future__ import annotations
 
+import fcntl
 import json
 import sys
 import time
@@ -55,8 +56,30 @@ from pathlib import Path
 from reckon import ledger
 
 PROJECT = "proj"
-PAUSE_SECONDS = 5.0
-WAIT_SECONDS = 120.0
+WAIT_SECONDS = 60.0
+
+
+def holding_the_write_lock(project: str) -> bool:
+    """Whether this process already holds the project's ledger write lock.
+
+    The pause below only means anything to a writer the other one can overtake.
+    A revision that serialises the whole write holds this lock from before its
+    per-run write until after its envelope write, so a commit during the pause
+    is impossible by construction -- the other writer is blocked on this very
+    lock -- and waiting for one would wait forever. The lock is asked for rather
+    than inferred from the writer's shape, and a revision carrying no such lock
+    answers no, so the pause stands and the overtaking writer is waited for.
+    """
+    lock_path = getattr(ledger, "ledger_lock_path", None)
+    if lock_path is None:
+        return False
+    handle = lock_path(project).open("a+b")
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        return True
+    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    return False
 
 
 def main() -> int:
@@ -69,21 +92,29 @@ def main() -> int:
         def paused(project, rows, root_arg):
             result = real(project, rows, root_arg)
             (scratch / "late-paused").write_text("1")
-            deadline = time.monotonic() + PAUSE_SECONDS
-            while (
-                not (scratch / "winner.json").exists()
-                and time.monotonic() < deadline
-            ):
-                time.sleep(0.02)
+            if not holding_the_write_lock(project):
+                # Held here in the middle of this writer's own pause, the other
+                # writer's commit is the only thing that can resume it. A
+                # deadline that silently expired instead would let this writer
+                # commit first, collapsing the schedule into the ordinary
+                # serialised order and reporting a pass this schedule never
+                # produced.
+                deadline = time.monotonic() + WAIT_SECONDS
+                while not (scratch / "winner.json").exists():
+                    if time.monotonic() >= deadline:
+                        raise SystemExit(
+                            "the other writer did not commit while this one paused"
+                        )
+                    time.sleep(0.02)
             return result
 
         ledger._keep_run_files_identical = paused
     else:
-        # Wait for the other writer to reach its pause before writing. A writer
-        # that never arrives must fail loudly: on a loaded machine a short wait
-        # can expire, the write then lands first, and the schedule collapses
-        # into the serialised order this case exists to exclude -- a pass the
-        # schedule never produced, which is how this test first reported one.
+        # Wait for the other writer to reach its pause before writing, and fail
+        # loudly if it never does: a writer that instead proceeds alone lands
+        # first, collapsing the schedule into the serialised order this case
+        # exists to exclude, and the case then reports a pass the schedule never
+        # produced -- how this test first reported one.
         deadline = time.monotonic() + WAIT_SECONDS
         while not (scratch / "late-paused").exists():
             if time.monotonic() >= deadline:
@@ -283,14 +314,18 @@ def test_a_loser_of_the_write_race_cannot_overwrite_the_winner(
     disagreement the write ordering exists to prevent, reached by a writer that
     reported no success at all.
 
-    The interleaving is forced rather than hoped for. The first writer is held
-    by a seam between its per-run write and its envelope write until the second
-    has committed; each writer runs in its own process, because the exclusion
+    The interleaving is forced rather than hoped for. One writer is held by a
+    seam between its per-run write and its envelope write; the other is held
+    until that seam is reached, then writes and announces its commit, which is
+    what resumes the first. Each runs in its own process, because the exclusion
     that must hold is the one between processes and a thread shares it
-    invisibly. The claim is weaker than "the first writer wins": either writer
-    may reach the lock first, so the assertions are that exactly one is refused
-    on the version, that the refusal wrote nothing, that the other writer's row
-    survives in both copies, and that the project still reads.
+    invisibly. Where the writer performs the whole write under the project's
+    lock the pause is skipped: that writer already holds the lock the other one
+    would need, so a commit during the pause cannot happen and waiting for it
+    would wait forever. The claim is weaker than "the first writer wins": either
+    writer may reach the lock first, so the assertions are that exactly one is
+    refused on the version, that the refusal wrote nothing, that the other
+    writer's row survives in both copies, and that the project still reads.
     """
     _seed(repo)
     scratch = tmp_path / "race"
@@ -340,7 +375,16 @@ def test_a_loser_of_the_write_race_cannot_overwrite_the_winner(
 
     ok_role = next(role for role, o in outcomes.items() if o["result"] == "ok")
     lost_role = "winner" if ok_role == "late" else "late"
-    assert "moved from version" in outcomes[lost_role]["text"]
+    # Refused on the version, not on a torn read. A writer that reaches the
+    # ledger while another is between its per-run write and its envelope write
+    # reads a project whose two copies disagree, and an un-serialised writer
+    # reports that to its caller as conflicting history -- a corruption the
+    # ledger does not have, and the wrong remedy for a write that should simply
+    # re-read.
+    assert "moved from version" in outcomes[lost_role]["text"], (
+        "the refused writer was not answered with a version conflict: "
+        + outcomes[lost_role]["text"]
+    )
 
     aggregate, _ = ledger.load(PROJECT, repo)
     row = aggregate["runs"][0]
