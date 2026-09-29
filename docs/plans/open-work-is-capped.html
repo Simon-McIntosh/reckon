@@ -21,12 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="the-fleet-reports-its-velocity">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
   <title>Open Work Is Capped | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -97,10 +98,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-owic-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-owic-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="2026-09-29T06:26:59+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Triage, then cap</h4>
     <div class="r-fu-body"><p>§2 is ready; §3 waits on the two decisions and the velocity view.</p></div>
     <pre class="r-fu-prompt">/reckon-build open-work-is-capped</pre>
+    <p class="r-fu-outcome">Section 2's triage is delivered. The four batches are reconciled into one record at c94459b8, read at main 5344dcf5, with one row per pending plan (68). Every merge chain resolves to a kept target, and the proposals sum to 24 keep, 30 merge and 14 close, against the locked limit of 25. All 128 file:line citations resolve with their symbol at the cited line. The weekly-counts gate has passed, so section 3's cap is unblocked. Nothing was closed: the lead and the owning sessions act on the triage.</p>
+    </article>
+<article class="r-fu" data-id="f-owic-002" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-29T06:30:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Enforce the pending-plan limit at creation</h4>
+    <div class="r-fu-body"><p>Section 3 refuses creation of a plan beyond the limit of 25 pending plans, with the locked refuse-with-override mode, and the refusal names the three pending plans nearest to closing. The triage's dispositions are the lead's to act on first; if all are accepted, 24 plans remain pending.</p></div>
+    <pre class="r-fu-prompt">/reckon-build open-work-is-capped §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
