@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="The arm-id reduction keeps a genuine repository path whole">
+  <meta name="plan-summary" content="Two over-reductions in canonical_node_id let a scratch tree's name absorb a genuine id. A leading component that names a real path at the repository root is now kept whole, and an arm whose suite record names no command names no directory, so the manifest's measurement_cwd is withheld rather than attributed to the wrong arm. Both defects were reproduced at the base blob; reverting either change reddens its named test.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <title>The arm-id reduction keeps a genuine repository path whole | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The arm-id reduction keeps a genuine repository path whole</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>The recorded-directory reduction introduced for
+        <code>scratch-arm-ids-reduce</code> matched a leading id component against the scratch
+        tree's basename alone. A base arm run as <code>env -C /tmp/pkg</code> in a repository
+        that holds a <code>pkg</code> package printed <code>pkg/tests/test_gate.py::test_alpha</code>,
+        and the basename <code>pkg</code> reduced it onto the repository's
+        <code>tests/test_gate.py::test_alpha</code> &mdash; two different tests merged into one,
+        hiding a failure the head arm really added.</p>
+      <p><code>_arm_directory</code> returned the manifest's single
+        <code>measurement_cwd</code> for an arm whose suite record named no command, so that
+        field &mdash; which belongs to whichever arm was measured in the scratch tree &mdash;
+        was attributed to the other arm and its ids reduced against a tree it never ran in.</p>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p>In <code>reckon/crew/review.py</code>,
+        <code>_strip_recorded_directory</code> now leaves a leading component whole when
+        <code>_names_repository_path</code> finds it at the repository root
+        (<code>_REPOSITORY_ROOT</code>, with <code>_REPO_DIRECTORY_NAME</code> derived from it),
+        so a genuine <code>pkg/tests/&hellip;</code> id is no longer reduced away.</p>
+      <p><code>_arm_directory</code> returns <code>None</code> for an arm whose suite record names
+        no command, so the manifest's <code>measurement_cwd</code> is withheld rather than
+        attributed to whichever arm is read first.</p>
+    </section>
+
+    <section id="gate">
+      <h2>The gate</h2>
+      <p>The node's own file and the sibling arm-id file, run at the change's commit and read
+        through the production <code>annotate_review_of_run</code> path with a synthesised
+        manifest and repository:</p>
+      <table>
+        <thead>
+          <tr><th>file</th><th>result</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>tests/test_scratch_arm_ids_reduce.py</code></td>
+            <td><code>5 passed</code>, exit 0</td>
+          </tr>
+          <tr>
+            <td>both node-id files together</td>
+            <td><code>19 passed</code>, exit 0</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The change landed at commit <code>08fdc5e23</code> against base <code>cbbbb56f</code>;
+        both defects were reproduced against the base blob of <code>reckon/crew/review.py</code>
+        and are absent at the change's commit.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>The negative control</h2>
+      <p>The declared control reverts each change in turn and requires its named test to go red.
+        Its log's first line, verbatim:</p>
+      <pre><code>revert each answering commit in turn and confirm the check the finding names fails without it</code></pre>
+      <p>Reverting the repository-path guard reddens
+        <code>test_a_scratch_tree_named_like_a_repository_path_leaves_that_path_whole</code>;
+        restoring the <code>measurement_cwd</code> attribution reddens
+        <code>test_a_measurement_directory_without_an_arm_command_is_not_attributed</code>.
+        <code>reckon/crew/review.py</code> was restored byte-identically (sha256 equal on both
+        sides).</p>
+    </section>
+
+    <section id="limits">
+      <h2>What this record does not show</h2>
+      <p>This fragment records the node's landing; it was authored in a following repair node
+        because the original landing carried only its manifest line. The gate logs it cites live
+        under the run directory
+        <code>r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

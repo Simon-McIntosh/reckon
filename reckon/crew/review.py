@@ -499,6 +499,20 @@ _COMMAND_KEY = "command"
 # which a worker running a gate or a base arm in a scratch tree records.
 _MEASUREMENT_CWD_FIELD = "measurement_cwd"
 
+# The revision a gate log's first line names is what ties its recorded count to
+# the commit it measured. The conventional first line spells it ``revision
+# <sha> tree <path>``; a promotion replay spells it ``# replayed revision:
+# <sha> (integrated <sha>)``. Only the header line is read, so a revision-
+# shaped token in a test's own output cannot be mistaken for the log's.
+_LOGGED_REVISION_RE = re.compile(r"revision\s*:?\s*(?P<sha>[0-9a-fA-F]{7,40})\b")
+
+# The keys the annotated review carries for the revision each arm's gate log
+# names. They sit beside the added-failure count so a reader can tell the
+# revision the count is evidence about without re-running the gate — the fact a
+# header naming the base withholds.
+_BASE_LOG_REVISION_KEY = "base_log_revision"
+_HEAD_LOG_REVISION_KEY = "head_log_revision"
+
 # The token that pins a recorded command's working directory, in the two
 # spellings ``env`` accepts. The match is anchored on ``env`` so a ``-C`` flag
 # belonging to some other tool in the same command is not mistaken for it.
@@ -759,6 +773,25 @@ def _read_gate_log(log_path: str | None, run_directory: Path | None) -> str | No
         return path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return None
+
+
+def recorded_log_revision(log_text: str | None) -> str | None:
+    """Return the revision a gate log's first line names, or ``None``.
+
+    The first line is the log's own record of the revision it ran at, and it is
+    what ties the failures it lists to a commit. A log whose first line names no
+    revision says nothing about what it measured, so ``None`` is returned rather
+    than a guess at the arm's revision. Only the header line is read: a node id
+    or a traceback path in the body can carry a revision-shaped token, and those
+    belong to the output rather than to the measurement.
+    """
+    if not log_text:
+        return None
+    lines = log_text.splitlines()
+    if not lines:
+        return None
+    match = _LOGGED_REVISION_RE.search(lines[0])
+    return match.group("sha") if match else None
 
 
 def _manifest_prose(manifest_text: str) -> str:
@@ -1197,7 +1230,7 @@ def annotate_review_of_run(
     head_text = _read_gate_log(
         _gate_log_path(manifest_text, _HEAD_LOG_FIELD), run_directory
     )
-    return annotate_added_failures(
+    annotated = annotate_added_failures(
         record,
         base_text=base_text,
         head_text=head_text,
@@ -1205,6 +1238,13 @@ def annotate_review_of_run(
         base_directory=_arm_directory(manifest_text, _BASE_LOG_FIELD),
         head_directory=_arm_directory(manifest_text, _HEAD_LOG_FIELD),
     )
+    # Each arm log's own header says which revision it measured, so recording it
+    # lets a reader tie the added-failure count to that commit without re-running
+    # the gate. A header naming the base while the change is at another commit
+    # then reads as the mismatch it is rather than as evidence about the change.
+    annotated[_BASE_LOG_REVISION_KEY] = recorded_log_revision(base_text)
+    annotated[_HEAD_LOG_REVISION_KEY] = recorded_log_revision(head_text)
+    return annotated
 
 
 def store_review(
