@@ -20,13 +20,13 @@ axis that binds and cores are the cheap one.
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import time
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
+from reckon._store import write_json_atomically
 from reckon.crew.refusals import format_refusal
 from reckon.crew.runs import CrewError
 
@@ -125,12 +125,9 @@ def publish_reservation(record: Mapping[str, Any], project: str | None = None) -
     keeps that sharing inside the project that holds the allocation.
     """
     path = reservation_path(project)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(f".{os.getpid()}.tmp")
-    tmp.write_text(
-        json.dumps(dict(record), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    write_json_atomically(
+        path, dict(record), indent=2, sort_keys=True, fsync=False, mode=None
     )
-    os.replace(tmp, path)
     return path
 
 

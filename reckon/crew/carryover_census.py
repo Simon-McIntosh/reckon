@@ -57,6 +57,7 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
+from reckon._observations import optional_number
 from reckon.capabilities import (
     _charged_input_from_usage,
     _cumulative_event_input,
@@ -186,7 +187,7 @@ def _run_cumulative_input(stream: Path, dialect: str | None) -> float | None:
 
     entry = _result_model_usage_input(stream)
     value = entry.get("inputTokens") if isinstance(entry, Mapping) else None
-    return _measured(value)
+    return optional_number(value)
 
 
 def _own_prompt_tokens(run_path: Path) -> int | None:
@@ -210,12 +211,6 @@ def _run_stamp(run_id: str) -> str:
     _, _, remainder = run_id.partition("-")
     stamp, _, _ = remainder.partition("-")
     return stamp or run_id
-
-
-def _measured(value: Any) -> float | None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    return float(value)
 
 
 def _median(values: Iterable[float]) -> float | None:
@@ -524,7 +519,7 @@ def _result_model_usage_input(stream: Path) -> dict[str, Any] | None:
                 for name, entry in usage.items():
                     if not isinstance(entry, Mapping):
                         continue
-                    value = _measured(entry.get("inputTokens"))
+                    value = optional_number(entry.get("inputTokens"))
                     if value is None:
                         continue
                     if best is None or value > best["inputTokens"]:

@@ -52,7 +52,6 @@ describes the whole run and can legitimately exceed that window many times over.
 
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 import queue
@@ -66,6 +65,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from reckon._observations import optional_number
+from reckon._store import write_json_atomically
 
 # Sandbox tiers named by the flight schema. The mapping to concrete flags is
 # per-dialect; the tier names are shared vocabulary.
@@ -1621,7 +1623,7 @@ class _ClaudeDialect(Dialect):
             per_model = [
                 entry for entry in model_usage.values() if isinstance(entry, Mapping)
             ]
-            totals = [_number(entry.get("outputTokens")) for entry in per_model]
+            totals = [optional_number(entry.get("outputTokens")) for entry in per_model]
             measured = [value for value in totals if value is not None]
             generated = int(sum(measured)) if measured else None
             input_totals = [
@@ -1634,13 +1636,16 @@ class _ClaudeDialect(Dialect):
             measured_inputs = [value for value in input_totals if value is not None]
             cumulative_input = int(sum(measured_inputs)) if measured_inputs else None
             cached_totals = [
-                _number(entry.get("cacheReadInputTokens")) for entry in per_model
+                optional_number(entry.get("cacheReadInputTokens"))
+                for entry in per_model
             ]
             measured_cached = [value for value in cached_totals if value is not None]
             cumulative_cached_input = (
                 int(sum(measured_cached)) if measured_cached else None
             )
-            windows = [_number(entry.get("contextWindow")) for entry in per_model]
+            windows = [
+                optional_number(entry.get("contextWindow")) for entry in per_model
+            ]
             usable = [value for value in windows if value]
             # One usable window even when several models ran: the run is held by
             # the smallest, since that is the one a shared prompt overflows first.
@@ -1739,22 +1744,17 @@ class _ClaudeDialect(Dialect):
         return _parse_claude_account(payload)
 
 
-def _number(value: Any) -> float | None:
-    """Return a real number, rejecting the bool that would read as 0 or 1."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    return float(value)
-
-
 def _seconds(milliseconds: Any) -> float | None:
     """Convert a reported millisecond span to seconds, or None."""
-    value = _number(milliseconds)
+    value = optional_number(milliseconds)
     return None if value is None else round(value / 1000.0, 3)
 
 
 def _sum_tokens(usage: Mapping[str, Any], keys: Sequence[str]) -> int | None:
     """Total the named token counts, or None when none of them was reported."""
-    measured = [value for key in keys if (value := _number(usage.get(key))) is not None]
+    measured = [
+        value for key in keys if (value := optional_number(usage.get(key))) is not None
+    ]
     return int(sum(measured)) if measured else None
 
 
@@ -2071,38 +2071,26 @@ def _permission_bits(path: Path) -> int | None:
 def _write_private_json(
     destination: Path, payload: Mapping[str, Any], mode: int = 0o600
 ) -> None:
-    """Write a JSON object private from creation, then put it at ``mode``.
+    """Write a JSON object private from creation, at ``mode``.
 
     The payload is the operator's own home configuration, so the run's copy
-    must never be readable beyond ``0o600`` at any instant. A file created by
-    ``Path.write_text`` takes the umask — commonly ``0o644`` — and is only
-    narrowed by a later ``chmod``, which leaves a window in which another
-    principal on the host can read it. The bytes are instead written to a
-    sibling temporary file opened ``0o600`` and moved onto the destination with
-    :func:`os.replace`, so the destination is only ever the private inode or the
-    file it replaces.
+    must never be readable beyond ``0o600`` at any instant. The shared writer
+    creates its temporary private and applies ``mode`` to that temporary before
+    the rename, so the destination is only ever the private inode or the file it
+    replaces, and a narrowed ceiling never leaves a wider window behind.
 
     ``mode`` is the ceiling applied to the final file; it is never wider than
     ``0o600`` because the caller derives it as the narrower of ``0o600`` and any
     existing destination's own mode.
     """
-    data = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode()
-    temporary = destination.parent / f".{destination.name}.{os.getpid()}.tmp"
-    descriptor = os.open(temporary, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(data)
-        # O_CREAT's mode is filtered by the umask, which can only narrow it;
-        # set the ceiling explicitly so a stricter umask cannot leave the file
-        # below the mode the caller asked for.
-        os.chmod(temporary, 0o600)
-        os.replace(temporary, destination)
-    except BaseException:
-        with contextlib.suppress(OSError):
-            os.unlink(temporary)
-        raise
-    if mode != 0o600:
-        os.chmod(destination, mode)
+    write_json_atomically(
+        destination,
+        payload,
+        indent=2,
+        sort_keys=True,
+        fsync=False,
+        mode=mode,
+    )
 
 
 def _load_json_mapping(path: Path) -> dict[str, Any] | None:

@@ -62,7 +62,12 @@ from urllib.parse import unquote, urlsplit
 from urllib.request import urlopen
 
 from reckon import _backends, _plan_html, capabilities, crew, fleet_index, ledger
-from reckon._store import _config_home, _mounts_path, _state_root
+from reckon._store import (
+    _config_home,
+    _mounts_path,
+    _state_root,
+    write_json_atomically,
+)
 from reckon.evidence import (
     EvidenceSynthesisError,
     compose_landed_record,
@@ -904,34 +909,17 @@ def _store_git_creation_cache(
     if not (Path(cache_key[0]) / ".git").exists():
         return
     path = _git_creation_cache_path(cache_key)
-    temporary: Path | None = None
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=path.parent,
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            json.dump(
-                _git_creation_payload(cache_key, entry),
-                handle,
-                indent=2,
-                sort_keys=True,
-            )
-            handle.write("\n")
-            temporary = Path(handle.name)
-        temporary.replace(path)
+        write_json_atomically(
+            path,
+            _git_creation_payload(cache_key, entry),
+            indent=2,
+            sort_keys=True,
+            fsync=False,
+            mode=0o600,
+        )
     except OSError as exc:
         LOGGER.warning("Could not persist Git creation cache %s: %s", path, exc)
-    finally:
-        if temporary is not None and temporary.exists():
-            try:
-                temporary.unlink()
-            except OSError:
-                pass
 
 
 def _run_git(
@@ -1126,32 +1114,17 @@ def _store_git_last_modified_cache(
     if not (Path(cache_key[0]) / ".git").exists():
         return
     path = _git_last_modified_cache_path(cache_key)
-    temporary: Path | None = None
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=path.parent,
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            json.dump(
-                _git_last_modified_payload(cache_key, entry),
-                handle,
-                indent=2,
-                sort_keys=True,
-            )
-            handle.write("\n")
-            temporary = Path(handle.name)
-        temporary.replace(path)
+        write_json_atomically(
+            path,
+            _git_last_modified_payload(cache_key, entry),
+            indent=2,
+            sort_keys=True,
+            fsync=False,
+            mode=0o600,
+        )
     except OSError as exc:
         LOGGER.warning("Could not persist Git last-modified cache %s: %s", path, exc)
-    finally:
-        if temporary is not None and temporary.exists():
-            with contextlib.suppress(OSError):
-                temporary.unlink()
 
 
 def _parse_last_committed(output: str) -> dict[str, int]:

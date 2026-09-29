@@ -55,6 +55,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import _plan_html
+from reckon._store import write_json_atomically
 from reckon.crew import review as _review_store
 
 # ── The fingerprint exclusion set ───────────────────────────────────────────
@@ -354,8 +355,9 @@ def store_plan_review(
     key the file. A missing ``timestamp`` is stamped with the current UTC moment
     so every stored record carries one; an existing timestamp is preserved. The
     ``plan_version`` is normalised to an integer and a missing status to
-    :data:`DEFAULT_STATUS` on the stored copy. The write is atomic: a temporary
-    file is replaced into place, so a reader never sees a half-written record.
+    :data:`DEFAULT_STATUS` on the stored copy. The write is atomic: it goes
+    through the shared writer's temporary-and-rename, so a reader never sees a
+    half-written record.
     """
     project = str(record.get("project") or "").strip()
     plan_slug = str(record.get("plan_slug") or "").strip()
@@ -375,12 +377,9 @@ def store_plan_review(
     if not stored.get("timestamp"):
         stored["timestamp"] = datetime.now(UTC).isoformat()
     path = _target_path(project, plan_slug, int(plan_version), stored, base_dir)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(
-        json.dumps(stored, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    write_json_atomically(
+        path, stored, indent=2, sort_keys=True, fsync=False, mode=None
     )
-    temporary.replace(path)
     return path
 
 
