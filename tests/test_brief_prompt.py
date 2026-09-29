@@ -369,7 +369,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable>
   after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable>
   failure_attribution: <armed-only, test role JSON {failure_id: candidate_commit} for each newly added failure>
-  artifacts: <paths plus headline metrics>
+  artifacts: <paths plus headline metrics; a metric quoted from a gate log is that log's own summary line, so the record reconciles with the log it cites>
   evidence_inputs: <facts the orchestrator needs for writeback>
   follow_ons: <work you found but were fenced out of, or none>
   blockers: <none, or the exact unmet condition>
@@ -493,3 +493,28 @@ def test_the_manifest_template_states_what_completed_holds() -> None:
 def test_the_literal_copy_of_the_suite_lines_carries_the_completed_rule() -> None:
     for arm in ("baseline_suite:", "after_suite:"):
         assert COMPLETED_RULE in _arm_line(PLAN_PROMPT_SNAPSHOT, arm)
+
+
+# ── A metric quoted from a gate log is that log's own summary line ───────────
+#
+# A record is evidence only when a figure it quotes is the one its cited log
+# prints. Two runs over the same population agree on the failed and passed
+# counts while differing on the summary line, so the counts alone cannot
+# reconcile a record with the log it names: the summary line is what a reader
+# compares, and the contract asks for that line rather than a remembered figure.
+
+RECONCILABLE_METRIC_RULE = (
+    "a metric quoted from a gate log is that log's own summary line"
+)
+
+
+def test_the_manifest_template_asks_for_a_reconcilable_metric() -> None:
+    composed = _compose()
+
+    assert RECONCILABLE_METRIC_RULE in _flat(_arm_line(composed, "artifacts:"))
+
+
+def test_the_literal_copy_of_the_artifacts_line_carries_the_metric_rule() -> None:
+    assert RECONCILABLE_METRIC_RULE in _flat(
+        _arm_line(PLAN_PROMPT_SNAPSHOT, "artifacts:")
+    )
