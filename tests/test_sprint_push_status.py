@@ -155,7 +155,8 @@ def test_planned_sprint_with_started_members_reports_drift() -> None:
     assert row["state_drift"] == {"stored": "planned", "derived": "in-progress"}
 
 
-def test_audit_raises_two_active_sprints_at_error_severity() -> None:
+def test_audit_is_quiet_on_two_active_sprints() -> None:
+    """Several active sprints are an ordinary scheduling state, not a defect."""
     findings = mcp_module._audit_sprint_findings(
         {
             "active_sprint_id": "S1",
@@ -166,8 +167,7 @@ def test_audit_raises_two_active_sprints_at_error_severity() -> None:
         },
         [],
     )
-    row = next(f for f in findings if f["code"] == "multiple-active-sprints")
-    assert row["severity"] == "error"
+    assert not [f for f in findings if f["code"] == "multiple-active-sprints"]
 
 
 def test_audit_warns_when_the_pushed_sprint_has_no_ready_work() -> None:
