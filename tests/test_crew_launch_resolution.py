@@ -20,6 +20,7 @@ import pytest
 
 from reckon import crew
 from reckon.crew import runs
+from tests import test_a_live_run_never_reads_dead as liveness
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -256,7 +257,10 @@ def test_a_resume_refuses_an_unresolvable_backend_and_leaves_the_pointer_alone(
             "phase": "working",
             "backend": "alpha",
             "launch": "cli",
-            "pid": None,
+            # A supervisor pid this host checks and finds gone: the resume has
+            # observed the worker's end, so the run directory stays untouched
+            # for the refusal this test is about.
+            "pid": liveness._absent_pid(),
             "session_id": "session-abc",
             "worktree": str(worktree),
             "manifest_path": str(directory / "manifest.md"),

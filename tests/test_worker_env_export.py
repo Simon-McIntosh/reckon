@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 from reckon import crew
+from tests import test_a_live_run_never_reads_dead as liveness
 from tests.test_crew import CONFIG, _node
 
 pytest_plugins = ("tests.test_crew",)
@@ -117,6 +118,8 @@ def test_clive_dispatch_and_resume_carry_identity_and_additive_headers(
         return current
 
     dispatch_module._mutate_pointer(record["run_id"], add_session)
+    # The supervisor recorded the run's end, the observation a resume rests on.
+    liveness._write_exit_record(record["run_id"])
     resumed = crew.resume_plan(record["run_id"], "continue", config=_config("clive"))
     if os.environ.get(DROP_RESUME_EXPORT_ENV) == DROP_RESUME_EXPORT:
         resumed = dataclasses.replace(

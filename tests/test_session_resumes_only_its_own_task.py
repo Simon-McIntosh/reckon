@@ -27,6 +27,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew, ledger
+from tests import test_a_live_run_never_reads_dead as liveness
 
 # `crew` re-exports a `dispatch` function under that name, so the module is
 # reached by import rather than by attribute.
@@ -346,6 +347,8 @@ def test_a_resume_of_a_run_continues_that_runs_own_session(
     dispatched = _dispatch(home, repo, "task-alpha")
     _complete(dispatched, ALPHA_SESSION)
 
+    # The supervisor recorded the run's end, the observation a resume rests on.
+    liveness._write_exit_record(str(dispatched["run_id"]))
     plan = dispatch_module.resume_plan(
         str(dispatched["run_id"]),
         "the limit has reset; continue",

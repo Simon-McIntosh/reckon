@@ -39,6 +39,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends, crew
+from tests import test_a_live_run_never_reads_dead as liveness
 
 # ``reckon.crew.dispatch`` names the command function on the package, so the
 # module is reached by import rather than by attribute.
@@ -99,12 +100,15 @@ class Fixture:
         self.manifest.write_text(f"node: {self.run_id}\nstatus: in-progress\n")
         # The run's own worker record, written by the supervisor that spawned
         # it: this is what identifies the run directory the fallback anchors to.
+        # Its pid is one this host can check and find gone, so a resume of the
+        # run rests on an observed end rather than on an unread process.
+        self.dead_pid = liveness._absent_pid()
         crew._write_json(
             self.run_dir / "worker.json",
             {
                 "run_id": self.run_id,
                 "attempt": 1,
-                "pid": 1,
+                "pid": self.dead_pid,
                 "pid_start_time": None,
                 "launched_at": "2026-09-28T10:00:00Z",
                 "backend": backend,
@@ -148,6 +152,10 @@ class Fixture:
             "dialect": self.dialect,
             "sandbox": "worktree-full",
             "session_id": self.session_id,
+            # The supervisor this run was launched under is gone too, so the
+            # resume rests on a pid checked on this host rather than on a
+            # reading no host could stand behind.
+            "pid": self.dead_pid,
             "sandbox_write_roots": [],
             "argv": argv,
             "command": str(argv[0]) if argv else "",

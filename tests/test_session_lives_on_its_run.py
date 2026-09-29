@@ -10,6 +10,7 @@ import pytest
 
 from reckon import crew, ledger
 from reckon.crew.dispatch import change_lane, resume_plan
+from tests import test_a_live_run_never_reads_dead as liveness
 
 FIRST_SESSION = "266f04b2-75c1-43f0-aa27-0d72a67b340f"
 SECOND_SESSION = "366f04b2-75c1-43f0-aa27-0d72a67b340f"
@@ -194,6 +195,8 @@ def test_redispatch_resume_uses_the_new_harness_session(repo):
     )
     assert moved["lane_change"]["session"] == "fresh"
     assert FIRST_SESSION not in moved["argv"]
+    # The supervisor recorded the run's end, the observation a resume rests on.
+    liveness._write_exit_record(dispatched["run_id"])
     plan = resume_plan(dispatched["run_id"], "continue the same task", config=CONFIG)
     assert plan.dialect == "claude"
     assert plan.argv[plan.argv.index("--resume") + 1] == SECOND_SESSION
@@ -222,6 +225,8 @@ def test_resume_starts_fresh_when_the_current_harness_has_no_session(repo):
         config=CONFIG,
         launcher=lambda *args, **kwargs: 999999999,
     )
+    # The supervisor recorded the run's end, the observation a resume rests on.
+    liveness._write_exit_record(dispatched["run_id"])
     plan = resume_plan(dispatched["run_id"], "continue the same task", config=CONFIG)
     assert plan.dialect == "claude"
     assert FIRST_SESSION not in plan.argv

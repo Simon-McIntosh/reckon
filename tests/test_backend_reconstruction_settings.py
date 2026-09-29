@@ -25,6 +25,7 @@ import pytest
 from reckon import _backends, crew
 from reckon.crew.dispatch import _backend_settings
 from reckon.crew.promotion import _terminal_stream_data
+from tests import test_a_live_run_never_reads_dead as liveness
 
 # The evidence row's peak prompt, divided against windows on both sides of the
 # divisor the stream announces, so each direction of the defect is a number.
@@ -314,6 +315,8 @@ def test_a_resumed_plan_carries_the_recorded_model_and_effort(crew_home) -> None
         },
     )
 
+    # The supervisor recorded the run's end, the observation a resume rests on.
+    liveness._write_exit_record(run_id)
     plan = crew.resume_plan(run_id, "continue")
 
     assert plan.resumed_session == "sess-recorded-on-the-pointer"
@@ -366,6 +369,7 @@ def test_a_resumption_states_it_was_not_context_checked(crew_home) -> None:
         },
     )
 
+    liveness._write_exit_record(run_id)
     crew.resume_plan(run_id, "continue")
 
     stamped = crew.read_pointer(run_id)["context_fit"]
