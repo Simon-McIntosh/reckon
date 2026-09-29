@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="114">
+<meta name="plan-version" content="115">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1473,6 +1473,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260929T183613683581-a-live-worker-still-owes-its-review" data-who="reckon-build" data-when="2026-09-29T19:58:35.263Z">
     <div class="r-comment-body"><p>reckon/crew/promotion.py — _require_review_waiver reads the review obligation from the terminal delivery this promotion proceeds on (any of complete/blocked/failed) as well as from the classification arms, so a delivered run whose recorded process is still alive (classified running, deferred outcome) owes its tier's review instead of promoting unreviewed; the refusal now states the classification it was reached under and, for a delivery-driven refusal, names the review dispatch rather than an observation</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260929T195906221317-review-of-a-live-worker-still-owes-its-review" data-who="reckon-build" data-when="2026-09-29T20:40:37.805Z">
+    <div class="r-comment-body"><p>review of r-20260929T183613683581-a-live-worker-still-owes-its-review at b63fe49d stored parsed 94/100 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19) with added_failure_count 0 against the reviewed run&#x27;s own base/head arms and four findings</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
 </div>
@@ -1546,7 +1549,7 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
     <div class="r-comment-body"><p>measurement complete, no repository change — the target test failed 2/50 isolated and 2/20 whole-file under pytest -n 8 at 2728ea21 versus 1/50 and 3/20 at its first parent 06149d98 (4/70 pooled per revision, Fisher exact two-sided p=1.0000), so the verdict is equal at both revisions</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260929T195226593093-review-of-follow-lifetime-case-across-whole-lines" data-who="reckon-build" data-when="2026-09-29T20:37:35.426Z">
-    <div class="r-comment-body"><p>Independent review of run r-20260929T190729159452-follow-lifetime-case-across-whole-lines (reviewed head fc3a14d4c, no commit to read) stored at the review store&#x27;s legacy and head-keyed paths: goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 19, total 94; the reviewed run&#x27;s verdict &quot;equal at both revisions&quot; reproduces from its own 140 logs (2728ea21 2/50 isolated + 2/20 whole-file, 06149d98 1/50 + 3/20), and added_failure_count is 0 because the single FAILED node id is printed by both arms.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20260929T190729159452-follow-lifetime-case-across-whole-lines (reviewed head fc3a14d4c, no commit to read) stored at the review store's legacy and head-keyed paths: goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 19, total 94; the reviewed run's verdict "equal at both revisions" reproduces from its own 140 logs (2728ea21 2/50 isolated + 2/20 whole-file, 06149d98 1/50 + 3/20), and added_failure_count is 0 because the single FAILED node id is printed by both arms.</p></div>
 </div>
 </section>
 </main>
