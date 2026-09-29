@@ -83,6 +83,37 @@
     "reason": "corrective-run:resume",
     "verdict": "exempt"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "f0b9f3749e67084a66631f4871ed77d0fc9a5ebe",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]",
+        "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[True]"
+      ],
+      "integrated_revision": "f0b9f3749e67084a66631f4871ed77d0fc9a5ebe",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision f0b9f3749e67: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -rf -n 8 --timeout=300 --basetemp=/tmp/rcq2-head-bt tests/test_brief_dispatch.py tests/test_direct_resume_needs_an_observed_death.py tests/test_crew_lane_change.py tests/test_every_attempt_is_supervised.py tests/test_run_record_reports_actual_resume.py tests/test_session_lives_on_its_run.py tests/test_unmeasured_horizon_never_refuses.py tests/test_worker_env_export.py",
+    "gate_command_source": "stored",
+    "integrated_revision": "f0b9f3749e67084a66631f4871ed77d0fc9a5ebe",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "timed_out": false,
+    "worktree_roots_rewritten": [
+      "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e"
+    ]
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
