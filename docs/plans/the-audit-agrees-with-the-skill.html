@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-audit-agrees-with-the-skill">
   <meta name="plan-title" content="The Audit Agrees With The Skill">
   <meta name="plan-summary" content="audit-doc accepts the landed-section template the skill prescribes, refuses a slug two resource types share, and promotion reads a review&#x27;s empty commits.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="3.0">
   <meta name="plan-capability-version" content="1.0">
@@ -19,14 +19,14 @@
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-standalone" content="Three independent contract mismatches between reckon&#x27;s own validators and the skill text; nothing upstream must land first, and §3 is sequenced by a file trigger rather than a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
   <title>The Audit Agrees With The Skill | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-commits" content="6e168152,17bb7142,3824f9cf,a255c027,da3ea4a6">
-<meta name="plan-impl" content="0.67">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -108,10 +108,11 @@
     <pre class="r-fu-prompt">/reckon-build the-audit-agrees-with-the-skill</pre>
     <p class="r-fu-outcome">§1 (a landed section's header is not a splice) and §2 (a slug two resource types share is refused at audit) have landed, per their landing comments, and are declared done. §3, the commitless review manifest, remains. Coordinators have avoided the hand edit by promoting reviews with --no-commit, but the done-when, that a promotion test reads 'commits: none (review node)' as empty on a review and still refuses it on an implement run, is not met. It is now implementable and carried by f-taawts-commitless-review-promotes.</p>
     </article>
-<article class="r-fu" data-id="f-taawts-commitless-review-promotes" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-taawts-commitless-review-promotes" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="2026-09-29T14:17:26+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">Land §3: a review&#x27;s commitless manifest promotes without a hand edit</h4>
     <div class="r-fu-body"><p>A <code>commits:</code> value beginning <code>none</code> is read as an empty list on a node whose role produces no commit, such as a review, so <code>crew complete</code> promotes it without <code>--no-commit</code> or a hand edit. The same prose on an implement run is still refused. The done-when is §3's own.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-audit-agrees-with-the-skill §3</pre>
+    <p class="r-fu-outcome">Landed across three merges. commitless-review-promotes (92c0a7ff) made a review declaring commits none promote without a hand edit. commitless-boundary-is-any-non-word (69cbf25a) widened that to any non-word boundary. commitless-changed-paths-reads-the-declaration (87bcae7d, review 91) replaced the prose rules with evidence: a review or investigate run promotes with no commits only when git shows no repository change in its own worktree against its base. When prose and git disagree, promotion refuses and names the paths. --no-commit REASON overrides, and the ledger records the uncommitted paths. verify-gate at the merge showed one failure, test_a_terminal_record_landing_after_exit_is_folded_into_the_row. test-terminal-record-settle-at-the-merge measured it at 11/20 isolated and 7/20 under -n 6 at both the merge and its parent, and 5/5 passing with basetemp on xfs. GPFS does not show an os.utime to the next stat for about 0.3 s, so the cause is the basetemp filesystem, not the merge. done — no followup on this plan; the fragile test is recorded on the-suite-is-green-at-head.</p>
     </article>
 </section>
 
@@ -166,7 +167,7 @@
     <div class="r-comment-body"><p>docs/evidence/fragments/the-audit-agrees-with-the-skill/commitless-changed-paths-reads-the-declaration.html</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T122222061725-review-of-commitless-changed-paths-reads-the-declaration" data-who="reckon-build" data-when="2026-09-29T13:26:57.794Z">
-    <div class="r-comment-body"><p>review of r-20260929T050438982778-commitless-changed-paths-reads-the-declaration stored at total 91/100 (goal_fidelity 18, evidence 17, scope_discipline 20, durability 17, fit 19), three findings. Headline: the change does what the plan section says. A commitless review is refused whenever its worktree holds work, whatever the prose says - 13 refusal arms at head over a committed file whose name reads as an absence word, an untracked file, a tracked modification, and the investigate role. A clean worktree promotes under every prose shape - 8 arms, including both provisioned .venv variants. The coordinator&#x27;s --no-commit reason overrides the measurement and the record carries the declined path. The three implement arms refuse identically at base and head, so implement behaviour is unchanged. Three arms changed direction between the two revisions and two of them are the repair itself: an untracked-only worktree change under changed_paths none promoted at base and is refused at head, and two prose shapes (none, no repository change / none. review only) that the hand edit had been needed for are refused at base on a clean worktree and promote at head.</p></div>
+    <div class="r-comment-body"><p>review of r-20260929T050438982778-commitless-changed-paths-reads-the-declaration stored at total 91/100 (goal_fidelity 18, evidence 17, scope_discipline 20, durability 17, fit 19), three findings. Headline: the change does what the plan section says. A commitless review is refused whenever its worktree holds work, whatever the prose says - 13 refusal arms at head over a committed file whose name reads as an absence word, an untracked file, a tracked modification, and the investigate role. A clean worktree promotes under every prose shape - 8 arms, including both provisioned .venv variants. The coordinator's --no-commit reason overrides the measurement and the record carries the declined path. The three implement arms refuse identically at base and head, so implement behaviour is unchanged. Three arms changed direction between the two revisions and two of them are the repair itself: an untracked-only worktree change under changed_paths none promoted at base and is refused at head, and two prose shapes (none, no repository change / none. review only) that the hand edit had been needed for are refused at base on a clean worktree and promote at head.</p></div>
 </div>
 </section>
 </main>

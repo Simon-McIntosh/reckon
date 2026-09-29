@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="100">
+<meta name="plan-version" content="101">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1214,6 +1214,11 @@
     <h4 class="r-fu-title">Browser tests skip with a stated reason where no headless browser exists</h4>
     <div class="r-fu-body"><p><b>Operator decision, 2026-09-29.</b> <code>test_spa_module_scope</code> and the other headless-browser tests should skip with a stated reason when no browser binary exists, and run where one does. They are neither made mandatory on the fleet node nor moved to another host.</p><p>Done when every browser-driven test resolves its browser once, skips with a reason that names the missing binary when none resolves, and still runs and asserts where one does. A negative control proves the skip is not vacuous: with a stub browser on PATH, the test runs and fails on a planted defect. Nothing under <code>reckon/</code> changes.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
+    </article>
+<article class="r-fu" data-id="f-sgh-terminal-record-settle-reads-gpfs-mtime" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The terminal-record settle test passes whatever filesystem holds its basetemp</h4>
+    <div class="r-fu-body"><p>Measured 2026-09-29 by <code>test-terminal-record-settle-at-the-merge</code> (report <code>~/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md</code>). <code>tests/test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row</code> fails 11 of 20 isolated runs and 7 of 20 under <code>-n 6</code> when its basetemp is on GPFS. It fails identically at 87bcae7d and at its parent dc520696, and passes 5 of 5 with the basetemp on xfs <code>/tmp</code>. The test's first observation calls <code>os.utime(stream, None)</code> so the stream reads fresh. On GPFS the following <code>stat</code> returns the pre-utime mtime in 42 of 60 trials, about 0.3 s stale, and the suite shrinks <code>_STREAM_SETTLE_QUIESCENCE_SECONDS</code> to 0.05 s. <code>_wait_out_stream_tail</code> then sees a quiet stream at the first observation, and the assertion reads 1 where it needs 3. Production windows are far above 0.3 s, so this is a fixture fragility, not a promotion defect. Done when the test passes 20 of 20 with its basetemp on GPFS and 20 of 20 on xfs, without loosening <code>reads["count"] >= 3</code>. For example, it can drive freshness through the patched observation function rather than filesystem mtime, or use a quiescence window above the measured GPFS lag.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
