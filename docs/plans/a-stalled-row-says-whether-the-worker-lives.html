@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-stalled-row-says-whether-the-worker-lives">
   <meta name="plan-title" content="A Stalled Row Says Whether The Worker Lives">
   <meta name="plan-summary" content="A dead worker surfaces only after fifteen minutes of silence, and when it does its row reads the same as a live one that is busy compiling.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="5.0">
   <meta name="plan-capability-version" content="1.0">
@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-29">
-  <meta name="plan-version" content="85">
+  <meta name="plan-version" content="87">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -525,10 +525,11 @@
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
     <p class="r-fu-outcome">Measured by session-resume-cases-fail-at-main (r-20260929T175443103315, review 96). Both parametrisations first fail at a75752c55 (2026-09-25, the promotion guard that refuses a run citing its own base) and last pass at its parent f64f60ee. The direct-resume work was not the cause: 2248e214 and d6dcefb3 already failed the same way. Repaired by session-fixture-declares-no-commit, merged at f376ffd80 and promoted (review 100, no findings). The fixture now passes no_commit instead of citing its base, with no assertion changed; the gate reads 13 passed EXIT=0 at head against 2 failed at base, and the control was admitted on its facts. Report: ~/.config/reckon/crew/reports/reckon/s22-coord/session-resume-cases-fail-at-main/report.md. One harness observation went to a-worker-cannot-write-your-home as f-awcwyh-the-git-shim-refuses-test-fixtures: both runs ran pytest under env -u RECKON_RUN_ID because the git shim refused their fixtures' git init.</p>
     </article>
-<article class="r-fu" data-id="f-asrswtwl-direct-resume-teardown-flake" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives §4" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-asrswtwl-direct-resume-teardown-flake" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives §4" data-resolved-at="2026-09-29T20:22:37+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The direct-resume test&#x27;s teardown fingerprint flips under fleet writes</h4>
     <div class="r-fu-body"><p>The home fixture in <code>tests/test_direct_resume_needs_an_observed_death.py</code> compares mtimes in the real crew home before and after each case, to prove the test wrote nothing there. Live fleet writes into that home between the two readings flip it, so the case fails intermittently with no code change. That is the test reading state outside the repository under test. Isolate the crew home to a temp directory for the case, then assert the real home untouched by a probe the fleet cannot move, such as the absence of a path only this test would create. The file is now free: the lane-change repair chain that held it has landed.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives §4</pre>
+    <p class="r-fu-outcome">done — no followup. direct-resume-teardown-reads-its-own-home merged at 4082125a7 and promoted (review 91, zero added failures, control admitted on its facts). Each case in tests/test_direct_resume_needs_an_observed_death.py now resolves its crew home under tmp_path, pinned by an assertion. The no-write proof checks for the absence of paths named for this file's own run ids instead of comparing real-home mtimes, so fleet writes can no longer flip it; the gate reads 14 passed EXIT=0. The review's one finding is recorded rather than acted on: the test derives the real home as ~/.config/reckon/crew, while the resolver falls back to ~/docs-server where that directory is absent. It does not apply on this host. With this, every section of the plan and every followup it carried has landed.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -677,7 +678,7 @@
     <div class="r-comment-body"><p>Stored the independent review of e7c266480 at both granted paths — byte-identical (13545 bytes, sha256 08a7f0a93ee5e653812194130b98205fd6d7d6f4e454bec45f06be4e66d5fc00 each): status parsed, all five dimensions scored in 0..20 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 14, fit 19; total 90), six item verdicts with none absent, five production call sites, added_failure_count null with added_failure_ids [] as the reviewed run is unarmed and names no baseline_suite or after_suite gate log (a legitimate absence carried under added_failures_source, not a node defect), and two findings — the repaired probe at measure.sh:17 carries no guard (falsified by mutation: the mutated driver exits 0 and its log carries 0 module-under-test lines against 1 in the control) and the reviewed manifest's landing line cites line 19 for a probe the repair moved to line 17.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260929T191753796671-direct-resume-teardown-reads-its-own-home" data-who="reckon-build" data-when="2026-09-29T19:52:03.250Z">
-    <div class="r-comment-body"><p>The home fixture in tests/test_direct_resume_needs_an_observed_death.py no longer fingerprints the real crew home before and after each case; the case&#x27;s crew home is isolated under tmp_path with its resolution assertion unchanged, and the no-write proof is now the absence, read after the case, of the run directories and live pointers named for the run ids this file mints — a path only this test creates that no fleet write can move — gate 14 passed exit 0 at base 62e7fc4b9 and at head 949d6294e, three consecutive head runs 9 passed exit 0 each, negative control 9 errors exit 1 on the resolution assertion</p></div>
+    <div class="r-comment-body"><p>The home fixture in tests/test_direct_resume_needs_an_observed_death.py no longer fingerprints the real crew home before and after each case; the case's crew home is isolated under tmp_path with its resolution assertion unchanged, and the no-write proof is now the absence, read after the case, of the run directories and live pointers named for the run ids this file mints — a path only this test creates that no fleet write can move — gate 14 passed exit 0 at base 62e7fc4b9 and at head 949d6294e, three consecutive head runs 9 passed exit 0 each, negative control 9 errors exit 1 on the resolution assertion</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260928T083019129591-review-of-pin-the-unreadable-word-in-its-reason" data-who="reckon-build" data-when="2026-09-28T09:21:05.311Z">
     <div class="r-comment-body"><p>review stored at 564a3a42: total 94, zero added failures; one finding on a negative-control log's revision field</p></div>
