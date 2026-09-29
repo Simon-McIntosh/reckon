@@ -4908,7 +4908,7 @@ def dispatch(
                     else None
                 )
                 record["session_harness"] = plan.dialect if reuse_session else None
-                plan = apply_backend_placement(plan, backend, project)
+                plan = resolve_backend_placement(plan, backend, project)
             except (_backends.BackendError, flight.FlightConfigError, OSError) as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
             placement = flight.placement_for(backend)
@@ -6013,6 +6013,37 @@ def apply_backend_placement(
     else:
         prefix = [os.path.abspath(found), *options]
     return dataclasses.replace(plan, argv=[*prefix, *plan.argv])
+
+
+def resolve_backend_placement(
+    plan: _backends.LaunchPlan,
+    backend: Mapping[str, Any],
+    project: str | None = None,
+) -> _backends.LaunchPlan:
+    """Hold or join the shared reservation, then place the launch inside it.
+
+    A dispatch declaring a placement runs inside the one allocation every worker
+    of the host shares. The declared wrapping on its own prefixes a bare step
+    client, which carries no job id and publishes nothing for the next dispatch
+    to find, so every dispatch mints an allocation of its own; the ensure is
+    reached instead so the allocation is created once, by whichever dispatch
+    arrives first, and every later dispatch joins it. ``ensure_reservation``
+    decides on the liveness probe under a cross-process lock and starts nothing
+    when a live reservation is already held, which is what makes a dispatch that
+    finds one — or that races another — join the allocation rather than mint a
+    second beside it.
+
+    A backend declaring no placement runs outside any reservation, so it is
+    returned untouched: nothing is held and the scheduler is not asked after.
+    """
+    from reckon import flight
+
+    if flight.placement_for(backend) is None:
+        return plan
+    from reckon.crew import placement as placement_module
+
+    placement_module.ensure_reservation(project=project)
+    return apply_backend_placement(plan, backend, project)
 
 
 # How long a declared job-id probe is given to answer, and how many times it is

@@ -211,7 +211,11 @@ def test_a_probe_that_cannot_be_completed_is_unknown_and_submits_nothing(
     assert result["probe"] == "unknown"
     assert _asked("salloc") == [], "nothing may be obtained while the probe is unknown"
     # It waited and asked again rather than reading the first silence as absent.
-    assert len(_asked("squeue")) == placement._UNKNOWN_PROBE_ATTEMPTS
+    # The count is written out rather than read back from the module: read from
+    # the constant it would pass however far the retry bound were cut, and the
+    # property under test is that a repeat query happened at all. The bound is
+    # one initial probe plus three retries.
+    assert len(_asked("squeue")) == 4
     assert placement.read_reservation()["job_id"] == HELD_ID
 
 
