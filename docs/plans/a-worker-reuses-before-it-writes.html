@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 </head>
 <body>
   <main class="plan-doc">
@@ -110,7 +110,7 @@
     <div class="r-comment-body"><p>one-timestamp-parser: reckon/_timestamps.py with parse_utc landed, behaviour fixed by tests/test_timestamps_parse_utc.py (15 passing at head 7960e8a2); the fix is real because the naive-as-UTC policy turns red under its declared mutation (3 failed, exit 1), and no caller is migrated here — the 52 fromisoformat callers found by the AST scan are grouped into 4 batches plus a 31-entry deferred set, disjoint from each other and from every live claim. See docs/evidence/fragments/a-worker-reuses-before-it-writes/one-timestamp-parser.html.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260928T225457714670-review-of-one-timestamp-parser" data-who="reckon-build" data-when="2026-09-28T23:52:17.329Z">
-    <div class="r-comment-body"><p>review-of-one-timestamp-parser: an independent review of run r-20260928T215628176452-one-timestamp-parser read at base a928b6be and head 7960e8a2 is stored at both granted paths; it scores goal_fidelity 18, evidence 18, scope_discipline 20, durability 18, fit 19 (total 93, no dimension absent), records added_failure_count 0 with no added ids derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs, and files one finding: the log the manifest names as the head arm opens on the pytest progress line and names neither its revision, nor its tree, nor its command.</p></div>
+    <div class="r-comment-body"><p>review-of-one-timestamp-parser: an independent review of run r-20260928T215628176452-one-timestamp-parser read at base a928b6be and head 7960e8a2 is stored at both granted paths; it scores goal_fidelity 18, evidence 18, scope_discipline 20, durability 18, fit 19 (total 93, no dimension absent), records added_failure_count 0 with no added ids derived from the reviewed run's own baseline_suite and after_suite gate logs, and files one finding: the log the manifest names as the head arm opens on the pytest progress line and names neither its revision, nor its tree, nor its command.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:04:52.771Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder stored under the crew review store as a parsed record (goal_fidelity 16, evidence 15, scope_discipline 20, durability 16, fit 19; total 86) with three findings</p></div>
@@ -120,6 +120,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T232418863394-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:50:54.618Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder read at base a928b6be and head 597e785e is stored at both granted paths; it scores goal_fidelity 15, evidence 15, scope_discipline 20, durability 17, fit 19 (total 86, no dimension absent), records added_failure_count 0 with no added ids derived from the reviewed run's own baseline_suite and after_suite gate logs, and files two findings: the sixteen-writer inventory omits reckon/crew/follow_checkpoint.py (json.dumps plus a rename in a helper, invisible to the stated grep), and it also omits reckon/hooks/install.py:_write_settings and the nine-call-site reckon/project_state.py:_durable_replace family whose directory fsync no row records</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260928T215645482298-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:23:26.501Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-worker-reuses-before-it-writes/one-atomic-writer-and-one-number-decoder.html — the atomic JSON writer and bool-rejecting numeric decoder, their four fixed behaviours fixed by test, and the mechanically re-derived 16-writer / 4-decoder migration inventory with the durability and locking each caller keeps; figure docs/figures/a-worker-reuses-before-it-writes/one-atomic-writer-and-one-number-decoder/writer-attributes.svg</p></div>
 </div>
 </section>
 </main>
