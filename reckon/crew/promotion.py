@@ -3585,6 +3585,16 @@ def _require_review_waiver(
     it wrote for another run is its own deliverable; requiring another review
     would recurse without a stopping point.
 
+    The obligation is read from the delivery this promotion is proceeding on —
+    a terminal manifest written for this attempt — and not from the live-pointer
+    classification. The classifier's ``running`` arm means only that a live
+    process could still supersede the manifest, so it defers the run's outcome;
+    a delivered run whose worker has not stopped yet therefore classifies as
+    neither ``scoring`` nor ``promotable``, and a gate that read the obligation
+    off that classification disarmed itself for exactly those runs: they
+    promoted unreviewed with no waiver, and a waiver offered for one was refused
+    as a waiver of nothing.
+
     ``review`` is the record whose own comment says it read ``promoted_head``; a
     record of a different revision does not satisfy the gate. When such a record
     exists, its head arrives as ``stale_head`` so the refusal can name both
@@ -3602,8 +3612,11 @@ def _require_review_waiver(
 
     role = _pointer_role(record)
     reason = str(waiver_reason).strip()
-    review_required = classification == "scoring" or (
-        classification == "promotable" and bool(stale_head)
+    delivered = _release_terminal_manifest(record)
+    review_required = (
+        classification == "scoring"
+        or (classification == "promotable" and bool(stale_head))
+        or delivered
     )
     # The tier, not the role, decides whether the run changed work a reviewer
     # owes. An unmeasured or unknown tier is treated as the fuller review, so a
