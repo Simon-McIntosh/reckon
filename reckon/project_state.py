@@ -44,6 +44,7 @@ from reckon._schema import (
     parse_plan_ref,
     resolve_plan_ref,
 )
+from reckon._store import write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
 from reckon.sprint_liveness import sprint_liveness
@@ -264,16 +265,15 @@ def stamp_legacy_index(
         "canonical": ["sprints/", "milestones/", "blockers/", "state/*/timeline.html"],
         "note": SUPERSEDED_NOTE,
     }
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    write_json_atomically(
+        path,
+        payload,
+        indent=2,
+        sort_keys=False,
+        mode=0o600,
+        fsync=True,
+        fsync_directory=True,
     )
-    os.close(fd)
-    tmp = Path(tmp_name)
-    try:
-        tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-        _durable_replace(tmp, path)
-    finally:
-        tmp.unlink(missing_ok=True)
     return {"ok": True, "changed": True, "path": str(path)}
 
 
@@ -1068,11 +1068,6 @@ def _write_resource_unlocked(
         payload,
     )
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
-    )
-    os.close(fd)
-    tmp = Path(tmp_name)
     if resource_type == "project":
         envelope = {
             "updated": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -1080,16 +1075,32 @@ def _write_resource_unlocked(
             "doc": "project",
             "data": payload,
         }
-        tmp.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
+        write_json_atomically(
+            path,
+            envelope,
+            indent=2,
+            sort_keys=False,
+            mode=0o600,
+            fsync=True,
+            fsync_directory=True,
+        )
     else:
+        # The typed resources are rendered HTML, not JSON: the shared JSON
+        # writer cannot express them, so this branch keeps the temporary and
+        # durable-replace path it has always used.
+        fd, tmp_name = tempfile.mkstemp(
+            prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+        )
+        os.close(fd)
+        tmp = Path(tmp_name)
         tmp.write_text(
             _render_resource(project, resource_type, resource_id, payload),
             encoding="utf-8",
         )
-    try:
-        _durable_replace(tmp, path)
-    finally:
-        tmp.unlink(missing_ok=True)
+        try:
+            _durable_replace(tmp, path)
+        finally:
+            tmp.unlink(missing_ok=True)
     return current_version + 1
 
 
@@ -1712,9 +1723,28 @@ def create_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
                     + ", ".join(str(path.relative_to(docs_dir)) for path in collisions)
                 )
 
-            for (_, _, source), destination in zip(staged, destinations, strict=True):
+            for (resource_type, _, source), destination in zip(
+                staged, destinations, strict=True
+            ):
                 destination.parent.mkdir(parents=True, exist_ok=True)
-                _durable_replace(source, destination)
+                if resource_type == "project":
+                    # The staged project resource is a JSON envelope. It is
+                    # published through the shared atomic writer, so the durable
+                    # write of a JSON document is one call rather than a staged
+                    # temporary renamed into place. The other resource is
+                    # rendered HTML, which the JSON writer cannot express, so it
+                    # keeps the staged install.
+                    write_json_atomically(
+                        destination,
+                        json.loads(source.read_text(encoding="utf-8")),
+                        indent=2,
+                        sort_keys=False,
+                        mode=None,
+                        fsync=True,
+                        fsync_directory=True,
+                    )
+                else:
+                    _durable_replace(source, destination)
                 installed.append(destination)
 
             rows = [
@@ -1739,19 +1769,15 @@ def create_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
                 "completed_at": datetime.now(UTC).isoformat(timespec="seconds"),
             }
             target = marker_path(docs_dir)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            fd, marker_tmp_name = tempfile.mkstemp(
-                prefix=f".{target.name}.", suffix=".tmp", dir=target.parent
+            write_json_atomically(
+                target,
+                marker,
+                indent=2,
+                sort_keys=False,
+                mode=0o600,
+                fsync=True,
+                fsync_directory=True,
             )
-            os.close(fd)
-            marker_tmp = Path(marker_tmp_name)
-            try:
-                marker_tmp.write_text(
-                    json.dumps(marker, indent=2) + "\n", encoding="utf-8"
-                )
-                _durable_replace(marker_tmp, target)
-            finally:
-                marker_tmp.unlink(missing_ok=True)
             # The aggregate stays as the record of what was migrated, and now
             # says so in the file itself rather than only in a sibling marker
             # the reader has no reason to open.
@@ -1827,32 +1853,30 @@ def _publish_move_journal(
         "target_before": base64.b64encode(target_bytes).decode("ascii"),
         "written_at": datetime.now(UTC).isoformat(timespec="seconds"),
     }
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    write_json_atomically(
+        path,
+        payload,
+        indent=2,
+        sort_keys=False,
+        mode=0o600,
+        fsync=True,
+        fsync_directory=True,
     )
-    os.close(fd)
-    tmp = Path(tmp_name)
-    try:
-        tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-        _durable_replace(tmp, path)
-    finally:
-        tmp.unlink(missing_ok=True)
 
 
 def _mark_move_journal_committed(path: Path) -> None:
     """Durably publish commit completion before removing recovery evidence."""
     payload = json.loads(path.read_text(encoding="utf-8"))
     payload["status"] = "committed"
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    write_json_atomically(
+        path,
+        payload,
+        indent=2,
+        sort_keys=False,
+        mode=0o600,
+        fsync=True,
+        fsync_directory=True,
     )
-    os.close(fd)
-    tmp = Path(tmp_name)
-    try:
-        tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-        _durable_replace(tmp, path)
-    finally:
-        tmp.unlink(missing_ok=True)
 
 
 def recover_project_state_transactions(docs_dir: Path, project: str) -> list[Path]:

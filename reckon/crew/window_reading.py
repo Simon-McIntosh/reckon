@@ -39,6 +39,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import _backends
+from reckon._observations import optional_number
 from reckon._timestamps import parse_utc
 
 #: The named periods, in the order a reader expects to see them. A period the
@@ -133,7 +134,7 @@ def _newest_reading(
         # The top-level `utilization` beside `rateLimitType` is deliberately
         # absent from this comprehension: only `unifiedWindows` holds a window.
         for period, window in _ordered_windows(_unified_windows(ordered[index]))
-        if (value := _numeric(window.get("utilization"))) is not None
+        if (value := optional_number(window.get("utilization"))) is not None
     )
     if not figures:
         return WindowReading(
@@ -170,7 +171,7 @@ def _events_from(source: object) -> tuple[list[dict[str, Any]], str]:
 def _carries_window(event: Mapping[str, Any]) -> bool:
     """Whether this event is a rate-limit report carrying a usable window."""
     return any(
-        _numeric(window.get("utilization")) is not None
+        optional_number(window.get("utilization")) is not None
         for window in _unified_windows(event).values()
     )
 
@@ -257,10 +258,3 @@ def _parse_stamp(value: Any) -> datetime | None:
     if not isinstance(value, str):
         return None
     return parse_utc(value)
-
-
-def _numeric(value: Any) -> float | None:
-    """A real number, never a ``bool``, which is an ``int`` subclass here."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    return float(value)

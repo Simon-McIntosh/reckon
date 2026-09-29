@@ -65,6 +65,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import _store
+from reckon._store import write_json_atomically
 
 # ── The schema: five dimensions, one maximum ────────────────────────────────
 # A dimension added later is added in exactly one place. The mirror lives in
@@ -1398,9 +1399,19 @@ def record_dimension_disposition(
 
 
 def _write_record(path: Path, record: Mapping[str, Any]) -> None:
-    """Write one record to ``path`` atomically, beside any temporary it leaves."""
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(
-        json.dumps(dict(record), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    """Write one record to ``path`` atomically through the shared writer.
+
+    The caller has already materialised ``path``'s parent, so the writer is
+    asked not to create it: a missing parent is a caller error here, not a
+    directory to resurrect. The record is indented and key-sorted as before,
+    and the parent keeps its previous mode rather than taking a private one.
+    """
+    write_json_atomically(
+        path,
+        dict(record),
+        indent=2,
+        sort_keys=True,
+        mode=None,
+        fsync=False,
+        create_parents=False,
     )
-    temporary.replace(path)
