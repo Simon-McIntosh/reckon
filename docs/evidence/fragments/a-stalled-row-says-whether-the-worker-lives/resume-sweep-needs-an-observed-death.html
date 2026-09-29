@@ -48,30 +48,42 @@
   <code>r-unobserved-liveness</code> appearing in the lifted list. Both red logs are in the run
   directory's record and both end in an <code>EXIT=</code> line.</p>
 
+  <h3>The twelve stale lift fixtures</h3>
+
+  <p><strong>They moved with the guard, in the same node.</strong> Seven files build live pointers
+  with no <code>launcher_host</code>, no pid and no exit record and assert that the sweep lifts them:
+  <code>test_crew_recover.py</code>, <code>test_wait_shapes.py</code>,
+  <code>test_crew_wait_stanza_validation.py</code>, <code>test_wait_marker_is_not_a_stub.py</code>,
+  <code>test_external_wait.py</code>, <code>test_a_met_wait_is_ready_not_abandoned.py</code> and
+  <code>test_dry_run_predicts_the_launcher.py</code>. Every one is a run whose end nothing observed,
+  so the strict reading withholds the lift — the same reading the new file's third case pins. Each
+  fixture builder gained one optional argument writing the launcher host and a pid past the kernel's
+  <code>pid_max</code> ceiling, a pid this host checks and finds gone, and the twelve cases that
+  assert a lift pass it. No assertion was deleted, no expectation was flipped to the refusal (no case
+  asserted a lift of an unknown-liveness run on purpose), and the guard was not narrowed to make a
+  fixture pass.</p>
+
+  <p>The narrowing that would have made them green instead — refusing only a record naming a foreign
+  launcher host — was rejected: it leaves the class of runs the row's promise is about still lifted
+  on a reading that was never taken, which is the defect this change exists to remove.</p>
+
   <h3>What is not delivered, and why</h3>
 
-  <p><strong>The head arm of the declared gate adds twelve failing ids.</strong> They are the fixtures
-  of the old contract: <code>test_crew_recover.py</code>, <code>test_wait_shapes.py</code>,
-  <code>test_external_wait.py</code>, <code>test_a_met_wait_is_ready_not_abandoned.py</code>,
-  <code>test_crew_wait_stanza_validation.py</code>, <code>test_dry_run_predicts_the_launcher.py</code>
-  and <code>test_wait_marker_is_not_a_stub.py</code> build live pointers with no
-  <code>launcher_host</code>, no pid and no exit record, and assert that the sweep lifts them. Every
-  one of them is a run whose end nothing observed, so the strict reading of the change withholds the
-  lift — the same reading the new file's third case pins. Repairing them means giving each fixture an
-  observed end (a dead pid on this host, or an exit record), and those files are outside this node's
-  declared write scope, so the repair is reported rather than performed. The narrowing that would
-  make them green again — refusing only a record that names a foreign launcher host — was rejected:
-  it would leave the class of runs the row's promise is about still lifted on a reading that was
-  never taken, which is the defect this change exists to remove.</p>
+  <p>A direct in-repo resume (<code>reckon crew resume --run</code>, reaching
+  <code>dispatch.resume_plan</code>) still carries only its own live-process guard, so a hand-typed
+  resume of an unknown-liveness run is unchanged by this work, and the sweep was the declared scope.
+  Widening that guard to the same observed-end rule is recorded as the follow-on.</p>
 
   <h3>Gate</h3>
 
   <ul>
-    <li>Base arm <code>89890b94</code>: 12 failed, 264 passed, <code>EXIT=1</code> — all twelve
-    pre-existing in files this node does not own.</li>
-    <li>After arm, at the landed head: 24 failed, 254 passed, <code>EXIT=1</code> — the same twelve,
-    plus the twelve stale lift fixtures above; the two new cases pass.</li>
-    <li><code>ruff check</code> and <code>ruff format --check</code> on the two changed paths:
-    clean.</li>
+    <li>Base arm <code>89890b94</code>: 12 failed, 264 passed, <code>EXIT=1</code>.</li>
+    <li>After arm at <code>a953cd99</code> (the guard and the repaired fixtures together): 12 failed,
+    266 passed, <code>EXIT=1</code> — the same twelve ids, <strong>no failing id added</strong>, and
+    the two new cases pass. The twelve are pre-existing at the base revision and fail identically in
+    both arms.</li>
+    <li><code>ruff check</code> and <code>ruff format --check</code> on all nine changed paths: zero
+    findings at the base and at the head, compared per file with the base content piped under the
+    same <code>--stdin-filename</code> so per-file ignores resolve identically on both sides.</li>
   </ul>
 </section>
