@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-title" content="A replayed row carries the time its run entered its state">
+  <meta name="plan-summary" content="_recorded_fleet_times now keeps the earliest recorded time in the unbroken trailing run of events whose to_state equals a run's current state, so a re-emitted baseline for an unchanged state no longer moves the stamp forward to the latest re-emission.">
+  <meta name="plan-evidence-for" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <title>A replayed row carries the time its run entered its state | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A replayed row carries the time its run entered its state</h1>
+
+    <section id="measure">
+      <h2>What the stamp is</h2>
+      <p>The producer re-emits a <code>baseline</code> event for every live run
+        about every 25 minutes, so a replayed row stamped with the last event
+        naming the run carries the latest re-emission rather than the moment the
+        run entered its state. <code>_recorded_fleet_times</code> in
+        <code>reckon/cli.py</code> now takes, for each run, the current state and
+        the earliest recorded time in the unbroken trailing run of events whose
+        <code>to_state</code> equals that state. A later re-emission of the same
+        state extends the run without moving the time; a genuine change of state
+        opens a new run and stamps it at the change.</p>
+
+      <section id="gate">
+        <h2>Gate</h2>
+        <table>
+          <thead><tr><th>Check</th><th>Result</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>New cases: a transition into <code>working</code> followed by
+                three baselines of <code>working</code>, and
+                <code>working → blocked → working</code></td>
+              <td>2 passed</td>
+              <td><code>tests/test_follow_rearm_continues.py</code> — the first
+                case asserts the replayed row carries the transition's stamp,
+                not the last re-emission's; the second asserts the row carries
+                the second entry into <code>working</code>.</td>
+            </tr>
+            <tr>
+              <td>Declared negative control, keeping the last event naming the
+                run as its recorded time</td>
+              <td>1 failed as required</td>
+              <td><code>gates/negative-control-last-event.log</code>, its first
+                line the declared string verbatim. With the trailing-run read
+                replaced by the last-event assignment, the first case fails: the
+                row carries the final re-emission's stamp
+                (<code>12:41:48.670290</code>) instead of the entry
+                (<code>12:11:48.670262</code>).</td>
+            </tr>
+            <tr>
+              <td>Selection delta, base <code>e2c4a662</code> vs head
+                <code>671189f5</code> (34 follower, ticker, watch and
+                row-policy files)</td>
+              <td>zero added failures by id</td>
+              <td>base 5 failed / 332 passed
+                (<code>gates/base-selection.log</code>);
+                after 5 failed / 334 passed
+                (<code>gates/after-selection.log</code>). The two extra passes
+                are the new cases; the failing id set is identical. The base
+                arm ran against a scratch tree cut with <code>git archive</code>
+                at <code>e2c4a662</code>, its header naming that tree's
+                <code>reckon/cli.py</code> and resolved cwd.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <h2>Scope</h2>
+      <p>Only <code>_recorded_fleet_times</code> and its docstring change in
+        <code>reckon/cli.py</code>; the two cases are added to
+        <code>tests/test_follow_rearm_continues.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

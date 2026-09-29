@@ -2463,13 +2463,18 @@ def _stream_events_upto(stream_path: Path, *, offset: int, boundary: int) -> lis
 def _recorded_fleet_times(
     stream_path: Path, *, boundary: int
 ) -> dict[str, tuple[str, str]]:
-    """The state each run was last recorded in, and the time it entered it.
+    """The state each run is in, and the time it entered that state.
 
     A row that re-announces a run should carry the clock the run's own record
     gave it rather than the moment the pane happened to attach, so the time is
-    read from the stream the producer wrote. The last event naming a run wins,
-    because the stream is appended in order, and the read stops at the boundary
-    the replay was given so the answer describes the same span the rows do.
+    read from the stream the producer wrote. A run's recorded time is the first
+    event in the unbroken trailing run of events whose ``to_state`` equals that
+    state, read as the earliest stamp that the run carries for the state: a
+    re-emitted baseline names a state the run already sits in and is stamped
+    when it is emitted, so it extends the run without moving the time, while a
+    genuine change of state opens a new run and stamps it at the change. The
+    read stops at the boundary the replay was given so the answer describes the
+    same span the rows do.
     """
     latest: dict[str, tuple[str, str]] = {}
     for event in _stream_events_upto(stream_path, offset=0, boundary=boundary):
@@ -2479,7 +2484,18 @@ def _recorded_fleet_times(
         to_state = event.get("to_state")
         if not run_id or not to_state:
             continue
-        latest[run_id] = (str(event.get("observed_at") or ""), str(to_state))
+        state = str(to_state)
+        stamp = str(event.get("observed_at") or "")
+        recorded = latest.get(run_id)
+        if recorded is not None and recorded[1] == state:
+            # The same state again: this event continues the trailing run, so
+            # the run's recorded time stays the earlier stamp it already holds.
+            held = parse_utc(recorded[0])
+            moment = parse_utc(stamp)
+            if moment is not None and (held is None or moment < held):
+                latest[run_id] = (stamp, state)
+            continue
+        latest[run_id] = (stamp, state)
     return latest
 
 

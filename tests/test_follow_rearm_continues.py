@@ -264,6 +264,120 @@ def test_a_rearm_with_nothing_new_carries_the_recorded_state_time(home) -> None:
     )
 
 
+def test_a_rearm_stamps_the_entry_into_a_state_not_its_last_re_emission(
+    home,
+) -> None:
+    """A run carries the time it entered its state, not its last re-emission.
+
+    The stream records a transition into ``working`` and then three baselines
+    that re-announce the same state. Those baselines extend the unbroken
+    trailing run of ``working`` the transition opened, so the row a later
+    arming derives from the fleet carries the transition's stamp. Reading the
+    last event naming the run would stamp the row with the final re-emission
+    instead, which is the moment that event was written, not the moment the run
+    began working.
+    """
+    _write_pointer(home, RUN_A, "node-a", phase="working")
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+        _arm()
+
+        entered = _iso(time.time() - 40 * 60)
+        reemits = [
+            _iso(time.time() - 30 * 60),
+            _iso(time.time() - 20 * 60),
+            _iso(time.time() - 10 * 60),
+        ]
+        _append_stream(
+            stream_path,
+            [
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="working",
+                    observed_at=entered,
+                    previous="dispatched",
+                ),
+                *[
+                    _event(
+                        RUN_A,
+                        "node-a",
+                        state="working",
+                        observed_at=stamp,
+                        event="baseline",
+                    )
+                    for stamp in reemits
+                ],
+            ],
+        )
+        # Consume the appended lines, so the next arming has no gap to replay
+        # and derives the row from the fleet.
+        _arm()
+        third = _arm(resume=None)
+
+    assert [str(event["observed_at"]) for event in third] == [entered], (
+        f"a run's row carries the time it entered working, not its last "
+        f"re-emission; got {[event['observed_at'] for event in third]!r}"
+    )
+
+
+def test_a_rearm_stamps_the_current_entry_after_a_state_returns(home) -> None:
+    """A state a run returns to is stamped at its returning entry.
+
+    The stream records ``working``, then ``blocked``, then ``working`` again.
+    The trailing run of ``working`` began at the second entry, because the
+    ``blocked`` event broke the first run, so the row carries the second entry's
+    stamp rather than the first. A scan that kept the last event naming the run
+    would agree here by accident; a scan that kept the first event naming the
+    run would stamp the row with the stale first entry.
+    """
+    _write_pointer(home, RUN_A, "node-a", phase="working")
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+        _arm()
+
+        first_working = _iso(time.time() - 40 * 60)
+        blocked = _iso(time.time() - 30 * 60)
+        second_working = _iso(time.time() - 20 * 60)
+        _append_stream(
+            stream_path,
+            [
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="working",
+                    observed_at=first_working,
+                    previous="dispatched",
+                ),
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="blocked",
+                    observed_at=blocked,
+                    previous="working",
+                ),
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="working",
+                    observed_at=second_working,
+                    previous="blocked",
+                ),
+            ],
+        )
+        _arm()
+        third = _arm(resume=None)
+
+    assert [str(event["observed_at"]) for event in third] == [second_working], (
+        f"a run back in working is stamped at its second entry; got "
+        f"{[event['observed_at'] for event in third]!r}"
+    )
+
+
 def test_a_rearm_after_a_quiet_baseline_arming_draws_the_fleet(home) -> None:
     """A baseline arming against a quiet stream still leaves a place, and the
     next arming still replays the fleet.
