@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="An arm's ids reduce against the directory its own record names">
+  <meta name="plan-summary" content="canonical_node_id reduces a leading id component that matches the tail of the arm's own recorded working directory, so a base arm run from a scratch tree compares its failures in repository-relative form. The scratch-prefix case adds nothing; a package's own pkg/tests id stays distinct; reverting the reduction turns the scratch-prefix case red with two added failures.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <title>An arm's ids reduce against the directory its own record names | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>An arm's ids reduce against the directory its own record names</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>pytest prints a summary line's node id relative to the root directory it resolved, and that
+        directory can sit above the arm's own working directory. A base arm run as
+        <code>env -C /tmp/rcq2-base</code> whose root resolved to <code>/tmp</code> printed
+        <code>rcq2-base/tests/&hellip;</code> where the head arm printed <code>tests/&hellip;</code>.
+        Compared verbatim the two spellings name different tests, so a run that added nothing
+        reports added failures and the nonzero count caps its total below the promotion floor
+        &mdash; the direction the count exists to prevent.</p>
+      <p>Reproduced from a live run's own logs
+        (<code>r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death</code>):</p>
+      <table>
+        <thead>
+          <tr><th>arm</th><th>log line</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>base</td>
+            <td><code>FAILED rcq2-base/tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]</code></td>
+          </tr>
+          <tr>
+            <td>head</td>
+            <td><code>FAILED tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>That run's manifest names the tree the base arm ran inside, in two places:
+        <code>measurement_cwd: /tmp/rcq2-base</code>, and the <code>env -C</code> target its own
+        gate command pins the arm to.</p>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p><code>canonical_node_id</code> in <code>reckon/crew/review.py</code> takes the arm's
+        recorded working directory and, before it splits the path, drops the longest leading run of
+        components that matches the tail of that directory. <code>rcq2-base/tests/x.py::t</code>
+        against a directory of <code>/tmp/rcq2-base</code> reduces to <code>tests/x.py::t</code>; a
+        spelling that shares no suffix with the record is left alone.</p>
+      <p>The directory is read per arm from the arm's own record by
+        <code>_arm_directory</code>: the <code>env -C</code> / <code>--chdir=</code> target of the
+        suite's recorded <code>command</code>, else the manifest's <code>measurement_cwd</code>
+        line. Nothing is stripped from a log whose own record names no directory, and no directory
+        from one arm is applied to the other &mdash; a reduction that cannot be explained by an
+        arm's own record would silently under-count, which is the failure this count exists to
+        catch.</p>
+      <p>A path whose leading components are part of the repository-relative path &mdash; a
+        package's own <code>pkg/tests/</code> &mdash; shares no suffix with the scratch record, so
+        it is not reduced and stays a different test from the repository's <code>tests/</code>.</p>
+    </section>
+
+    <section id="gate">
+      <h2>The gate</h2>
+      <p>Every test file that imports <code>reckon.crew.review</code> (32 files at base, plus this
+        change's own file at head), run in a scratch tree exported from the base revision and in
+        the worktree at head, each arm under <code>env -C</code> with <code>PYTHONPATH</code>
+        pointing at its own tree, and each log's header printing the revision and the
+        <code>reckon/crew/review.py</code> it resolved:</p>
+      <table>
+        <thead>
+          <tr><th>arm</th><th>revision</th><th>result</th><th>failed ids</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>base</td>
+            <td><code>467c0aab</code></td>
+            <td><code>5 failed, 468 passed</code> in 242.46s</td>
+            <td>5</td>
+          </tr>
+          <tr>
+            <td>head</td>
+            <td><code>41a8a4f0</code></td>
+            <td><code>5 failed, 471 passed</code> in 251.42s</td>
+            <td>5</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The two arms' failed ids are identical, all five in <code>tests/test_ledger.py</code>, so
+        the head arm adds no failure id: derived through the production
+        <code>added_failures_from_gate_logs</code> with each arm reduced against its own recorded
+        directory, the added set is <code>0 []</code>. Both arm logs are recorded as JSON with
+        <code>completed: true</code>, and the record's own <code>env -C</code> line reads back as
+        the directory it names.</p>
+      <p>The equivalence itself is asserted without a scratch tree on disk, by driving the
+        production read path (<code>annotate_review_of_run</code>) with a synthesised manifest and
+        the two arm logs it names. The base log's spelling is derived from the directory its record
+        names rather than written down, in both shapes a real record uses
+        (<code>env -C</code> and <code>measurement_cwd</code>): the scratch-prefix case adds
+        nothing and the total is not capped, while the <code>pkg/tests/</code> case, where the head
+        alone reports <code>tests/test_gate.py::test_alpha</code>, still reports one added
+        failure.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>The negative control</h2>
+      <p>The declared control reverts the reduction and requires the scratch-prefix case to go red.
+        Its log's first line, verbatim:</p>
+      <pre><code>revert canonical_node_id in reckon/crew/review.py to its base body; the scratch-prefix case in tests/test_scratch_arm_ids_reduce.py reports two added failures</code></pre>
+      <p>Run by swapping the function's body for the base revision's own body text while leaving
+        the head signature in place, so the caller still binds the arm's directory and the run
+        measures the reduction rather than a missing parameter. The two scratch-prefix case
+        parametrisations fail with <code>assert 2 == 0</code> &mdash; the two failures read as
+        added &mdash; and the <code>pkg/tests/</code> case passes: <code>2 failed, 1 passed</code>,
+        exit 1. The tree was restored byte-identically (sha256 equal before and after).</p>
+    </section>
+
+    <section id="limits">
+      <h2>What the gate arms do not show</h2>
+      <p>Both gate arms were run with their own tree as the working directory and with relative test
+        paths, so neither log carried a scratch prefix and the reduction is the identity on both
+        &mdash; the same derivation with no recorded directory at all also reports
+        <code>0 []</code>. The prefix case itself is carried by the unit tests and the negative
+        control above, not by those two logs.</p>
+      <p>The five <code>tests/test_ledger.py</code> failures are present at both arms, outside this
+        change's scope, and are unchanged by it.</p>
+    </section>
+  </main>
+</body>
+</html>
