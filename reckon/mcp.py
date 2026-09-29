@@ -1632,7 +1632,7 @@ _OP_VOCAB = {
     "insert_section": "{op:'insert_section', id, title, body, effort_hours, capability, links} — writes a new h2 with its typed section record; effort_hours, capability and links are required.",
     "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions, preserves item metadata.",
     "push": "{op:'push'} — marks the selected sprint active (pushed) and demotes any other active sprint to open in the same versioned write.",
-    "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource by doc_type.",
+    "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource by doc_type. A plan created at or beyond the project's declared pending-plan limit succeeds and its response carries a warning naming the limit, the pending count and the three pending plans nearest to closing.",
 }
 
 
@@ -3096,13 +3096,13 @@ def _plans_nearest_to_closing(
     ]
 
 
-def _pending_limit_refusal(
+def _pending_limit_warning(
     project: str,
     limit: int,
     pending_count: int,
     nearest: list[dict[str, Any]],
 ) -> str:
-    """One refusal sentence naming the limit, the count, the nearest, the override."""
+    """One warning sentence naming the limit, the count, and the nearest plans."""
 
     def describe(row: dict[str, Any]) -> str:
         impl = row.get("impl")
@@ -3110,31 +3110,10 @@ def _pending_limit_refusal(
 
     named = "; ".join(describe(row) for row in nearest) or "none"
     return (
-        f"creating a plan is refused: project {project!r} already holds "
+        f"plan created: project {project!r} already holds "
         f"{pending_count} pending plans, at its limit of {limit}. Nearest to "
-        f"closing, by impl (highest first): {named}. To open a plan anyway, pass "
-        f"override_wip_limit=<reason>; the reason is recorded as a comment on the "
-        f"new plan."
+        f"closing, by impl (highest first): {named}."
     )
-
-
-def _record_wip_override(
-    working: dict[str, Any], reason: str, limit: int, pending: int
-):
-    """Record an override reason as a comment on the plan it let through."""
-    comments = dict(working.get("comments") or {})
-    now = datetime.now(tz=UTC)
-    entry = {
-        "id": f"c-wip-{now:%Y%m%dT%H%M%S%f}",
-        "who": "edit_plan",
-        "when": f"{now.isoformat(timespec='seconds')}",
-        "body": (
-            f"opened beyond the pending-plan limit of {limit} "
-            f"({pending} pending): {reason}"
-        ),
-    }
-    comments.setdefault("_top", []).append(entry)
-    working["comments"] = comments
 
 
 def _edit_plan(
@@ -3148,7 +3127,6 @@ def _edit_plan(
     mode: Literal["state", "text"] = "state",
     old_html: str | None = None,
     new_html: str | None = None,
-    override_wip_limit: str | None = None,
 ) -> dict[str, Any]:
     """Edit structured state or authored prose with version protection.
 
@@ -3361,7 +3339,7 @@ def _edit_plan(
     # ── create path (plan slugs only) ──
     limit: int | None = None
     pending_count = 0
-    wip_override = (override_wip_limit or "").strip()
+    pending_limit_warning: str | None = None
     if create:
         if is_index:
             return {"ok": False, "error": "cannot create the index slug"}
@@ -3387,26 +3365,18 @@ def _edit_plan(
             }
         if expected_version != 0:
             return {"ok": False, "error": "create requires expected_version=0"}
-        # ── pending-plan limit (refuse-with-override) ──
-        # A project whose configuration declares no limit is never capped.
+        # ── pending-plan limit (warn, never refuse) ──
+        # A project whose configuration declares no limit is never warned.
         # Pending uses the velocity plan census's own closed definition, so a
-        # plan closed there frees room here.
+        # plan closed there clears the warning.
         limit = _pending_plan_limit(_project_manifest(project, root))
-        pending = _pending_plans(project, root) if limit is not None else []
-        pending_count = len(pending)
-        if limit is not None and pending_count >= limit and not wip_override:
-            nearest = _plans_nearest_to_closing(pending, 3)
-            return {
-                "ok": False,
-                "error": "pending_plan_limit",
-                "project": project,
-                "limit": limit,
-                "pending": pending_count,
-                "nearest_to_closing": nearest,
-                "detail": _pending_limit_refusal(
-                    project, limit, pending_count, nearest
-                ),
-            }
+        if limit is not None:
+            pending = _pending_plans(project, root)
+            pending_count = len(pending)
+            if pending_count >= limit:
+                pending_limit_warning = _pending_limit_warning(
+                    project, limit, pending_count, _plans_nearest_to_closing(pending, 3)
+                )
         html_file.parent.mkdir(parents=True, exist_ok=True)
         html_file.write_text(new_plan_html(project, slug), encoding="utf-8")
         created_file = html_file  # cleaned up below if the create then fails
@@ -3471,11 +3441,6 @@ def _edit_plan(
         if created_file is not None:
             created_file.unlink(missing_ok=True)
         return {"ok": False, "error": "schema_validation", "details": errors}
-
-    # ── record an override reason only when it lifted a refusal, so the
-    #    comment never claims a limit that was not reached ──
-    if create and wip_override and limit is not None and pending_count >= limit:
-        _record_wip_override(working, wip_override, limit, pending_count)
 
     # ── standalone declaration (authored markup, written to the header) ──
     if (
@@ -3556,6 +3521,8 @@ def _edit_plan(
         result["warnings"] = warnings
     if create:
         result["created"] = True
+        if pending_limit_warning is not None:
+            result["warning"] = pending_limit_warning
     return result
 
 
@@ -3628,7 +3595,6 @@ def _edit_plan_tool(
     create: bool = False,
     checkout_path: str | None = None,
     doc_type: str | None = None,
-    override_wip_limit: str | None = None,
 ) -> dict[str, Any]:
     """Edit one Reckon resource through a version-safe state or text mode.
 
@@ -3638,12 +3604,10 @@ def _edit_plan_tool(
     ``expected_version``; worktree callers must reuse the same
     ``checkout_path`` on both calls.
 
-    Creating a plan beyond the project's declared pending-plan limit is
-    refused, naming the pending plans nearest to closing. Pass
-    ``override_wip_limit=<reason>`` to open the plan anyway. The reason is
-    recorded as a comment only when the override actually lifts a refusal —
-    a create within the limit, or in a project declaring no limit, accepts the
-    override without recording it.
+    Creating a plan at or beyond the project's declared pending-plan limit
+    still succeeds; the success response carries a ``warning`` naming the limit,
+    the pending count and the three pending plans nearest to closing. A create
+    within the limit, or in a project declaring no limit, carries no warning.
     """
 
     return _edit_plan(
@@ -3657,7 +3621,6 @@ def _edit_plan_tool(
         mode=mode,
         old_html=old_html,
         new_html=new_html,
-        override_wip_limit=override_wip_limit,
     )
 
 
