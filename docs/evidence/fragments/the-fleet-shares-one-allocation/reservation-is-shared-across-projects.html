@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-shares-one-allocation">
+  <meta name="plan-title" content="The Fleet Shares One Allocation">
+  <meta name="plan-summary" content="One reservation is held for the fleet and published as a single unkeyed record every project resolves, with the roster counting the runs actually placed into it.">
+  <meta name="plan-evidence-for" content="the-fleet-shares-one-allocation">
+  <meta name="plan-verifies" content="the-fleet-shares-one-allocation#s2">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="delivered">
+  <meta name="plan-tags" content="crew,placement,reservation,concurrency">
+  <title>The Fleet Shares One Allocation — reservation is shared across projects | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="reservation-is-shared-across-projects" data-reckon="landed" data-when="2026-09-29">
+  <h2>Reservation is shared across projects</h2>
+  <p>The reservation record is unkeyed, so a dispatch under a project that did not publish it resolves the
+    same job id (case 1), and a legacy per-project record is still read for its own project so an existing
+    reservation is not orphaned (case 4). The roster counts the runs whose live pointer records a placement,
+    across every project: over one backend's population of twenty four placed runs from two projects and
+    thirty unplaced runs, the placed runs of both projects are counted and the unplaced runs hold no seat
+    (case 2); a backend declaring no placement is untouched and unbounded (case 3). The focused gate of four
+    files is green at 51 passed against 46 passed on the base arm — 0 added failures — and a declared negative
+    control that restores per-project keying turns case 1 red.</p>
+</article>
+</body>
+</html>

@@ -463,11 +463,15 @@ def _refuse_over_reservation_roster(
     reservation is actually held — an unplaced backend has no roster of ours,
     and a host with no reservation has nothing to oversubscribe.
 
-    Both the record and the count are the PROJECT's. The reservation a project
-    holds admits that project's workers, so only those occupy its roster, and
-    a project holding none is unaffected by one another project holds. The lane
-    bound above this counts across projects and should, because a served lane
-    is genuinely shared; an allocation is not.
+    The record is one shared allocation's, and the count is the fleet's. One
+    reservation admits every project's placed workers, so every run actually
+    placed inside it occupies the same roster whichever project dispatched it,
+    and a project whose runs are not placed is unbounded by it. The count is
+    taken from the recorded fact that a run was placed rather than from project
+    membership. The lane bound above this counts across projects too and should,
+    because a served lane is consumed by every caller that sends it a request,
+    placed or not; an allocation is consumed only by the workers running inside
+    it as steps.
     """
     from reckon import flight
     from reckon.crew import placement as placement_module
@@ -476,7 +480,7 @@ def _refuse_over_reservation_roster(
         return
     if not placement_module.read_reservation(project):
         return
-    occupants = placement_module.occupying_the_reservation(occupying, project)
+    occupants = placement_module.occupying_the_reservation(occupying)
     refusal = placement_module.reservation_roster_refusal(len(occupants))
     if refusal is None:
         return
@@ -5969,9 +5973,9 @@ def apply_backend_placement(
     from reckon.crew import placement as placement_module
 
     options = [str(item) for item in placement.get("options") or ()]
-    # The project's own reservation, never another's: a worker placed into an
-    # allocation its project does not hold would run somewhere nobody sized for
-    # it and be counted against a roster nobody armed on its behalf.
+    # The one shared reservation, which any project's dispatch resolves: a
+    # worker placed into it runs where it was sized to and is counted against
+    # the roster that admits it.
     reservation = placement_module.read_reservation(project)
     if reservation and placement_module.reservation_alive(reservation):
         # The reservation is held and its job id is published, so this worker
