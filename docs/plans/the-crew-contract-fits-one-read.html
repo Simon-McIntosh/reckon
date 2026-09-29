@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 </head>
 <body>
   <main class="plan-doc">
@@ -109,6 +109,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260928T222406605114-review-of-classify-rules-in-the-skill" data-who="reckon-build" data-when="2026-09-28T23:29:30.497Z">
     <div class="r-comment-body"><p>Independent review of r-20260928T205643766684-classify-rules-in-the-skill at head f66c3ae0 stored: parsed, all five dimensions scored (goal_fidelity 15, evidence 15, scope_discipline 20, durability 13, fit 18; total 81), item_aggregate 6/6, 5 findings, call_site_count 4, added_failure_count 0 (measured; the reviewed manifest names no baseline_suite/after_suite pair, so the production read path reports it unmeasured).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260928T233349299191-review-of-classify-rules-in-sprint-orchestration" data-who="reckon-build" data-when="2026-09-29T00:08:49.525Z">
+    <div class="r-comment-body"><p>Independent review of r-20260928T205701106926-classify-rules-in-sprint-orchestration at its repair head b2fbbcc16f35242ab7be3fa0ff4c5a4fd9102460 (base 7c25dee788bd668dfbfd36624f8ec590e9dba129): status parsed, all five dimensions scored in 0..20 (goal_fidelity 17, evidence 17, scope_discipline 20, durability 16, fit 18, total 88), item_aggregate 6 with every checklist item carrying a verdict, call_site_count 4, two findings, and byte-identical copies at the head-keyed and legacy paths. The findings: the fragment&#x27;s row labelled L750 at :293 (&quot;A member is a serial worker; dispatch refuses one with a non-terminal in-flight run&quot;) cites a line that carries the tail of the preceding session-identity rule and its rationale, while the sentence begins at line 756 of skills/reckon-build/references/sprint-orchestration.md in the same revision and the next row cites L756 for that sentence&#x27;s tail, so its first half is attributed to the wrong line; and the commit-form rules at :160 (L295) and :186 (L427) name the manifest-status vocabulary and its unknown-status tests as their enforcement, which fire on the manifest&#x27;s status word rather than on the guarded action, with the reason&#x27;s clause &quot;promotion rejects a bodiless or unscoped commit&quot; backed only on the out-of-scope half (reckon/crew/promotion.py:1897) while no production code reads a commit message and no test asserts a bodiless-commit refusal. Repairs verified at this head: the header&#x27;s revision claim now matches all 13 cited logs, each recording rev=74a17bc4, and the remedies row for the manifest-status rule now names the tests that make that refusal fire. added_failure_count is unmeasured rather than zero: the reviewed manifest names no baseline_suite or after_suite gate log.</p></div>
 </div>
 </section>
 </main>
