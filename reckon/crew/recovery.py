@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
 from reckon.crew import metering, quota_weight, runs
-from reckon.crew import repair as repair_module
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
@@ -213,24 +212,12 @@ def _is_review_node(record: Mapping[str, Any]) -> bool:
 
 
 def _review_tree(record: Mapping[str, Any]) -> Path | None:
-    """The tree whose head a review of this run must describe, when readable.
-
-    A record that names neither a worktree nor a repository has no tree, and
-    reports ``None``: the empty string is not a path to fall back on, because it
-    resolves to the current working directory, which would make the caller read
-    whatever checkout the process happens to stand in rather than the run's own.
-    """
-    worktree_raw = str(record.get("worktree") or "").strip()
-    if worktree_raw:
-        worktree = Path(worktree_raw)
-        if worktree.is_dir():
-            return worktree
-    repo_raw = str(record.get("repo") or "").strip()
-    if repo_raw:
-        repo = Path(repo_raw)
-        if repo.is_dir():
-            return repo
-    return None
+    """The tree whose head a review of this run must describe, when readable."""
+    worktree = Path(str(record.get("worktree") or ""))
+    if worktree.is_dir():
+        return worktree
+    repo = Path(str(record.get("repo") or ""))
+    return repo if repo.is_dir() else None
 
 
 def _revision_at(tree: Path, timestamp: str) -> str:
@@ -850,15 +837,6 @@ def _stop_delivered_reviews(
 # still in scoring rather than guessing.
 REVIEW_DISPATCH_FIELD = "review_dispatch"
 
-# The pointer field recording the one repair a finding-bearing review round
-# dispatched. A round is the pair a review stands for — the run it reviewed and
-# the head it read — so a second sweep over the same stored record reads this
-# field and dispatches nothing, while a run reviewed again at a later head
-# composes a different round and is free to dispatch its own repair. Named
-# beside the review field because a reader asking why a run with findings is
-# not yet repaired should find the answer on the reviewed run's own pointer.
-REPAIR_DISPATCH_FIELD = "repair_dispatch"
-
 # The flight key naming backends a review must never be composed onto. It is a
 # routing rule rather than a preference: the composed lane is a fallback list,
 # so an exclusion a fallback can step over cannot be honoured.
@@ -1324,358 +1302,6 @@ def dispatch_review_for_run(
     }
 
 
-def _review_carried_head(review: Mapping[str, Any]) -> str:
-    """The head a stored review read, as its own record carries it.
-
-    The round a repair belongs to is keyed on the head the *review* read, not
-    on the reviewed run's current tree head: the composer re-reads the store by
-    the round's head, so passing the tree head would select a different record
-    — or none — the moment the reviewed run moves past the revision the review
-    speaks for. A record that carries no head predates the field, and the
-    empty string lets the composer fall back to the newest record, which is the
-    same fallback the review selection used.
-    """
-    _, _, _, head = review_module.carried_revision_pair(review)
-    return str(head or "").strip()
-
-
-def _record_repair_dispatch(
-    run_id: str,
-    *,
-    status: str,
-    reason: str,
-    round_id: str = "",
-    repair_run_id: str = "",
-    backend: str = "",
-    node_id: str = "",
-) -> None:
-    """Write the reflex's repair outcome onto the reviewed run it acted for.
-
-    A skip is recorded as loudly as a dispatch, for the same reason the review
-    outcome is: a round that produced no repair is otherwise indistinguishable
-    from one the reflex never considered, and a sweep that cannot tell the two
-    apart re-composes the same round on every tick. The round and the node it
-    composed are recorded with the outcome, so the next sweep tells an attempt
-    of this round from a later round the run has since moved to, and a repair
-    that died without a ledger row is found free to be attempted again.
-    """
-    if not run_id:
-        return
-
-    def record(pointer: dict[str, Any]) -> dict[str, Any]:
-        pointer[REPAIR_DISPATCH_FIELD] = {
-            "status": status,
-            "reason": reason,
-            "run_id": repair_run_id or None,
-            "node_id": node_id or None,
-            "round_id": round_id or None,
-            "backend": backend or None,
-            "at": _utc_now(),
-            "attempt": int(
-                (pointer.get(REPAIR_DISPATCH_FIELD) or {}).get("attempt") or 0
-            )
-            + 1,
-        }
-        return pointer
-
-    _mutate_pointer(run_id, record)
-
-
-def _promoted_run_ids(project: str) -> set[str]:
-    """The run ids the project's ledger holds, or empty when it cannot be read.
-
-    A ledger that cannot be read is not evidence a repair was promoted, so the
-    refusal degrades to "unknown" and the round stays free to be attempted: an
-    unreadable ledger must not manufacture the absence of the ``run`` whose
-    promotion is exactly what a standing round is waiting to observe.
-    """
-    from reckon import ledger as ledger_module
-
-    try:
-        return ledger_module.run_ids(project)
-    except Exception:  # noqa: BLE001 - an unreadable ledger is not a promotion
-        return set()
-
-
-def _repair_in_flight(
-    record: Mapping[str, Any], *, node_id: str, project: str
-) -> str:
-    """The repair run already standing for this round, or empty.
-
-    Recognition keys on the node id the composer minted, which is a pure
-    function of the round — the run reviewed and the head read — so a
-    redispatch of a failed attempt is recognised as the same node rather than
-    composed as a second. A round stands while its repair's pointer is live.
-    Once that pointer is gone the run has either died or been promoted, and
-    the ledger settles which: a promoted repair satisfies the round, so the
-    round dispatches nothing, while a repair that died with no ledger row
-    leaves the round free to be attempted again.
-    """
-    recorded = record.get(REPAIR_DISPATCH_FIELD)
-    if isinstance(recorded, Mapping) and str(recorded.get("node_id") or "") == node_id:
-        standing = str(recorded.get("run_id") or "")
-        if standing:
-            if runs.pointer_path(standing).exists() and read_pointer(standing):
-                return standing
-            if project and standing in _promoted_run_ids(project):
-                return standing
-    for pointer in list_live(project=project or None):
-        node = pointer.get("node") or {}
-        if str(node.get("id") or "") == node_id:
-            return str(pointer.get("run_id") or "")
-    return ""
-
-
-def dispatch_repair_for_run(
-    record: Mapping[str, Any],
-    *,
-    config: Mapping[str, Any] | None = None,
-    launcher: Callable[..., Any] | None = None,
-) -> dict[str, Any]:
-    """Run the one repair a finding-bearing review round composes for itself.
-
-    A stored review that carries findings is a review *round* — the run it read
-    and the head it read — and its work is one node: three findings answered in
-    one turn cost one dispatch, where three repairs cost three lanes and three
-    merges against the same files. The composition itself lives in
-    :mod:`reckon.crew.repair`, so this function and a coordinator reading the
-    same record compose the same node rather than each deriving its own.
-
-    The return value is the reflex's own report, not a command: ``dispatched``
-    says a repair run is now in flight, ``node_id`` and ``round_id`` name what
-    was composed, ``goal`` and ``write_paths`` carry the brief the repair was
-    dispatched with, and ``reason`` explains a false. Nothing here is raised
-    for an ordinary refusal — a scope, member, lane or budget refusal is
-    *reported* and recorded against the run, because the caller is a sweep that
-    must reach the rest of the fleet. The refusal itself still comes from
-    dispatch, so the automatic path is refused exactly where a manual one is.
-
-    A run with no stored review, or one whose review carries no finding,
-    dispatches nothing: a clean review is not work, and composing an empty node
-    would spend a lane on nothing. The negative half of idempotence is
-    ``_repair_in_flight``: a round already standing — its repair live, or its
-    repair promoted — is left alone, so a sweep re-fires nothing it has already
-    dispatched.
-    """
-    run_id = str(record.get("run_id") or "")
-    if _is_review_node(record):
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "reason": "the run is itself a review, so it carries no repair round",
-        }
-    project = str(record.get("project") or "")
-    if not project:
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "reason": "the run records no project to compose a repair against",
-        }
-    # A cheap presence check before the head resolution below costs a git
-    # subprocess: a run with no review record on disk has no round to repair,
-    # and the sweep reaches this for every live pointer on its cadence.
-    _stored_path, stored = review_module.stored_record(project, run_id)
-    if stored is None:
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "reason": "no review is stored for this run",
-        }
-    review, review_error = _stored_review(record)
-    if review is None or not _review_is_complete(review):
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "review_status": "unreadable" if review_error else "present",
-            "reason": (
-                f"the stored review could not be read: {review_error}"
-                if review_error
-                else "the stored review does not cover the run's current head"
-            ),
-        }
-    findings = repair_module.review_findings(review)
-    if not findings:
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "reason": "the stored review carries no finding, so composes no repair",
-        }
-    fields = _review_dispatch_fields(record)
-    round_id = repair_module.repair_round_id(review, reviewed_run_id=run_id)
-    repo = str(record.get("repo") or "")
-    if not repo:
-        reason = "the run records no repository to dispatch a repair against"
-        _record_repair_dispatch(
-            run_id, status="refused", reason=reason, round_id=round_id
-        )
-        return {"run_id": run_id, "dispatched": False, "reason": reason}
-
-    composed = repair_module.compose_repair_for_run(
-        project,
-        run_id,
-        reviewed_head_sha=_review_carried_head(review) or None,
-        run_record=record,
-        source_node=fields["source_node"],
-        plan=str(fields["plan"]),
-        section=str(fields["section"]),
-        session=str(fields["session"]),
-        time_budget=str(fields["time_budget"]),
-    )
-    if composed is None:
-        # The composer returns None for a finding-bearing record only when the
-        # record it re-read differs from the one selected here; the round is
-        # left for a coordinator rather than dispatched from a stale parse.
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "reason": "no repair composes for this review round",
-        }
-    node_id = str(composed["node_id"])
-    round_id = str(composed["round_id"])
-    standing = _repair_in_flight(record, node_id=node_id, project=project)
-    if standing:
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "reason": "a repair for this review round is already standing",
-            "repair_run_id": standing,
-            "node_id": node_id,
-            "round_id": round_id,
-        }
-
-    resolved = _resolved_review_config(project, config)
-    try:
-        from reckon import flight
-
-        resolved = flight.select_local_backend(resolved)
-    except Exception as exc:  # noqa: BLE001 - the configured lane is the reason
-        reason = f"the local lane is unavailable: {exc}"
-        _record_repair_dispatch(
-            run_id,
-            status="awaiting-lane",
-            reason=reason,
-            round_id=round_id,
-            node_id=node_id,
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "awaiting_lane": True,
-            "reason": reason,
-        }
-
-    local_lane = str(resolved.get("local_backend") or "").strip()
-    owning_lane = str(record.get("backend") or "").strip()
-    candidates = _review_lane_candidates(resolved, owning_backend=owning_lane)
-    if not candidates:
-        reason = f"the repair for {run_id} has no eligible lane"
-        _record_repair_dispatch(
-            run_id,
-            status="awaiting-lane",
-            reason=reason,
-            round_id=round_id,
-            node_id=node_id,
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "awaiting_lane": True,
-            "reason": reason,
-        }
-    backend = candidates[0]
-    on_local_lane = backend == local_lane
-
-    dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    from reckon.crew.dispatch import BudgetHold
-    from reckon.crew.node import TaskNode
-
-    node = TaskNode(
-        id=node_id,
-        goal=str(composed["goal"]),
-        plan=str(composed["plan"]),
-        section=str(composed["section"]),
-        role=str(composed["role"]),
-        spec_level=str(composed["spec_level"]),
-        done_when=str(composed["done_when"]),
-        write_paths=list(composed["write_paths"]),
-        time_budget=str(composed["time_budget"]),
-        negative_control=str(composed.get("negative_control") or ""),
-    )
-    try:
-        launched = dispatch_module.dispatch(
-            node=node,
-            project=project,
-            repo=repo,
-            config=resolved,
-            session=str(composed["session"]),
-            launcher=launcher,
-            watch_required=True,
-            local=on_local_lane,
-            backend_override=None if on_local_lane else backend,
-            unreconciled_override=True,
-        )
-    except BudgetHold as exc:
-        reason = f"the {backend} lane is unavailable: {exc}"
-        _record_repair_dispatch(
-            run_id,
-            status="awaiting-lane",
-            reason=reason,
-            round_id=round_id,
-            node_id=node_id,
-            backend=backend,
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "awaiting_lane": True,
-            "backend": backend,
-            "lane": getattr(exc, "verdict", None),
-            "reason": reason,
-        }
-    except CrewError as exc:
-        # Scope, member, follower, context-fit, plan visibility and competence
-        # refusals all arrive here. The automatic path must not be the one place
-        # they are skipped, so the refusal is recorded and reported rather than
-        # caught and shrugged off.
-        _record_repair_dispatch(
-            run_id,
-            status="refused",
-            reason=str(exc),
-            round_id=round_id,
-            node_id=node_id,
-            backend=backend,
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "refused": True,
-            "backend": backend,
-            "reason": str(exc),
-        }
-
-    repair_run_id = str(launched.get("run_id") or "")
-    _record_repair_dispatch(
-        run_id,
-        status="dispatched",
-        reason=f"the repair dispatched automatically as run {repair_run_id}",
-        round_id=round_id,
-        node_id=node_id,
-        repair_run_id=repair_run_id,
-        backend=backend,
-    )
-    return {
-        "run_id": run_id,
-        "dispatched": True,
-        "backend": backend,
-        "repair_run_id": repair_run_id,
-        "node_id": node_id,
-        "round_id": round_id,
-        "goal": str(composed["goal"]),
-        "write_paths": list(composed["write_paths"]),
-        "reason": f"dispatched the composed repair as run {repair_run_id}",
-    }
-
-
 def _sweeping_session(project: str | None) -> str:
     """The session whose follower this process serves, or empty.
 
@@ -1724,7 +1350,6 @@ def dispatch_awaiting_reviews(
     dispatched: list[str] = []
     refused: list[dict[str, Any]] = []
     awaiting_lane: list[str] = []
-    repaired: list[str] = []
     sweeping = session if session is not None else _sweeping_session(project)
     for pointer in list_live(project=project):
         if (
@@ -1747,36 +1372,26 @@ def dispatch_awaiting_reviews(
             scan = classify_pointer(pointer)
         except Exception:  # noqa: BLE001 - one unreadable run must not stop the sweep
             scan = None
-        if scan is not None and scan["classification"] == "scoring":
-            report = dispatch_review_for_run(pointer, config=config, launcher=launcher)
-            reports.append(report)
-            if report.get("dispatched"):
-                dispatched.append(str(report.get("review_run_id") or ""))
-            elif report.get("awaiting_lane"):
-                awaiting_lane.append(str(report.get("run_id") or ""))
-            elif report.get("refused"):
-                # The report itself, not a generator over it: a refusal list is
-                # read and serialized by whoever consumes the sweep, and a
-                # generator is neither readable nor JSON-serializable, so the
-                # refusal would be lost at exactly the moment a reader needs to
-                # know which lane was refused.
-                refused.append(report)
-        # The repair pass, keyed on the stored review rather than on the run's
-        # classification: a review carrying findings may leave the run reading
-        # promotable, so gating this on ``scoring`` alone would leave a
-        # finding-bearing round unrepaired. A run with no stored review, or a
-        # clean one, composes nothing here and the sweeping of the rest of the
-        # fleet is unaffected.
-        repair_report = dispatch_repair_for_run(pointer, config=config, launcher=launcher)
-        if repair_report.get("dispatched"):
-            reports.append(repair_report)
-            repaired.append(str(repair_report.get("repair_run_id") or ""))
+        if scan is None or scan["classification"] != "scoring":
+            continue
+        report = dispatch_review_for_run(pointer, config=config, launcher=launcher)
+        reports.append(report)
+        if report.get("dispatched"):
+            dispatched.append(str(report.get("review_run_id") or ""))
+        elif report.get("awaiting_lane"):
+            awaiting_lane.append(str(report.get("run_id") or ""))
+        elif report.get("refused"):
+            # The report itself, not a generator over it: a refusal list is
+            # read and serialized by whoever consumes the sweep, and a
+            # generator is neither readable nor JSON-serializable, so the
+            # refusal would be lost at exactly the moment a reader needs to
+            # know which lane was refused.
+            refused.append(report)
     return {
         "reports": reports,
         "dispatched": dispatched,
         "refused": refused,
         "awaiting_lane": awaiting_lane,
-        "repaired": repaired,
     }
 
 
