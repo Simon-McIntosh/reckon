@@ -45,15 +45,30 @@
   <code>tests/test_crew_runs_view.py</code>, <code>tests/test_closure_fence_agreement.py</code>,
   <code>tests/test_obligations_do_not_mislead.py</code>, <code>tests/test_paused_is_not_blocked.py</code>),
   one arm per revision, one log each, each ending in <code>EXIT=</code>. Both arms collected 261
-  tests from the same file list, and both logs carry the same test-file digest.</p>
+  tests from the same file list, and both logs carry the same test-file digest. Each log's header
+  names the revision, the tree, the command, the resolved working directory and the absolute path of
+  the module under test as imported, so the arms' provenance is checkable from the log rather than
+  asserted. The baseline tree is node-local and transient, and <code>gate-arm-setup.sh</code> in the
+  run directory rebuilds it from the base revision — <code>git archive</code> of
+  <code>68a5b96b</code> with this node's test file overlaid. Both arms were run twice, and the second
+  pair is the one named here: the repeat's failure ids are identical to the first run's, which are
+  kept beside them as <code>gate-baseline-first.ids</code> and <code>gate-head-first.ids</code>.</p>
 
   <table>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>baseline</td><td><code>68a5b96b</code></td><td><strong>19 failed, 242 passed</strong>, exit 1</td></tr>
-      <tr><td>after</td><td><code>c84429e5</code></td><td><strong>17 failed, 244 passed</strong>, exit 1</td></tr>
+      <tr><td>after</td><td><code>09feaea7</code></td><td><strong>17 failed, 244 passed</strong>, exit 1</td></tr>
     </tbody>
   </table>
+
+  <p>The after arm's log was taken at <code>09feaea7</code>, the record commit on top of the repair
+  (which is <code>c84429e5</code>); the two revisions differ in no source or test file —
+  <code>git diff c84429e5 09feaea7 -- reckon tests</code> is empty — so the source under test is the
+  repair itself. The baseline log's header records <code>measurement_module</code> as
+  <code>/tmp/drain-gate/base/reckon/crew/runs.py</code> and <code>measurement_cwd</code> as
+  <code>/tmp/drain-gate/base</code>, which is the imported module and the directory the run resolved
+  from rather than the tree the file was copied out of.</p>
 
   <p>Failure ids added by the change: <strong>none</strong>. The baseline's two extra failures are
   this node's new drain cases — the foreign row and the recorded exit — and both pass at the head.
@@ -113,7 +128,7 @@
 
   <p><strong>Commits.</strong> The drain repair as first written: <code>713dbde8</code>, narrowed to
   a proven-only reading by <code>c84429e5</code>. The landing record and the figure are the commit
-  that carries this fragment. Gate logs (<code>gate-base.log</code>, <code>gate-head.log</code>,
+  that carries this fragment. Gate logs (<code>gate-baseline.log</code>, <code>gate-head.log</code>,
   <code>negative-control.log</code>, <code>gate-pre-existing.log</code>) are in the run directory
   <code>~/.config/reckon/crew/runs/r-20260929T054906743931-drain-view-reads-the-host-gated-liveness/</code>.</p>
 </section>
