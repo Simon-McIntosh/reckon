@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="The manifest template states the red log's exit line and each suite arm's literal command">
+  <meta name="plan-summary" content="The manifest template's negative_control_log line asked only that the log's first line repeat the mutation, and the baseline_suite and after_suite lines did not say their command must be runnable, so three control logs carried no exit record the gate could read and five promoted records held a gate command rebuilt by hand from a placeholder. The negative_control_log line now states the log's last line is a bare line reading EXIT= followed by the exit code, and both suite arms state command is the literal command that ran, with absolute paths and no angle-bracket placeholder. tests/test_brief_prompt.py asserts both clauses on each arm's own line of the composed contract and on the snapshot literal; restoring the three former template lines reddens the composed-contract assertions, with the suite rule counted zero times.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>The manifest template states the red log's exit line and each suite arm's literal command &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The manifest template states the red log's exit line and each suite arm's literal command &mdash; evidence</h1>
+  <p>The manifest block in <code>reckon/crew/prompts.py</code> asked a worker for the negative control's log path with only one requirement spelled out &mdash; that the log's first line repeat the declared mutation verbatim &mdash; while the reader that discharges the declaration reads the run's facts from the log's own text instead. A declaration is refused when its log carries no terminal <code>EXIT=&lt;n&gt;</code> record or no failing test id, and three sound controls needed a coordinator waiver because the record was absent: one log ended with the exit status on a <code>pytest</code> line rather than a bare line of its own, and two ended with no exit record at all.</p>
+  <p>The same block listed <code>command</code> in each suite arm's JSON without stating what it must hold. The recorded command is re-executed verbatim at the merged head, and a description of the check rather than the check exits non-zero without running anything, so the shape check refuses an angle-bracket placeholder or a prose file list. Five promotions had their gate command rebuilt from a log header by hand.</p>
+  <p>Both requirements now sit on the lines the worker writes:</p>
+  <ul>
+    <li><code>negative_control_log</code> (line 570): <em>The log's last line is a bare line reading <code>EXIT=</code> followed by the exit code.</em></li>
+    <li><code>baseline_suite</code> and <code>after_suite</code> (lines 572&ndash;573): <em>command is the literal command that ran, with absolute paths and no angle-bracket placeholder.</em></li>
+  </ul>
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>The composed contract carries each clause on its own arm's line.</strong> <code>tests/test_brief_prompt.py</code> gains four cases: two assert the clause on the arm line of the composed contract (<code>test_the_manifest_template_states_the_red_logs_exit_line</code>, <code>test_the_manifest_template_states_the_suite_arm_command_rule</code>, the latter first counting the command rule twice), and two hold the same clauses on the snapshot literal the byte-identity check pins (<code>test_the_literal_copy_carries_the_exit_line_rule</code>, <code>test_the_literal_copy_of_the_suite_lines_carries_the_command_rule</code>), so a rule stated elsewhere in the contract cannot satisfy the check and the template and its literal copy cannot drift apart.</li>
+      <li><strong>Base arm</strong> (<code>52a910d2</code>, the worktree before the change): <code>6 failed, 234 passed in 60.72s</code>, <code>EXIT=1</code>. <code>logs/baseline_suite.log</code>.</li>
+      <li><strong>Head arm</strong> (<code>37b00cfaf</code>, after the commit): <code>6 failed, 238 passed in 66.37s</code>, <code>EXIT=1</code> &mdash; the same six ids, none added, and the four extra passes are this node's own cases. <code>logs/after_suite.log</code>; a second sample of the same content before the commit read <code>6 failed, 238 passed in 57.52s</code> (<code>logs/after_suite-precommit.log</code>).</li>
+      <li><strong>Negative control</strong> (the three former template lines restored in <code>reckon/crew/prompts.py</code>): <code>9 failed, 235 passed in 61.01s</code>, <code>EXIT=1</code>. The exit-line clause is asserted absent from the composed line, and the suite-command rule counts <code>assert 0 == 2</code>; the byte-identity case reddens with them. The two literal-copy cases stay green by construction &mdash; the mutation changes the template, not the snapshot they pin. <code>logs/negative_control.log</code>.</li>
+    </ul>
+    <p>Both arms ran in the worktree itself, not a scratch tree: the base arm at <code>52a910d2</code> before the first edit, the head arm at <code>37b00cfaf</code> after the commit, over the same 22-file population &mdash; <code>tests/test_brief_prompt.py</code> plus every test module that imports <code>reckon.crew.prompts</code>. Each log's header names its revision, tree, the literal command and the imported <code>module.__file__</code>, and it resolves under this worktree. The mutation was applied to the committed tree and reverted from a copy taken before it; <code>git diff</code> against HEAD is empty afterwards.</p>
+  </section>
+  <section id="outside-the-delta">
+    <h2>The six red ids are not this change's</h2>
+    <p>Both arms carry the same six failures &mdash; two in <code>tests/test_crew_prompts.py</code> and four in <code>tests/test_skill_contract_parity.py</code> &mdash; and the set difference between the arms is empty. They compare the in-tree landing contract against the skill prose (<code>_slice_between</code> looks for <code>Append your landing record to your own section</code>, which the in-tree text no longer carries), so they track a wording change in flight on that surface rather than anything this node touched. They are recorded under <code>follow_ons</code>, not repaired here: the skill files lie outside this node's fence.</p>
+  </section>
+ </main>
+</body>
+</html>
