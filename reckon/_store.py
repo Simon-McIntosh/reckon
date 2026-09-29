@@ -68,7 +68,7 @@ import secrets
 import fcntl
 import hashlib
 from contextlib import ExitStack, contextmanager, suppress
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -673,11 +673,20 @@ _EVIDENCE_APPENDS: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None
     ContextVar("reckon_evidence_appends", default=None)
 )
 
+#: Section collapses are the same kind of write effect as insertions: each
+#: replaces one authored h2's body with its landed card. Kept in its own
+#: collection so a collapse and an insertion in one batch apply in order and
+#: neither is confused for the other.
+_SECTION_COLLAPSES: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None] = (
+    ContextVar("reckon_section_collapses", default=None)
+)
+
 
 def _begin_write_effects(working: dict[str, Any]) -> None:
     """Start empty out-of-band effect collections for one op batch."""
     _SECTION_INSERTIONS.set((working, []))
     _EVIDENCE_APPENDS.set((working, []))
+    _SECTION_COLLAPSES.set((working, []))
 
 
 def _queue_section_insertion(working: dict[str, Any], request: dict[str, str]) -> None:
@@ -711,6 +720,23 @@ def _consume_evidence_appends(data: dict[str, Any]) -> list[dict[str, str]]:
     if pending is None or pending[0] is not data:
         return []
     _EVIDENCE_APPENDS.set(None)
+    return list(pending[1])
+
+
+def _queue_section_collapse(working: dict[str, Any], request: dict[str, str]) -> None:
+    """Attach one collapse to the current batch without changing plan state."""
+    pending = _SECTION_COLLAPSES.get()
+    if pending is None or pending[0] is not working:
+        raise OpError("collapse_section has no active write-effect collection")
+    pending[1].append(request)
+
+
+def _consume_section_collapses(data: dict[str, Any]) -> list[dict[str, str]]:
+    """Return collapses produced by this exact state object, then clear."""
+    pending = _SECTION_COLLAPSES.get()
+    if pending is None or pending[0] is not data:
+        return []
+    _SECTION_COLLAPSES.set(None)
     return list(pending[1])
 
 
@@ -757,6 +783,197 @@ def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
         fragment += body.strip() + "\n"
     fragment += "\n" + indentation
     return html_text[: boundary.start()] + fragment + html_text[boundary.start() :]
+
+
+_H2_OPEN_RE = re.compile(r"<h2\b[^>]*>", re.IGNORECASE)
+_SECTION_OPEN_RE = re.compile(r"<section\b[^>]*>", re.IGNORECASE)
+_SECTION_CLOSE_RE = re.compile(r"</section\s*>", re.IGNORECASE)
+
+
+def _attr(open_tag: str, name: str) -> str | None:
+    """The value an opening tag declares for one attribute, or None."""
+    pattern = re.compile(
+        rf"""\b{re.escape(name)}\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))""",
+        re.IGNORECASE,
+    )
+    match = pattern.search(open_tag)
+    if match is None:
+        return None
+    return next(group for group in match.groups() if group is not None)
+
+
+def _class_list(open_tag: str) -> list[str]:
+    """The class tokens an opening tag declares."""
+    return (_attr(open_tag, "class") or "").split()
+
+
+def _element_id(open_tag: str) -> str | None:
+    """The id an opening tag declares, whatever quote style wraps it."""
+    return _attr(open_tag, "id")
+
+
+def _is_structural_boundary(open_tag: str) -> bool:
+    """Whether a section open tag ends the preceding section's authored body.
+
+    A landed card and a structured-state region (``data-reckon`` other than the
+    section's own record span) both do; the section's record span does not.
+    """
+    if "section-landed" in _class_list(open_tag):
+        return True
+    return _attr(open_tag, "data-reckon") not in (None, "section")
+
+
+def _section_heading(html_text: str, section_id: str) -> tuple[str, str, int, str]:
+    """The authored h2 for one id: its open tag, inner HTML and source offsets.
+
+    Returns ``(open_tag, inner_html, open_start, inner_end)``. ``inner_end`` is
+    the offset just past the closing ``</h2>``, where the section's body begins.
+    """
+    for candidate in _H2_OPEN_RE.finditer(html_text):
+        if _element_id(candidate.group()) != section_id:
+            continue
+        inner_end = html_text.find("</h2>", candidate.end())
+        if inner_end == -1:
+            raise OpError(
+                f"collapse_section: heading id {section_id!r} has no closing </h2>"
+            )
+        return (
+            candidate.group(),
+            html_text[candidate.end() : inner_end],
+            candidate.start(),
+            inner_end + len("</h2>"),
+        )
+    raise OpError(f"collapse_section: no section with id {section_id!r} in the plan")
+
+
+def _section_body_end(html_text: str, start: int) -> int:
+    """Where an authored body under one h2 ends: the next heading, landed card
+    or structured-state region, or the closing main element, whichever comes
+    first, so no neighbouring markup is consumed."""
+    ends: list[int] = []
+    heading = _H2_OPEN_RE.search(html_text, start)
+    if heading is not None:
+        ends.append(heading.start())
+    for candidate in _SECTION_OPEN_RE.finditer(html_text, start):
+        if _is_structural_boundary(candidate.group()):
+            ends.append(candidate.start())
+            break
+    closing = re.search(r"</main\s*>", html_text[start:], re.IGNORECASE)
+    if closing is not None:
+        ends.append(start + closing.start())
+    return min(ends) if ends else len(html_text)
+
+
+def _matching_section_close(html_text: str, start: int) -> int | None:
+    """Offset past the ``</section>`` that balances an already-open section."""
+    depth = 1
+    pos = start
+    while True:
+        nxt_open = _SECTION_OPEN_RE.search(html_text, pos)
+        nxt_close = _SECTION_CLOSE_RE.search(html_text, pos)
+        if nxt_close is None:
+            return None
+        if nxt_open is not None and nxt_open.start() < nxt_close.start():
+            depth += 1
+            pos = nxt_open.end()
+            continue
+        depth -= 1
+        pos = nxt_close.end()
+        if depth == 0:
+            return pos
+
+
+def _landed_card_html(open_tag: str, inner_html: str, request: dict[str, str]) -> str:
+    """The landed card: the shipped badge, the summary and the evidence link.
+
+    The heading keeps its own open tag — and therefore its id — and is carried
+    inside the card's ``<header>``. That header's direct parent is a
+    ``<section class="section-landed">``, which is the shape the document
+    structure audit exempts as summary-card chrome rather than a second shell
+    header.
+    """
+    from html import escape
+
+    anchor = escape(request["evidence_anchor"], quote=True)
+    return (
+        '<section class="section-landed">\n'
+        f'  <header><span class="badge badge-shipped">&#10003; landed '
+        f"{datetime.now(UTC).date().isoformat()}</span>\n"
+        f"    {open_tag}{inner_html}</h2></header>\n"
+        f'  <p class="landed-summary">{request["summary"]} '
+        f'<a href="{anchor}">full record</a></p>\n'
+        "</section>"
+    )
+
+
+def _landed_card_span(
+    html_text: str, h2_start: int, section_id: str
+) -> tuple[int, int] | None:
+    """The span of a landed card that wraps this heading, or None if authored.
+
+    The span runs from the card's opening ``<section class="section-landed">``
+    to its matching close, so collapsing a section that already carries a card
+    replaces that card in place. A card whose close cannot be found, or whose
+    span would reach across a second heading or a structured-state region, is
+    refused rather than replaced, so a repeat collapse can consume no
+    neighbouring markup and never writes a partial result.
+    """
+    opens = list(_SECTION_OPEN_RE.finditer(html_text, 0, h2_start))
+    if not opens:
+        return None
+    wrapper = opens[-1]
+    if _SECTION_CLOSE_RE.search(html_text, wrapper.end(), h2_start) is not None:
+        return None
+    if "section-landed" not in _class_list(wrapper.group()):
+        return None
+    close_end = _matching_section_close(html_text, wrapper.end())
+    if close_end is None:
+        raise OpError(
+            f"collapse_section: the landed card for {section_id!r} has no closing tag"
+        )
+    span = html_text[wrapper.start() : close_end]
+    if len(_H2_OPEN_RE.findall(span)) != 1:
+        raise OpError(
+            f"collapse_section: cannot determine the extent of {section_id!r} "
+            "unambiguously"
+        )
+    for candidate in _SECTION_OPEN_RE.finditer(span):
+        if candidate.start() == 0:
+            continue
+        if _is_structural_boundary(candidate.group()):
+            raise OpError(
+                f"collapse_section: cannot determine the extent of {section_id!r} "
+                "unambiguously"
+            )
+    return wrapper.start(), close_end
+
+
+def _collapse_authored_section(html_text: str, request: dict[str, str]) -> str:
+    """Replace one section's rendered extent with its landed card.
+
+    An authored section runs from its h2 to the next heading, landed card or
+    structured-state region, or ``</main>``. A section already rendered as a
+    landed card runs from that card's opening tag to its matching close, so a
+    repeat collapse refreshes the card in place: the heading and its id are
+    kept and there is exactly one card and one closing tag.
+    """
+    open_tag, inner_html, open_start, body_start = _section_heading(
+        html_text, request["section"]
+    )
+    card_span = _landed_card_span(html_text, open_start, request["section"])
+    if card_span is None:
+        extent_start, extent_end = open_start, _section_body_end(html_text, body_start)
+    else:
+        extent_start, extent_end = card_span
+    replaced = html_text[extent_start:extent_end]
+    trailing = re.search(r"\s*\Z", replaced)
+    card = _landed_card_html(open_tag, inner_html, request)
+    return (
+        html_text[:extent_start]
+        + card
+        + (trailing.group() if trailing is not None else "")
+        + html_text[extent_end:]
+    )
 
 
 def _evidence_record_path(docs_dir: Path, plan_slug: str) -> Path:
@@ -1069,6 +1286,7 @@ def _write_state_locked(
     # merge can replace ``data`` with a fresh mapping.
     section_insertions = _consume_section_insertions(data)
     evidence_appends = _consume_evidence_appends(data)
+    section_collapses = _consume_section_collapses(data)
 
     if expected_version != cur_version:
         merged_comments = _comment_append_onto_current(data, cur_state)
@@ -1113,6 +1331,8 @@ def _write_state_locked(
             )
         for request in section_insertions:
             source_text = _insert_authored_section(source_text, request)
+        for request in section_collapses:
+            source_text = _collapse_authored_section(source_text, request)
     except ValueError as exc:
         raise OpError(str(exc)) from exc
     if evidence_appends:
@@ -2528,6 +2748,50 @@ def _apply_insert_section(
     working.setdefault("section_declarations", {})[record["id"]] = record["status"]
 
 
+def _apply_collapse_section(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
+    """Collapse one landed section to its card and declare it done.
+
+    The HTML replacement and the declaration change ride one versioned write:
+    the card is queued as a write effect and the section's declaration is set on
+    the same working object, so a caller cannot observe one without the other.
+    """
+    if is_index or str(working.get("type", "plan") or "plan") != "plan":
+        raise OpError("collapse_section op is plan-only")
+    section_id = op.get("section")
+    if not isinstance(section_id, str) or not re.fullmatch(
+        r"[A-Za-z0-9][A-Za-z0-9._-]*", section_id
+    ):
+        raise OpError(
+            "collapse_section op requires a 'section' id matching "
+            "[A-Za-z0-9][A-Za-z0-9._-]*"
+        )
+    summary = op.get("summary")
+    if not isinstance(summary, str) or not summary.strip():
+        raise OpError("collapse_section op requires a non-empty string 'summary'")
+    anchor = op.get("evidence_anchor")
+    if not isinstance(anchor, str) or not anchor.strip():
+        raise OpError(
+            "collapse_section op requires a non-empty string 'evidence_anchor'"
+        )
+    _queue_section_collapse(
+        working,
+        {
+            "section": section_id,
+            "summary": summary.strip(),
+            "evidence_anchor": anchor.strip(),
+        },
+    )
+    working.setdefault("section_declarations", {})[section_id] = "done"
+    sections = working.get("sections")
+    if isinstance(sections, list):
+        for section in sections:
+            if isinstance(section, dict) and section.get("id") == section_id:
+                section["status"] = "done"
+                break
+
+
 def _apply_move(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
     if not is_index:
         raise OpError("move op is index-only")
@@ -2576,6 +2840,7 @@ _OP_DISPATCH = {
     "retire_prose": _apply_retire_prose,
     "insert_section": _apply_insert_section,
     "append_evidence": _apply_append_evidence,
+    "collapse_section": _apply_collapse_section,
     "move": _apply_move,
 }
 
