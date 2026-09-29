@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="120">
+<meta name="plan-version" content="121">
 </head>
 <body>
   <main class="plan-doc">
@@ -1383,7 +1383,10 @@
     <div class="r-comment-body"><p>The control gate now admits a control on a failing id the head arm (after_suite) passes, falling back to the baseline comparison only when the manifest records no readable head arm; the four 2026-09-28 promotions that needed --waive-negative-control replay read-only against their own manifests and logs and are all admitted, evidence in docs/evidence/fragments/crew-runtime-positive-controls/control-is-compared-with-the-head-arm.html</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260929T043953043725-review-of-control-is-compared-with-the-head-arm" data-who="reckon-build" data-when="2026-09-29T05:03:29.121Z">
-    <div class="r-comment-body"><p>review of r-20260929T035747361954-control-is-compared-with-the-head-arm: qualified at 97/100 (goal_fidelity 19, evidence 20, scope_discipline 20, durability 19, fit 19) — the head-arm comparison is landed as specified, the negative control fires on it, and the one finding is the head-arm reader&#x27;s completion spelling; records stored at both declared paths.</p></div>
+    <div class="r-comment-body"><p>review of r-20260929T035747361954-control-is-compared-with-the-head-arm: qualified at 97/100 (goal_fidelity 19, evidence 20, scope_discipline 20, durability 19, fit 19) — the head-arm comparison is landed as specified, the negative control fires on it, and the one finding is the head-arm reader's completion spelling; records stored at both declared paths.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260929T130721314494-head-arm-without-completed-is-unreadable" data-who="reckon-build" data-when="2026-09-29T14:21:56.820Z">
+    <div class="r-comment-body"><p>the head-arm reader at `reckon/crew/promotion.py:5088` now asks `completed` as a literal `True`, so an `after_suite` that omits the key or carries null is unreadable and the baseline comparison decides the control; three cases in `tests/test_control_is_compared_with_the_head_arm.py` hold one manifest apart in that key alone, the head arm 54 passed in 18.53s EXIT=0 against the base tree&#x27;s 2 failed, 52 passed in 19.26s EXIT=1; evidence at `docs/evidence/fragments/crew-runtime-positive-controls/head-arm-without-completed-is-unreadable.html`</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>

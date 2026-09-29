@@ -1,0 +1,437 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "64d8c18eb828de80fb6a1a48ed10833100ed15ed",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 12599526,
+      "input_tokens_cumulative": 12599526,
+      "output_tokens": 111423,
+      "output_tokens_cumulative": 111423,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 116,
+    "files": 3,
+    "removed": 5
+  },
+  "commit_resolution": null,
+  "commits": [
+    "b4d154e17e8d87d241287c0f0d26e16b86d52a3f",
+    "f45cf75421256eb26987cf0667d3737bb06f2794",
+    "3817cdf508a5a332f0cc5dc34656073463abf717"
+  ],
+  "completed_at": "2026-09-29T14:21:56.820Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T13:07:41Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_control_gate_checks_facts.py::test_a_control_that_adds_no_failure_to_the_baseline_is_refused"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=/tmp/hac-head /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 --timeout=300 tests/test_control_is_compared_with_the_head_arm.py tests/test_control_gate_checks_facts.py tests/test_crew_declared_negative_control.py tests/test_crew_negative_control_header.py tests/test_crew_negative_control_interface.py tests/test_negative_control_log_is_a_path.py tests/test_negative_control_waiver.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130721314494-head-arm-without-completed-is-unreadable/logs/head_arm.log"
+  },
+  "impl_move": {
+    "at_complete": 1.0,
+    "at_dispatch": 1.0,
+    "plan": "crew-runtime-positive-controls",
+    "reason": "closes followup f-crpc-a-head-arm-without-completed-is-unreadable on an already-complete plan (impl 1.0)",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T14:07:22.843569+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T13:07:22Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 21,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 10,
+    "headroom": 5,
+    "mean_context": 125714,
+    "observed_at": "2026-09-29T13:07:01Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T14:21:56.820Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130721314494-head-arm-without-completed-is-unreadable/manifest.md",
+  "member": "disposable-r-20260929T130721314494-head-arm-without-completed-is-unreadable",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_control_is_compared_with_the_head_arm.py::test_an_after_suite_with_a_null_completed_value_leaves_the_decision_to_the_baseline",
+      "tests/test_control_is_compared_with_the_head_arm.py::test_an_after_suite_without_a_completed_key_leaves_the_decision_to_the_baseline"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_control_is_compared_with_the_head_arm.py::test_an_after_suite_with_a_null_completed_value_leaves_the_decision_to_the_baseline",
+      "tests/test_control_is_compared_with_the_head_arm.py::test_an_after_suite_without_a_completed_key_leaves_the_decision_to_the_baseline"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_control_is_compared_with_the_head_arm.py::test_an_after_suite_with_a_null_completed_value_leaves_the_decision_to_the_baseline",
+      "tests/test_control_is_compared_with_the_head_arm.py::test_an_after_suite_without_a_completed_key_leaves_the_decision_to_the_baseline"
+    ],
+    "declaration": "restore the literal completed-False-only check in a scratch copy; the missing-key case must let the head arm decide and fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130721314494-head-arm-without-completed-is-unreadable/logs/negative_control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130721314494-head-arm-without-completed-is-unreadable/logs/negative_control.log",
+    "test_paths": [
+      "tests/test_control_is_compared_with_the_head_arm.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "head-arm-without-completed-is-unreadable",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 663,
+          "cached_input_tokens": 870029,
+          "input_tokens": 870694,
+          "output_tokens": 1302,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 871996,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "tests/test_control_is_compared_with_the_head_arm.py gains three cases, each building a manifest plus logs in a temporary run directory and calling the gate's control check: an after_suite with no completed key, one with completed null, one with completed true. The first two fall back to the baseline comparison (a control whose failing id the baseline also fails is refused), while completed true keeps the head-arm decision. The missing-key case fails at the base revision because the head arm decides it (logged) and passes at the head. The negative control, in a scratch copy, restores the literal-False-only check; the missing-key case fails, with the mutation on the red log's first line and an EXIT= line after pytest's output. The gate is that test file plus every tests/ file whose name contains negative_control or control_gate, run with -n 8 --timeout=300; both arms are recorded as one JSON object each under baseline_suite and after_suite (revision, command, exit_status, one log_path, failure_ids as a JSON list), each log ending in an EXIT= line, with the head arm adding no failing id. ruff check plus ruff format --check on the changed paths add no finding against the base.",
+    "estimated_hours": null,
+    "goal": "Plan crew-runtime-positive-controls, followup f-crpc-a-head-arm-without-completed-is-unreadable: a head arm that omits its completed key does not decide a negative control. Read the followup in docs/plans/crew-runtime-positive-controls.html. The head-arm reader in reckon/crew/promotion.py (near :4870, added by control-is-compared-with-the-head-arm at 725632ca) treats only a literal completed: False as unreadable, so an after_suite that omits completed or carries null is read as a completed arm, deciding the control, while the same mapping would be refused on the baseline side. Treat a missing or null completed as unreadable on both arms, so the baseline comparison decides when the head arm is not known to have completed.",
+    "id": "head-arm-without-completed-is-unreadable",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T13:07:22Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 21,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 10,
+      "headroom": 5,
+      "mean_context": 125714,
+      "observed_at": "2026-09-29T13:07:01Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130721314494-head-arm-without-completed-is-unreadable/manifest.md",
+    "negative_control": "restore the literal completed-False-only check in a scratch copy; the missing-key case must let the head arm decide and fail",
+    "plan": "crew-runtime-positive-controls",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/promotion.py",
+      "tests/test_control_is_compared_with_the_head_arm.py",
+      "docs/evidence/fragments/crew-runtime-positive-controls/head-arm-without-completed-is-unreadable.html",
+      "docs/figures/crew-runtime-positive-controls/head-arm-without-completed-is-unreadable"
+    ]
+  },
+  "orientation_input_tokens": 1934197.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "head-arm-without-completed-is-unreadable",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T13:07:28.867317+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "crew-runtime-positive-controls",
+  "plan_impl_at_dispatch": 1.0,
+  "promoted_revision": "3817cdf508a5a332f0cc5dc34656073463abf717",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 20,
+      "goal_fidelity": 17,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 94
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T130721314494-head-arm-without-completed-is-unreadable",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "",
+  "session_harness": "claude",
+  "session_id": "6f4e2a7f-0771-485d-97fc-4e60f99e096b",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 12764891,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 4429.458,
+    "generated_tokens": 119677,
+    "generation_seconds": 4137.034,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.2,
+    "machine_seconds": 292.424,
+    "peak_input_tokens": 164065,
+    "tokens_per_second": 28.93,
+    "wall_tokens_per_second": 27.02
+  },
+  "time_budget": "60m",
+  "tool_steps": 117.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "blocked",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports blocked: The declared two-arm gate over the 28 files that call resume_plan or crew resume is unrecorded: the head arm's run in the worktree ends at pytest's 95% progress row with no summary; no EXIT= line and no failure list; and the base arm over the same set never started; so there is no failure-id delta and no evidence that closing this guard reddens no existing fixture. Each arm needs about 20 minutes of its own; in a node with the budget for both. No other work is outstanding: the change; its test; the base reproduction; the negative control and ruff are all complete and committed.",
+        "effective_phase": "working",
+        "elapsed_seconds": 2491,
+        "exit_record": null,
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "The declared two-arm gate over the 28 files that call resume_plan or crew resume is unrecorded: the head arm's run in the worktree ends at pytest's 95% progress row with no summary; no EXIT= line and no failure list; and the base arm over the same set never started; so there is no failure-id delta and no evidence that closing this guard reddens no existing fixture. Each arm needs about 20 minutes of its own; in a node with the budget for both. No other work is outstanding: the change; its test; the base reproduction; the negative control and ruff are all complete and committed.",
+          "lifting_condition": null,
+          "recovery": "decide",
+          "recovery_classification": "blocked",
+          "state": "blocked"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 0,
+        "log_fresh": true,
+        "manifest_commits": [
+          "716c1325",
+          "c671a521"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "f8dee00f915bf7c41b7c7a4a65ddc926e8ba492d9fc1c187767fb23ed2ec963c",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T085357030873-direct-resume-needs-an-observed-death/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "blocked",
+        "manifest_status": "blocked",
+        "marker": "!",
+        "needs_help_complete": false,
+        "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T085357030873-direct-resume-needs-an-observed-death/manifest.md; resolve the blocker before resuming the run",
+        "node": "direct-resume-needs-an-observed-death",
+        "phase": "working",
+        "plan": "a-stalled-row-says-whether-the-worker-lives",
+        "process_alive": null,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "decide",
+        "recovery_classification": "blocked",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260929T085357030873-direct-resume-needs-an-observed-death",
+        "session": "s22-coord",
+        "session_resolution": {
+          "consulted": [
+            "pointer",
+            "stream",
+            "ledger"
+          ],
+          "resolved": true,
+          "run_id": "r-20260929T085357030873-direct-resume-needs-an-observed-death",
+          "session_id": "10355087-ebe8-46fa-b0d6-98ef637dd25d",
+          "source": "stream"
+        },
+        "stored_phase": "working",
+        "terminal_age_seconds": 6373,
+        "terminal_at": "2026-09-29T11:21:11Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/direct-resume-needs-an-observed-death"
+      }
+    ]
+  },
+  "wall_seconds": 4455,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T14:21:57Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T13:08:04Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T130721314494-head-arm-without-completed-is-unreadable",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 27308,
+    "worker_pid": 129532
+  },
+  "worker_seconds": 4420,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
