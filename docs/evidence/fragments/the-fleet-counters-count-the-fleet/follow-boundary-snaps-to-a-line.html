@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-title" content="The follow boundary snaps to a line so a half-written record is delivered once, whole">
+  <meta name="plan-summary" content="The follower's replay boundary is snapped back to the byte after the last newline before the read, so a record the producer is still writing is not split across the replay and the follow loop but read whole and once by the loop.">
+  <meta name="plan-evidence-for" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <title>The follow boundary snaps to a line | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The follow boundary snaps to a line so a half-written record is delivered once, whole</h1>
+
+    <section id="measure">
+      <h2>What the boundary is</h2>
+      <p>The follower derives its replay span from a boundary captured from the
+        stream file's size before the replay reads anything. The producer appends
+        one JSON record per line, so a line boundary is a record boundary — but a
+        size read while the producer is mid-write lands inside a record that has
+        no newline yet. Taken there, the replay stops on the last whole line
+        before it and the follow loop opens in the middle of the broken record,
+        so the first half is dropped by the parser and the completion reads as a
+        second unparseable fragment: the record reaches the pane never.</p>
+      <p>The guard now snaps the captured offset back to the byte after the last
+        newline at or before it (<code>_follow_boundary</code> in
+        <code>reckon/cli.py</code>, replacing the raw
+        <code>stream_path.stat().st_size</code>). The boundary always lands on a
+        newline, so the replay reads only whole records and the follow loop opens
+        at the start of any record still being written — which it then reads
+        whole once the newline lands, delivered exactly once.</p>
+
+      <section id="gate">
+        <h2>Gate</h2>
+        <table>
+          <thead><tr><th>Check</th><th>Result</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>The new test, both boundary cases</td>
+              <td>2 passed</td>
+              <td><code>gates/head-new-test.log</code> — one record completed
+                before the arming (boundary already on a newline, snap a no-op)
+                and one completed after the boundary was captured. Both assert
+                the move reaches the pane exactly once, whole.</td>
+            </tr>
+            <tr>
+              <td>Declared negative control, the raw captured size taken as the
+                boundary</td>
+              <td>1 failed as required</td>
+              <td><code>gates/negative-control-raw-size.log</code>, its first
+                line the declaration verbatim. In a scratch tree the snap is
+                replaced by <code>return size</code>; the mid-record case fails
+                (the move never reaches the pane) while the line-end case still
+                passes, so the test pins the snap and nothing else.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

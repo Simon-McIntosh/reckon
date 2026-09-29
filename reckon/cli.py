@@ -2397,9 +2397,35 @@ def follower_row_path(
     )
 
 
-def _stream_events_upto(
-    stream_path: Path, *, offset: int, boundary: int
-) -> list[dict]:
+def _follow_boundary(stream_path: Path) -> int:
+    """The byte after the last complete record when the boundary is taken.
+
+    The producer appends one JSON record per line, so a line boundary is a
+    record boundary. The size captured from the file can fall inside a record
+    the producer is still writing, and a boundary taken there would leave the
+    replay reading a half-written line it cannot parse and the follow loop
+    opening in the middle of that record, so the record would be delivered in
+    halves or not at all. So the guard snaps the captured stream offset back to
+    the byte after the last newline at or before it: the boundary always lands
+    on a newline, the replay reads only whole records, and the loop opens at the
+    start of any record still being written, which it then reads whole and once.
+    """
+    try:
+        size = stream_path.stat().st_size
+    except OSError:
+        return 0
+    if size <= 0:
+        return 0
+    try:
+        with stream_path.open("rb") as stream:
+            data = stream.read(size)
+    except OSError:
+        return 0
+    newline = data.rfind(b"\n")
+    return newline + 1 if newline >= 0 else 0
+
+
+def _stream_events_upto(stream_path: Path, *, offset: int, boundary: int) -> list[dict]:
     """Read a stream's events from one byte offset up to a fixed boundary.
 
     The boundary is captured before the read rather than taken from the file
@@ -2910,11 +2936,10 @@ def _follow_watch_lines(
             # transition appended in between therefore falls on one side of the
             # boundary or the other — the replay's list or the loop's read — and
             # arrives once, where taking the size afterwards would drop it from
-            # both.
-            try:
-                boundary = stream_path.stat().st_size
-            except OSError:
-                boundary = 0
+            # both. The capture also snaps back to the byte after the last
+            # newline, so a record the producer is still writing is not split
+            # across the two reads: a line boundary is a record boundary.
+            boundary = _follow_boundary(stream_path)
             if mode != "baseline" and first_attach:
                 # The event restores the pane's stored history for a terminal,
                 # and carries no remembered states: the replay below is about to
@@ -3222,9 +3247,7 @@ def _seed_ticker_memory(grid, states) -> None:
     """
     if not states:
         return
-    grid._reported.update(
-        {str(key): str(value) for key, value in dict(states).items()}
-    )
+    grid._reported.update({str(key): str(value) for key, value in dict(states).items()})
 
 
 def _ticker_options(command):
@@ -4605,7 +4628,9 @@ def crew_suite_run(project, checkout_path, pretty):
             f"project {project!r} declares no review.suite command, so there is "
             "nothing to run"
         )
-    log_path = standing_suite.suite_runs_dir(root, project) / f"suite-{time.time_ns()}.log"
+    log_path = (
+        standing_suite.suite_runs_dir(root, project) / f"suite-{time.time_ns()}.log"
+    )
     record = standing_suite.run(root, declaration, log_path)
     standing_suite.record(root, project, record)
     _emit({"ok": True, "project": project, **record}, pretty)
@@ -4815,7 +4840,9 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
     help="Show the lane-change launch without stopping or starting a worker.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_redispatch(run_id, backend, reason, advice, estimated_hours, print_only, pretty):
+def crew_redispatch(
+    run_id, backend, reason, advice, estimated_hours, print_only, pretty
+):
     """Move one working run to another backend without replacing its identity."""
     crew_module, flight_module = _crew_modules()
     try:
