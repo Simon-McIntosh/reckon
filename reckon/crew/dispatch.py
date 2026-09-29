@@ -4744,12 +4744,13 @@ def dispatch(
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,
             "sandbox": backend.get("sandbox"),
-            # Whether this launch was composed inside the fence wrapper. The
-            # boundary check reads this recorded fact rather than the current
-            # default, so a later change to the default cannot redefine what an
-            # already-dispatched run is checked against. A record written before
-            # the field existed carries neither value and keeps the full scan.
-            "fenced": FENCE_WORKERS,
+            # Whether this launch was composed inside the fence wrapper,
+            # overwritten from the composed plan below. The boundary check reads
+            # this recorded fact rather than the current default, so a later
+            # change to the default cannot redefine what an already-dispatched
+            # run is checked against. A record written before the field existed
+            # carries neither value and keeps the full scan.
+            "fenced": False,
             "sandbox_write_roots": (
                 None
                 if resolution.sandbox_write_roots is None
@@ -4917,6 +4918,11 @@ def dispatch(
             job_id, job_id_status = placement_job_id(placement, run_id=run_id)
             record.update(
                 {
+                    # Whether the plan this dispatch composed carries the fence
+                    # wrapper. Read from the composed argv, so a cli launch that
+                    # asked for the fence is recorded as fenced while any launch
+                    # that composed none is not.
+                    "fenced": _plan_composed_the_fence(plan),
                     # The pointer's pid is the per-run supervisor's, written
                     # once it is running, further down. Until then the run has no
                     # process identity, which is why it starts empty rather than
@@ -4953,7 +4959,11 @@ def dispatch(
                 }
             )
         else:
+            # An in-harness launch composes no plan here and no fence argv, so
+            # it is recorded unfenced and its boundary check keeps the full scan
+            # of every registered worktree.
             plan = None
+            record["fenced"] = False
             record["directive"] = {
                 "attach_with": f"reckon crew attach --run {run_id} --task <task-id>",
                 "fences": {
@@ -5040,6 +5050,7 @@ def dispatch(
                             repo_root=repo_root,
                             worktree=Path(worktree["path"]),
                             plan=plan,
+                            fenced=bool(record["fenced"]),
                             prompt_path=prompt_path,
                             log_path=log_path,
                             stderr_path=stderr_path,
@@ -5068,7 +5079,7 @@ def dispatch(
                 record["repository_tree_snapshot"] = _repository_tree_snapshot(
                     repo_root,
                     roots=_boundary_snapshot_roots(
-                        repo_root, Path(worktree["path"]), fenced=FENCE_WORKERS
+                        repo_root, Path(worktree["path"]), fenced=bool(record["fenced"])
                     ),
                 )
             spawned_start_time = _process_start_time(spawned_pid)
@@ -5084,7 +5095,7 @@ def dispatch(
                 directory,
                 repo_root,
                 worktree=Path(str(worktree["path"])),
-                fenced=FENCE_WORKERS,
+                fenced=bool(record["fenced"]),
             )
     except Exception:
         _unwire_peer_channels(run_id, wired_peer_run_ids)
@@ -6467,6 +6478,7 @@ def _supervisor_spec(
     repo_root: Path,
     worktree: Path,
     plan: _backends.LaunchPlan,
+    fenced: bool = False,
     prompt_path: Path,
     log_path: Path,
     stderr_path: Path,
@@ -6493,7 +6505,7 @@ def _supervisor_spec(
         # Whether this launch was composed inside the fence, carried so the
         # supervisor's boundary baseline reads the same two trees the dispatch
         # record names.
-        "fenced": FENCE_WORKERS,
+        "fenced": fenced,
         "prompt_path": str(prompt_path),
         "log_path": str(log_path),
         "stderr_path": str(stderr_path),
@@ -6732,6 +6744,7 @@ def supervised_launch(
             repo_root=repo_root,
             worktree=worktree,
             plan=plan,
+            fenced=bool(record.get("fenced")),
             prompt_path=prompt_path,
             log_path=log_path,
             stderr_path=stderr_path,
@@ -6830,6 +6843,19 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
             preexec_fn=_worker_default_signals,  # noqa: PLW1509
         )
     return process.pid
+
+
+def _plan_composed_the_fence(plan: _backends.LaunchPlan | None) -> bool:
+    """Whether a launch plan's argv carries the fence wrapper.
+
+    The fence is composed inside the plan builder and only for a cli launch
+    that asked for it, so the fact is read from the composed argv rather than
+    from the request to compose one. A launch that composed no fence — an
+    in-harness lane, whose plan is absent here, or any lane whose argv is a
+    bare harness — is not fenced, and its boundary check keeps the full scan of
+    every registered worktree, because nothing stopped it writing elsewhere.
+    """
+    return plan is not None and bool(_harness_behind_the_fence(plan.argv))
 
 
 def _boundary_snapshot_roots(

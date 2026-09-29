@@ -48,12 +48,32 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (root / "docs" / "plans").mkdir(parents=True)
+    (root / "docs" / "plans" / "plan-a.html").write_text(
+        "<!doctype html>\n<html><head>\n"
+        '<meta name="docs-project" content="sample">\n'
+        '<meta name="reckon-type" content="plan">\n'
+        '<meta name="plan-slug" content="plan-a">\n'
+        '</head><body><h2 id="s3">§3 — Dispatch</h2></body></html>\n',
+        encoding="utf-8",
+    )
+    (root / "skills" / "reckon-build" / "scripts").mkdir(parents=True)
+    fleet_source = (
+        Path(__file__).parents[1]
+        / "skills"
+        / "reckon-build"
+        / "scripts"
+        / "worktree_fleet.py"
+    )
+    (root / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py").write_text(
+        fleet_source.read_text(encoding="utf-8"), encoding="utf-8"
+    )
     (root / "allowed.txt").write_text("seed\n", encoding="utf-8")
     for arguments in (
         ("init", "-q", "-b", "main"),
         ("config", "user.email", "worker@example.invalid"),
         ("config", "user.name", "Worker"),
-        ("add", "allowed.txt"),
+        ("add", "allowed.txt", "docs/plans/plan-a.html", "skills"),
         ("commit", "-q", "-m", "chore: seed"),
     ):
         _git(root, *arguments)
@@ -333,3 +353,94 @@ def test_a_fenced_run_is_still_refused_when_it_wrote_the_main_checkout(
     assert "allowed.txt" in message
     assert f"main checkout {repository}" in message
     assert pointer_path(run_id).is_file()
+
+
+DISPATCH_CONFIG = {
+    "default_backend": "alpha",
+    "backends": {
+        "alpha": {
+            "launch": "cli",
+            "command": "codex",
+            "model": "some-model",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "time_budget": "25m",
+        },
+        "native": {"launch": "in-harness", "time_budget": "25m"},
+    },
+    "roles": {"implement": {}, "inline": {"backend": "native"}},
+    "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+}
+
+
+def _node(tmp_path: Path, *, role: str) -> crew.TaskNode:
+    return crew.TaskNode(
+        id="boundary-node",
+        goal="record the launch fence fact",
+        plan="plan-a",
+        section="§3",
+        done_when=(
+            "uv run pytest tests/test_boundary_check_reads_two_trees.py "
+            "reports 8 passed"
+        ),
+        write_paths=["allowed.txt"],
+        time_budget="25m",
+        manifest_path=str(tmp_path / "manifest.md"),
+        spec_level="guided",
+        role=role,
+    )
+
+
+def _registered_worktrees(repository: Path) -> int:
+    porcelain = _git(repository, "worktree", "list", "--porcelain")
+    return sum(1 for line in porcelain.splitlines() if line.startswith("worktree "))
+
+
+def test_a_cli_dispatch_records_the_composed_fence_and_snapshots_two_trees(
+    repository: Path, worktrees: list[Path], tmp_path: Path
+) -> None:
+    """A cli launch whose plan carries the fence records fenced and reads two."""
+    record = dispatch_module.dispatch(
+        node=_node(tmp_path, role="implement"),
+        project=PROJECT,
+        repo=repository,
+        config=DISPATCH_CONFIG,
+        session="boundary-session",
+        check_budget=False,
+        launcher=lambda plan, *, log_path, stderr_path, prompt_path: 4242,
+    )
+
+    assert record["fenced"] is True
+    snapshot = record["repository_tree_snapshot"]
+    assert len(snapshot["trees"]) == 2
+    assert {Path(tree["path"]).resolve() for tree in snapshot["trees"]} == {
+        repository.resolve(),
+        Path(str(record["worktree"])).resolve(),
+    }
+
+
+def test_an_in_harness_dispatch_is_recorded_unfenced_and_keeps_the_full_scan(
+    repository: Path, worktrees: list[Path], tmp_path: Path, status_log: Path
+) -> None:
+    """An in-harness launch composes no fence, so its check reads every tree."""
+    record = dispatch_module.dispatch(
+        node=_node(tmp_path, role="inline"),
+        project=PROJECT,
+        repo=repository,
+        config=DISPATCH_CONFIG,
+        session="boundary-session",
+        check_budget=False,
+    )
+
+    assert record["fenced"] is False
+    run_id = str(record["run_id"])
+    snapshot_path = run_dir(run_id) / dispatch_module.TREE_SNAPSHOT_NAME
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    registered = _registered_worktrees(repository)
+    assert len(snapshot["trees"]) == registered
+
+    _reset(status_log)
+    assert promotion._repository_tree_boundary_violations(run_id, record) == []
+    calls = _status_calls(status_log)
+
+    assert len(calls) == registered
