@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="131">
+<meta name="plan-version" content="132">
 </head>
 <body>
   <main class="plan-doc">
@@ -1417,6 +1417,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260929T160908518777-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8" data-who="reckon-build" data-when="2026-09-29T16:21:45.392Z">
     <div class="r-comment-body"><p>The baseline reader now validates `failure_ids` the way the head reader does — a list of non-empty strings — so a JSON string is no longer iterated as its characters and a non-iterable no longer raises out of the gate, and an unreadable baseline decides nothing in every shape; the pinned refusal case is restored to the baseline comparison it names (head arm 26 passed EXIT=0, negative control 4 failed EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260929T162201112211-review-of-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8" data-who="reckon-build" data-when="2026-09-29T16:59:26.809Z">
+    <div class="r-comment-body"><p>review of run r-20260929T160908518777-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8 (base 06149d982550928383d75dfcbe21b367b24f2e43, head 60b35ebb908689928ca4ec53d98b341292c3d6c4) stored as a parsed record at the revision-keyed path and byte-identically at the legacy path beside it (11244 bytes each, sha256 dd1bc8c55fbfb8187734b372e84b9f4b8dad784f0d2242705f28d0c15c1f1fa7) — scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20 (total 98, no dimension absent, all six item verdicts present, two production call sites), no findings, and added_failure_count 0 with an empty id list derived by the project&#x27;s own set-difference instrument from the reviewed run&#x27;s own two arm logs (logs/negative_control.log as the base arm, logs/head_arm.log as the after arm), with the instrument&#x27;s positive control shown to fire and the reverse direction recorded</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
