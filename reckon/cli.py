@@ -5052,6 +5052,68 @@ def crew_ledger(project, view, checkout_path, pretty):
     _emit({"ok": True, "project": project, **payload}, pretty)
 
 
+@crew.command(name="velocity")
+@click.option(
+    "--project",
+    required=True,
+    help="Project measured, or * for every mounted checkout.",
+)
+@click.option(
+    "--since",
+    default=None,
+    help="Window start, ISO-8601. Refused when absent or unparseable.",
+)
+@click.option(
+    "--until",
+    default=None,
+    help="Window close, ISO-8601 (default: now).",
+)
+@click.option(
+    "--fields",
+    multiple=True,
+    help=(
+        "An optional block to include. Repeatable and comma-separated; the "
+        "aggregate tables are served by default. Unrecognised names are refused."
+    ),
+)
+@click.option("--limit", type=int, default=None, help="Cells per page.")
+@click.option(
+    "--cursor",
+    default=None,
+    help="Resume the project-lane-day cells at a cursor from a previous page.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_velocity(project, since, until, fields, limit, cursor, pretty):
+    """Report what the fleet delivered over a caller-named window.
+
+    The per-project, per-lane and per-day tables are the default answer; the
+    project-lane-day cells and every other block are served only when named in
+    --fields, and the cells are paged by --limit and --cursor. This is the same
+    payload the crew read view answers with for the same window, because both
+    call one composition.
+    """
+    from reckon import velocity as velocity_module
+
+    requested = [
+        name
+        for value in fields
+        for name in (part.strip() for part in value.split(","))
+        if name
+    ]
+    payload = velocity_module.view(
+        project,
+        since=since,
+        until=until,
+        fields=requested or None,
+        limit=limit,
+        cursor=cursor,
+    )
+    if not payload.get("ok"):
+        detail = payload.get("detail") or payload.get("message") or str(payload)
+        raise click.ClickException(str(detail))
+    _emit(payload, pretty)
+
+
 @crew.command(name="split-runs")
 @click.option(
     "--dry-run",

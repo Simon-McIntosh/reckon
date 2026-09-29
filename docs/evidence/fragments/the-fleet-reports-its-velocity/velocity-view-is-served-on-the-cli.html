@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-reports-its-velocity">
+  <meta name="plan-title" content="The velocity view is served on the command line">
+  <meta name="plan-summary" content="crew velocity in reckon/cli.py and crew(view=&quot;velocity&quot;) in reckon/mcp.py both call one composition, reckon.velocity.view, so the two surfaces return the same payload for the same window.">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-reports-its-velocity">
+  <meta name="plan-node" content="velocity-view-is-served-on-the-cli">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-environment" content="Linux node; Python 3.14 venv; pytest; synthesised git repositories under tmp_path">
+  <title>The velocity view is served on the command line &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The velocity view is served on the command line</h1>
+    <p class="plan-summary">The delivery-rate view gains its command-line surface, and the whole
+    composition the caller sees &mdash; the window parsing, the mount resolution, the default
+    summary and the paging of the cells &mdash; moves into one function that both surfaces call.</p>
+  </header>
+
+  <figure>
+    <img src="/reckon/figures/the-fleet-reports-its-velocity/velocity-view-is-served-on-the-cli/velocity-view-cli-call-path.svg" alt="Two surfaces, reckon crew velocity in reckon/cli.py and crew(view=velocity) in reckon/mcp.py, both arrow into one function, velocity.view, which parses the window, resolves mounts, composes the default summary and pages the cells; below it the report function's measurement layers are reused unchanged.">
+    <figcaption>One composition serves both surfaces: the command line and the read view call
+    <code>velocity.view</code>, which in turn calls the existing <code>report</code> and its
+    measurement layers.</figcaption>
+  </figure>
+
+  <section id="one-composition">
+    <h2>One composition, two surfaces</h2>
+
+    <p><code>reckon.velocity.view(project, *, since, until=None, checkout_path=None,
+    fields=None, limit=None, cursor=None)</code> now owns everything between a caller's request and
+    the payload they read: it parses and refuses the window, resolves the mount set, composes the
+    default summary, and pages the project-lane-day cells. Both surfaces call it, so no derivation
+    exists twice. <code>crew(view="velocity")</code> in <code>reckon/mcp.py</code> is now a thin
+    call, and <code>reckon crew velocity</code> in <code>reckon/cli.py</code> calls the same
+    function &mdash; they cannot disagree about a window because there is one window to agree about.</p>
+
+    <p><code>project</code> is one mounted project's name, or <code>"*"</code> for every mounted
+    checkout; <code>since</code> names the window start and is refused by name when absent or
+    unparseable, because there is no safe default &mdash; a view that silently measured "since
+    forever" would report a window the caller did not ask for; <code>until</code> names the close and
+    defaults to now. The per-project, per-lane and per-day tables are the default answer. Every
+    other block is served only when named in <code>fields</code>, and the project-lane-day cells
+    &mdash; the largest block &mdash; are paged by <code>limit</code> and <code>cursor</code>
+    through the same <code>paginate</code> helper the other crew views use. An unrecognised field is
+    refused with the accepted set named.</p>
+
+    <p>The composition returns the payload both surfaces emit, so a refusal &mdash;
+    <code>ok: false</code> with a <code>detail</code> naming the reason &mdash; reads the same on
+    either surface. The command line raises <code>click.ClickException</code> carrying that
+    <code>detail</code>, so a missing <code>ok: false</code> is a nonzero exit whose message names
+    the parameter.</p>
+  </section>
+
+  <section id="cli-surface">
+    <h2>The command line</h2>
+
+    <p><code>reckon crew velocity</code> follows the <code>crew ledger</code> command's pattern and
+    options: <code>--project</code> (required; one project, or <code>*</code> for every mounted
+    one), <code>--since</code>, <code>--until</code>, <code>--fields</code> (repeatable and
+    comma-separated), <code>--limit</code>, <code>--cursor</code>, and <code>--pretty</code>. It
+    reads and emits through the same composition the MCP read uses, with the same meanings and the
+    same refusals.</p>
+
+    <p>The measurement's progress lines &mdash; the per-project <code>head</code> line, the ledger
+    clock recoveries and the positive-control line &mdash; move from stdout to stderr. The
+    projection's narration was previously interleaved with the answer; a caller of the command line
+    now parses the JSON on stdout without filtering the library's narration out of it. The returned
+    data is unchanged: only the stream the narration lands on.</p>
+  </section>
+
+  <section id="tests">
+    <h2>Tests, arms and the negative control</h2>
+
+    <p><code>tests/test_crew_velocity_cli.py</code> synthesises two git repositories under
+    <code>tmp_path</code> &mdash; each with a committed run ledger at its head and a mount entry in
+    an isolated <code>mounts.json</code> &mdash; exactly as <code>tests/test_crew_velocity_view.py</code>
+    synthesises them, and reads nothing outside <code>tmp_path</code>. Three tests:</p>
+
+    <ul>
+      <li>the default call's command-line JSON equals the read view's payload for the same window
+      (<em>the aggregate tables, no cells</em>);</li>
+      <li>a project-lane-day cells page reached by <em>cursor</em> matches the read view's page for
+      the same cursor, and differs from the first page;</li>
+      <li>a missing <code>--since</code> is refused by name, at a nonzero exit.</li>
+    </ul>
+
+    <p>The parity assertions compare the parsed payloads, so the two surfaces are held to the same
+    data rather than to the same serialisation; the command line emits its JSON with sorted keys.</p>
+
+    <table>
+      <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr><td>Base (scratch tree)</td><td><code>2309c8b9</code></td><td>3 failed, exit 1 &mdash; the new test file against the pre-change modules: the read view has no <code>velocity</code> branch and the command line has no <code>velocity</code> command</td><td><code>gate-base.log</code></td></tr>
+        <tr><td>Head</td><td><code>e5f575ea</code></td><td>15 passed, exit 0 &mdash; the three gate files at the committed head</td><td><code>gate-head.log</code></td></tr>
+        <tr><td>Negative control</td><td><code>e5f575ea</code></td><td>1 failed, 2 passed, exit 1 &mdash; the cells-page parity case reddens when the command line drops the cursor</td><td><code>negative-control.log</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Base arm.</strong> The repository's <code>.git</code> is read-only to this worker, so
+    no detached worktree could be added. The base revision was reconstructed instead: a scratch tree
+    under <code>/tmp</code> symlinks every top-level entry and every module of the package, then
+    shadows <code>reckon/velocity.py</code>, <code>reckon/mcp.py</code> and <code>reckon/cli.py</code>
+    with their revisions at <code>2309c8b9</code>. The log header names the revision, the served
+    <code>module.__file__</code> (the scratch tree) and the working directory. All three tests fail
+    there, which is the pre-change state: the absence of a <code>velocity</code> branch and of a
+    <code>velocity</code> command is what the new tests assert against.</p>
+
+    <p><strong>Head arm.</strong> At the committed head <code>e5f575ea</code>, over
+    <code>tests/test_crew_velocity_cli.py</code>, <code>tests/test_crew_velocity_view.py</code> and
+    <code>tests/test_velocity.py</code>: 15 passed, exit 0. The two pre-existing files pass at their
+    own passing state, so the node adds no failure to either.</p>
+
+    <p><strong>Negative control.</strong> The declared mutation &mdash; the command line's
+    <code>cursor=cursor</code> replaced by <code>cursor=None</code>, so it always returns the first
+    page &mdash; reddens <code>test_a_cells_page_agrees_with_the_read_view</code>: 1 failed, 2
+    passed, exit 1. The mutation string is repeated verbatim as the first line of
+    <code>negative-control.log</code>, and its absolute path is named in the manifest. The mutation
+    was reverted and the tree is clean at the committed head.</p>
+  </section>
+
+  <section id="scope">
+    <h2>Scope</h2>
+
+    <p>Four paths carry this node's work: <code>reckon/velocity.py</code> (the composition, and the
+    narration moved to stderr), <code>reckon/mcp.py</code> (the branch reduced to a thin call), <code>reckon/cli.py</code>
+    (the new command) and <code>tests/test_crew_velocity_cli.py</code>. The declared negative control
+    names a mutation the node wrote a check for, so it is recorded above. One finding from the
+    read view's review is outside this node and untouched: the crew tool's generic over-budget
+    receipt in <code>reckon/mcp_budget.py:105</code> proposes fields a velocity branch does not
+    serve.</p>
+  </section>
+</main>
+</body>
+</html>
