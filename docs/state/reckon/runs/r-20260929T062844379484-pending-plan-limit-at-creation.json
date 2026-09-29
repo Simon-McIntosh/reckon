@@ -1,0 +1,432 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "11d1f94962adb2f83a75fded4ff9636cd49eda06",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 2197318,
+      "input_tokens_cumulative": 2197318,
+      "output_tokens": 11347,
+      "output_tokens_cumulative": 11347,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 394,
+    "files": 4,
+    "removed": 3
+  },
+  "commit_resolution": null,
+  "commits": [
+    "87874436a652d8bf3fa59df9327fd73b72e9e444",
+    "8e9d4f409c10f6769406382958fa16aba567dd5e"
+  ],
+  "completed_at": "2026-09-29T07:19:16.782Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T06:29:03Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_mcp_vocabulary_is_complete.py::test_op_vocab_names_every_dispatchable_op",
+    "reckon/mcp.py's"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_pending_plan_limit.py tests/test_edit_plan.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T062844379484-pending-plan-limit-at-creation/gate-merged-main.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.5,
+    "plan": "open-work-is-capped",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T07:28:46.012581+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T06:28:46Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 5,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 5,
+    "headroom": 10,
+    "mean_context": 130000,
+    "observed_at": "2026-09-29T06:28:41Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T07:19:16.782Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T062844379484-pending-plan-limit-at-creation/manifest.md",
+  "member": "disposable-r-20260929T062844379484-pending-plan-limit-at-creation",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_pending_plan_limit.py::test_third_create_is_refused_naming_the_plans_nearest_to_closing"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_mcp_vocabulary_is_complete.py::test_op_vocab_names_every_dispatchable_op"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_pending_plan_limit.py::test_third_create_is_refused_naming_the_plans_nearest_to_closing"
+    ],
+    "declaration": "skip the limit check in _edit_plan's create path; the third-create refusal case must then fail",
+    "head_failure_ids": [
+      "tests/test_mcp_vocabulary_is_complete.py::test_op_vocab_names_every_dispatchable_op"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T062844379484-pending-plan-limit-at-creation/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T062844379484-pending-plan-limit-at-creation/negative-control.log",
+    "test_paths": [
+      "tests/test_pending_plan_limit.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "pending-plan-limit-at-creation",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1094,
+          "cached_input_tokens": 822741,
+          "input_tokens": 823837,
+          "output_tokens": 1175,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 825012,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "The project resource docs/state/reckon/project.json declares a pending-plan limit of 25 beside schedule_horizon_sprints, and it is read the way roadmap reads that key. A project that declares no limit is not capped.\n\nreckon/mcp.py:_edit_plan with create=True for a new plan refuses when the project already holds as many pending plans as its limit. Pending uses the same definition the velocity view's plan census uses: not shipped, done, superseded or abandoned, and not archived. That definition is imported, not re-derived. The refusal:\n- names the limit and the pending count;\n- names the three pending plans nearest to closing, ranked by their impl, highest first;\n- names the override.\nThe override is a new edit_plan argument, override_wip_limit, carrying a reason. It lets the create through and records the reason as a comment on the new plan. That is the locked refuse-with-override mode, decision wip-limit-mode.\n\ntests/test_pending_plan_limit.py synthesises a project under tmp_path with a limit of 2 and two pending plans, and reads and writes nothing outside tmp_path. It asserts:\n- a third create is refused, naming the plans nearest to closing;\n- the create goes through with override_wip_limit and the reason lands as a comment;\n- closing one plan by setting its status to done lets a create through without an override;\n- a project with no declared limit is never refused.\n\nThat file and the existing edit_plan test files keep their base failing ids and add none. The manifest writes baseline_suite and after_suite each as one line of armed JSON: revision, command with no placeholder, exit_status, completed, failure_count, failure_ids, log_path. The head arm runs at the committed head, and every gate log opens with one line naming its revision, tree and command. The declared negative control is applied and observed to fail, and its log's absolute path is in the manifest with an EXIT= line and the FAILED id.",
+    "estimated_hours": null,
+    "goal": "Refuse creation of a plan beyond the project's pending-plan limit, naming the plans nearest to closing, with a recorded override",
+    "id": "pending-plan-limit-at-creation",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T06:28:46Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 5,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 5,
+      "headroom": 10,
+      "mean_context": 130000,
+      "observed_at": "2026-09-29T06:28:41Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T062844379484-pending-plan-limit-at-creation/manifest.md",
+    "negative_control": "skip the limit check in _edit_plan's create path; the third-create refusal case must then fail",
+    "plan": "open-work-is-capped",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/mcp.py",
+      "docs/state/reckon/project.json",
+      "tests/test_pending_plan_limit.py",
+      "docs/evidence/fragments/open-work-is-capped/pending-plan-limit-at-creation.html",
+      "docs/figures/open-work-is-capped/pending-plan-limit-at-creation"
+    ]
+  },
+  "orientation_input_tokens": 4711761.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "pending-plan-limit-at-creation",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T06:28:52.030812+00:00",
+    "score": 0.7375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "open-work-is-capped",
+  "plan_impl_at_dispatch": 0.5,
+  "promoted_revision": "8e9d4f409c10f6769406382958fa16aba567dd5e",
+  "resume_waiver": null,
+  "review": null,
+  "review_tier": "full",
+  "review_waiver": {
+    "reason": "review 91 at 87874436 carried forward: the repair at 8e9d4f40 gates the override comment on a declared, reached limit exactly as the finding asked, adds the two tests for the silent cases, and corrects a manifest path; the coordinator read the diff and ran the tests at the merged tree"
+  },
+  "role": "implement",
+  "run_id": "r-20260929T062844379484-pending-plan-limit-at-creation",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "ce7f44eb-ba0f-400c-a0d1-73b327610d46",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 17992829,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 383.418,
+    "generated_tokens": 70543,
+    "generation_seconds": 206.769,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 21.7,
+    "machine_seconds": 176.649,
+    "peak_input_tokens": 104394,
+    "tokens_per_second": 341.17,
+    "wall_tokens_per_second": 183.98
+  },
+  "time_budget": "60m",
+  "tool_steps": 136.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": true,
+        "budget_overrun_seconds": 672,
+        "budget_seconds": 2700,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 3372,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-29T06:08:19Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-29T05:33:03Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260929T053221615781-fragment-scope-for-landing-roles-only",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 8409,
+          "worker_pid": 2812695
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 1228,
+        "log_fresh": false,
+        "manifest_commits": [
+          "4e82a893",
+          "a924e1cc",
+          "6b32f1b3"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "adcec5577fed0dbaa69d2d12435d21c44cc1bcc34c9dfb8a7b35b28ca1223ec4",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T053221615781-fragment-scope-for-landing-roles-only/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan a-landing-record-never-conflicts --section '§2' --role review --spec-level exact --node review-of-fragment-scope-for-landing-roles-only --goal 'attach an independent review to run r-20260929T053221615781-fragment-scope-for-landing-roles-only' --done-when 'the review for r-20260929T053221615781-fragment-scope-for-landing-roles-only stores a parsed record scoring all 5 dimensions in the range 0..20, carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T053221615781-fragment-scope-for-landing-roles-only.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T053221615781-fragment-scope-for-landing-roles-only.at-6b32f1b377bf1554a7c16bd1f1efd11a7d5056ed.json --time-budget 45m --session s25-coord --allow-unreconciled-runs --local",
+        "node": "fragment-scope-for-landing-roles-only",
+        "phase": "complete",
+        "plan": "a-landing-record-never-conflicts",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260929T053221615781-fragment-scope-for-landing-roles-only",
+        "session": "s25-coord",
+        "stored_phase": "starting",
+        "terminal_age_seconds": 1391,
+        "terminal_at": "2026-09-29T06:05:37Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/fragment-scope-for-landing-roles-only"
+      }
+    ]
+  },
+  "wall_seconds": 3013,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T07:19:17Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T07:12:49Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T062844379484-pending-plan-limit-at-creation",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 9304,
+    "worker_pid": 92054
+  },
+  "worker_seconds": 2978,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
