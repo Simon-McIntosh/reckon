@@ -497,17 +497,18 @@ def _list_live_records(
 def list_live(
     *, project: str | None = None, phase: str | None = None
 ) -> list[dict[str, Any]]:
-    """Return matching live pointers, newest run id last."""
+    """Return matching live pointers, newest run id last.
+
+    The pointers are returned as they are stored: a liveness probe taken here is
+    never written into ``process_alive``. A pid answers only on the host that
+    issued it, while the crew home is shared across login nodes, so a value
+    written into that key would be read back by the classifier as its own
+    observer's answer on a host that never issued the pid — from which a live
+    worker on another machine reads dead. Consumers derive liveness where they
+    read it, through ``classify_pointer`` or ``record_process_alive``, each
+    under its own host gate.
+    """
     records = _list_live_records(project=project, phase=phase)
-    for record in records:
-        if not record.get("pid"):
-            continue
-        # Return the re-derived fact without mutating the pointer. A read must
-        # not report a worker as live merely because the last observer did,
-        # while all consumers of this one snapshot must see the same answer.
-        # The accessor carries the reuse check now, so the pid-start-time
-        # comparison is not repeated here.
-        record["process_alive"] = record_process_alive(record)
     if project is not None and phase is None:
         _publish_watch_stream(project, records)
     return records

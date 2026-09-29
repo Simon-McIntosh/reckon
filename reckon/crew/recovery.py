@@ -3574,6 +3574,7 @@ def _interruption_evidence(
     *,
     phase: str,
     process_alive: bool | None,
+    liveness_proven: bool,
     exit_record: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any] | None, int]:
     """Return why unfinished work stopped involuntarily, plus retained commits.
@@ -3586,6 +3587,15 @@ def _interruption_evidence(
     completion/promotion always outranks either inference, and a recorded exit
     outranks the death inferences: it is the end itself rather than a reading
     of a vanished pid, so a run that chose its exit is not an interruption.
+
+    Retained work is inferred from the liveness reading alone, so the reading
+    has to be one this host can stand behind: the crew home is shared across
+    login nodes and a pid answers only on the host that issued it, so a stored
+    answer from another observer is no reading here. Consumed without that
+    qualification it lets a worker still running on its own machine read as an
+    interruption of the work it is holding. An ending the run itself recorded is
+    unaffected: it is read through the exit record, or through the phase an
+    observer wrote beside the reading, and neither rests on the reading alone.
     """
     if phase in {"complete", "promoted", "stopped"} or record.get("promoted_at"):
         return None, 0
@@ -3631,6 +3641,9 @@ def _interruption_evidence(
             },
             0,
         )
+
+    if not liveness_proven:
+        return None, 0
 
     commits = _commits_beyond_base(record)
     if commits:
@@ -3857,16 +3870,15 @@ def classify_pointer(
     # stored answer is kept and the row carries that it is unproven — an
     # unprovable answer is not proof of death.
     stored_alive = record.get("process_alive")
-    if (
+    launched_here = (
         record.get("launcher_host") is not None
         and str(record.get("launcher_host")) == _reading_host()
-        and record.get("pid")
-    ):
+    )
+    if launched_here and record.get("pid"):
         # The run was launched here: the launched pid's kernel state is the
         # authority at this instant, and the recorded start tick rules out a
-        # reused pid — the same reading ``list_live`` produces for a fleet
-        # view. A zombie entry answers not alive, composing with the narrowed
-        # probe rather than reviving the old answer.
+        # reused pid. A zombie entry answers not alive, composing with the
+        # narrowed probe rather than reviving the old answer.
         alive = runs.record_process_alive(record)
         expected_start = record.get("pid_start_time")
         if alive is True and expected_start is not None:
@@ -3883,8 +3895,16 @@ def classify_pointer(
     # then answers for a process that is gone while the work continues — so a
     # dead pointer pid is not proof the work is gone. The worker record is asked
     # next, and only its answer may let a run read as dead.
+    #
+    # Its pid is read on this host, so the answer is evidence only for a run
+    # launched here. The worker record carries no host field of its own, and
+    # numbers are reused across machines: a foreign run whose pid happens to be
+    # held here would otherwise be handed proof of life this host cannot
+    # support, which is the mirror of reading a foreign pid as dead. The record
+    # is still read for a foreign run, because whether one exists is what
+    # advances the phase, but its answer does not become this host's reading.
     worker_alive = _worker_record_liveness(record)
-    if alive is not True and worker_alive is True:
+    if alive is not True and worker_alive is True and launched_here:
         alive = True
         liveness_proven = True
     # Whether anything runs under the worker is the second half of the same
@@ -4057,7 +4077,11 @@ def classify_pointer(
     interruption_commits = 0
     if manifest_status not in TERMINAL_MANIFEST_STATUSES:
         interruption, interruption_commits = _interruption_evidence(
-            record, phase=phase, process_alive=alive, exit_record=ended_exit
+            record,
+            phase=phase,
+            process_alive=alive,
+            liveness_proven=liveness_proven,
+            exit_record=ended_exit,
         )
         commits_beyond_base = interruption_commits
     review: dict[str, Any] | None = None
