@@ -50,22 +50,23 @@
   the module under test as imported, so the arms' provenance is checkable from the log rather than
   asserted. The baseline tree is node-local and transient, and <code>gate-arm-setup.sh</code> in the
   run directory rebuilds it from the base revision — <code>git archive</code> of
-  <code>68a5b96b</code> with this node's test file overlaid. Both arms were run twice, and the second
-  pair is the one named here: the repeat's failure ids are identical to the first run's, which are
-  kept beside them as <code>gate-baseline-first.ids</code> and <code>gate-head-first.ids</code>.</p>
+  <code>68a5b96b</code> with this node's test file overlaid. Each arm was run more than once and the
+  repeats agree: the baseline's earlier ids are kept beside the fence as
+  <code>gate-baseline-first.ids</code> and the head's run before the formatting commit as
+  <code>gate-head-first.ids</code>, and the arms named here reproduce both.</p>
 
   <table>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>baseline</td><td><code>68a5b96b</code></td><td><strong>19 failed, 242 passed</strong>, exit 1</td></tr>
-      <tr><td>after</td><td><code>09feaea7</code></td><td><strong>17 failed, 244 passed</strong>, exit 1</td></tr>
+      <tr><td>after</td><td><code>09e33ae5</code></td><td><strong>17 failed, 244 passed</strong>, exit 1</td></tr>
     </tbody>
   </table>
 
-  <p>The after arm's log was taken at <code>09feaea7</code>, the record commit on top of the repair
-  (which is <code>c84429e5</code>); the two revisions differ in no source or test file —
-  <code>git diff c84429e5 09feaea7 -- reckon tests</code> is empty — so the source under test is the
-  repair itself. The baseline log's header records <code>measurement_module</code> as
+  <p>The after arm's log was taken at <code>09e33ae5</code>, the commit that joins the repair's own
+  new lines to the form the declared formatter produces; the join changes no behaviour — the same
+  reading goes into the same call — so the source under test is the repair itself, and the arm's
+  log names that revision on its first line. The baseline log's header records <code>measurement_module</code> as
   <code>/tmp/drain-gate/base/reckon/crew/runs.py</code> and <code>measurement_cwd</code> as
   <code>/tmp/drain-gate/base</code>, which is the imported module and the directory the run resolved
   from rather than the tree the file was copied out of.</p>
@@ -94,13 +95,24 @@
   reads the recorded end rather than an inference: <code>exit_record</code> present,
   <code>process_alive False</code>, unproven, classification not <code>abandoned</code>.</p>
 
-  <p>Ruff, measured in mirrored trees carrying the repository's own pyproject so the rule set is the
-  declared one: <code>ruff check</code> reports 3 findings on <code>reckon/crew/runs.py</code> at
-  both revisions (the same <code>I001</code> import-block ids, one shifted line number) and 1
-  <code>I001</code> on the test file at both revisions, and the change adds none.
-  <code>ruff format --check</code> is unchanged on both files — <code>runs.py</code> would be
-  reformatted at the base revision and still would be, the test file is already formatted in both
-  arms — so the delta is zero on both declared paths.</p>
+  <p>Ruff, measured inside each arm's own tree so the rule set is the declared one and the package
+  layout is the tree's own (<code>ruff-delta.log</code>): <code>ruff check</code> on the two changed
+  paths reports no findings at either revision — <code>All checks passed!</code> in both arms — and
+  <code>ruff format --check</code> reports the same two pre-existing regions of
+  <code>reckon/crew/runs.py</code> in both arms, the same two hunks at lines 1227 and 1347 in the
+  base and 1235 and 1355 at the head, moved by the lines the change inserts, with the test file
+  already formatted in both. The delta is zero on both declared paths. It did not start that way:
+  the change's own new lines were first written in a form the formatter would join, which added a
+  third hunk at the head and is why the change carries a formatting commit (<code>09e33ae5</code>);
+  the measured head is that commit, and the hunk set is again the base's.</p>
+
+  <p>Measuring that delta in a one-file mirror instead is what produced a spurious count, and the
+  difference is worth recording because the method is easy to reach for: a mirror carrying only
+  <code>reckon/crew/runs.py</code> and the pyproject reports three <code>I001</code> findings for
+  those identical bytes, and the same mirror with
+  <code>reckon/__init__.py</code> and <code>reckon/crew/__init__.py</code> present reports none — the
+  finding is about the package files the copy does not carry, not about the code. A rule-set probe
+  therefore has to run inside the tree being judged.</p>
 
   <h3>The negative control</h3>
 
@@ -117,18 +129,17 @@
 
   <h3>What is not here</h3>
 
-  <p>Three things are recorded rather than touched. <code>dispatch.py</code>'s <code>fold()</code>
+  <p>Two things are recorded rather than touched. <code>dispatch.py</code>'s <code>fold()</code>
   still writes <code>process_alive</code> from a local probe without a host gate, carried over from
-  the sibling node's landing. <code>ruff</code> reports "All checks passed" for the same bytes from
-  inside the <code>.reckon-worktrees</code> path that it reports 3 <code>I001</code> findings for in
-  a mirrored temporary tree, which is an instrument difference worth a reading of its own before
-  anyone trusts a lint count taken in a worktree. And the 17 common failures above belong to their
-  own repair. No suite-wide run: this change touches one function and one test file, and
-  verification of the merged result belongs to a separately dispatched node.</p>
+  the sibling node's landing. And the 17 common failures above belong to their own repair. No
+  suite-wide run: this change touches one function and one test file, and verification of the
+  merged result belongs to a separately dispatched node.</p>
 
   <p><strong>Commits.</strong> The drain repair as first written: <code>713dbde8</code>, narrowed to
-  a proven-only reading by <code>c84429e5</code>. The landing record and the figure are the commit
-  that carries this fragment. Gate logs (<code>gate-baseline.log</code>, <code>gate-head.log</code>,
-  <code>negative-control.log</code>, <code>gate-pre-existing.log</code>) are in the run directory
+  a proven-only reading by <code>c84429e5</code>, and its new lines joined to the form the declared
+  formatter produces by <code>09e33ae5</code>. The landing record and the figure are the commits
+  that carry this fragment. Gate logs (<code>gate-baseline.log</code>, <code>gate-head.log</code>,
+  <code>negative-control.log</code>, <code>gate-pre-existing.log</code>, <code>ruff-delta.log</code>)
+  are in the run directory
   <code>~/.config/reckon/crew/runs/r-20260929T054906743931-drain-view-reads-the-host-gated-liveness/</code>.</p>
 </section>
