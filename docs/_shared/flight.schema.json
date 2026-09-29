@@ -1181,6 +1181,17 @@
             "additionalProperties": false,
             "description": "How a finished run is sized to a review. Declared on the flight config so a host or project layer retunes the tier thresholds without a code change; the resolver reads them from the resolved config.",
             "properties": {
+                "suite": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ReviewSuite"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The project's own suite command and whole-run budget. Absent means the project declares no standing suite, and no run is recorded for it."
+                },
                 "tiers": {
                     "anyOf": [
                         {
@@ -1194,6 +1205,30 @@
                 }
             },
             "title": "ReviewConfig",
+            "type": "object"
+        },
+        "ReviewSuite": {
+            "additionalProperties": false,
+            "description": "The project's own suite: the command the coordinator runs once at the merged head, and the whole-run wall-clock budget it is held to. Declared on the flight config so a project names its own suite rather than reckon fixing one.",
+            "properties": {
+                "budget": {
+                    "description": "Whole-run wall-clock budget, written as an integer followed by a unit \u2014 `s`, `m` or `h`. A run that exceeds it is stopped and recorded as over budget rather than being left to hang.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": "string"
+                },
+                "command": {
+                    "description": "The suite command as an argument vector, run from the checkout root. The first entry is the executable, resolved against the working directory and PATH the run is started in.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "command",
+                "budget"
+            ],
+            "title": "ReviewSuite",
             "type": "object"
         },
         "ReviewTiers": {

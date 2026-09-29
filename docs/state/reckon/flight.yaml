@@ -84,3 +84,20 @@ review_excluded_backends:
   - native
 
 default_backend: clive
+
+# The project's own suite: run once at the merged head with the root
+# environment's interpreter, eight workers, no cache, quiet, over tests/.
+# Twenty minutes is the whole-run ceiling; the wave close is what runs it.
+review:
+  suite:
+    command:
+      - .venv/bin/python
+      - -m
+      - pytest
+      - -n
+      - "8"
+      - -p
+      - no:cacheprovider
+      - -q
+      - tests/
+    budget: 20m

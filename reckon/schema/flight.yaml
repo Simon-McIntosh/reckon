@@ -796,6 +796,13 @@ slots:
     range: ReviewTiers
     inlined: true
 
+  suite:
+    description: >-
+      The project's own suite command and whole-run budget. Absent means the
+      project declares no standing suite, and no run is recorded for it.
+    range: ReviewSuite
+    inlined: true
+
 # ── Classes ─────────────────────────────────────────────────────────────────
 
 classes:
@@ -825,6 +832,30 @@ classes:
       change; the resolver reads them from the resolved config.
     slots:
       - tiers
+      - suite
+
+  ReviewSuite:
+    description: >-
+      The project's own suite: the command the coordinator runs once at the
+      merged head, and the whole-run wall-clock budget it is held to. Declared
+      on the flight config so a project names its own suite rather than reckon
+      fixing one.
+    attributes:
+      command:
+        description: >-
+          The suite command as an argument vector, run from the checkout root.
+          The first entry is the executable, resolved against the working
+          directory and PATH the run is started in.
+        range: string
+        multivalued: true
+        required: true
+      budget:
+        description: >-
+          Whole-run wall-clock budget, written as an integer followed by a unit
+          — `s`, `m` or `h`. A run that exceeds it is stopped and recorded as
+          over budget rather than being left to hang.
+        pattern: "^[0-9]+[smh]$"
+        required: true
 
   ReviewTiers:
     description: >-
