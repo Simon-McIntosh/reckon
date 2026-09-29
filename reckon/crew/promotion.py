@@ -4832,10 +4832,10 @@ def _control_failure_ids(log_text: str) -> set[str]:
 def _baseline_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str]:
     """The failing tests the manifest records for the baseline.
 
-    The baseline is the arm the control is compared against: a control shows
-    something broke only by failing a test that was not already failing. A run
-    that recorded no baseline observation has nothing on record as failing, so
-    every failure its control names is one the baseline does not.
+    The baseline is the fallback arm a control is compared against when the
+    manifest records no readable head arm. A run that recorded no baseline
+    observation has nothing on record as failing, so every failure its control
+    names is one the baseline does not.
     """
     observation = None if manifest is None else manifest.get("baseline_suite")
     if not isinstance(observation, Mapping):
@@ -4845,6 +4845,36 @@ def _baseline_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str]:
         for test_id in observation.get("failure_ids") or ()
         if str(test_id).strip()
     }
+
+
+def _head_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str] | None:
+    """The failing tests the manifest records for the head arm, or ``None``.
+
+    The head arm is the run's own after measurement: the same suite over the
+    tree the change landed in. It is the arm a control has to be compared
+    against, because it answers the question the control exists to ask — does
+    the mutation redden a test the changed code passes? The baseline answers a
+    different one. A node whose tests were written before the repair has every
+    new case failing at the base by design, so a baseline comparison refuses
+    exactly the sound controls that redden those cases.
+
+    ``None`` means no readable head arm is recorded: an absent ``after_suite``,
+    an observation marked incomplete, or one whose ``failure_ids`` cannot be
+    read as a list of ids says nothing about what the head arm passed. Reading
+    such an arm as failing nothing would admit every control, so the caller
+    falls back to the baseline comparison instead.
+    """
+    observation = None if manifest is None else manifest.get("after_suite")
+    if not isinstance(observation, Mapping):
+        return None
+    if observation.get("completed") is False:
+        return None
+    failure_ids = observation.get("failure_ids")
+    if not isinstance(failure_ids, list) or any(
+        not isinstance(test_id, str) or not test_id.strip() for test_id in failure_ids
+    ):
+        return None
+    return {review_module.canonical_node_id(test_id.strip()) for test_id in failure_ids}
 
 
 def _require_declared_negative_control(
@@ -4865,12 +4895,16 @@ def _require_declared_negative_control(
 
     The log is judged on two facts about the run it captured, not on how it is
     worded: the run's terminal record exited non-zero, and the log names at
-    least one failing test id the baseline does not fail. Neither fact is
-    inferred — a log with no exit record and a log naming no failing test id
-    each state too little to admit the control, and a bare failing count is not
+    least one failing test id the head arm does not fail. The head arm is the
+    run's own after measurement, so a control that reddens a case written
+    before the repair is admitted even though the baseline, taken over the
+    unfixed tree, fails that case too; the baseline comparison decides only
+    when the manifest records no readable head arm. Neither fact is inferred —
+    a log with no exit record and a log naming no failing test id each state
+    too little to admit the control, and a bare failing count is not
     evidence that either fact holds. Wording cannot carry either fact, so a
     declaration pasted into a log whose run exited zero is refused, and neither
-    can a log whose run merely repeated the failures the baseline already had.
+    can a log whose run merely repeated the failures the compared arm already had.
     The declaration stays on the node record and on the verdict row beside the
     log path, so a person compares the two — the instrument for *is this the
     right mutation*, which no comparison of text can be. A declaration of
@@ -4940,12 +4974,17 @@ def _require_declared_negative_control(
             "name that path"
         )
     control_ids = _control_failure_ids(text)
+    head_ids = _head_suite_failure_ids(manifest)
     baseline_ids = _baseline_suite_failure_ids(manifest)
-    added = sorted(control_ids - baseline_ids)
+    reference_ids = baseline_ids if head_ids is None else head_ids
+    added = sorted(control_ids - reference_ids)
     recorded_exit = _recorded_exit_status(text)
     check["control_exit_status"] = recorded_exit
     check["control_failure_ids"] = sorted(control_ids)
     check["baseline_failure_ids"] = sorted(baseline_ids)
+    if head_ids is not None:
+        check["head_failure_ids"] = sorted(head_ids)
+    check["comparison_arm"] = "baseline_suite" if head_ids is None else "after_suite"
     check["added_failure_ids"] = added
     # Both facts have to come from something only the run could have written: a
     # log with no EXIT record says nothing about whether its command failed,
@@ -4960,6 +4999,11 @@ def _require_declared_negative_control(
         unexplained = "it records EXIT=0, so its run did not fail"
     elif not control_ids:
         unexplained = "it names no failing test id, so what broke is unknown"
+    elif head_ids is not None and not added:
+        unexplained = (
+            "it adds no failure to the head arm's: every test it names "
+            f"({', '.join(sorted(control_ids))}) is one the head arm also fails"
+        )
     elif not added:
         unexplained = (
             "it adds no failure to the baseline's: every test it names "
@@ -4972,7 +5016,9 @@ def _require_declared_negative_control(
             f"run {run_id!r} declares the mutation {declaration!r} but the log at "
             f"{resolved!r} shows no failed control run: {unexplained}. A control "
             "is admitted on its facts alone — a non-zero exit record and at least "
-            "one failing test id the baseline does not fail — and neither fact is "
+            "one failing test id the head arm does not fail, falling back to the "
+            "baseline's failing ids only when the manifest records no readable "
+            "head arm — and neither fact is "
             "inferred from the log's wording or from a bare failing count. Re-run "
             "the declared mutation and keep the log it produced, with the "
             "capture's EXIT=<n> record and the runner's own list of which tests "
