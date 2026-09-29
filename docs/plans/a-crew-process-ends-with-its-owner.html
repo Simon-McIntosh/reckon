@@ -22,8 +22,8 @@
   <title>A crew process ends with its owner | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="97">
+<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-version" content="98">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
@@ -1136,6 +1136,11 @@
 <article class="r-fu" data-id="f-acpewio-remaining-after-audit" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-28T14:55:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Producer lease first, then census, pause hold, reconcile gate, incremental reads and skill rules</h4>
     <div class="r-fu-body"><p>The S21 currency audit at <code>76e1bf93</code> (report <code>~/.config/reckon/crew/reports/reckon/s21-audit-dispatch.{json,md}</code>) leaves these open:</p><ul><li><b>§3: producer lease.</b> No lease mechanism exists anywhere in <code>reckon/</code>, and <code>tests/test_producer_holds_a_lease.py</code> is absent. §11 follows §3.</li><li><b>§6: crew census of orphans.</b> <code>tests/test_crew_census.py</code> is absent, and <code>death_census.py</code> is a different census.</li><li><b>§9: dispatch holds while the lane is paused.</b> <code>tests/test_dispatch_holds_while_the_lane_is_paused.py</code> is absent. <code>lane_document.py</code> models a paused lane, but no hold path exists.</li><li><b>§10: its own gate.</b> Five sibling cases landed and pass, but <code>tests/test_a_run_can_always_be_reconciled.py</code> is absent. Write that gate, or re-point it at the five sibling files.</li><li><b>§11: incremental producer reads,</b> after §3.</li><li><b>§7: skill rules</b>, now named at reckon-build.</li></ul><p>§3, §6, §9 and §7 touch disjoint files. Open side followups: worker-retired-at-acceptance, phase-writer, complete-refuses-an-open-merge, predecessor-commits-reach-the-ledger, nongit-test-stays-outside-a-repo and every-signal-leaves-a-sender-record.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
+    </article>
+<article class="r-fu" data-id="f-acpewio-reflex-dispatch-detaches-from-its-follower" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-29T07:40:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A review the follower&#x27;s reflex launches does not die when that follower&#x27;s Monitor is stopped</h4>
+    <div class="r-fu-body"><p>This has now been measured in two sessions. In s21-coord, four reflex-launched reviews (on 2026-09-26 and 2026-09-28) each died by SIGTERM at the second their follower's Monitor expired. On 2026-09-29, imas-ambix-67's reflex review r-20260929T071650132500 was dispatched at 07:17:04Z and SIGTERMed at 07:19:55Z, when its follower's 30-minute Monitor expired. Hand-dispatched reviews survive, because their supervisor detaches. s22-coord measured the distinguishing fact: a follower that exits on its own <code>--lifetime</code> leaves its reflex reviews alive, but a Monitor stop or expiry takes them down. So the reflex launches its supervisor inside the follower's process tree, and the harness signals that tree.</p><p>Done when a reflex-launched review's supervisor is detached from the follower exactly as a hand dispatch is, with its own session and ppid 1. Alternatively, once RECKON_FLEET_SPAWN is live, it goes through the fleet spawn lane. A test SIGTERMs a follower's whole process group after its reflex has launched a review, and asserts the review's supervisor and worker survive. A negative control launches the reflex review in-tree and shows it dies. The workaround until then is to arm followers with <code>--lifetime</code> shorter than the Monitor's timeout.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
     </article>
 </section>
