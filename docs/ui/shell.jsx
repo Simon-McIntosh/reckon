@@ -457,6 +457,7 @@ function App() {
                 {canvasView === "sprint" && <window.Sprint sprintId={route.sprint} onNav={nav} />}
                 {canvasView === "graph" && <window.GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
                 {canvasView === "crew" && <window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} />}
+                {canvasView === "velocity" && <window.VelocityView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} />}
               </div>
             </div>
           </div>

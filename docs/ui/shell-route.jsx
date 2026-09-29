@@ -15,6 +15,7 @@ const SHELL_CANVAS_VIEWS = new Set([
   "sprint",
   "graph",
   "crew",
+  "velocity",
   ...ARTIFACT_CANVAS_VIEWS,
 ]);
 
@@ -32,6 +33,7 @@ function parseHash() {
   if (h.startsWith("sprint/")) return { view: "sprint", sprint: decodeURIComponent(h.slice(7)) };
   if (h === "graph") return { view: "graph" };
   if (h === "crew") return { view: "crew" };
+  if (h === "velocity") return { view: "velocity" };
   if (h === "sprints") return { view: "sprint", sprint: null };
   return { view: "home" };
 }
@@ -53,6 +55,7 @@ const WORK_TABS = [
   { key: "sprint", label: "Sprints", index: { view: "sprint", sprint: null } },
   { key: "graph", label: "Graph", index: { view: "graph" } },
   { key: "crew", label: "Crew", index: { view: "crew" } },
+  { key: "velocity", label: "Velocity", index: { view: "velocity" } },
 ];
 
 function useHashRoute() {
@@ -73,6 +76,7 @@ function useHashRoute() {
     else if (to.view === "sprint") window.location.hash = `#sprint/${encodeURIComponent(to.sprint)}`;
     else if (to.view === "graph") window.location.hash = "#graph";
     else if (to.view === "crew") window.location.hash = "#crew";
+    else if (to.view === "velocity") window.location.hash = "#velocity";
   }, []);
   return [route, nav];
 }

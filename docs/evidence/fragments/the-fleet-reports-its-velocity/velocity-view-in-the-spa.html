@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-reports-its-velocity">
+  <meta name="plan-title" content="The velocity view is in the plan SPA">
+  <meta name="plan-summary" content="A Velocity work tab renders the served payload: reckon/serve.py exposes GET /crew/velocity over the same velocity.view the crew tool and the command line call, and docs/ui/velocity.jsx renders its tables without deriving any of them.">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-reports-its-velocity">
+  <meta name="plan-node" content="velocity-view-in-the-spa">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-environment" content="Linux compute node; Python 3.14 venv; pytest; synthesised git repository under tmp_path; server handler bound to a loopback port">
+  <title>The velocity view is in the plan SPA &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The velocity view is in the plan SPA</h1>
+    <p class="plan-summary">The browser gets a Velocity work tab. It reads a server route that
+    calls the composition behind the crew read and the command line, so all three surfaces answer
+    one payload; the tab renders that payload and derives none of it.</p>
+  </header>
+
+  <figure>
+    <img src="/reckon/figures/the-fleet-reports-its-velocity/velocity-view-in-the-spa/velocity-tab-call-path.svg" alt="Left: the Velocity tab issues GET /crew/velocity with a project, an optional since and until, and the fields it names; the route resolves the checkout through the mount table, opens the last fourteen days when no window is named, refuses a partial window with 400 carrying the view's detail, and calls reckon.velocity.view. Right: the SPA tab, crew(view=velocity) and reckon crew velocity all reach the one composition, so the rendered and the agent-read numbers cannot disagree.">
+    <figcaption>The route is transport only: one composition behind three surfaces, and the browser
+    packages available because the payload is the view's own bytes.</figcaption>
+  </figure>
+
+  <section id="route">
+    <h2>The route serves the composition; it does not re-derive it</h2>
+
+    <p><code>GET /crew/velocity?project=NAME&amp;since=ISO&amp;until=ISO&amp;fields=...&amp;limit=N&amp;cursor=C</code>
+    joins the crew paths in <code>reckon/serve.py</code>. It validates the project name, resolves a
+    named project's checkout through the server's own mount table
+    (<code>mounts[project].parent</code>, so a mount recorded as the docs directory yields the
+    repository root the view wants), and maps the query onto <code>reckon.velocity.view</code> with
+    the same keyword surface the crew read passes &mdash; <code>since</code>, <code>until</code>,
+    <code>checkout_path</code>, <code>fields</code>, <code>limit</code>, <code>fields</code> and
+    <code>cursor</code>. The payload is written straight out as JSON, so the route owns no
+    arithmetic at all and a change to the measurement layers reaches the browser with no server
+    edit.</p>
+
+    <p><strong>The default window.</strong> A caller that names no window gets one: the route opens
+    the last <code>VELOCITY_DEFAULT_WINDOW_DAYS</code> (14) and passes both ends to the view, so the
+    response's <code>window</code> block names the window it was measured over and the tab can label
+    it. A caller that names <em>part</em> of a window &mdash; an <code>until</code> with no
+    <code>since</code>, or an unparseable <code>since</code> &mdash; is refused with
+    <strong>400</strong> carrying <code>velocity.view</code>'s own refusal detail verbatim, because
+    a partial window is a caller error the view already names and inventing a start would silently
+    measure something the caller did not ask for. The two statements in the node's measure are
+    therefore not in tension: the window <em>absent</em> gets the default, the window
+    <em>incomplete</em> is refused by name. The test file pins both.</p>
+
+    <p><strong>The checkout is the one the mounts name.</strong> A missing project is a 404, not a
+    silent <code>"*"</code> read of every mounted project: the tab is scoped to the project the
+    payload it is showing came from, and a browser asking for a project the server does not mount
+    should be told so rather than shown another project's numbers.</p>
+  </section>
+
+  <section id="tab">
+    <h2>The tab renders, it does not derive</h2>
+
+    <p><code>docs/ui/velocity.jsx</code> defines <code>VelocityView</code>, registered in the SPA's
+    script list <em>before</em> <code>shell.js</code> so the shell can call it, and reachable as the
+    <code>velocity</code> key in <code>WORK_TABS</code> and the <code>#velocity</code> hash route.
+    It renders:</p>
+
+    <ul>
+      <li>a per-project table with the promotions split into implementation class and
+      review-or-investigate, the review share, lines added and removed by class, the
+      two-day-allowed 7-day deletion share, the dispatch-to-completion median and p75, and attempts
+      per landed node;</li>
+      <li>the same rows by lane and by day;</li>
+      <li>weekly plans opened and closed;</li>
+      <li>a window picker that re-requests the route with <code>since</code> and <code>until</code>,
+      with a control that clears them back to the server's default;</li>
+      <li>a loading state that names the window being fetched, so a slow read says what it is
+      reading over rather than showing an empty table.</li>
+    </ul>
+
+    <p>Every figure on the surface is read from a field the payload carries. The component holds no
+    arithmetic beyond formatting a ratio as a percentage and an epoch as a duration or a clock:
+    there is no count it computes, no share it divides, no median it takes. That is deliberate and
+    it is the repo's binding rule &mdash; a derivation written in JSX is invisible to every
+    non-browser reader, and an agent and a human reading the same project would disagree with
+    nothing failing.</p>
+  </section>
+
+  <section id="tests">
+    <h2>Tests, arms and the negative control</h2>
+
+    <p><code>tests/test_serve_velocity_route.py</code> builds one synthesised git repository under
+    <code>tmp_path</code> with a committed run ledger at its head &mdash; an implementation-class and
+    a review-or-investigate promotion, source, test and plan commits, and two promotion commits
+    &mdash; mounts it through an isolated <code>mounts.json</code> pinned into the server's own
+    mount table. It binds <code>serve.Handler</code> to <code>127.0.0.1:0</code>, serves it on a
+    thread, and reads it with <code>HTTPConnection</code>. Nothing outside <code>tmp_path</code> is
+    read or written except the two SPA source files the load-list and tab assertions must inspect
+    (<code>docs/index.html</code>, <code>docs/ui/shell-route.jsx</code>).</p>
+
+    <table>
+      <thead><tr><th>Test</th><th>What it pins</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_the_route_equals_the_crew_read_view</code></td><td>the route's JSON is <em>equal</em> to <code>crew(view="velocity")</code> for the same window, and both promotion classes are present in the split</td></tr>
+        <tr><td><code>test_a_missing_since_returns_400_carrying_the_refusal</code></td><td>an <code>until</code> with no <code>since</code> is 400, and its detail is byte-equal to the view's own refusal detail</td></tr>
+        <tr><td><code>test_the_default_window_is_the_last_fourteen_days</code></td><td>a caller naming no window gets 200 and a window whose elapsed span is <code>VELOCITY_DEFAULT_WINDOW_DAYS</code></td></tr>
+        <tr><td><code>test_the_spa_loads_velocity_before_shell</code></td><td><code>docs/index.html</code> loads <code>_ui/velocity.js</code> before <code>_ui/shell.js</code></td></tr>
+        <tr><td><code>test_the_work_tabs_carry_the_velocity_key</code></td><td><code>WORK_TABS</code> in <code>shell-route.jsx</code> carries a <code>velocity</code> key labelled Velocity</td></tr>
+      </tbody>
+    </table>
+
+    <p>The parity case is the one that matters: it is the node's stated measure, and it is the only
+    assertion that would notice the route composing a payload of its own. The fixture's dates are
+    anchored on the run clock rather than a calendar date, because the default window is measured
+    from now and a fixed date would drift out of it &mdash; the first draft used a frozen
+    <code>2026-09-01</code> and the default-window case crashed in
+    <code>capture_project</code>, which selects no commit when the window contains none.</p>
+
+    <table>
+      <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr><td>Base</td><td><code>b7f58806</code></td><td>62 passed, 3 failed, 4 errors, 9 skipped, exit 1 &mdash; extracted with <code>git archive</code>; the four <code>test_build</code> errors are the scratch tree having no <code>.git</code>, and all three failures repeat at head</td><td><code>gate-baseline.log</code></td></tr>
+        <tr><td>Head</td><td><code>b7f58806</code> + this node's uncommitted change</td><td>72 passed, 2 failed, 9 skipped, exit 1 &mdash; <strong>zero added failures</strong>; the two are pre-existing at base</td><td><code>gate-after.log</code></td></tr>
+        <tr><td>Negative control</td><td>head + the declared mutation</td><td>the parity case fails: 200 in both cases, but the route measured over the default window instead of the named one (<code>primary_commits 0</code> against <code>5</code>), exit 1</td><td><code>negative-control.log</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The two head failures are not this node's.</strong>
+    <code>test_spa_module_scope::test_inlined_bundle_renders_from_a_file_url_without_reference_errors</code>
+    and <code>test_crew_routes::test_fitting_and_unbounded_backends_dispatch_without_context_refusal</code>
+    each fail identically at the base revision &mdash; the first for want of a headless browser on
+    this host, the second for a dispatch write-path expectation that predates this change. Judged by
+    delta, this node adds none.</p>
+
+    <p><strong>Gate selection.</strong> The head arm runs the files that reach the changed code: the
+    new route test, the three velocity surfaces' tests, the crew route tests, the SPA module-list and
+    bundle gates, the artifact-route and crew-stylesheet gates and the composition gate &mdash; not
+    the suite. The whole suite is one integration verification at the merged head, where it measures
+    the merge rather than this worktree.</p>
+
+    <p><strong>Negative control.</strong> The declared mutation replaces the route's conditional
+    default with an unconditional one &mdash; <code>since, until = named("since"), named("until")</code>
+    followed by an unguarded <code>since, until = _velocity_default_window()</code> &mdash; so the
+    route returns the default window regardless of what the caller named. The parity case then fails,
+    which is the assertion the node exists to make. The mutation was reverted and the file's md5
+    confirmed identical to its pre-control value; the mutation string is the first line of
+    <code>negative-control.log</code>.</p>
+  </section>
+
+  <section id="scope">
+    <h2>Scope, and one extension taken</h2>
+
+    <p>Six paths carry the work: <code>reckon/serve.py</code> (the route),
+    <code>docs/ui/velocity.jsx</code> (the tab), <code>docs/ui/shell-route.jsx</code> (the hash route
+    and the work tab), <code>docs/index.html</code> (the load list, which is the single source the
+    three other SPA entry points are held to), <code>docs/ui/crew.css</code> (the tab's styles) and
+    <code>tests/test_serve_velocity_route.py</code>.</p>
+
+    <p><strong>Extension taken: <code>docs/ui/shell.jsx</code>.</strong> The shell's canvas body
+    dispatches each view with its own literal, so a tab that is not named there renders nothing
+    however well it is registered. The added line is one dispatch
+    (<code>canvasView === "velocity"</code> rendering <code>window.VelocityView</code>) beside the
+    crew dispatch it imitates. It is outside the node's declared fence and is taken deliberately
+    rather than reworking the dispatch into a table, which would have been a refactor across every
+    peer's tab.</p>
+  </section>
+</main>
+</body>
+</html>
