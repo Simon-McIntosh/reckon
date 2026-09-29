@@ -366,8 +366,8 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   measurement_cwd: <only for a gate or base-arm measurement run in a scratch tree: the resolved working directory the run resolved from>
   negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. The log's first line repeats the declared mutation verbatim, so a log that failed for any other reason is refused
   negative_control_note: <where an explanation goes: one line of commentary on the red log named above, since that value stands alone; omit when the log is self-explanatory>
-  baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line, false otherwise, and null or absent is unreadable>
-  after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line, false otherwise, and null or absent is unreadable>
+  baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable>
+  after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable>
   failure_attribution: <armed-only, test role JSON {failure_id: candidate_commit} for each newly added failure>
   artifacts: <paths plus headline metrics>
   evidence_inputs: <facts the orchestrator needs for writeback>
@@ -401,15 +401,75 @@ still unmet. Asking costs one turn; thrashing costs the node.
 
 # ── Both suite arms say what `completed` holds ──────────────────────────────
 #
-# An arm is evidence only when its suite ran to the summary line, and the gate
-# reads a null or absent `completed` as unreadable. A template that merely
-# listed the key left the worker to guess, and an arm it guessed wrong on was
-# refused hours later at promotion with nothing in the contract to point at.
+# An arm is evidence only when its suite ran to the summary line, and every
+# reader asks completion as a literal `True`, so a `false`, null or absent
+# value is unreadable. A template that merely listed the key left the worker to
+# guess, and one that named `false` as the ordinary value told the worker to
+# write a value the gate refuses on the same terms as the null it warned about.
 
 COMPLETED_RULE = (
-    "completed is true only when the suite ran to its summary line, "
-    "false otherwise, and null or absent is unreadable"
+    "completed is true only when the suite ran to its summary line; "
+    "false, null or absent is unreadable"
 )
+
+_ABSENT = object()
+
+
+def _completed_values_the_readers_refuse() -> tuple[set[object], set[object]]:
+    """Ask the readers, not the prose, which `completed` values they accept.
+
+    The contract states a rule in words and the gate applies it in code. This
+    drives the code so the two cannot drift: an arm carrying a value the
+    readers refuse must be named unreadable wherever the contract speaks of
+    completion.
+    """
+    from reckon.crew.promotion import (
+        _baseline_suite_failure_ids,
+        _head_suite_failure_ids,
+    )
+    from reckon.ledger import suite_observation_missing_fields
+
+    def _observation(value: object) -> dict[str, object]:
+        observation: dict[str, object] = {
+            "revision": "abcdef1",
+            "command": "pytest -q tests/",
+            "exit_status": 0,
+            "failure_count": 0,
+            "failure_ids": [],
+            "log_path": "logs/after_suite.log",
+        }
+        if value is not _ABSENT:
+            observation["completed"] = value
+        return observation
+
+    refused: set[object] = set()
+    readable: set[object] = set()
+    for value in (True, False, None, _ABSENT):
+        observation = _observation(value)
+        by_ledger = "after_suite.completed" in suite_observation_missing_fields(
+            observation, name="after_suite"
+        )
+        manifest = {"after_suite": observation, "baseline_suite": observation}
+        by_promotion = (
+            _head_suite_failure_ids(manifest) is None
+            and _baseline_suite_failure_ids(manifest) is None
+        )
+        if by_ledger or by_promotion:
+            refused.add(value)
+        else:
+            readable.add(value)
+    return refused, readable
+
+
+def test_the_completed_rule_agrees_with_the_readers_that_apply_it() -> None:
+    refused, readable = _completed_values_the_readers_refuse()
+
+    assert readable == {True}
+    assert refused == {False, None, _ABSENT}
+
+    unreadable_clause = COMPLETED_RULE.split("is unreadable")[0]
+    for token in ("true", "false", "null", "absent"):
+        assert token in unreadable_clause, token
 
 
 def _arm_line(text: str, arm: str) -> str:

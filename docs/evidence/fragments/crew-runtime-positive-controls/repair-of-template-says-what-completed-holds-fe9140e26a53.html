@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="The completed rule names every value the readers refuse">
+  <meta name="plan-summary" content="The manifest template called only null or absent unreadable and gave false as the ordinary value, while every reader asks completion as a literal True: reckon/ledger.py:259 reports a false completed as missing and both head and baseline readers at reckon/crew/promotion.py return None for it. A worker whose suite did not reach its summary line was told to write a value the gate refuses on the same terms as the null the template warned about. Both arm lines now read 'completed is true only when the suite ran to its summary line; false, null or absent is unreadable', and a new case drives the ledger validator and both promotion readers so the prose and the code cannot drift.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>The completed rule names every value the readers refuse &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The completed rule names every value the readers refuse &mdash; evidence</h1>
+  <p>The manifest template's two suite arms stated the completion rule one value short. They read <code>completed is true only when the suite ran to its summary line, false otherwise, and null or absent is unreadable</code>, which presents <code>false</code> as the ordinary value a half-run records while calling only <code>null</code> and absent unreadable. Every reader that decides a control asks completion as a literal <code>True</code>: <code>reckon/ledger.py:259</code> reports <code>completed</code> missing when it is not <code>True</code>, and <code>reckon/crew/promotion.py</code>'s head and baseline readers both return <code>None</code> for it. So the value the template told the worker to write is refused on exactly the terms the template warned about for the null arm beside it.</p>
+  <p>Reproduced before repair against the readers themselves: an otherwise complete observation with <code>completed: false</code> is reported missing by <code>suite_observation_missing_fields</code> exactly as <code>completed: null</code> is, and both <code>_head_suite_failure_ids</code> and <code>_baseline_suite_failure_ids</code> return <code>None</code> for it, as they do for null. Both lines now read:</p>
+  <p><code>completed is true only when the suite ran to its summary line; false, null or absent is unreadable</code></p>
+  <p>The clause is on each arm's own line, so a worker filling in either arm reads it at the key it is about to write, and it no longer names a value the gate accepts alongside those it refuses.</p>
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>The contract names the readers' own partition.</strong> <code>tests/test_brief_prompt.py</code> gains <code>test_the_completed_rule_agrees_with_the_readers_that_apply_it</code>, which drives <code>suite_observation_missing_fields</code> and both promotion readers over <code>completed</code> set to <code>true</code>, <code>false</code>, <code>null</code> and absent, and asserts the readable set is exactly <code>{true}</code> and the refused set exactly <code>{false, null, absent}</code>, then that the pinned rule names each of those values before its <code>is unreadable</code> clause. The prose and the code cannot drift apart unseen.</li>
+      <li><strong>Base arm</strong> (<code>3376b9959</code>, the archived base tree): <code>6 failed, 231 passed in 54.47s</code>, <code>EXIT=1</code>. <code>logs/baseline_suite.log</code>.</li>
+      <li><strong>Head arm</strong> (<code>3376b9959</code> plus this change): <code>6 failed, 232 passed in 49.78s</code>, <code>EXIT=1</code> &mdash; the same six ids, none added, and the one extra pass is the new case. <code>logs/after_suite.log</code>.</li>
+      <li><strong>Negative control</strong> (the former clause restored in <code>reckon/crew/prompts.py:572-573</code>, the new check kept): <code>1 failed, 2 passed, 14 deselected</code>, <code>EXIT=1</code>, <code>AssertionError: assert 0 == 2</code> &mdash; with the former wording back the composed contract counts the corrected rule zero times. <code>logs/negative_control.log</code>.</li>
+    </ul>
+    <p>Both arms used the same 22-file population: <code>tests/test_brief_prompt.py</code> plus every test module that imports <code>reckon.crew.prompts</code>. The base arm ran in an archived copy of the base revision; the head arm ran in this worktree, and each log's header names its revision, tree, the imported <code>module.__file__</code> and the command.</p>
+  </section>
+  <section id="outside-the-delta">
+    <h2>The six red ids are not this change's</h2>
+    <p>Both arms carry the same six failures &mdash; two in <code>tests/test_crew_prompts.py</code> and four in <code>tests/test_skill_contract_parity.py</code> &mdash; and the set difference between the arms is empty. They read the landing contract against skill prose outside the repository, a surface this node's fence does not reach, so they are reported under <code>follow_ons</code> rather than repaired here.</p>
+  </section>
+ </main>
+</body>
+</html>
