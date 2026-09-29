@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping
 
+from reckon._timestamps import parse_utc
 from reckon.crew.node import SUMMARY_AXES
 
 # ── The summary reflex ──────────────────────────────────────────────────────
@@ -523,11 +524,7 @@ def _row_moment(record: Mapping[str, Any], key: str) -> datetime | None:
     raw = record.get(key)
     if not isinstance(raw, str) or not raw.strip():
         return None
-    try:
-        moment = datetime.fromisoformat(raw.strip())
-    except ValueError:
-        return None
-    return moment if moment.tzinfo is not None else moment.replace(tzinfo=UTC)
+    return parse_utc(raw)
 
 
 def run_rows(

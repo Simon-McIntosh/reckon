@@ -19,6 +19,7 @@ from datetime import datetime
 from itertools import pairwise
 from typing import Any
 
+from reckon._timestamps import parse_utc
 from reckon.crew.quota_weight import (
     RelativeQuotaWeight,
     RequestTokenUsage,
@@ -201,13 +202,7 @@ def _moment(value: object) -> datetime | None:
     """Parse an ISO timestamp, or None when it cannot be read."""
     if not value:
         return None
-    try:
-        parsed = datetime.fromisoformat(str(value))
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=datetime.UTC)
-    return parsed
+    return parse_utc(str(value))
 
 
 def infer_binding_window(

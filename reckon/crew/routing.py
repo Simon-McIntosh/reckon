@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 from reckon import _backends, _plan_html, agent_context, capabilities, flight, ledger
+from reckon._timestamps import parse_utc
 from reckon.calibration import calibration_configuration_key
 from reckon.capability import (
     CAPABILITY_CLASSES,
@@ -1619,13 +1620,7 @@ def _parse_utc_timestamp(value: Any) -> datetime | None:
     """Return an aware UTC timestamp, or None for missing or malformed input."""
     if not value:
         return None
-    try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+    return parse_utc(str(value))
 
 
 def reap_idle_session_members(

@@ -14,11 +14,12 @@ import math
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from reckon import ledger
+from reckon._timestamps import parse_utc
 from reckon.crew import pace as pace_module
 
 __all__ = [
@@ -402,16 +403,10 @@ def _read(
     if bare == _INSTANT:
         if not isinstance(value, str):
             return _UnmeasuredAllowance(f"{label} is not an instant: {value!r}")
-        text = value.strip()
-        if text.endswith("Z"):
-            text = text[:-1] + "+00:00"
-        try:
-            moment = datetime.fromisoformat(text)
-        except ValueError:
+        moment = parse_utc(value)
+        if moment is None:
             return _UnmeasuredAllowance(f"{label} is not a valid instant: {value!r}")
-        if moment.tzinfo is None:
-            moment = moment.replace(tzinfo=UTC)
-        return moment.astimezone(UTC)
+        return moment
     if bare == _OBJECT:
         if not isinstance(value, Mapping) or not value:
             return _UnmeasuredAllowance(f"{label} is not an object carrying evidence")

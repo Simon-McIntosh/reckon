@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import _store, flight, ledger
+from reckon._timestamps import parse_utc
 from reckon.crew import recovery, runs
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, parse_duration
@@ -54,13 +55,10 @@ def _seconds_since(value: Any, *, now: datetime) -> int:
     text = str(value or "").strip()
     if not text:
         return 0
-    try:
-        stamp = datetime.fromisoformat(text)
-    except ValueError:
+    stamp = parse_utc(text)
+    if stamp is None:
         return 0
-    if stamp.tzinfo is None:
-        stamp = stamp.replace(tzinfo=UTC)
-    return max(0, int((now - stamp.astimezone(UTC)).total_seconds()))
+    return max(0, int((now - stamp).total_seconds()))
 
 
 def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:

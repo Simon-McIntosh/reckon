@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Iterable, Mapping, Sequence
-from datetime import UTC, datetime
+from datetime import UTC
 from pathlib import Path
 from typing import Any
 
 from reckon import ledger
+from reckon._timestamps import parse_utc
 from reckon.crew.node import CrewError, normalize_section
 from reckon.crew.recovery import classify_pointer
 from reckon.crew.resumption import resolve_session
@@ -583,6 +584,21 @@ def watch_event_paths(*, home: Path | None = None) -> list[Path]:
     return sorted(root.glob(f"*{WATCH_EVENT_SUFFIX}"))
 
 
+_ZONE_DESIGNATOR = re.compile(r"(?:[Zz]|[+-]\d{2}:?\d{2})$")
+
+
+def _states_zone(text: str) -> bool:
+    """Whether a stamp's own text names a zone.
+
+    A stamp names its zone by ending in a UTC designator or a numeric offset;
+    the date and time may be separated by ``T`` or a space, so the offset is
+    read from the text's tail rather than from where a ``T`` happens to sit. A
+    zoneless stamp is not read as UTC, because a zone invented at the row is
+    indistinguishable downstream from one the producer recorded.
+    """
+    return bool(_ZONE_DESIGNATOR.search(text.strip()))
+
+
 def _normalize_stamp(value: Any) -> tuple[str | None, str]:
     """Return ``(stamp_utc, zone)`` for a stored stamp.
 
@@ -593,14 +609,10 @@ def _normalize_stamp(value: Any) -> tuple[str | None, str]:
     downstream from one the producer recorded.
     """
     text = str(value or "").strip()
-    if not text:
+    if not text or not _states_zone(text):
         return None, "unknown"
-    candidate = text[:-1] + "+00:00" if text.endswith(("Z", "z")) else text
-    try:
-        parsed = datetime.fromisoformat(candidate)
-    except ValueError:
-        return None, "unknown"
-    if parsed.tzinfo is None:
+    parsed = parse_utc(text)
+    if parsed is None:
         return None, "unknown"
     return parsed.astimezone(UTC).isoformat(), "utc"
 

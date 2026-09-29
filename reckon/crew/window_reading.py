@@ -39,6 +39,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import _backends
+from reckon._timestamps import parse_utc
 
 #: The named periods, in the order a reader expects to see them. A period the
 #: provider reports that is not named here is still read, and sorts after these.
@@ -251,16 +252,11 @@ def _parse_stamp(value: Any) -> datetime | None:
 
     A stamp without a zone is read as UTC, because the streams are written in
     UTC and reading one as local would invert a statement about how old a
-    reading is. A trailing ``Z`` is the form the streams actually carry, and
-    ``fromisoformat`` reads it as UTC directly.
+    reading is. A trailing ``Z`` is the form the streams actually carry.
     """
     if not isinstance(value, str):
         return None
-    try:
-        parsed = datetime.fromisoformat(value)
-    except ValueError:
-        return None
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    return parse_utc(value)
 
 
 def _numeric(value: Any) -> float | None:

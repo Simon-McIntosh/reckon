@@ -51,6 +51,7 @@ from typing import Any
 
 from reckon import _backends, ledger
 from reckon import budget as budget_module
+from reckon._timestamps import parse_utc
 from reckon.crew.dispatch import (
     BudgetHold,
     _actionable_budget_hold,
@@ -118,11 +119,7 @@ MAX_SWEEP_WRITERS = 8
 
 def _parse_stamp(value: Any) -> datetime | None:
     """Parse an ISO-8601 stamp, returning None for anything unreadable."""
-    try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except (TypeError, ValueError):
-        return None
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    return parse_utc(str(value))
 
 
 def _now(now: datetime | None = None) -> datetime:

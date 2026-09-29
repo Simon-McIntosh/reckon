@@ -54,6 +54,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon._timestamps import parse_utc
+
 UNKNOWN = "unknown"
 
 # Every field the reader resolves independently. Each maps to the document
@@ -141,11 +143,7 @@ def _parse_stamp(value: object) -> datetime | None:
     text = _text(value)
     if text is None:
         return None
-    try:
-        parsed = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    return parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed
+    return parse_utc(text)
 
 
 def _unknown_gate() -> dict[str, Any]:

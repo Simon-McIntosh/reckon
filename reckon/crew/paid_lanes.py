@@ -44,6 +44,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from reckon._timestamps import parse_utc
 from reckon.crew import window_reading
 
 #: The windows the document carries, in the order a reader expects them.
@@ -236,11 +237,7 @@ def _parse_stamp(value: Any) -> datetime | None:
     """
     if not isinstance(value, str):
         return None
-    try:
-        parsed = datetime.fromisoformat(value)
-    except ValueError:
-        return None
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    return parse_utc(value)
 
 
 def _derived(
