@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="20">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="21">
+<meta name="plan-impl" content="0.75">
 </head>
 <body>
   <main class="plan-doc">
@@ -104,9 +104,15 @@
     <pre class="r-fu-prompt">/reckon-build open-work-is-capped</pre>
     <p class="r-fu-outcome">Section 2's triage is delivered. The four batches are reconciled into one record at c94459b8, read at main 5344dcf5, with one row per pending plan (68). Every merge chain resolves to a kept target, and the proposals sum to 24 keep, 30 merge and 14 close, against the locked limit of 25. All 128 file:line citations resolve with their symbol at the cited line. The weekly-counts gate has passed, so section 3's cap is unblocked. Nothing was closed: the lead and the owning sessions act on the triage.</p>
     </article>
-<article class="r-fu" data-id="f-owic-002" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-29T06:30:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-owic-002" data-status="resolved" data-written-by="s25-coord" data-written-at="2026-09-29T06:30:00Z" data-recommends-skill="" data-resolved-at="2026-09-29T10:10:46+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Enforce the pending-plan limit at creation</h4>
     <div class="r-fu-body"><p>Section 3 refuses creation of a plan beyond the limit of 25 pending plans, with the locked refuse-with-override mode, and the refusal names the three pending plans nearest to closing. The triage's dispositions are the lead's to act on first; if all are accepted, 24 plans remain pending.</p></div>
+    <pre class="r-fu-prompt">/reckon-build open-work-is-capped §3</pre>
+    <p class="r-fu-outcome">The limit is enforced at creation in the relocked warn mode. edit_plan(create=True) always succeeds, and at or over reckon's declared pending_plan_limit of 25 its response carries a warning naming the limit, the pending count and the three pending plans nearest to closing by impl. The refusal branch and the override argument were removed at 73dd0732 after the first refuse-with-override landing at 46fd73e2. tests/test_pending_plan_limit.py covers the behaviour and gated at exit 0; the review is stored against d964c467.</p>
+    </article>
+<article class="r-fu" data-id="f-owic-003" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-29T10:25:00Z" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Read two consecutive weeks of opened and closed counts</h4>
+    <div class="r-fu-body"><p>The remaining half of section 3 is the time-based measure: the velocity view's plans.by_project_week must show reckon closing at least as many plans as it opens in two consecutive complete ISO weeks. The first week that can count begins 2026-09-28 (W40), so the earliest reading is on 2026-10-12, after W41 closes. Read <code>crew(view="velocity")</code> for reckon, record both weeks' figures on the gate, and ship the plan if both hold. If either week opens more than it closes, record the figures and name the pending plans nearest to closing, which is what the creation warning already surfaces.</p></div>
     <pre class="r-fu-prompt">/reckon-build open-work-is-capped §3</pre>
     </article>
 </section>
@@ -157,7 +163,7 @@
     <div class="r-comment-body"><p>The pending-plan limit at plan creation is now a warning, not a refusal -- a create at or beyond the declared limit succeeds and its success response carries a warning naming the limit, the pending count and the three pending plans nearest to closing (ranked by impl, highest first); the refusal branch, the override_wip_limit argument and its comment-recording helper are removed, so no plan comment is written in any case. Gate 102 passed at exit 0.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T080358131764-review-of-pending-plan-limit-warns" data-who="reckon-build" data-when="2026-09-29T08:56:26.363Z">
-    <div class="r-comment-body"><p>Independent review of run r-20260929T073936801928-pending-plan-limit-warns is stored as one record at both the legacy and the head-keyed fenced paths (plan open-work-is-capped section 3; reviewed base b7f58806, reviewed head d964c467, two commits, 103 insertions and 175 deletions across reckon/mcp-no — corrected: across reckon/mcp.py, tests/test_pending_plan_limit.py and the landing fragment): the record parses with goal_fidelity 19, evidence 19, scope_discipline 20, durability 18 and fit 19 for a total of 95 out of 100, carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs (105 passed at b7f58806 and 102 passed at d964c467, both EXIT=0, both re-run by me), and carries two findings — the real project declares no pending_plan_limit at this head because the previous node&#x27;s landing merge 46fd73e2 dropped the committed config key while keeping its code, so the new warning is unreachable on reckon (outside the reviewed node&#x27;s write fence, reported for the coordinator), and the rewritten fixture is labelled &quot;at its limit&quot; while holding four plans against a limit of three, leaving the equality boundary and the removed-argument signature to my probe rather than the repository.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20260929T073936801928-pending-plan-limit-warns is stored as one record at both the legacy and the head-keyed fenced paths (plan open-work-is-capped section 3; reviewed base b7f58806, reviewed head d964c467, two commits, 103 insertions and 175 deletions across reckon/mcp-no — corrected: across reckon/mcp.py, tests/test_pending_plan_limit.py and the landing fragment): the record parses with goal_fidelity 19, evidence 19, scope_discipline 20, durability 18 and fit 19 for a total of 95 out of 100, carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite and after_suite gate logs (105 passed at b7f58806 and 102 passed at d964c467, both EXIT=0, both re-run by me), and carries two findings — the real project declares no pending_plan_limit at this head because the previous node's landing merge 46fd73e2 dropped the committed config key while keeping its code, so the new warning is unreachable on reckon (outside the reviewed node's write fence, reported for the coordinator), and the rewritten fixture is labelled "at its limit" while holding four plans against a limit of three, leaving the equality boundary and the removed-argument signature to my probe rather than the repository.</p></div>
 </div>
 </section>
 </main>
