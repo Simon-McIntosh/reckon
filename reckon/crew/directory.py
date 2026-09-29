@@ -10,7 +10,7 @@ from typing import Any
 
 from reckon import ledger
 from reckon.crew.recovery import classify_pointer
-from reckon.crew.runs import list_live, record_process_alive
+from reckon.crew.runs import list_live
 
 
 class DirectoryError(RuntimeError):
@@ -64,10 +64,11 @@ def _observed_transport(record: Mapping[str, Any]) -> dict[str, str] | None:
 
 def _run_row(record: Mapping[str, Any]) -> dict[str, Any]:
     node = _node(record)
-    observed = dict(record)
-    if record.get("pid"):
-        observed["process_alive"] = record_process_alive(record)
-    classified = classify_pointer(observed)
+    # Liveness is derived inside the classifier, under its host gate: the
+    # directory view asks the process table only where the record's launching
+    # host is this host, so a pointer written on another machine is never read
+    # through a pid this host happens to hold.
+    classified = classify_pointer(record)
     # The classifier's phase is the run's own evidence — its stream, its worker
     # record, its delivery — while the pointer's is the launcher's label, which
     # only ``observe`` advances. The row carries the same reading the live and

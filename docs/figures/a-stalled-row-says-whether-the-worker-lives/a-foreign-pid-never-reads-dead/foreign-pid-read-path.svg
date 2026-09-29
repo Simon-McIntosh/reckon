@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" width="1000" height="620" font-family="monospace" font-size="13">
+  <rect width="1000" height="620" fill="#fbfbfa"/>
+  <text x="24" y="34" font-size="17" font-weight="bold">A pid answers only on the host that issued it</text>
+  <text x="24" y="56" fill="#555">The pointer is shared through the crew home; the process is not.</text>
+
+  <!-- host A -->
+  <rect x="24" y="84" width="260" height="250" rx="8" fill="#eef4fd" stroke="#7aa3d6"/>
+  <text x="40" y="108" font-weight="bold">host A — launched the run</text>
+  <rect x="44" y="122" width="220" height="44" rx="6" fill="#fff" stroke="#7aa3d6"/>
+  <text x="56" y="140">worker pid 4242</text>
+  <text x="56" y="158" fill="#2b6a2b">alive — this host issued it</text>
+  <rect x="44" y="184" width="220" height="130" rx="6" fill="#fff" stroke="#7aa3d6"/>
+  <text x="56" y="204">live pointer (shared home)</text>
+  <text x="56" y="224">launcher_host: host A</text>
+  <text x="56" y="242">pid: 4242</text>
+  <text x="56" y="260">manifest: in-progress</text>
+  <text x="56" y="278">worktree: 1 commit ahead</text>
+  <text x="56" y="300" fill="#555">no exit record written</text>
+
+  <line x1="284" y1="249" x2="392" y2="249" stroke="#7a7264" marker-end="url(#a)"/>
+  <text x="288" y="240" fill="#555">read</text>
+
+  <!-- host B -->
+  <rect x="400" y="84" width="576" height="512" rx="8" fill="#f5f3ef" stroke="#b9ae99"/>
+  <text x="416" y="108" font-weight="bold">host B — reads the fleet</text>
+
+  <rect x="424" y="126" width="528" height="52" rx="6" fill="#fff" stroke="#b9ae99"/>
+  <text x="440" y="146">list_live</text>
+  <text x="440" y="166" fill="#a33">before: probed 4242 here, answered False, wrote it into the row</text>
+
+  <line x1="688" y1="178" x2="688" y2="204" stroke="#7a7264" marker-end="url(#a)"/>
+  <rect x="424" y="204" width="528" height="72" rx="6" fill="#fff" stroke="#b9ae99"/>
+  <text x="440" y="224">classify_pointer</text>
+  <text x="440" y="244">launcher_host == this host? probe locally, liveness_proven = True</text>
+  <text x="440" y="262">otherwise: stored answer stands, liveness_proven = False</text>
+
+  <line x1="688" y1="276" x2="688" y2="302" stroke="#7a7264" marker-end="url(#a)"/>
+  <rect x="424" y="302" width="528" height="72" rx="6" fill="#fff" stroke="#b9ae99"/>
+  <text x="440" y="322">_interruption_evidence — the retained-work arm</text>
+  <text x="440" y="342">fires only when the death is proven on the reading host</text>
+  <text x="440" y="360">or the supervisor's exit record recorded the end</text>
+
+  <line x1="560" y1="374" x2="486" y2="420" stroke="#a33" marker-end="url(#r)"/>
+  <line x1="816" y1="374" x2="880" y2="420" stroke="#2b6a2b" marker-end="url(#g)"/>
+
+  <rect x="424" y="420" width="240" height="128" rx="6" fill="#fdecec" stroke="#c98b8b"/>
+  <text x="440" y="442" font-weight="bold" fill="#a33">before the repair</text>
+  <text x="440" y="466">interrupted</text>
+  <text x="440" y="486">reason:</text>
+  <text x="440" y="504">dead-pid-with-retained-work</text>
+  <text x="440" y="524" fill="#a33">a resume is offered for a</text>
+  <text x="440" y="540" fill="#a33">worker still running on A</text>
+
+  <rect x="748" y="420" width="204" height="128" rx="6" fill="#ecf6ec" stroke="#8fbf8f"/>
+  <text x="764" y="442" font-weight="bold" fill="#2b6a2b">now</text>
+  <text x="764" y="466">no interruption</text>
+  <text x="764" y="486">liveness unknown</text>
+  <text x="764" y="510" fill="#2b6a2b">host B reports only</text>
+  <text x="764" y="526" fill="#2b6a2b">what it observed</text>
+
+  <rect x="424" y="562" width="528" height="24" rx="4" fill="#fff" stroke="#b9ae99"/>
+  <text x="440" y="579">control: launched here, pid absent → the interruption still fires</text>
+
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#7a7264"/>
+    </marker>
+    <marker id="r" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#a33"/>
+    </marker>
+    <marker id="g" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#2b6a2b"/>
+    </marker>
+  </defs>
+</svg>

@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import json
 import os
+import socket
+import subprocess
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -56,10 +59,18 @@ def _write_pointer(
     session: str,
     *,
     phase: str,
-    alive: bool,
+    alive: bool | None = None,
     manifest_status: str | None = None,
+    launcher_host: str | None = None,
+    pid: int | None = None,
+    pid_start_time: str | None = None,
 ) -> dict:
-    """Write one live pointer, its stream and (optionally) its manifest."""
+    """Write one live pointer, its stream and (optionally) its manifest.
+
+    ``alive`` is left out of the record entirely when it is not given, because
+    the fleet read hands a pointer on as it is stored; an absent field is thus
+    the shape a reader meets on a run whose liveness nothing has recorded.
+    """
     run_dir = home / "crew" / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     stream = run_dir / "stdout.jsonl"
@@ -70,16 +81,57 @@ def _write_pointer(
         "project": PROJECT,
         "session": session,
         "phase": phase,
-        "process_alive": alive,
         "node": {"plan": plan, "section": "s2"},
         "log_path": str(stream),
     }
+    if alive is not None:
+        record["process_alive"] = alive
     if manifest_status is not None:
         record["manifest_path"] = str(_write_manifest(home, run_id, manifest_status))
+    if launcher_host is not None:
+        record["launcher_host"] = launcher_host
+    if pid is not None:
+        record["pid"] = pid
+        record["pid_start_time"] = pid_start_time or recovery._process_start_time(pid)
     live_dir = home / "crew" / "live"
     live_dir.mkdir(parents=True, exist_ok=True)
     (live_dir / f"{run_id}.json").write_text(json.dumps(record), encoding="utf-8")
     return record
+
+
+def _start_worker() -> subprocess.Popen:
+    """A real local process for a pointer's pid, so liveness is the table's word."""
+    return subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(300)"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def _end_worker(worker: subprocess.Popen) -> None:
+    """End a process this case started and fail if it survives."""
+    worker.terminate()
+    worker.wait()
+    deadline = time.monotonic() + 5.0
+    while runs.process_alive(worker.pid) is True:
+        assert time.monotonic() < deadline, (
+            f"the process this case started survived it: {worker.pid}"
+        )
+        time.sleep(0.02)
+
+
+def _ended_process() -> tuple[int, str]:
+    """A pid this host issued and has since reaped, with its kernel start tick.
+
+    The child is held while its start tick is read, so the record can carry the
+    tick of the process that stopped rather than of whatever holds the number
+    later: a reused pid then still reads as the ended one.
+    """
+    worker = _start_worker()
+    started = recovery._process_start_time(worker.pid)
+    _end_worker(worker)
+    assert started is not None, "the ended process left no kernel start tick"
+    return worker.pid, started
 
 
 def _iso_utc(seconds: float) -> str:
@@ -411,3 +463,60 @@ def test_a_fresh_recorded_state_carries_a_live_run(
     assert result["S100"]["live"] is True
     assert result["S100"]["live_runs"] == ["run-a1"]
     assert result["S100"]["live_sessions"] == ["s-a1"]
+
+
+def test_a_local_run_is_read_through_its_own_process(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An unrecorded local run's liveness is this host's process-table answer.
+
+    Both arms hold the same pointer shape, the same fresh stream and the same
+    absent ``process_alive`` field, and differ in the one fact the reading turns
+    on: whether the process the pointer names still runs. The field is absent
+    rather than empty because the fleet read hands pointers on as they are
+    stored — a liveness verdict is read where it is used, from the process table,
+    and only for a record the reading host launched — so a guard that waited for
+    that field to say false would take the run's own last stream write, moments
+    old, as work still in progress, and hold a crew that has just stopped live
+    on its sprint. The running arm is stated beside it so the case cannot be
+    passed by a reading that never finds liveness at all.
+    """
+    home, docs = _fixture(tmp_path)
+    _write_plan(docs, "plan-alpha", "S100")
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    host = socket.gethostname()
+    ended_pid, ended_start = _ended_process()
+    assert runs.process_alive(ended_pid) is not True, "the fixture process still runs"
+    running = _start_worker()
+    try:
+        running_pointer = _write_pointer(
+            home,
+            "run-running",
+            "plan-alpha",
+            "s-running",
+            phase="working",
+            manifest_status="in-progress",
+            launcher_host=host,
+            pid=running.pid,
+        )
+        ended_pointer = _write_pointer(
+            home,
+            "run-ended",
+            "plan-alpha",
+            "s-ended",
+            phase="working",
+            manifest_status="in-progress",
+            launcher_host=host,
+            pid=ended_pid,
+            pid_start_time=ended_start,
+        )
+        running_row = sl.sprint_liveness(PROJECT, docs, [running_pointer])["S100"]
+        ended_row = sl.sprint_liveness(PROJECT, docs, [ended_pointer])["S100"]
+    finally:
+        _end_worker(running)
+
+    assert running_row["live"] is True, running_row
+    assert running_row["live_runs"] == ["run-running"], running_row
+    assert ended_row["live"] is False, ended_row
+    assert ended_row["live_runs"] == [], ended_row
+    assert ended_row["held_runs"] == 0, ended_row

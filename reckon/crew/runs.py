@@ -497,17 +497,26 @@ def _list_live_records(
 def list_live(
     *, project: str | None = None, phase: str | None = None
 ) -> list[dict[str, Any]]:
-    """Return matching live pointers, newest run id last."""
+    """Return matching live pointers, newest run id last.
+
+    The pointers are returned as they are stored: a liveness probe taken here is
+    never written into ``process_alive``. A pid answers only on the host that
+    issued it, while the crew home is shared across login nodes, so a value
+    written into that key would be read back by the classifier as its own
+    observer's answer on a host that never issued the pid — from which a live
+    worker on another machine reads dead.
+
+    A consumer that reports a run's liveness derives it where it reads it,
+    through ``recovery.local_liveness`` or ``recovery.classify_pointer`` — which
+    reads it and supplies the row the fleet, the directory, the query and the
+    ticker all render — the one reading that asks the process table only when
+    the record's ``launcher_host`` is the reading host. ``record_process_alive``
+    is the bare probe beneath that gate: it asks this host's table about
+    whatever pid the record carries and performs no host check of its own, so it
+    may be used only where the pid's presence on this host is already
+    established — ``dispatch`` probing the process it has just spawned, say.
+    """
     records = _list_live_records(project=project, phase=phase)
-    for record in records:
-        if not record.get("pid"):
-            continue
-        # Return the re-derived fact without mutating the pointer. A read must
-        # not report a worker as live merely because the last observer did,
-        # while all consumers of this one snapshot must see the same answer.
-        # The accessor carries the reuse check now, so the pid-start-time
-        # comparison is not repeated here.
-        record["process_alive"] = record_process_alive(record)
     if project is not None and phase is None:
         _publish_watch_stream(project, records)
     return records
