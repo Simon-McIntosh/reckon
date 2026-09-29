@@ -1,0 +1,115 @@
+<section id="a-foreign-pid-never-reads-dead">
+  <h2>A pid this host never issued cannot make a live worker read dead</h2>
+
+  <p><strong>What changed.</strong> <code>list_live</code> asked the local process table about every
+  live pointer's pid and wrote the answer into <code>process_alive</code> — the field
+  <code>classify_pointer</code> reads as the last observer's own account. The crew home is shared
+  across login nodes while a pid answers only on the host that issued it, so a reader elsewhere
+  found nothing holding a peer's worker, the retained-work interruption fired for a worker still
+  running on its own machine, and the row offered a <em>resume</em> of work already in flight.</p>
+
+  <p>The fleet read now hands the record on untouched, and liveness is derived where it is read:
+  <code>classify_pointer</code> probes the pid only when the record's <code>launcher_host</code> is
+  this host — which is what marks the reading <code>liveness_proven</code> — and the retained-work
+  arm of <code>_interruption_evidence</code> consumes a liveness answer only when it was proven on
+  this host or an exit record recorded the end.</p>
+
+  <h3>The defect, reproduced before the repair</h3>
+
+  <p>At the base revision <code>fc6c5ecb</code> the new file's case F reads a pointer whose
+  <code>launcher_host</code> is another machine, whose pid nothing here holds, whose manifest is the
+  worker's own non-terminal last word, and whose worktree carries one commit past its dispatch base.
+  Through <code>list_live</code> and then <code>_watch_snapshot</code> — the follower's own read path
+  — it produces: <code>process_alive False</code>, <code>liveness_proven False</code>,
+  <code>interruption {'reason': 'dead-pid-with-retained-work', …}</code>, classification
+  <code>interrupted</code>, snapshot state <code>blocked</code>, snapshot recovery
+  <code>resume</code>. The same fixture read without the fleet read in front of it — the stored
+  pointer straight into <code>classify_pointer</code> — is <code>process_alive None</code>,
+  <code>liveness_proven False</code>, no interruption, <code>running</code>
+  (<code>raw-pointer-probe.log</code> in the run directory), which is the whole of the
+  fabrication: the row was produced by the reading host asking about a number this host never
+  issued, and nothing else in it says the worker is gone.</p>
+
+  <figure>
+    <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/a-foreign-pid-never-reads-dead/foreign-pid-read-path.svg"
+         alt="Host A launched the run and holds worker pid 4242, alive; the live pointer in the shared crew home names host A, pid 4242, an in-progress manifest and a worktree one commit ahead. Host B reads the fleet: list_live probed pid 4242 locally and wrote the answer False into the record; classify_pointer probes locally only when launcher_host is this host and otherwise leaves a stored answer unproven; the retained-work arm of _interruption_evidence fires only on a reading proven here or an exit record. Before the repair the outcome was interrupted with reason dead-pid-with-retained-work, offering a resume for a worker still running on A; now the outcome is no interruption, liveness unknown." />
+    <figcaption>One pointer, two observers. The pointer is shared through the crew home; the
+    process is not, so a probe taken on the reading host is evidence only about that host.</figcaption>
+  </figure>
+
+  <h3>The repair, in two halves</h3>
+
+  <ul>
+    <li><strong>The reading is not fabricated.</strong> <code>list_live</code> returns the stored
+    record unchanged; every consumer derives liveness where it reads, through
+    <code>classify_pointer</code> or <code>record_process_alive</code>, each under its own host
+    gate.</li>
+    <li><strong>The arm refuses an unproven reading.</strong> <code>_interruption_evidence</code>
+    returns nothing when the death was not observed here: the crew home is shared and a pid is not,
+    so a stored answer from another observer is no reading on this host. An end the run itself
+    recorded is untouched — it is read through the exit record or through the phase an observer
+    wrote beside the reading, and neither rests on the reading alone.</li>
+    <li><strong>The mirror direction, closed too.</strong> The run directory's worker record carries
+    a pid but no host, so a foreign run whose number happened to be held here was handed proof of
+    life this host cannot support. The record is still read for such a run — whether one exists is
+    what advances the phase — but its answer no longer becomes this host's proven reading.</li>
+  </ul>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the new file plus the two files that already reach this code —
+  <code>tests/test_a_live_run_never_reads_dead.py</code> and
+  <code>tests/test_stalled_row_names_liveness.py</code> — one arm per revision, one log each,
+  each ending in <code>EXIT=</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline</td><td><code>fc6c5ecb</code></td><td><strong>4 failed, 18 passed</strong>, exit 1</td></tr>
+      <tr><td>after</td><td><code>b0809e30</code></td><td><strong>1 failed, 21 passed</strong>, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>Failure ids added by the change: <strong>none</strong>. The baseline's three extra failures are
+  this node's new cases — the foreign-pid case, the borrowed-life case, and the clause-level case
+  driven directly with the reading unproven and then proven. The one failure common to both arms,
+  <code>test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word</code>, is pre-existing and
+  unrelated to liveness: it also fails on <code>main</code> at <code>cea6da07</code>, it exercises
+  <code>fleet_transitions</code> and a departure word rather than any process reading, and its file
+  is outside this node's write scope, so it is reported rather than repaired here.</p>
+
+  <p>The new file's own controls are what keep the narrowing honest: a run launched <em>here</em>
+  whose pid nothing holds still reads interrupted with the retained-work clause and
+  <code>liveness_proven</code> true, and a foreign run whose end the supervisor recorded still reads
+  <code>process gone</code> rather than <code>liveness unknown</code>. <code>ruff check</code> on the
+  two changed source files reports the same 8 findings as the base revision, <code>ruff format
+  --check</code> on them reports the same 7 hunks with line numbers normalised away, and the new
+  file is clean and formatted.</p>
+
+  <h3>The negative control</h3>
+
+  <p>The declared mutation is <code>restore the ungated list_live liveness write in a scratch copy;
+  case F must fail with dead-pid-with-retained-work</code>, repeated verbatim as the red log's first
+  line. The repair has two halves, so the log records both stages rather than claiming one: with the
+  write alone restored the case fails on the injection itself (<em>the fleet read added a probe of
+  its own to the record</em>), and with the gate also removed it fails on the declared reading —
+  <code>{'reason': 'dead-pid-with-retained-work', …}</code> where the case expects none — while the
+  row it hands a coordinator reads interrupted, <code>blocked</code>, and a resume. The same fixture
+  against the pre-repair tree prints the identical row, which is the cross-check that the mutation
+  reproduces the defect rather than inventing a second one. The log ends in <code>EXIT=1</code>.</p>
+
+  <h3>What is not here</h3>
+
+  <p>Two exposures beside this one are recorded rather than touched, because neither is in this
+  node's scope and each needs its own reading: <code>dispatch.py</code> writes
+  <code>record["process_alive"]</code> from a local probe in <code>fold()</code> without a host
+  gate, and the <code>orphaned</code> phase it sets is consumed by the arm's earlier branch, which
+  reads it as an observer's recorded ending rather than by inference. No suite-wide run: the change
+  touches two modules and one new test file, and verification of the merged result belongs to a
+  separately dispatched node.</p>
+
+  <p><strong>Commits.</strong> Implementation and cases: <code>b0809e30</code>. The landing record
+  and the figure are the commit that carries this fragment. Gate logs
+  (<code>gate-base.log</code>, <code>gate-head.log</code>, <code>negative-control.log</code>) are in
+  the run directory <code>~/.config/reckon/crew/runs/r-20260929T025436655393-a-foreign-pid-never-reads-dead/</code>.</p>
+</section>
