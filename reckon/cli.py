@@ -2843,13 +2843,18 @@ def _follow_watch_lines(
                 reannounce=mode != "baseline",
             ):
                 yield printed
-            # The fleet is the record now: the stream is read from its end when
-            # the read loop opens it, so a run that also moved in the gap is not
-            # delivered a second time.
-            try:
-                cursor["offset"] = stream_path.stat().st_size
-            except OSError:
-                cursor["offset"] = offset
+            # A re-arm's replay is the record now, so the read loop opens the
+            # stream at its end: the gap a run moved across the fleet already
+            # covers, and reading it again would deliver the same run twice (a
+            # replay row and then a transition). A first arming leaves the
+            # cursor's own offset alone — the baseline is the fleet as it
+            # stands, and any line already in the stream is still this reader's
+            # to follow from where the cursor placed it.
+            if mode != "baseline":
+                try:
+                    cursor["offset"] = stream_path.stat().st_size
+                except OSError:
+                    cursor["offset"] = offset
         # Left behind before the first read rather than after the first line:
         # an arming that starts against a quiet stream and then ends has still
         # established its place. Without this the baseline's own arming wrote
