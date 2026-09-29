@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="125">
+<meta name="plan-version" content="126">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -394,6 +394,11 @@
 <article class="r-fu" data-id="f-tfcctf-a-resumed-run-counts-as-working" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">A resumed run with a live worker counts as working, not unpromoted</h4>
     <div class="r-fu-body"><p>Measured 2026-09-29 at 08:14. The follower row read <code>0w 0b 3u</code> while two of the three runs had been resumed with <code>crew resume</code> and had live workers streaming within the last 7 seconds. The third was a review run still exiting. Each resumed run's manifest still reads <code>complete</code> from its previous turn, so the counter classes it as delivered work awaiting a gate. That gives no working runs and three unpromoted ones, and a reader takes the fleet for idle. Every obligation-hook line in that session also listed both resumed runs as <code>promotable-stale</code> with a <code>crew complete</code> command. Following that line would promote a run mid-turn and delete its pointer. Done when a run whose live worker process was launched after its manifest's last write counts as <code>w</code> in the follower counters, and the obligation hook does not offer it for promotion. A test drives a resumed run with a stale <code>complete</code> manifest and a live worker, and asserts both. The declared mutation, reading the manifest status alone, fails.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
+    </article>
+<article class="r-fu" data-id="f-tfcctf-noise-pair-case-is-deterministic" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The noise-pair row-policy case passes deterministically</h4>
+    <div class="r-fu-body"><p>Reported by the S25 coordinator on 2026-09-29. <code>tests/test_follower_prints_only_policy_rows.py::test_a_noise_pair_prints_nothing_through_the_followers_own_rows</code> fails 2 of 10 runs alone at main (75fdee2a). The case landed with this plan's §9b filter, <code>follower-prints-only-policy-rows</code>. It also appeared among the five added failures in the first review of <code>rearm-replays-the-fleet-with-recorded-times</code>, so a flake there can be read as a regression, or can hide one. Done when the source of nondeterminism is named: a timing window, a shared temp directory, or the environment. The case passes 50 of 50 isolated runs and 50 of 50 runs under <code>-n 8</code>, logs recorded, and no assertion is loosened or removed to get there.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
     </article>
 </section>
