@@ -41,6 +41,7 @@ from typing import Any, Iterable, Mapping
 
 from reckon import capability
 from reckon._store import _config_home
+from reckon._timestamps import parse_utc
 
 # Layer names, lowest precedence first. The order is the merge order.
 LAYER_ORDER = ("shipped", "host", "project", "override")
@@ -1378,8 +1379,9 @@ def _observation_age(stamp: object) -> float | None:
 
     Both an epoch-seconds number and an ISO-8601 string are accepted; a string
     without an explicit zone is read as UTC. Anything else — a missing stamp, an
-    unparsable one — returns None, so an undated reading is never silently
-    treated as current.
+    unparsable one, one padded with whitespace, one suffixed with a lowercase
+    zone marker — returns None, so an undated reading is never silently treated
+    as current.
     """
     if isinstance(stamp, bool):
         return None
@@ -1387,12 +1389,11 @@ def _observation_age(stamp: object) -> float | None:
         return max(0.0, time.time() - float(stamp))
     if not isinstance(stamp, str):
         return None
-    try:
-        parsed = datetime.fromisoformat(stamp)
-    except ValueError:
+    if stamp != stamp.strip() or stamp.endswith("z"):
         return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
+    parsed = parse_utc(stamp)
+    if parsed is None:
+        return None
     return max(0.0, (datetime.now(UTC) - parsed).total_seconds())
 
 
