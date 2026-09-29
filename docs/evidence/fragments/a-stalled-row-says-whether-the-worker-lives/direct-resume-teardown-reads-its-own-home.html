@@ -1,0 +1,65 @@
+<section id="direct-resume-teardown-reads-its-own-home">
+  <h2>The direct-resume cases prove their no-write claim by a path only they create</h2>
+
+  <p><strong>What changed.</strong> The <code>home</code> fixture in
+  <code>tests/test_direct_resume_needs_an_observed_death.py</code> resolved the crew home to a
+  temporary directory and then proved the case wrote nothing to the real one by fingerprinting that
+  home's entries and their mtimes before and after the case. The real crew home is live — the fleet
+  writes into it while the case runs — so that reading moved under the fleet's hand and the case
+  failed intermittently with no code change to explain it. The isolation and the assertion that pins
+  it (<code>assert runs.crew_home().is_relative_to(tmp_path)</code>) are unchanged. The no-write
+  proof is now the absence, read after the case, of the run directories and live pointers named for
+  the run ids this file mints: a real run id carries its launch timestamp, so those names are ones
+  only this test creates and no fleet write can move them. No other assertion changed; the
+  fingerprint helper was removed with the reading it served.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_direct_resume_needs_an_observed_death.py</code> plus
+  <code>tests/test_crew_lane_change.py</code>, run once per revision in this worktree, one log each,
+  each ending in an <code>EXIT=</code> line whose header names the revision, the tree, the module
+  under test as imported and the resolved cwd. The target file alone then ran three consecutive
+  times at head.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline (gate)</td><td><code>62e7fc4b9</code></td><td><strong>14 passed</strong>, exit 0</td></tr>
+      <tr><td>after (gate)</td><td><code>949d6294e</code></td><td><strong>14 passed</strong>, exit 0</td></tr>
+      <tr><td>after, runs 1/2/3 (file alone)</td><td><code>949d6294e</code></td><td><strong>9 passed</strong> each, exit 0</td></tr>
+    </tbody>
+  </table>
+
+  <p>Failure ids added by the change: <strong>none</strong> — both arms are green, with the same 14
+  tests. <code>ruff check</code> and <code>ruff format --check</code> on the file: no findings, the
+  same as at base. The flake itself was not observed in this window (the baseline arm passed), which
+  is the defect's own shape: the proof read state the case does not own, so whether it fires depends
+  on the fleet, not on the code. Both arms ran under <code>env -u RECKON_RUN_ID</code>, because the
+  worker git shim refuses the fixture's <code>git init</code> when that variable is set.</p>
+
+  <h3>The probe is aimed and can see</h3>
+
+  <p>An absence reading is only as good as the instrument taking it, so the probe was checked
+  against something known present before it was trusted. It was run against a stand-in root with the same
+  paths planted, where it finds both, and it was compared with
+  <code>runs.run_dir</code>/<code>runs.pointer_path</code> resolved with no isolation in place, where
+  it names exactly the two paths the code builds —
+  <code>~/.config/reckon/crew/runs/…</code> and <code>~/.config/reckon/crew/live/….json</code>. Read
+  at the real home, it finds nothing. Five checks, all pass, exit 0.</p>
+
+  <h3>The negative control</h3>
+
+  <p>The declared mutation is <code>revert the crew-home isolation in
+  tests/test_direct_resume_needs_an_observed_death.py; the assertion that each case's crew home
+  resolves under tmp_path fails</code>, repeated verbatim as the red log's first line. With the
+  isolation line removed from a copy of the file, every case fails at fixture setup on
+  <code>assert runs.crew_home().is_relative_to(tmp_path)</code> —
+  <strong>9 errors</strong>, exit 1 — and the file was then restored from the saved copy, the tree
+  reading clean afterwards. The red log is
+  <code>negative-control.log</code> in the run directory
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T191753796671-direct-resume-teardown-reads-its-own-home/</code>,
+  beside the two arm logs, the three head runs and the instrument check.</p>
+
+  <p><strong>Commits.</strong> The test change: <code>949d6294e</code>. This landing record is the
+  commit that carries it.</p>
+</section>
