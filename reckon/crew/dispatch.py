@@ -2594,17 +2594,6 @@ def _dispatch_lane_advisory(
     return carry
 
 
-# The lane's own names for the two populations a routing decision weighs: what
-# the engine is actively generating, and what is queued behind it. A document
-# naming the generating count directly is read as such; the lane's current
-# publication calls it ``running``, the requests occupying the engine, and that
-# is the fallback. Either key absent leaves the count unknown and never zero, so
-# a lane with nothing running and a lane that cannot be measured stay distinct.
-_GENERATING_KEYS = ("generating", "running")
-_WAITING_KEYS = ("waiting",)
-_THROUGHPUT_KEY = "throughput"
-
-
 def _lane_reading_unknown(*, detail: str) -> dict[str, Any]:
     """Advisory carry for a lane reading the dispatch could not trust."""
     return {
@@ -2614,7 +2603,7 @@ def _lane_reading_unknown(*, detail: str) -> dict[str, Any]:
         "mean_context": "unknown",
         "generating": "unknown",
         "waiting": "unknown",
-        "throughput": _lane_throughput_unknown(detail=detail),
+        "throughput": _lane_document.blank_throughput(detail=detail),
         "observed_at": None,
         "age_seconds": None,
         "suggested_shelf_life_seconds": None,
@@ -2626,118 +2615,6 @@ def _metric_number(value: object) -> int | float | None:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return value
     return None
-
-
-def _lane_count(
-    document: Mapping[str, Any], keys: tuple[str, ...]
-) -> int | float | str:
-    """Resolve one of the lane's counts, or ``unknown`` when it published none.
-
-    Zero is a measurement and stays one: a lane publishing ``running: 0`` is a
-    lane with nothing resident, while a document without the key says nothing
-    about its load, and reading the second as the first would report a quiet
-    lane for an unmeasured one.
-    """
-    for key in keys:
-        value = _metric_number(document.get(key))
-        if value is not None:
-            return value
-    return "unknown"
-
-
-def _lane_throughput_unknown(*, detail: str) -> dict[str, Any]:
-    """The carried throughput block when no figure could be read."""
-    return {
-        "state": "unknown",
-        "mean_tokens_per_second": "unknown",
-        "aggregate_tokens_per_second": "unknown",
-        "runs": "unknown",
-        "observed_at": None,
-        "age_seconds": None,
-        "detail": detail,
-    }
-
-
-def _lane_age_seconds(stamp: object, *, now: datetime) -> int | None:
-    """Whole seconds between an ISO-8601 stamp and ``now``, or None if unusable.
-
-    A non-string, an unparsable stamp and one in the future all resolve to
-    None: none of them describes an observation that has already happened.
-    """
-    if not isinstance(stamp, str) or not stamp.strip():
-        return None
-    try:
-        parsed = datetime.fromisoformat(stamp.strip())
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
-    seconds = (now - parsed).total_seconds()
-    return int(seconds) if seconds >= 0 else None
-
-
-def _lane_throughput_carry(
-    document: Mapping[str, Any],
-    *,
-    stamp: str,
-    age_seconds: int,
-    now: datetime,
-) -> dict[str, Any]:
-    """Read the lane's achieved throughput with its vintage and its denominator.
-
-    The figures describe the generating population: how much text the lane
-    emitted per second averaged over the runs it served, the same figure
-    aggregated across them, and how many runs it was divided by. The vintage
-    and the denominator travel with the rate because a derived figure loses its
-    meaning without them -- the mean moves as soon as a run joins or leaves the
-    population, so a rate quoted without its denominator cannot be compared
-    against the conditions of its use.
-
-    The block's own ``observed_at`` describes the window the rate was measured
-    over, and the reading's stamp describes the document; a block carrying no
-    stamp of its own is described by the reading that carries it. As everywhere
-    in this carry the fields degrade one at a time: a lane publishing a mean
-    without a denominator still reports the mean, and the half it did not
-    publish is stated rather than resolved to a zero a reader would take for a
-    measurement.
-    """
-    block = document.get(_THROUGHPUT_KEY)
-    if not isinstance(block, Mapping):
-        return _lane_throughput_unknown(
-            detail=(
-                f"lane document publishes no {_THROUGHPUT_KEY!r} block, so the "
-                "rate its generating population achieved is not measured"
-            )
-        )
-    mean = _metric_number(block.get("mean_tokens_per_second"))
-    aggregate = _metric_number(block.get("aggregate_tokens_per_second"))
-    runs = _metric_number(block.get("runs"))
-    block_age = _lane_age_seconds(block.get("observed_at"), now=now)
-    block_stamp = stamp if block_age is None else str(block.get("observed_at"))
-    unreadable = [
-        name
-        for name, value in (
-            ("mean_tokens_per_second", mean),
-            ("aggregate_tokens_per_second", aggregate),
-            ("runs", runs),
-        )
-        if value is None
-    ]
-    return {
-        "state": "measured",
-        "mean_tokens_per_second": "unknown" if mean is None else mean,
-        "aggregate_tokens_per_second": "unknown" if aggregate is None else aggregate,
-        "runs": "unknown" if runs is None else runs,
-        "observed_at": block_stamp,
-        "age_seconds": age_seconds if block_age is None else block_age,
-        "detail": (
-            ""
-            if not unreadable
-            else "lane document publishes no numeric "
-            + " or ".join(f"{name!r}" for name in unreadable)
-            + f" in its {_THROUGHPUT_KEY!r} block"
-        ),
-    }
 
 
 def _lane_reading_carry(
@@ -2771,7 +2648,7 @@ def _lane_reading_carry(
     replace. ``generating`` is the lane's count of requests actively
     generating, ``waiting`` its count of requests queued behind them, and
     ``throughput`` the achieved rate with the vintage and the denominator that
-    make it interpretable -- see ``_lane_throughput_carry``. A document that
+    make it interpretable -- see ``lane_document.read_lane_throughput``. A document that
     publishes no count leaves that count ``unknown``, never zero, so an
     unmeasured lane and an idle one do not read alike.
     """
@@ -2836,13 +2713,14 @@ def _lane_reading_carry(
         if value is None
     ]
     age_seconds = int(age.total_seconds())
+    counts = _lane_document.read_lane_counts(document)
     return {
         "state": "fresh",
         "headroom": "unknown" if headroom is None else headroom,
-        "generating": _lane_count(document, _GENERATING_KEYS),
-        "waiting": _lane_count(document, _WAITING_KEYS),
-        "throughput": _lane_throughput_carry(
-            document, stamp=stamp, age_seconds=age_seconds, now=now
+        "generating": counts["generating"],
+        "waiting": counts["waiting"],
+        "throughput": _lane_document.read_lane_throughput(
+            document, reading_stamp=stamp, reading_age_seconds=age_seconds, now=now
         ),
         # The field names WHICH constraint binds, and a lane with no such
         # constraint has nothing to name rather than nothing to report.
