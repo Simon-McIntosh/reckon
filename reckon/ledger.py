@@ -34,7 +34,11 @@ rather than averaging it in silently.
 
 from __future__ import annotations
 
+import contextlib
+import fcntl
+import hashlib
 import json
+import os
 import random
 import re
 import subprocess
@@ -42,7 +46,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Mapping, Sequence
 
 # Reached through the module rather than by importing its names: a reload
 # rebinds the store's classes in place, and a captured exception class would
@@ -779,6 +783,149 @@ def _run_store_location() -> str:
     return str(run_store.store_path())
 
 
+def _replace_run_file(target: Path, text: str) -> None:
+    """Replace a per-run file's contents in one atomic step.
+
+    Writing in place truncates the file before the new bytes land, so a write
+    that fails part-way would leave the file holding a prefix of its own
+    content — a third state agreeing with neither the aggregate row nor the
+    revision it replaced, and one the restore below could no longer put back.
+    A sibling temporary beside the target instead keeps the revision the file
+    already holds intact when the replacement cannot be made, and the
+    temporary is removed so the run store carries no residue.
+    """
+    temporary = target.parent / f".{target.name}.{os.getpid()}.tmp"
+    try:
+        temporary.write_text(text, encoding="utf-8")
+        os.replace(temporary, target)
+    except OSError:
+        with contextlib.suppress(OSError):
+            temporary.unlink()
+        raise
+
+
+def _restore_run_files(snapshots: Sequence[tuple[Path, str]]) -> None:
+    """Put each captured revision back, undoing a partly applied rewrite.
+
+    Called when a later part of the same :func:`write` call fails, so the
+    project never holds a per-run file ahead of an aggregate row that was never
+    written. The reader then finds the copies agreeing at the revision it read
+    before, which is the state it can read, rather than a disagreement no
+    reader may read.
+    """
+    for target, text in snapshots:
+        with contextlib.suppress(OSError):
+            _replace_run_file(target, text)
+
+
+def _keep_run_files_identical(
+    project: str, rows: Sequence[Any], root: str | Path | None
+) -> list[tuple[Path, str]]:
+    """Rewrite a per-run file so it equals the aggregate row it copies.
+
+    A completed run may be recorded in both the aggregate run list and its own
+    file under ``runs/``, and :func:`load` refuses the whole project when the
+    two serialisations disagree. A write that edited an aggregate row and left
+    the file behind would therefore hand the caller a project its own reader
+    cannot read, so every written row that already owns a file is re-encoded by
+    :func:`serialize_run` here, keeping the two copies byte-identical.
+
+    The caller runs this before the aggregate envelope is written, and applies
+    it as a pair: a per-run file that cannot be rewritten raises here, while
+    the aggregate still holds the revision it read, and any file this call did
+    rewrite is put back first, so a failed write leaves the project readable
+    at its prior revision rather than advanced in one copy and stale in the
+    other. The caller restores the returned snapshots in turn if the envelope
+    write that follows is refused.
+
+    A row with no file is left alone: writing one is the layout move
+    :func:`_split_project_runs` performs explicitly and commits, not a side
+    effect an unrelated write should carry. The file already agreeing with the
+    row is also left alone, so a write that changes no run still touches no run
+    file. Each replaced file yields the revision it held, which is what
+    :func:`_restore_run_files` puts back.
+    """
+    snapshots: list[tuple[Path, str]] = []
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        run_id = row.get("run_id")
+        if not run_id or not _SAFE_ID.fullmatch(str(run_id)):
+            continue
+        target = run_path(project, str(run_id), root)
+        encoded = serialize_run(row)
+        try:
+            if not (target.exists() or target.is_symlink()):
+                continue
+            prior = target.read_text(encoding="utf-8")
+            if prior == encoded:
+                continue
+            _replace_run_file(target, encoded)
+        except OSError as exc:
+            _restore_run_files(snapshots)
+            raise LedgerError(
+                f"cannot keep run {run_id!r} readable for {project!r}: "
+                f"{target} could not be made identical to its ledger row, so "
+                f"the write was abandoned at the revision the ledger already "
+                f"held: {exc}"
+            ) from exc
+        snapshots.append((target, prior))
+    return snapshots
+
+
+def ledger_lock_path(project: str) -> Path:
+    """The lock file one project's ledger write serialises on.
+
+    It lives outside the repository, under the config home's ``locks/``
+    directory, so serialising a write never adds a file to the tree it is
+    writing and never collides with a project's own tracked content. The
+    project name is folded into the filename with a digest of the full name so
+    two projects whose names sanitise alike cannot share one lock.
+
+    Named here rather than inline in :func:`_ledger_write_lock` because the
+    path is operator-visible: a stuck writer is diagnosed by looking at the
+    lock it holds, and a test asserts the write creates nothing inside the
+    repository.
+    """
+    from reckon.crew.runs import crew_home
+
+    readable = re.sub(r"[^A-Za-z0-9._-]+", "-", project).strip("-.") or "project"
+    digest = hashlib.sha256(project.encode("utf-8")).hexdigest()[:16]
+    return crew_home() / "locks" / f"ledger-write-{readable[:48]}-{digest}.lock"
+
+
+@contextlib.contextmanager
+def _ledger_write_lock(project: str):
+    """Serialise one project's whole ledger write across processes.
+
+    A ledger write is a read-modify-write across more than one file: it reads
+    the aggregate at a version, rewrites the per-run files that must follow
+    their rows, then writes the aggregate under that version. Without mutual
+    exclusion two writers prepared from the same revision interleave — one
+    rewrites a run file, the other writes the file and commits, and the first
+    then fails its version check and puts back the copy it captured *before*
+    the winner wrote, replacing a committed row with a stale one. The reader
+    then refuses the whole project, which is the disagreement the ordering of
+    these writes exists to prevent. Holding an exclusive lock across the whole
+    cycle removes the interleaving rather than compensating for it: the loser
+    is refused before it writes anything, and any restore it performs can only
+    concern files it wrote itself.
+
+    The lock is advisory and process-scoped (``flock``), which is the scope of
+    the hazard: every writer here is a command in a separate process. It is
+    released when the file handle closes, so a writer that dies mid-write
+    cannot strand the lock.
+    """
+    path = ledger_lock_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 def write(
     project: str,
     data: Mapping[str, Any],
@@ -801,6 +948,18 @@ def write(
     the removal is stated where it is performed rather than inferred later
     from an absence. An absent ledger has no members, so creating one from
     empty is unaffected.
+
+    A write that cannot bring every per-run file it must change into line with
+    its aggregate row is abandoned, and the files it had already changed are
+    put back, so a store that refuses one write (a read-only tree, a full
+    disk) leaves the project readable at the revision it held rather than
+    advanced in one copy and stale in the other.
+
+    The whole read-modify-write is serialised across processes on a lock file
+    of its own (:func:`ledger_lock_path`), so the version pairing is not the
+    only thing standing between two writers: a writer prepared from a revision
+    another has since committed is refused before it writes anything, and the
+    files it puts back on a later failure are only ever the ones it wrote.
 
     The roster check answers to the version check rather than pre-empting it:
     a write prepared against a version the ledger has moved past is refused
@@ -832,66 +991,101 @@ def write(
     rather than leaving an empty commit behind.
     """
     path = ledger_path(project, root)
-    incoming_members = list(data.get("members", []))
-    incoming_runs = list(data.get("runs", []))
-    stored, stored_version = load(project, root)
-    current_view = expected_version == stored_version
-    dropped = (
-        dropped_member_ids(stored["members"], incoming_members) if current_view else []
-    )
-    if dropped and not allow_member_removal:
-        raise LedgerError(
-            f"refusing to write the ledger for {project!r}: this write drops "
-            f"roster member(s) {', '.join(dropped)} that the stored roster "
-            f"holds, taking the member count from {len(stored['members'])} to "
-            f"{len(incoming_members)}, which is how a roster empties itself "
-            "without anyone asking; pass allow_member_removal=True when the "
-            "removal is intended"
+    # The lock spans the read, the version check, the per-run file writes and
+    # the aggregate write, so two writers prepared from one revision cannot
+    # interleave: the loser is refused before it writes anything, and a restore
+    # it performs can only put back a file it wrote itself. Held across the
+    # roster commit too, because that commit is the last step of the same write.
+    with _ledger_write_lock(project):
+        incoming_members = list(data.get("members", []))
+        incoming_runs = list(data.get("runs", []))
+        stored, stored_version = load(project, root)
+        current_view = expected_version == stored_version
+        dropped = (
+            dropped_member_ids(stored["members"], incoming_members)
+            if current_view
+            else []
         )
-    if current_view and len(incoming_runs) < len(stored["runs"]):
-        raise LedgerError(
-            f"refusing to write the ledger for {project!r}: this write takes "
-            f"the committed run count from {len(stored['runs'])} to "
-            f"{len(incoming_runs)}, and a promotion only ever appends, so a "
-            f"reduction is by construction a lost read rather than an edit; "
-            f"the run store at {_run_store_location()} holds every promoted "
-            "run independently of this file and is the recovery for a ledger "
-            "that has already lost rows"
-        )
-    if commit and not dropped:
-        raise LedgerError(
-            f"nothing to commit for {project!r}: commit=True names the roster "
-            "rows a write dropped, and this write dropped none"
-        )
-    obstruction = None
-    if commit:
-        try:
-            obstruction = _roster_obstruction(
-                project, ", ".join(dropped), path, stored["members"]
+        if dropped and not allow_member_removal:
+            raise LedgerError(
+                f"refusing to write the ledger for {project!r}: this write drops "
+                f"roster member(s) {', '.join(dropped)} that the stored roster "
+                f"holds, taking the member count from {len(stored['members'])} to "
+                f"{len(incoming_members)}, which is how a roster empties itself "
+                "without anyone asking; pass allow_member_removal=True when the "
+                "removal is intended"
             )
-        except LedgerError as exc:
-            obstruction = str(exc)
-    payload = {
-        "members": sorted(
-            (dict(member) for member in incoming_members),
-            key=lambda member: str(member.get("id", "")),
-        ),
-        "runs": list(data.get("runs", [])),
-        "holds": list(data.get("holds", [])),
-    }
-    try:
-        version = _store._write_json_envelope(
-            path, project, LEDGER_SLUG, payload, expected_version
-        )
-    except _store.VersionConflict as exc:
-        raise LedgerError(
-            f"ledger for {project!r} moved from version {exc.expected} to "
-            f"{exc.current} while this write was being prepared; re-read and retry"
-        ) from exc
-    if commit and obstruction is None:
-        _commit_roster_write(
-            project, "chore(roster): retire " + ", ".join(dropped), path
-        )
+        if current_view and len(incoming_runs) < len(stored["runs"]):
+            raise LedgerError(
+                f"refusing to write the ledger for {project!r}: this write takes "
+                f"the committed run count from {len(stored['runs'])} to "
+                f"{len(incoming_runs)}, and a promotion only ever appends, so a "
+                f"reduction is by construction a lost read rather than an edit; "
+                f"the run store at {_run_store_location()} holds every promoted "
+                "run independently of this file and is the recovery for a ledger "
+                "that has already lost rows"
+            )
+        if commit and not dropped:
+            raise LedgerError(
+                f"nothing to commit for {project!r}: commit=True names the roster "
+                "rows a write dropped, and this write dropped none"
+            )
+        if not current_view:
+            # Refused here, under the lock and before any per-run file is
+            # touched, rather than left to the envelope's own version check:
+            # this writer returns its conflict having written nothing, so a
+            # winner's committed rows cannot be overwritten by a copy this
+            # writer captured before the winner wrote.
+            raise LedgerError(
+                f"ledger for {project!r} moved from version {expected_version} to "
+                f"{stored_version} while this write was being prepared; "
+                "re-read and retry"
+            )
+        obstruction = None
+        if commit:
+            try:
+                obstruction = _roster_obstruction(
+                    project, ", ".join(dropped), path, stored["members"]
+                )
+            except LedgerError as exc:
+                obstruction = str(exc)
+        payload = {
+            "members": sorted(
+                (dict(member) for member in incoming_members),
+                key=lambda member: str(member.get("id", "")),
+            ),
+            "runs": list(data.get("runs", [])),
+            "holds": list(data.get("holds", [])),
+        }
+        # The per-run files are made consistent with the rows they copy before
+        # the aggregate envelope advances, never after. If one of them cannot
+        # be rewritten, the write is abandoned while the aggregate still holds
+        # the revision it read, so the reader finds the two copies agreeing
+        # rather than a row the file cannot follow. The reverse order left the
+        # aggregate ahead of its files when a store refused a single write,
+        # which is the disagreement load() refuses the whole project for.
+        snapshots = _keep_run_files_identical(project, payload["runs"], root)
+        try:
+            version = _store._write_json_envelope(
+                path, project, LEDGER_SLUG, payload, expected_version
+            )
+        except _store.VersionConflict as exc:
+            _restore_run_files(snapshots)
+            raise LedgerError(
+                f"ledger for {project!r} moved from version {exc.expected} to "
+                f"{exc.current} while this write was being prepared; re-read and retry"
+            ) from exc
+        except Exception:
+            # An envelope that could not be written leaves the aggregate at the
+            # revision it read, so the files already brought forward must go back
+            # with it; otherwise this write would hand the reader exactly the
+            # disagreement the order above exists to avoid.
+            _restore_run_files(snapshots)
+            raise
+        if commit and obstruction is None:
+            _commit_roster_write(
+                project, "chore(roster): retire " + ", ".join(dropped), path
+            )
     return version
 
 

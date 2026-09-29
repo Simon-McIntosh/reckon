@@ -1,0 +1,167 @@
+<article class="landed-report" data-run-id="r-20260929T092802902599-ledger-write-keeps-run-files">
+  <h3>ledger-write-keeps-run-files &#8212; the writer keeps each per-run file identical to its aggregate row</h3>
+  <p>
+    <strong>What changed.</strong> A write to the ledger now re-encodes every written run row
+    that already owns a per-run file through <code>serialize_run</code>, so the aggregate row
+    and its file stay byte-identical. Before this, a write that edited an aggregate row left
+    the file holding the previous revision, and the next <code>ledger.load</code> refused the
+    project with the differs-between refusal &#8212; the writer produced state its own reader
+    cannot read. A row with no file is left alone; creating one remains the explicit,
+    committed run split. The reader is unchanged.
+  </p>
+  <p>
+    <strong>Measure.</strong> Five <code>test_shadow_*</code> ids failed at base
+    <code>57e4ea2e</code> inside <code>ledger.load</code> (log <code>logs/01-base-shadow-ids.log</code>) and pass at
+    head <code>bc444b40</code> (log <code>logs/03-head-shadow-ids.log</code>): 5 failed &#8594; 5 passed. Across the
+    test files importing <code>reckon.ledger</code>, the head arm measured 21 failed / 1640
+    passed (log <code>logs/05-head-arm.log</code>) and a base arm over those same 21 ids failed exactly
+    them at base (log <code>logs/07-base-arm-targeted.log</code>): <strong>0 added failures</strong>. The full
+    101-file base arm (log <code>logs/06-base-arm.log</code>) was discarded as ENOSPC-contaminated (490
+    errors), which is why the base arm of that pass was targeted; the full arm was obtained
+    later, under <em>Repair measure</em> below. The declared negative control &#8212;
+    <em>drop the per-run write from ledger.write; case 1&#8217;s read-back fails with the
+    differs-between refusal</em> &#8212; fires: 1 failed, <code>EXIT=1</code>, log
+    <code>logs/04-negative-control.log</code>.
+  </p>
+  <p>
+    <strong>Repair.</strong> The first form of the fix rewrote the per-run files after the
+    aggregate envelope had already advanced, with no way back. A store that refused a single
+    file write &#8212; a read-only tree, a full disk &#8212; therefore left the aggregate on the
+    new revision while the file kept the old one, and the next read refused the whole project:
+    the writer causing the very disagreement it exists to prevent, from a call that reported no
+    success at all. The files are now brought into line with the rows they copy
+    <em>before</em> the envelope advances, each through a sibling temporary and
+    <code>os.replace</code> so a failed write cannot leave a file holding a prefix of its own
+    content, and each replaced file yields the revision it held. A file that refuses its write
+    abandons the write while the aggregate still holds the revision it read, putting back what
+    it had already changed; an envelope refused on a stale version, or that fails its own
+    write, puts them all back in turn.
+  </p>
+  <p>
+    <strong>Repair measure.</strong> Two cases were added. The first injects
+    <code>OSError(ENOSPC)</code> on any write under the
+    project&#8217;s <code>runs/</code> directory: at <code>a55213dd</code>, before the repair,
+    <code>ledger.write</code> reported no error and the read that followed died with the
+    <code>differs between &#8230; refusing to read conflicting history</code> refusal &#8212;
+    1 failed, <code>EXIT=1</code> (log <code>logs/08-unwritable-case-before-repair.log</code>).
+    After the repair the same case shows <code>ledger.write</code> raising and the read
+    returning the run the reader already had, alongside a second case where the envelope itself
+    refuses and the file is put back: 4 passed, <code>EXIT=0</code>
+    (log <code>logs/09-unwritable-case-after-repair.log</code>). The declared negative control
+    was re-run against the reordered writer and still fires: 1 failed, <code>EXIT=1</code>
+    (log <code>logs/11-negative-control-reordered.log</code>).
+  </p>
+  <p>
+    <strong>Repair measure.</strong> A symmetric pair of arms over the 101 test files that
+    import <code>reckon.ledger</code>, each with its own <code>--basetemp</code> under
+    <code>/tmp</code> and <code>pytest-xdist -n 8</code>: at the committed base
+    <code>22 failed / 1637 passed / 1 skipped</code>
+    (log <code>logs/baseline-arm-suite.log</code>), and at the repaired head
+    <code>21 failed / 1638 passed / 1 skipped</code>
+    (log <code>logs/head-arm-suite.log</code>). <strong>No id fails at head that does not fail
+    at base &#8212; 0 added failures.</strong> Each arm&#8217;s basetemp was deleted before the
+    next arm, and the deletion is recorded at the end of its log. The head arm was run three
+    times: twice with no head-only id, and once with a single intermittent id
+    (<code>test_shadow_inherits_primary_time_budget_instead_of_role_default</code>) that passes
+    three times in isolation at the same revision (log
+    <code>logs/12-head-only-id-repeat.log</code>) and fails inside
+    <code>crew.complete</code>&#8217;s gate-evidence guard in <code>reckon/crew/promotion.py</code>,
+    which this change does not touch.
+  </p>
+  <p>
+    <strong>Repair (a second writer).</strong> The re-review scored 86 and found the window
+    between the per-run writes and the envelope write open to a second writer. Two writers
+    prepared from one revision: the loser rewrites its per-run file, the winner rewrites and
+    commits, and the loser, refused on its stale version, puts back the copy it captured
+    before the winner wrote &#8212; leaving a per-run file holding a row the aggregate does
+    not, and the next <code>ledger.load</code> refusing the whole project. The write now
+    takes an exclusive <code>fcntl.flock</code> on a lock file of its own, outside the
+    repository&#8217;s tracked tree, and holds it across the whole read-modify-write: the
+    version check, the per-run file writes and the envelope write, plus the roster commit
+    that can follow. A writer prepared from a revision another has committed is refused
+    under that lock <em>having written nothing</em>, so the files a failing write puts back
+    are only ever the ones it wrote itself. For project <code>reckon</code> the lock is
+    <code>~/.config/reckon/crew/locks/ledger-write-reckon-18dc8a86709b6aa8.lock</code>
+    (a readable project slug plus a digest of the exact name, so two projects never share
+    one file). The lock file lives outside the checkout on purpose: one inside the tree
+    would dirty the repository it protects and would be written by the same store whose
+    failures the write already has to survive.
+  </p>
+  <p>
+    <strong>Repair measure (the interleaved write).</strong> A new case forces the schedule
+    rather than hoping for it, and runs it in <em>processes, not threads</em>: the exclusion
+    that must hold is the one between separate commands, and a thread would share it
+    invisibly. One writer is held by a seam between its per-run write and its envelope
+    write; the other is held until that seam is reached, then writes and announces its
+    commit, which is what resumes the first. Red at <code>f1b9e06f</code> before the repair
+    &#8212; 1 failed, <code>EXIT=1</code>, log
+    <code>logs/13-race-case-red-at-f1b9e06f.log</code>; green at the repair, 1 passed, log
+    <code>logs/17-race-case-green-at-repair.log</code>, with each writer&#8217;s own line
+    printed as the evidence for every claim.
+  </p>
+  <p>
+    What the red shows at the un-serialised revision is worth stating exactly. Under the
+    real writer the second arrival <em>re-reads the project</em> while the first is between
+    its two writes, so its own read refuses first and it is answered with
+    <code>differs between &#8230; refusing to read conflicting history</code> &#8212; a
+    corruption the ledger does not have, named before any version check, and the wrong
+    remedy for a write that should simply re-read. No version conflict is raised at all.
+    The reviewer&#8217;s own schedule, which interposes a commit behind the first
+    writer&#8217;s envelope call, reaches the stale restore instead (their logs
+    <code>08-race-head.log</code> and <code>09-race-base.log</code>). Both are removed by
+    the same serialisation; the two-writer shape is the one a second command actually
+    produces.
+  </p>
+  <p>
+    <img src="/reckon/figures/the-suite-is-green-at-head/ledger-write-keeps-run-files/two-writers-interleave.svg"
+         alt="Two panes of the same forced interleaving. Left, without a lock across the write: writer A reads the ledger at version 1, rewrites its run file, and is held at the seam before its envelope write; writer B reads mid-write, sees the two copies disagree, and is refused as conflicting history before any version check, having written nothing; A then resumes and commits. No version conflict is raised. Right, with one lock held across the write: A takes the lock, reads, rewrites the run file and is held at the seam still holding the lock; B blocks on the lock and cannot write mid-write; A writes its envelope at version 1 and commits, then releases; B takes the released lock and is refused on version 1, having written nothing. Exactly one writer is refused, on the version."/>
+  </p>
+  <p>
+    <strong>Repair measure (arms).</strong> The same pair of arms over the test files that
+    import <code>reckon.ledger</code>, now <strong>102 files</strong>: this node&#8217;s own
+    test file is added to the 101 listed at the base revision, so the arms exercise the case
+    that pins this repair. <code>pytest-xdist -n 8</code>, each arm with its own
+    <code>--basetemp</code> under <code>/tmp</code>, and each arm refusing to start under
+    5&#160;GB free (8&#160;GB before each). At the un-serialised revision
+    <code>f1b9e06f</code>: <code>22 failed / 1642 passed / 1 skipped</code> in 692.68&#160;s
+    (log <code>logs/16-baseline-arm-suite.log</code>), the extra failure being exactly
+    <code>test_a_loser_of_the_write_race_cannot_overwrite_the_winner</code>. At the repaired
+    head <code>ca4e60ca</code>: <code>21 failed / 1643 passed / 1 skipped</code> in
+    635.15&#160;s (log <code>logs/15-after-arm-suite.log</code>). <strong>No id fails at head
+    that does not fail at base &#8212; 0 added failures</strong>, and the case is red at the
+    un-serialised revision inside the arm as well as in isolation. Each arm&#8217;s basetemp
+    was deleted afterwards and the deletion recorded at the end of its log. The earlier pair
+    over the 101 files is superseded and marked as such
+    (<code>logs/15-after-arm-suite.population-101-files.log</code>).
+  </p>
+  <p>
+    <strong>Negative controls.</strong> The declared control &#8212; <em>drop the per-run
+    write from <code>ledger.write</code>; case 1&#8217;s read-back fails with the
+    differs-between refusal</em> &#8212; still fires against the locked writer: 1 failed,
+    <code>EXIT=1</code> (log <code>logs/18-negative-control-write-dropped.log</code>). A
+    second control drops the lock itself (<code>with _ledger_write_lock(project)</code> to
+    <code>if True</code>, leaving the version pre-check and everything else unchanged): the
+    race case fails, 1 failed, <code>EXIT=1</code>
+    (log <code>logs/19-negative-control-lock-dropped.log</code>), which is what shows the
+    lock &#8212; not the version check alone &#8212; is what the case rests on. The worktree
+    file is verified byte-identical to the committed revision after the controls.
+  </p>
+  <p>
+    <strong>Correction.</strong> An earlier commit on this node stated that the race case
+    passed in an eight-worker arm against the un-serialised revision. It did not: the arms
+    run a population of test files listed at the base revision, and this node&#8217;s test
+    file is new, so the case ran in neither arm of that pair. The bounded, silently
+    expiring wait was replaced on its own merits &#8212; a silent expiry manufactures an
+    ordering &#8212; and not because an arm was observed to expire it, which is not
+    established. Both arms were re-run with the file in the population, and its first form
+    remains visible in <code>logs/15-after-arm-suite.population-101-files.log</code> beside
+    its superseded note.
+  </p>
+  <p>
+    <strong>Commits.</strong> <code>bc444b40</code> (the writer keeps each per-run file
+    identical to its row), <code>a55213dd</code> (this record), <code>1f87d481</code> (the
+    fail-safe ordering, and the two cases that pin it), <code>288e260b</code> (one exclusive
+    lock across the whole write), <code>2f75e3b9</code> and <code>ca4e60ca</code> (the
+    interleaved-write case: the resume rule and the refusal it asserts).
+  </p>
+</article>
