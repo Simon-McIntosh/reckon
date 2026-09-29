@@ -16,7 +16,7 @@
     <header>
       <p class="eyebrow">Execution evidence &middot; fragment</p>
       <h1>The collapse op lands a section and its declaration together</h1>
-      <p class="lead">Retiring a landed section used to take two writes: one to replace its authored prose with the landed card, another to set its declaration to done. Between them a reader could see the card without the declaration, or the reverse. A single op now does both in one versioned write.</p>
+      <p class="lead">Retiring a landed section used to take two writes: one to replace its authored prose with the landed card, another to set its declaration to done. Between them a reader could see the card without the declaration, or the reverse. A single op now does both in one versioned write, and collapsing an already-collapsed section refreshes its card in place rather than nesting a second one.</p>
     </header>
 
     <section id="what-changed">
@@ -24,8 +24,8 @@
       <ul>
         <li><code>reckon/_store.py</code> gains <code>collapse_section</code>, dispatched from <code>_OP_DISPATCH</code> beside <code>insert_section</code> and <code>append_evidence</code>. It validates the section id, a non-empty summary and a non-empty evidence anchor, then queues the HTML replacement as a write effect and sets the section's declaration to <code>done</code> on the same working state, so the two cannot be observed apart.</li>
         <li>The card is the shipped landed card: a <code>&lt;section class="section-landed"&gt;</code> whose <code>&lt;header&gt;</code> carries the badge and the original <code>&lt;h2&gt;</code> &mdash; and therefore the heading and its id &mdash; with a <code>landed-summary</code> paragraph linking the evidence anchor. That header shape is the one the structure audit exempts as card chrome rather than a second shell header.</li>
-        <li>The replaced body ends at the next heading, the next structured-state region, or <code>&lt;/main&gt;</code>, whichever comes first, so the replacement never reaches across a <code>data-reckon</code> region.</li>
-        <li>A missing section is refused inside the write transform, before any bytes are written, and the file is left unchanged.</li>
+        <li>A section already carrying a card is replaced from the card's opening tag to its matching close, so a repeat or refresh keeps exactly one card and one closing tag and the new summary and evidence link replace the old. An authored section runs from its h2 to the next heading, landed card or structured-state region, or <code>&lt;/main&gt;</code>; a landed card is itself a boundary, so collapsing a neighbour cannot consume a card's opening markup.</li>
+        <li>A card whose close cannot be found, or whose span would reach across a second heading or a structured-state region, is refused and the file is left unchanged &mdash; a partial result is never written.</li>
         <li><code>reckon/mcp.py</code> adds <code>collapse_section</code> to <code>_OP_VOCAB</code>, so an agent reading the op grammar can discover it.</li>
       </ul>
     </section>
@@ -39,26 +39,33 @@
         <li><code>test_collapse_leaves_structured_state_regions_byte_identical</code> &mdash; the decisions, followups and comments regions are byte-for-byte unchanged.</li>
         <li><code>test_collapse_refuses_a_missing_section_and_leaves_the_file_unchanged</code> &mdash; a missing id returns <code>op_error</code> and writes nothing.</li>
         <li><code>test_collapsed_result_passes_audit_doc_without_a_duplicate_header</code> &mdash; the collapsed file passes <code>audit-doc</code> with no header-duplicate finding.</li>
+        <li><code>test_collapsing_twice_leaves_one_card_with_the_latest_summary</code> &mdash; a second collapse keeps exactly one card carrying the second summary and link, drops the first cleanly, and audits clean.</li>
+        <li><code>test_collapsing_a_neighbour_keeps_both_cards</code>, parametrised over both orders &mdash; collapsing one section then its neighbour leaves both cards intact and audits clean.</li>
+        <li><code>test_a_card_without_a_closing_tag_is_refused_and_leaves_the_file_unchanged</code> &mdash; a card with no closing tag is refused and the file is byte-identical.</li>
       </ul>
       <table>
         <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
         <tbody>
           <tr><td>Base at <code>0ed58e22</code>, the two pre-existing gate files in a scratch copy of the base tree</td><td>20 passed, <code>EXIT=0</code>; base failing ids &mdash; none</td><td><code>r-20260929T190319353906-collapse-section-op-lands-a-section/gate-baseline.log</code></td></tr>
-          <tr><td>This tree at <code>98df7f32</code>, all three gate files</td><td>25 passed, <code>EXIT=0</code>; zero added failures &mdash; 20 base ids plus the 5 new cases</td><td><code>r-20260929T190319353906-collapse-section-op-lands-a-section/gate-after.log</code></td></tr>
-          <tr><td>Declared negative control at <code>0ed58e22+dirty</code></td><td>1 failed, <code>EXIT=1</code>; first line repeats the declaration verbatim</td><td><code>r-20260929T190319353906-collapse-section-op-lands-a-section/negative-control.log</code></td></tr>
+          <tr><td>Final head <code>f3601c02</code>, all three gate files</td><td>29 passed, <code>EXIT=0</code>; zero added failures &mdash; 20 base ids plus 9 new cases</td><td><code>r-20260929T190319353906-collapse-section-op-lands-a-section/gate-after.log</code></td></tr>
+          <tr><td>Negative control 1 at <code>f3601c02+dirty</code></td><td>1 failed, <code>EXIT=1</code>; first line repeats the declaration mutation verbatim</td><td><code>r-20260929T190319353906-collapse-section-op-lands-a-section/negative-control.log</code></td></tr>
+          <tr><td>Negative control 2 at <code>f3601c02+dirty</code></td><td>1 failed, <code>EXIT=1</code> on <code>assert 2 == 1</code> card count; first line repeats the extent mutation verbatim</td><td><code>r-20260929T190319353906-collapse-section-op-lands-a-section/negative-control-extent.log</code></td></tr>
         </tbody>
       </table>
       <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190319353906-collapse-section-op-lands-a-section/</code>. Each ran with the shared environment interpreter at <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code> and a neutral basetemp on node-local <code>/tmp</code>.</p>
     </section>
 
-    <section id="negative-control">
-      <h2>Declared negative control</h2>
-      <p>Declared mutation: <em>leave the section declaration unchanged when collapsing</em>. Applied to <code>_apply_collapse_section</code> (the declaration assignment replaced by a no-op), the declaration case fails &mdash; <code>FAILED tests/test_edit_plan_collapse_section.py::test_collapse_sets_the_section_declaration_to_done</code>, <code>EXIT=1</code> &mdash; because the write is refused when the record and the declaration disagree, so the collapsed card cannot land without its declaration. The mutation was reverted and the tree returned to <code>98df7f32</code>.</p>
+    <section id="negative-controls">
+      <h2>Declared negative controls</h2>
+      <p><strong>Control 2 &mdash; extent.</strong> Declared mutation: <em>restore the scan-to-next-region extent when collapsing</em>. Forcing the card-span path off, so the extent is again scanned to the next structured-state region, the twice-collapsed case fails on <code>assert 2 == 1</code>: two cards remain and the first is left unclosed. This is the defect the fix repairs.</p>
+      <p><strong>Control 1 &mdash; declaration.</strong> Declared mutation: <em>leave the section declaration unchanged when collapsing</em>. With the declaration assignment replaced by a no-op the declaration case fails, because the write is refused when the section record and the declaration disagree.</p>
     </section>
 
     <section id="commits">
       <h2>Commits</h2>
-      <p><code>98df7f327a9b6566e025374a7da18f86a20753b9</code> &mdash; feat(store): collapse a landed section to its card in one versioned write. Changes <code>reckon/_store.py</code>, <code>reckon/mcp.py</code>, <code>tests/test_edit_plan_collapse_section.py</code>.</p>
+      <p><code>98df7f327a9b6566e025374a7da18f86a20753b9</code> &mdash; feat(store): collapse a landed section to its card in one versioned write.</p>
+      <p><code>f3601c024f194f39221815c90feaa0626eb61bd7</code> &mdash; fix(store): replace a landed card in place when collapsing again.</p>
+      <p>Both change <code>reckon/_store.py</code> and <code>tests/test_edit_plan_collapse_section.py</code>; <code>98df7f32</code> also changes <code>reckon/mcp.py</code>.</p>
     </section>
   </main>
 </body>
