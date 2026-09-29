@@ -26,7 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
+<meta name="plan-impl" content="0.35">
 </head>
 <body>
   <main class="plan-doc">
@@ -70,14 +71,16 @@
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
-<div class="r-gate" data-id="g-tccfor-rules-settled" data-section="s3" data-gated-sections="s3" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-tccfor-rules-settled" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the narrowed refusals are merged to main, so the rewrite describes the refusals that will be in force</h4>
     <p class="r-gate-required-evidence">a-refusal-is-about-the-work#s2</p>
-    </div>
-<div class="r-gate" data-id="g-tccfor-review-tiers-settled" data-section="s3" data-gated-sections="s3" data-status="open" data-verdict="">
+    <a class="r-gate-evidence" href="a-refusal-is-about-the-work is shipped at impl 1.0. Its section 2 narrowed contract lint (placeholders and two-deliverable goals refused, punctuation not) closed with verify-gate exit 0 at the integrated head ed676da4, and sections 3 and 4 landed before the plan shipped, so the refusals the rewrite describes are the ones on main.">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-tccfor-review-tiers-settled" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the review tiers are merged to main, so the rewrite describes the review rules that will be in force</h4>
     <p class="r-gate-required-evidence">a-review-is-sized-to-its-risk#s2</p>
-    </div>
+    <a class="r-gate-evidence" href="a-review-is-sized-to-its-risk section 2 is merged. The tier resolver reckon/review_tiers.py landed at 31509127. Promotion computes and gates on the tier, and a none-tier run promotes without a stored review, at 5539c1d5. The ledger declares review_tier and the suite fallout is reconciled (review 93), so the review rules the rewrite describes are the ones in force.">Evidence</a>
+</div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -138,7 +141,10 @@
     <div class="r-comment-body"><p>The baseline section 3 holds is recorded and merged at dcaca633. It is a <strong>median per-session total of 20,484 input tokens</strong> spent loading the reckon-build skill and its references before a coordinator's first dispatch, over five sessions from 25 to 27 September. The median clean full SKILL.md load is also 20,484 tokens (maximum 25,904, 1.83 tokens per word). The skill and references stand at 34,776 words today, against the 12,000-word ceiling. The rewrite therefore meets the token half of its done-when at a per-session median of 10,242 tokens or fewer, measured with <code>docs/research/data/crew-contract-baseline/measure.py</code>.</p><p>The first figure the node reported, 6,231 tokens, was a per-load median mixing reference reads with skill loads. It was replaced after review, because halving it would have set a target below the smallest single reference read.</p><p>Review 85 left three record findings for the rewrite node to fix when it re-measures:</p><ul><li><code>baseline.log</code>'s header names 9522a833, not the revision that produced it. The reviewer reproduced the log byte for byte at 8ca1f795.</li><li>The fragment at :73 mixes two selection counts in one sentence.</li><li>The bracketing control in <code>measure.py</code> near :389 compares against the wrong neighbour, so it cannot fail on the regression it names.</li></ul></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T055321097273-review-of-crew-contract-token-baseline" data-who="reckon-build" data-when="2026-09-29T06:38:49.435Z">
-    <div class="r-comment-body"><p>review of r-20260929T041258061768-crew-contract-token-baseline (plan the-crew-contract-fits-one-read section 3, node crew-contract-token-baseline, base a34a62bb, head 8ca1f795, four commits all inside the three declared write paths) is stored at both granted paths, 12316 bytes each, md5 d664c857e828c7f7371f46778c7b8688: status parsed, total 85 over five dimensions scored 0..20 (goal_fidelity 16, evidence 16, scope_discipline 20, durability 14, fit 19), all six checklist items present, three findings. The section&#x27;s figure holds up - the per-session median 20484 and the five totals reproduce exactly at the reviewed head from the reviewed run&#x27;s own instrument, and the figure re-renders byte-identically from the committed log - but the instrument is not fully trustworthy about itself: the bracketing control stays green with the regression it names reinstated and its verdict never reaches the run&#x27;s exit status; the committed log names a revision that cannot produce it; and the fragment&#x27;s line 73 mixes two selection predicates in one sentence. added_failure_count is unmeasured rather than zero because the reviewed node armed no suite, and no test in the repository reaches its change.</p></div>
+    <div class="r-comment-body"><p>review of r-20260929T041258061768-crew-contract-token-baseline (plan the-crew-contract-fits-one-read section 3, node crew-contract-token-baseline, base a34a62bb, head 8ca1f795, four commits all inside the three declared write paths) is stored at both granted paths, 12316 bytes each, md5 d664c857e828c7f7371f46778c7b8688: status parsed, total 85 over five dimensions scored 0..20 (goal_fidelity 16, evidence 16, scope_discipline 20, durability 14, fit 19), all six checklist items present, three findings. The section's figure holds up - the per-session median 20484 and the five totals reproduce exactly at the reviewed head from the reviewed run's own instrument, and the figure re-renders byte-identically from the committed log - but the instrument is not fully trustworthy about itself: the bracketing control stays green with the regression it names reinstated and its verdict never reaches the run's exit status; the committed log names a revision that cannot produce it; and the fragment's line 73 mixes two selection predicates in one sentence. added_failure_count is unmeasured rather than zero because the reviewed node armed no suite, and no test in the repository reaches its change.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260929T103000-s3-waits-on-lead" data-who="s25-coord" data-when="2026-09-29T10:30:00Z">
+    <div class="r-comment-body"><p>Both section 3 gates are passed. The remaining precondition is the lead's confirmation of section 2's proposed "still wanted" column across the three landed classification fragments under <code>docs/evidence/fragments/the-crew-contract-fits-one-read/</code>: the skill (240 rows: 26 delete-as-enforced, 13 merge, 201 keep), sprint orchestration (256 rows) and the other references. The skill table is not exhaustive; seven uncovered rule sentences are listed in the section 2 comment of 00:25. The rewrite should take those as rows of its own rather than treat the table as complete.</p></div>
 </div>
 </section>
 </main>
