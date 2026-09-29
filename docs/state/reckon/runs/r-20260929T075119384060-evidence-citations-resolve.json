@@ -1,0 +1,336 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "d0f61409ca12ffdffe2cc203df24e31579e7254f",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 6943617,
+      "input_tokens_cumulative": 6943617,
+      "output_tokens": 46548,
+      "output_tokens_cumulative": 46548,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 40,
+    "files": 2,
+    "removed": 4
+  },
+  "commit_resolution": null,
+  "commits": [
+    "c164d7ea11748a827579189fb7320a614109b6dc"
+  ],
+  "completed_at": "2026-09-29T08:38:33.396Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T07:51:35Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_schema.py::test_canonical_dump_equals_read_state[full",
+    "reckon/crew/promotion.py::_preserve_cited_gate_log"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_schema.py",
+    "exit_status": 1,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119384060-evidence-citations-resolve/logs/after-arm-tests-test_schema.log"
+  },
+  "impl_move": {
+    "at_complete": 0.96,
+    "at_dispatch": 0.96,
+    "plan": "the-suite-is-green-at-head",
+    "reason": "impl 0.96 was set before 2026-09-29, when this citation repair and 17 more red ids were folded into section 2; impl is monotonic, so it stays until section 2 closes rather than rising on a denominator that has since grown",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T08:51:21.220406+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T07:51:21Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 24,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 16,
+    "headroom": -2,
+    "mean_context": 115000,
+    "observed_at": "2026-09-29T07:50:57Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T08:38:33.396Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119384060-evidence-citations-resolve/manifest.md",
+  "member": "disposable-r-20260929T075119384060-evidence-citations-resolve",
+  "negative_control": {
+    "reason": "node-writes-no-test-path",
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "evidence-citations-resolve",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 381,
+          "cached_input_tokens": 300876,
+          "input_tokens": 301259,
+          "output_tokens": 459,
+          "reasoning_output_tokens": 245,
+          "total_tokens": 301718,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "caa2d324-580b-4245-9533-3aec9e945566",
+      "session_id": "s21-1c"
+    },
+    "done_when": "At the node's base, tests/test_schema.py::test_cross_project_conformance[reckon:orchestrator-crew-pattern-studies-landed] fails, and its log names the four cited shas that resolve in no mounted repository. That log is the reproduction, taken before any edit. For each of the four, the manifest states what it actually is, found from its source rather than guessed: a reckon commit re-derived to the sha that resolves, or an upstream reference such as a third-party project commit, in which case the record carries it in the form the conformance check accepts for external references. No sha is replaced by a guess. After the repair that test id passes, and tests/test_schema.py shows 0 added failures against the base arm. The negative control restores the base copy of docs/evidence/archive/orchestrator-crew-pattern-studies-landed.html and reddens the id again; it is executed and logged. Logs sit under the run directory, headed with revision and command and ending EXIT=. If the check has no form that accepts an upstream reference, stop with NEEDS-HELP naming the validator function, rather than editing it.",
+    "estimated_hours": null,
+    "goal": "Repair the orchestrator-crew-pattern-studies evidence record so every sha it cites resolves or is marked as an upstream reference",
+    "id": "evidence-citations-resolve",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T07:51:21Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 24,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 16,
+      "headroom": -2,
+      "mean_context": 115000,
+      "observed_at": "2026-09-29T07:50:57Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119384060-evidence-citations-resolve/manifest.md",
+    "negative_control": "",
+    "plan": "the-suite-is-green-at-head",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "docs/evidence/archive/orchestrator-crew-pattern-studies-landed.html",
+      "docs/evidence/fragments/the-suite-is-green-at-head/evidence-citations-resolve.html",
+      "docs/figures/the-suite-is-green-at-head/evidence-citations-resolve"
+    ]
+  },
+  "orientation_input_tokens": 3070881.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "evidence-citations-resolve",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T07:51:29.222147+00:00",
+    "score": 0.7375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-suite-is-green-at-head",
+  "plan_impl_at_dispatch": 0.96,
+  "promoted_revision": "c164d7ea11748a827579189fb7320a614109b6dc",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 19,
+      "evidence": 17,
+      "fit": 20,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 96
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "run_id": "r-20260929T075119384060-evidence-citations-resolve",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "59fa2c7b-9a99-4b8b-b06c-4e4daf9fc447",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 0,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 6943617,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2794.12,
+    "generated_tokens": 46548,
+    "generation_seconds": 2429.824,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 32.2,
+    "machine_seconds": 364.296,
+    "peak_input_tokens": 154392,
+    "tokens_per_second": 19.16,
+    "wall_tokens_per_second": 16.66
+  },
+  "time_budget": "60m",
+  "tool_steps": 67.0,
+  "unreconciled_override": null,
+  "wall_seconds": 2818,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T08:38:34Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T07:51:55Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T075119384060-evidence-citations-resolve",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 9341,
+    "worker_pid": 481444
+  },
+  "worker_seconds": 2759,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
