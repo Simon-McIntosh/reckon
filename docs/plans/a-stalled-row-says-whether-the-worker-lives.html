@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-29">
-  <meta name="plan-version" content="81">
+  <meta name="plan-version" content="82">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -519,10 +519,16 @@
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
     <p class="r-fu-outcome">repair-of-direct-resume-needs-an-observed-death merged at 9dddeeb3 and promoted (review 86). change_lane in reckon/crew/dispatch.py, reached by crew resume --backend and crew redispatch, now refuses a run whose end nothing observed, through the resume sweep's own _observed_end_refusal helper. Zero added failures: base 3 failed, head 2 failed, none new. The stored added-failure count of 2 is a scratch-tree id-prefix artifact, filed as f-ssp-an-arm-run-from-a-scratch-tree-keeps-its-ids. The control was waived only because both arms omit completed; its log exits 1 on the case the head passes. At merged main, verify-gate shows only the two test_session_lives_on_its_run.py failures present in both arms. The review's four findings (a stub-driven case, a print-only preview ahead of the guard, and two record figures) went to the reflex repair r-20260929T163935832766.</p>
     </article>
-<article class="r-fu" data-id="f-asrswtwl-session-resume-cases-fail-at-main" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-asrswtwl-session-resume-cases-fail-at-main" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="2026-09-29T19:16:58+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The two promoted-session resume cases fail at main</h4>
     <div class="r-fu-body"><p><code>tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]</code> and <code>[True]</code> fail at base 9c2daf02, at head f86b93f4 and at merged main (verify-gate of r-20260929T144906489940). The file's fixtures were changed by d6dcefb3, the direct-resume node's observed-end fixture commit, so these may be that node's regression. Establish the first revision where they fail, then repair the cause. Wait for the reflex repair r-20260929T163935832766 to release the file before dispatching.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
+    <p class="r-fu-outcome">Measured by session-resume-cases-fail-at-main (r-20260929T175443103315, review 96). Both parametrisations first fail at a75752c55 (2026-09-25, the promotion guard that refuses a run citing its own base) and last pass at its parent f64f60ee. The direct-resume work was not the cause: 2248e214 and d6dcefb3 already failed the same way. Repaired by session-fixture-declares-no-commit, merged at f376ffd80 and promoted (review 100, no findings). The fixture now passes no_commit instead of citing its base, with no assertion changed; the gate reads 13 passed EXIT=0 at head against 2 failed at base, and the control was admitted on its facts. Report: ~/.config/reckon/crew/reports/reckon/s22-coord/session-resume-cases-fail-at-main/report.md. One harness observation went to a-worker-cannot-write-your-home as f-awcwyh-the-git-shim-refuses-test-fixtures: both runs ran pytest under env -u RECKON_RUN_ID because the git shim refused their fixtures' git init.</p>
+    </article>
+<article class="r-fu" data-id="f-asrswtwl-direct-resume-teardown-flake" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The direct-resume test&#x27;s teardown fingerprint flips under fleet writes</h4>
+    <div class="r-fu-body"><p>The home fixture in <code>tests/test_direct_resume_needs_an_observed_death.py</code> compares mtimes in the real crew home before and after each case, to prove the test wrote nothing there. Live fleet writes into that home between the two readings flip it, so the case fails intermittently with no code change. That is the test reading state outside the repository under test. Isolate the crew home to a temp directory for the case, then assert the real home untouched by a probe the fleet cannot move, such as the absence of a path only this test would create. The file is now free: the lane-change repair chain that held it has landed.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives §4</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
