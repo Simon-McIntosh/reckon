@@ -1,0 +1,16 @@
+<section id="repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0">
+  <h2>The in-harness preview refusal now has a case of its own</h2>
+
+  <p><strong>What changed.</strong> <code>change_lane</code> reads both launch-path refusals ahead of
+  its preview return, but every case in its population presented a source the lane changer launched
+  itself, so the in-harness refusal was asserted by nothing. Moving it back below the preview return
+  left the population green. The new case
+  <code>test_a_lane_change_preview_of_a_live_harness_task_is_refused</code> in
+  <code>tests/test_direct_resume_needs_an_observed_death.py</code> presents a run the harness owns
+  (<code>launch: in-harness</code>, a live <code>task</code>, a non-terminal phase) and requires a
+  <code>--print-only</code> lane change to raise the refusal naming the attached task.</p>
+
+  <p><strong>Measured.</strong> The file runs 9 passed at head (was 8). The negative control moves
+  the two refusals back below the preview return in a scratch tree; the new case then fails
+  <code>DID NOT RAISE CrewError</code> (2 failed, 7 passed), so the case is what holds the ordering.</p>
+</section>

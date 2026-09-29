@@ -55,6 +55,7 @@ EXIT_RUN = "r-observed-exit"
 DEAD_PID_RUN = "r-observed-dead-pid"
 UNKNOWN_RUN = "r-unobserved-liveness"
 LIVE_RUN = "r-proven-live"
+HARNESS_RUN = "r-in-harness-live"
 
 CONFIG = {
     "default_backend": "alpha",
@@ -407,6 +408,39 @@ def test_a_lane_change_preview_reports_the_refusal_a_real_call_raises(
     refusal = str(raised.value)
     assert UNKNOWN_RUN in refusal
     assert "liveness unknown" in refusal
+
+
+def test_a_lane_change_preview_of_a_live_harness_task_is_refused(
+    home: Path, tmp_path: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A harness-attached run refuses the move in a preview, not only on a real call.
+
+    The in-harness refusal is a launch-path gate, so a preview must raise it
+    rather than report a lane change the real call refuses. Every other case in
+    the population presents a source the lane changer launched itself, so without
+    this one a preview of a run the harness owns reads as a move it is not.
+    """
+    _stub_destination(monkeypatch)
+    record = _lane_pointer(
+        tmp_path,
+        repo,
+        HARNESS_RUN,
+        pid=liveness._absent_pid(),
+        launcher_host=HOST,
+    )
+    record["launch"] = "in-harness"
+    record["task"] = "task-live-in-harness"
+    record["phase"] = "working"
+    _write_json(pointer_path(HARNESS_RUN), record)
+
+    with pytest.raises(CrewError) as raised:
+        change_lane(
+            HARNESS_RUN, "beta", "the lane is spent", config=CONFIG, launch=False
+        )
+
+    refusal = str(raised.value)
+    assert HARNESS_RUN in refusal
+    assert "attached to live harness task" in refusal
 
 
 def test_a_lane_change_preview_of_an_observed_death_reports_without_writing(
