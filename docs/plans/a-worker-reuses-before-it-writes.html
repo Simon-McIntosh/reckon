@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 </head>
 <body>
   <main class="plan-doc">
@@ -129,6 +129,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260929T011057320697-timestamp-callers-batch-b" data-who="reckon-build" data-when="2026-09-29T02:31:54.219Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-b.html</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260929T030500-first-migration-wave-landed" data-who="s25-coord" data-when="2026-09-29T03:05:00Z">
+    <div class="r-comment-body"><p>The first migration wave has landed on main. At the merged tree the three nodes together add no failing test id against its first parent (8025 passed).</p><ul><li><strong>timestamp-callers-batch-a</strong>: 13 crew readers, merged at 5246a089, review 88.</li><li><strong>timestamp-callers-batch-b</strong>: 6 top-level readers, merged at ed226f9e, review 93. Two readers are retained exceptions with reasons: <code>doccheck.modified_age_days</code> reads a stated calendar date, and <code>project_state._validate_review</code> keeps its strict acceptance set.</li><li><strong>writer-callers-first-wave</strong>: 8 writers and 2 decoders, merged at 40c62156, review 94. <code>write_json_atomically</code> gains <code>indent</code>, <code>sort_keys</code>, a mode applied with chmod, and <code>fsync_directory</code>.</li></ul><p>Each caller's output is pinned by a table recorded at base by running the base code. Two repair rounds caught behaviour changes the first tables missed: space-separated zoned stamps, near-midnight offsets, and a validator that widened. Every later batch's input list includes those shapes.</p><p>Open items:</p><ul><li><code>_store.write_json_atomically</code> leaves the empty temporary behind when its chmod raises.</li><li>The zone test in <code>query</code> and <code>rollout</code> reads an offset carrying seconds (<code>+00:00:30</code>) as naming no zone.</li><li>The deferred timestamp readers remain. Those in <code>dispatch.py</code>, <code>promotion.py</code> and <code>recovery.py</code> wait for peer claims to release.</li><li>The second writer wave remains, including the writers that fsync the directory.</li></ul></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:04:52.771Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder stored under the crew review store as a parsed record (goal_fidelity 16, evidence 15, scope_discipline 20, durability 16, fit 19; total 86) with three findings</p></div>
