@@ -3,8 +3,8 @@
 Dispatch places every run's worktree under ``Code/.reckon-worktrees``, so the
 pool holds a sibling run's tree beside the worker's own. When the pool is not
 part of the fence's protected set, the whole pool is dev-bind-mounted writable
-and a fenced worker can write another run's worktree — the boundary §3 closes
-by naming the pool in the protected set.
+and a fenced worker can write another run's worktree — a boundary the fence
+closes by naming the pool in the protected set.
 
 The property is asserted two ways, because a shape assertion cannot tell a
 fence that holds from one spelled correctly and doing nothing, and an executed
@@ -187,7 +187,6 @@ def test_protected_paths_includes_the_worktree_pool(tmp_path: Path) -> None:
     assert _backends.resolved_destination(pool.pool) in protected
 
 
-@requires_bwrap
 def test_the_own_worktree_bind_follows_the_pool_overlay(tmp_path: Path) -> None:
     """The own-tree grant is emitted after the pool overlay, so it is not shadowed."""
     pool = Pool(tmp_path)
