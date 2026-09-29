@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-29">
-  <meta name="plan-version" content="56">
+  <meta name="plan-version" content="57">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -483,10 +483,11 @@
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives §2 — make the death row read the last stream record whatever its size</pre>
     <p class="r-fu-outcome">done — the tail reader extends backwards to the last complete record whatever its size (c5b2e184, 7db40838, merged at ece4fa95); review 96; its one test-docstring finding forwarded to the liveness node on recovery.py</p>
     </article>
-<article class="r-fu" data-id="f-asrswtwl-live-worker-read-dead" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T07:20:00Z" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-asrswtwl-live-worker-read-dead" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-25T07:20:00Z" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="2026-09-29T05:48:36+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The watcher read two live workers as dead with retained work</h4>
     <div class="r-fu-body"><p>Observed 2026-09-25 between 09:13 and 09:17 CEST. The follower emitted <code>blocked — the worker process is gone with no recorded exit and the worktree carries 1 commit</code> (the <code>dead-pid-with-retained-work</code> interruption in <code>reckon/crew/recovery.py</code>, which requires <code>process_alive is False</code>) for runs <code>r-20260925T065159936340-after-edge-reaches-every-roadmap-reader</code> and <code>r-20260925T065053546333-two-red-negative-control-cases-repaired</code>. At that moment both supervisors (pids 3795398, 3790946) and both workers (3801097, 3797308) were alive with streams written within the last second, and the MCP live view classified both <code>running — the process is alive</code>. The watcher process (pid 853019) had been running since 2026-09-24T19:00Z. The window coincides with a repo-wide <code>reckon crew gc --apply</code> removing 262 worktrees, so the misread may be a liveness probe racing a pointer or worktree scan under load rather than the probe itself; it was not reproduced. The consequence is a false <code>resume</code> offer on a live worker, which a reflex acting on it would duplicate. Measure: reproduce under concurrent gc or load, and make the interruption require a liveness reading that agrees on two consecutive snapshots before it is emitted.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives — a live worker must never read as dead with retained work</pre>
+    <p class="r-fu-outcome">Reproduced at HEAD by live-worker-read-dead-still-reproduces: a host mismatch let list_live's local probe of a foreign pid decide the retained-work interruption, and 20 of 25 pointers were exposed. Repaired by a-foreign-pid-never-reads-dead, merged at 8413ce50 and promoted after two reviews (last total 92, zero added failures). The interruption consumes a liveness reading only when it is proven on this host or backed by an exit record, and sprint_liveness and the directory row use the same gate. verify-gate is green on the merged main. The drain view's remaining probe is f-asrswtwl-drain-view-reads-a-foreign-pid.</p>
     </article>
 <article class="r-fu" data-id="f-asrswtwl-sweep-guard-needs-observed-death" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The resume sweep lifts a run of unknown liveness, though the row promises it waits for an observed end</h4>
