@@ -3457,6 +3457,36 @@ def _worker_record_liveness(record: Mapping[str, Any]) -> bool | None:
     return alive
 
 
+def _worker_launched_after_manifest(record: Mapping[str, Any], manifest: Path) -> bool:
+    """Whether the run's current worker started after the manifest was written.
+
+    A resumed attempt reuses its run directory, so the manifest beside the
+    pointer may be the verdict a previous turn left. Its own launch time is the
+    fact that separates the two: a worker that started after the manifest was
+    last written cannot have written it, so a terminal status the file still
+    carries belongs to the superseded attempt rather than to the worker running
+    now. Unreadable evidence answers False — the reading never invents a launch
+    it did not observe.
+    """
+    data = _worker_record(record)
+    if data is None:
+        return False
+    raw = str(data.get("launched_at") or "").strip()
+    if not raw:
+        return False
+    try:
+        launched = datetime.fromisoformat(raw)
+    except ValueError:
+        return False
+    if launched.tzinfo is None:
+        launched = launched.replace(tzinfo=UTC)
+    try:
+        written = manifest.stat().st_mtime
+    except OSError:
+        return False
+    return launched.timestamp() > written
+
+
 def _int_or_none(value: Any) -> int | None:
     """A recorded number, or None when the record carries none to read."""
     try:
@@ -4478,7 +4508,25 @@ def classify_pointer(
             manifest_status = ""
     terminal_at = None
     terminal_age_seconds = None
-    deferred_outcome = alive is True and manifest_status in TERMINAL_MANIFEST_STATUSES
+    # A terminal manifest is provisional while a worker that could have
+    # superseded it is alive. The pointer's own pid proves that on the host that
+    # launched the run, but a resumed attempt often carries no such proof: the
+    # run directory and its manifest are reused, and the pointer's process
+    # reading can be left unproven, so the stale verdict would otherwise be read
+    # as delivery — a working run counted as unpromoted and offered a promotion
+    # that would delete its live pointer. The worker's own record is the second
+    # proof: a worker launched after the manifest was last written cannot have
+    # written it, so a terminal status still on the file belongs to the
+    # superseded attempt. Only the launch time is compared; a worker started
+    # before the manifest keeps the classification its record already earns.
+    superseded_manifest = (
+        alive is not True
+        and worker_alive is True
+        and _worker_launched_after_manifest(record, manifest)
+    )
+    deferred_outcome = manifest_status in TERMINAL_MANIFEST_STATUSES and (
+        alive is True or superseded_manifest
+    )
     interruption = None
     interruption_commits = 0
     if manifest_status not in TERMINAL_MANIFEST_STATUSES:
