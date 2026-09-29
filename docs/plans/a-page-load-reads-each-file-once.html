@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
 <meta name="plan-impl" content="0.83">
 <meta name="plan-informs" content="a-follower-outlives-its-monitor">
@@ -484,6 +484,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260929T0935-s5-warm-gate-met" data-who="s21-coord" data-when="2026-09-29T07:35:00Z">
     <div class="r-comment-body"><p><b>The §5 warm gate is met.</b> reckon.service was restarted at 09:29:32 CEST onto main <code>eb9c8950</code>, which carries §7 (<code>dae29b19</code>), the rollup isolation fix (<code>4944dfb6</code>) and imas-codex's repaired page (imas-codex <code>206d305e7</code>). s21-coord then ran a curl pass over the six §1 requests, once to warm the server and once warm (07:31:19Z, load 15.9). This was a direct check, not the time_page_load.py harness. Warm results, all 200:</p><ul><li><code>/_projects/index.json</code> 0.214 s</li><li><code>/crew</code> 1.246 s</li><li><code>/_discover/nova</code> 0.175 s</li><li><code>/_discover/reckon</code> 0.555 s</li><li><code>/_discover/imas-codex</code> 0.107 s</li><li><code>/_discover/imas-efit</code> 0.063 s</li></ul><p>Every request is under the 2 s bound.</p><p><b>Outside this gate:</b> the first cold <code>/_projects/index.json</code> after the restart took 91.3 s. Cold paint is the subject of the-page-paints-from-an-index §3 and §7 (S22), and f-aplref-002 still hands the residual <code>/_discover</code> cost to a-follower-outlives-its-monitor §9.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260929T070551906736-review-of-rollup-isolates-a-project" data-who="reckon-build" data-when="2026-09-29T07:54:34.642Z">
+    <div class="r-comment-body"><p>Independent review of run r-20260929T064712390989-rollup-isolates-a-project is stored as one record at both the legacy and the head-keyed fenced paths, 10801 bytes each (plan a-page-load-reads-each-file-once section 5; reviewed base 7cc73727, reviewed head 9d867811, three commits, 247 insertions and 4 deletions across reckon/serve.py, tests/test_rollup_isolates_a_project.py and the landing fragment): the record parses with goal_fidelity 20, evidence 17, scope_discipline 20, durability 19 and fit 18 for a total of 94 out of 100, carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs, and carries three findings — the landing fragment prints the symbol PlanPageRefusal where reckon/serve.py declares PlanPageRefusalError, the reviewed manifest&#x27;s follow-on (2) sends a coordinator after a per-project 500 whose detail the landed wrap already fills, and the reviewed run&#x27;s logs/node-gate.log names a revision at which the test file its own command runs does not exist.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260923T160312477604-palette-counts-each-inventory-once" data-who="reckon-ship" data-when="2026-09-23T16:39:34.734Z">
     <div class="r-comment-body"><p>palette assertion counts each mounted inventory exactly once with the palette cycled; guard removal doubles every request and fails it; review 96, which found the cycle's close and reopen unasserted, carried to a corrective node</p></div>
