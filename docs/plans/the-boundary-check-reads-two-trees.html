@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="8">
+<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-version" content="9">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -119,10 +119,11 @@
     <p class="r-gate-required-evidence">a-dispatch-returns-without-its-worker#s3</p>
     <a class="r-gate-evidence" href="a-dispatch-returns-without-its-worker §3 merged at 3ad8b13c (git merge-base --is-ancestor passes on main), and reckon/crew/dispatch.py carries TREE_SNAPSHOT_NAME = &quot;tree-snapshot.json&quot;. The per-run supervisor takes the snapshot, and promotion reads its baseline from the run directory. Observed on every s21-coord run on 2026-09-24/25: each run directory holds tree-snapshot.json written before the worker spawns.">Evidence</a>
 </div>
-<div class="r-gate" data-id="g-tbcrtt-2" data-section="s1" data-gated-sections="s1" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-tbcrtt-2" data-section="s1" data-gated-sections="s1" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the fence protects the worktree root, so a fenced worker cannot write another run&#x27;s worktree</h4>
     <p class="r-gate-required-evidence">a-worker-cannot-write-your-home#s3</p>
-    </div>
+    <a class="r-gate-evidence" href="a-worker-cannot-write-your-home §3&#x27;s worktree-pool fence merged at 8ebb1870 (run r-20260929T075119343538, review 92, 0 added failures). At HEAD, reckon/_backends.py protected_paths names Code/.reckon-worktrees, and fence_argv re-binds the run&#x27;s own worktree writable after the pool&#x27;s read-only overlay. tests/test_fence_protects_the_worktree_pool.py shows a fenced stub&#x27;s write into a sibling run&#x27;s worktree refused as a read-only file system while its own-worktree write lands: 3 passed, EXIT=0. With the pool removed from protected_paths all 3 fail, EXIT=1. The rest of §3 (flight key, missing-capability refusal, --no-fence) does not bear on this measure.">Evidence</a>
+</div>
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-tbcrtt-split-with-crew-process" data-who="reckon-e5" data-when="2026-09-24">
