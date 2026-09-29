@@ -35,7 +35,7 @@ import shlex
 import time
 from collections import Counter
 from collections.abc import Callable, Mapping
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from types import UnionType
 from typing import Annotated, Any, Literal, Union, get_args, get_origin, get_type_hints
@@ -3022,6 +3022,121 @@ def _validate_working(slug: str, working: dict) -> list[str] | None:
     return None
 
 
+def _project_manifest(project: str, root: str | None) -> dict[str, Any]:
+    """The project's configuration row, read the way roadmap reads it.
+
+    ``schedule_horizon_sprints`` and any sibling project-wide ceiling live here.
+    """
+    data, _version = read_plan(project, "index", root)
+    if not isinstance(data, dict):
+        return {}
+    rows = data.get("projects") or []
+    if rows and isinstance(rows[0], dict):
+        return rows[0]
+    return {}
+
+
+def _pending_plan_limit(project_manifest: dict[str, Any] | None) -> int | None:
+    """Read the declared pending-plan limit, or None when the project declares none.
+
+    A project that declares no positive integer limit is not capped.
+    """
+    value = (project_manifest or {}).get("pending_plan_limit")
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        return None
+    return value
+
+
+def _pending_plans(project: str, root: str | None) -> list[dict[str, Any]]:
+    """The project's pending plans, by the velocity plan census's own definition.
+
+    *Pending* is the complement of closed, and closed is imported rather than
+    re-derived: a plan is closed when its status is one of the velocity view's
+    ``CLOSED_STATUSES`` or its archive flag is set.
+    """
+    discovered = _discover_project(project, root)
+    pending: list[dict[str, Any]] = []
+    for item in discovered.get("inventory", []):
+        row = _inventory_row(item)
+        if row.get("type", "plan") != "plan":
+            continue
+        if str(row.get("archived") or "") == "1":
+            continue
+        if str(row.get("status") or "") in velocity_module.CLOSED_STATUSES:
+            continue
+        pending.append(row)
+    return pending
+
+
+def _plans_nearest_to_closing(
+    pending: list[dict[str, Any]], count: int
+) -> list[dict[str, Any]]:
+    """The ``count`` pending plans closest to done, ranked by impl, highest first.
+
+    impl is the completion fraction a plan authors for itself; a missing or
+    unparseable impl ranks last so a plan never sorts above one that declares
+    progress.
+    """
+
+    def rank(row: dict[str, Any]) -> tuple[float, str]:
+        try:
+            impl = float(row.get("impl"))
+        except (TypeError, ValueError):
+            impl = 0.0
+        return (-impl, str(row.get("slug") or ""))
+
+    ranked = sorted(pending, key=rank)[:count]
+    return [
+        {
+            "slug": str(row.get("slug") or ""),
+            "title": str(row.get("title") or ""),
+            "impl": row.get("impl"),
+        }
+        for row in ranked
+    ]
+
+
+def _pending_limit_refusal(
+    project: str,
+    limit: int,
+    pending_count: int,
+    nearest: list[dict[str, Any]],
+) -> str:
+    """One refusal sentence naming the limit, the count, the nearest, the override."""
+
+    def describe(row: dict[str, Any]) -> str:
+        impl = row.get("impl")
+        return f"{row['slug']} (impl {impl})" if impl is not None else f"{row['slug']}"
+
+    named = "; ".join(describe(row) for row in nearest) or "none"
+    return (
+        f"creating a plan is refused: project {project!r} already holds "
+        f"{pending_count} pending plans, at its limit of {limit}. Nearest to "
+        f"closing, by impl (highest first): {named}. To open a plan anyway, pass "
+        f"override_wip_limit=<reason>; the reason is recorded as a comment on the "
+        f"new plan."
+    )
+
+
+def _record_wip_override(
+    working: dict[str, Any], reason: str, limit: int, pending: int
+):
+    """Record an override reason as a comment on the plan it let through."""
+    comments = dict(working.get("comments") or {})
+    now = datetime.now(tz=UTC)
+    entry = {
+        "id": f"c-wip-{now:%Y%m%dT%H%M%S%f}",
+        "who": "edit_plan",
+        "when": f"{now.isoformat(timespec='seconds')}",
+        "body": (
+            f"opened beyond the pending-plan limit of {limit} "
+            f"({pending} pending): {reason}"
+        ),
+    }
+    comments.setdefault("_top", []).append(entry)
+    working["comments"] = comments
+
+
 def _edit_plan(
     project: str,
     slug: str,
@@ -3033,6 +3148,7 @@ def _edit_plan(
     mode: Literal["state", "text"] = "state",
     old_html: str | None = None,
     new_html: str | None = None,
+    override_wip_limit: str | None = None,
 ) -> dict[str, Any]:
     """Edit structured state or authored prose with version protection.
 
@@ -3243,6 +3359,9 @@ def _edit_plan(
             selected_type = slug_matches[0].type
 
     # ── create path (plan slugs only) ──
+    limit: int | None = None
+    pending_count = 0
+    wip_override = (override_wip_limit or "").strip()
     if create:
         if is_index:
             return {"ok": False, "error": "cannot create the index slug"}
@@ -3268,6 +3387,26 @@ def _edit_plan(
             }
         if expected_version != 0:
             return {"ok": False, "error": "create requires expected_version=0"}
+        # ── pending-plan limit (refuse-with-override) ──
+        # A project whose configuration declares no limit is never capped.
+        # Pending uses the velocity plan census's own closed definition, so a
+        # plan closed there frees room here.
+        limit = _pending_plan_limit(_project_manifest(project, root))
+        pending = _pending_plans(project, root) if limit is not None else []
+        pending_count = len(pending)
+        if limit is not None and pending_count >= limit and not wip_override:
+            nearest = _plans_nearest_to_closing(pending, 3)
+            return {
+                "ok": False,
+                "error": "pending_plan_limit",
+                "project": project,
+                "limit": limit,
+                "pending": pending_count,
+                "nearest_to_closing": nearest,
+                "detail": _pending_limit_refusal(
+                    project, limit, pending_count, nearest
+                ),
+            }
         html_file.parent.mkdir(parents=True, exist_ok=True)
         html_file.write_text(new_plan_html(project, slug), encoding="utf-8")
         created_file = html_file  # cleaned up below if the create then fails
@@ -3332,6 +3471,10 @@ def _edit_plan(
         if created_file is not None:
             created_file.unlink(missing_ok=True)
         return {"ok": False, "error": "schema_validation", "details": errors}
+
+    # ── record an override reason on the plan it let through ──
+    if create and wip_override:
+        _record_wip_override(working, wip_override, limit, pending_count)
 
     # ── standalone declaration (authored markup, written to the header) ──
     if (
@@ -3484,6 +3627,7 @@ def _edit_plan_tool(
     create: bool = False,
     checkout_path: str | None = None,
     doc_type: str | None = None,
+    override_wip_limit: str | None = None,
 ) -> dict[str, Any]:
     """Edit one Reckon resource through a version-safe state or text mode.
 
@@ -3492,6 +3636,11 @@ def _edit_plan_tool(
     HTML replacement. Read the same resource first and pass its version as
     ``expected_version``; worktree callers must reuse the same
     ``checkout_path`` on both calls.
+
+    Creating a plan beyond the project's declared pending-plan limit is
+    refused, naming the pending plans nearest to closing. Pass
+    ``override_wip_limit=<reason>`` to open the plan anyway; the reason is
+    recorded as a comment on the new plan.
     """
 
     return _edit_plan(
@@ -3505,6 +3654,7 @@ def _edit_plan_tool(
         mode=mode,
         old_html=old_html,
         new_html=new_html,
+        override_wip_limit=override_wip_limit,
     )
 
 
