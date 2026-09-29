@@ -91,7 +91,14 @@ def test_wait_classification_ranges_over_liveness_and_condition_state(
     condition_state: str,
     expected_recovery: str,
 ) -> None:
-    pointer = _waiting_pointer(tmp_path, alive=alive)
+    # A met condition offers a resume only once the worker's own end has been
+    # observed, so the fixture records a pid this host reads and finds gone and
+    # the process table answers instead of the carried flag. ``alive`` stays the
+    # pointer's stored answer, which only a reading taken on the host that
+    # launched the run can supersede.
+    pointer = _waiting_pointer(
+        tmp_path, alive=alive, observed_end=condition_state == "met"
+    )
 
     row = recovery.classify_pointer(
         pointer,
@@ -136,7 +143,9 @@ def test_a_met_dead_wait_is_walked_by_the_resume_sweep(
 def test_a_successful_terminal_probe_is_ready_to_resume(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    pointer = _waiting_pointer(tmp_path, alive=False)
+    # The offer rests on the observed end as much as on the probe's verdict:
+    # this pointer records a pid the reading host checks and finds gone.
+    pointer = _waiting_pointer(tmp_path, alive=False, observed_end=True)
     monkeypatch.setattr(
         recovery.subprocess,
         "run",
