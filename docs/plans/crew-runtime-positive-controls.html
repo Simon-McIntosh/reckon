@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="126">
+<meta name="plan-version" content="127">
 </head>
 <body>
   <main class="plan-doc">
@@ -1400,6 +1400,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260929T151851526457-strict-arms-refusal-impact" data-who="reckon-build" data-when="2026-09-29T16:10:42.827Z">
     <div class="r-comment-body"><p>Measured the unmerged baseline-arm completion rule at 09d4deea against main over 108 real runs: 5 controls are admitted on main and refused at 09d4deea (r-20260928T061043305378, r-20260928T132148906656, r-20260928T160825030673, r-20260929T035930031370, r-20260929T073847002082), 0 flip the other way, and the six-file control-gate test population is green in both arms (43 passed, 0 failed each) so the named test delta is empty. Report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/strict-arms-refusal-impact/report.md</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260929T161201154274-review-of-strict-arms-refusal-impact" data-who="reckon-build" data-when="2026-09-29T16:25:41.614Z">
+    <div class="r-comment-body"><p>Independent review of r-20260929T151851526457-strict-arms-refusal-impact stored at both granted paths, parsed, scoring goal_fidelity 18, evidence 16, scope_discipline 19, durability 18, fit 19, total 90, added_failure_count 0 derived from the reviewed run&#x27;s own tests-main.log and tests-repair.log (43 passed, no FAILED or ERROR line in either arm), with two findings at report.md:13 and report.md:46. I reproduced the headline independently: my own harness re-decided the declared control for the five flipped runs plus twelve stable controls in both trees, matching the recorded verdicts for all seventeen rows with zero disagreements, and I did not accept the report&#x27;s attribution on trust — removing the completion guard at reckon/crew/promotion.py:5072 in a hardlink copy of the repair tree reddens exactly the two baseline cases in tests/test_control_is_compared_with_the_head_arm.py (2 failed, 12 passed against 14 passed unmutated), which confirms the report&#x27;s own follow-on that the six-file population it was briefed with is silent while the repair is nevertheless pinned elsewhere.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
