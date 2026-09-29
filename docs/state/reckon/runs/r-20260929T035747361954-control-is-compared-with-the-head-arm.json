@@ -1,0 +1,448 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "27f6266af0af83249c9785b7db70b43373a3bb6f",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 18311100,
+      "input_tokens_cumulative": 18311100,
+      "output_tokens": 88477,
+      "output_tokens_cumulative": 88477,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 647,
+    "files": 6,
+    "removed": 10
+  },
+  "commit_resolution": null,
+  "commits": [
+    "5d45fe08fc9d686fe106ca37a59be8176144900b",
+    "d4403d6fac1ce3d3a251d56794650267a1ea1be8",
+    "3d45f7a3b31ed0d06eeabc4e330bf581cc6b654b",
+    "f91fc0c865742bb108f0544454056d1ffd72dde1"
+  ],
+  "completed_at": "2026-09-29T04:39:10.419Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T03:58:11Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_lane_advisory_on_dispatch.py",
+    "tests/test_a_live_run_never_reads_dead.py",
+    "tests/test_recovery_state_typing.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "env -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/control-is-compared-with-the-head-arm TMPDIR=/tmp PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/control-is-compared-with-the-head-arm /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_control_is_compared_with_the_head_arm.py tests/test_control_gate_checks_facts.py tests/test_crew_declared_negative_control.py tests/test_crew_negative_control_header.py tests/test_crew_negative_control_interface.py tests/test_negative_control_log_is_a_path.py tests/test_negative_control_waiver.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035747361954-control-is-compared-with-the-head-arm/logs/head-arm.log"
+  },
+  "impl_move": {
+    "at_complete": 1.0,
+    "at_dispatch": 1.0,
+    "plan": "crew-runtime-positive-controls",
+    "reason": "closes followup f-crpc-a-test-first-baseline-refuses-a-sound-control on an already-complete plan (impl 1.0)",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T04:57:48.892444+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T03:57:48Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 5,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 3,
+    "headroom": 9,
+    "mean_context": 160000,
+    "observed_at": "2026-09-29T03:57:43Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T04:39:10.419Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035747361954-control-is-compared-with-the-head-arm/manifest.md",
+  "member": "disposable-r-20260929T035747361954-control-is-compared-with-the-head-arm",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_control_is_compared_with_the_head_arm.py::test_a_case_red_at_the_base_and_green_at_the_head_admits_the_control",
+      "tests/test_control_is_compared_with_the_head_arm.py::test_a_case_the_head_arm_also_fails_is_refused"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_control_is_compared_with_the_head_arm.py::test_a_case_red_at_the_base_and_green_at_the_head_admits_the_control",
+      "tests/test_control_is_compared_with_the_head_arm.py::test_a_case_the_head_arm_also_fails_is_refused",
+      "tests/test_control_is_compared_with_the_head_arm.py::test_without_a_readable_head_arm_the_baseline_decides_the_admission[absent]",
+      "tests/test_control_is_compared_with_the_head_arm.py::test_without_a_readable_head_arm_the_baseline_decides_the_admission[uncompleted]"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_control_is_compared_with_the_head_arm.py::test_a_case_red_at_the_base_and_green_at_the_head_admits_the_control",
+      "tests/test_control_is_compared_with_the_head_arm.py::test_a_case_the_head_arm_also_fails_is_refused"
+    ],
+    "declaration": "restore the baseline-only comparison in a scratch copy; the test-first case (a) must be refused and fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035747361954-control-is-compared-with-the-head-arm/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035747361954-control-is-compared-with-the-head-arm/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_control_gate_checks_facts.py",
+      "tests/test_control_is_compared_with_the_head_arm.py",
+      "tests/test_negative_control_waiver.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "control-is-compared-with-the-head-arm",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1446,
+          "cached_input_tokens": 603671,
+          "input_tokens": 605119,
+          "output_tokens": 1495,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 606614,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "tests/test_control_is_compared_with_the_head_arm.py builds manifests plus logs in a temporary run directory for five cases, each calling the promotion gate's control check: (a) test-first: the control's failing id is red in baseline_suite, green in after_suite, so the control is admitted; (b) the control's only failing id also fails in after_suite, so it is refused; (c) no readable after_suite, so the baseline comparison decides as today (admitted when the id is absent from baseline, refused when present); (d) a control log with EXIT=0 is refused; (e) a control log with no EXIT= line is refused as today. Case (a) fails at the base revision (logged) and passes at the head. A replay section in the manifest runs the new check read-only against the four named runs' real manifests and control logs, recording that each is now admitted, without writing to those run directories. The negative control, in a scratch copy, restores the baseline-only comparison; case (a) fails, with the mutation on the red log's first line and an EXIT= line after pytest's output. The gate is the new test plus every tests/ file whose name contains negative_control or control_gate; both arms are recorded as one JSON object each under baseline_suite and after_suite (revision, command, exit_status, one log_path, failure_ids), each log ending in an EXIT= line, with the head arm adding no failing id. ruff check plus ruff format --check on the changed paths add no finding against the base. The tests neither read nor write the real ~/.config/reckon.",
+    "estimated_hours": null,
+    "goal": "Plan crew-runtime-positive-controls, followup f-crpc-a-test-first-baseline-refuses-a-sound-control: the negative-control gate admits a control that reddens a test the head arm passes. Read the followup in docs/plans/crew-runtime-positive-controls.html, including reckon-d5's added instance. _require_declared_negative_control in reckon/crew/promotion.py (near :4850) admits a control only when it fails an id the baseline arm does not fail (baseline_failure_ids near :4948). A node whose tests are written first has every new case red at base by design, so a sound control on one of them is refused; four promotions on 2026-09-28 needed a waiver for exactly this (runs r-20260928T142644163914, r-20260928T193532461213, r-20260928T204215455574, r-20260929T001417713998). Make the admitting fact: the control exits non-zero with at least one failing id that the head arm (after_suite) passes, falling back to the baseline comparison only when the manifest records no readable head arm.",
+    "id": "control-is-compared-with-the-head-arm",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T03:57:48Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 5,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 3,
+      "headroom": 9,
+      "mean_context": 160000,
+      "observed_at": "2026-09-29T03:57:43Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035747361954-control-is-compared-with-the-head-arm/manifest.md",
+    "negative_control": "restore the baseline-only comparison in a scratch copy; the test-first case (a) must be refused and fail",
+    "plan": "crew-runtime-positive-controls",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/promotion.py",
+      "tests/test_control_is_compared_with_the_head_arm.py",
+      "tests/test_control_gate_checks_facts.py",
+      "tests/test_negative_control_waiver.py",
+      "docs/evidence/fragments/crew-runtime-positive-controls/control-is-compared-with-the-head-arm.html",
+      "docs/figures/crew-runtime-positive-controls/control-is-compared-with-the-head-arm"
+    ]
+  },
+  "orientation_input_tokens": 2587848.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "control-is-compared-with-the-head-arm",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T03:57:58.954395+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "crew-runtime-positive-controls",
+  "plan_impl_at_dispatch": 1.0,
+  "promoted_revision": "f91fc0c865742bb108f0544454056d1ffd72dde1",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 19,
+      "evidence": 20,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 97
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T035747361954-control-is-compared-with-the-head-arm",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "",
+  "session_harness": "claude",
+  "session_id": "3ab2239d-f5ce-4d84-b714-66770a2e534d",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 18477385,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2402.776,
+    "generated_tokens": 96447,
+    "generation_seconds": 1931.152,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.4,
+    "machine_seconds": 471.624,
+    "peak_input_tokens": 164985,
+    "tokens_per_second": 49.94,
+    "wall_tokens_per_second": 40.14
+  },
+  "time_budget": "60m",
+  "tool_steps": 160.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 2712,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-29T03:40:10Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-29T02:55:49Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260929T025436655393-a-foreign-pid-never-reads-dead",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 41701,
+          "worker_pid": 2043230
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 1064,
+        "log_fresh": false,
+        "manifest_commits": [
+          "b0809e30aa6b7bdc92a444ecffdc0abd31fa10f0",
+          "03b5131a77ff2c74074170ce558be651a03a2e30"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "5b528ee489e326a162bcd06efb515b126ea455778e630300715cf3268975a430",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T025436655393-a-foreign-pid-never-reads-dead/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan a-stalled-row-says-whether-the-worker-lives --section '§3' --role review --spec-level exact --node review-of-a-foreign-pid-never-reads-dead --goal 'attach an independent review to run r-20260929T025436655393-a-foreign-pid-never-reads-dead' --done-when 'the review for r-20260929T025436655393-a-foreign-pid-never-reads-dead stores a parsed record scoring all 5 dimensions in the range 0..20, carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T025436655393-a-foreign-pid-never-reads-dead.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T025436655393-a-foreign-pid-never-reads-dead.at-03b5131a77ff2c74074170ce558be651a03a2e30.json --time-budget 60m --session s22-coord --allow-unreconciled-runs --local",
+        "node": "a-foreign-pid-never-reads-dead",
+        "phase": "complete",
+        "plan": "a-stalled-row-says-whether-the-worker-lives",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260929T025436655393-a-foreign-pid-never-reads-dead",
+        "session": "s22-coord",
+        "stored_phase": "starting",
+        "terminal_age_seconds": 1094,
+        "terminal_at": "2026-09-29T03:39:39Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-foreign-pid-never-reads-dead"
+      }
+    ]
+  },
+  "wall_seconds": 2459,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T04:39:10Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T03:59:01Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T035747361954-control-is-compared-with-the-head-arm",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 15451,
+    "worker_pid": 2242830
+  },
+  "worker_seconds": 2390,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

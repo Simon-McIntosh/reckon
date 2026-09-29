@@ -25,9 +25,9 @@
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
+<meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="117">
+<meta name="plan-version" content="118">
 </head>
 <body>
   <main class="plan-doc">
@@ -1372,6 +1372,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260928T192732320631" data-who="s25-coord" data-when="2026-09-28T19:28:00.000Z">
     <div class="r-comment-body"><p>Second measurement for f-crpc-a-test-first-baseline-refuses-a-sound-control (s25-coord, 2026-09-28). Run r-20260928T175645048110-dispatch-declares-the-run-it-repairs declared the mutation 'drop repairs from the corrective-attempt check'. Its control log records EXIT=1 and FAILED tests/test_dispatch_declares_the_run_it_repairs.py::test_a_repairs_dispatch_records_the_field_and_promotes_exempt, a case that passes in the head arm (logs/head-arm.txt, EXIT=0, no FAILED ids). crew complete refused the control because the base arm, taken before the feature existed, also fails every case of the node's new test file. It was promoted with --waive-negative-control naming this reason. The same remedy applies: compare a control with the head arm, and fall back to the base arm only when no head arm is recorded.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260929T035747361954-control-is-compared-with-the-head-arm" data-who="reckon-build" data-when="2026-09-29T04:39:10.419Z">
+    <div class="r-comment-body"><p>The control gate now admits a control on a failing id the head arm (after_suite) passes, falling back to the baseline comparison only when the manifest records no readable head arm; the four 2026-09-28 promotions that needed --waive-negative-control replay read-only against their own manifests and logs and are all admitted, evidence in docs/evidence/fragments/crew-runtime-positive-controls/control-is-compared-with-the-head-arm.html</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
