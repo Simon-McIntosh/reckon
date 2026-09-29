@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="The worktree-pool fence test follows the naming rules">
+  <meta name="plan-summary" content="The composition-only fence test no longer needs bubblewrap, and the module docstring carries no plan-section label.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s3">
+  <meta name="plan-commits" content="b554bbd2">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fence,worktree">
+  <title>The worktree-pool fence test follows the naming rules — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="fence-pool-test-follows-the-naming-rules" data-reckon="landed" data-when="2026-09-29">
+  <h2>The worktree-pool fence test follows the naming rules</h2>
+  <p>The own-tree bind case asserts only the composed argv, so it never launches bubblewrap; its bubblewrap marker made it skip on a host without bubblewrap and hid a composition regression behind the skip. The marker is dropped from that case while the executed refusal keeps it. The module docstring's section label is replaced by the mechanism sentence, so the file carries no plan witness. Naming checks 2a and 2b over the file print nothing (exit 1 each). With bubblewrap hidden from PATH the composition case is reported passed and only the executed case is skipped (2 passed, 1 skipped); with bubblewrap present all 3 pass. The declared negative control — marker restored, bubblewrap hidden — reports the composition case skipped, not passed.</p>
+</article>
+</body>
+</html>
