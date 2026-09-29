@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="Two review findings on the strict-arms refusal-impact report">
+  <meta name="plan-summary" content="Two review findings against report.md of the strict-arms refusal-impact measurement: a module digest labelled sha256 that is an md5, and a completion-census figure scoped to the whole population but stated as a within-subset count. Both are corrected in place and re-verified against the run's own logs.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>The strict-arms refusal-impact report corrections &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The strict-arms refusal-impact report corrections &mdash; evidence</h1>
+  <section id="measure">
+    <h2>What changed, and the figure each finding carried</h2>
+    <ul>
+      <li><strong>fbd864b260e &mdash; mislabelled module digest.</strong> <code>report.md</code> line 13 stated the two trees' <code>reckon/crew/promotion.py</code> digests as <code>cb41f9ff&hellip;</code> (main) and <code>73b81ef3&hellip;</code> (repair) under the label <em>module sha256</em>. Both are md5: <code>md5sum</code> reproduces them exactly, and <code>sha256sum</code> over the same files returns <code>6d19f6b249d09edd48c2fbe9963f8bcbf2a6cef149267b19e2fd5da4825d42d6</code> and <code>75fe118e3e53c15632c4e250f6f372fbcec0de9dd2afd06f4e28e65505203cd5</code>, the values the run's own <code>check-main.log</code> and <code>check-repair.log</code> headers already record. The line now carries the true sha256 for each tree.</li>
+      <li><strong>f9a0f21b1bd &mdash; census figure moved onto a subset.</strong> The prose read <em>Within the 39: baseline_suite recorded but not complete in 24</em>. <code>comparison.json</code>'s <code>completion_census.baseline_recorded_without_completed</code> is <strong>24</strong>, but <code>arms_compare.py</code> increments that counter for every one of the 108 population rows, so it is a whole-population marginal. Re-counting inside the <code>neither_arm_completed</code> list of 39 gives <strong>23</strong> recorded-without-completion plus <strong>16</strong> absent, which sum to the 39 the sentence is scoped to. The line now reads 23.</li>
+    </ul>
+  </section>
+ </main>
+</body>
+</html>
