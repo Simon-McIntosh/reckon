@@ -3453,6 +3453,40 @@ def _require_review_waiver(
     return None
 
 
+def _require_standing_suite(
+    project: str,
+    review_tier: str,
+    root: str | Path | None,
+) -> None:
+    """Refuse a lighter promotion while the project's declared suite is held.
+
+    A per-node gate runs only the tests a node's brief names, so a project whose
+    default command stopped at collection can keep promoting unseen; the
+    project's own suite is the check that sees the whole tree, and the lighter
+    tiers wait on it. The tier is the one promotion has already resolved from
+    what the run changed, so a ``full`` review -- which reads the run for
+    itself -- is never held, and the tier is neither re-derived nor copied here.
+
+    The reason comes from the project's recorded suite runs: the latest one
+    failed to collect or overran its budget and no later waiver has lifted it.
+    The refusal names that reason together with both ways out, so an operator is
+    not left to guess which command answers the node. A run whose record names
+    no project owns no declared suite and is not held.
+    """
+    if not project:
+        return
+    from reckon.crew import standing_suite
+
+    reason = standing_suite.hold_reason(root, review_tier, project)
+    if reason is None:
+        return
+    raise CrewError(
+        f"standing suite holds this promotion: {reason}; record a passing run "
+        f"with `reckon crew suite run --project {project}` or record a lead "
+        f"waiver with `reckon crew suite waive --project {project} --reason TEXT`"
+    )
+
+
 def _unreviewed_refusal(
     run_id: str,
     review_action: str,
@@ -3676,6 +3710,10 @@ def complete(
             promoted_head=promoted_revision,
             stale_head=stale_review_head,
         )
+        # The project's declared suite is the gate that sees the whole tree, and
+        # the lighter promotions wait on it. The tier is the one just resolved,
+        # so a full review -- which reads the run for itself -- is never held.
+        _require_standing_suite(landing_project, review_tier, root)
         candidate_remedy = classified.get("resume_remedy")
         resume_remedy = (
             dict(candidate_remedy) if isinstance(candidate_remedy, Mapping) else None

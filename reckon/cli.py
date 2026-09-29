@@ -4351,6 +4351,87 @@ def crew_drain(project, session, leaves, pretty):
     )
 
 
+@crew.group(name="suite")
+def crew_suite():
+    """The project's declared suite: run it once, or waive its hold."""
+    return None
+
+
+def _suite_project_root(project: str, checkout_path: Path | None) -> Path:
+    """Return the checkout root a project's suite runs and is recorded in.
+
+    A project's registered mount decides it, never the caller's enclosing
+    checkout, so a run started from elsewhere still lands its record where the
+    promotion that reads it will look. A project with no mount needs an explicit
+    ``--checkout-path``, because a suite run filed under the wrong root would be
+    invisible to the very promotion it is meant to answer.
+    """
+    from reckon.crew.dispatch import project_mount_repository
+
+    if checkout_path is not None:
+        return checkout_path.expanduser().resolve()
+    mount = project_mount_repository(project)
+    if mount is None:
+        raise click.ClickException(
+            f"project {project!r} has no registered mount; pass --checkout-path "
+            "naming the repository its suite runs in"
+        )
+    return mount
+
+
+@crew_suite.command(name="run")
+@click.option("--project", required=True, help="Project whose declared suite to run.")
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root whose suite is run (default: the registered mount).",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_suite_run(project, checkout_path, pretty):
+    """Run the project's declared suite under its budget and record the result."""
+    from reckon.crew import standing_suite
+
+    _, flight_module = _crew_modules()
+    root = _suite_project_root(project, checkout_path)
+    try:
+        config = flight_module.resolve(project, checkout_path=root).config
+    except flight_module.FlightConfigError as exc:
+        raise click.ClickException(str(exc)) from exc
+    declaration = flight_module.review_suite(config)
+    if declaration is None:
+        raise click.ClickException(
+            f"project {project!r} declares no review.suite command, so there is "
+            "nothing to run"
+        )
+    log_path = standing_suite.suite_runs_dir(root, project) / f"suite-{time.time_ns()}.log"
+    record = standing_suite.run(root, declaration, log_path)
+    standing_suite.record(root, project, record)
+    _emit({"ok": True, "project": project, **record}, pretty)
+
+
+@crew_suite.command(name="waive")
+@click.option("--project", required=True, help="Project whose hold is waived.")
+@click.option("--reason", required=True, help="Why the hold is lifted.")
+@click.option("--who", default="lead", show_default=True, help="Who waived it.")
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root whose state is written (default: the registered mount).",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_suite_waive(project, reason, who, checkout_path, pretty):
+    """Record a waiver that lifts the standing-suite hold."""
+    from reckon.crew import standing_suite
+
+    if not reason.strip():
+        raise click.ClickException("--reason must not be empty")
+    root = _suite_project_root(project, checkout_path)
+    path = standing_suite.record_waiver(root, project, who=who, why=reason)
+    _emit({"ok": True, "project": project, "waiver": str(path)}, pretty)
+
+
 @crew.command(name="gc")
 @click.option(
     "--repo",
