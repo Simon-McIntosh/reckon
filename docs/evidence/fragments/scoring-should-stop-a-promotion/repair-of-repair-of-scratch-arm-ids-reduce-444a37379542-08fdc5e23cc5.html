@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="The review ties its added-failure count to the revision each arm log names">
+  <meta name="plan-summary" content="The gate log's revision line named the base while the change sat at another commit, and the landed change carried no evidence file. The log now re-runs at the change's own commit, a fragment records the landing, and annotate_review_of_run carries each arm log's own recorded revision so a later reader can tie the added-failure count to a commit without re-running the gate.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <title>The review ties its added-failure count to the revision each arm log names | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The review ties its added-failure count to the revision each arm log names</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>Two defects were raised against the arm-id reduction's landing. Its gate log's first
+        line named the base revision <code>cbbbb56f</code> while the change itself sits at
+        <code>08fdc5e23</code>, so the recorded <code>5 passed</code> could not be tied to the
+        committed change without re-running the gate. And the change carried no evidence file,
+        although its diff is 150 changed lines &mdash; well past the small-node clause that
+        exempts only diffs of fifty or fewer &mdash; so its evidence anchor existed only as a
+        manifest line.</p>
+      <p>The underlying gap is in the review path: <code>annotate_review_of_run</code> derived
+        the added-failure count from the two arm logs but did not carry forward the revision each
+        arm log's own first line names, so nothing in the annotated review let a reader tie that
+        count to a commit.</p>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p>The source run's gate log was re-run against an export of <code>08fdc5e23</code>, so its
+        header now names that revision and the change it measures agree:
+        <code>5 passed</code>, exit 0. A fragment now records that landing.</p>
+      <p>In <code>reckon/crew/review.py</code>, <code>recorded_log_revision</code> reads the
+        revision a gate log's first line names, and <code>annotate_review_of_run</code> records it
+        under <code>base_log_revision</code> and <code>head_log_revision</code> beside the
+        added-failure count it already derives. A base log naming one commit and a head log
+        naming another now read as the mismatch they are rather than as evidence about either.</p>
+    </section>
+
+    <section id="gate">
+      <h2>The gate</h2>
+      <p>The node's own file, run at the change's commit through the production
+        <code>annotate_review_of_run</code> path with a synthesised manifest and repository:</p>
+      <table>
+        <thead>
+          <tr><th>file</th><th>result</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>tests/test_scratch_arm_ids_reduce.py</code></td>
+            <td><code>6 passed</code>, exit 0</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The new case drives each arm log with a header naming its own revision and asserts the
+        annotated review carries both.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>The negative control</h2>
+      <p>The declared control reverts each change in turn and requires its named check to go red.
+        Its log's first line, verbatim:</p>
+      <pre><code>revert each answering commit in turn and confirm the check the finding names fails without it</code></pre>
+      <p>Removing the two lines that record the arm-log revisions reddens
+        <code>test_the_annotated_review_carries_the_revision_each_arm_log_names</code> with a
+        <code>KeyError</code> (1 failed, 5 passed, exit 1). <code>reckon/crew/review.py</code> was
+        left untouched in the worktree; the mutation ran on a scratch copy.</p>
+    </section>
+
+    <section id="limits">
+      <h2>What this record does not show</h2>
+      <p>The carried revisions are read from each log's first line only; a gate log whose first
+        line names no revision records <code>None</code>, which is a state a reader must still
+        treat as unknown rather than as agreement.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -64,8 +64,15 @@ def _prefixed(test_id: str, directory: str) -> str:
     return f"{Path(directory).name}/{test_id}"
 
 
-def _log(*failed: str) -> str:
-    lines = [f"FAILED {test_id} - AssertionError: boom" for test_id in failed]
+def _log(*failed: str, header: str | None = None) -> str:
+    """Return a pytest-shaped log, optionally opening with its revision header.
+
+    A real gate log's first line names the revision it ran at; the fixtures that
+    exercise the reduction omit it, and the case that exercises the revision
+    reader supplies it, so the absence and the presence are both covered.
+    """
+    lines = [header] if header is not None else []
+    lines.extend(f"FAILED {test_id} - AssertionError: boom" for test_id in failed)
     lines.append(f"{len(failed)} failed")
     return "\n".join(lines) + "\n"
 
@@ -92,6 +99,8 @@ def _annotated_record(
     base_command: str | None = BASE_COMMAND,
     head_command: str | None = HEAD_COMMAND,
     extra: str = "",
+    base_header: str | None = None,
+    head_header: str | None = None,
 ) -> dict:
     """Write the two arms and read them back through the promotion's own path."""
     config_home = tmp_path / "config"
@@ -99,8 +108,12 @@ def _annotated_record(
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     directory = run_dir(RUN)
     directory.mkdir(parents=True, exist_ok=True)
-    (directory / "base.log").write_text(_log(*base_ids), encoding="utf-8")
-    (directory / "head.log").write_text(_log(*head_ids), encoding="utf-8")
+    (directory / "base.log").write_text(
+        _log(*base_ids, header=base_header), encoding="utf-8"
+    )
+    (directory / "head.log").write_text(
+        _log(*head_ids, header=head_header), encoding="utf-8"
+    )
     (directory / "manifest.md").write_text(
         f"node: {RUN}\n"
         "status: complete\n"
@@ -247,3 +260,32 @@ def test_a_measurement_directory_without_an_arm_command_is_not_attributed(
         "log's own spelling intact"
     )
     assert review["added_failure_ids"] == [_prefixed("tests/test_alpha.py", SCRATCH)]
+
+
+def test_the_annotated_review_carries_the_revision_each_arm_log_names(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each arm log's own header says which revision it measured.
+
+    A gate log's first line is its own record of the revision it ran at, and it
+    is what ties the failures it lists to a commit. Carrying it onto the review
+    lets a later reader tie the added-failure count to that revision without
+    re-running the gate — so a header naming the base while the change sits at
+    another commit reads as the mismatch it is rather than as evidence about the
+    change. The body of each log names the same id, so only the headers differ
+    and the reduction is unaffected.
+    """
+    review = _annotated_record(
+        tmp_path,
+        monkeypatch,
+        base_ids=["tests/test_alpha.py"],
+        head_ids=["tests/test_alpha.py"],
+        base_header=f"revision {BASE_SHA} tree {SCRATCH}",
+        head_header=f"revision {HEAD_SHA} tree /work",
+    )
+
+    assert review["base_log_revision"] == BASE_SHA, (
+        "the base log's own first line names the revision it ran at; the "
+        "annotated review must carry it so the count can be tied to a commit"
+    )
+    assert review["head_log_revision"] == HEAD_SHA
