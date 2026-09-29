@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 430" width="760" height="430" role="img" aria-labelledby="title desc">
+  <title id="title">Cold, warm and head-moved velocity read times against the 30 second deadline</title>
+  <desc id="desc">A cold report of the 2026-09-15 to 2026-09-29 window over reckon takes 576.9 seconds. A warm report at the same head takes 5.2 seconds, and a warm report after one new commit takes 16.9 seconds. Both warm figures sit below the 30 second read deadline, drawn as a dashed line.</desc>
+  <style>
+    .axis { stroke: #64748b; stroke-width: 1; }
+    .grid { stroke: #e2e8f0; stroke-width: 1; }
+    .label { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; fill: #1e293b; }
+    .value { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; font-weight: 600; fill: #0f172a; }
+    .small { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; fill: #64748b; }
+    .cold { fill: #b45309; }
+    .warm { fill: #15803d; }
+    .deadline { stroke: #b91c1c; stroke-width: 2; stroke-dasharray: 7 5; }
+    .deadline-text { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; fill: #b91c1c; font-weight: 600; }
+  </style>
+
+  <text class="label" x="24" y="30" font-size="15" font-weight="600">Velocity read of one project over two weeks</text>
+  <text class="small" x="24" y="50">reckon, 2026-09-15 to 2026-09-29, taken in one process per arm on one cache directory</text>
+
+  <line class="grid" x1="90" y1="330" x2="700" y2="330"/>
+  <line class="grid" x1="90" y1="286.7" x2="700" y2="286.7"/>
+  <line class="grid" x1="90" y1="243.3" x2="700" y2="243.3"/>
+  <line class="grid" x1="90" y1="200" x2="700" y2="200"/>
+  <line class="grid" x1="90" y1="156.7" x2="700" y2="156.7"/>
+  <line class="grid" x1="90" y1="113.3" x2="700" y2="113.3"/>
+  <text class="small" x="80" y="334" text-anchor="end">0</text>
+  <text class="small" x="80" y="290" text-anchor="end">100 s</text>
+  <text class="small" x="80" y="247" text-anchor="end">200 s</text>
+  <text class="small" x="80" y="204" text-anchor="end">300 s</text>
+  <text class="small" x="80" y="160" text-anchor="end">400 s</text>
+  <text class="small" x="80" y="117" text-anchor="end">500 s</text>
+  <line class="axis" x1="90" y1="330" x2="90" y2="70"/>
+
+  <rect class="cold" x="150" y="80" width="110" height="250" rx="2"/>
+  <text class="value" x="205" y="72" text-anchor="middle">576.9 s</text>
+  <text class="label" x="205" y="350" text-anchor="middle">cold</text>
+  <text class="small" x="205" y="366" text-anchor="middle">no cache</text>
+
+  <rect class="warm" x="360" y="327.7" width="110" height="2.3" rx="1"/>
+  <text class="value" x="415" y="319" text-anchor="middle">5.2 s</text>
+  <text class="label" x="415" y="350" text-anchor="middle">warm, same head</text>
+  <text class="small" x="415" y="366" text-anchor="middle">both layers served</text>
+
+  <rect class="warm" x="570" y="322.7" width="110" height="7.3" rx="1"/>
+  <text class="value" x="625" y="314" text-anchor="middle">16.9 s</text>
+  <text class="label" x="625" y="350" text-anchor="middle">warm, one new commit</text>
+  <text class="small" x="625" y="366" text-anchor="middle">both layers extended</text>
+
+  <line class="deadline" x1="90" y1="317" x2="700" y2="317"/>
+  <text class="deadline-text" x="700" y="310" text-anchor="end">30 s read deadline</text>
+</svg>
