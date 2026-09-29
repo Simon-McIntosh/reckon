@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" font-family="sRGB, Helvetica, Arial, sans-serif">
+  <style>
+    .box { fill: #f5f7fb; stroke: #3b5b9a; stroke-width: 1.5; rx: 6; }
+    .fail { fill: #fdecec; stroke: #b3413b; stroke-width: 1.5; rx: 6; }
+    .good { fill: #eaf7ee; stroke: #2f7d46; stroke-width: 1.5; rx: 6; }
+    .lbl { font-size: 13px; fill: #14213d; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; fill: #14213d; }
+    .h { font-size: 16px; font-weight: 700; fill: #14213d; }
+    .arrow { stroke: #47607f; stroke-width: 1.6; fill: none; marker-end: url(#a); }
+    .cap { font-size: 12px; fill: #4a5568; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#47607f"/>
+    </marker>
+  </defs>
+
+  <text x="24" y="30" class="h">A. write_json_atomically — the chmod-failure branch</text>
+  <rect class="box" x="24"  y="52" width="150" height="46"/>
+  <text x="40" y="80" class="lbl">create unique</text>
+  <text x="40" y="94" class="mono">sibling .tmp</text>
+
+  <rect class="fail" x="212" y="52" width="150" height="46"/>
+  <text x="228" y="80" class="lbl">chmod(mode)</text>
+  <text x="228" y="94" class="mono">raises →</text>
+
+  <rect class="box" x="400" y="52" width="150" height="46"/>
+  <text x="416" y="80" class="lbl">render + fsync</text>
+  <text x="416" y="94" class="mono">into handle</text>
+
+  <rect class="box" x="588" y="52" width="150" height="46"/>
+  <text x="604" y="80" class="lbl">rename over</text>
+  <text x="604" y="94" class="mono">destination</text>
+
+  <rect class="box" x="776" y="52" width="160" height="46"/>
+  <text x="792" y="80" class="lbl">[fsync parent]</text>
+  <text x="792" y="94" class="mono">optional</text>
+
+  <path class="arrow" d="M174,75 H206"/>
+  <path class="arrow" d="M362,75 H394"/>
+  <path class="arrow" d="M550,75 H582"/>
+  <path class="arrow" d="M738,75 H770"/>
+
+  <rect class="fail" x="212" y="140" width="290" height="52"/>
+  <text x="228" y="163" class="lbl">before: descriptor closed,</text>
+  <text x="228" y="181" class="mono">.dest.json.&lt;pid&gt;.&lt;hex&gt;.tmp left on disk</text>
+  <rect class="good" x="520" y="140" width="330" height="52"/>
+  <text x="536" y="163" class="lbl">after: descriptor closed and</text>
+  <text x="536" y="181" class="mono">candidate.unlink(missing_ok=True)</text>
+  <path class="arrow" d="M287,100 V136"/>
+  <path class="arrow" d="M287,100 C420,118 640,120 685,136"/>
+
+  <text x="24" y="248" class="h">B. the zone test — text shape vs parsed tzinfo</text>
+  <rect class="box" x="24" y="266" width="360" height="40"/>
+  <text x="40" y="291" class="mono">2026-09-29T01:02:03+00:00:30</text>
+  <path class="arrow" d="M384,286 H440"/>
+
+  <rect class="fail" x="440" y="262" width="240" height="200"/>
+  <text x="456" y="286" class="lbl">before — text shape</text>
+  <text x="456" y="308" class="mono">[Zz]|[+-]dd:?dd$</text>
+  <text x="456" y="330" class="cap">offset ends in :30 → no match</text>
+  <text x="456" y="356" class="lbl">reads as “names no zone”</text>
+  <text x="456" y="382" class="mono">query → (None, "unknown")</text>
+  <text x="456" y="402" class="mono">rollout → naive 01:02:03</text>
+
+  <rect class="good" x="700" y="262" width="236" height="200"/>
+  <text x="716" y="286" class="lbl">after — parsed tzinfo</text>
+  <text x="716" y="308" class="mono">parse_iso(text).tzinfo</text>
+  <text x="716" y="330" class="cap">offset +00:00:30 → aware</text>
+  <text x="716" y="356" class="lbl">reads as “states a zone”</text>
+  <text x="716" y="382" class="mono">query → (…01:01:33+00:00,</text>
+  <text x="716" y="400" class="mono">          "utc")</text>
+  <text x="716" y="422" class="mono">rollout → aware 01:01:33+00:00</text>
+</svg>
