@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="144">
+<meta name="plan-version" content="145">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -634,6 +634,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260929T141906421295-a-resumed-run-counts-as-working" data-who="reckon-build" data-when="2026-09-29T16:15:33.482Z">
     <div class="r-comment-body"><p>9bf9d9eb and 16923c23 — reckon/crew/recovery.py gains `_worker_launched_after_manifest` (the run's recorded worker launch time against the manifest's mtime) and a `superseded_manifest` arm of `deferred_outcome`, so a terminal manifest older than the worker that would have written it belongs to the superseded attempt; tests/test_a_resumed_run_counts_as_working.py covers the five cases, including the launch order that must not defer. No fragment and no figure: this node's done-when names no artifact, so the landing record is this line.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20260929T161624682607-review-of-a-resumed-run-counts-as-working" data-who="reckon-build" data-when="2026-09-29T16:44:10.322Z">
+    <div class="r-comment-body"><p>Independent review of run r-20260929T141906421295-a-resumed-run-counts-as-working (base 89af9522d0d836837abfce62b7e35265c9427393, head 16923c23ddd3dd5d03736670ca5ce7632a8b8144, reviewed manifest sha256 7360d11b334327732cbc159175ef3efbcc76b4f47f1c556318dbf56b95643a6d, 9197 bytes, unchanged since before the record was written and re-read afterwards) stored as a parsed record at the revision-keyed path and byte-identically at the legacy path beside it, 21169 bytes, sha256 80d95111a4f8e4fc1228e5628dc03ec8d7755d7f05208f67594e22e961dbb6ac — scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 20 (total 97), all six checklist items carried, two findings. The goal&#x27;s four clauses each verified: (a) a live worker launched after the manifest was last written keeps today&#x27;s classification and obligation, and the opposite order — a live worker launched before it — is now driven by tests/test_a_resumed_run_counts_as_working.py:222-252, which passes at head; (b) the always-True mutation of the launch comparison reddens exactly that new case; (c) the always-False mutation (classify from the manifest status alone) reddens exactly the three resumed-run cases; (d) both control logs are admitted by the promotion reader and the manifest&#x27;s gate records resolve through the review reader. Findings: manifest.md:20 carries no tests field, so reckon crew check-manifest reports ok false — reproduced; and the two scratch-tree control logs (evidence/negative_control.log:2) name their tree and full command but not module.__file__ nor cwd, with no measurement_module/measurement_cwd in the manifest, though each control&#x27;s failing ids are ones the head arm passes, which only holds if the mutation was in the imported module.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T130204463138-ticker-row-is-one-aligned-transition" data-who="reckon-build" data-when="2026-09-25T13:46:08Z">
     <div class="r-comment-body"><p>each ticker row is one transition, from → to on an aligned arrow with fixed columns on both sides, chained per run on the pane's last shown state, with no action word; 266 passed; review 86, whose three findings (stale width comment at ticker.py:339, a test assertion that cannot fail, and a wrong rendered-case count in the evidence) go to the next ticker node</p></div>
