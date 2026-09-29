@@ -5047,17 +5047,30 @@ def _control_failure_ids(log_text: str) -> set[str]:
     return review_module._pytest_failure_ids(log_text)
 
 
-def _baseline_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str]:
-    """The failing tests the manifest records for the baseline.
+def _baseline_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str] | None:
+    """The failing tests the manifest records for the baseline, or ``None``.
 
     The baseline is the fallback arm a control is compared against when the
-    manifest records no readable head arm. A run that recorded no baseline
-    observation has nothing on record as failing, so every failure its control
+    manifest records no readable head arm. A manifest that recorded no
+    ``baseline_suite`` at all observed nothing, so every failure its control
     names is one the baseline does not.
+
+    An arm that is recorded but does not declare its run complete is a
+    different fact: the run may have been interrupted, so the ids it lists are
+    not the set it failed and the arm says nothing about what it passed.
+    Completion is asked the way the head arm asks it — a literal ``True``,
+    never a truthy stand-in — so an arm that omits ``completed`` or carries
+    null is unreadable here, and ``None`` says so. Reading such an arm as
+    complete would either trust the ids of a half-run or, read as an empty set,
+    admit every control it was meant to refuse. ``None`` therefore decides no
+    control: the caller falls through to the head arm when one is readable, and
+    refuses when neither is.
     """
     observation = None if manifest is None else manifest.get("baseline_suite")
     if not isinstance(observation, Mapping):
         return set()
+    if observation.get("completed") is not True:
+        return None
     return {
         review_module.canonical_node_id(str(test_id).strip())
         for test_id in observation.get("failure_ids") or ()
@@ -5121,7 +5134,12 @@ def _require_declared_negative_control(
     run's own after measurement, so a control that reddens a case written
     before the repair is admitted even though the baseline, taken over the
     unfixed tree, fails that case too; the baseline comparison decides only
-    when the manifest records no readable head arm. Neither fact is inferred —
+    when the manifest records no readable head arm. An arm is readable only when
+    it declares its run complete — a literal ``True``, never a truthy stand-in —
+    so neither an ``after_suite`` nor a ``baseline_suite`` that omits the key or
+    carries null decides anything, and when both are unreadable the control is
+    refused rather than admitted against a comparison that was never made.
+    Neither fact is inferred —
     a log with no exit record and a log naming no failing test id each state
     too little to admit the control, and a bare failing count is not
     evidence that either fact holds. Wording cannot carry either fact, so a
@@ -5198,15 +5216,29 @@ def _require_declared_negative_control(
     control_ids = _control_failure_ids(text)
     head_ids = _head_suite_failure_ids(manifest)
     baseline_ids = _baseline_suite_failure_ids(manifest)
-    reference_ids = baseline_ids if head_ids is None else head_ids
-    added = sorted(control_ids - reference_ids)
+    # The head arm decides the control whenever it is readable; the baseline is
+    # the fallback only when it is not. ``None`` from either reader means the arm
+    # is unreadable, so when both are unreadable nothing is left to compare
+    # against and the control cannot be admitted on a comparison that was never
+    # made: ``reference_ids`` stays ``None`` and the refusal below carries it.
+    if head_ids is not None:
+        reference_ids: set[str] | None = head_ids
+    else:
+        reference_ids = baseline_ids
+    added = [] if reference_ids is None else sorted(control_ids - reference_ids)
     recorded_exit = _recorded_exit_status(text)
     check["control_exit_status"] = recorded_exit
     check["control_failure_ids"] = sorted(control_ids)
-    check["baseline_failure_ids"] = sorted(baseline_ids)
+    if baseline_ids is not None:
+        check["baseline_failure_ids"] = sorted(baseline_ids)
     if head_ids is not None:
         check["head_failure_ids"] = sorted(head_ids)
-    check["comparison_arm"] = "baseline_suite" if head_ids is None else "after_suite"
+    if reference_ids is None:
+        check["comparison_arm"] = "none"
+    elif head_ids is None:
+        check["comparison_arm"] = "baseline_suite"
+    else:
+        check["comparison_arm"] = "after_suite"
     check["added_failure_ids"] = added
     # Both facts have to come from something only the run could have written: a
     # log with no EXIT record says nothing about whether its command failed,
@@ -5221,6 +5253,13 @@ def _require_declared_negative_control(
         unexplained = "it records EXIT=0, so its run did not fail"
     elif not control_ids:
         unexplained = "it names no failing test id, so what broke is unknown"
+    elif reference_ids is None:
+        unexplained = (
+            "no readable comparison arm is recorded — neither after_suite nor "
+            "baseline_suite declares the run complete — so it adds no failure "
+            "against an arm the gate can read, and the failure it names "
+            f"({', '.join(sorted(control_ids))}) is one nothing compares"
+        )
     elif head_ids is not None and not added:
         unexplained = (
             "it adds no failure to the head arm's: every test it names "
@@ -5240,7 +5279,8 @@ def _require_declared_negative_control(
             "is admitted on its facts alone — a non-zero exit record and at least "
             "one failing test id the head arm does not fail, falling back to the "
             "baseline's failing ids only when the manifest records no readable "
-            "head arm — and neither fact is "
+            "head arm, an arm being readable only when it declares its run "
+            "complete — and neither fact is "
             "inferred from the log's wording or from a bare failing count. Re-run "
             "the declared mutation and keep the log it produced, with the "
             "capture's EXIT=<n> record and the runner's own list of which tests "

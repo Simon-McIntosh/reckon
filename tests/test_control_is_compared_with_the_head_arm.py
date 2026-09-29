@@ -26,6 +26,14 @@ nothing — the same mapping the strict arm validator refuses. So cases (f) to (
 hold one manifest that differs only in that key: absent and null leave the
 decision with the baseline comparison, which refuses the very same control that
 a declared-complete head arm admits.
+
+The same rule holds on both arms. A ``baseline_suite`` that omits the key or
+carries null is unreadable too, so it is not the empty arm a manifest with no
+baseline at all records: an unreadable baseline decides no control rather than
+the absence of one. When a manifest records no readable arm of either kind the
+comparison was never made, which admits nothing, so cases (i) and (j) hold one
+unreadable baseline per form and assert the refusal — the control that a
+declared-complete baseline would admit on the same log.
 """
 
 from __future__ import annotations
@@ -275,7 +283,47 @@ def test_an_after_suite_declaring_completion_keeps_the_head_arm_decision(
 
     assert control["verdict"] == "matched"
     assert control["comparison_arm"] == "after_suite"
-    # The baseline fails the id the control reddens, which is why the arm that
-    # decides matters: this is the test-first shape the two cases above refuse.
+    # The baseline fails the id the control reddens, which is why the arms that
+    # decide matter: this is the test-first shape the two cases above refuse.
     assert control["baseline_failure_ids"] == [TEST_FIRST_CASE]
     assert control["added_failure_ids"] == [TEST_FIRST_CASE]
+
+
+@pytest.mark.parametrize(
+    "baseline",
+    [
+        _arm_without_completed_key([KNOWN_CASE], revision="1111111"),
+        {**_arm([KNOWN_CASE], revision="1111111"), "completed": None},
+    ],
+    ids=["absent-key", "null"],
+)
+def test_a_baseline_that_declares_no_completion_decides_no_control(
+    tmp_path: Path, baseline: dict
+) -> None:
+    """(i)/(j) An unreadable baseline is not an empty arm.
+
+    The id the control reddens is one this baseline does not list, so read as
+    complete it would admit the control. Read as unreadable it decides nothing,
+    and with no head arm either there is no comparison left to admit it on.
+    """
+    with pytest.raises(CrewError) as refusal:
+        _gate(tmp_path, log_text=_red_log(PASSED_CASE), baseline=baseline)
+
+    message = str(refusal.value)
+    assert "no readable comparison arm" in message
+    assert PASSED_CASE in message
+
+
+def test_a_declared_complete_baseline_admits_the_same_control(
+    tmp_path: Path,
+) -> None:
+    """The contrast the two cases above turn on: the key alone changes the verdict."""
+    control = _gate(
+        tmp_path,
+        log_text=_red_log(PASSED_CASE),
+        baseline=_arm([KNOWN_CASE], revision="1111111"),
+    )
+
+    assert control["verdict"] == "matched"
+    assert control["comparison_arm"] == "baseline_suite"
+    assert control["added_failure_ids"] == [PASSED_CASE]
