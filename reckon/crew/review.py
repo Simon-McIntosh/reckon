@@ -491,6 +491,21 @@ _HEAD_LOG_FIELD = "after_suite"
 # field's JSON object, or from a ``log_path`` line written beneath the field.
 _LOG_PATH_KEY = "log_path"
 
+# Within a suite field, the key naming the command that produced the log. The
+# command is where an arm records the directory it ran in.
+_COMMAND_KEY = "command"
+
+# The manifest field naming the working directory a measurement resolved from,
+# which a worker running a gate or a base arm in a scratch tree records.
+_MEASUREMENT_CWD_FIELD = "measurement_cwd"
+
+# The token that pins a recorded command's working directory, in the two
+# spellings ``env`` accepts. The match is anchored on ``env`` so a ``-C`` flag
+# belonging to some other tool in the same command is not mistaken for it.
+_ENV_CHDIR_RE = re.compile(
+    r"\benv\b[^\n;|&]*?(?:-C|--chdir=)\s*(?P<directory>[^\s'\";|&]+)"
+)
+
 _MANIFEST_FILE_NAME = "manifest.md"
 
 # The manifest fields that carry the observation rather than prose about it.
@@ -524,7 +539,51 @@ _CWD_COMPONENTS = ("", ".", "..")
 _REPO_DIRECTORY_NAME = Path(__file__).resolve().parents[2].name
 
 
-def canonical_node_id(node_id: str) -> str:
+# The separator a recorded working directory is split on. Its components are
+# what a leading id component is matched against: pytest prints a summary line's
+# id relative to the root directory it resolved, which can sit above the arm's
+# own working directory, so a plain relative spelling may open with that
+# directory's trailing components. An arm run as ``env -C /tmp/rcq2-base`` whose
+# root directory resolved to ``/tmp`` printed ``rcq2-base/tests/x.py`` where the
+# arm at the repository root printed ``tests/x.py``. The tail is what tells that
+# prefix apart from a plain repository-relative spelling — the repository
+# directory name above is the one instance of it that needs no recording.
+_DIRECTORY_SEPARATOR = "/"
+
+
+def _recorded_directory_tail(arm_directory: str | Path | None) -> tuple[str, ...]:
+    """Return the components of a recorded working directory, outermost first."""
+    text = str(arm_directory or "").replace("\\", _DIRECTORY_SEPARATOR).strip()
+    return tuple(
+        part for part in text.split(_DIRECTORY_SEPARATOR) if part not in ("", ".")
+    )
+
+
+def _strip_recorded_directory(path: str, arm_directory: str | Path | None) -> str:
+    """Return ``path`` without the leading components the arm's own directory contributed.
+
+    The longest run of leading components that reproduces the tail of the
+    recorded directory is removed, and the rest of the path is left for the
+    caller to reduce as it would any other spelling. Removing the whole run
+    rather than one component keeps a scratch tree nested below the root
+    directory the log resolved against — ``tmp/rcq2-base/tests/x.py`` — reading
+    as one test with the id an arm at the repository root printed, while a path
+    whose leading components share no suffix with the record
+    (``pkg/tests/x.py``) is untouched and stays a different test. A path the
+    strip would empty keeps its own spelling, so an id naming the directory
+    itself is still compared rather than reduced to nothing.
+    """
+    tail = _recorded_directory_tail(arm_directory)
+    if not tail:
+        return path
+    components = path.split(_DIRECTORY_SEPARATOR)
+    for length in range(len(tail), 0, -1):
+        if length < len(components) and components[:length] == list(tail[-length:]):
+            return _DIRECTORY_SEPARATOR.join(components[length:])
+    return path
+
+
+def canonical_node_id(node_id: str, arm_directory: str | Path | None = None) -> str:
     """Return a pytest node id in the repository-relative form the count compares.
 
     A gate log carries whatever spelling the command that wrote it printed, and
@@ -535,24 +594,28 @@ def canonical_node_id(node_id: str) -> str:
     verbatim, one test reads as two, and a run that added nothing reads as
     having added failures — which caps its total below the promotion floor.
 
-    Two prefixes are the working directory's contribution rather than part of
-    the path, and both are removed. A path opening with an absolute or dot
+    Three prefixes are the working directory's contribution rather than part of
+    the path, and all are removed. A path opening with an absolute or dot
     component keeps the sub-path from its last ``tests`` component onward,
     because everything above the anchor there came from where the command ran.
     A path opening with the repository's own directory name has that one
     component removed, which is what an arm invoked from the repository's
-    parent printed. Any other plain relative spelling is kept whole: reducing
-    it would merge a package's own ``pkg/tests/x.py`` into ``tests/x.py``, and
-    an addition under one would read as one the other already had. Separators
-    are normalised to ``/`` in every case. The ``::`` segments and
-    parametrisation brackets are returned untouched, because they are what
-    tells apart two tests sharing a file. An id carrying no ``tests`` component
-    cannot be resolved against the repository and is kept verbatim: it is still
-    compared, under the spelling its own log used, rather than dropped from the
-    difference.
+    parent printed. A path opening with the trailing components of
+    ``arm_directory`` — the working directory the arm's own record names — has
+    those removed, which is what an arm run inside a scratch tree printed when
+    the log's root directory resolved above it. Any other plain relative
+    spelling is kept whole: reducing it would merge a package's own
+    ``pkg/tests/x.py`` into ``tests/x.py``, and an addition under one would read
+    as one the other already had. Separators are normalised to ``/`` in every
+    case. The ``::`` segments and parametrisation brackets are returned
+    untouched, because they are what tells apart two tests sharing a file. An id
+    carrying no ``tests`` component cannot be resolved against the repository and
+    is kept verbatim: it is still compared, under the spelling its own log used,
+    rather than dropped from the difference.
     """
     path, separator, segments = node_id.partition("::")
     path = path.replace("\\", "/")
+    path = _strip_recorded_directory(path, arm_directory)
     components = path.split("/")
     if len(components) > 1 and components[0] == _REPO_DIRECTORY_NAME:
         components = components[1:]
@@ -565,7 +628,9 @@ def canonical_node_id(node_id: str) -> str:
     return path + separator + segments
 
 
-def _pytest_failure_ids(log_text: str) -> set[str]:
+def _pytest_failure_ids(
+    log_text: str, arm_directory: str | Path | None = None
+) -> set[str]:
     """Return the pytest node ids a gate log reports FAILED or ERROR.
 
     A pytest summary line is one node id per line prefixed ``FAILED`` (or
@@ -573,13 +638,15 @@ def _pytest_failure_ids(log_text: str) -> set[str]:
     line, so the whole token after the prefix is taken and surrounding
     whitespace is stripped. Both logs of a difference are read through
     :func:`canonical_node_id`, so the two sides are compared as ids rather than
-    as the working directory each arm happened to be invoked from.
+    as the working directory each arm happened to be invoked from, and the
+    directory this arm's own record names is the one its ids are reduced
+    against.
     """
     ids: set[str] = set()
     for raw in log_text.splitlines():
         match = _GATE_FAILURE_RE.match(raw.strip())
         if match:
-            ids.add(canonical_node_id(match.group(1)))
+            ids.add(canonical_node_id(match.group(1), arm_directory))
     return ids
 
 
@@ -714,7 +781,11 @@ def _prose_id_token(raw: str) -> str | None:
     return token if "::" in token else None
 
 
-def _retires_id(text: str, test_id: str) -> bool:
+def _retires_id(
+    text: str,
+    test_id: str,
+    arm_directories: tuple[str | Path | None, ...] = (),
+) -> bool:
     """Whether retirement prose names a test id in full.
 
     The prose spelling and the counted id are compared as canonical forms
@@ -726,14 +797,23 @@ def _retires_id(text: str, test_id: str) -> bool:
     through :func:`canonical_node_id`. Each token is compared as a whole, so a
     shorter id is not retired by a longer one that contains it. The sentence is
     split on the separators a manifest's own list fields use, so a single
-    sentence retiring several ids retires each of them.
+    sentence retiring several ids retires each of them. Each recorded working
+    directory is applied to the token as well, so a manifest that spells the id
+    with the prefix the arm's own tree contributed still retires the counted id.
     """
     if not text or not test_id:
         return False
     target = canonical_node_id(test_id)
+    directories = tuple(directory for directory in arm_directories if directory)
     for raw in _PROSE_TOKEN_SPLIT_RE.split(text):
         token = _prose_id_token(raw)
-        if token is not None and canonical_node_id(token) == target:
+        if token is None:
+            continue
+        if canonical_node_id(token) == target:
+            return True
+        if any(
+            canonical_node_id(token, directory) == target for directory in directories
+        ):
             return True
     return False
 
@@ -870,6 +950,9 @@ def _partial_review_path(
 def added_failures_from_gate_logs(
     base_text: str | None,
     head_text: str | None,
+    *,
+    base_directory: str | Path | None = None,
+    head_directory: str | Path | None = None,
 ) -> tuple[int | None, list[str]]:
     """Return the added-failure count and ids the two gate logs support.
 
@@ -878,10 +961,18 @@ def added_failures_from_gate_logs(
     both logs are absent, and a count that was never taken must not be stored as
     a measured zero. A count of ``0`` with no ids means both logs were read and
     the run added no failing test.
+
+    Each log is read against its own arm's recorded working directory, so ids an
+    arm printed from inside a scratch tree are compared in the
+    repository-relative form rather than under the prefix that tree
+    contributed.
     """
     if base_text is None or head_text is None:
         return None, []
-    added = sorted(_pytest_failure_ids(head_text) - _pytest_failure_ids(base_text))
+    added = sorted(
+        _pytest_failure_ids(head_text, head_directory)
+        - _pytest_failure_ids(base_text, base_directory)
+    )
     return len(added), added
 
 
@@ -891,6 +982,8 @@ def annotate_added_failures(
     base_text: str | None,
     head_text: str | None,
     retirement_text: str = "",
+    base_directory: str | Path | None = None,
+    head_directory: str | Path | None = None,
 ) -> dict[str, Any]:
     """Store the reviewed run's added failures on ``record`` and cap its total.
 
@@ -904,9 +997,18 @@ def annotate_added_failures(
     The count is recorded as unmeasured, never as zero, when either log is
     absent; the total is left alone in that case. The returned record is a copy;
     the caller's mapping is not mutated.
+
+    ``base_directory`` and ``head_directory`` are the working directories the
+    two arms' own records name, and every id on the count's two sides is reduced
+    against the arm that printed it.
     """
     result = dict(record)
-    count, added_ids = added_failures_from_gate_logs(base_text, head_text)
+    count, added_ids = added_failures_from_gate_logs(
+        base_text,
+        head_text,
+        base_directory=base_directory,
+        head_directory=head_directory,
+    )
     result["added_failure_count"] = count
     result["added_failure_ids"] = added_ids
     if count is None:
@@ -919,7 +1021,9 @@ def annotate_added_failures(
     if count == 0:
         return result
     unretired = [
-        test_id for test_id in added_ids if not _retires_id(retirement_text, test_id)
+        test_id
+        for test_id in added_ids
+        if not _retires_id(retirement_text, test_id, (base_directory, head_directory))
     ]
     if not unretired:
         result["added_failures_note"] = (
@@ -934,6 +1038,73 @@ def annotate_added_failures(
         f"{count} failing test(s) not retired by name ({', '.join(unretired)})"
     )
     return result
+
+
+def _recorded_working_directory(manifest_text: str) -> str | None:
+    """Return the working directory the manifest records for a measurement, if any.
+
+    The field carries a bare path on its own line, which is the shape the
+    dispatch contract's manifest writes. A value that opens as a JSON object or
+    list is a structured record rather than a path and is not read as one.
+    """
+    for part in _manifest_field_lines(manifest_text, _MEASUREMENT_CWD_FIELD):
+        named = part.strip().strip("'\"")
+        if named and not named.startswith(("{", "[")):
+            return named
+    return None
+
+
+def _suite_value(manifest_text: str, field: str, key: str) -> str | None:
+    """Return one named value from a suite field, or ``None`` when it names none.
+
+    The suite fields are written in the two shapes a manifest produces: a JSON
+    object on the field's own line, which is what the dispatch contract's
+    manifest writes, and a ``key: value`` line indented beneath the field. Both
+    are read, so a worker writing either shape has its record understood.
+    """
+    parts = _manifest_field_lines(manifest_text, field)
+    if not parts:
+        return None
+    first = parts[0]
+    if first.startswith("{"):
+        try:
+            loaded = json.loads(first)
+        except json.JSONDecodeError:
+            loaded = None
+        if isinstance(loaded, Mapping):
+            named = str(loaded.get(key) or "").strip()
+            if named:
+                return named
+    for part in parts[1:]:
+        match = _MANIFEST_FIELD_RE.match(part)
+        if match and match.group("key") == key:
+            named = match.group("value").strip().strip("'\"")
+            if named:
+                return named
+    return None
+
+
+def _arm_directory(manifest_text: str, field: str) -> str | None:
+    """Return the working directory one arm's own record names, or ``None``.
+
+    Two recorded facts can name it. A gate command pinning the run with ``env
+    -C <directory>`` decides the directory the arm ran in. The manifest's own
+    ``measurement_cwd`` names the tree a measurement in a scratch tree resolved
+    from, and it is attributed to the arm whose command mentions it — the arm
+    that ran elsewhere is left without one rather than given its sibling's tree,
+    because the reduction is applied per arm and a directory attributed to the
+    wrong arm reduces that arm's ids.
+    """
+    recorded = _recorded_working_directory(manifest_text)
+    command = _suite_value(manifest_text, field, _COMMAND_KEY) or ""
+    if not command:
+        return recorded
+    match = _ENV_CHDIR_RE.search(command)
+    if match:
+        return match.group("directory")
+    if recorded and recorded in command:
+        return recorded
+    return None
 
 
 def _run_directory(reviewed_run_id: str) -> Path | None:
@@ -964,6 +1135,10 @@ def annotate_review_of_run(
     count that was never taken. A manifest that is present but names no base log
     or no head log yields an explicit unmeasured count, which is a state the
     record can carry.
+
+    Each log is read against the working directory its own arm's record names,
+    so an arm run inside a scratch tree is compared with the arm at the
+    repository root rather than under the tree's prefix.
     """
     run_directory = _run_directory(reviewed_run_id)
     if run_directory is None:
@@ -985,6 +1160,8 @@ def annotate_review_of_run(
         base_text=base_text,
         head_text=head_text,
         retirement_text=_manifest_prose(manifest_text),
+        base_directory=_arm_directory(manifest_text, _BASE_LOG_FIELD),
+        head_directory=_arm_directory(manifest_text, _HEAD_LOG_FIELD),
     )
 
 
