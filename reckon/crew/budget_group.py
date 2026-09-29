@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from reckon._timestamps import parse_utc
 from reckon.crew import bar as bar_module
 from reckon.crew import pace as pace_module
 from reckon.crew import reserve as reserve_module
@@ -362,22 +363,19 @@ def _observed_moment(stamp: object) -> datetime | None:
     An epoch-seconds number and an ISO-8601 string are both accepted; a string
     carrying no zone is read as UTC.  Anything else — a missing stamp, an
     unparsable one, a bool — returns ``None`` so an undated reading never
-    competes with a dated sibling for the group's position.
+    competes with a dated sibling for the group's position. The shared parser
+    is tolerant of surrounding space and of a lowercase zone designator; this
+    reader's recorded contract refuses both.
     """
     if isinstance(stamp, bool):
         return None
     if isinstance(stamp, (int, float)):
-        try:
-            return datetime.fromtimestamp(float(stamp), tz=UTC)
-        except (OverflowError, OSError, ValueError):
-            return None
+        return parse_utc(stamp)
     if not isinstance(stamp, str):
         return None
-    try:
-        parsed = datetime.fromisoformat(stamp)
-    except ValueError:
+    if stamp != stamp.strip() or stamp.endswith("z"):
         return None
-    return _aware(parsed)
+    return parse_utc(stamp)
 
 
 def _aware(moment: datetime) -> datetime:
