@@ -13,8 +13,9 @@
   <meta name="plan-recorded-at" content="2026-09-29">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktree; gates run against the root environment's interpreter">
-  <meta name="plan-commits" content="a366947c">
+  <meta name="plan-commits" content="a366947c,5caf7559,6f97c185">
   <meta name="plan-artifacts" content="reckon/crew/standing_suite.py,tests/test_standing_suite.py,reckon/flight.py,reckon/_flight_schema.py,reckon/schema/flight.yaml,docs/_shared/flight.schema.json,docs/state/reckon/flight.yaml">
+  <meta name="plan-reviewed-by" content="r-20260928T233552756785">
   <title>The suite is declared and recorded — landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -70,6 +71,29 @@
     <code>reckon.crew.promotion</code>'s. Both are imported, not copied, and neither file was
     edited. The collection line is read in both its plain ("collected 12 items") and
     pytest-xdist ("[12 items]") forms.</p>
+
+    <h3>A collection failure is decided from evidence, never from a non-zero exit</h3>
+    <p>Under <code>-q</code> — the form reckon's own suite declares — pytest prints neither the
+    plain collection line nor the xdist one. So the collected count reads as absent unless
+    something else supplies it, and the first version of this hold collapsed to "the exit status is
+    non-zero". That is wrong in the direction that matters: <strong>pytest exits 1 for a suite that
+    collected, ran and failed</strong>, and such a suite was then recorded as a collection failure
+    and held as one — the lighter tiers waiting on a suite that is merely red, which a writer knows
+    perfectly well what to do with.</p>
+    <p>The rule now in the module is a short one. Only three things mark a collection failure:</p>
+    <ul>
+      <li>pytest's own <code>errors during collection</code> line, printed inside its
+      <code>Interrupted:</code> banner;</li>
+      <li>exit status <code>5</code>, which pytest documents as "no tests collected";</li>
+      <li>any other non-zero status that is neither <code>0</code> nor <code>1</code>
+      <em>and</em> a summary showing no test ran.</li>
+    </ul>
+    <p>Exit <code>1</code> is deliberately not among them, and exit <code>2</code> alone is not
+    either — pytest uses 2 for an interruption, so it is a collection failure only when the summary
+    also shows nothing ran. The collected count is read from pytest's collection line when it
+    prints one and otherwise summed from the final summary counts, passed + failed + errors +
+    skipped + xfailed + xpassed. A run with no evidence of collection records zero, the honest
+    count, rather than an absent one.</p>
     <p>Promotion is deliberately <strong>not</strong> wired here. This node builds the declaration,
     the record and the hold; connecting the hold to the promotion path is separate work.</p>
   </section>
@@ -92,7 +116,15 @@
     <code>record_waiver</code> writes the waiver, carrying who excused it and why.</p>
     <p>The distinction that matters: a suite with one failing test is a <em>failing suite</em>, and
     a writer knows what to do with it. A suite that failed to collect is a suite that no longer
-    runs at all, and it is the failure this hold exists for.</p>
+    runs at all, and it is the failure this hold exists for. The rule that separates them is stated
+    in §&nbsp;recorded above, and it is why exit 1 is not a hold.</p>
+    <p>One case deliberately <strong>raises</strong> rather than returning <code>None</code>. When
+    no project name is passed and the checkout root resolves to no mounted project, the records
+    cannot be read at all, and answering "no hold" there would let a suite that failed to collect
+    read exactly like a suite that passed. <code>hold_reason</code> raises
+    <code>StandingSuiteError</code> naming the unresolved root; a caller that names the project
+    still gets its answer. That path was silent in the first version, and it is the same defect as
+    the one above — a true statement standing in for the one that was needed.</p>
   </section>
 
   <section id="measured">
@@ -115,29 +147,52 @@
         </tr>
         <tr>
           <td>head</td>
-          <td><code>a366947c</code>, committed head</td>
+          <td><code>6f97c185</code>, committed head</td>
           <td>pytest -q tests/test_standing_suite.py tests/test_flight.py</td>
-          <td>93 passed, 2 skipped — <code>EXIT=0</code>, no FAILED ids</td>
+          <td>95 passed, 2 skipped — <code>EXIT=0</code>, no FAILED ids</td>
         </tr>
         <tr>
           <td>negative control</td>
-          <td><code>a366947c</code> with <code>hold_reason</code> mutated to return
+          <td><code>6f97c185</code> with <code>hold_reason</code> mutated to return
           <code>None</code> whenever the latest record has <code>collection_failed</code></td>
           <td>pytest -q tests/test_standing_suite.py::test_a_collection_failure_is_recorded_and_holds_none_and_light</td>
           <td><code>EXIT=1</code>, <code>1 failed</code> — the test fails as required</td>
         </tr>
       </tbody>
     </table>
-    <p>The eight tests added by this node build throwaway projects under <code>tmp_path</code> and
-    run each with <code>sys.executable</code>, so nothing is written outside the test's own
-    temporary tree. They cover: the reader returning <code>None</code> when undeclared; the reader
-    refusing a malformed block by name; the declared budget converting to seconds; a collection
-    failure being recorded and holding <code>none</code> and <code>light</code> but not
-    <code>full</code>; a later passing run lifting the hold; a waiver lifting the hold; a run past
-    its budget being stopped with its process group gone; and the record landing under the project's
-    state tree.</p>
+    <p>The ten tests added by this node build throwaway projects under <code>tmp_path</code> and
+    run each with <code>sys.executable</code> or a generated script it starts, so nothing is
+    written outside the test's own temporary tree. They cover: the reader returning
+    <code>None</code> when undeclared; the reader refusing a malformed block by name; the declared
+    budget converting to seconds; a collection failure (a syntax error, run under <code>-q</code>)
+    being recorded with <code>collected==0</code> and holding <code>none</code> and
+    <code>light</code> but not <code>full</code>; <strong>a suite that collects, runs and fails
+    under <code>-q</code> recording a positive collected count, <code>failed==1</code> and
+    <code>collection_failed</code> false, and holding nothing</strong>; a later passing run lifting
+    the hold; a waiver lifting the hold; a run past its budget being stopped with its whole process
+    group gone; an unresolvable checkout root raising rather than reading as no hold; and the
+    record landing under the project's state tree.</p>
     <p>The full project suite was <strong>not</strong> run by this node; the wave close runs it once
     at the merged head, and that declaration is this node's own subject.</p>
+  </section>
+
+  <section id="review-round">
+    <h2>What a review round changed</h2>
+    <p>An independent review of the first landing scored it and named three defects, all repaired in
+    one round. Two were in the hold itself, and both had the same shape: a value absent from the
+    log read as a fact rather than as an absence. The collected count was one, because
+    <code>-q</code> prints no collection line; the project identity was the other, because an
+    unresolved root returned "no hold" for records it could not read. The repairs are stated under
+    §&nbsp;recorded and §&nbsp;holds, and each is covered by a case that fails without it. The third
+    named defect was a missing test, added.</p>
+    <p>Repairing them exposed a fourth, which is worth recording because it is the kind that reaches
+    a promotion arm as somebody else's failure. The over-budget case declared a pytest suite with a
+    one-second budget and had the inner test write its pid before sleeping. The head arm went red
+    <em>under load</em>: interpreter startup had consumed the budget before the test body ran, the
+    pid file was never written, and the case failed with <code>FileNotFoundError</code> against a
+    runner that was behaving correctly. It passed in three earlier runs on an idle machine. The
+    command is now the interpreter directly, writing its own pid and its child's before anything
+    else, which makes the group-reaping claim deterministic rather than dependent on machine load.</p>
   </section>
 
   <section id="notes">
@@ -154,7 +209,10 @@
     repository already uses for a run record, imported at call time. The writer named in the brief
     as living in <code>reckon/_store.py</code> is not present at this revision — that helper arrives
     with separate work — so the equivalent existing writer was used rather than a third one
-    introduced.</p>
+    introduced. <code>write_json_atomically</code> has since landed on <code>main</code> at
+    <code>7599e8bc</code>, after this node's base, so this call site keeps
+    <code>reckon.crew.runs._write_json</code> and joins the atomic-writer migration tracked by
+    <code>a-worker-reuses-before-it-writes</code> §3.</p>
   </section>
 </main>
 </body>
