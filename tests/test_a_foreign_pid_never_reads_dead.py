@@ -15,6 +15,11 @@ directory's worker record carries a pid but no host, so a foreign run whose
 number happened to be live here was handed proof of life this host cannot
 support, and its row read alive with the reading marked proven.
 
+The views share one narrowed reading rather than each taking a probe of its own:
+the directory row is classified through it, and a sprint's liveness asks it
+directly, so a pointer written on another machine cannot arrive alive in one
+view and unreadable in another.
+
 Each case below is paired with a control that differs in one fact, so what a
 failure names is the fact rather than a neighbour: a run launched here whose pid
 nothing holds must still read interrupted, and a foreign run whose end the
@@ -40,7 +45,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, runs
+from reckon.crew import directory, recovery, runs
 from tests import test_a_live_run_never_reads_dead as liveness
 from tests import test_stalled_row_names_liveness as stalled
 
@@ -156,6 +161,17 @@ def _classify(record: dict, moment: float) -> tuple[dict, dict]:
         record, moment=moment, stall_seconds=STALL_SECONDS
     )
     return row, snapshot
+
+
+def _directory_row(run_id: str) -> dict:
+    """The directory view's own row for one run, wherever the read placed it."""
+    result = directory.directory(project=PROJECT)
+    rows = [
+        row for coordinator in result["coordinators"] for row in coordinator["runs"]
+    ] + list(result["unowned_runs"])
+    matches = [row for row in rows if row["run_id"] == run_id]
+    assert len(matches) == 1, matches
+    return matches[0]
 
 
 def test_a_run_launched_elsewhere_is_not_read_interrupted_with_retained_work(
@@ -310,3 +326,33 @@ def test_a_death_read_elsewhere_is_not_enough_for_the_retained_work_clause(
     assert proven is not None, "the clause no longer fires on a proven death"
     assert proven["reason"] == "dead-pid-with-retained-work", proven
     assert proven_commits == 1, proven_commits
+
+
+def test_the_directory_row_does_not_read_a_foreign_pid_as_alive(
+    tmp_path: Path,
+) -> None:
+    """The directory view reports liveness too, and reads it under the same gate.
+
+    The row is built from the pointer alone, so a probe taken here becomes the
+    run's liveness in it. The pid is a process this host really holds, so
+    nothing in the pointer's own facts keeps the row from reading alive; the one
+    fact that does is the host the run was launched on, which the pointer names
+    and this host's process table cannot answer for. The same pointer with the
+    host set to this one is the control: it reads alive, so the gate narrows the
+    reading rather than removing it.
+    """
+    run_id = "r-foreign-row-with-a-local-number"
+    with liveness._live_child() as local_pid:
+        pointer = _run_launched_elsewhere(tmp_path, run_id, pid=local_pid)
+        assert runs.process_alive(local_pid) is True, (
+            "the pointer's pid is not a live process on this host, so the "
+            "borrowed-life reading is not under test"
+        )
+        foreign_row = _directory_row(run_id)
+        pointer["launcher_host"] = HOST
+        runs._write_json(runs.pointer_path(run_id), pointer)
+        local_row = _directory_row(run_id)
+
+    assert foreign_row["process_alive"] is not True, foreign_row
+    assert foreign_row["process_alive"] is None, foreign_row
+    assert local_row["process_alive"] is True, local_row

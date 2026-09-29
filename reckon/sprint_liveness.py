@@ -21,7 +21,12 @@ from typing import Any
 from reckon._plan_html import parse_meta
 from reckon.crew import runs
 from reckon.crew.node import DEFAULT_WATCH_STALL_WINDOW, parse_duration
-from reckon.crew.recovery import _run_stream_mtime, _utc_seconds
+from reckon.crew.recovery import (
+    _run_exit_record,
+    _run_stream_mtime,
+    _utc_seconds,
+    local_liveness,
+)
 from reckon.crew.runs import list_live
 
 # The fleet reducer's words for a pointer that is carrying its sprint right now:
@@ -128,6 +133,25 @@ def _manifest_status(record: Mapping[str, Any]) -> str:
     return ""
 
 
+def _process_read_ended(record: Mapping[str, Any]) -> bool:
+    """Whether this host can read the run's process as ended.
+
+    A recent stream is not liveness on its own: a worker that died a moment ago
+    leaves one behind. The reading that says whether anything still runs is
+    taken through the same host gate the classifier uses, so the two views of
+    one run agree — the process table is asked only where the record's
+    launching host is this host, and a stored answer is not consulted on its
+    own, because the fleet read hands pointers on as they are stored and an
+    answer taken on another machine says nothing about the run. A run whose end
+    the supervisor recorded is ended wherever it ran: the exit record is the
+    account of the end rather than an inference from a missing process.
+    """
+    alive, proven = local_liveness(record)
+    if alive is not True and _run_exit_record(record) is not None:
+        return True
+    return proven and alive is False
+
+
 def _fallback_state(
     record: Mapping[str, Any], *, moment: float, stall_seconds: int
 ) -> str:
@@ -143,7 +167,7 @@ def _fallback_state(
     stream_mtime = _run_stream_mtime(record)
     recent = stream_mtime is not None and moment - stream_mtime <= stall_seconds
     phase = str(record.get("phase") or "")
-    if recent and record.get("process_alive") is not False:
+    if recent and not _process_read_ended(record):
         if phase == "starting":
             return "dispatched"
         if phase in {"working", "running"} or not phase:

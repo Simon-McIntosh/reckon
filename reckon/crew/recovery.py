@@ -3487,6 +3487,64 @@ def _reading_host() -> str:
     return socket.gethostname()
 
 
+def _launched_on_this_host(record: Mapping[str, Any]) -> bool:
+    """Whether this host is the one that issued the record's pid.
+
+    A pointer written before the launching host was recorded names none, and an
+    unnamed host cannot be shown to be this one.
+    """
+    return (
+        record.get("launcher_host") is not None
+        and str(record.get("launcher_host")) == _reading_host()
+    )
+
+
+def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
+    """The liveness this host can stand behind for one live pointer.
+
+    Returns ``(alive, proven)``. The process table answers only when the
+    record's launching host is this host: a pid is meaningful only on the
+    machine that issued it, and the crew home is shared across login nodes, so
+    asking a foreign process table — or carrying an answer taken there —
+    fabricates a verdict in both directions. Where the launching host cannot be
+    shown to be this host the stored answer is kept and ``proven`` is false,
+    which is no evidence either way rather than proof of death, and every
+    consumer that reads liveness from a pointer reads it here so one run cannot
+    read two ways across the views that render it.
+
+    A pointer pid that is gone does not yet end the work. The pointer names the
+    supervisor for a supervised launch while the worker pid lives on the run
+    directory's own worker record, and a supervisor that exits before its
+    worker takes the pointer pid with it — the recorded pid then answers for a
+    process that is gone while the work continues. The worker record is asked
+    next, on the same terms: it carries no host of its own and numbers are
+    reused across machines, so only a run launched here is read alive from it.
+
+    The recorded end is not folded in here. A caller that emits an exit record
+    reads it anyway, the reading above is what says whether the record applies,
+    and a resumed attempt reuses the run directory, so an earlier attempt's
+    record must not call the new worker dead.
+    """
+    launched_here = _launched_on_this_host(record)
+    if launched_here and record.get("pid"):
+        # The launched pid's kernel state is the authority at this instant, and
+        # the recorded start tick rules out a reused pid. A zombie entry answers
+        # not alive, composing with the narrowed probe rather than reviving an
+        # older answer.
+        alive = runs.record_process_alive(record)
+        expected_start = record.get("pid_start_time")
+        if alive is True and expected_start is not None:
+            alive = _process_start_time(record.get("pid")) == expected_start
+        proven = True
+    else:
+        alive = record.get("process_alive")
+        proven = False
+    if launched_here and alive is not True and _worker_record_liveness(record) is True:
+        alive = True
+        proven = True
+    return alive, proven
+
+
 def _run_chain_manifest_freshness(record: Mapping[str, Any]) -> tuple[bool, bool]:
     """Judge delivery against the first dispatch across the attempt chain."""
     try:
@@ -3862,51 +3920,14 @@ def classify_pointer(
     # asking git costs a subprocess, so live and settled delivery paths never pay.
     commits_beyond_base = 0
     # Liveness is read at the moment it is used, not carried from the fleet
-    # read that loaded the pointer. The process table answers only when the
-    # record's launching host is the reading host: a pid is meaningful only on
-    # the machine that issued it, and the crew home is shared across login
-    # nodes, so asking a foreign pid table fabricates a verdict in both
-    # directions. Where the launching host cannot be shown to be this host the
-    # stored answer is kept and the row carries that it is unproven — an
-    # unprovable answer is not proof of death.
-    stored_alive = record.get("process_alive")
-    launched_here = (
-        record.get("launcher_host") is not None
-        and str(record.get("launcher_host")) == _reading_host()
-    )
-    if launched_here and record.get("pid"):
-        # The run was launched here: the launched pid's kernel state is the
-        # authority at this instant, and the recorded start tick rules out a
-        # reused pid. A zombie entry answers not alive, composing with the
-        # narrowed probe rather than reviving the old answer.
-        alive = runs.record_process_alive(record)
-        expected_start = record.get("pid_start_time")
-        if alive is True and expected_start is not None:
-            alive = _process_start_time(record.get("pid")) == expected_start
-        liveness_proven = True
-        local_reading = True
-    else:
-        alive = stored_alive
-        liveness_proven = False
-        local_reading = False
-    # The pointer names the supervisor for a supervised launch while the worker
-    # pid lives on the run directory's own worker record. A supervisor that has
-    # exited before its worker takes the pointer pid with it — the recorded pid
-    # then answers for a process that is gone while the work continues — so a
-    # dead pointer pid is not proof the work is gone. The worker record is asked
-    # next, and only its answer may let a run read as dead.
-    #
-    # Its pid is read on this host, so the answer is evidence only for a run
-    # launched here. The worker record carries no host field of its own, and
-    # numbers are reused across machines: a foreign run whose pid happens to be
-    # held here would otherwise be handed proof of life this host cannot
-    # support, which is the mirror of reading a foreign pid as dead. The record
-    # is still read for a foreign run, because whether one exists is what
-    # advances the phase, but its answer does not become this host's reading.
+    # read that loaded the pointer, through the one host-gated reading every
+    # consumer shares.
+    alive, liveness_proven = local_liveness(record)
+    local_reading = liveness_proven
+    # The worker record is read again for the descendant check below, which
+    # asks whether anything runs under the worker: that answer is about the
+    # pid's children rather than about the run's liveness.
     worker_alive = _worker_record_liveness(record)
-    if alive is not True and worker_alive is True and launched_here:
-        alive = True
-        liveness_proven = True
     # Whether anything runs under the worker is the second half of the same
     # question, so it is read here rather than by each consumer: the pid asked
     # is the process the work happens in, which for a supervised launch is the

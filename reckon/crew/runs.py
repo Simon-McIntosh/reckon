@@ -504,9 +504,17 @@ def list_live(
     issued it, while the crew home is shared across login nodes, so a value
     written into that key would be read back by the classifier as its own
     observer's answer on a host that never issued the pid — from which a live
-    worker on another machine reads dead. Consumers derive liveness where they
-    read it, through ``classify_pointer`` or ``record_process_alive``, each
-    under its own host gate.
+    worker on another machine reads dead.
+
+    A consumer that reports a run's liveness derives it where it reads it,
+    through ``recovery.local_liveness`` or ``recovery.classify_pointer`` — which
+    reads it and supplies the row the fleet, the directory, the query and the
+    ticker all render — the one reading that asks the process table only when
+    the record's ``launcher_host`` is the reading host. ``record_process_alive``
+    is the bare probe beneath that gate: it asks this host's table about
+    whatever pid the record carries and performs no host check of its own, so it
+    may be used only where the pid's presence on this host is already
+    established — ``dispatch`` probing the process it has just spawned, say.
     """
     records = _list_live_records(project=project, phase=phase)
     if project is not None and phase is None:
