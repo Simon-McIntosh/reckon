@@ -1754,25 +1754,15 @@ def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:
     )
 
 
-def _first_changed_path_is_a_file(
-    manifest: Mapping[str, Any], record: Mapping[str, Any]
-) -> bool:
-    """Whether the first ``changed_paths`` entry names a file in the run's tree.
+def _path_exists_in_run_tree(name: str, record: Mapping[str, Any]) -> bool:
+    """Whether ``name`` resolves to something that exists in the run's tree.
 
-    The corroborating half of the declaration reading, and the one that holds
-    even when a value's shape looks like prose. A field whose first entry names a
-    file that exists in the promoted revision's tree is a path list whatever
-    else it resembles, so a run that really changed a file called ``none`` or
-    ``nil`` keeps the path and the commit it requires. A relative entry resolves
-    against the run's repository root, as the manifest's own convention has it,
-    and an absolute entry as written; a run that records no repository has no
-    tree to check and answers no.
+    A relative name resolves against the run's repository root, as the
+    manifest's own convention has it, and an absolute name as written. A run
+    that records no repository has no tree to check and answers no.
     """
-    items = [str(item).strip() for item in (manifest.get("changed_paths") or ())]
-    if not items or not items[0]:
-        return False
     root = str(record.get("repo") or record.get("worktree") or "").strip()
-    candidate = Path(items[0]).expanduser()
+    candidate = Path(name).expanduser()
     if not candidate.is_absolute():
         if not root:
             return False
@@ -1783,6 +1773,58 @@ def _first_changed_path_is_a_file(
         return False
 
 
+def _changed_path_entries(
+    manifest: Mapping[str, Any], record: Mapping[str, Any]
+) -> tuple[str, ...]:
+    """The ``changed_paths`` entries to judge as declarations of a path.
+
+    Usually the parsed list. But ``parse_manifest`` empties a field whose value
+    is exactly one absence word, so ``changed_paths: none`` arrives as an empty
+    list — and ``none``, ``nil``, ``n/a`` and ``-`` are all plausible filenames
+    a run might really have changed. The parsed list cannot then tell a node
+    that declared no path from one that changed a file of that name, and the
+    guard would stop before the tree is consulted. So for a role that carries no
+    repository work the raw value is read when the parsed list is empty: a value
+    that is a single token naming a file in the run's tree is returned here in
+    the list's place, and the run keeps the path and the commit that contains
+    it. A value of several tokens is a sentence, not a one-word path, and is
+    left to the shape reading.
+    """
+    items = tuple(str(item).strip() for item in (manifest.get("changed_paths") or ()))
+    if items:
+        return items
+    raw = _raw_manifest_field(_manifest_text(record), "changed_paths")
+    if raw is None:
+        return ()
+    token = raw.strip()
+    if not token or any(character.isspace() for character in token):
+        return ()
+    from reckon.crew.recovery import _pointer_role
+
+    if _pointer_role(record) not in _COMMITLESS_ROLES:
+        return ()
+    return (token,) if _path_exists_in_run_tree(token, record) else ()
+
+
+def _first_changed_path_is_a_file(
+    manifest: Mapping[str, Any], record: Mapping[str, Any]
+) -> bool:
+    """Whether the first ``changed_paths`` entry names a file in the run's tree.
+
+    The corroborating half of the declaration reading, and the one that holds
+    even when a value's shape looks like prose. The entries come from
+    ``_changed_path_entries``, so a bare ``changed_paths: none`` the list reader
+    emptied is judged by its raw token too. A first entry naming a file that
+    exists in the promoted revision's tree settles the field as a path list
+    whatever else it resembles, so a run that really changed a file called
+    ``none`` or ``nil`` keeps the path and the commit it requires.
+    """
+    entries = _changed_path_entries(manifest, record)
+    if not entries or not entries[0]:
+        return False
+    return _path_exists_in_run_tree(entries[0], record)
+
+
 def _changed_paths_declare_no_paths(
     manifest: Mapping[str, Any], record: Mapping[str, Any]
 ) -> bool:
@@ -1791,7 +1833,9 @@ def _changed_paths_declare_no_paths(
     Three tests, in order. A first entry that names a file in the promoted tree
     settles it as a path list at once — evidence the shape reading cannot
     overrule, because ``none`` and ``nil`` are plausible filenames and the shape
-    an absence word leaves can be spoofed by a path. A prose sentence that opens
+    an absence word leaves can be spoofed by a path. The entries are read
+    through ``_changed_path_entries``, so a bare ``changed_paths: none`` the
+    list reader emptied is judged by its raw token too. A prose sentence that opens
     with the declaration word — the shape ``_prose_changed_paths_name_no_paths``
     reads from the parsed list — is a no-paths declaration for any role, so a
     committing role keeps the entry-by-entry behaviour it has always had. A
@@ -1828,7 +1872,7 @@ def _changed_paths_inside_repository(
     run records no repository to resolve against, every named path is returned,
     which is the guard's prior behaviour.
     """
-    items = [str(item).strip() for item in (manifest.get("changed_paths") or ())]
+    items = list(_changed_path_entries(manifest, record))
     root = str(record.get("repo") or record.get("worktree") or "").strip()
     if not root:
         return tuple(items)
@@ -1881,7 +1925,7 @@ def _require_commit_for_changed_manifest(
         return
     if (
         str(manifest.get("status") or "").strip().lower() != "complete"
-        or not manifest.get("changed_paths")
+        or not _changed_path_entries(manifest, record)
         or _changed_paths_declare_no_paths(manifest, record)
         or _manifest_cites_a_commit(manifest, record, manifest_text)
         or not _changed_paths_inside_repository(manifest, record)
@@ -3456,7 +3500,7 @@ def _review_changed_scope(
     declared = _fresh_manifest(record)
     declares_paths = bool(
         declared
-        and declared.get("changed_paths")
+        and _changed_path_entries(declared, record)
         and not _changed_paths_declare_no_paths(declared, record)
     )
     return _manifest_repository_paths(record), None, declares_paths

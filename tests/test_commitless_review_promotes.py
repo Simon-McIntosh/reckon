@@ -59,6 +59,14 @@ RUN_IDS = (
     "r-20260928T100000000025-review-changed-paths-full-stop-prose",
     "r-20260928T100000000026-review-changed-paths-prose-deliverables",
     "r-20260928T100000000027-review-commits-full-stop-prose",
+    "r-20260928T100000000028-review-bare-none-file",
+    "r-20260928T100000000029-review-bare-nil-file",
+    "r-20260928T100000000030-review-bare-na-file",
+    "r-20260928T100000000031-review-bare-dash-file",
+    "r-20260928T100000000032-review-bare-none-no-file",
+    "r-20260928T100000000033-review-bare-nil-no-file",
+    "r-20260928T100000000034-review-bare-na-no-file",
+    "r-20260928T100000000035-review-bare-dash-no-file",
 )
 
 # The sentence a review writes when it has no repository change to cite, in the
@@ -140,6 +148,26 @@ CHANGED_PATHS_DECLARATIONS_WITH_FURTHER_TEXT = (
         "none under the repository; the deliverables are the report, the figure "
         "and the fragment",
     ),
+)
+
+# A bare absence word is also a plausible filename. parse_manifest empties the
+# field, so the parsed list cannot tell a node that declared no path from one
+# that changed a file called none, nil, n/a or -. The raw value can, and each
+# name below is seeded into the repository so the existence check is exercised.
+BARE_ABSENCE_WORD_FILES = (
+    ("r-20260928T100000000028-review-bare-none-file", "none"),
+    ("r-20260928T100000000029-review-bare-nil-file", "nil"),
+    ("r-20260928T100000000030-review-bare-na-file", "n/a"),
+    ("r-20260928T100000000031-review-bare-dash-file", "-"),
+)
+
+# The same bare values with no such file in the tree: the node really declared
+# no path, and the review promotes with no commit.
+BARE_ABSENCE_WORD_NO_FILES = (
+    ("r-20260928T100000000032-review-bare-none-no-file", "none"),
+    ("r-20260928T100000000033-review-bare-nil-no-file", "nil"),
+    ("r-20260928T100000000034-review-bare-na-no-file", "n/a"),
+    ("r-20260928T100000000035-review-bare-dash-no-file", "-"),
 )
 
 
@@ -776,6 +804,51 @@ def test_the_commits_field_keeps_its_permissive_boundary(
         role="review",
         node_id=f"review-of-{PLAN}",
     )
+
+    promoted = _promotes(repository, run_id)
+
+    assert promoted["record"]["commits"] == []
+    assert not pointer_path(run_id).exists()
+
+
+def _seed_changed_file(repository: Path, name: str) -> None:
+    target = repository / name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("changed\n", encoding="utf-8")
+    _git(repository, "add", "--", name)
+    _git(repository, "commit", "-q", "-m", "test: change " + name)
+
+
+@pytest.mark.parametrize(("run_id", "name"), BARE_ABSENCE_WORD_FILES)
+def test_a_bare_absence_word_named_like_a_changed_file_is_still_a_path(
+    repository: Path, tmp_path: Path, run_id: str, name: str
+) -> None:
+    """A bare absence word is a filename when the tree really holds that file.
+
+    ``parse_manifest`` empties ``changed_paths: none`` to ``[]``, so the guard
+    used to stop before the tree was consulted and a review that really changed
+    a file called ``none``, ``nil``, ``n/a`` or ``-`` promoted with no commit.
+    The raw value is read instead, and the run needs the commit as for any other
+    changed path; it is refused exactly as at the dispatch base.
+    """
+    _seed_changed_file(repository, name)
+    manifest = _manifest(tmp_path, run_id, changed_paths=name, commits="none")
+    _pointer(repository, run_id, manifest, role="review", node_id=f"review-of-{PLAN}")
+
+    with pytest.raises(crew.CrewError, match="manifest field 'commits' is missing"):
+        crew.complete(run_id, gate="passed", root=repository)
+
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+@pytest.mark.parametrize(("run_id", "name"), BARE_ABSENCE_WORD_NO_FILES)
+def test_a_bare_absence_word_with_no_such_file_still_declares_none(
+    repository: Path, tmp_path: Path, run_id: str, name: str
+) -> None:
+    """With no file of that name, the bare word is the declaration it reads as."""
+    manifest = _manifest(tmp_path, run_id, changed_paths=name, commits="none")
+    _pointer(repository, run_id, manifest, role="review", node_id=f"review-of-{PLAN}")
 
     promoted = _promotes(repository, run_id)
 
