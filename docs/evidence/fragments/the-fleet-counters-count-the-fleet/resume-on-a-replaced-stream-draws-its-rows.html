@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-title" content="A resume naming a replaced stream derives its baseline on the first pass">
+  <meta name="plan-summary" content="A follower arming whose checkpoint names a replaced stream is treated as a fresh arm. The fleet baseline is re-derived from the live runs and fed through the row path on the arming's first pass, before any wait, so the row it owes the pane is delivered however little of the arming's remaining lifetime is left. Previously the arming read the replaced stream instead and deferred the owed row to a later pass gated on that lifetime, which a slow fleet snapshot could exhaust first.">
+  <meta name="plan-evidence-for" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>A replaced-stream resume owes its rows on the first pass | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A resume naming a replaced stream derives its baseline on the first pass</h1>
+
+    <section id="measure">
+      <h2>What the arming now does</h2>
+      <p>A follower arming carries a resume state whose checkpoint records the
+        stream it was watching and the offset it had reached. When that stream
+        has been replaced, the recorded offset names a file that no longer
+        describes the arming's place: the arming must re-derive the fleet
+        baseline from the live runs rather than continue from an offset into a
+        different file.</p>
+      <p>The generator already had a baseline branch, but a resume state routed
+        the arming into the in-place reload branch — <code>reloading</code> was
+        set from the mere presence of a resume state — which read the replaced
+        stream from its recorded offset. The re-derived baseline row therefore
+        arrived only on a pass that the outer loop ran after the in-place read,
+        and that pass is gated on the arming's remaining lifetime. The
+        checkpoint write that follows the first line can consume that lifetime
+        outright, so the arming ended with the pane's owed row never drawn.</p>
+      <p>An arming is now treated as a fresh arm whenever a reloading pass did
+        not resolve to a continuation of the same stream
+        (<code>reloading and mode != "continue"</code>). The fleet baseline is
+        re-derived and fed through the row path on that same first pass, before
+        any wait, so the row the pane is owed reaches it regardless of how much
+        of the arming's lifetime remains. The change is confined to the follow
+        and replay path in <code>reckon/cli.py</code>; it touches neither the
+        row policy nor the atomic writer.</p>
+
+      <section id="gate">
+        <h2>Gate</h2>
+        <table>
+          <thead><tr><th>Check</th><th>Result</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>The new test — a replaced-stream resume owes its row on the
+                first pass, driven with no lifetime left</td>
+              <td>1 passed at the head, 1 failed at the base</td>
+              <td>Arms the real follow loop, fires a resume whose checkpoint
+                names a replaced stream, sets the arming's remaining lifetime to
+                zero, and requires the owed baseline row anyway. Fails at the
+                base with <code>assert 'r-policy-b' in {}</code> at line 541.</td>
+            </tr>
+            <tr>
+              <td>Declared negative control — restoring the identified cause of
+                the empty resumed arming</td>
+              <td>1 failed as required</td>
+              <td><code>logs/negative-control/restore-the-cause.log</code>, first
+                line the declaration verbatim, ending <code>EXIT=1</code>.</td>
+            </tr>
+            <tr>
+              <td>The named flake — the whole file under <code>pytest -n 8</code>,
+                50 runs per arm, interleaved</td>
+              <td>head 50/50 green; base 49/50 (the named case, run 24)</td>
+              <td><code>logs/pairs/8e84776d-run-01..50.log</code> (20 passed
+                each), <code>logs/pairs/467c0aab-run-24.log</code>
+                (<code>test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows</code>
+                at line 502, <code>assert 'r-policy-b' in {}</code>). One run per
+                log, its own <code>--basetemp</code> on node-local
+                <code>/tmp</code>.</td>
+            </tr>
+            <tr>
+              <td>Head vs base over the follow/ticker/watch/row-policy files and
+                <code>tests/test_follow_reads_whole_lines.py</code>, by failure
+                id</td>
+              <td>zero added ids</td>
+              <td>Two <code>-n 8</code> suite runs per arm. The non-crash failure
+                set is the same four ids on both arms in all four runs. The
+                remaining ids are xdist worker crashes, present on both arms and
+                varying run to run; every such file passes serially 5× per arm
+                (40/40) and the two crash-prone files pass 6× per arm under
+                <code>-n 8</code> (37/37) — see the manifest's
+                <code>failure_attribution</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
