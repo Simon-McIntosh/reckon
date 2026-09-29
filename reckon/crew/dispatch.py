@@ -8254,8 +8254,23 @@ def change_lane(
             f"run {run_id!r} is attached to live harness task {record['task']!r}; "
             "cancel it in that harness before changing backend"
         )
-    if source_launch == "cli" and record_process_alive(record, process_alive) is True:
-        _signal_process_group(int(record["pid"]), record.get("pid_start_time"))
+    if source_launch == "cli":
+        if record_process_alive(record, process_alive) is True:
+            _signal_process_group(int(record["pid"]), record.get("pid_start_time"))
+        else:
+            # "Not known to be alive" is not an observed end. A worker whose
+            # pointer recorded no process, or whose pid this host cannot answer
+            # for, may still be writing, so a fresh worker started over it is
+            # the collision the stop above prevents — the same rule the resume
+            # door applies. The reading is the sweep's own helper rather than a
+            # second composition of it, so what counts as an observed end cannot
+            # drift between the two doors, and the refusal names the reading it
+            # holds.
+            from reckon.crew.resumption import _observed_end_refusal
+
+            refusal = _observed_end_refusal(record)
+            if refusal is not None:
+                raise refusal
 
     directory.mkdir(parents=True, exist_ok=True)
     prompt_path.write_text(prompt, encoding="utf-8")

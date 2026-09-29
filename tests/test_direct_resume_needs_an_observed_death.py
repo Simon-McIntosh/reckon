@@ -24,16 +24,18 @@ as the red log's first line.
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import socket
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from reckon.crew import recovery, runs
-from reckon.crew.dispatch import resume_plan
+from reckon.crew.dispatch import change_lane, resume_plan
 from reckon.crew.node import CrewError
 from reckon.crew.runs import _write_json, pointer_path
 from tests import test_a_live_run_never_reads_dead as liveness
@@ -267,3 +269,100 @@ def test_a_proven_live_process_is_refused_as_before(
     refusal = str(raised.value)
     assert "still has a live process" in refusal
     assert "before resuming" in refusal
+
+
+# --- The third door: a lane change starts a worker too ---------------------
+
+
+def _stub_destination(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Resolve the destination to an in-harness directive, so no executable is needed.
+
+    The refusal under test is decided before the destination is built, so the
+    resolution is stubbed to the smallest shape ``change_lane`` reads. The
+    launch is in-harness so the spawn path is never reached; the run's own
+    reading is what the guard turns on.
+    """
+    resolution = SimpleNamespace(
+        backend="beta",
+        launch="in-harness",
+        backend_settings={},
+        validation=SimpleNamespace(ok=True, findings=[]),
+        competence={"allowed": True},
+        authority="a-ledger-authority",
+        sandbox_write_roots=None,
+    )
+    module = importlib.import_module("reckon.crew.dispatch")
+    monkeypatch.setattr(module, "plan_dispatch", lambda **kwargs: resolution)
+    monkeypatch.setattr(module, "_budget_verdict", lambda **kwargs: {"held": False})
+    monkeypatch.setattr(
+        module, "resolve_dispatch_ledger_root", lambda authority: authority
+    )
+
+
+def _lane_pointer(
+    tmp_path: Path,
+    repo: Path,
+    run_id: str,
+    *,
+    pid: int | None,
+    launcher_host: str | None,
+) -> dict:
+    """A stopped run as a lane change found it, differing only in what is known of its end."""
+    record = _pointer(tmp_path, repo, run_id, pid=pid, launcher_host=launcher_host)
+    prompt = runs.run_dir(run_id) / "prompt.txt"
+    prompt.write_text("the original dispatch prompt\n", encoding="utf-8")
+    record.update(
+        {
+            "dialect": "codex",
+            "session_harness": "codex",
+            "attempt": 1,
+            "base_sha": "HEAD",
+            "prompt_path": str(prompt),
+        }
+    )
+    _write_json(pointer_path(run_id), record)
+    return record
+
+
+def test_a_lane_change_of_unknown_liveness_is_refused(
+    home: Path, tmp_path: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A backend override must not start a second worker over a run whose end nothing observed."""
+    _stub_destination(monkeypatch)
+    _lane_pointer(
+        tmp_path,
+        repo,
+        UNKNOWN_RUN,
+        pid=liveness._absent_pid(),
+        launcher_host=FOREIGN_HOST,
+    )
+
+    with pytest.raises(CrewError) as raised:
+        change_lane(
+            UNKNOWN_RUN, "beta", "the lane is spent", config=CONFIG, launch=True
+        )
+
+    refusal = str(raised.value)
+    assert UNKNOWN_RUN in refusal
+    assert "liveness unknown" in refusal
+
+
+def test_a_lane_change_of_an_observed_death_proceeds(
+    home: Path, tmp_path: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An observed end licenses the move, exactly as it licenses the resume."""
+    _stub_destination(monkeypatch)
+    _lane_pointer(
+        tmp_path,
+        repo,
+        DEAD_PID_RUN,
+        pid=liveness._absent_pid(),
+        launcher_host=HOST,
+    )
+
+    moved = change_lane(
+        DEAD_PID_RUN, "beta", "the lane is spent", config=CONFIG, launch=True
+    )
+
+    assert moved["backend"] == "beta"
+    assert moved["launch"] == "in-harness"
