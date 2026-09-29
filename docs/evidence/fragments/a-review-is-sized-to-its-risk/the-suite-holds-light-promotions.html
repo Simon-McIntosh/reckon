@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-holds-light-promotions">
+  <meta name="plan-title" content="The suite holds light promotions — landed evidence">
+  <meta name="plan-summary" content="Promotion now consults the project's declared standing suite for the tiers it lets through unreviewed: while the latest recorded run failed to collect or overran its budget, a tier none or light promotion is refused with the recorded reason and both ways out, and a full review is never held. Two commands run the suite and record a waiver.">
+  <meta name="plan-evidence-for" content="reckon:a-review-is-sized-to-its-risk">
+  <meta name="plan-verifies" content="reckon:a-review-is-sized-to-its-risk#s6">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux compute node; Python 3.12; uv; detached git worktree; gates run against the root environment's interpreter">
+  <meta name="plan-commits" content="9eab4fe5">
+  <meta name="plan-artifacts" content="reckon/crew/promotion.py,reckon/cli.py,tests/test_standing_suite_holds_promotion.py,docs/figures/a-review-is-sized-to-its-risk/the-suite-holds-light-promotions/hold-in-promotion.svg">
+  <title>The suite holds light promotions — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The suite holds light promotions — landed evidence</h1>
+    <p class="plan-summary">The declaration, the record and the hold all landed in an earlier node; the hold was
+    disclosed there as having no caller. This node gives it one: promotion consults the project's
+    own suite wherever it has already resolved a run's review tier, so the lighter tiers wait while
+    the whole-tree check is broken — and never the full review, which reads the run for itself.</p>
+  </header>
+
+  <section id="wired">
+    <h2>The hold reaches the promotion path</h2>
+    <p><code>reckon/crew/promotion.py</code> calls <code>standing_suite.hold_reason</code> inside
+    <code>complete</code>, immediately after the review-waiver gate resolves. It passes three things
+    the caller already holds — the run's <code>landing_project</code>, the <code>review_tier</code>
+    just resolved from what the run changed, and the project's checkout <code>root</code> — so the
+    tier is neither re-derived nor copied, and the check sits where the tier is settled rather than
+    in a second decision path that could drift from it. A refusal names the recorded reason and both
+    ways out, so an operator is not left to guess which command answers the node.</p>
+    <figure>
+      <img src="/reckon/figures/a-review-is-sized-to-its-risk/the-suite-holds-light-promotions/hold-in-promotion.svg"
+           alt="Decision flow: a full tier proceeds; a none or light tier consults hold_reason, which proceeds when the latest run passed, is a waiver, or is absent, and refuses when the latest run failed to collect or overran its budget with no later waiver."
+           style="max-width:100%">
+      <figcaption>Only the bottom-right path holds. A suite that collected, ran and failed is an
+      ordinary red suite and holds nothing; only a broken collection or a budget overrun does.</figcaption>
+    </figure>
+    <p>The refusal reads, in shape:</p>
+    <pre><code>standing suite holds this promotion: the project's latest suite run at &lt;rev&gt;
+(observed &lt;time&gt;) failed to collect; a tier 'none' promotion waits until a passing
+run is recorded or the lead waives it; record a passing run with
+`reckon crew suite run --project NAME` or record a lead waiver with
+`reckon crew suite waive --project NAME --reason TEXT`</code></pre>
+    <p>A run whose record names no project owns no declared suite and is not held; a project with no
+    recorded runs returns <code>None</code> from <code>hold_reason</code> and is unaffected, so the
+    many existing promotion tests move no failure id.</p>
+  </section>
+
+  <section id="commands">
+    <h2>Two commands for the coordinator</h2>
+    <ul>
+      <li><code>reckon crew suite run --project NAME</code> resolves the project's registered
+      checkout, reads its declared <code>review.suite</code> command and budget from the project
+      flight layer, runs it under that budget through <code>standing_suite.run</code>, records the
+      result with <code>standing_suite.record</code>, and prints the recorded counts as JSON. A
+      project with no mount needs an explicit <code>--checkout-path</code>, so a run cannot be filed
+      under the wrong root and be invisible to the promotion it answers.</li>
+      <li><code>reckon crew suite waive --project NAME --reason TEXT</code> records a waiver through
+      <code>standing_suite.record_waiver</code>, carrying who excused the hold and why.</li>
+    </ul>
+    <p>Both are subcommands of a new <code>crew suite</code> group.</p>
+  </section>
+
+  <section id="measured">
+    <h2>What was measured</h2>
+    <table>
+      <thead><tr><th>Arm</th><th>Revision / tree</th><th>Command</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>focused gate</td>
+          <td><code>9eab4fe5</code>, worktree</td>
+          <td>pytest -q tests/test_standing_suite_holds_promotion.py</td>
+          <td>5 passed — <code>EXIT=0</code></td>
+        </tr>
+        <tr>
+          <td>focused promotion + suite</td>
+          <td><code>9eab4fe5</code>, worktree</td>
+          <td>pytest -q tests/test_standing_suite.py + the promotion test files</td>
+          <td>95 passed — <code>EXIT=0</code></td>
+        </tr>
+        <tr>
+          <td>base (full suite)</td>
+          <td><code>fc7a5807</code>, <code>git archive</code> at /tmp</td>
+          <td>python -m pytest -n 8 -p no:cacheprovider -q tests/</td>
+          <td>99 failed, 12 errors, 8450 passed, 72 skipped — <code>EXIT=1</code> (947 s)</td>
+        </tr>
+        <tr>
+          <td>after (full suite)</td>
+          <td><code>9eab4fe5</code>, worktree</td>
+          <td>python -m pytest -n 8 -p no:cacheprovider -q tests/</td>
+          <td>82 failed, 8477 passed, 72 skipped — <code>EXIT=1</code> (1386 s)</td>
+        </tr>
+        <tr>
+          <td>added failures vs base</td>
+          <td>base ids vs after ids</td>
+          <td>comm -13 base after</td>
+          <td>1 id — <code>tests/test_follower_checks_its_owner.py::test_a_takeover_records_the_armed_owner_not_the_claimants_parent</code>, which passes in isolation at <em>both</em> revisions (2.5 s at head, 22.8 s at base), i.e. a <code>-n 8</code> contention artefact rather than a regression; no id this change's files can reach is added</td>
+        </tr>
+        <tr>
+          <td>negative control</td>
+          <td><code>9eab4fe5</code> with the hold call removed from
+          <code>promotion.complete</code></td>
+          <td>pytest -q tests/test_standing_suite_holds_promotion.py::test_a_collection_failure_holds_a_tier_none_promotion</td>
+          <td>1 failed — <code>EXIT=1</code>: the refusal is what the removed check produces</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The base arm was taken from a <code>git archive</code> of <code>fc7a5807</code> at
+    <code>/tmp</code>, run with the worktree interpreter and <code>PYTHONPATH</code> on the archive, so
+    both arms share one interpreter, one dependency set and one <code>-n 8</code> setting. The two arms
+    differ by 17 base-only failures (nested-launch, packaging, roster/hook-installer repository-path
+    checks); those compare a resolved path against the tree they run from and are artefacts of the base
+    tree's location, not of this change — none of them is in a module the change touches, and the base
+    arm also recorded 12 collection errors against none in the after arm. The direction the gate turns
+    on is <em>added</em>: the change adds no failure it can reach, and the one differing id passes in
+    isolation at both revisions.</p>
+    <p>The added-failure cap the review reads from this node's own arms is therefore
+    <strong>0</strong>: the single differing id is a load-dependent artefact demonstrably present at
+    the base revision too.</p>
+  </section>
+
+  <section id="notes">
+    <h2>One scope note</h2>
+    <p><code>reckon/crew/promotion.py</code> is also in the write scope of a concurrent node
+    (<code>commitless-changed-paths-reads-the-declaration</code>). This node's edit is confined to a
+    single call inserted immediately after the review-waiver gate resolves and one helper defined
+    beside it, so the two should merge cleanly, but the coordinator must reconcile promotion.py across
+    the two before promoting either.</p>
+  </section>
+</main>
+</body>
+</html>
