@@ -3778,8 +3778,13 @@ def _crew(
     ``directory`` reads every live coordinator across the workstation, or one
     project's coordinators, and resolves a run or human node id to its owner.
     ``ledger``, ``records`` and ``summary`` read the project's committed runs —
-    ``<repo>/docs/state/<project>/crew.json``, the durable half; ``live`` reads
-    the never-committed pointers of runs still in flight, each carrying the
+    ``<repo>/docs/state/<project>/crew.json``, the durable half; ``scores``
+    reads the per-dimension review scores those rows carry, filtered by
+    ``plan``, ``node`` or ``run_id`` so a score is readable against the job that
+    earned it, omitting a row with no stored review rather than reporting it as
+    zeros and returning a stored review that never parsed with its status and
+    no scores; ``live`` reads the never-committed pointers of runs still in
+    flight, each carrying the
     classification :func:`reckon.crew.recovery.recover` would give it; ``drain`` derives
     the session-closure count, declared executable remainder, and recorded
     dispositions from those pointers;
@@ -3893,6 +3898,7 @@ def _crew(
         "runs",
         "obligations",
         "velocity",
+        "scores",
     ):
         return {
             "ok": False,
@@ -3901,8 +3907,9 @@ def _crew(
                 "view must be directory, drain, scopes, summary, flight, live, "
                 "records, ledger, budget or obligations; lanes is the endpoint "
                 "quota view, routing is the cross-ledger cost view, runs is the "
-                "compact joined view, velocity is the delivery-rate view, and "
-                "fleet is the cross-project view"
+                "compact joined view, scores is the per-dimension review view, "
+                "velocity is the delivery-rate view, and fleet is the "
+                "cross-project view"
             ),
         }
     try:
@@ -4104,6 +4111,30 @@ def _crew(
                 "version": version,
                 "path": str(ledger_module.ledger_path(project, checkout_path)),
                 "runs": runs,
+            }
+        if view == "scores":
+            # The committed rows are the only input: the reader is
+            # :func:`reckon.ledger.review_scores`, so a row whose review was
+            # never stored is left out here rather than turned into zeros.
+            runs, version = ledger_module.read_records(
+                project,
+                checkout_path,
+                plan=plan,
+                since=since,
+                limit=limit,
+            )
+            return {
+                "ok": True,
+                "project": project,
+                "view": view,
+                "version": version,
+                "path": str(ledger_module.ledger_path(project, checkout_path)),
+                "scores": ledger_module.review_scores(
+                    runs,
+                    plan=plan,
+                    node=node,
+                    run_id=run_id,
+                ),
             }
         return {
             "ok": True,

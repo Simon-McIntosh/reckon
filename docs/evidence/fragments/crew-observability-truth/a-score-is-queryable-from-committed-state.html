@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-score-is-queryable-from-committed-state">
+  <meta name="plan-title" content="A stored review score is queryable from committed state">
+  <meta name="plan-summary" content="The five per-dimension review scores a promotion writes onto its committed ledger row are now readable through the crew view, filtered by plan, node or run; a row whose review was never stored is left out rather than returned as zeros, and a review that never parsed answers with its status and no scores.">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>A stored review score is queryable from committed state | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-09-29</p>
+      <h1>A stored review score is queryable from committed state</h1>
+      <p class="lead">
+        Every review a promotion attaches is written onto the run's committed ledger row
+        as five per-dimension scores and a total. The reader that turns those rows into
+        an answer existed and had no caller, so the record was written by every promotion
+        and consulted by nothing: reading a plan's scores meant opening the ledger file
+        by hand. The crew view surface now carries a <code>scores</code> reader over the
+        committed rows, filtered by plan, node or run id, and it keeps the three row
+        shapes apart &mdash; a stored review answers with its own dimensions, a row whose
+        review was never stored is left out rather than returned as zeros, and a stored
+        review that never parsed answers with its status and no scores.
+      </p>
+    </header>
+
+    <h2 id="gap">&sect;1 &mdash; What no reader could answer</h2>
+    <p>
+      At the base revision <code>reckon.ledger.review_scores</code> is defined and called
+      from nowhere in production: <code>git grep review_scores 89890b94 -- reckon/</code>
+      returns the definition and nothing else, and the only callers anywhere are cases in
+      <code>tests/test_ledger.py</code>. The committed rows are the only place the scores
+      live &mdash; the real ledger at the time of this record holds <strong>2,379 rows,
+      550 of which carry a stored review block</strong>, every one of them written by a
+      promotion. A coordinator asking which dimension a plan's work scored low on had to
+      open <code>docs/state/reckon/crew.json</code> and read it by hand.
+    </p>
+
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/a-score-is-queryable-from-committed-state/scores-reach-a-reader.svg"
+           alt="Diagram: a committed ledger row carrying a review block is read once by the crew scores view, which filters rows by plan, node or run id and passes them to review_scores; a parsed review returns five dimensions and a total, a row with no stored review is left out rather than returned as zeros, and a review that never parsed returns its status with empty scores and a null total."
+           style="max-width:100%">
+      <figcaption>One caller over the committed rows, three row shapes kept apart. The
+      lower strip records the base state the change starts from: the reader existed and
+      nothing called it. The figure deliberately shows the absent row <em>leaving</em>
+      the result rather than arriving as a row of zeros, because that is the reading the
+      whole change turns on.</figcaption>
+    </figure>
+
+    <h2 id="shape">&sect;2 &mdash; What the view returns</h2>
+    <p>
+      <code>reckon/mcp.py</code> at <code>2523db17</code> adds a <code>scores</code>
+      branch to the crew view dispatch, beside <code>records</code> and <code>summary</code>.
+      It reads the ledger of the checkout named by <code>checkout_path</code> through
+      <code>ledger.read_records</code> and hands those rows to
+      <code>ledger.review_scores</code>, whose per-row shape is unchanged: the reader
+      already omitted an absent review and already returned an unparsed one with its
+      status, so the change gives it the caller it never had rather than teaching it the
+      distinction a second time. Filters bind the row's own attributes, so a score is
+      read against the job that earned it.
+    </p>
+    <table>
+      <thead><tr><th>Row shape in the committed ledger</th><th>What the view returns</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>a review was stored and parsed</td>
+          <td>one entry naming the run, plan and node, the five dimensions
+          (<code>goal_fidelity</code>, <code>evidence</code>, <code>scope_discipline</code>,
+          <code>durability</code>, <code>fit</code>), the sum as <code>total</code>, and the
+          dimensions the reviewer recorded as unmeasured in <code>absent</code></td>
+        </tr>
+        <tr>
+          <td>no review was ever stored</td>
+          <td>no entry at all &mdash; a review that was never recorded is not a score of
+          zero, and a caller cannot read it as one</td>
+        </tr>
+        <tr>
+          <td>a review was stored but did not parse</td>
+          <td>one entry with its own <code>status</code>, <code>scores</code> empty,
+          <code>total</code> <code>null</code>, and the dimensions it could not read listed
+          in <code>absent</code> &mdash; the refusal is visible rather than rendered as a
+          measurement</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      A parsed review that genuinely scores zero keeps its entry with <code>total</code>
+      <code>0</code>: a measurement of zero and an absent measurement are different
+      readings, and collapsing either into the other is the failure this shape exists to
+      prevent.
+    </p>
+
+    <h2 id="evidence">&sect;3 &mdash; What the arms measured</h2>
+    <p>
+      The gate ran in scratch trees against a stated revision each, so the module under
+      test is provably the tree's own (<code>module.__file__</code> and the resolved tree
+      are recorded on each log's header lines) rather than whichever source the shared
+      environment happens to serve. Targets were the new file plus every existing file
+      that exercises <code>review_scores</code> or the crew read views:
+      <code>tests/test_review_scores_are_queryable.py</code>,
+      <code>tests/test_ledger.py</code>,
+      <code>tests/test_review_scoring.py</code>,
+      <code>tests/test_crew_scoring_state.py</code>,
+      <code>tests/test_crew_runs_view.py</code>,
+      <code>tests/test_crew_lanes_view.py</code>,
+      <code>tests/test_mcp_tools.py</code>,
+      <code>tests/test_derived_figures_reach_a_reader.py</code>.
+    </p>
+    <table>
+      <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>base</td>
+          <td><code>89890b94</code></td>
+          <td><code>7 failed, 207 passed</code>, EXIT=1 &mdash; the six new cases fail
+          because the view does not exist at base, alongside one pre-existing failure
+          (<code>test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker</code>)</td>
+          <td><code>logs/gate-base.log</code></td>
+        </tr>
+        <tr>
+          <td>after</td>
+          <td><code>2523db17</code></td>
+          <td><code>1 failed, 213 passed</code>, EXIT=1 &mdash; all six new cases
+          pass; the single failure is the identical pre-existing id, so
+          <strong>zero added failing ids</strong> against base</td>
+          <td><code>logs/after_suite.log</code></td>
+        </tr>
+        <tr>
+          <td>negative control</td>
+          <td><code>2523db17</code> minus the <code>isinstance(block, Mapping)</code> guard in <code>review_scores</code>, in a scratch copy</td>
+          <td><code>3 failed, 3 passed</code>, EXIT=1 &mdash; the unreviewed-row case fails
+          once the guard is dropped (an unreviewed row reaches the block read as
+          <code>None</code>), while the parsed-zero and unparsed cases still pass, so the
+          absence case is measuring the guard rather than passing for its own reasons</td>
+          <td><code>logs/negative-control.log</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The new cases are six: the reviewed row's five dimensions come back filtered by plan,
+      by node, and by run id (each dimension carries a different value, so a dimension
+      returned against the wrong name is visible rather than hidden by the total); an
+      unreviewed row matching a filter exactly contributes no entry; a parsed review that
+      scored zero keeps its entry with <code>total</code> <code>0</code>; and a review that
+      never parsed answers with its status, empty scores, a <code>null</code> total and its
+      absent dimensions. The fixture builds its ledger in a temporary repository and points
+      the config home at an empty temporary directory, so the tests neither read nor write
+      the real ledger or <code>~/.config/reckon</code>.
+    </p>
+
+    <h2 id="boundaries">&sect;4 &mdash; Boundaries and open items</h2>
+    <ul>
+      <li>
+        <strong>Joining a score to work its run later generated is out of scope.</strong>
+        The view answers from the row's own attributes; attributing a score to work that
+        landed after the run it measured is an open decision on the parent plan and is not
+        attempted here.
+      </li>
+      <li>
+        <strong>The CLI's <code>ledger</code> view is untouched.</strong> The score reader
+        lands on the crew MCP surface only; <code>reckon/cli.py</code> is held by a
+        concurrent node, and the sibling surface there is not this node's change to make.
+      </li>
+      <li>
+        <strong>A pre-existing failure, not this change's.</strong>
+        <code>tests/test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker</code>
+        fails identically at base and at head: it asserts a <code>--local</code> flag that
+        the dispatch string does not carry (the string ends
+        <code>--backend native</code>). Identical id in both arms, so it is recorded as a
+        follow-on rather than triaged here; the dispatch surface belongs to a concurrent
+        node.
+      </li>
+      <li>
+        <strong>Files.</strong> <code>reckon/mcp.py</code> (the view branch and its
+        docstring), <code>tests/test_review_scores_are_queryable.py</code> (the gate), this
+        fragment and its figure. <code>reckon/ledger.py</code> was in scope and needed no
+        change &mdash; the reader already held all three distinctions.
+      </li>
+    </ul>
+
+    <h2 id="outcome">&sect;5 &mdash; Outcome</h2>
+    <p>
+      Commit <code>2523db17</code> carries the change, with the figure at
+      <code>3064f77d</code>. <code>review_scores</code> now has a production caller: the
+      crew view answers <code>view="scores"</code> from the committed rows of the named
+      checkout, filtered by plan, node or run id. Read against the real ledger, the view
+      returned 550 reviewed rows across 60 plans, every one of them parsed, three carrying
+      a dimension the reviewer recorded as unmeasured &mdash; a record that until this
+      change no surface could read.
+    </p>
+  </main>
+</body>
+</html>
