@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-label="Flow: a node is first gated on whether it can write its worktree; if not, no landing contract is stated. If it can, a second gate asks whether its resolved write paths carry its own landing fragment. If yes, the plan landing contract is stated. If no, the run-record carrier is stated instead.">
+  <style>
+    .box { fill: #f6f8fa; stroke: #57606a; stroke-width: 1.5; }
+    .gate { fill: #fff8e6; stroke: #9a6700; stroke-width: 1.5; }
+    .yes { fill: #dcffe4; stroke: #1a7f37; stroke-width: 1.5; }
+    .no  { fill: #ffebe9; stroke: #cf222e; stroke-width: 1.5; }
+    .t { font: 14px system-ui, sans-serif; fill: #1f2328; }
+    .h { font: 15px 600 system-ui, sans-serif; fill: #1f2328; }
+    .l { font: 12px system-ui, sans-serif; fill: #57606a; }
+    .a { stroke: #57606a; stroke-width: 1.5; fill: none; marker-end: url(#m); }
+  </style>
+  <defs>
+    <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <rect class="gate" x="40" y="40" width="250" height="60" rx="8"/>
+  <text class="t" x="165" y="66" text-anchor="middle">can the worker write</text>
+  <text class="t" x="165" y="86" text-anchor="middle">its assigned worktree?</text>
+
+  <rect class="no" x="470" y="40" width="210" height="60" rx="8"/>
+  <text class="t" x="575" y="66" text-anchor="middle">no landing contract</text>
+  <text class="l" x="575" y="86" text-anchor="middle">read-only delivery tier</text>
+
+  <rect class="gate" x="40" y="160" width="250" height="60" rx="8"/>
+  <text class="t" x="165" y="186" text-anchor="middle">is its own fragment in the</text>
+  <text class="t" x="165" y="206" text-anchor="middle">node's resolved write paths?</text>
+
+  <rect class="yes" x="470" y="160" width="210" height="60" rx="8"/>
+  <text class="t" x="575" y="186" text-anchor="middle">plan landing contract</text>
+  <text class="l" x="575" y="206" text-anchor="middle">record &#8594; the node's fragment</text>
+
+  <rect class="no" x="470" y="260" width="210" height="60" text-anchor="middle" rx="8"/>
+  <text class="t" x="575" y="286" text-anchor="middle">run-record carrier</text>
+  <text class="l" x="575" y="306" text-anchor="middle">landing line &#8594; the run's record</text>
+
+  <path class="a" d="M 290 70 L 466 70"/>
+  <text class="l" x="378" y="62" text-anchor="middle">no</text>
+
+  <path class="a" d="M 165 100 L 165 156"/>
+  <text class="l" x="185" y="132" text-anchor="middle">yes</text>
+
+  <path class="a" d="M 290 180 L 466 180"/>
+  <text class="l" x="378" y="172" text-anchor="middle">yes</text>
+
+  <path class="a" d="M 165 220 L 165 290 L 466 290"/>
+  <text class="l" x="200" y="270" text-anchor="middle">no</text>
+</svg>

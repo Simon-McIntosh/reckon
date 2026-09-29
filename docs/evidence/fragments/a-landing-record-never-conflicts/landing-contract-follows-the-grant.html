@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-record-never-conflicts">
+  <meta name="plan-evidence-for" content="a-landing-record-never-conflicts">
+  <title>The landing contract follows the grant | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The landing contract follows the fragment grant</h1>
+      <p class="lead">The plan landing contract tells a worker to write its evidence anchor to the node's own fragment and its figures to the node's own figure directory. It was composed on worktree writability alone, so a verifier role whose sandbox can write the worktree &mdash; but whose fence withholds the fragment &mdash; was told to write a path its fence withholds. The contract now reads both facts, and a node whose fence withholds the fragment reads the run-record carrier a brief already reads.</p>
+    </header>
+
+    <section id="the-defect">
+      <h2>The defect: the contract named a path the grant withheld</h2>
+      <p>Section&nbsp;2 gives each node its own fragment and figure directory as its default scope, and a following fix withholds those two paths from a role that may not land work in the tree. The grant gate then read <code>role_may_write_repository_paths(node.role)</code> as well as sandbox writability. The prompt's contract gate read only sandbox writability, so the two disagreed about the same node.</p>
+      <p>The disagreement was measured on the fragment role-scope run r-20260929T053221615781, whose independent review recorded it: <em>the landing contract is still composed on worktree writability alone at <code>reckon/crew/dispatch.py:4577</code>, so the writable-sandbox verifier whose fragment this change withholds is still told by <code>PLAN_LANDING_CONTRACT</code> to write <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node-id&gt;.html</code>.</em> The reproduction is the declared negative control below: under the base decision, a <code>test</code>-role node with a <code>worktree-full</code> sandbox and no fragment in its write paths still reads the plan landing contract, and the verifier assertion fails.</p>
+    </section>
+
+    <section id="what-changed">
+      <h2>What changed</h2>
+      <figure class="plan-figure">
+        <img alt="Decision flow. First gate: can the worker write its assigned worktree? If no, no landing contract is stated (the read-only delivery tiers). If yes, a second gate asks whether the node's own fragment is in its resolved write paths. If yes, the plan landing contract is stated and the record goes to the node's fragment. If no, the run-record carrier is stated and the landing line stays on the run's own record." src="/reckon/figures/a-landing-record-never-conflicts/landing-contract-follows-the-grant/landing-carrier-decision.svg"/>
+        <figcaption>The carrier is chosen from two facts together: the worker can write its worktree, and the node's resolved write paths carry its own landing fragment.</figcaption>
+      </figure>
+      <ul>
+        <li><code>reckon/crew/dispatch.py</code> gains <code>_writes_its_landing_fragment(node, *, authority)</code>, which derives the node's fragment with the same <code>_landing_fragment_paths</code> the grant uses and resolves each declared write path with the same <code>_resolve_declared_path</code>, so the contract and the grant cannot disagree. It names no role and repeats no path format.</li>
+        <li>The two landing facts are resolved behind one call site, <code>_compose_dispatch_prompt</code>, so the prompt a test composes is exactly the prompt dispatch composes and a change to either fact is visible rather than masked.</li>
+        <li><code>reckon/crew/prompts.py</code>: <code>compose_prompt</code> gains <code>writes_landing_fragment</code>. When the fragment is not in scope the plan carrier is replaced by <code>BRIEF_LANDING_CONTRACT</code> &mdash; the run-record wording already defined &mdash; so the landing line stays on the run's own record. A caller that supplies no fact keeps the plan carrier for a writable node, the shape every direct composer has used.</li>
+        <li>The default grant is unchanged; only the prompt stops naming a path the grant withholds.</li>
+      </ul>
+    </section>
+
+    <section id="the-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_landing_contract_follows_the_grant.py</code> composes through the dispatch path: it dry-runs a node and composes with <code>_compose_dispatch_prompt</code>, the same call site dispatch uses.</p>
+      <ul>
+        <li><code>test_an_implement_node_reads_the_plan_contract_and_its_fragment</code> &mdash; an <code>implement</code> node's write scope carries its fragment and figure; the composed prompt states <code>PLAN_LANDING_CONTRACT</code> and names the granted fragment path.</li>
+        <li><code>test_a_writable_verifier_reads_the_run_record_carrier_not_the_plan_contract</code> &mdash; a <code>test</code> role with a <code>worktree-full</code> sandbox carries neither path; the composed prompt names neither the plan contract nor the fragment, and states the run-record landing sentence.</li>
+        <li><code>test_the_fragment_fact_reads_write_paths_not_the_role</code> &mdash; the same verifier role reads the plan carrier when its scope carries the fragment and the run-record carrier when it does not, so the decision follows the scope rather than a role list kept in a second place.</li>
+        <li><code>test_a_direct_composer_without_the_fact_keeps_the_plan_carrier</code> &mdash; a direct composer that supplies no scope is unchanged.</li>
+      </ul>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base at <code>711647ff</code>, this gate over the two pre-existing files</td><td>33 passed, <code>EXIT=0</code>; base failing ids &mdash; none</td><td><code>r-20260929T065505688984-landing-contract-follows-the-grant/base-suite.log</code></td></tr>
+          <tr><td>This tree at <code>9bd25dc2</code>, this gate over all three files</td><td>37 passed, <code>EXIT=0</code>; zero added failures &mdash; 33 base ids plus the 4 new cases</td><td><code>r-20260929T065505688984-landing-contract-follows-the-grant/head-suite.log</code></td></tr>
+          <tr><td>Declared negative control at <code>9bd25dc2+dirty</code></td><td>1 failed / 3 passed, <code>EXIT=1</code>; first line repeats the declaration verbatim</td><td><code>r-20260929T065505688984-landing-contract-follows-the-grant/negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T065505688984-landing-contract-follows-the-grant/</code>. Each gate log's first line names the revision, the tree and the command; the head arm was run at the committed revision <code>9bd25dc2</code>.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>choose the landing contract on worktree writability alone again; the writable test-role case must then fail</em>. Applied to <code>_compose_dispatch_prompt</code> (the fragment fact forced to granted), the writable-verifier case fails on its own assertion &mdash; <code>FAILED tests/test_landing_contract_follows_the_grant.py::test_a_writable_verifier_reads_the_run_record_carrier_not_the_plan_contract</code>, <code>EXIT=1</code> &mdash; and the other three cases pass. The mutation was reverted and the tree returned clean at <code>9bd25dc2</code>.</p>
+    </section>
+
+    <section id="commits">
+      <h2>Commits</h2>
+      <p><code>9bd25dc2</code> &mdash; fix(crew): state the plan landing contract only when the fragment is granted. Changes <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/prompts.py</code>, <code>tests/test_landing_contract_follows_the_grant.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
