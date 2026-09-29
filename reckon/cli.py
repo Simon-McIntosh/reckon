@@ -2942,11 +2942,16 @@ def _follow_watch_lines(
                 boundary=boundary,
             ):
                 yield printed
-            # The replay delivered everything up to the boundary, so the read
-            # loop opens there: the gap it already covered is not read again,
-            # which is what stops a run that moved from being drawn twice — as a
-            # replay row and then as a transition.
-            cursor["offset"] = boundary
+            # A re-arm's replay delivered its gap as news up to the boundary, so
+            # the read loop opens there: the gap it already covered is not read
+            # again, which is what stops a run that moved from being drawn twice
+            # — as a replay row and then as a transition. A first arming read
+            # nothing to the boundary — it derives the fleet — so it leaves every
+            # line already in the stream to the read loop, which opens at the
+            # cursor's own offset and delivers them. Opening a first arming at
+            # the boundary would drop the lines it never replayed.
+            if mode != "baseline":
+                cursor["offset"] = boundary
         # Left behind before the first read rather than after the first line:
         # an arming that starts against a quiet stream and then ends has still
         # established its place. Without this the baseline's own arming wrote
