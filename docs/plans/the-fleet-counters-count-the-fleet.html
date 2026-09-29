@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="133">
+<meta name="plan-version" content="134">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -402,10 +402,11 @@
     <div class="r-fu-body"><p>Reported by the S25 coordinator on 2026-09-29. <code>tests/test_follower_prints_only_policy_rows.py::test_a_noise_pair_prints_nothing_through_the_followers_own_rows</code> fails 2 of 10 runs alone at main (75fdee2a). The case landed with this plan's §9b filter, <code>follower-prints-only-policy-rows</code>. It also appeared among the five added failures in the first review of <code>rearm-replays-the-fleet-with-recorded-times</code>, so a flake there can be read as a regression, or can hide one. Done when the source of nondeterminism is named: a timing window, a shared temp directory, or the environment. The case passes 50 of 50 isolated runs and 50 of 50 runs under <code>-n 8</code>, logs recorded, and no assertion is loosened or removed to get there.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
     </article>
-<article class="r-fu" data-id="f-tfcctf-replay-stamps-the-state-entry-time" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfcctf-replay-stamps-the-state-entry-time" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="2026-09-29T13:55:52+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">A replayed row carries the time its run entered its state, not the last re-baseline</h4>
     <div class="r-fu-body"><p>Measured on the first arming after 22b36271 (2026-09-29, 11:34 local). The replay stamped <code>review-of-rearm-replays-the-fleet-with-recorded-times</code> at 11:30:33, but the run entered <code>working</code> at 10:18:06. The producer re-emits a <code>baseline</code> event for every live run about every 25 minutes: at 08:24, 08:49, 09:12 and 09:30 UTC for this run. <code>_recorded_fleet_times</code> keeps the last event naming a run, so the stamp is the latest re-baseline rather than the entry time. The lead asked for correct timestamps. Done when the replay stamps each row with the observed_at of the first event in the run's trailing sequence of events whose to_state equals its current state, so a re-emitted baseline never resets it. A test with a transition into working followed by three re-baselines asserts that the row carries the transition's time. The declared mutation, keeping the last event, fails.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
+    <p class="r-fu-outcome">replay-stamps-the-state-entry-time merged at 9c462893 (review 99, no findings, zero added failures by id). _recorded_fleet_times stamps each run with the first event of its trailing, unbroken sequence in its current state. A baseline re-emitted every 25 minutes no longer moves the time. A run that went working, then blocked, then working replays at its second entry.</p>
     </article>
 <article class="r-fu" data-id="f-tfcctf-follow-reads-whole-lines" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The follower delivers every stream record once, whole</h4>
@@ -606,7 +607,7 @@
     <div class="r-comment-body"><p>the independent review of run r-20260929T093259536095-follow-boundary-snaps-to-a-line (reviewed base 8fa5ce749f5fa2e61126afe7c0c3d5c2a8d2631d, reviewed head b1ebba90c676d13509ceb158743020f38e414d88) is stored at both fenced paths, byte-identical, 19381 bytes each, sha256 prefix d2390b44472c07a2; status parsed, all 5 dimensions scored in range 0..20 — goal_fidelity 17, evidence 16, scope_discipline 18, durability 18, fit 17, total 86 — all 6 checklist verdicts present, 4 findings emitted, added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite/after_suite gate logs.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260929T122636189413-replay-stamps-the-state-entry-time" data-who="reckon-build" data-when="2026-09-29T13:12:57.677Z">
-    <div class="r-comment-body"><p>_recorded_fleet_times now stamps each replayed row with the earliest recorded time in the unbroken trailing run of events whose to_state equals the run&#x27;s current state, so a re-emitted baseline no longer moves the stamp to the latest re-emission (2 new cases pass; the declared last-event mutation fails; selection delta 0 added failures by id, base 332 passed / head 334 passed).</p></div>
+    <div class="r-comment-body"><p>_recorded_fleet_times now stamps each replayed row with the earliest recorded time in the unbroken trailing run of events whose to_state equals the run's current state, so a re-emitted baseline no longer moves the stamp to the latest re-emission (2 new cases pass; the declared last-event mutation fails; selection delta 0 added failures by id, base 332 passed / head 334 passed).</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T130204463138-ticker-row-is-one-aligned-transition" data-who="reckon-build" data-when="2026-09-25T13:46:08Z">
     <div class="r-comment-body"><p>each ticker row is one transition, from → to on an aligned arrow with fixed columns on both sides, chained per run on the pane's last shown state, with no action word; 266 passed; review 86, whose three findings (stale width comment at ticker.py:339, a test assertion that cannot fail, and a wrong rendered-case count in the evidence) go to the next ticker node</p></div>
