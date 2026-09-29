@@ -59,6 +59,7 @@ mutators, serve.py, single-checkout agents) are completely unaffected.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextvars import ContextVar
 import json
 import os
@@ -69,7 +70,7 @@ import hashlib
 from contextlib import ExitStack, contextmanager
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
 from reckon.lifecycle import TERMINAL_STATUSES
 
@@ -349,26 +350,76 @@ def _write_json_envelope(
             "doc": slug,
             "data": new_data,
         }
-        tmp: Path | None = None
-        try:
-            with tempfile.NamedTemporaryFile(
-                mode="w",
-                encoding="utf-8",
-                dir=path.parent,
-                prefix=f".{path.name}.",
-                suffix=".tmp",
-                delete=False,
-            ) as handle:
-                tmp = Path(handle.name)
-                json.dump(envelope, handle, indent=2)
-                handle.write("\n")
-                handle.flush()
-                os.fsync(handle.fileno())
-            tmp.replace(path)
-        finally:
-            if tmp is not None:
-                tmp.unlink(missing_ok=True)
+
+        def render(handle: TextIO) -> None:
+            json.dump(envelope, handle, indent=2)
+            handle.write("\n")
+
+        _write_through_sibling_temporary(path, render)
         return new_data["_version"]
+
+
+def _write_through_sibling_temporary(
+    path: Path,
+    render: Callable[[TextIO], None],
+    *,
+    fsync: bool = True,
+) -> None:
+    """Write through a unique sibling temporary and rename it into place.
+
+    The bytes go to a fresh temporary beside the destination, which is then
+    renamed over it. Renaming within one directory is the atomic step, so a
+    reader sees the file as it was or as it now is, never a half-written one.
+    The temporary is removed on any failure, so a refused write leaves neither a
+    partial destination nor a stray sibling. ``fsync`` decides whether the bytes
+    are made durable before the rename: a caller whose file must survive a crash
+    leaves it on, while a caller rewriting a disposable cache may turn it off.
+    """
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temporary = Path(handle.name)
+            render(handle)
+            handle.flush()
+            if fsync:
+                os.fsync(handle.fileno())
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def write_json_atomically(
+    path: str | Path,
+    payload: Any,
+    *,
+    fsync: bool = True,
+) -> Path:
+    """Write ``payload`` as JSON so a reader never observes a partial file.
+
+    The serialised bytes go to a unique sibling temporary which is renamed over
+    the destination, so the destination is only ever the whole previous file or
+    the whole new one. A failure removes the temporary and leaves the
+    destination untouched. ``fsync`` is on by default and makes the bytes
+    durable before the rename; a caller rewriting a disposable cache may turn it
+    off. The parent directory is created when it is absent.
+    """
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    def render(handle: TextIO) -> None:
+        json.dump(payload, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+
+    _write_through_sibling_temporary(target, render, fsync=fsync)
+    return target
 
 
 # ── HTML-state helpers ────────────────────────────────────────────────────
