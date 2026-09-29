@@ -107,6 +107,9 @@ STATUS_ENUM = [
     "reference",
 ]
 SECTION_DECLARATION_ENUM = ["implementable", "deferred", "done"]
+#: How a plan's impl fraction was obtained: derived from typed section records
+#: ("computed") or read from the plan-impl meta ("authored").
+IMPL_SOURCE_ENUM = ["computed", "authored"]
 PERSISTABLE_STATUS_ENUM = [status for status in STATUS_ENUM if status != "blocked"]
 ROI_ENUM = ["high", "mid", "low"]
 EFFORT_ENUM = ["S", "M", "L", "XL"]
@@ -1233,6 +1236,15 @@ class PlanState(BaseModel):
     # ── Server-owned (never authored) ──
     modified: str = ""  # ISO date, server-written on each POST
     impl: float = 0.0  # progress fraction, server-written
+    impl_source: str = Field(
+        "",
+        description=(
+            "How the impl fraction was obtained: 'computed' from typed section "
+            "records, or 'authored' from the plan-impl meta. Absent when neither "
+            "source produced a figure."
+        ),
+        json_schema_extra=_enum(IMPL_SOURCE_ENUM),
+    )
     version: int = 0  # optimistic-concurrency counter, server-owned
     compatibility_warnings: list[str] = Field(
         default_factory=list,
