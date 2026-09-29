@@ -1,0 +1,354 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "d0f61409ca12ffdffe2cc203df24e31579e7254f",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 1487447,
+      "input_tokens_cumulative": 1487447,
+      "output_tokens": 9085,
+      "output_tokens_cumulative": 9085,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 284,
+    "files": 3,
+    "removed": 2
+  },
+  "commit_resolution": null,
+  "commits": [
+    "409e42c8fa2f6950ec8df051f1869562f8d300db",
+    "406641db37dfbf409c98d8d3d713d055f4355086"
+  ],
+  "completed_at": "2026-09-29T09:54:14.145Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T07:51:35Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fence_protects_the_worktree_pool.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119343538-fence-protects-the-worktree-pool/logs/head-fence-pool.txt"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.98,
+    "plan": "a-worker-cannot-write-your-home",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T08:51:21.204083+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T07:51:21Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 24,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 16,
+    "headroom": -2,
+    "mean_context": 115000,
+    "observed_at": "2026-09-29T07:50:57Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T09:54:14.145Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119343538-fence-protects-the-worktree-pool/manifest.md",
+  "member": "disposable-r-20260929T075119343538-fence-protects-the-worktree-pool",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_fence_protects_the_worktree_pool.py::test_a_worker_writes_its_own_tree_and_not_the_sibling",
+      "tests/test_fence_protects_the_worktree_pool.py::test_protected_paths_includes_the_worktree_pool",
+      "tests/test_fence_protects_the_worktree_pool.py::test_the_own_worktree_bind_follows_the_pool_overlay"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_fence_protects_the_worktree_pool.py::test_a_worker_writes_its_own_tree_and_not_the_sibling",
+      "tests/test_fence_protects_the_worktree_pool.py::test_protected_paths_includes_the_worktree_pool",
+      "tests/test_fence_protects_the_worktree_pool.py::test_the_own_worktree_bind_follows_the_pool_overlay"
+    ],
+    "declaration": "remove Code/.reckon-worktrees from protected_paths; case 1's write into sibling worktree B then lands and the test fails",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119343538-fence-protects-the-worktree-pool/logs/negative-control-pytest.txt",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119343538-fence-protects-the-worktree-pool/logs/negative-control-pytest.txt",
+    "test_paths": [
+      "tests/test_fence_protects_the_worktree_pool.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "fence-protects-the-worktree-pool",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 381,
+          "cached_input_tokens": 300876,
+          "input_tokens": 301259,
+          "output_tokens": 459,
+          "reasoning_output_tokens": 245,
+          "total_tokens": 301718,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "caa2d324-580b-4245-9533-3aec9e945566",
+      "session_id": "s21-1c"
+    },
+    "done_when": "tests/test_fence_protects_the_worktree_pool.py passes under the root .venv python. The setup is a temporary home holding two sibling run worktrees, A and B, under Code/.reckon-worktrees. (1) A fenced stub launched for worktree A has its write into worktree B refused as a read-only file system, while its write into A lands. (2) protected_paths for that home includes Code/.reckon-worktrees. The fence argv binds the run's own worktree writable after the pool's read-only bind, so the own-tree grant is not shadowed; this is asserted on the composed argv. The declared negative control is executed and logged. The fence test files named in ~/.config/reckon/crew/reports/reckon/s21-audit-fence.md show 0 added failures between a base arm and a head arm. Every log sits under the run directory, headed with revision, tree and command and ending EXIT=. Out of scope, listed as follow_ons: the protected_paths flight key and unprotected_paths, the missing-capability refusal, and --no-fence.",
+    "estimated_hours": null,
+    "goal": "Add the worktree pool to the fence's shipped protected set, so a fenced worker cannot write any worktree except its own",
+    "id": "fence-protects-the-worktree-pool",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T07:51:21Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 24,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 16,
+      "headroom": -2,
+      "mean_context": 115000,
+      "observed_at": "2026-09-29T07:50:57Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119343538-fence-protects-the-worktree-pool/manifest.md",
+    "negative_control": "remove Code/.reckon-worktrees from protected_paths; case 1's write into sibling worktree B then lands and the test fails",
+    "plan": "a-worker-cannot-write-your-home",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/_backends.py",
+      "tests/test_fence_protects_the_worktree_pool.py",
+      "docs/evidence/fragments/a-worker-cannot-write-your-home/fence-protects-the-worktree-pool.html",
+      "docs/figures/a-worker-cannot-write-your-home/fence-protects-the-worktree-pool"
+    ]
+  },
+  "orientation_input_tokens": 1868512.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "fence-protects-the-worktree-pool",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T07:51:29.191239+00:00",
+    "score": 0.6625,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-worker-cannot-write-your-home",
+  "plan_impl_at_dispatch": 0.98,
+  "promoted_revision": "406641db37dfbf409c98d8d3d713d055f4355086",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 17,
+      "fit": 17,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 92
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T075119343538-fence-protects-the-worktree-pool",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "9f87b265-da1c-436b-816a-021eab69aab7",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": 3,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 13822877,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 621.985,
+    "generated_tokens": 62485,
+    "generation_seconds": 603.22,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 19.3,
+    "machine_seconds": 18.765,
+    "peak_input_tokens": 92500,
+    "tokens_per_second": 103.59,
+    "wall_tokens_per_second": 100.46
+  },
+  "time_budget": "60m",
+  "tool_steps": 100.0,
+  "unreconciled_override": null,
+  "wall_seconds": 7359,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T09:54:14Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T09:43:48Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T075119343538-fence-protects-the-worktree-pool",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 9391,
+    "worker_pid": 1204772
+  },
+  "worker_seconds": 7314,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
