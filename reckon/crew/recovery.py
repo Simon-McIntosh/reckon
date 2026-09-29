@@ -3011,6 +3011,34 @@ def _carries_orientation_write(text: str, data: Mapping[str, Any]) -> bool:
     return not any(line.startswith("status:") for line in text.splitlines())
 
 
+def _orientation_write_of_a_run_in_motion(
+    record: Mapping[str, Any],
+    *,
+    alive: bool | None,
+    worker_alive: bool | None,
+    manifest_text: str,
+    manifest_data: Mapping[str, Any],
+) -> bool:
+    """Whether a run holding only its orientation write is working right now.
+
+    The file alone cannot answer this: a stub and the first minute of a turn are
+    the same bytes, and the difference is whether the worker is still writing
+    them. Liveness is that difference, and it must be a positive answer — a
+    worker whose process is gone left its stub behind as the missing verdict it
+    may well be, and the word for that stands. Beside liveness the reading wants
+    the evidence the phase derivation uses for the same run, so the two surfaces
+    cannot disagree: a worker record naming a pid, or an assistant turn in the
+    run's newest stream, says the launch got past starting.
+    """
+    if alive is not True:
+        return False
+    if not _carries_orientation_write(manifest_text, manifest_data):
+        return False
+    if worker_alive is True:
+        return True
+    return _newest_stream_shows_work(record)
+
+
 def _worker_record(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
     """The run's own worker record, or None when none was written or readable."""
     try:
@@ -4697,7 +4725,22 @@ def classify_pointer(
     if classification == INTERRUPTED_RUN_PHASE:
         recovery_classification = INTERRUPTED_RUN_PHASE
     elif manifest_unwritten:
-        recovery_classification = "unwritten"
+        # A live worker between its orientation write and its first status has
+        # not failed to deliver, and the phase is already read from its stream;
+        # the recovery word is read from the same evidence, or a run whose
+        # stream is growing renders unwritten and a reader is sent to resume
+        # work in flight. Motion is what buys the reading — see
+        # :func:`_orientation_write_of_a_run_in_motion`.
+        if _orientation_write_of_a_run_in_motion(
+            record,
+            alive=alive,
+            worker_alive=worker_alive,
+            manifest_text=manifest_text,
+            manifest_data=manifest_data,
+        ):
+            recovery_classification = classification
+        else:
+            recovery_classification = "unwritten"
     elif classification in {"blocked", "paused"} and hold is not None:
         recovery_classification = "held"
     elif classification == "blocked" and needs_help_complete_value:
