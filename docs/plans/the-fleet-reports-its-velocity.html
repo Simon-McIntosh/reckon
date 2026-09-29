@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-fleet-reports-its-velocity">
   <meta name="plan-title" content="The Fleet Reports Its Velocity">
   <meta name="plan-summary" content="Learning what the fleet delivers took six census nodes and three corrections; velocity, review share, rework, coordinator cost and quota runway become one read.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,16 +20,16 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,measurement">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <meta name="plan-blocks" content="open-work-is-capped">
   <title>The Fleet Reports Its Velocity | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-commits" content="85af514b,997c5539,7c508e7e,4d79a470,a70ad742,c0917d6f,e2fc9f03,30fe8845,280d7fa9,43e971d3,be18adb4,90959463,118b06ba,0b61cc5d,e6b344f3,474d8119,66edfc86,9576896f,2652f39b">
 <meta name="plan-artifacts" content="reckon/path_classes.py,tests/test_path_classes.py,reckon/velocity.py,tests/test_velocity.py,tests/test_velocity_coordinator_cost.py">
-<meta name="plan-impl" content="0.89">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -245,10 +245,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tfriv-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfriv-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="2026-09-29T10:01:01+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Build the velocity view</h4>
     <div class="r-fu-body"><p>§2 first. §3 and §5 extend the velocity module and run one after the other; §4 changes the preflight and the run store and can run beside them.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-reports-its-velocity</pre>
+    <p class="r-fu-outcome">done — no followup. The velocity view is one function in reckon/velocity.py served on three surfaces that return one payload: crew(view="velocity") (03ebd642), reckon crew velocity (3629a275) and the plan SPA's Velocity tab through GET /crew/velocity (da6b7606). A head-keyed cache of captured history and ledger-clock recovery (993f1501) brings a warm read to 5.2 s at an unchanged head and 16.9 s after a new commit, against the crew tool's 30 s deadline; a cold read is about 577 s. Sections 3 to 5 landed earlier. The crew tool's generic over-budget hint, recorded in the section 2 comments, belongs to mcp_budget.py rather than to this plan.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
