@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="An arm that declares no completion decides no control, on both arms">
+  <meta name="plan-summary" content="The head-arm reader asked completion as a literal True, but the baseline reader returned the failure ids of any baseline_suite mapping, so a key-less or null baseline still decided a control as if its arm had finished. `_baseline_suite_failure_ids` now asks completion the same way and returns None for an arm that omits the key or carries null. When neither arm is readable the caller refuses the control rather than admitting it against a comparison that was never made. Two cases hold one unreadable baseline per form.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>An arm that declares no completion decides no control, on both arms &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>An arm that declares no completion decides no control, on both arms &mdash; evidence</h1>
+  <p>The control gate compares a red log against a readable suite arm. The head-arm reader <code>_head_suite_failure_ids</code> was already strict: it asks <code>observation.get("completed") is not True</code>, so a key-less or null <code>after_suite</code> is unreadable and the baseline comparison decides. The baseline reader <code>_baseline_suite_failure_ids</code> was not: it returned the <code>failure_ids</code> of any <code>baseline_suite</code> mapping regardless of completion, so a baseline that omitted the key or carried null decided the control while its own run said nothing about having finished. The followup asks that a missing or null <code>completed</code> be unreadable <em>on both arms</em>.</p>
+  <p>The baseline reader now asks completion the same way, a literal <code>True</code>, and returns <code>None</code> for an arm that omits the key or carries null. A manifest that recorded no <code>baseline_suite</code> at all still reads as the empty arm, because it observed nothing and every failure its control names is one the baseline does not.</p>
+  <p>A naive strict read is fail-open in one direction, and that direction is closed here. If the unreadable arm were folded into the empty set, a control would be admitted with no comparison at all, and a manifest omitting <code>completed</code> from both arms would admit every control. Instead, when the head arm is also unreadable, there is no arm left to compare against: <code>reference_ids</code> stays <code>None</code>, <code>comparison_arm</code> is recorded as <code>none</code>, and the control is refused rather than admitted on a comparison that was never made.</p>
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>Two cases, one per form.</strong> <code>tests/test_control_is_compared_with_the_head_arm.py</code> gains a <code>baseline_suite</code> with no <code>completed</code> key and one with <code>completed: null</code>, each over a log whose failing id that baseline would have exempted had it been read as complete, and with no readable head arm. Under the old reader both were <em>admitted</em>; under the new one both are refused with <em>no readable comparison arm is recorded</em>, and a third case shows the same manifest with <code>completed: true</code> admitting the control via <code>comparison_arm: baseline_suite</code>.</li>
+      <li><strong>Head arm</strong> (<code>7e452839</code>): <code>21 passed in 0.66s</code>, <code>EXIT=0</code>, over the two control-gate files. <code>logs/head_arm.log</code>.</li>
+      <li><strong>Negative control</strong> (whole answering commit reverted to <code>7e452839</code>'s parent, tests unchanged): <code>2 failed, 12 passed in 0.59s</code>, <code>EXIT=1</code>, the two failures being exactly the missing-key and null baseline cases, each reporting <code>DID NOT RAISE CrewError</code> &mdash; the lenient baseline reader admitting the control it should refuse. <code>logs/negative_control.log</code>.</li>
+      <li><strong>Gate-adjacent population</strong> (nine files touching <code>negative_control_log</code> or the gate): <code>101 passed in 234.11s</code>, <code>EXIT=0</code>. <code>logs/gate_population.log</code>.</li>
+      <li><strong>Lint.</strong> Zero added findings on the changed paths: <code>ruff check</code> reports 5 against a 7-finding baseline over the same two paths, and <code>ruff format --check</code> leaves the same nine pre-existing hunks in <code>promotion.py</code> and none in the test file.</li>
+    </ul>
+  </section>
+  <section id="fixture">
+    <h2>A pinned fixture keeps its refusal, but by a different path</h2>
+    <p><code>tests/test_control_gate_checks_facts.py::test_a_control_that_adds_no_failure_to_the_baseline_is_refused</code> passes a baseline of <code>{"failure_ids": [...], "failure_count": 1}</code> with no <code>completed</code> key and no head arm. Under the new rule that baseline is unreadable, so the case now refuses through the no-readable-arm branch rather than through the baseline comparison. It still refuses and its assertions still hold, but it no longer exercises the comparison its name describes. That file is outside this node's write scope, so the fixture was left unedited: a node holding it should add <code>completed: true</code> to that baseline mapping so the case again pins the baseline comparison's own refusal.</p>
+  </section>
+ </main>
+</body>
+</html>
