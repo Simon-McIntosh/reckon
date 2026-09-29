@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
 <meta name="plan-impl" content="0.83">
 <meta name="plan-informs" content="a-follower-outlives-its-monitor">
@@ -477,6 +477,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260929T043717430852-page-load-remeasured-after-fixes" data-who="reckon-build" data-when="2026-09-29T05:00:08.174Z">
     <div class="r-comment-body"><p>page-load-remeasured-after-fixes measured the six warm requests on pid 2448736 at main 2309c8b9 and the §5 gate FAILS on two of six — /_projects/index.json closes the connection with no response at 2.912 s and /_discover/imas-codex answers 500 at 0.212 s — both from one malformed plan page in imas-codex, docs/plans/migration-project-state.html, whose section records carry no data-id so the parser refuses them and the rollup's executor thread dies where the per-project route would have answered; a third recorded miss, /_discover/nova at 3.082 s, re-samples at 0.16-0.18 s and is the next request paying for the failed rollup's abandoned workers; the failures attribute to that page's last write ec7ec63ae in imas-codex, not to dae29b19.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260929T064712390989-rollup-isolates-a-project" data-who="reckon-build" data-when="2026-09-29T07:05:45.509Z">
+    <div class="r-comment-body"><p>rollup-isolates-a-project: /_projects/index.json now isolates a refused plan page to its own row — three mounted projects all served 200, the refused row carrying error &quot;migration-project-state.html: sections[&#x27;&#x27;].id: record must be adjacent to its h2&quot; with both other rows and their data intact; regression 14 passed / 2 skipped with 0 added failures against base 7cc73727; negative control red when today&#x27;s (OSError, ProjectStateError) clause is restored.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260923T160312477604-palette-counts-each-inventory-once" data-who="reckon-ship" data-when="2026-09-23T16:39:34.734Z">
     <div class="r-comment-body"><p>palette assertion counts each mounted inventory exactly once with the palette cycled; guard removal doubles every request and fails it; review 96, which found the cycle's close and reopen unasserted, carried to a corrective node</p></div>
