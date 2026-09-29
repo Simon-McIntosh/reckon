@@ -37,6 +37,8 @@ import shlex
 import sqlite3
 import statistics
 import subprocess
+import sys
+import time
 from pathlib import Path
 
 from reckon._timestamps import parse_utc
@@ -738,6 +740,7 @@ def capture_project(
         "product_commits",
         len(product),
         flush=True,
+        file=sys.stderr,
     )
     return {
         "project": project,
@@ -907,6 +910,7 @@ def recover_ledger_clocks(
             "/",
             len(candidates),
             flush=True,
+            file=sys.stderr,
         )
 
 
@@ -951,6 +955,7 @@ def positive_controls():
     print(
         "positive controls: tracked deletion 2/3 within seven days; late deletion excluded; rename preserves identity; binary lines stay null",
         flush=True,
+        file=sys.stderr,
     )
     return {
         "line_identity_deletions_within_seven_days": {
@@ -2246,3 +2251,146 @@ def report(
     summary = compact_summary(full, weekly_cells)
     summary["by_project_day_lane"] = full["by_project_day_lane"]
     return summary
+
+
+# The velocity view answers with its three aggregate tables by default and
+# serves every other block only when the caller names it through ``fields``.
+# The tables carry full per-cell metrics, so a window of more than a few weeks
+# can be narrowed no further than the block choice: the project-lane-day cells
+# in particular run to hundreds of thousands of characters and are paged.
+OPTIONAL_BLOCKS = frozenset(
+    {
+        "total",
+        "provenance",
+        "definitions",
+        "positive_controls",
+        "coverage",
+        "august_baseline",
+        "plans",
+        "by_week",
+        "weekly_definition",
+        "session_continuity",
+        "daily_lane_output",
+        "named_episodes",
+        "coordinator_cost",
+        "by_project_day_lane",
+    }
+)
+
+
+def view(
+    project,
+    *,
+    since,
+    until=None,
+    checkout_path=None,
+    fields=None,
+    limit=None,
+    cursor=None,
+):
+    """Compose the velocity view for a caller-named window, for either surface.
+
+    One composition serves the MCP read and the command line, so the two
+    surfaces cannot disagree about a window. It owns the whole derivation the
+    caller sees: the window parsing, the mount resolution, the default summary
+    and the paging of the project-lane-day cells.
+
+    ``project`` is one mounted project's name, or ``"*"`` for every mounted
+    checkout. ``since`` names the window start and is refused by name when
+    absent or unparseable, because there is no safe default: a view that
+    silently measured "since forever" would report a window the caller did not
+    ask for. ``until`` names the window close and defaults to now.
+
+    The per-project, per-lane and per-day tables are the default answer. Every
+    other block is served only when named in ``fields``, and the
+    project-lane-day cells — the largest block — are paged by ``limit`` and
+    ``cursor``: the count names the size of what is withheld. An unrecognised
+    field is refused with the accepted set named.
+
+    Returns the payload both surfaces emit. A refusal is a payload carrying
+    ``ok: False`` and a ``detail`` naming the reason, so a caller reads the
+    same shape whether the request is served or refused.
+    """
+    from reckon._store import _docs_dir_for_project
+    from reckon.flight import mounted_project_docs
+    from reckon.mcp_views import ViewRequestError, error_response, paginate
+
+    if since is None or stamp(since) is None:
+        return {
+            "ok": False,
+            "error": "crew_error",
+            "project": project,
+            "view": "velocity",
+            "detail": (
+                "the velocity view needs since=<window start, ISO-8601>; "
+                "it is absent or unparseable"
+            ),
+        }
+    window_end = until if until is not None else iso(time.time())
+    if stamp(window_end) is None:
+        return {
+            "ok": False,
+            "error": "crew_error",
+            "project": project,
+            "view": "velocity",
+            "detail": (
+                "until, when given, must be an ISO-8601 clock; it is unparseable"
+            ),
+        }
+    if project == "*":
+        checkouts = {
+            name: str(docs.parent) for name, docs in mounted_project_docs().items()
+        }
+    else:
+        docs_dir = _docs_dir_for_project(project, checkout_path)
+        if docs_dir is None:
+            return {
+                "ok": False,
+                "error": "crew_error",
+                "project": project,
+                "view": "velocity",
+                "detail": f"project {project!r} has no readable docs directory",
+            }
+        checkouts = {project: str(docs_dir.parent)}
+    payload = report(checkouts, start=since, end=window_end)
+    cells = payload.pop("by_project_day_lane", [])
+    if isinstance(fields, str):
+        requested = [part.strip() for part in fields.split(",")]
+    else:
+        requested = [str(name) for name in (fields or [])]
+    requested = list(dict.fromkeys(name for name in requested if name))
+    unknown = sorted(set(requested) - OPTIONAL_BLOCKS)
+    if unknown:
+        return {
+            "ok": False,
+            "error": "crew_error",
+            "project": project,
+            "view": "velocity",
+            "detail": (
+                "unknown velocity fields "
+                + ", ".join(repr(name) for name in unknown)
+                + "; optional fields are "
+                + ", ".join(sorted(OPTIONAL_BLOCKS))
+            ),
+        }
+    response = {
+        "ok": True,
+        "view": "velocity",
+        "project": project,
+        "window": payload["window"],
+        "by_project": payload["by_project"],
+        "by_lane": payload["by_lane"],
+        "by_day": payload["by_day"],
+        "by_project_day_lane_count": len(cells),
+    }
+    for name in requested:
+        if name in payload:
+            response[name] = payload[name]
+    if "by_project_day_lane" in requested:
+        try:
+            page, pagination = paginate(cells, cursor=cursor, limit=limit)
+        except ViewRequestError as exc:
+            return error_response(exc.code, exc.message, hint=exc.hint)
+        response["by_project_day_lane"] = page
+        response["pagination"] = pagination
+    return response

@@ -128,7 +128,6 @@ from reckon.mcp_views import (
     error_response,
     normalize_selector,
     normalize_view,
-    paginate,
     resource_view,
     roadmap_view,
     storage_schema_for,
@@ -3745,31 +3744,6 @@ def _roadmap_tool(
     )
 
 
-# The velocity view answers with its three aggregate tables by default and
-# serves every other block only when the caller names it through ``fields``.
-# The tables carry full per-cell metrics, so a window of more than a few weeks
-# can be narrowed no further than the block choice: the project-lane-day cells
-# in particular run to hundreds of thousands of characters and are paged.
-_VELOCITY_OPTIONAL_BLOCKS = frozenset(
-    {
-        "total",
-        "provenance",
-        "definitions",
-        "positive_controls",
-        "coverage",
-        "august_baseline",
-        "plans",
-        "by_week",
-        "weekly_definition",
-        "session_continuity",
-        "daily_lane_output",
-        "named_episodes",
-        "coordinator_cost",
-        "by_project_day_lane",
-    }
-)
-
-
 def _crew(
     project: str | None = None,
     view: str = "summary",
@@ -3949,94 +3923,18 @@ def _crew(
                 **obligations_module.obligations(project, session),
             }
         if view == "velocity":
-            # The window start is the caller's to name and is refused by name
-            # when absent, because there is no safe default: a view that
-            # silently measured "since forever" would report a window the
-            # caller did not ask for.
-            if since is None or velocity_module.stamp(since) is None:
-                return {
-                    "ok": False,
-                    "error": "crew_error",
-                    "project": project,
-                    "view": view,
-                    "detail": (
-                        "the velocity view needs since=<window start, ISO-8601>; "
-                        "it is absent or unparseable"
-                    ),
-                }
-            window_end = (
-                until if until is not None else velocity_module.iso(time.time())
+            # The window parsing, the mount resolution, the default summary and
+            # the paging of the cells live in one function, so this read and the
+            # command line's serve the same payload for the same window.
+            return velocity_module.view(
+                project,
+                since=since,
+                until=until,
+                checkout_path=checkout_path,
+                fields=fields,
+                limit=limit,
+                cursor=cursor,
             )
-            if velocity_module.stamp(window_end) is None:
-                return {
-                    "ok": False,
-                    "error": "crew_error",
-                    "project": project,
-                    "view": view,
-                    "detail": (
-                        "until, when given, must be an ISO-8601 clock; "
-                        "it is unparseable"
-                    ),
-                }
-            if project == "*":
-                checkouts = {
-                    name: str(docs.parent)
-                    for name, docs in flight_module.mounted_project_docs().items()
-                }
-            else:
-                docs_dir = _docs_dir_for_project(project, checkout_path)
-                if docs_dir is None:
-                    raise crew_module.CrewError(
-                        f"project {project!r} has no readable docs directory"
-                    )
-                checkouts = {project: str(docs_dir.parent)}
-            payload = velocity_module.report(checkouts, start=since, end=window_end)
-            # The per-project, per-lane and per-day tables are the default
-            # answer. The other aggregate blocks are served only when named,
-            # and the project-lane-day cells are the largest of them, so they
-            # are paged like every other crew view's records rather than
-            # returned whole: the count names the size of what is withheld.
-            cells = payload.pop("by_project_day_lane", [])
-            if isinstance(fields, str):
-                requested = [part.strip() for part in fields.split(",")]
-            else:
-                requested = [str(name) for name in (fields or [])]
-            requested = list(dict.fromkeys(name for name in requested if name))
-            unknown = sorted(set(requested) - _VELOCITY_OPTIONAL_BLOCKS)
-            if unknown:
-                return {
-                    "ok": False,
-                    "error": "crew_error",
-                    "project": project,
-                    "view": view,
-                    "detail": (
-                        "unknown velocity fields "
-                        + ", ".join(repr(name) for name in unknown)
-                        + "; optional fields are "
-                        + ", ".join(sorted(_VELOCITY_OPTIONAL_BLOCKS))
-                    ),
-                }
-            response = {
-                "ok": True,
-                "view": view,
-                "project": project,
-                "window": payload["window"],
-                "by_project": payload["by_project"],
-                "by_lane": payload["by_lane"],
-                "by_day": payload["by_day"],
-                "by_project_day_lane_count": len(cells),
-            }
-            for name in requested:
-                if name in payload:
-                    response[name] = payload[name]
-            if "by_project_day_lane" in requested:
-                try:
-                    page, pagination = paginate(cells, cursor=cursor, limit=limit)
-                except ViewRequestError as exc:
-                    return error_response(exc.code, exc.message, hint=exc.hint)
-                response["by_project_day_lane"] = page
-                response["pagination"] = pagination
-            return response
         if view == "runs":
             return crew_runs_view(
                 project,
