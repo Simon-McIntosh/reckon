@@ -213,6 +213,57 @@ def test_a_rearm_with_nothing_new_draws_one_row_per_live_run(home) -> None:
     )
 
 
+def test_a_rearm_with_nothing_new_carries_the_recorded_state_time(home) -> None:
+    """A run that has not moved still carries the time its state was recorded.
+
+    The run is live and working, and the stream's last word for it says so at a
+    stamp long before the arming. Nothing changes in the gap, so no transition
+    is replayed for that run: its row is derived from the live pointer, and its
+    time is the stream's own record for that state, not the second the pane
+    attached. Reading only the replayed lines would stamp it with the attach
+    time, so the expectation is the recorded past stamp read back.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+        _arm()
+
+        past = _iso(time.time() - 40 * 60)
+        assert ticker_module.local_clock(past) != ticker_module.local_clock(
+            _iso(time.time())
+        )
+        _append_stream(
+            stream_path,
+            [
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="working",
+                    observed_at=past,
+                    previous="dispatched",
+                ),
+                _event(
+                    RUN_B,
+                    "node-b",
+                    state="working",
+                    observed_at=past,
+                    previous="dispatched",
+                ),
+            ],
+        )
+        # Consume the appended lines, so the next arming has no gap to replay
+        # and derives both rows from the fleet.
+        _arm()
+        third = _arm(resume=None)
+
+    assert [str(event["observed_at"]) for event in third] == [past, past], (
+        f"a run that did not move still carries its recorded state time; got "
+        f"{[event['observed_at'] for event in third]!r}"
+    )
+
+
 def test_a_rearm_after_a_quiet_baseline_arming_draws_the_fleet(home) -> None:
     """A baseline arming against a quiet stream still leaves a place, and the
     next arming still replays the fleet.
