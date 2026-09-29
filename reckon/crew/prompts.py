@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 import re
 import sys
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Iterable, Mapping
 
 from reckon.crew.node import (
     NEEDS_HELP_MARKER,
@@ -52,6 +52,22 @@ FALSIFIABLE_EVIDENCE_CONTRACT = (
     "  landed by a marker it introduced rather than one it removed.\n"
     "  Record the commits and paths you changed; a coordinator cannot see your\n"
     "  tree, so an unfilled field reads as no work."
+)
+
+# The write-fence rule, embedded in every composed prompt beside the two
+# contracts above. It lives here for the same reason its siblings do: the
+# prompt embeds no protocol reference by design, so a rule carried only by a
+# reference file reaches nobody. Both halves are stated — the rule the worker
+# obeys, and the mechanical reason it holds — so a worker that never reads the
+# fence's own plan still learns why a write outside its grants fails rather
+# than merely that it must not try. Kept as a standalone constant so a test can
+# compose with the rule sentence deleted and diff against the live prompt,
+# which proves the rule arrives only through this text.
+FENCE_WRITE_GRANT_CONTRACT = (
+    "FENCE — WRITE GRANTS\n"
+    "  Never write the operator's memory directory or any path outside your\n"
+    "  granted write paths. The fence enforces this: a write outside your\n"
+    "  grants is refused as a read-only file system."
 )
 
 # The small-node rule, embedded beside the landing sentence in each landing
@@ -319,6 +335,8 @@ def _invariant_prompt_prefix() -> str:
         + DURABLE_WRITE_CONTRACT
         + "\n\n"
         + FALSIFIABLE_EVIDENCE_CONTRACT
+        + "\n\n"
+        + FENCE_WRITE_GRANT_CONTRACT
         + "\n\nNODE     "
     )
 
