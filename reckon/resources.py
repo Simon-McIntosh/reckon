@@ -24,6 +24,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 from reckon import _plan_html
 from reckon._schema import RESOURCE_TYPE_ENUM, ResourceIdentity
+from reckon._store import write_json_atomically
 
 TYPE_ROOTS = {
     "plan": "plans",
@@ -997,8 +998,9 @@ def migrate_typed_layout(docs_dir: Path, project: str) -> dict:
     if not active_items:
         if manifest_path.is_file():
             return prior
-        manifest_path.parent.mkdir(parents=True, exist_ok=True)
-        manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+        write_json_atomically(
+            manifest_path, manifest, indent=2, sort_keys=True, fsync=False, mode=None
+        )
         return manifest
 
     moves = {

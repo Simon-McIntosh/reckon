@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import os
 import posixpath
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
@@ -14,7 +13,7 @@ from statistics import fmean, median
 from typing import Any
 
 from reckon import _plan_html, ledger
-from reckon._store import _config_home, _mounts_path
+from reckon._store import _config_home, _mounts_path, write_json_atomically
 from reckon.calibration import calibration_configuration_key
 
 _ORIENTATION_MINIMUM_SAMPLES = 2
@@ -1101,10 +1100,14 @@ def rebuild_capabilities(
         bin_width_hours=bin_width_hours,
     )
     target = Path(path) if path is not None else capabilities_path()
-    target.parent.mkdir(parents=True, exist_ok=True)
-    temporary = target.with_name(target.name + ".tmp")
-    temporary.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
-    os.replace(temporary, target)
+    write_json_atomically(
+        target,
+        record,
+        indent=2,
+        sort_keys=True,
+        fsync=False,
+        mode=None,
+    )
     return record
 
 

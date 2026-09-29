@@ -47,7 +47,6 @@ import socket
 import struct
 import subprocess
 import sys
-import tempfile
 import termios
 import threading
 import time
@@ -57,6 +56,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from reckon._store import write_json_atomically
 
 RUNTIME_DIR_ENV = "FLEET_RUNTIME_DIR"
 STATE_DIR_ENV = "FLEET_STATE_DIR"
@@ -226,22 +227,20 @@ def prepare_runtime(environ: MutableMapping[str, str] | None = None) -> Path:
 def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     """Write JSON atomically, so a reader never sees a half-written record.
 
-    The parent directory is never created here: a run directory a discard has
-    removed must stay removed, so a write into one that is gone is a deliberate
-    refusal rather than a resurrection.
+    The parent directory is never created: a run directory a discard has removed
+    must stay removed, so a write into one that is gone is a deliberate refusal
+    rather than a resurrection. That is why the shared writer is asked not to
+    create the parent.
     """
-    descriptor, tmp_name = tempfile.mkstemp(
-        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
+    write_json_atomically(
+        path,
+        payload,
+        indent=2,
+        sort_keys=True,
+        fsync=False,
+        mode=0o600,
+        create_parents=False,
     )
-    tmp = Path(tmp_name)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            json.dump(payload, handle, indent=2, sort_keys=True)
-            handle.write("\n")
-        os.replace(tmp, path)
-    except BaseException:
-        tmp.unlink(missing_ok=True)
-        raise
 
 
 def publish_record(runtime: Path, environ: Mapping[str, str] | None = None) -> Path:

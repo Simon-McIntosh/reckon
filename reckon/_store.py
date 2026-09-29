@@ -64,7 +64,7 @@ from contextvars import ContextVar
 import json
 import os
 import re
-import tempfile
+import secrets
 import fcntl
 import hashlib
 from contextlib import ExitStack, contextmanager
@@ -355,8 +355,57 @@ def _write_json_envelope(
             json.dump(envelope, handle, indent=2)
             handle.write("\n")
 
-        _write_through_sibling_temporary(path, render)
+        _write_through_sibling_temporary(path, render, mode=0o600)
         return new_data["_version"]
+
+
+def _fsync_directory(directory: Path) -> None:
+    """Flush a directory entry, so a rename into it survives a crash."""
+    descriptor = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _open_sibling_temporary(
+    path: Path, create_mode: int, exact_mode: int | None
+) -> tuple[TextIO, Path]:
+    """Open a fresh, uniquely named sibling of ``path`` at ``create_mode``.
+
+    The creation mode is handed to the open rather than applied afterwards, so a
+    caller that must hold its file private is private from the first byte rather
+    than only after a chmod. ``O_EXCL`` refuses a name that already exists rather
+    than reusing a sibling another writer is mid-way through, and the random
+    suffix makes that refusal vanishingly rare. ``create_mode`` is filtered by
+    the umask exactly as an ordinary file creation would be, which is how a
+    caller asking for the process default gets it.
+
+    ``exact_mode`` is the mode the caller asked for, applied with ``os.chmod``
+    immediately after creation when it is not ``None``. The open's own mode is
+    filtered by the umask, which can only narrow it, so a file the caller asked
+    to be ``0o600`` would otherwise land ``0o400`` under a umask such as
+    ``0o277``; the chmod restores exactly the requested bits without ever
+    widening the file past them at any instant.
+    """
+    for _ in range(64):
+        candidate = (
+            path.parent / f".{path.name}.{os.getpid()}.{secrets.token_hex(8)}.tmp"
+        )
+        try:
+            descriptor = os.open(
+                candidate, os.O_CREAT | os.O_EXCL | os.O_WRONLY, create_mode
+            )
+        except FileExistsError:
+            continue
+        try:
+            if exact_mode is not None:
+                os.chmod(candidate, exact_mode)
+        except OSError:
+            os.close(descriptor)
+            raise
+        return os.fdopen(descriptor, "w", encoding="utf-8"), candidate
+    raise FileExistsError(f"could not create a temporary sibling for ``{path}``")
 
 
 def _write_through_sibling_temporary(
@@ -364,6 +413,8 @@ def _write_through_sibling_temporary(
     render: Callable[[TextIO], None],
     *,
     fsync: bool = True,
+    mode: int | None = None,
+    fsync_directory: bool = False,
 ) -> None:
     """Write through a unique sibling temporary and rename it into place.
 
@@ -374,23 +425,28 @@ def _write_through_sibling_temporary(
     partial destination nor a stray sibling. ``fsync`` decides whether the bytes
     are made durable before the rename: a caller whose file must survive a crash
     leaves it on, while a caller rewriting a disposable cache may turn it off.
+    ``mode`` is the permission bits the final file must carry. The temporary is
+    created at that mode and then set to it exactly with ``os.chmod``, because
+    the open's own mode is filtered by the umask and a umask such as ``0o277``
+    would otherwise leave a caller asking for ``0o600`` with ``0o400``. ``None``
+    takes the process's default creation mode instead, umask and all, which is
+    what an ordinary whole-file write would have left. ``fsync_directory``
+    flushes the parent directory entry after the rename, which is what makes the
+    rename itself durable across a crash.
     """
     temporary: Path | None = None
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=path.parent,
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            temporary = Path(handle.name)
+        handle, temporary = _open_sibling_temporary(
+            path, 0o666 if mode is None else mode, mode
+        )
+        with handle:
             render(handle)
             handle.flush()
             if fsync:
                 os.fsync(handle.fileno())
         temporary.replace(path)
+        if fsync_directory:
+            _fsync_directory(path.parent)
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
@@ -401,6 +457,11 @@ def write_json_atomically(
     payload: Any,
     *,
     fsync: bool = True,
+    indent: int | None = 2,
+    sort_keys: bool = True,
+    mode: int | None = 0o600,
+    fsync_directory: bool = False,
+    create_parents: bool = True,
 ) -> Path:
     """Write ``payload`` as JSON so a reader never observes a partial file.
 
@@ -409,16 +470,34 @@ def write_json_atomically(
     the whole new one. A failure removes the temporary and leaves the
     destination untouched. ``fsync`` is on by default and makes the bytes
     durable before the rename; a caller rewriting a disposable cache may turn it
-    off. The parent directory is created when it is absent.
+    off.
+
+    The remaining keyword arguments exist so a caller keeps the behaviour it had
+    before it moved onto this writer. ``indent`` and ``sort_keys`` are the
+    serialisation, defaulting to this writer's own. ``mode`` is the temporary's
+    permission bits and defaults to ``0o600``, the private mode this writer has
+    always produced; a caller whose file was an ordinary whole-file write passes
+    ``None`` to take the process's default creation mode instead.
+    ``fsync_directory`` flushes the parent directory entry after the rename, and
+    ``create_parents`` is turned off by a caller for which materialising a
+    missing parent would resurrect a directory something else deliberately
+    removed.
     """
     target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
+    if create_parents:
+        target.parent.mkdir(parents=True, exist_ok=True)
 
     def render(handle: TextIO) -> None:
-        json.dump(payload, handle, indent=2, sort_keys=True)
+        json.dump(payload, handle, indent=indent, sort_keys=sort_keys)
         handle.write("\n")
 
-    _write_through_sibling_temporary(target, render, fsync=fsync)
+    _write_through_sibling_temporary(
+        target,
+        render,
+        fsync=fsync,
+        mode=mode,
+        fsync_directory=fsync_directory,
+    )
     return target
 
 
