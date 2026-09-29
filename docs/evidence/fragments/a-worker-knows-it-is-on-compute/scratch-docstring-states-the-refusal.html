@@ -1,0 +1,92 @@
+<section id="scratch-docstring-states-the-refusal">
+  <h2>A scratch-removal docstring states the moved-root refusal it actually makes</h2>
+
+  <p><strong>What changed.</strong> The <code>_removable_scratch_target</code> docstring in
+  <code>reckon/crew/dispatch.py</code> claimed that accepting a recorded <code>scratch</code> path gave
+  the removal <em>resilience to a root that moved</em>. The guard does the opposite: it requires the
+  recorded path's parent to equal the scratch root that resolves <em>now</em>, so a record made under a
+  root that has since moved is refused. The docstring now states that case for both the guard and
+  <code>remove_worker_scratch</code>, and a new test drives the case — it redirects
+  <code>RECKON_WORKER_SCRATCH_ROOT</code> between the create and the remove and asserts the record is
+  withheld with the original directory still present.</p>
+
+  <h3>The defect, reproduced before the repair</h3>
+
+  <p>At the base revision <code>13f950ff</code> the docstring read:</p>
+
+  <p><code>A recorded path is therefore only ever allowed to equal &lt;scratch root&gt;/&lt;run id&gt;
+  — its value is resilience to a root that moved, never a licence to name a directory the run does
+  not own.</code></p>
+
+  <p>But the behaviour is the reverse. With the root moved between create and remove, the guard
+  resolves the current root <code>B</code>, finds the recorded path's parent is <code>A</code>, and
+  returns <code>None</code> with <code>"scratch path is not the directory this run owns"</code> — so
+  the recorded path supplies <em>no</em> resilience; it is withheld. A docstring that names a policy
+  the code does not follow is a claim a later reader acts on, so the wording is the defect and the
+  reproduction is the behaviour that contradicts it. The probe at <code>13f950ff</code> reported
+  <code>removed: False</code>, <code>withheld: scratch path is not the directory this run owns</code>,
+  <code>original dir present: True</code>.</p>
+
+  <h3>The repair</h3>
+
+  <p>Both docstrings now state the moved-root case and drop the resilience claim. The behaviour is
+  unchanged — a working guard is documented, not reimplemented:</p>
+
+  <figure>
+    <img src="/reckon/figures/a-worker-knows-it-is-on-compute/scratch-docstring-states-the-refusal/scratch-moved-root-withheld.svg"
+         alt="The create phase resolves root A, makes A/&lt;run&gt; and records it on the pointer. The root is then moved to B. At removal the guard resolves the current root B and compares the recorded path's parent A against it; they differ, so it returns the withheld reason, removal is False, and A/&lt;run&gt; is left in place." />
+    <figcaption>The create phase records a path under root A; by removal the root has moved to B, so
+    the guard withholds the recorded path and leaves the directory in place.</figcaption>
+  </figure>
+
+  <ul>
+    <li><strong>Narrowing, not widening.</strong> The new wording says a recorded path is allowed only
+    as <code>&lt;scratch root&gt;/&lt;run id&gt;</code> <em>beneath the root that resolves now</em>, so
+    it narrows what may be removed rather than widening it.</li>
+    <li><strong>The moved case, stated.</strong> <em>A record made under a scratch root that has since
+    moved names a directory no longer a child of the resolved root; it is withheld and left in
+    place, never removed.</em> <code>remove_worker_scratch</code> carries the same sentence for its
+    recorded-path argument.</li>
+  </ul>
+
+  <h3>Measured</h3>
+
+  <p>The gate is the one test file that reaches this code,
+  <code>tests/test_worker_scratch_lives_with_its_run.py</code>, run as one arm per revision:</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline</td><td><code>13f950ff</code></td><td><strong>13 passed</strong>, exit 0</td></tr>
+      <tr><td>after</td><td><code>99dd5b5e</code></td><td><strong>14 passed</strong>, exit 0</td></tr>
+    </tbody>
+  </table>
+
+  <p>Failure ids added by the change: <strong>none</strong> (0 added, 0 removed). The one test the
+  change adds, <code>test_a_record_under_a_moved_root_is_withheld</code>, redirects the scratch root after
+  <code>_plant_scratch</code> and asserts <code>scratch_removed is False</code>, a non-empty
+  <code>scratch_withheld</code>, and that the created directory and its file survive. The gate logs
+  are under the run directory, one per arm, each headed by the revision, the tree and the command it
+  ran and ending in <code>EXIT=&lt;n&gt;</code>.</p>
+
+  <h3>The negative control</h3>
+
+  <p>The declared mutation is <code>accept a recorded path whose parent is not the current scratch
+  root</code>. Applied as <code>RECKON_WORKER_SCRATCH_MOVED_NEGATIVE=1</code>, it drops only the
+  parent-of-the-current-root refusal at the guard, keeping every other check. Under it the new case
+  and the pre-existing outside-the-root case both turn red — <strong>2 failed, 12 passed</strong>,
+  exit 1 — which is the discrimination: the recorded directory is removed because the guard no longer
+  withholds it. The red log's first line repeats the mutation verbatim, the two failing ids are listed
+  beneath it, and the log ends in <code>EXIT=1</code>; it is named in the node's manifest under
+  <code>negative_control_log</code>.</p>
+
+  <h3>What is not here</h3>
+
+  <p>No suite-wide run: the change touches one module's docstrings and one test file, and the gate set
+  that reaches it is that file. Verifying the merged result belongs to a separately dispatched test
+  node. The behaviour was confirmed unchanged rather than reimplemented: the probe above and the new
+  case both exercise the guard as it already was.</p>
+
+  <p><strong>Commits.</strong> Implementation and cases: <code>99dd5b5e</code>. The landing record and
+  the figure are the commit that carries this fragment.</p>
+</section>

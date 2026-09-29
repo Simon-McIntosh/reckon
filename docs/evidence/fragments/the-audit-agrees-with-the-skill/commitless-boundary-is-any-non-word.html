@@ -1,0 +1,72 @@
+<article class="landed-report" data-run-id="r-20260928T183052345451-commitless-boundary-is-any-non-word">
+      <h3>commitless-boundary-is-any-non-word — the absence word ends at any non-word character</h3>
+      <p>
+        A commitless role's <code>commits:</code> declaration was recognised by an
+        enumerated separator set — whitespace, end of value, comma, semicolon, colon,
+        em dash, hyphen, opening or closing parenthesis. A sentence punctuation mark
+        outside that list kept the declaration unread: <code>commits: none. review
+        only</code> and <code>commits: none/review only</code> were parsed as citations
+        and refused with <em>does not resolve to an object</em>, so the coordinator
+        still had to blank the line by hand. The set was incomplete by construction:
+        any new punctuation a node reached for re-opened the hand edit.
+      </p>
+      <p>
+        The rule now reads the word boundary instead of a separator list. After leading
+        whitespace, the field opens with an absence word when the next character is the
+        end of the value or a character that is not a letter, digit or underscore —
+        <code>_ABSENCE_BOUNDARY = r"(?!\w)"</code> in
+        <code>reckon/crew/promotion.py</code>. A letter, digit or underscore after the
+        letters means a longer word that merely begins with them (<code>nonesuch</code>),
+        so that stays a citation attempt. The reading is still given only to a role that
+        commits nothing; a role that commits keeps the entry-by-entry citation check.
+      </p>
+      <figure>
+        <img src="/reckon/figures/the-audit-agrees-with-the-skill/commitless-boundary-is-any-non-word/boundary-rule.png"
+             alt="The character after the absence word decides: end or any non-word character declares absence; a letter, digit or underscore does not.">
+        <figcaption>
+          The boundary read, character by character. Each boundary drawn green promotes
+          a review without a hand edit. The table below lists the nine review shapes that
+          promote and the two shapes that are still refused.
+        </figcaption>
+      </figure>
+      <table>
+        <caption>Shapes exercised by <code>tests/test_commitless_review_promotes.py</code></caption>
+        <thead>
+          <tr><th><code>commits:</code> value</th><th>Role</th><th>Outcome</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>none (review node; no repository change; …)</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none (review node, no repository change)</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none, no repository change</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none; review only</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none - review only</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none. review only</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none – review only</code> (en dash)</td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none/review only</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none) review only</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none. no repository change</code></td><td>implement</td><td>refused (does not resolve to an object)</td></tr>
+          <tr><td><code>nonesuch, prose</code></td><td>review</td><td>refused (does not resolve to an object)</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Negative control.</strong> Restoring the enumerated separator set
+        reddens the full-stop review case
+        (<code>tests/test_commitless_review_promotes.py::test_sentence_punctuation_after_the_absence_word_promotes_on_a_review[r-20260928T100000000011-review-full-stop-absence-none. review only]</code>);
+        under the mutation the value is refused as an unresolvable citation. The red log
+        is <code>negative-control-full-stop.log</code> under the run directory, whose
+        first line repeats the declared mutation verbatim.
+      </p>
+      <p>
+        <strong>Gate.</strong> The 25 promotion test files plus
+        <code>tests/test_cited_identifier_resolves.py</code> ran at the new head:
+        10 failed, 227 passed. All 10 failures sit in three files
+        (<code>test_promotion_never_amends_its_commit.py</code>,
+        <code>test_promotion_stages_its_one_run_file.py</code>,
+        <code>test_cited_identifier_resolves.py</code>); the base arm over exactly
+        those files reproduced the same 10 ids, so the change adds zero failures by
+        id. Those failures are the review gate refusing to classify a scoring run as
+        promoted — unrelated to the absence-word boundary — and are reported as a
+        follow-on rather than triaged here. Logs: <code>gate-head.log</code> and
+        <code>gate-base.log</code> under the run directory.
+      </p>
+    </article>
