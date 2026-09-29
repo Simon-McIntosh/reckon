@@ -1,0 +1,358 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "60708b078c03a99e1c9d45504b7693483704dc9d",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 2743855,
+      "input_tokens_cumulative": 2743855,
+      "output_tokens": 24334,
+      "output_tokens_cumulative": 24334,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 67,
+    "files": 2,
+    "removed": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "1c92d1bee3c53402b38d6e90c08e716adf8d6bf6",
+    "d00825411315ffa585f33a7c94f3442b6e4a995c"
+  ],
+  "completed_at": "2026-09-29T18:48:24.159Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T18:34:20Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "env -u RECKON_RUN_ID PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/session-fixture-declares-no-commit /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_session_lives_on_its_run.py tests/test_promotion_refuses_a_base_commit.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T183405930875-session-fixture-declares-no-commit/arm-head-suite.log"
+  },
+  "impl_move": {
+    "at_complete": 1.0,
+    "at_dispatch": 1.0,
+    "plan": "a-stalled-row-says-whether-the-worker-lives",
+    "reason": "the plan was already at impl 1.0; this repairs a stale test fixture",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T19:04:07.193306+00:00",
+    "horizon_seconds": 1800,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T18:34:07Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 6,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 5,
+    "headroom": 11,
+    "mean_context": 110000,
+    "observed_at": "2026-09-29T18:34:01Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T18:48:24.159Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T183405930875-session-fixture-declares-no-commit/manifest.md",
+  "member": "disposable-r-20260929T183405930875-session-fixture-declares-no-commit",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]",
+      "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[True]"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]",
+      "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[True]"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]",
+      "tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[True]"
+    ],
+    "declaration": "restore commits=[observed['base_sha']] in the fixture's crew.complete call in tests/test_session_lives_on_its_run.py; both test_promoted_session_resumes_same_task_without_roster_write parametrisations fail with the base-citation refusal",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T183405930875-session-fixture-declares-no-commit/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T183405930875-session-fixture-declares-no-commit/negative-control.log",
+    "test_paths": [
+      "tests/test_session_lives_on_its_run.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "session-fixture-declares-no-commit",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1702,
+          "cached_input_tokens": 424534,
+          "input_tokens": 426238,
+          "output_tokens": 828,
+          "reasoning_output_tokens": 167,
+          "total_tokens": 427066,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "The fixture's crew.complete call passes no_commit with a reason in place of commits=[observed[\"base_sha\"]], with no assertion changed; both parametrisations of test_promoted_session_resumes_same_task_without_roster_write pass; the named negative control (restore the base citation) fails both with the base-citation refusal; the gate is tests/test_session_lives_on_its_run.py plus tests/test_promotion_refuses_a_base_commit.py, run at base and head with both suite arms recorded as JSON carrying completed true, a literal command with no placeholder, and a bare line reading EXIT= followed by the exit code ending each log, and the head arm adds no failure id; an evidence fragment at docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/session-fixture-declares-no-commit.html records the change and cites the measurement report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/session-resume-cases-fail-at-main/report.md; the turn ends once the manifest reads complete.",
+    "estimated_hours": null,
+    "goal": "The promoted-session fixture in tests/test_session_lives_on_its_run.py declares that its synthetic run made no commit instead of citing the run's own base, so test_promoted_session_resumes_same_task_without_roster_write passes under the base-citation guard from a75752c55 (followup f-asrswtwl-session-resume-cases-fail-at-main).",
+    "id": "session-fixture-declares-no-commit",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T18:34:07Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 6,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 5,
+      "headroom": 11,
+      "mean_context": 110000,
+      "observed_at": "2026-09-29T18:34:01Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T183405930875-session-fixture-declares-no-commit/manifest.md",
+    "negative_control": "restore commits=[observed['base_sha']] in the fixture's crew.complete call in tests/test_session_lives_on_its_run.py; both test_promoted_session_resumes_same_task_without_roster_write parametrisations fail with the base-citation refusal",
+    "plan": "a-stalled-row-says-whether-the-worker-lives",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§4",
+    "spec_level": "exact",
+    "time_budget": "30m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_session_lives_on_its_run.py",
+      "docs/evidence/fragments/a-stalled-row-says-whether-the-worker-lives/session-fixture-declares-no-commit.html",
+      "docs/figures/a-stalled-row-says-whether-the-worker-lives/session-fixture-declares-no-commit"
+    ]
+  },
+  "orientation_input_tokens": 885374.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "session-fixture-declares-no-commit",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T18:34:14.653206+00:00",
+    "score": 0.49375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-stalled-row-says-whether-the-worker-lives",
+  "plan_impl_at_dispatch": 1.0,
+  "promoted_revision": "d00825411315ffa585f33a7c94f3442b6e4a995c",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 20,
+      "evidence": 20,
+      "fit": 20,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 100
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "run_id": "r-20260929T183405930875-session-fixture-declares-no-commit",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§4",
+  "session_harness": "claude",
+  "session_id": "dd59a9d9-31d5-45e0-9e06-ff31bb68b90d",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 2743855,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 819.053,
+    "generated_tokens": 24334,
+    "generation_seconds": 608.498,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 24.2,
+    "machine_seconds": 210.555,
+    "peak_input_tokens": 116275,
+    "tokens_per_second": 39.99,
+    "wall_tokens_per_second": 29.71
+  },
+  "time_budget": "30m",
+  "tool_steps": 37.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 844,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T18:48:24Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T18:34:42Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T183405930875-session-fixture-declares-no-commit",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 4216,
+    "worker_pid": 91795
+  },
+  "worker_seconds": 774,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
