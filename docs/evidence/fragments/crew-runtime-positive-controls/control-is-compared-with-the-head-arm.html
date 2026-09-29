@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="The control is judged against the head arm">
+  <meta name="plan-summary" content="The negative-control gate admits a control whose failing id the head arm passes, so a test-first node no longer needs a waiver; the baseline comparison survives only as the fallback for a manifest with no readable head arm. Four waived promotions replayed read-only, one refusal shown beside them.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="qualified">
+  <title>The control is judged against the head arm &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The control is judged against the head arm &mdash; evidence</h1>
+  <p><code>_require_declared_negative_control</code> in <code>reckon/crew/promotion.py</code> now admits a control on a failure its <em>head arm</em> passes rather than one its baseline does not fail. The head arm is the run's own <code>after_suite</code>: the suite as it stands after the repair. The baseline &mdash; the suite taken over the unfixed tree &mdash; is still read, but only when the manifest records no readable head arm, which is the one case where it is the best evidence available. A node that writes its cases before the repair is the reason: every new case is red at the base by design, so the old comparison refused exactly the controls that reddened them and four promotions on 2026-09-28 could proceed only on <code>--waive-negative-control</code>.</p>
+
+  <figure>
+    <img src="/reckon/figures/crew-runtime-positive-controls/control-is-compared-with-the-head-arm/arm_decision.png"
+      alt="Left: the gate's decision. The control log supplies two facts first — a terminal exit record and at least one failing test id — and each fact missing or naming zero refuses the control. Then the arm that decides: a readable head arm recorded means the id must be absent from after_suite's failure_ids, and no readable head arm means the baseline_suite comparison stands. Right: the four replayed runs, each with its control's failing id red in the baseline arm, green in the head arm, and admitted.">
+    <figcaption>Left, the decision as the gate now makes it: two facts from the control log, then the head arm decides; the baseline answers only when the manifest records no readable head arm. Right, the four promotions that needed a waiver, replayed against their own manifests and logs: in each, the id the control reddened sits in the baseline arm's failure ids and in none of the head arm's.</figcaption>
+  </figure>
+
+  <section id="defect">
+    <h2>The defect, reproduced before it was repaired</h2>
+    <p>A test-first node runs its suite twice: the baseline arm over the unfixed tree, the head arm after the repair. Its control reddens one of its own new cases, so the failing id is present in <em>both</em> arms' failure sets at the moment the baseline is taken &mdash; the case does not exist before the node writes it, so it fails there by construction. The old gate subtracted the baseline's <code>failure_ids</code> from the control's failing ids and admitted the control only if something remained. Nothing remained. The refusal, quoted from <code>base-arm.log</code> (revision <code>27f6266a</code>, the commit before this node's change):</p>
+    <pre><code>E  reckon.crew.CrewError: run 'r-20260929T070000000000-control' declares the mutation
+   'applied: the early return was removed in a scratch copy' but the log at
+   '.../control.log' shows no failed control run: it adds no failure to the baseline's:
+   every test it names (tests/test_guard.py::test_a_red_before_the_repair) is one the
+   baseline already fails.</code></pre>
+    <p>The node's measurement was correct and the control was sound; the arm it was compared against was the wrong one. Four promotions hit this on 2026-09-28 and each was recorded on a waiver rather than admitted on its facts: <code>r-20260928T142644163914</code>, <code>r-20260928T193532461213</code>, <code>r-20260928T204215455574</code> and <code>r-20260929T001417713998</code>.</p>
+    <p>The arm is also the one place the comparison could be defeated by the honest answer: three of those four runs share a suite with concurrent nodes, so their head arms <em>do</em> carry failures &mdash; other nodes', not theirs. Containment against the head arm's own failure set is what tells the two apart, and it is why the rule is a set difference rather than &ldquo;the head arm is clean&rdquo;.</p>
+  </section>
+
+  <section id="rule">
+    <h2>The admitting fact</h2>
+    <ul>
+      <li><strong>Two facts, unchanged and still not inferred.</strong> The control's log must carry a terminal <code>EXIT=&lt;n&gt;</code> record other than zero, and must name at least one failing test id. A log with no record, a log reading zero, and a log naming nothing each refuse the control, as before.</li>
+      <li><strong>The third fact changes arm.</strong> The control's failing ids are differenced against the head arm's <code>failure_ids</code>. At least one id the head arm passes admits the control; every id already in the head arm's set refuses it, with the refusal naming the head arm.</li>
+      <li><strong>A readable head arm is <code>after_suite</code></strong> carrying a <code>failure_ids</code> list of non-empty strings, and not marked <code>completed: false</code>. Anything else &mdash; the key absent, the observation incomplete, a <code>failure_ids</code> value that is not a list of ids &mdash; reads as <em>no readable head arm</em> and falls back to the baseline comparison. The fallback is deliberate: reading a malformed arm as failing nothing would admit every control, which is the fail-open shape this gate exists to avoid.</li>
+      <li><strong>The verdict row carries all four.</strong> <code>control_failure_ids</code>, <code>baseline_failure_ids</code>, <code>head_failure_ids</code> when a head arm was read, and <code>comparison_arm</code> naming which of the two decided &mdash; so a reader sees the disagreement between the arms without reopening either log.</li>
+    </ul>
+    <p>The remedy text a refused worker receives now reads &ldquo;at least one failing test id the head arm does not fail, falling back to the baseline's failing ids only when the manifest records no readable head arm&rdquo;, and the two refusal branches are worded apart, so the message says which arm refused and what to re-run.</p>
+  </section>
+
+  <section id="arms">
+    <h2>The gate and its two arms</h2>
+    <p>The population is this node's new test file plus every <code>tests/</code> file whose name contains <code>negative_control</code> or <code>control_gate</code> &mdash; seven files, <strong>51 cases</strong>. The baseline arm ran them against the base revision tree (<code>git archive</code> of <code>27f6266a</code>) with this node's new test file added, since the file is the measurement: <strong>4 failed, 47 passed, exit 1</strong> (<code>logs/base-arm.log</code>), the four failures being exactly the cases that assert the new arm &mdash; case (a), case (b), and both parametrisations of case (c), each red because the behaviour does not exist at the base. The head arm ran the same population in this worktree at the committed head: <strong>51 passed, exit 0</strong> (<code>logs/head-arm.log</code> and <code>logs/focused-gate.log</code>), adding no failing id to the baseline's four. Both logs carry their revision on line one and end in an <code>EXIT=</code> line; the two scratch-tree runs name <code>reckon/crew/promotion.py</code> as imported and the directory they resolved from, so the tree a figure measures is checkable rather than asserted.</p>
+    <p>The five cases the gate is written around: <strong>(a)</strong> an id red in <code>baseline_suite</code> and green in <code>after_suite</code> admits the control, with <code>comparison_arm</code> reading <code>after_suite</code>; <strong>(b)</strong> an id that also fails in <code>after_suite</code> is refused by the head-arm branch; <strong>(c)</strong> with no readable <code>after_suite</code> &mdash; absent, and present-but-<code>completed: false</code> &mdash; the baseline decides, refusing an id it fails and admitting one it does not; <strong>(d)</strong> a log whose capture exited zero is refused whatever it names; <strong>(e)</strong> a log with no exit record is refused. The tests build their manifests and logs under pytest's <code>tmp_path</code> and read nothing outside it: no real run directory is touched.</p>
+  </section>
+
+  <section id="control">
+    <h2>The negative control</h2>
+    <p>The declared mutation is <em>&ldquo;restore the baseline-only comparison in a scratch copy; the test-first case (a) must be refused and fail&rdquo;</em>, applied in <code>/tmp/nc-head-arm-mutation-tree</code> by forcing <code>reference_ids</code> back to <code>baseline_ids</code>. The restored comparison refuses the control in case (a) with the old baseline wording, so the case fails on the attribute the change introduced; case (b) fails with it, because a gate that never reads the head arm admits a control whose id the head arm also fails. <strong>2 failed, 49 passed, exit 1 at a non-zero EXIT record</strong> (<code>logs/negative-control.log</code>), the mutation verbatim on line one and the <code>EXIT=1</code> record after pytest's own output. The 49 that stayed green are the rest of the population, so the mutation's blast radius is the two cases it should move and nothing else.</p>
+    <p><strong>Self-applied.</strong> The rule admits this node's own control on the same terms: the gate invoked against this run's delivered manifest and red log &mdash; the record rebuilt from the declaration and write path the dispatch carried, read-only &mdash; returns <code>matched</code> with <code>comparison_arm: after_suite</code>, <code>control_exit_status: 1</code>, and both mutated case ids named as the ones added to the deciding arm (<code>logs/promotion-dry-run.log</code>). A gate that refused the run that wrote it would be evidence about the gate, not about the control, and this is the cheapest honest way to see it does not.</p>
+  </section>
+
+  <section id="replay">
+    <h2>The four waived promotions, replayed</h2>
+    <p>A rule that admits a control the old one refused has to be shown against the runs it was written for, and read-only: <code>docs/figures/crew-runtime-positive-controls/control-is-compared-with-the-head-arm/replay_head_arm_admission.py</code> reads each run's own manifest, its control log and its committed row from disk, rebuilds the node record the gate judges, and calls the gate. No run directory is written to. All four are now <strong>matched</strong>, each with <code>comparison_arm: after_suite</code> and the control's failing id named as the one id added to the deciding arm:</p>
+    <ul>
+      <li><code>r-20260928T142644163914</code> (lane reading) &mdash; admitted via <code>after_suite</code>; its head arm's three failure ids all name cases in <code>tests/test_lane_advisory_on_dispatch.py</code>, another node's file, so this is the containment case rather than an empty-arm case.</li>
+      <li><code>r-20260928T193532461213</code> (receipt rollback) &mdash; admitted via <code>after_suite</code>; its head arm records no failing id.</li>
+      <li><code>r-20260928T204215455574</code> (directory row) &mdash; admitted via <code>after_suite</code>; its head arm records no failing id.</li>
+      <li><code>r-20260929T001417713998</code> (orientation stub) &mdash; its head arm's four failure ids name cases in other test files; the control's id is in none of them.</li>
+    </ul>
+    <p>A replay that could only print the answer it wanted would be evidence of nothing, so a fifth entry replays the first run with its head arm removed: with no readable arm the baseline decides again and the control is <strong>REFUSED</strong>, in the fallback's own wording. The instrument can still say no, and the fallback is exercised rather than assumed. Both halves are in <code>logs/replay.log</code>.</p>
+  </section>
+
+  <section id="hygiene">
+    <h2>Lint and format</h2>
+    <p><code>ruff check</code> and <code>ruff format</code> over the changed paths add no finding against the base: <code>reckon/crew/promotion.py</code> carries ten lint findings at both revisions and nine format hunks at both, and the new test file and the two figure scripts carry none. Both revisions are judged under the repository's own ruff selection &mdash; the base revision read through <code>--stdin-filename</code>, because a copy of it checked from <code>/tmp</code> is measured under ruff's default rules instead and reports eleven lint findings for the same bytes. Findings are counted per finding with <code>--output-format=concise</code> rather than by line count, since a clean file prints its own summary line. The file's nine pre-existing format hunks sit outside every line this change touches and are deliberately left alone: reformatting them would rewrite lines the commit does not otherwise carry.</p>
+  </section>
+
+  <section id="scope">
+    <h2>What this measure is not</h2>
+    <p>This gate measures the change on its own tree. Whether the merged result holds alongside the other nodes of this section is a separate measurement belonging to a node dispatched for it, and none is claimed here. No finding outside the declared scope was triaged: the failures visible in two replayed runs' head arms name other nodes' test files and are recorded on those runs, not repaired here.</p>
+  </section>
+ </main>
+</body>
+</html>
