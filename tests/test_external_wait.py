@@ -192,7 +192,10 @@ def test_an_old_wait_surfaces_its_age_without_becoming_blocked(
     assert counts == {"working": 0, "blocked": 0, "unpromoted": 0, "waiting": 1}
     assert event["blocked"] == 0 and event["waiting"] == 1
     assert "7200s" in snapshot["detail"]
-    assert "!" in line and "wait-aged" in line
+    # No row carries a separate attention mark: the destination state word and
+    # its colour already say whether a reader must act, so the aged wait reads
+    # from "wait-aged" alone and its age from the clause beside it.
+    assert "!" not in line and "wait-aged" in line
 
 
 def test_a_crash_without_a_wait_declaration_stays_abandoned(
