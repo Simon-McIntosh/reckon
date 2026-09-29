@@ -122,6 +122,21 @@ def test_private_json_owner_only_mode_unchanged(tmp_path):
     assert mode == 0o400
 
 
+def test_private_json_mode_survives_a_restrictive_umask(tmp_path):
+    from reckon import _backends
+
+    destination = tmp_path / "private-umask.json"
+    previous = os.umask(0o277)
+    try:
+        _backends._write_private_json(destination, CANONICAL_PAYLOAD, 0o600)
+    finally:
+        os.umask(previous)
+
+    text, mode = _written(destination)
+    assert text == CANONICAL_TEXT
+    assert mode == 0o600
+
+
 def test_capabilities_output_unchanged(tmp_path, monkeypatch):
     from reckon import capabilities
 
@@ -418,19 +433,23 @@ def test_serve_caches_delegate(
 # --------------------------------------------------------------------------
 
 
-def test_shared_writer_accepts_the_new_parameters(tmp_path):
-    from reckon._store import write_json_atomically
+def test_shared_written_mode_is_exact_under_a_restrictive_umask(tmp_path):
+    from reckon import _store
 
     target = tmp_path / "custom.json"
-    write_json_atomically(
-        target,
-        CANONICAL_PAYLOAD,
-        indent=None,
-        sort_keys=False,
-        fsync=False,
-        mode=0o640,
-        fsync_directory=False,
-    )
+    previous = os.umask(0o077)
+    try:
+        _store.write_json_atomically(
+            target,
+            CANONICAL_PAYLOAD,
+            indent=None,
+            sort_keys=False,
+            fsync=False,
+            mode=0o640,
+            fsync_directory=False,
+        )
+    finally:
+        os.umask(previous)
 
     text, mode = _written(target)
     assert text == json.dumps(CANONICAL_PAYLOAD, indent=None, sort_keys=False) + "\n"

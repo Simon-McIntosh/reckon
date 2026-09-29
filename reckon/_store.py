@@ -368,7 +368,9 @@ def _fsync_directory(directory: Path) -> None:
         os.close(descriptor)
 
 
-def _open_sibling_temporary(path: Path, create_mode: int) -> tuple[TextIO, Path]:
+def _open_sibling_temporary(
+    path: Path, create_mode: int, exact_mode: int | None
+) -> tuple[TextIO, Path]:
     """Open a fresh, uniquely named sibling of ``path`` at ``create_mode``.
 
     The creation mode is handed to the open rather than applied afterwards, so a
@@ -378,6 +380,13 @@ def _open_sibling_temporary(path: Path, create_mode: int) -> tuple[TextIO, Path]
     suffix makes that refusal vanishingly rare. ``create_mode`` is filtered by
     the umask exactly as an ordinary file creation would be, which is how a
     caller asking for the process default gets it.
+
+    ``exact_mode`` is the mode the caller asked for, applied with ``os.chmod``
+    immediately after creation when it is not ``None``. The open's own mode is
+    filtered by the umask, which can only narrow it, so a file the caller asked
+    to be ``0o600`` would otherwise land ``0o400`` under a umask such as
+    ``0o277``; the chmod restores exactly the requested bits without ever
+    widening the file past them at any instant.
     """
     for _ in range(64):
         candidate = (
@@ -389,6 +398,12 @@ def _open_sibling_temporary(path: Path, create_mode: int) -> tuple[TextIO, Path]
             )
         except FileExistsError:
             continue
+        try:
+            if exact_mode is not None:
+                os.chmod(candidate, exact_mode)
+        except OSError:
+            os.close(descriptor)
+            raise
         return os.fdopen(descriptor, "w", encoding="utf-8"), candidate
     raise FileExistsError(f"could not create a temporary sibling for ``{path}``")
 
@@ -410,16 +425,19 @@ def _write_through_sibling_temporary(
     partial destination nor a stray sibling. ``fsync`` decides whether the bytes
     are made durable before the rename: a caller whose file must survive a crash
     leaves it on, while a caller rewriting a disposable cache may turn it off.
-    ``mode`` is the temporary's permission bits, taken at creation so a file that
-    must stay private never widens at any instant; ``None`` takes the process's
-    default creation mode instead, which is what an ordinary whole-file write
-    would have left. ``fsync_directory`` flushes the parent directory entry after
-    the rename, which is what makes the rename itself durable across a crash.
+    ``mode`` is the permission bits the final file must carry. The temporary is
+    created at that mode and then set to it exactly with ``os.chmod``, because
+    the open's own mode is filtered by the umask and a umask such as ``0o277``
+    would otherwise leave a caller asking for ``0o600`` with ``0o400``. ``None``
+    takes the process's default creation mode instead, umask and all, which is
+    what an ordinary whole-file write would have left. ``fsync_directory``
+    flushes the parent directory entry after the rename, which is what makes the
+    rename itself durable across a crash.
     """
     temporary: Path | None = None
     try:
         handle, temporary = _open_sibling_temporary(
-            path, 0o666 if mode is None else mode
+            path, 0o666 if mode is None else mode, mode
         )
         with handle:
             render(handle)
