@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" width="960" height="700" font-family="ui-sans-serif, system-ui, sans-serif">
+  <rect width="960" height="700" fill="#fbfbfd"/>
+  <text x="32" y="44" font-size="24" font-weight="700" fill="#1a1c22">Eight timestamp callers, one parser</text>
+  <text x="32" y="70" font-size="14" fill="#5a5f6b">Each caller stops parsing stamps itself and reads through <tspan font-family="ui-monospace, monospace" fill="#8a3ffc">reckon._timestamps.parse_utc</tspan>; each keeps the output it had at the base revision.</text>
+
+  <!-- Column headers -->
+  <text x="150" y="108" font-size="12" font-weight="700" letter-spacing="1" fill="#8a8f9b">CALLER (was a private parse)</text>
+  <text x="520" y="108" font-size="12" font-weight="700" letter-spacing="1" fill="#8a8f9b">RETAINED BEHAVIOUR</text>
+  <text x="792" y="108" font-size="12" font-weight="700" letter-spacing="1" fill="#8a8f9b">SHARED PARSER</text>
+
+  <!-- module groups -->
+  <g font-size="13">
+    <!-- _backends -->
+    <rect x="32" y="122" width="330" height="74" rx="8" fill="#ffffff" stroke="#d7dae2"/>
+    <text x="46" y="143" font-family="ui-monospace, monospace" font-size="12" fill="#8a3ffc">reckon/_backends.py</text>
+    <text x="46" y="165" fill="#1a1c22">_parse_cached_fetch_stamp</text>
+    <text x="46" y="185" fill="#1a1c22">_event_timestamp</text>
+
+    <!-- budget -->
+    <rect x="32" y="206" width="330" height="52" rx="8" fill="#ffffff" stroke="#d7dae2"/>
+    <text x="46" y="227" font-family="ui-monospace, monospace" font-size="12" fill="#8a3ffc">reckon/budget.py</text>
+    <text x="46" y="248" fill="#1a1c22">_parse_stamp</text>
+
+    <!-- budget_group -->
+    <rect x="32" y="268" width="330" height="52" rx="8" fill="#ffffff" stroke="#d7dae2"/>
+    <text x="46" y="289" font-family="ui-monospace, monospace" font-size="12" fill="#8a3ffc">reckon/crew/budget_group.py</text>
+    <text x="46" y="310" fill="#1a1c22">_observed_moment</text>
+
+    <!-- metering -->
+    <rect x="32" y="330" width="330" height="74" rx="8" fill="#ffffff" stroke="#d7dae2"/>
+    <text x="46" y="351" font-family="ui-monospace, monospace" font-size="12" fill="#8a3ffc">reckon/crew/metering.py</text>
+    <text x="46" y="373" fill="#1a1c22">_event_timestamp</text>
+    <text x="46" y="393" fill="#1a1c22">_stamped_elapsed</text>
+
+    <!-- ticker -->
+    <rect x="32" y="414" width="330" height="74" rx="8" fill="#ffffff" stroke="#d7dae2"/>
+    <text x="46" y="435" font-family="ui-monospace, monospace" font-size="12" fill="#8a3ffc">reckon/crew/ticker.py</text>
+    <text x="46" y="457" fill="#1a1c22">row_moment</text>
+    <text x="46" y="477" fill="#1a1c22">local_clock</text>
+  </g>
+
+  <!-- guard column -->
+  <g>
+    <rect x="420" y="122" width="300" height="112" rx="8" fill="#fff8e6" stroke="#e6b400"/>
+    <text x="436" y="145" font-size="13" font-weight="700" fill="#8a6a00">strict-spelling guard</text>
+    <text x="436" y="167" font-size="12" fill="#4a4f5b">refuses surrounding space</text>
+    <text x="436" y="185" font-size="12" fill="#4a4f5b">refuses a lowercase zone designator</text>
+    <text x="436" y="203" font-size="12" fill="#4a4f5b">refuses a value that is not a string</text>
+    <text x="436" y="224" font-size="11" fill="#8a6a00">parse_utc is tolerant of all three, so the guard sits above it</text>
+
+    <rect x="420" y="330" width="300" height="70" rx="8" fill="#eef6ff" stroke="#2f6fed"/>
+    <text x="436" y="353" font-size="13" font-weight="700" fill="#1f4fb0">naive-as-local branch</text>
+    <text x="436" y="375" font-size="12" fill="#4a4f5b">a stamp naming no zone is read as the</text>
+    <text x="436" y="391" font-size="12" fill="#4a4f5b">replaying machine's wall clock (row_moment)</text>
+
+    <rect x="420" y="414" width="300" height="70" rx="8" fill="#f3eefe" stroke="#8a3ffc"/>
+    <text x="436" y="437" font-size="13" font-weight="700" fill="#6a2fd0">display rendering</text>
+    <text x="436" y="459" font-size="12" fill="#4a4f5b">local_clock renders the reader's own</text>
+    <text x="436" y="475" font-size="12" fill="#4a4f5b">wall clock, keeping that rendering exactly</text>
+  </g>
+
+  <!-- shared parser -->
+  <rect x="752" y="200" width="176" height="240" rx="8" fill="#ffffff" stroke="#8a3ffc" stroke-width="2"/>
+  <text x="768" y="226" font-family="ui-monospace, monospace" font-size="13" font-weight="700" fill="#8a3ffc">parse_utc(value)</text>
+  <text x="768" y="252" font-size="12" fill="#4a4f5b">epoch number → seconds,</text>
+  <text x="768" y="268" font-size="12" fill="#4a4f5b">split at 1e11 for ms</text>
+  <line x1="768" y1="284" x2="912" y2="284" stroke="#e6e8ef"/>
+  <text x="768" y="304" font-size="12" fill="#4a4f5b">explicit zone is</text>
+  <text x="768" y="320" font-size="12" fill="#4a4f5b">authoritative,</text>
+  <text x="768" y="336" font-size="12" fill="#4a4f5b">normalised to UTC</text>
+  <line x1="768" y1="352" x2="912" y2="352" stroke="#e6e8ef"/>
+  <text x="768" y="372" font-size="12" fill="#4a4f5b">naive value read</text>
+  <text x="768" y="388" font-size="12" fill="#4a4f5b">as UTC</text>
+  <line x1="768" y1="404" x2="912" y2="404" stroke="#e6e8ef"/>
+  <text x="768" y="424" font-size="12" fill="#c0392b">malformed → None</text>
+
+  <!-- arrows: callers to guard -->
+  <g stroke="#c7ccd6" stroke-width="1.6" fill="none">
+    <path d="M362 159 H 400 V 150 H 420"/>
+    <path d="M362 241 H 420"/>
+    <path d="M362 294 H 420"/>
+    <path d="M362 367 H 400 V 178 H 420"/>
+    <path d="M362 451 H 402 V 366 H 420"/>
+    <path d="M362 451 H 420"/>
+  </g>
+  <!-- guard to parser -->
+  <g stroke="#c7ccd6" stroke-width="1.6" fill="none">
+    <path d="M720 178 H 736 V 300 H 752"/>
+    <path d="M720 365 H 740 V 320 H 752"/>
+    <path d="M720 449 H 736"/>
+  </g>
+
+  <!-- result strip -->
+  <rect x="32" y="516" width="896" height="150" rx="10" fill="#ffffff" stroke="#d7dae2"/>
+  <text x="50" y="544" font-size="14" font-weight="700" fill="#1a1c22">Preservation measured, not assumed</text>
+  <text x="50" y="568" font-size="12.5" fill="#4a4f5b">16 shared inputs (zoned, Z, lowercase z, space-separated zoned and naive, offset with seconds, near-midnight offset,</text>
+  <text x="50" y="586" font-size="12.5" fill="#4a4f5b">naive, date-only, valid-date-plus-trailing-text, surrounding whitespace, epoch number, empty, None, non-string, garbage)</text>
+  <text x="50" y="604" font-size="12.5" fill="#4a4f5b">run through each caller at the base revision and again at the new head; a raised exception is recorded as its type.</text>
+
+  <rect x="50" y="620" width="250" height="30" rx="6" fill="#e9f7ef" stroke="#2e9e5b"/>
+  <text x="66" y="640" font-size="13" font-weight="700" fill="#1f7a44">base vs head: 0 differing cells</text>
+  <rect x="318" y="620" width="250" height="30" rx="6" fill="#e9f7ef" stroke="#2e9e5b"/>
+  <text x="334" y="640" font-size="13" font-weight="700" fill="#1f7a44">9 rows × 16 inputs = 144 cells</text>
+  <rect x="586" y="620" width="326" height="30" rx="6" fill="#fdecea" stroke="#c0392b"/>
+  <text x="602" y="640" font-size="13" font-weight="700" fill="#a5281c">negative control: zone dropped → .space_zoned fails</text>
+</svg>

@@ -56,6 +56,7 @@ from types import SimpleNamespace
 from typing import Any, Callable, Iterable, Mapping
 
 from reckon import _backends, crew, ledger
+from reckon._timestamps import parse_utc
 from reckon.crew import bar as bar_module
 from reckon.crew import budget_group, window_reading
 from reckon.crew import pace as pace_module
@@ -259,12 +260,18 @@ def _now(now: datetime | None = None) -> datetime:
 
 
 def _parse_stamp(value: Any) -> datetime | None:
-    """Parse an ISO-8601 stamp, returning None for anything unreadable."""
-    try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except (TypeError, ValueError):
+    """Parse an ISO-8601 stamp, returning None for anything unreadable.
+
+    Only a string is a stamp: a number, ``None`` or any other object reads as
+    nothing. The shared parser is tolerant of surrounding space and of a
+    lowercase zone designator; this reader's recorded contract refuses both, so
+    a string whose own text is not spelled strictly reads as unreadable.
+    """
+    if not isinstance(value, str):
         return None
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    if value != value.strip() or value.endswith("z"):
+        return None
+    return parse_utc(value)
 
 
 @dataclass(frozen=True)

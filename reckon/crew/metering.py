@@ -21,6 +21,8 @@ from numbers import Real
 from pathlib import Path
 from typing import Any, Literal
 
+from reckon._timestamps import parse_utc
+
 # A request above this published threshold is charged at twice the input rate and
 # one and a half times the output rate for the whole request, not only the excess.
 SURCHARGED_REQUEST_INPUT_TOKENS = 272_000
@@ -537,12 +539,18 @@ def _stream_time_span(path: Path) -> tuple[float | None, float | None]:
 
 
 def _event_timestamp(value: str) -> datetime | None:
-    """Parse one event's timestamp, treating a naive stamp as UTC."""
-    try:
-        parsed = datetime.fromisoformat(value)
-    except ValueError:
+    """Parse one event's timestamp, treating a naive stamp as UTC.
+
+    The reader takes a string: a non-string is a caller error and is surfaced
+    rather than silently reading as nothing. The shared parser is tolerant of
+    surrounding space and of a lowercase zone designator; this reader's
+    recorded contract refuses both.
+    """
+    if not isinstance(value, str):
+        raise TypeError(f"timestamp must be a string, not {type(value).__name__}")
+    if value != value.strip() or value.endswith("z"):
         return None
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    return parse_utc(value)
 
 
 def _stamped_elapsed(
@@ -563,12 +571,11 @@ def _stamped_elapsed(
     started = record.get("created_at") or record.get("attempt_started_at")
     if not isinstance(started, str) or not started:
         return None
-    try:
-        moment = datetime.fromisoformat(str(started))
-    except ValueError:
+    if started != started.strip() or started.endswith("z"):
         return None
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=UTC)
+    moment = parse_utc(started)
+    if moment is None:
+        return None
     if now_seconds is None:
         now_seconds = datetime.now(UTC).timestamp()
     return max(0.0, float(now_seconds) - moment.timestamp())

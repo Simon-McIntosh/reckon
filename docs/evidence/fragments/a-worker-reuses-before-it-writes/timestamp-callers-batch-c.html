@@ -1,0 +1,93 @@
+<article class="landed-report" data-run-id="r-20260929T030516526491-timestamp-callers-batch-c">
+      <h3>timestamp-callers-batch-c — the last eight readers join the shared parser</h3>
+      <p>
+        Eight readers across five modules still carried their own ISO-8601
+        handling — a <code>datetime.fromisoformat</code> call and, next to it,
+        the tolerance each author had added by hand. They now read through
+        <code>reckon._timestamps.parse_utc</code>: <code>_parse_cached_fetch_stamp</code>
+        and <code>_event_timestamp</code> in <code>reckon/_backends.py</code>,
+        <code>_parse_stamp</code> in <code>reckon/budget.py</code>,
+        <code>_observed_moment</code> in <code>reckon/crew/budget_group.py</code>,
+        <code>_event_timestamp</code> and <code>_stamped_elapsed</code> in
+        <code>reckon/crew/metering.py</code>, and <code>row_moment</code> and
+        <code>local_clock</code> in <code>reckon/crew/ticker.py</code>. No
+        <code>fromisoformat</code> call remains in any of the five modules.
+      </p>
+      <p>
+        The bar was not a shared parser but a shared parser that changed
+        nothing observable. The eight callers did not agree with
+        <code>parse_utc</code> on four points, and each disagreement was kept
+        rather than unified: the readers refuse a stamp whose text is not
+        strictly spelled (surrounding space, a lowercase zone designator) where
+        <code>parse_utc</code> tolerates both;
+        <code>metering._event_timestamp</code> keeps raising <code>TypeError</code>
+        on a non-string where <code>parse_utc</code> returns <code>None</code>;
+        <code>ticker.row_moment</code> reads a stamp naming no zone as the
+        replaying machine's <em>local</em> wall clock where <code>parse_utc</code>
+        reads UTC. A guard sits above the call in each case, and the
+        local-zone branch reproduces the recorded epoch exactly.
+      </p>
+      <figure>
+        <img src="/reckon/figures/a-worker-reuses-before-it-writes/timestamp-callers-batch-c/caller-migration-topology.svg"
+             alt="Eight callers grouped by module feed a strictness guard or a local-zone branch, which feed parse_utc; a strip below records 144 recorded cells with zero differing between base and head.">
+        <figcaption>
+          Each caller keeps the guard its recorded contract had before the
+          shared parser answers; the parser is reached only for a stamp the
+          caller would already have accepted.
+        </figcaption>
+      </figure>
+      <table>
+        <caption>What each caller reads and what it kept</caption>
+        <thead>
+          <tr><th>Caller</th><th>Reads</th><th>Retained beyond <code>parse_utc</code></th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>_backends._parse_cached_fetch_stamp</code></td><td>cache fetch stamp</td><td>epoch number accepted; text must carry a zone and no surrounding space; date-only refused</td></tr>
+          <tr><td><code>_backends._event_timestamp</code></td><td>event <code>timestamp</code></td><td>non-string and empty refused; surrounding space and lowercase zone refused</td></tr>
+          <tr><td><code>budget._parse_stamp</code></td><td>budget stamp</td><td>non-string refused; surrounding space and lowercase zone refused</td></tr>
+          <tr><td><code>budget_group._observed_moment</code></td><td>reading <code>observed_at</code></td><td>bool refused; epoch number accepted; surrounding space and lowercase zone refused</td></tr>
+          <tr><td><code>metering._event_timestamp</code></td><td>event <code>timestamp</code></td><td>non-string raises <code>TypeError</code>; surrounding space and lowercase zone refused</td></tr>
+          <tr><td><code>metering._stamped_elapsed</code></td><td>pointer <code>created_at</code></td><td>non-string refused; surrounding space and lowercase zone refused</td></tr>
+          <tr><td><code>ticker.local_clock</code></td><td>display stamp</td><td>short text renders <code>--:--:--</code>; a refusal falls back to the stamp's own clock field; else the reader's wall clock</td></tr>
+          <tr><td><code>ticker.row_moment</code></td><td>row <code>observed_at</code></td><td>zoneless text read as the local wall clock; unreadable → <code>0.0</code></td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Preservation.</strong> The eight callers were driven over one
+        shared sixteen-input list at the base revision and again at the new head,
+        through the door each caller already exposed: a zoned ISO string, a
+        <code>Z</code>-suffixed one, a lowercase <code>z</code>, a space-separated
+        zoned stamp, a space-separated naive one, an offset carrying seconds, a
+        near-midnight offset, a naive stamp, a date-only stamp, a valid date with
+        trailing text, surrounding whitespace, an epoch number, an empty string,
+        <code>None</code>, a non-string object and garbage text. A raised
+        exception is recorded as its type. The comparison is canonical: each
+        datetime is recorded as the instant it names and whether it is
+        zone-aware, so a caller cannot pass by re-parsing to recover the offset
+        the shared parser discarded. Base and head agree on all 144 cells —
+        nine rows (the eight callers plus <code>parse_utc</code> itself, run as
+        the reference) by sixteen inputs — with zero differing cells. Timezone-
+        sensitive cells are made deterministic by pinning the local zone to
+        <code>Europe/Paris</code> inside the test.
+      </p>
+      <p>
+        <strong>Negative control.</strong> Making
+        <code>metering._event_timestamp</code> drop the zone from a zoned input
+        reddens the space-separated zoned case,
+        <code>tests/test_timestamp_callers_batch_c.py::test_migrated_caller_keeps_its_recorded_output[metering._event_timestamp-space_zoned]</code>
+        — the recorded instant is aware and the mutated caller returns a naive
+        one. The red log is <code>negative_control.log</code> under the run
+        directory, whose first line repeats the declared mutation verbatim.
+      </p>
+      <p>
+        <strong>Gate.</strong> The touched modules' existing test files
+        (<code>tests/test_backends.py</code>, <code>tests/test_budget.py</code>,
+        <code>tests/test_budget_group.py</code>, <code>tests/test_crew_ticker.py</code>,
+        <code>tests/test_cumulative_token_accounting.py</code>,
+        <code>tests/test_resumed_burn_prices_to_rollout.py</code>) and
+        <code>tests/test_timestamps_parse_utc.py</code> were run at the base
+        revision and at the new head; the delta by failure id is recorded in
+        <code>baseline_suite.log</code> and <code>after_suite.log</code> under
+        the run directory.
+      </p>
+    </article>

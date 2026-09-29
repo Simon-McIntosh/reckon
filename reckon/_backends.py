@@ -68,6 +68,7 @@ from typing import Any
 
 from reckon._observations import optional_number
 from reckon._store import write_json_atomically
+from reckon._timestamps import parse_utc
 
 # Sandbox tiers named by the flight schema. The mapping to concrete flags is
 # per-dialect; the tier names are shared vocabulary.
@@ -735,6 +736,10 @@ def _parse_claude_account(payload: object) -> dict[str, Any]:
 # leaves the reading unknown rather than showing a figure with no age.
 ACCOUNT_CACHE_STAMP = "fetch_stamp"
 
+# The cache stamp is trusted only when its own text names a zone, so the
+# check reads the text's tail rather than assuming a missing zone means UTC.
+_CACHED_STAMP_ZONE = re.compile(r"(?:Z|[+-]\d{2}:?\d{2}(?::\d{2})?)$")
+
 
 def _parse_cached_fetch_stamp(payload: object) -> datetime | None:
     """Return when the cached block was written, or None when untrustworthy.
@@ -742,7 +747,9 @@ def _parse_cached_fetch_stamp(payload: object) -> datetime | None:
     The stamp is accepted as epoch seconds or a zoned ISO-8601 string, the
     shapes a durable cache can write without a zone, and read as UTC. A
     missing, malformed or unzoned value returns None: without a trusted moment
-    the copy's age cannot be stated, so the copy must not be shown bare.
+    the copy's age cannot be stated, so the copy must not be shown bare. The
+    shared parser reads a zoneless value as UTC, so a value whose text names no
+    zone is refused here before it is parsed.
     """
     if not isinstance(payload, Mapping):
         return None
@@ -750,17 +757,11 @@ def _parse_cached_fetch_stamp(payload: object) -> datetime | None:
     if isinstance(stamp, bool) or not isinstance(stamp, (int, float, str)):
         return None
     if isinstance(stamp, (int, float)):
-        try:
-            return datetime.fromtimestamp(float(stamp), tz=timezone.utc)  # noqa: UP017
-        except (OverflowError, OSError, ValueError):
-            return None
-    try:
-        moment = datetime.fromisoformat(stamp)
-    except ValueError:
+        return parse_utc(stamp)
+    text = stamp.strip()
+    if text != stamp or not _CACHED_STAMP_ZONE.search(text):
         return None
-    if moment.tzinfo is None:
-        return None
-    return moment.astimezone(timezone.utc)  # noqa: UP017
+    return parse_utc(text)
 
 
 def _human_age(seconds: float) -> str:
@@ -2825,15 +2826,18 @@ def run_probe(probe: BudgetProbe) -> dict[str, Any] | None:
 
 
 def _event_timestamp(event: Mapping[str, Any]) -> datetime | None:
-    """Parse one event's own timestamp, or None when it carries none usable."""
+    """Parse one event's own timestamp, or None when it carries none usable.
+
+    The shared parser is tolerant of surrounding space and of a lowercase zone
+    designator; this reader's recorded contract refuses both, so a stamp whose
+    own text is not spelled strictly is read as carrying no usable moment.
+    """
     value = event.get("timestamp")
     if not isinstance(value, str) or not value.strip():
         return None
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
+    if value != value.strip() or value.endswith("z"):
         return None
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    return parse_utc(value)
 
 
 def _requests_tool(event: Mapping[str, Any]) -> bool:
