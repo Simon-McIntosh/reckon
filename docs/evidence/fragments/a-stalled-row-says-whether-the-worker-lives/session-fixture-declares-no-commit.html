@@ -1,0 +1,66 @@
+<section id="session-fixture-declares-no-commit">
+  <h2>The promoted-session fixture declares its synthetic run commitless</h2>
+
+  <p><strong>What changed.</strong> The fixture
+  <code>test_promoted_session_resumes_same_task_without_roster_write</code> in
+  <code>tests/test_session_lives_on_its_run.py</code> promoted a synthetic run that produced no
+  commits while citing <code>commits=[observed["base_sha"]]</code> — the run's own seed commit.
+  The promotion guard <code>_require_commits_beyond_base</code> (added at
+  <code>a75752c55</code>) correctly refuses a citation of the base as a claim of work the run made
+  beyond it, so both parametrisations failed on the refusal. The fixture now passes the commitless
+  declaration the refusal names, <code>no_commit="synthetic session-persistence fixture with no
+  product edits"</code>, in place of the citation. No assertion changed and no test was disabled:
+  the fixture's purpose — that a promoted run's captured session survives on the ledger row and is
+  used by the next dispatch — is untouched. Product code is unchanged.</p>
+
+  <h3>Reproduced before the repair</h3>
+
+  <p>At base <code>60708b078</code> both parametrisations fail inside <code>crew.complete</code>
+  with the base-citation refusal; the whole gate gives <strong>2 failed, 11 passed</strong>,
+  exit 1:</p>
+
+  <pre><code>reckon.crew.CrewError: run 'r-…-capture' cites d47ddb031ff3f1679210eb653832750047ff8e81 as its
+own work, but that is the base it was dispatched against (d47ddb031ff3f1679210eb653832750047ff8e81).
+A promotion records what the run made beyond its base, and a citation of the base itself would read
+as landed work that predates the run. Cite the commit the run committed on top of the base, or pass
+--no-commit '&lt;why&gt;' when it produced none</code></pre>
+
+  <p>The failing statement is the fixture's promotion call, not an assertion. This is the same
+  defect the followup <code>f-asrswtwl-session-resume-cases-fail-at-main</code> measured and
+  attributed to <code>a75752c55</code>; that report is the measurement input —
+  <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/session-resume-cases-fail-at-main/report.md</code>
+  — and the repair applied here is the one it verified in a scratch tree.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_session_lives_on_its_run.py</code> plus
+  <code>tests/test_promotion_refuses_a_base_commit.py</code>, run once per revision in this
+  worktree, one log each, each ending in an <code>EXIT=</code> line. Each log's header names the
+  revision, the tree, the command, the module under test as imported and the resolved cwd.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline</td><td><code>60708b078</code></td><td><strong>2 failed, 11 passed</strong>, exit 1</td></tr>
+      <tr><td>after (fixture repair)</td><td><code>1c92d1bee</code></td><td><strong>13 passed</strong>, exit 0</td></tr>
+    </tbody>
+  </table>
+
+  <p>Failure ids added by the change: <strong>none</strong>. The baseline's two failures are the
+  two parametrisations this node repairs; the head arm has no failures.</p>
+
+  <h3>The negative control</h3>
+
+  <p>The declared mutation is <code>restore commits=[observed['base_sha']] in the fixture's
+  crew.complete call in tests/test_session_lives_on_its_run.py; both
+  test_promoted_session_resumes_same_task_without_roster_write parametrisations fail with the
+  base-citation refusal</code>, repeated verbatim as the red log's first line. With the citation
+  restored the two parametrisations fail on the same refusal again —
+  <strong>2 failed</strong>, exit 1 — and the repair was then reapplied from the commit above. The
+  red log is <code>negative-control.log</code> in the run directory
+  <code>~/.config/reckon/crew/runs/r-20260929T183405930875-session-fixture-declares-no-commit/</code>,
+  beside the two arm logs.</p>
+
+  <p><strong>Commits.</strong> The fixture repair: <code>1c92d1bee</code>. This landing record is
+  the commit that carries it.</p>
+</section>

@@ -170,7 +170,7 @@ def test_promoted_session_resumes_same_task_without_roster_write(repo, observe_f
     promoted = crew.complete(
         observed["run_id"],
         gate="passed",
-        commits=[observed["base_sha"]],
+        no_commit="synthetic session-persistence fixture with no product edits",
         review_waiver="synthetic session-persistence fixture with no product edits",
     )
     assert promoted["pointer_removed"] is True
