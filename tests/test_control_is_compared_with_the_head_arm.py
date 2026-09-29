@@ -19,6 +19,13 @@ the best evidence available.
 Cases (d) and (e) hold the two facts the admission has always required and must
 keep: a log whose capture exited zero is refused, and a log with no exit record
 is refused.
+
+Completion is asked as a literal ``True``, never as a truthy stand-in, because
+an arm that omits the key or carries null reads as complete while saying
+nothing — the same mapping the strict arm validator refuses. So cases (f) to (h)
+hold one manifest that differs only in that key: absent and null leave the
+decision with the baseline comparison, which refuses the very same control that
+a declared-complete head arm admits.
 """
 
 from __future__ import annotations
@@ -54,6 +61,13 @@ def _arm(
         "failure_count": len(failure_ids),
         "failure_ids": failure_ids,
     }
+
+
+def _arm_without_completed_key(failure_ids: list[str], *, revision: str) -> dict:
+    """One suite observation from a manifest that never declared completion."""
+    observation = _arm(failure_ids, revision=revision)
+    del observation["completed"]
+    return observation
 
 
 def _gate(
@@ -210,3 +224,58 @@ def test_a_control_log_with_no_exit_record_is_refused(tmp_path: Path) -> None:
 
     message = str(refusal.value)
     assert "records no EXIT status" in message
+
+
+def test_an_after_suite_without_a_completed_key_leaves_the_decision_to_the_baseline(
+    tmp_path: Path,
+) -> None:
+    """(f) An arm that never declared completion is unreadable, so the baseline decides."""
+    with pytest.raises(CrewError) as refusal:
+        _gate(
+            tmp_path,
+            log_text=_red_log(TEST_FIRST_CASE),
+            baseline=_arm([TEST_FIRST_CASE], revision="1111111"),
+            after=_arm_without_completed_key([], revision="2222222"),
+        )
+
+    message = str(refusal.value)
+    assert "adds no failure" in message
+    assert "baseline" in message
+    assert TEST_FIRST_CASE in message
+
+
+def test_an_after_suite_with_a_null_completed_value_leaves_the_decision_to_the_baseline(
+    tmp_path: Path,
+) -> None:
+    """(g) Null declares no more completion than the key's absence does."""
+    with pytest.raises(CrewError) as refusal:
+        _gate(
+            tmp_path,
+            log_text=_red_log(TEST_FIRST_CASE),
+            baseline=_arm([TEST_FIRST_CASE], revision="1111111"),
+            after={**_arm([], revision="2222222"), "completed": None},
+        )
+
+    message = str(refusal.value)
+    assert "adds no failure" in message
+    assert "baseline" in message
+    assert TEST_FIRST_CASE in message
+
+
+def test_an_after_suite_declaring_completion_keeps_the_head_arm_decision(
+    tmp_path: Path,
+) -> None:
+    """(h) The same manifest with completed true is decided by the head arm."""
+    control = _gate(
+        tmp_path,
+        log_text=_red_log(TEST_FIRST_CASE),
+        baseline=_arm([TEST_FIRST_CASE], revision="1111111"),
+        after=_arm([], revision="2222222"),
+    )
+
+    assert control["verdict"] == "matched"
+    assert control["comparison_arm"] == "after_suite"
+    # The baseline fails the id the control reddens, which is why the arm that
+    # decides matters: this is the test-first shape the two cases above refuse.
+    assert control["baseline_failure_ids"] == [TEST_FIRST_CASE]
+    assert control["added_failure_ids"] == [TEST_FIRST_CASE]
