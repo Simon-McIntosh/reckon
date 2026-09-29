@@ -23,8 +23,8 @@
   <title>The fleet shares one allocation | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="7">
+<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-version" content="8">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -140,6 +140,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260928T1735-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T15:35:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T142353317590-s21-audit-placement).</p><ul><li><b>§1: done.</b></li><li><b>§2: still required.</b> Per-project keying is still in force at <code>placement.py:97-115</code>, and the roster is counted by project rather than by recorded placement.</li><li><b>§3: still required.</b> No two-project, one-allocation assertion exists.</li><li><b>f-fsa-001: still required.</b></li><li><b>f-tfsoa-handoff-01: partly done.</b> The record names job 1276262 by hand, and that job is alive, but no code adopts it, the resume path does not place into it, and 1276262 has not been released.</li></ul><p><b>Wiring change.</b> The hard <code>depends_on</code> on a-placement-with-no-reservation-mints-one-per-worker is removed. That plan's §3 and this §2 depend on each other, so the hard edge made both unstartable. <b>Dispatch the sibling's §3 with this §2 and §3 as one node.</b> An <code>after</code> edge would carry this ordering, but edit_plan cannot write <code>plan-after</code> today: it is not a settable path, and text mode refuses metadata changes. The hard <code>blocks</code> edge on a-cutover-is-measured-against-its-baseline stays, because the cutover genuinely needs the shared allocation to exist.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260929T0750-joint-node-reuse" data-who="s21-1c" data-when="2026-09-29T07:50:00Z">
+    <div class="r-comment-body">Reuse, recorded at hand-off from s21-coord. The joint node, which covers this §2 and §3 together with a-placement-with-no-reservation-mints-one-per-worker §3, f-pnr-001 and f-fsa-001, builds on reckon/crew/fleet_node.py. That module is `reckon fleet-node hold|status|place`, merged at 15390017. It finds allocations by the reckon-fleet or ambix-fleet job comment (find_allocations, find_allocation, recorded_job_id) and composes step placement (placement_argv). Do not add a second hold path beside it. Per-project keying lives at reckon/crew/placement.py:97-115. The allocation to adopt is the supervisor-running kind, 1277272 on clu-2018 (locked decision; see f-tfsoa-handoff-01). Every test uses a recording scheduler: no node submits, cancels or reloads a real allocation. Operator authorisation, 2026-09-29: once the joint node has merged, the coordinator may cancel 1276262 (clu-2002) by its job id, if squeue shows no step running in it. The coordinator performs that cancel and reports its printed output. No worker does.</div>
 </div>
 </section>
 </main>

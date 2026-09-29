@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="72">
+<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-version" content="73">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.98">
@@ -1536,10 +1536,11 @@
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home f-awcwyh-git-shim-checks-the-resolved-repo</pre>
     <p class="r-fu-outcome">Done, evidenced by the S21 currency audit at 76e1bf93: reckon/worker_shims/git with reckon/worker_git_shim.py, landed in merge 82b6e0c3. tests/test_git_shim_checks_the_resolved_repo.py: 173 passed, EXIT=0.</p>
     </article>
-<article class="r-fu" data-id="f-awcwyh-plain-dir-inside-a-checkout" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26T13:20:00+02:00" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awcwyh-plain-dir-inside-a-checkout" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-26T13:20:00+02:00" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home §2" data-resolved-at="2026-09-29T07:45:28+00:00" data-resolved-by="s21-1c">
     <h4 class="r-fu-title">Decide whether a plain directory inside a protected checkout may be a fenced worktree</h4>
     <div class="r-fu-body"><p>a-fence-refuses-a-protected-worktree (merged at <code>3db08a97</code>, review 90) refuses a fence whose worktree is a protected checkout, or a git working tree nested inside one. The review found that a plain directory inside a checkout still composes, with a writable bind of that subdirectory. That never re-opens the checkout's <code>.git</code>, dispatch never places a worktree there, and two existing fixtures depend on it composing. Refusing on path containment regardless of <code>.git</code> is stricter, but it needs those fixtures moved outside a synthetic checkout first. Low priority; this is a design decision rather than a live exposure.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §2</pre>
+    <p class="r-fu-outcome">Decided by the operator on 2026-09-29: keep composing. A plain directory inside a protected checkout still composes a fence, with a writable bind of that subdirectory. This is not a live exposure: the bind never re-opens the checkout's .git, and dispatch never places a worktree there. Refusing on path containment would move two fixtures out of a synthetic checkout and protect nothing more. No code change; done — no followup.</p>
     </article>
 <article class="r-fu" data-id="f-awcwyh-fence-comment-names-worker-launches" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The fence comment in dispatch.py names worker launches, and the probe exemption</h4>
@@ -1730,6 +1731,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T123835850215-review-of-s19-internals-consumers-survey" data-who="reckon-ship" data-when="2026-09-24T12:52:33.616Z">
     <div class="r-comment-body"><p>reflex review of the internals survey, stored</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260929T0750-agents-md-authorised" data-who="s21-1c" data-when="2026-09-29T07:50:00Z">
+    <div class="r-comment-body">The operator authorised §4 on 2026-09-29 to rewrite the paragraph in the operator's global ~/.agents/AGENTS.md (about lines 729-733) that says a worker can write the coordinator's memory directory because no dispatch fence covers it. The rewrite describes the fence instead. Conditions: §3's fence has merged first; only that paragraph changes; the landing report shows the diff. Nothing else in the global file is in §4's scope.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260926T0830-harness-home-landed" data-who="" data-when="">
     <div class="r-comment-body"><p><strong>Harness-home carry landed</strong> at <code>80d55621</code> (review 87). Each backend's flight entry declares the operator-home files its harness reads. For the claude dialect: <code>settings.json</code> filtered to hooks, and <code>CLAUDE.md</code>. For the codex dialect: <code>AGENTS.md</code>, a writable <code>config.toml</code>, and <code>rules/</code>. Pre-fence sessions are copied into the run home on resume. It takes effect only when the fence is re-enabled, because workers launch unfenced since <code>39fd7a28</code>. The fence has three re-enable preconditions: this carry (landed), plan writes staying in the run's worktree (landed at <code>e562d32e</code>, by s23), and a fenced worker able to commit (a-fenced-worker-can-commit, delivered and in review). After the third lands, the fence goes back on as its own announced change, proven by a fenced smoke test that commits, fires the Stop hook and carries the git-safety memory. Only then does the codex pause lift. The lead-approved worker git guard, installed at 08:11 on 2026-09-26, stays as defence in depth, because an unfenced worker ignored a written 'no path restoration' rule.</p></div>

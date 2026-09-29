@@ -22,8 +22,8 @@
   <title>A placement with no reservation mints one per worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="8">
+<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-version" content="9">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-informs" content="the-fleet-shares-one-allocation">
 </head>
@@ -158,6 +158,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260928T1730-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T15:30:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T142353317590-s21-audit-placement). The report is at <code>~/.config/reckon/crew/reports/reckon/s21-audit-placement.{json,md}</code>.</p><ul><li><b>§1 and §2: done.</b> The fallback at <code>dispatch.py:5592</code> is accurately described, and a test pins it.</li><li><b>§3 and f-pnr-001: still required.</b> Resolution never calls <code>ensure_reservation</code>, so each dispatch mints its own allocation.</li></ul><p><b>This plan is still needed, and today's <code>reckon fleet-node</code> work does not supersede it.</b> That work holds the sessions' allocation, but crew dispatch placement does not use it. Two allocations were alive at audit time: 1276262 (5 days 9 hours) and 1277272.</p><p><b>Wiring change.</b> §3 and the-fleet-shares-one-allocation §2 depend on each other. The placement call needs the unkeyed record, and the unkeyed record exists only for the shared reservation, so neither can land alone. The previous blocks/depends_on pair therefore deadlocked: the sibling waited for this plan to ship, and this plan cannot ship alone. The hard edge is replaced by an <code>after</code> edge on the sibling. <b>Dispatch this §3 and the sibling's §2 and §3 as one node</b>, joint estimate 9 to 11 worker-hours.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260929T0750-joint-node" data-who="s21-1c" data-when="2026-09-29T07:50:00Z">
+    <div class="r-comment-body">Dispatched as one joint node with the-fleet-shares-one-allocation §2 and §3, because each needs the other. That plan's §2 comment of 2026-09-29 carries the reuse (reckon/crew/fleet_node.py, merged at 15390017) and the allocation decisions.</div>
 </div>
 </section>
 </main>
