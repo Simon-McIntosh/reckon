@@ -207,8 +207,8 @@ def fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Fixture:
     )
 
 
-def _dispose(fixture: Fixture, *arguments: str):
-    """Invoke the disposition command through the CLI entry point."""
+def _dispose_run(reviewed_run_id: str, *arguments: str):
+    """Invoke the disposition command for one run through the CLI entry point."""
     return CliRunner().invoke(
         cli_main,
         [
@@ -217,10 +217,15 @@ def _dispose(fixture: Fixture, *arguments: str):
             "--project",
             PROJECT,
             "--run",
-            fixture.reviewed,
+            reviewed_run_id,
             *arguments,
         ],
     )
+
+
+def _dispose(fixture: Fixture, *arguments: str):
+    """Invoke the disposition command through the CLI entry point."""
+    return _dispose_run(fixture.reviewed, *arguments)
 
 
 def _sub_floor_rows() -> list[dict[str, Any]]:
@@ -427,6 +432,118 @@ def test_a_run_whose_records_name_no_revision_is_refused_by_name(
     assert "refusing to take one from the working directory" in result.output
     assert _stored_dispositions(fixture.reviewed) == {}
     assert not (unrelated / "docs").exists()
+
+
+def test_a_review_keyed_to_another_revision_is_refused_by_head(
+    fixture: Fixture,
+) -> None:
+    """A record describing another revision is not the record to answer.
+
+    A store can hold a record for a run keyed to a revision the run's work is
+    not at — the review an earlier revision was given, kept while the work
+    advanced. The head-keyed reader then selects no record, while the run's
+    store does hold one describing a different revision, and a writer that
+    answered it would retire a finding on a diff nobody read. The command
+    refuses and names the two revisions that disagree, and the finding the
+    stored record carries is still undisposed afterwards.
+    """
+    stored_head = fixture.head_sha
+    described = fixture.base_sha
+    _store_review(
+        fixture.reviewed,
+        _emit(
+            {
+                "goal_fidelity": 19,
+                "evidence": 19,
+                "scope_discipline": 18,
+                "durability": SUB_FLOOR_SCORE,
+                "fit": 18,
+            },
+            base_sha=described,
+            head_sha=described,
+        ),
+        timestamp="2026-09-28T11:05:00+00:00",
+    )
+    review_module.review_path(
+        PROJECT, fixture.reviewed, reviewed_head_sha=stored_head
+    ).unlink()
+
+    # The same reader sees the stored record and no record for the head the
+    # run's work is at, so the mismatch is a reading and not a broken lookup.
+    assert review_module.read_review(PROJECT, fixture.reviewed) is not None
+    assert (
+        review_module.read_review(
+            PROJECT, fixture.reviewed, reviewed_head_sha=stored_head
+        )
+        is None
+    )
+    standing = _undisposed_rows(fixture.reviewed, described)
+    assert [row["dimension"] for row in standing] == ["durability"]
+
+    result = _dispose(
+        fixture, "--dimension", "durability", "--kind", "folded", "--node", FOLD_NODE
+    )
+
+    assert result.exit_code != 0, result.output
+    assert (
+        "a disposition recorded now would answer a review its own head does not name"
+        in result.output
+    )
+    assert described in result.output
+    assert stored_head in result.output
+    assert "no stored review for run" not in result.output
+    assert [
+        row["dimension"] for row in _undisposed_rows(fixture.reviewed, described)
+    ] == ["durability"]
+    assert _stored_dispositions(fixture.reviewed) == {}
+
+
+def test_a_run_with_no_stored_review_is_refused_by_name(
+    fixture: Fixture, tmp_path: Path
+) -> None:
+    """A run whose store holds no review at all is refused, and nothing is written.
+
+    A record for the run is what a disposition is written against, so a call
+    naming a run with none has nothing to answer — and must not record one into
+    an absent review or into another run's. The store reader is shown seeing the
+    fixture run's record and nothing for this run, so the absence is a reading
+    rather than a lookup that never works, and the fixture run's live row is
+    still standing after the refusal.
+    """
+    reviewed = "run-without-a-review"
+    tree = tmp_path / "reviewless-tree"
+    tree.mkdir()
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+    ):
+        _git(tree, *arguments)
+    (tree / "work.txt").write_text("head\n", encoding="utf-8")
+    _git(tree, "add", "work.txt")
+    _git(tree, "commit", "-q", "-m", "test: tree of a run with no stored review")
+    _write_pointer(reviewed, worktree=tree)
+
+    assert review_module.read_review(PROJECT, fixture.reviewed) is not None
+    assert review_module.read_review(PROJECT, reviewed) is None
+    assert [row["dimension"] for row in _sub_floor_rows()] == ["durability"]
+
+    result = _dispose_run(
+        reviewed,
+        "--dimension",
+        "durability",
+        "--kind",
+        "folded",
+        "--node",
+        FOLD_NODE,
+    )
+
+    assert result.exit_code != 0, result.output
+    assert f"no stored review for run {reviewed!r}" in result.output
+    assert "to record a disposition against" in result.output
+    assert "describes" not in result.output
+    assert [row["dimension"] for row in _sub_floor_rows()] == ["durability"]
+    assert review_module.read_review(PROJECT, reviewed) is None
 
 
 REFUSALS: tuple[tuple[str, tuple[str, ...], str], ...] = (
