@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-reports-its-velocity">
+  <meta name="plan-title" content="The velocity view answers within its deadline">
+  <meta name="plan-summary" content="Two cache layers, both keyed by repository and head and both written through reckon._store.write_json_atomically, take a warm velocity read of a two-week window from 576.9 s to 5.2 s, and to 16.9 s after one new commit — then a fresh call can serve it inside the crew tool's 30 s read deadline with the report's values unchanged.">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-reports-its-velocity">
+  <meta name="plan-node" content="velocity-view-answers-within-its-deadline">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-environment" content="Linux compute node; Python 3.14 venv; git 2.43; pytest 8.4; a throwaway clone of reckon under /tmp">
+  <title>The velocity view answers within its deadline &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The velocity view answers within its deadline</h1>
+    <p class="plan-summary">A two-week velocity read of one project replays the whole window on
+    every call. Caching the two stages that dominate that replay takes a warm read from
+    <strong>576.9 s</strong> to <strong>5.2 s</strong>, and to <strong>16.9 s</strong> after one
+    new commit, against a 30 s read deadline.</p>
+  </header>
+
+  <figure>
+    <img src="/reckon/figures/the-fleet-reports-its-velocity/velocity-view-answers-within-its-deadline/warm-read-stages.svg" alt="A bar chart of three timings over the 2026-09-15 to 2026-09-29 window: a cold read at 576.9 seconds, a warm read at the same head at 5.2 seconds, and a warm read after one new commit at 16.9 seconds. A dashed line marks the 30 second read deadline; the two warm bars sit below it.">
+    <figcaption>A cold read pays for the whole window twice &mdash; once for the commit census and
+    once for a patch-generating log over the ledger path. Both are cached by repository and head, so
+    the warm bars carry only the extension.</figcaption>
+  </figure>
+
+  <section id="measurement">
+    <h2>The measured timings</h2>
+
+    <p>The three arms ran one after another on one cache directory against a throwaway clone of
+    reckon under <code>/tmp</code>, with the module under test imported from the working tree and the
+    repository named as data, so nothing was checked out and no commit was made in any real
+    repository. The scratch commit that moves the head for the third arm is created with
+    <code>commit-tree</code> alone, which writes one object attached to the clone's head without
+    moving a ref.</p>
+
+    <table>
+      <thead>
+        <tr><th>Arm</th><th>Seconds</th><th>What it pays for</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Cold &mdash; no cache present</td><td>576.9</td>
+            <td>the commit census over 4,025 primary commits, the committed run records, and the
+            ledger-path search over the whole window</td></tr>
+        <tr><td>Warm &mdash; same head</td><td>5.2</td>
+            <td>loading the two cache entries; no history is walked</td></tr>
+        <tr><td>Warm &mdash; after one new commit</td><td>16.9</td>
+            <td>one commit captured, one ledger-path range searched</td></tr>
+      </tbody>
+    </table>
+
+    <p>Both warm figures are under the crew tool's 30 s read deadline
+    (<code>READ_DEADLINE_SECONDS</code> in <code>reckon/mcp.py</code>). The window is
+    2026-09-15 to 2026-09-29 and the figures are single observations on a shared compute node, so
+    they are evidence of the order of magnitude and not of a stable second decimal.</p>
+  </section>
+
+  <section id="profile">
+    <h2>What the profile said, and what was cached</h2>
+
+    <p>A warm <code>cProfile</code> run at the working tree's head put
+    <strong>110.3 s of 154.9 s</strong> inside <code>report</code> in
+    <code>recover_ledger_clocks</code>, and 32.4 s in the capture step; the measurement and summary
+    stages together accounted for the remaining twelve seconds. The recovery stage was the larger
+    by a wide margin and was the one worth caching.</p>
+
+    <p>The capture stage was already cached when this node started, keyed by the repository path and
+    its first-parent head, extending a head that has moved with only the commits after the cached
+    one. This node added the second layer beside it:</p>
+
+    <ul>
+      <li><strong>The captured history</strong> &mdash; the commit census, the ledger and every
+      committed run record, keyed by repository path and head. The ledger and the run records are
+      additionally keyed by the blob each was read from, so a window read re-reads only the objects
+      that changed.</li>
+      <li><strong>The ledger-clock recovery</strong> &mdash; where each run that has no promote
+      commit first appears in the ledger, keyed by repository path and the window's base commit. A
+      head that has moved is searched only over the range the cache had already reached, and only
+      for the run ids it had not yet placed; a cached head this one does not descend from cannot
+      supply them, so that search restarts from the window base.</li>
+    </ul>
+
+    <p>Both entries live under the user's cache directory &mdash;
+    <code>~/.cache/reckon/velocity/</code>, or <code>XDG_CACHE_HOME</code>, or a directory named by
+    <code>RECKON_VELOCITY_CACHE</code> &mdash; outside every repository, and both are written
+    through <code>reckon._store.write_json_atomically</code>. A file that is absent, unreadable,
+    version-mismatched or shaped like nothing this module writes is rebuilt rather than trusted.</p>
+  </section>
+
+  <section id="values">
+    <h2>The values are unchanged</h2>
+
+    <p>A cold read and a warm read of one window return the same mapping, compared as whole
+    payloads rather than field by field: eighteen top-level keys, <code>equal: True</code>. The
+    cache stores the capture and the recovery, not the report, so a served read recomputes the
+    measurement and the summary from the same captured inputs a cold read does.</p>
+
+    <p>Three properties are asserted by
+    <code>tests/test_velocity_cache.py</code> against repositories it synthesises under
+    <code>tmp_path</code>, with the cache directory pointed there, so nothing is read or written
+    outside the repository under test: a warm read equals a cold read value for value; a head that
+    has moved is extended rather than rebuilt, counted by the number of commit-capture calls rather
+    than timed; and a corrupt entry is rebuilt. Two further cases cover the second layer the same
+    way &mdash; the recovery is reproduced value for value without searching again, and a corrupt
+    recovery entry is rebuilt.</p>
+  </section>
+
+  <section id="control">
+    <h2>The negative control</h2>
+
+    <p>The declared control was to make the cache rebuild from scratch whenever the head moves, and
+    to require the extended-not-rebuilt case to fail. It failed as declared: with the injection
+    applied, <code>test_a_moved_head_is_extended_not_rebuilt</code> raises
+    <code>assert 2 == 1</code> on the count of capture calls, the run exits 1, and the other two
+    cases still pass. The test therefore detects the property it names rather than passing for any
+    cache at all.</p>
+  </section>
+
+  <section id="scope">
+    <h2>What this does not cover</h2>
+
+    <p>The cache is keyed by repository path and head, so a read of a window whose base has moved
+    &mdash; a caller naming a different start &mdash; cannot reuse a cached entry and pays the cold
+    cost again. That is the intended boundary rather than a defect: the entry records the base it
+    was captured from, and extending across a different base would change which commits the window
+    contains. A caller reading a fixed rolling window, which is what the crew tool's own view does,
+    stays inside it.</p>
+  </section>
+</main>
+</body>
+</html>
