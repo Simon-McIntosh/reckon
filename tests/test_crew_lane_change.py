@@ -12,6 +12,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew
+from reckon.crew import recovery
 
 CONFIG = {
     "default_backend": "alpha",
@@ -246,6 +247,12 @@ def test_resume_backend_override_reports_a_cross_harness_fresh_start(
     pointer = dict(before)
     pointer.update({"phase": "blocked", "pid": None, "pid_start_time": None})
     crew._write_json(crew.pointer_path(before["run_id"]), pointer)
+    # A blocked run whose end nothing observed is refused a lane change, so the
+    # fixture records the supervisor's exit: an end observed without a pid, and
+    # readable on a host that never launched the worker.
+    (crew.run_dir(before["run_id"]) / recovery.EXIT_RECORD_NAME).write_text(
+        json.dumps({"run_id": before["run_id"], "exit_code": 0}), encoding="utf-8"
+    )
     _resolve_config(monkeypatch)
 
     result = CliRunner().invoke(
