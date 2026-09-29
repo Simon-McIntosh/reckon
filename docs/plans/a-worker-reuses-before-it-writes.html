@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 <meta name="plan-impl" content="0.6">
 </head>
 <body>
@@ -157,7 +157,7 @@
     <div class="r-comment-body"><p>Independent review of r-20260929T130827936760-promotion-timestamps-reuse-the-parser stored at both granted paths — parsed, five dimensions goal_fidelity 18 / evidence 18 / scope_discipline 20 / durability 19 / fit 19 (total 94), added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own gate logs, with three findings (after_suite revision and command do not match its own named log; _elapsed_seconds returns None for a datetime where base computed 3600, unrecorded; whitespace-padded stamps newly accepted while the fragment claims one recorded difference).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260929T141227143352-dispatch-timestamps-reuse-the-parser" data-who="reckon-build" data-when="2026-09-29T15:20:41.362Z">
-    <div class="r-comment-body"><p>moved the evidence observed_at stamp, the repository-clock parse and _lane_advisory_instant in reckon/crew/dispatch.py onto reckon._timestamps (parse_utc/parse_iso), reproducing 24/24 base cells for the three readers and moving only 4 repository-clock cells on inputs the writer never emits; the lane reading retains its own fromisoformat so its refusal can quote the parser&#x27;s exception text; new tests/test_dispatch_timestamps_reuse_the_parser.py holds the six-input table per reader and passes 29/29.</p></div>
+    <div class="r-comment-body"><p>moved the evidence observed_at stamp, the repository-clock parse and _lane_advisory_instant in reckon/crew/dispatch.py onto reckon._timestamps (parse_utc/parse_iso), reproducing 24/24 base cells for the three readers and moving only 4 repository-clock cells on inputs the writer never emits; the lane reading retains its own fromisoformat so its refusal can quote the parser's exception text; new tests/test_dispatch_timestamps_reuse_the_parser.py holds the six-input table per reader and passes 29/29.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:04:52.771Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder stored under the crew review store as a parsed record (goal_fidelity 16, evidence 15, scope_discipline 20, durability 16, fit 19; total 86) with three findings</p></div>
@@ -209,6 +209,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T141158362929-supervisor-write-reuses-the-store" data-who="reckon-build" data-when="2026-09-29T14:47:57.143Z">
     <div class="r-comment-body"><p>_supervisor_write hands its payload to reckon._store.write_json_atomically with create_parents=False, keeping the missing-directory guard in dispatch.py and the False-on-OSError return, so a discarded run's directory is never materialised and the bytes and the 0o600 mode are unchanged (commit 2eda3920); measure: the new test's four rows pass at head, and the two-arm gate over the 40 tests/ files importing reckon.crew.dispatch adds no failing test id (head 22 failed/535 passed, base 23 failed/534 passed; the single differing id is the head-only delegation row that fails at base because base's _supervisor_write does not call the shared writer).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260929T144852410095-review-of-supervisor-write-reuses-the-store" data-who="reckon-build" data-when="2026-09-29T15:20:23.270Z">
+    <div class="r-comment-body"><p>review of run r-20260929T141158362929-supervisor-write-reuses-the-store (base fdb116e212e915cd96cb02835abc98a80f103c26, head 2eda39203b794a5535b4f7ca44aa3f17cec8abd5) stored as a parsed record, 12259 bytes, sha256 e02660d645915ef8c4fa7d99b71084ce13e5bd7503d5bacb0c718e50f3947ac3, at the revision-keyed path and byte-identically at the legacy path beside it — scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 20 (total 96), all six checklist items carried with no dimension absent, added_failure_count 0 with an empty id list derived by the project&#x27;s own set-difference instrument from the reviewed run&#x27;s gate_base_arm.log and gate_head_arm.log, two findings (dispatch.py:6217 re-enables owner write under a umask that clears it, measured base 0o400 vs head 0o600 at umask 0o277; the reviewed manifest&#x27;s declared landing fragment docs/evidence/fragments/a-worker-reuses-before-it-writes/supervisor-write-reuses-the-store.html was never written)</p></div>
 </div>
 </section>
 </main>
