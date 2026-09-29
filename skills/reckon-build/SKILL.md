@@ -1208,6 +1208,21 @@ only on request, so auditing what is reclaimable is free. Workers never mutate
 shared Reckon state; the orchestrator records followups, evidence, plan
 progress, sprint item outcomes, and sprint closure after integration.
 
+### What a coordinator commits directly
+
+The coordinator's own commits are a closed list; every other change reaches the
+primary branch as a reviewed worker commit.
+
+| Edit the coordinator commits itself | Condition |
+|---|---|
+| correcting a recorded sha, heading or path string | |
+| the union of a conflict in plan, evidence or sprint HTML | both sides' additions kept |
+| the union of a JSON conflict confined to append-only arrays or disjoint keys | the result passing `reckon audit-doc` or a JSON parse before commit |
+| correcting a path field inside a manifest | |
+| plan and sprint state | |
+
+Product source and tests, including test fixtures, are never edited inline, and a `.py` conflict is resolved only in a scratch worktree.
+
 ## Cross-references
 
 - `references/worker-protocol.md` — the task contract, fences, manifest, escape hatch.
