@@ -19,7 +19,7 @@ The head reads the zone from :func:`reckon._timestamps.parse_iso`'s ``tzinfo``
 and removes every failure's sibling, so each offset spelling returns the aware
 instant the pre-migration base ``cea6da07`` returned and a failed open leaves no
 file. The settings writer holds a non-ASCII hook-script path literally instead
-of escaped, its bytes as they were before the second writer wave.
+of escaped, its bytes as they were before it moved onto this writer.
 """
 
 from __future__ import annotations
