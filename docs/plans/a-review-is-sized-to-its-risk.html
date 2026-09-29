@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-impl" content="0.55">
 </head>
 <body>
   <main class="plan-doc">
@@ -257,6 +257,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260929T053954244745-the-suite-holds-light-promotions" data-who="reckon-build" data-when="2026-09-29T06:49:04.836Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-review-is-sized-to-its-risk/the-suite-holds-light-promotions.html</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260929T103000-first-wave-close" data-who="s25-coord" data-when="2026-09-29T10:30:00Z">
+    <div class="r-comment-body"><p>Section 6 on main:</p><ul><li><strong>Declaration.</strong> The suite command and a 1200 s budget are in <code>docs/state/reckon/flight.yaml</code> under <code>review.suite</code> (142cdf05). The runner, record and waiver live in <code>reckon/crew/standing_suite.py</code>.</li><li><strong>Hold.</strong> Promotion consults <code>hold_reason</code> for tiers none and light, and <code>reckon crew suite run|waive</code> is in the CLI (75fdee2a). A synthetic project whose suite fails at collection holds a tier-none promotion in a test.</li><li><strong>First real wave close in reckon</strong>, at main 8e5df9da: 8715 collected, 8566 passed, 77 failed, in 730 s of 1200 s, with collection intact. The record is committed at 135d1168 as <code>docs/state/reckon/suite-runs/20260929T102119.421963Z-8e5df9da882b.json</code>. <code>hold_reason(…, "none", "reckon")</code> reads it and returns no hold. The 77 failures are the population s21's the-suite-is-green-at-head is working down.</li><li><strong>Remaining for section 6:</strong> nova's declaration and one real nova wave close. Both are edits in the nova repository.</li></ul><p>Sections 2 and 3 are merged. Sections 4 and 5 remain, and both extend <code>reckon/crew/recovery.py</code>, which a peer's run currently claims.</p></div>
 </div>
 </section>
 </main>
