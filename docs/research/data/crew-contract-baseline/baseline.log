@@ -1,0 +1,34 @@
+revision a34a62bbfa3f95be7b996e0f80e842651493745a tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/crew-contract-token-baseline command: docs/research/data/crew-contract-baseline/measure.py
+transcript root: /home/ITER/mcintos/.claude/projects (read-only)
+selection rule: a session is selected when, on the baseline date, it records at least one reckon-build skill load -- a Skill invocation of reckon-build, an injected SKILL.md body, or a Read of SKILL.md or of a file under reckon-build/references/. The load window ends at the first `reckon crew dispatch` call at or after the first load, or at the end of the transcript when the session never dispatched.
+selection date: 2026-09-26
+control: True known Skill load seen; quoted transcript rejected
+selected sessions: 5
+  5b2accfd-6ddc-4250-b78f-fb482fefcddc  started 2026-09-26T12:18:48
+  1d1d2f0d-d00a-4244-9ce2-d47d56b14ae8  started 2026-09-26T10:35:51
+  3955c8d2-c817-48fc-81bf-8a29bb14c6cc  started 2026-09-24T19:25:31
+  6f6c5410-a944-473f-8ca9-1f558a522c59  started 2026-09-26T20:42:47
+  e6394022-d8bc-4bba-bd9a-ea5d9895a410  started 2026-09-24T20:36:45
+
+per-session input tokens spent loading the skill before first dispatch:
+  3955c8d2-c817-48fc-81bf-8a29bb14c6cc  boundary=  first-dispatch  total=      0  loads=0 [invoked-skills:SKILL.md=None (context shrank across the load (compaction))]
+      unmeasured: invoked-skills SKILL.md — context shrank across the load (compaction)
+  e6394022-d8bc-4bba-bd9a-ea5d9895a410  boundary=  first-dispatch  total=      0  loads=0 [invoked-skills:SKILL.md=None (context shrank across the load (compaction))]
+      unmeasured: invoked-skills SKILL.md — context shrank across the load (compaction)
+  5b2accfd-6ddc-4250-b78f-fb482fefcddc  boundary=end-of-transcript  total=   5889  loads=1 [Read:worker-verification.md=5889]
+  6f6c5410-a944-473f-8ca9-1f558a522c59  boundary=  first-dispatch  total=   6231  loads=1 [injected-body:SKILL.md=None (no request precedes the load), Read:claude-code.md=6231]
+      unmeasured: injected-body SKILL.md — no request precedes the load
+  1d1d2f0d-d00a-4244-9ce2-d47d56b14ae8  boundary=  first-dispatch  total=  25904  loads=1 [Skill:SKILL.md=25904]
+
+n sessions measured: 3
+median input tokens: 6231.0
+min 5889  max 25904  mean 12674.7
+SKILL.md-only sessions: n 1 median 25904.0
+
+word counts (whitespace-split, the done-when's rule):
+  SKILL.md: 11050 words
+  references (10 files): 23726 words
+  skill + references: 34776 words
+  ceiling: 12000 words — headroom -22776
+measured at 2026-09-29T04:42:10.698399+00:00
+EXIT=0
