@@ -1,0 +1,449 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "8fa5ce749f5fa2e61126afe7c0c3d5c2a8d2631d",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 11953420,
+      "input_tokens_cumulative": 11953420,
+      "output_tokens": 65927,
+      "output_tokens_cumulative": 65927,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 194,
+    "files": 3,
+    "removed": 13
+  },
+  "commit_resolution": null,
+  "commits": [
+    "b1ebba90c676d13509ceb158743020f38e414d88"
+  ],
+  "completed_at": "2026-09-29T11:27:17.548Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T09:33:19Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "base/head"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q -p no:cacheprovider -rf --basetemp=/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T093259536095-follow-boundary-snaps-to-a-line/gates/bt-after tests/test_attach_shows_each_live_run.py tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_watch_ensure.py tests/test_crew_watch_lifetime.py tests/test_crew_watch_stream.py tests/test_crew_watch_visibility.py tests/test_crew_watchlife.py tests/test_follow_counts_its_session.py tests/test_follow_lifetime.py tests/test_follow_lifetime_survives_reload.py tests/test_follow_observes_other_sessions.py tests/test_follow_rearm_continues.py tests/test_follow_sweep_cadence.py tests/test_follower_checks_its_owner.py tests/test_follower_freshness.py tests/test_follower_keeps_memory.py tests/test_follower_prints_only_policy_rows.py tests/test_follower_rearm_shows_nothing_twice.py tests/test_follower_reload_is_safe.py tests/test_follower_survives_a_config_change.py tests/test_follower_survives_a_host_change.py tests/test_ticker_node_names_keep_their_ends.py tests/test_ticker_reads_cleanly.py tests/test_ticker_reason_cut_at_a_word.py tests/test_ticker_renders_wait_facts.py tests/test_ticker_row_drops_unread_cells.py tests/test_ticker_row_is_one_transition.py tests/test_watch_arming_isolation.py tests/test_watch_reports_death_at_once.py tests/test_watch_seat_across_hosts.py tests/test_watch_version_stamp.py tests/test_watcher_arming_fallback.py tests/test_watcher_unit_restart.py",
+    "exit_status": 1,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T093259536095-follow-boundary-snaps-to-a-line/gates/after-selection.log"
+  },
+  "impl_move": {
+    "at_complete": 0.6363636363636364,
+    "at_dispatch": 0.6363636363636364,
+    "plan": "the-fleet-counters-count-the-fleet",
+    "reason": "section 9 stays open for two follow-ons: the replay stamps the state-entry time, and the follow read loop holds a partial line until its newline arrives",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T10:18:01.372627+00:00",
+    "horizon_seconds": 2700,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T09:33:01Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 13,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 15,
+    "headroom": -4,
+    "mean_context": 127500,
+    "observed_at": "2026-09-29T09:32:48Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T11:27:17.548Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T093259536095-follow-boundary-snaps-to-a-line/manifest.md",
+  "member": "disposable-r-20260929T093259536095-follow-boundary-snaps-to-a-line",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_follow_rearm_continues.py::test_a_record_half_written_at_the_boundary_is_delivered_once_whole[True]"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+      "tests/test_crew_watch_lifetime.py::test_dispatch_is_admitted_during_the_stale_terminal_window",
+      "tests/test_follow_observes_other_sessions.py::test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three",
+      "tests/test_watch_arming_isolation.py::test_an_opted_in_caller_is_not_refused",
+      "tests/test_watch_arming_isolation.py::test_arming_refuses_a_configuration_home_under_a_test_directory"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": null,
+    "control_failure_ids": [
+      "tests/test_follow_rearm_continues.py::test_a_record_half_written_at_the_boundary_is_delivered_once_whole[True]"
+    ],
+    "declaration": "take the raw captured stream size as the follow boundary without snapping to a newline",
+    "head_failure_ids": [
+      "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+      "tests/test_crew_watch_lifetime.py::test_dispatch_is_admitted_during_the_stale_terminal_window",
+      "tests/test_follow_observes_other_sessions.py::test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three",
+      "tests/test_watch_arming_isolation.py::test_an_opted_in_caller_is_not_refused",
+      "tests/test_watch_arming_isolation.py::test_arming_refuses_a_configuration_home_under_a_test_directory"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T093259536095-follow-boundary-snaps-to-a-line/gates/negative-control-raw-size.log",
+    "reason": "gates/negative-control-raw-size.log shows the declared mutation failing tests/test_follow_rearm_continues.py::test_a_record_half_written_at_the_boundary_is_delivered_once_whole[True] (pytest summary: 1 failed, 1 passed); that case is new in this node, so the base cannot fail it; the log lacks only the EXIT= line",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T093259536095-follow-boundary-snaps-to-a-line/gates/negative-control-raw-size.log",
+    "test_paths": [
+      "tests/test_follow_rearm_continues.py"
+    ],
+    "verdict": "waived"
+  },
+  "no_commit": null,
+  "node": "follow-boundary-snaps-to-a-line",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 539,
+          "cached_input_tokens": 431023,
+          "input_tokens": 431564,
+          "output_tokens": 961,
+          "reasoning_output_tokens": 74,
+          "total_tokens": 432525,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+      "session_id": "s23-coord"
+    },
+    "done_when": "reckon/cli.py snaps the captured stream offset back to the byte after the last newline at or before it, and the guard comment states exactly that. A test in tests/test_follow_rearm_continues.py captures the boundary while a record is half-written, completes the record, and asserts it is delivered exactly once with its full content. The same test passes with the boundary taken on a line end. The declared mutation, using the raw captured size as the boundary, is observed to fail that test with its log recorded. The follow, ticker, watch and row-policy test files named in the after_suite command of r-20260929T035930031370-rearm-replays-the-fleet-with-recorded-times show zero added failures by id against the dispatch base. The noise-pair case is known flaky at main, so compare it over five repeated runs. baseline_suite and after_suite are one-line JSON objects carrying revision, tree, the full command with no placeholders, exit_status, an absolute log_path, completed, failure_count and failure_ids",
+    "estimated_hours": null,
+    "goal": "the follow boundary crew follow fixes before its replay always falls on a line boundary, so a record the producer is still writing when the boundary is taken is delivered once, whole, by the follow loop",
+    "id": "follow-boundary-snaps-to-a-line",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T09:33:01Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 13,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 15,
+      "headroom": -4,
+      "mean_context": 127500,
+      "observed_at": "2026-09-29T09:32:48Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T093259536095-follow-boundary-snaps-to-a-line/manifest.md",
+    "negative_control": "take the raw captured stream size as the follow boundary without snapping to a newline",
+    "plan": "the-fleet-counters-count-the-fleet",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§9",
+    "spec_level": "exact",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/cli.py",
+      "tests/test_follow_rearm_continues.py",
+      "docs/evidence/fragments/the-fleet-counters-count-the-fleet/follow-boundary-snaps-to-a-line.html",
+      "docs/figures/the-fleet-counters-count-the-fleet/follow-boundary-snaps-to-a-line"
+    ]
+  },
+  "orientation_input_tokens": 1277334.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "follow-boundary-snaps-to-a-line",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T09:33:08.453343+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-fleet-counters-count-the-fleet",
+  "plan_impl_at_dispatch": 0.6363636363636364,
+  "promoted_revision": "b1ebba90c676d13509ceb158743020f38e414d88",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 16,
+      "fit": 17,
+      "goal_fidelity": 17,
+      "scope_discipline": 18
+    },
+    "status": "parsed",
+    "total": 86
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T093259536095-follow-boundary-snaps-to-a-line",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§9",
+  "session_harness": "claude",
+  "session_id": "42d70303-f96c-4749-a5c2-6aafae74b6f5",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 12117183,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 6812.779,
+    "generated_tokens": 72012,
+    "generation_seconds": 3515.17,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 33.8,
+    "machine_seconds": 3297.609,
+    "peak_input_tokens": 162463,
+    "tokens_per_second": 20.49,
+    "wall_tokens_per_second": 10.57
+  },
+  "time_budget": "45m",
+  "tool_steps": 104.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": true,
+        "budget_overrun_seconds": 2088,
+        "budget_seconds": 2400,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "working",
+        "elapsed_seconds": 4488,
+        "exit_record": {
+          "attempt": 3,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-29T09:13:38Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-29T08:18:35Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260929T050438982778-commitless-changed-paths-reads-the-declaration",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 20888,
+          "worker_pid": 712782
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 1166,
+        "log_fresh": false,
+        "manifest_commits": [
+          "046b3ae0cf4dd28e4c97fe540aa8f618bbb2920b",
+          "be777cea8a266926a1d781c2589fd86f0f7facf1",
+          "93edeb54c452d0119db9a77574440df7ed1c82fc",
+          "b8e7d1a952083aa68ebce35fac82952832f65683",
+          "1d37a921c2350dbb7bd9878fa5d809113b2eb108",
+          "fe2904b4632331c6f9889746cc66dc00f9296684"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "5cf9ba02bbbe0bc8387eb1601592632eb29ed5d601b065e68cd2dc8205d41bda",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T050438982778-commitless-changed-paths-reads-the-declaration/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan the-audit-agrees-with-the-skill --section '§3' --role review --spec-level exact --node review-of-commitless-changed-paths-reads-the-declaration --goal 'attach an independent review to run r-20260929T050438982778-commitless-changed-paths-reads-the-declaration' --done-when 'the review for r-20260929T050438982778-commitless-changed-paths-reads-the-declaration stores a parsed record scoring all 5 dimensions in the range 0..20, carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T050438982778-commitless-changed-paths-reads-the-declaration.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T050438982778-commitless-changed-paths-reads-the-declaration.at-fe2904b4632331c6f9889746cc66dc00f9296684.json --time-budget 40m --session s23-coord --allow-unreconciled-runs --local",
+        "node": "commitless-changed-paths-reads-the-declaration",
+        "phase": "working",
+        "plan": "the-audit-agrees-with-the-skill",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260929T050438982778-commitless-changed-paths-reads-the-declaration",
+        "session": "s23-coord",
+        "stored_phase": "working",
+        "terminal_age_seconds": 1417,
+        "terminal_at": "2026-09-29T09:09:26Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/commitless-changed-paths-reads-the-declaration"
+      }
+    ]
+  },
+  "wall_seconds": 6838,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T11:27:18Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T09:33:41Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T093259536095-follow-boundary-snaps-to-a-line",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 14068,
+    "worker_pid": 1131625
+  },
+  "worker_seconds": 6782,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
