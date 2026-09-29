@@ -1,0 +1,69 @@
+<article class="landed-report" data-run-id="r-20260929T050438982778-commitless-changed-paths-reads-the-declaration">
+      <h3>commitless-changed-paths-reads-the-declaration &mdash; the changed_paths absence read by the commits rule</h3>
+      <p>
+        A commitless run declares its unchanged repository in two fields: <code>commits</code> says
+        <code>none &hellip;</code> and <code>changed_paths</code> says <code>none under the
+        repository; the sole deliverable is the report</code>. The <code>commits</code> declaration was
+        already honoured by reading the raw field, but the <code>changed_paths</code> declaration was
+        recognised only through the manifest list's prose shape &mdash; <code>none</code> followed by
+        whitespace or the end of the parsed item. A declaration word followed by sentence punctuation
+        therefore survived as a path:
+      </p>
+      <pre>'none under the repository; the sole deliverable is the report' -> prose_none=True
+'none (the node changed no file under the repository)'         -> prose_none=True
+'none. review only'                                            -> prose_none=False
+'none, no repository change'  (parsed: ['no repository change']) -> prose_none=False
+'none) review only'                                            -> prose_none=False
+'candidate.txt'                                                -> prose_none=False</pre>
+      <p>
+        For a review the false reading resolved the leftover text as an in-repository path, so
+        <code>_require_commit_for_changed_manifest</code> refused the promotion with <em>&ldquo;the
+        manifest field 'commits' is missing&rdquo;</em> and the coordinator blanked the field by hand.
+        The fix reads <code>changed_paths</code> through the same helper <code>commits</code> already
+        uses &mdash; <code>_commitless_field_declares_absence</code>, now parameterised by field key
+        &mdash; so both fields are governed by one rule with no second copy. The role gate is
+        unchanged: only a commitless role (<code>review</code>, <code>investigate</code>) gets the
+        raw-field reading, and a committing role keeps the list reading, so
+        <code>candidate.txt</code> and <code>none. &hellip;</code> on an implement run still demand
+        their commit.
+      </p>
+      <figure>
+        <img src="/reckon/figures/the-audit-agrees-with-the-skill/commitless-changed-paths-reads-the-declaration/shared-absence-rule.png"
+             alt="Raw field opens with an absence word ending at the value edge or a non-word character; a commitless role then promotes with no paths, while a committing role or a real path keeps the path list and needs its commit.">
+        <figcaption>
+          One rule, two fields. The raw value is tested for an absence word followed by a word
+          boundary; the commitless-role gate then decides whether the field declares no repository
+          paths or stays a path list.
+        </figcaption>
+      </figure>
+      <table>
+        <caption>Shapes exercised by <code>tests/test_commitless_review_promotes.py</code></caption>
+        <thead>
+          <tr><th><code>changed_paths:</code> value</th><th>Role</th><th>Outcome</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>none under the repository; the sole deliverable is the report</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none. review only</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none, no repository change</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>none (the review is the deliverable)</code></td><td>review</td><td>promotes, no commits</td></tr>
+          <tr><td><code>candidate.txt</code> (a real path)</td><td>review</td><td>refused (manifest field 'commits' is missing)</td></tr>
+          <tr><td><code>none. no repository change</code></td><td>implement</td><td>refused (manifest field 'commits' is missing)</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Negative control.</strong> The declared mutation &mdash; <em>apply the absence rule to
+        the commits field only, leaving changed_paths parsed as a path list</em> &mdash; reddens the
+        <code>changed_paths</code> review cases. Under it the full-stop and comma cases are refused with
+        <em>&ldquo;manifest field 'commits' is missing&rdquo;</em>: 2 failed, 4 passed. The red log is
+        <code>negative-control-changed-paths.log</code> under the run directory, whose first line
+        repeats the declared mutation verbatim.
+      </p>
+      <p>
+        <strong>Gate.</strong> The 25 <code>tests/test_*promot*.py</code> files plus
+        <code>tests/test_cited_identifier_resolves.py</code> (26 files) ran at the new head
+        <code>046b3ae0</code> and at the dispatch base <code>658ba243</code>. Base: 237 passed, 0
+        failed (<code>gate-base.log</code>). Head: 243 passed, 0 failed (<code>gate-head.log</code>,
+        <code>-n 6</code>). The +6 are this node's new cases; the failure set is empty at both
+        revisions, so the change adds zero failures by id.
+      </p>
+    </article>
