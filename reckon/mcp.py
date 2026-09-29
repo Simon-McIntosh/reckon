@@ -1631,7 +1631,7 @@ _OP_VOCAB = {
     "retire_prose": "{op:'retire_prose', preimage:'<exact authored HTML>'} — removes one authored fragment outside every section[data-reckon], atomically with the batch's structured ops.",
     "insert_section": "{op:'insert_section', id, title, body, effort_hours, capability, links} — writes a new h2 with its typed section record; effort_hours, capability and links are required.",
     "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions, preserves item metadata.",
-    "push": "{op:'push'} — marks the selected sprint active (pushed) and demotes any other active sprint to open in the same versioned write.",
+    "push": "{op:'push'} — marks the selected sprint active (pushed) in one versioned write and leaves every other sprint's status untouched.",
     "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource by doc_type. A plan created at or beyond the project's declared pending-plan limit succeeds and its response carries a warning naming the limit, the pending count and the three pending plans nearest to closing.",
 }
 
@@ -2071,16 +2071,6 @@ def _audit_sprint_findings(
         if sprint.get("status") == "active"
     ]
     active_sprint_id = index_data.get("active_sprint_id")
-    if len(active_ids) > 1:
-        findings.append(
-            _finding(
-                "sprint",
-                "multiple-active-sprints",
-                "error",
-                f"multiple sprints are marked active: {', '.join(active_ids)}",
-                extra={"active_ids": active_ids},
-            )
-        )
     if active_sprint_id and active_sprint_id not in sprint_map:
         findings.append(
             _finding(
