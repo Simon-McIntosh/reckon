@@ -33,11 +33,18 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 from pathlib import Path
 
 import pytest
 
 from reckon.crew import recovery, resumption
+
+
+def _absent_pid() -> int:
+    """A pid the kernel will never allocate: beyond the pid_max ceiling."""
+    return int(Path("/proc/sys/kernel/pid_max").read_text().strip()) + 4096
+
 
 # The measured probe, verbatim from the run's manifest except that the report
 # directory is a fixture path. `$q` is filled from `squeue`, and the branch
@@ -99,14 +106,19 @@ def _wait_manifest(
 
 
 def _pointer(
-    tmp_path: Path, body: str, *, alive: bool = False, attempt: int = 1
+    tmp_path: Path,
+    body: str,
+    *,
+    alive: bool = False,
+    attempt: int = 1,
+    observed_end: bool = False,
 ) -> dict:
     worktree = tmp_path / "worktree"
     worktree.mkdir(parents=True, exist_ok=True)
     manifest = tmp_path / "manifest.md"
     manifest.write_text(body, encoding="utf-8")
     os.utime(manifest, ns=(MANIFEST_BASELINE_NS, MANIFEST_BASELINE_NS))
-    return {
+    record = {
         "run_id": "r-wait-stanza-fixture",
         "project": "fixture-project",
         "process_alive": alive,
@@ -129,6 +141,11 @@ def _pointer(
             "write_paths": [],
         },
     }
+    if observed_end:
+        # The end a lift rests on: this host checks the pid and finds it gone.
+        record["launcher_host"] = socket.gethostname()
+        record["pid"] = _absent_pid()
+    return record
 
 
 def _re_park(pointer: dict) -> None:
@@ -266,6 +283,7 @@ def test_a_re_park_on_an_unchanged_declaration_is_detected_after_one_cycle(
             probe=UNGUARDED_PROBE,
             terminal=UNGUARDED_TERMINAL,
         ),
+        observed_end=True,
     )
 
     # First cycle: nothing has lifted this declaration, so it is a candidate.
@@ -320,6 +338,7 @@ def test_editing_the_declaration_clears_the_wait_key_defect(
             probe=UNGUARDED_PROBE,
             terminal=UNGUARDED_TERMINAL,
         ),
+        observed_end=True,
     )
     declaration = recovery.external_wait(pointer, now_seconds=NOW_SECONDS)
     assert declaration is not None

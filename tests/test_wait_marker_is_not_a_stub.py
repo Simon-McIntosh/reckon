@@ -25,6 +25,7 @@ wait-aged when overdue.
 from __future__ import annotations
 
 import os
+import socket
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -32,6 +33,11 @@ import pytest
 
 from reckon.crew import prompts, recovery, resumption
 from reckon.crew.node import TaskNode
+
+
+def _absent_pid() -> int:
+    """A pid the kernel will never allocate: beyond the pid_max ceiling."""
+    return int(Path("/proc/sys/kernel/pid_max").read_text().strip()) + 4096
 
 # The five field sets, verbatim as healthy live workers wrote them. Four were
 # read out of their own manifests under the crew runs directory (the two
@@ -129,6 +135,7 @@ def _pointer(
     *,
     alive: bool = True,
     stream_written_at: float | None = None,
+    observed_end: bool = False,
 ) -> dict:
     worktree = tmp_path / "worktree"
     worktree.mkdir(parents=True, exist_ok=True)
@@ -162,6 +169,10 @@ def _pointer(
         stream = tmp_path / "stream.jsonl"
         stream.write_text('{"type":"assistant"}\n', encoding="utf-8")
         os.utime(stream, (stream_written_at, stream_written_at))
+    if observed_end:
+        # The end a lift rests on: this host checks the pid and finds it gone.
+        record["launcher_host"] = socket.gethostname()
+        record["pid"] = _absent_pid()
     return record
 
 
@@ -324,6 +335,7 @@ def test_a_genuine_wait_is_still_a_resume_candidate_when_its_probe_terminates(
         tmp_path,
         _manifest_text(_genuine_wait_body(), expected="59m"),
         alive=False,
+        observed_end=True,
     )
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     monkeypatch.setattr(resumption, "list_live", lambda **_kwargs: [pointer])

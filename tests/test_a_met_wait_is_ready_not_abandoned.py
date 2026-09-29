@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import socket
 import subprocess
 from pathlib import Path
 
@@ -10,7 +11,14 @@ import pytest
 from reckon.crew import recovery, resumption
 
 
-def _waiting_pointer(tmp_path: Path, *, alive: bool) -> dict:
+def _absent_pid() -> int:
+    """A pid the kernel will never allocate: beyond the pid_max ceiling."""
+    return int(Path("/proc/sys/kernel/pid_max").read_text().strip()) + 4096
+
+
+def _waiting_pointer(
+    tmp_path: Path, *, alive: bool, observed_end: bool = False
+) -> dict:
     run_id = "r-waiting-condition"
     worktree = tmp_path / "worktree"
     worktree.mkdir()
@@ -25,7 +33,7 @@ def _waiting_pointer(tmp_path: Path, *, alive: bool) -> dict:
         "resume_brief: collect the scheduler result\n",
         encoding="utf-8",
     )
-    return {
+    record = {
         "run_id": run_id,
         "project": "fixture-project",
         "process_alive": alive,
@@ -45,6 +53,11 @@ def _waiting_pointer(tmp_path: Path, *, alive: bool) -> dict:
             "write_paths": [],
         },
     }
+    if observed_end:
+        # The end a lift rests on: this host checks the pid and finds it gone.
+        record["launcher_host"] = socket.gethostname()
+        record["pid"] = _absent_pid()
+    return record
 
 
 def _condition(state: str):
@@ -101,7 +114,7 @@ def test_wait_classification_ranges_over_liveness_and_condition_state(
 def test_a_met_dead_wait_is_walked_by_the_resume_sweep(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    pointer = _waiting_pointer(tmp_path, alive=False)
+    pointer = _waiting_pointer(tmp_path, alive=False, observed_end=True)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     monkeypatch.setattr(resumption, "list_live", lambda **_kwargs: [pointer])
     monkeypatch.setattr(resumption, "_claimed_write_paths", lambda _pointer: [])

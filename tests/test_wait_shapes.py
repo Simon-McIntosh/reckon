@@ -37,12 +37,19 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
 from reckon.crew import recovery, resumption
+
+
+def _absent_pid() -> int:
+    """A pid the kernel will never allocate: beyond the pid_max ceiling."""
+    return int(Path("/proc/sys/kernel/pid_max").read_text().strip()) + 4096
+
 
 # A three-file condition, the ordinary shape: the worker is parked on a job
 # whose logs land in its own worktree.
@@ -83,13 +90,15 @@ def _probe_manifest(*, probe, terminal, condition="the scheduler job has left"):
     )
 
 
-def _pointer(tmp_path: Path, body: str, *, alive: bool = False) -> dict:
+def _pointer(
+    tmp_path: Path, body: str, *, alive: bool = False, observed_end: bool = False
+) -> dict:
     worktree = tmp_path / "worktree"
     worktree.mkdir(parents=True, exist_ok=True)
     manifest = tmp_path / "manifest.md"
     manifest.write_text(body, encoding="utf-8")
     os.utime(manifest, ns=(MANIFEST_BASELINE_NS, MANIFEST_BASELINE_NS))
-    return {
+    record = {
         "run_id": "r-wait-shapes-fixture",
         "project": "fixture-project",
         "process_alive": alive,
@@ -112,6 +121,11 @@ def _pointer(tmp_path: Path, body: str, *, alive: bool = False) -> dict:
             "write_paths": [],
         },
     }
+    if observed_end:
+        # The end a lift rests on: this host checks the pid and finds it gone.
+        record["launcher_host"] = socket.gethostname()
+        record["pid"] = _absent_pid()
+    return record
 
 
 def _declaration(pointer: dict):
@@ -467,7 +481,7 @@ def test_the_sweep_lifts_a_wait_whose_declared_paths_all_exist(
     chain that prints nothing and exits 0, so this is also the case that fails
     if the sweep stops reading `exit:<code>` for a condition it did not write.
     """
-    pointer = _pointer(tmp_path, _sweepable_file_manifest())
+    pointer = _pointer(tmp_path, _sweepable_file_manifest(), observed_end=True)
     _place(pointer, FILE_PATHS)
 
     report = _sweep_one(monkeypatch, tmp_path, pointer)

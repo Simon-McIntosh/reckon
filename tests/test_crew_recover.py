@@ -13,6 +13,7 @@ import asyncio
 import importlib
 import json
 import shlex
+import socket
 import subprocess
 import sys
 from datetime import timedelta
@@ -40,6 +41,11 @@ REFUSED_STREAM = (
 # A pid the test can be sure is not running, so a resumed pointer still reads as
 # a stopped run rather than a live one.
 DEAD_PID = 4_194_303
+
+
+def _absent_pid() -> int:
+    """A pid the kernel will never allocate: beyond the pid_max ceiling."""
+    return int(Path("/proc/sys/kernel/pid_max").read_text().strip()) + 4096
 
 
 def test_facade_child_module_attributes_are_modules() -> None:
@@ -132,6 +138,7 @@ def _refused_run(
     write_paths: tuple[str, ...] = ("reckon/one.py",),
     session_on_pointer: bool = False,
     session_in_stream: bool = True,
+    observed_end: bool = False,
 ) -> dict:
     """A pointer for a run a provider refusal stopped, as dispatch leaves it."""
     directory = tmp_path / "runs" / run_id
@@ -169,6 +176,10 @@ def _refused_run(
     }
     if session_on_pointer:
         record["session_id"] = "sess-on-the-pointer"
+    if observed_end:
+        # The end a lift rests on: this host checks the pid and finds it gone.
+        record["launcher_host"] = socket.gethostname()
+        record["pid"] = _absent_pid()
     _write_json(pointer_path(run_id), record)
     return record
 
@@ -217,7 +228,7 @@ def test_a_lapsed_refusal_is_resumed_once_with_a_continue_advice(
 ) -> None:
     """The recovery this whole plan exists for, and it happens unattended."""
     run_id = "r-20260903T090000000000-node-a"
-    _refused_run(tmp_path, run_id)
+    _refused_run(tmp_path, run_id, observed_end=True)
     after = _stated_reset() + timedelta(minutes=1)
     _clock_at(monkeypatch, after)
     launcher = _Launcher()
@@ -252,7 +263,7 @@ def test_a_second_sweep_finds_nothing_to_do(
 ) -> None:
     """Idempotence is what lets something already running call this."""
     run_id = "r-20260903T091000000000-node-a"
-    _refused_run(tmp_path, run_id)
+    _refused_run(tmp_path, run_id, observed_end=True)
     after = _stated_reset() + timedelta(minutes=1)
     _clock_at(monkeypatch, after)
     launcher = _Launcher()
@@ -274,7 +285,7 @@ def test_a_run_refused_again_waits_for_the_new_holds_own_expiry(
     a new hold the sweep waits on rather than one it may retry.
     """
     run_id = "r-20260903T092000000000-node-a"
-    _refused_run(tmp_path, run_id)
+    _refused_run(tmp_path, run_id, observed_end=True)
     reset = _stated_reset()
     _clock_at(monkeypatch, reset + timedelta(minutes=1))
     launcher = _Launcher()
@@ -374,7 +385,7 @@ def test_a_dry_run_reports_what_it_would_resume_and_resumes_nothing(
 ) -> None:
     """The mode that makes the sweep safe to call from a test, and from a check."""
     run_id = "r-20260903T096000000000-node-a"
-    _refused_run(tmp_path, run_id)
+    _refused_run(tmp_path, run_id, observed_end=True)
     launcher = _Launcher()
 
     report = sweep(
@@ -584,7 +595,7 @@ def test_every_surface_answers_the_same_session_from_the_same_source(
 ) -> None:
     """A pointer with no id and a stream with one: every surface says stream."""
     run_id = "r-20260904T030000000000-node-a"
-    _refused_run(tmp_path, run_id)
+    _refused_run(tmp_path, run_id, observed_end=True)
     assert "session_id" not in crew.read_pointer(run_id)
     expected = _stream_session_of(run_id)
     assert expected

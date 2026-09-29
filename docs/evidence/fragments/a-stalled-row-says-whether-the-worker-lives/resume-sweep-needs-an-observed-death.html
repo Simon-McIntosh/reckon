@@ -1,0 +1,89 @@
+<section id="resume-sweep-needs-an-observed-death">
+  <h2>The resume sweep lifts a run only once something observed the worker end</h2>
+
+  <p><strong>What changed.</strong> <code>_launcher_refusal</code> — the sweep's only process guard —
+  refused a process the local table answered for and nothing else. A run whose liveness nothing
+  established was therefore lifted as though it were dead: a worker on another login node, or a
+  pointer that recorded no process at all, fell through to a resume. That is the one recovery
+  mistake that costs more than it recovers, because two workers then write one run.</p>
+
+  <p>The lift now requires an observed end, read through the vocabulary the row already states rather
+  than a second one. An observation is exactly one of two things: a pid checked on this host and
+  found dead (<code>local_liveness</code> returning <code>proven</code>), or the supervisor's exit
+  record, which outlives a pointer nobody updated and stays readable on a machine that never launched
+  the worker. Both compose to <code>process gone</code> under <code>_process_reading</code>; every
+  other reading withholds the lift and names itself in the refusal. The exit record folds into the
+  reading exactly as <code>classify_pointer</code> folds it — alive is asked first, an earlier
+  attempt's record does not apply to a living worker — so a recorded end cannot read as ended on the
+  row and as unknown at the sweep. The gate is consulted ahead of both sweep modes, so a dry run's
+  <code>would_resume</code> stays the statement the real sweep acts on rather than diverging from
+  it.</p>
+
+  <figure>
+    <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/resume-sweep-needs-an-observed-death/sweep-lift-reading.svg"
+         alt="Four parked runs and what the sweep does with each: a pid this host checked and found dead reads process gone and is lifted; a supervisor exit record on a run launched elsewhere reads process gone and is lifted; a run launched on another host with no exit record reads liveness unknown and is left in place with the reading named in its refusal; a live local process reads alive and is refused, as before." />
+    <figcaption>One sweep, four parked runs. The two left-hand rows are observations; the third is
+    the reading that used to be treated as death, and the fourth is the guard that already
+    worked.</figcaption>
+  </figure>
+
+  <h3>Measured</h3>
+
+  <p>The new file <code>tests/test_resume_sweep_needs_an_observed_death.py</code> parks three runs in
+  a temporary crew home and runs the sweep once. Each park is genuine — the condition each declares
+  is met by the fixture's own file, through the default vector, so the lift stage is reached by the
+  condition rather than by a stub. The run with the supervisor's exit record is lifted
+  (<code>r-observed-exit</code>), the run whose pid this host checked and found dead is lifted
+  (<code>r-observed-dead-pid</code>), and the run launched on another host with no exit record is
+  left in place with <code>liveness unknown</code> named in its refusal
+  (<code>r-unobserved-liveness</code>). A fourth case holds a real live child on this host and keeps
+  the existing refusal, <code>still has a live process; observe or stop it before resuming</code>.</p>
+
+  <p>Against the base revision <code>89890b94</code> the same file fails on exactly one case — the
+  unknown-liveness one — because that run was lifted; the recorded-exit and dead-pid cases already
+  passed there, which is what says the two observations were not newly invented but newly
+  <em>required</em>. The negative control removes the observed-end gate from a scratch copy
+  (<code>restore the guard that refuses only a proven-live process in a scratch copy; the
+  unknown-liveness case must be lifted and fail</code>), and the same case fails again with
+  <code>r-unobserved-liveness</code> appearing in the lifted list. Both red logs are in the run
+  directory's record and both end in an <code>EXIT=</code> line.</p>
+
+  <h3>The twelve stale lift fixtures</h3>
+
+  <p><strong>They moved with the guard, in the same node.</strong> Seven files build live pointers
+  with no <code>launcher_host</code>, no pid and no exit record and assert that the sweep lifts them:
+  <code>test_crew_recover.py</code>, <code>test_wait_shapes.py</code>,
+  <code>test_crew_wait_stanza_validation.py</code>, <code>test_wait_marker_is_not_a_stub.py</code>,
+  <code>test_external_wait.py</code>, <code>test_a_met_wait_is_ready_not_abandoned.py</code> and
+  <code>test_dry_run_predicts_the_launcher.py</code>. Every one is a run whose end nothing observed,
+  so the strict reading withholds the lift — the same reading the new file's third case pins. Each
+  fixture builder gained one optional argument writing the launcher host and a pid past the kernel's
+  <code>pid_max</code> ceiling, a pid this host checks and finds gone, and the twelve cases that
+  assert a lift pass it. No assertion was deleted, no expectation was flipped to the refusal (no case
+  asserted a lift of an unknown-liveness run on purpose), and the guard was not narrowed to make a
+  fixture pass.</p>
+
+  <p>The narrowing that would have made them green instead — refusing only a record naming a foreign
+  launcher host — was rejected: it leaves the class of runs the row's promise is about still lifted
+  on a reading that was never taken, which is the defect this change exists to remove.</p>
+
+  <h3>What is not delivered, and why</h3>
+
+  <p>A direct in-repo resume (<code>reckon crew resume --run</code>, reaching
+  <code>dispatch.resume_plan</code>) still carries only its own live-process guard, so a hand-typed
+  resume of an unknown-liveness run is unchanged by this work, and the sweep was the declared scope.
+  Widening that guard to the same observed-end rule is recorded as the follow-on.</p>
+
+  <h3>Gate</h3>
+
+  <ul>
+    <li>Base arm <code>89890b94</code>: 12 failed, 264 passed, <code>EXIT=1</code>.</li>
+    <li>After arm at <code>a953cd99</code> (the guard and the repaired fixtures together): 12 failed,
+    266 passed, <code>EXIT=1</code> — the same twelve ids, <strong>no failing id added</strong>, and
+    the two new cases pass. The twelve are pre-existing at the base revision and fail identically in
+    both arms.</li>
+    <li><code>ruff check</code> and <code>ruff format --check</code> on all nine changed paths: zero
+    findings at the base and at the head, compared per file with the base content piped under the
+    same <code>--stdin-filename</code> so per-file ignores resolve identically on both sides.</li>
+  </ul>
+</section>

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import socket
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -13,6 +14,11 @@ from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "proj"
 DEAD_PID = 4_194_303
+
+
+def _absent_pid() -> int:
+    """A pid the kernel will never allocate: beyond the pid_max ceiling."""
+    return int(Path("/proc/sys/kernel/pid_max").read_text().strip()) + 4096
 
 
 @pytest.fixture()
@@ -28,6 +34,7 @@ def _waiting_run(
     run_id: str,
     *,
     started_at: str | None = None,
+    observed_end: bool = False,
 ) -> dict:
     started_at = started_at or datetime.now(tz=UTC).isoformat().replace("+00:00", "Z")
     directory = tmp_path / "runs" / run_id
@@ -74,6 +81,10 @@ def _waiting_run(
             "write_paths": ["reckon/one.py"],
         },
     }
+    if observed_end:
+        # The end a lift rests on: this host checks the pid and finds it gone.
+        record["launcher_host"] = socket.gethostname()
+        record["pid"] = _absent_pid()
     _write_json(pointer_path(run_id), record)
     return record
 
@@ -117,7 +128,7 @@ def test_the_sweep_resumes_only_after_the_condition_terminates(
     home: Path, tmp_path: Path
 ) -> None:
     run_id = "r-waiting-job"
-    _waiting_run(tmp_path, run_id)
+    _waiting_run(tmp_path, run_id, observed_end=True)
     launcher = _Launcher()
     observations = iter(
         (
