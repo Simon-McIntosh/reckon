@@ -79,6 +79,37 @@
     "plan": "the-fleet-counters-count-the-fleet",
     "verdict": "moved"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "21bea9487b217e65f2f0ad52090b9562fc9b7bc0",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+        "tests/test_follow_lifetime.py::test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on",
+        "tests/test_watch_arming_isolation.py::test_an_opted_in_caller_is_not_refused",
+        "tests/test_watch_arming_isolation.py::test_arming_refuses_a_configuration_home_under_a_test_directory"
+      ],
+      "integrated_revision": "21bea9487b217e65f2f0ad52090b9562fc9b7bc0",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 21bea9487b21: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q -p no:cacheprovider -rf --basetemp=/tmp/vg-bt-7f588c38 tests/test_attach_shows_each_live_run.py tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_watch_ensure.py tests/test_crew_watch_lifetime.py tests/test_crew_watch_stream.py tests/test_crew_watch_visibility.py tests/test_crew_watchlife.py tests/test_follow_counts_its_session.py tests/test_follow_lifetime.py tests/test_follow_lifetime_survives_reload.py tests/test_follow_observes_other_sessions.py tests/test_follow_reads_whole_lines.py tests/test_follow_rearm_continues.py tests/test_follow_sweep_cadence.py tests/test_follower_checks_its_owner.py tests/test_follower_freshness.py tests/test_follower_keeps_memory.py tests/test_follower_prints_only_policy_rows.py tests/test_follower_rearm_shows_nothing_twice.py tests/test_follower_reload_is_safe.py tests/test_follower_survives_a_config_change.py tests/test_follower_survives_a_host_change.py tests/test_ticker_node_names_keep_their_ends.py tests/test_ticker_reads_cleanly.py tests/test_ticker_reason_cut_at_a_word.py tests/test_ticker_renders_wait_facts.py tests/test_ticker_row_drops_unread_cells.py tests/test_ticker_row_is_one_transition.py tests/test_watch_arming_isolation.py tests/test_watch_reports_death_at_once.py tests/test_watch_seat_across_hosts.py tests/test_watch_version_stamp.py tests/test_watcher_arming_fallback.py tests/test_watcher_unit_restart.py",
+    "gate_command_source": "option",
+    "integrated_revision": "21bea9487b217e65f2f0ad52090b9562fc9b7bc0",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163910581552-resume-on-a-replaced-stream-draws-its-rows/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "timed_out": false,
+    "worktree_roots_rewritten": []
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
