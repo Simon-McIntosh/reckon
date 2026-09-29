@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Iterable, Mapping
@@ -53,9 +54,11 @@ FALSIFIABLE_EVIDENCE_CONTRACT = (
     "  tree, so an unfilled field reads as no work."
 )
 
-# The small-node rule, embedded beside the landing sentence in the
-# worktree-landing contract so a worker knows when its node is small and what a
-# small node owes. It lives here for the same reason its siblings do: the prompt
+# The small-node rule, embedded beside the landing sentence in each landing
+# contract so a worker knows when its node is small and what a small node owes.
+# Both carriers read it: a brief node is small on the same terms, and its
+# `landing:` line lands on the run's record rather than on a plan section. It
+# lives here for the same reason its siblings do: the prompt
 # embeds no protocol reference by design, so a discipline carried only by a
 # reference file reaches nobody. Every clause states a mechanical threshold and
 # names no repository, path, tool, model or project, because this text reaches
@@ -75,6 +78,44 @@ SMALL_NODE_RULE = (
     "  does not permit the other. Any single data file above 300,000 bytes belongs\n"
     "  in the run directory, not the repository.\n"
 )
+
+# The rule withholds a figure unless the node's done-when names one, so the
+# worker is told which side of that condition its own node is on rather than
+# left to apply a conditional to a node it cannot see from the inside. The
+# done-when is the node's own declaration of what it delivers, which is exactly
+# the artifact the rule keys on. The two clauses are emitted from one
+# classification, so the prompt never tells the same worker both to write a
+# figure and to withhold one, and each names the clause the other withholds so
+# a reader of either learns the whole rule.
+ARTIFACT_NAMED_CLAUSE = (
+    "  Your done-when names an artifact, so this node may write that artifact. It\n"
+    "  permits no other figure and no evidence prose.\n"
+)
+ARTIFACT_UNNAMED_CLAUSE = (
+    "  Your done-when names no artifact, so this node writes no figure and no\n"
+    "  evidence prose.\n"
+)
+
+# The words a done-when uses to name a figure artifact. A word-boundary match
+# keeps a longer word that merely contains one of them — "paragraph" holding
+# "graph" — from being read as the node naming a figure.
+FIGURE_NAME_PATTERN = re.compile(
+    r"\b(?:figures?|diagrams?|plots?|charts?|graphs?)\b", re.IGNORECASE
+)
+
+
+def _artifact_allowance(done_when: str) -> str:
+    """State the figure allowance this node's own done-when grants.
+
+    A done-when naming a figure artifact permits that figure and still withholds
+    the evidence prose; one naming none withholds both. The node's done-when is
+    the only input, so the clause states the node's own condition rather than
+    asking the worker to resolve a conditional against material it was not given.
+    """
+    if FIGURE_NAME_PATTERN.search(str(done_when or "")):
+        return ARTIFACT_NAMED_CLAUSE
+    return ARTIFACT_UNNAMED_CLAUSE
+
 
 # The worktree-landing contract, embedded only when the worker can write its
 # assigned worktree, so a repository change is the deliverable it can actually
@@ -115,11 +156,15 @@ PLAN_LANDING_CONTRACT = (
 # path outside the repository is refused by git, and a worker following it has
 # no way to comply. The repository files the node changes are what it commits,
 # and the manifest carries the record's absolute path so a reader can open it
-# without knowing the run id. The header, the figure convention and the
-# meta-line ban are unchanged, so the two landing contracts differ only in
-# where the record goes and whether it is committed. Kept as a standalone
-# constant so a test can compose with it masked out and diff against the live
-# prompt, which proves the substitution is removable and scoped.
+# without knowing the run id. The `landing:` line is named here too, because a
+# brief node is small on the same terms as a plan node and the small-node rule
+# below reaches both carriers; with no plan section to land on, that line stays
+# on the run's own record. The header, the figure convention and the meta-line
+# ban are unchanged, so the two landing contracts differ only in where the
+# record goes, whether it is committed, and where the landing line lands. Kept
+# as a standalone constant so a test can compose with it masked out and diff
+# against the live prompt, which proves the substitution is removable and
+# scoped.
 BRIEF_LANDING_CONTRACT = (
     "CONTRACT — LANDING YOUR RECORD\n"
     "  Write your landing record and your evidence anchor into this run's own\n"
@@ -127,7 +172,10 @@ BRIEF_LANDING_CONTRACT = (
     "  home and lies outside the worktree, so it is never committed: commit only\n"
     "  the repository files your node changes, and name the record's absolute path\n"
     "  in your manifest so a later reader can open it without the run id.\n"
-    "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
+    "  The `landing:` line lands on this run's own record, because a brief names\n"
+    "  no plan section for a promotion to land it on.\n"
+    + SMALL_NODE_RULE
+    + "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
     "  shown than described, under docs/figures/<topic>/ with the project-absolute\n"
     "  src /<project>/figures/...; never an image of what is naturally a table.\n"
     "  Do not edit the plan-version or plan-modified meta lines: every worker\n"
@@ -379,7 +427,16 @@ RUNTIME FILESYSTEM
     if not can_land:
         landing_contract = ""
     else:
-        landing_contract = BRIEF_LANDING_CONTRACT if brief else PLAN_LANDING_CONTRACT
+        # The small-node rule ends on a conditional the worker cannot resolve
+        # from inside its own node, so the clause stating which side of it this
+        # node is on is composed per node from the node's own done-when. It is
+        # appended rather than spliced into the constant, so masking either
+        # contract still reproduces the prompt with exactly that block removed.
+        landing_contract = (
+            (BRIEF_LANDING_CONTRACT if brief else PLAN_LANDING_CONTRACT)
+            + "\n"
+            + _artifact_allowance(node.done_when)
+        )
     closure_authority_contract = CLOSURE_AUTHORITY_CONTRACT if can_land else ""
     # The check is composed with this run's own id so the worker can execute the
     # line as written. A composing caller that supplies no id still gets a
@@ -393,12 +450,14 @@ RUNTIME FILESYSTEM
     )
     negative_control_declaration = _negative_control_declaration(node)
     orientation_scope = json.dumps(list(node.write_paths), separators=(",", ":"))
-    # The landing line belongs to a plan-carried node, whose landing record
-    # promotion lands as a comment on its plan section. A brief names no plan
-    # section, so the key is omitted rather than asking a brief worker to write a
-    # line that has no section to land on.
+    # The landing line belongs to whichever carrier the node has: a plan node's
+    # record is landed by promotion as a comment on its plan section, and a brief
+    # node has no section, so its line stays on the run's own record. The key is
+    # written either way, because the small-node rule tells both carriers a small
+    # node writes exactly one such line.
     landing_key = (
-        ""
+        "  landing: <exactly one line recording your landing record; this run names "
+        "no plan section, so it stays on the run's own record>\n"
         if brief
         else (
             "  landing: <exactly one line recording your landing record; promotion "

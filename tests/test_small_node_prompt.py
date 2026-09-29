@@ -6,16 +6,26 @@ itself — the composed prompt embeds no protocol reference, so a discipline
 carried only by a reference file reaches nobody. This module composes the
 prompt for a small implement node with the existing builder and asserts the
 three clauses by their own wording: the size test, what a small node writes,
-and where a large data file belongs. It also asserts that a node whose
-done-when names a figure is told it may write the figure but not the evidence
-prose, that the rule sits beside the landing sentence rather than somewhere
-else in the prompt, and that it is a pure insertion.
+and where a large data file belongs. It asserts them again for a brief-carrier
+prompt, which has no plan section and so keeps its `landing:` line on the run's
+own record. Because the rule withholds a figure on a condition the worker
+cannot resolve from inside its own node, it also asserts that the clause
+stating which side of that condition the node is on is composed from the
+node's own done-when: a figure-naming done-when is told the figure is permitted
+and the prose is not, and a done-when naming none is told both are withheld.
+Finally it asserts that the rule sits beside the landing sentence rather than
+somewhere else in the prompt, and that it is a pure insertion.
 """
 
 from __future__ import annotations
 
 from reckon.crew.node import TaskNode
-from reckon.crew.prompts import SMALL_NODE_RULE, compose_prompt
+from reckon.crew.prompts import (
+    ARTIFACT_NAMED_CLAUSE,
+    ARTIFACT_UNNAMED_CLAUSE,
+    SMALL_NODE_RULE,
+    compose_prompt,
+)
 
 # The three clauses, by their own wording. Kept as flattened substrings so a
 # line break in the composer cannot hide a clause that no longer says what the
@@ -44,6 +54,18 @@ LANDING_SENTENCE = (
     "final commit; promotion lands the `landing:` line on your plan section."
 )
 
+# The sentence a brief carrier reads in place of the plan one: a brief names no
+# plan section, so its landing line stays on the run's own record.
+BRIEF_LANDING_SENTENCE = (
+    "The `landing:` line lands on this run's own record, because a brief names "
+    "no plan section for a promotion to land it on."
+)
+
+# A brief names no plan section but carries the same node, so the rule has to
+# reach this carrier too: a small node dispatched as a brief owes exactly what a
+# small plan node owes.
+BRIEF_TEXT = "Make the small change, then record it for the next reader."
+
 
 def _node(*, done_when: str = "") -> TaskNode:
     return TaskNode(
@@ -68,6 +90,20 @@ def _prompt(*, done_when: str = "") -> str:
         manifest_path="/state/runs/small-node-run/manifest.md",
         time_budget="20m",
         needs_help_after_failures=2,
+    )
+
+
+def _brief_prompt(*, done_when: str = "") -> str:
+    return compose_prompt(
+        node=_node(done_when=done_when),
+        project="proj",
+        worktree="/repo/worktrees/small-node-run",
+        working_directory="/repo/worktrees/small-node-run",
+        manifest_path="/state/runs/small-node-run/manifest.md",
+        time_budget="20m",
+        needs_help_after_failures=2,
+        can_write_worktree=True,
+        brief=BRIEF_TEXT,
     )
 
 
@@ -101,11 +137,18 @@ def test_prompt_places_a_large_data_file_in_the_run_directory():
     assert LARGE_DATA_FILE_BELONGS_IN_RUN_DIRECTORY in _flat(_prompt())
 
 
-# ── A done-when that names a figure permits the figure, not the prose ───────
+# ── The artifact clause is composed from the node's own done-when ───────────
+#
+# The rule withholds a figure on a condition the worker cannot resolve from
+# inside its own node, so the prompt states which side of that condition this
+# node is on. The two clauses are asserted against each other: a done-when
+# naming a figure must read the named clause and not the unnamed one, and a
+# done-when naming none must read the reverse, so neither case can pass by
+# carrying a constant.
 
 
-def test_done_when_naming_a_figure_permits_the_figure_but_not_the_prose():
-    prompt = _flat(
+def test_a_done_when_naming_a_figure_permits_the_figure_but_not_the_prose():
+    named = _flat(
         _prompt(
             done_when=(
                 "the composed prompt names a figure artifact and its wording "
@@ -113,12 +156,50 @@ def test_done_when_naming_a_figure_permits_the_figure_but_not_the_prose():
             )
         )
     )
+    unnamed = _flat(
+        _prompt(
+            done_when="the composed prompt carries the rule beside the landing sentence"
+        )
+    )
 
-    # The clause tells exactly this node what it may do: it may write the figure
-    # its done-when names, and the same clause withholds the evidence prose.
+    # The general rule withholds the prose either way; the node-specific clause
+    # decides the figure, and says so on the side this node's done-when is on.
+    assert NO_PROSE_OR_FIGURE_UNLESS_NAMED in named
+    assert _flat(ARTIFACT_NAMED_CLAUSE) in named
+    assert _flat(ARTIFACT_UNNAMED_CLAUSE) not in named
+    assert _flat(ARTIFACT_UNNAMED_CLAUSE) in unnamed
+    assert _flat(ARTIFACT_NAMED_CLAUSE) not in unnamed
+
+
+def test_a_word_merely_containing_a_figure_word_does_not_count_as_naming_one():
+    prompt = _flat(
+        _prompt(done_when="rewrite the paragraph describing the landing rule")
+    )
+
+    assert _flat(ARTIFACT_UNNAMED_CLAUSE) in prompt
+    assert _flat(ARTIFACT_NAMED_CLAUSE) not in prompt
+
+
+# ── A brief carrier reads the same three rules ──────────────────────────────
+
+
+def test_a_brief_run_prompt_states_the_three_rules():
+    prompt = _flat(_brief_prompt())
+
+    assert SIZE_TEST in prompt
+    assert WHAT_A_SMALL_NODE_WRITES in prompt
     assert NO_PROSE_OR_FIGURE_UNLESS_NAMED in prompt
-    assert "unless its done-when names that artifact" in prompt
-    assert "does not permit the other" in prompt
+    assert LARGE_DATA_FILE_BELONGS_IN_RUN_DIRECTORY in prompt
+    assert prompt.count(_flat(SMALL_NODE_RULE)) == 1
+
+
+def test_a_brief_run_is_told_its_landing_line_stays_on_the_run_record():
+    prompt = _flat(_brief_prompt())
+
+    assert BRIEF_LANDING_SENTENCE in prompt
+    # The clause that decides the figure is composed for a brief node too, from
+    # the same done-when, so the withholding reaches this carrier as well.
+    assert _flat(ARTIFACT_UNNAMED_CLAUSE) in prompt
 
 
 # ── The rule sits beside the landing sentence, appears once, and is pure ─────
