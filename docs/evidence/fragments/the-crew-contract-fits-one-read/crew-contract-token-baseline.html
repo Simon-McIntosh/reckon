@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-crew-contract-fits-one-read">
+  <meta name="plan-verifies" content="reckon:the-crew-contract-fits-one-read#s3">
+  <meta name="evidence-verdict" content="pass-with-limitation">
+  <meta name="evidence-date" content="2026-09-29">
+  <meta name="evidence-commit" content="b1f967c9">
+  <title>Pre-dispatch skill-load token baseline, 26 September 2026 | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="crew-contract-token-baseline">
+  <h2>The 26 September pre-dispatch skill-load baseline</h2>
+
+  <p><strong>Baseline: a coordinator spends a median of 6,231 input tokens loading the
+  reckon-build skill and its references before its first <code>reckon crew dispatch</code>
+  call.</strong> Recorded from the transcripts under <code>~/.claude/projects</code> read
+  read-only, measured at revision <code>a34a62bb</code>. The section 3 rewrite is judged
+  against this number, which cannot move because it is instead derived from the recorded
+  usage totals of the sessions named below.</p>
+
+  <figure>
+    <img src="/reckon/figures/the-crew-contract-fits-one-read/crew-contract-token-baseline/baseline-per-session.png"
+         alt="Bar chart of pre-dispatch skill-load input tokens per 2026-09-26 session: 3955c8d2 and e6394022 unmeasured, 5b2accfd 5889, 6f6c5410 6231, 1d1d2f0d 25904; median 6231.">
+    <figcaption>Per-session cost. Grey bars are sessions whose load the instrument could not
+    isolate, and are excluded from the median.</figcaption>
+  </figure>
+
+  <h3>Method</h3>
+  <p>The script <code>docs/research/data/crew-contract-baseline/measure.py</code> scans the
+  coordinator transcripts read-only. <strong>Selection rule:</strong> a session is selected
+  when, on 2026-09-26, it records at least one reckon-build skill load — a <code>Skill</code>
+  invocation of <code>reckon-build</code>, an injected <code>SKILL.md</code> body, or a
+  <code>Read</code> of <code>SKILL.md</code> or of a file under
+  <code>reckon-build/references/</code>. The load window ends at the first
+  <code>reckon crew dispatch</code> call at or after the first load, or at the end of the
+  transcript when the session never dispatched.</p>
+  <p><strong>Token accounting.</strong> Each assistant request records a usage block whose
+  total input is <code>input_tokens + cache_creation_input_tokens + cache_read_input_tokens</code>.
+  A load's cost is the rise in that total across the load — the next recorded total after the
+  injected content lands, minus the last recorded total before it. Nothing is estimated from
+  characters. A load is reported <em>unmeasured</em>, rather than as a zero, when no request
+  precedes it (the skill was injected at session start) or when the context shrank across it
+  (a compaction landed between the two requests and bundled the re-injection with its
+  summary).</p>
+  <p><strong>Positive control.</strong> The detector is run against the session known to
+  invoke the skill (<code>1d1d2f0d</code>, where it sees the <code>Skill</code> load) and
+  against <code>1225959a</code>, a session that merely quotes a transcript containing the
+  skill body inside a tool result; the quoted copy is rejected. Both checks print in the log.</p>
+
+  <h3>Sessions measured</h3>
+  <table>
+    <thead><tr><th>Session</th><th>Started</th><th>Load</th><th>Tokens</th></tr></thead>
+    <tbody>
+      <tr><td><code>1d1d2f0d-d00a-4244-9ce2-d47d56b14ae8</code></td><td>2026-09-26 10:35</td><td>Skill: SKILL.md</td><td>25,904</td></tr>
+      <tr><td><code>6f6c5410-a944-473f-8ca9-1f558a522c59</code></td><td>2026-09-26 20:42</td><td>Read: orchestrator-harness/claude-code.md</td><td>6,231</td></tr>
+      <tr><td><code>5b2accfd-6ddc-4250-b78f-fb482fefcddc</code></td><td>2026-09-26 12:18</td><td>Read: worker-verification.md</td><td>5,889</td></tr>
+      <tr><td><code>3955c8d2-c817-48fc-81bf-8a29bb14c6cc</code></td><td>2026-09-24 19:25</td><td>invoked-skills: SKILL.md</td><td>unmeasured (compaction)</td></tr>
+      <tr><td><code>e6394022-d8bc-4bba-bd9a-ea5d9895a410</code></td><td>2026-09-24 20:36</td><td>invoked-skills: SKILL.md</td><td>unmeasured (compaction)</td></tr>
+    </tbody>
+  </table>
+  <p>Median over the three measured sessions: <strong>6,231</strong> tokens
+  (min 5,889, max 25,904). The single clean measurement of a full <code>SKILL.md</code>
+  injection is <strong>25,904</strong> tokens in <code>1d1d2f0d</code>; the other two
+  measured sessions loaded a reference only, or loaded <code>SKILL.md</code> before any
+  request was recorded. <code>6f6c5410</code> is measured under a start-of-session
+  <code>SKILL.md</code> injection the instrument cannot size, so its 6,231 counts its
+  reference load alone.</p>
+
+  <h3>Limitation</h3>
+  <p>2026-09-26 was a quiet Saturday: <strong>four</strong> sessions loaded
+  <code>SKILL.md</code> itself and a <strong>fifth</strong> (<code>5b2accfd</code>) loaded a
+  reference. Both figures are printed in the log. Only three of the five admitted a token
+  measurement, because two sessions were long-lived (started 2026-09-24) and their 09-26
+  load was a post-compaction re-injection, which the instrument cannot isolate from the
+  summary it arrived with. The 26 September figure is therefore a small-sample baseline; the
+  log carries every per-load figure and the reason for each exclusion so the after-side
+  measurement can apply the same rule.</p>
+
+  <h3>Word counts at the baseline revision</h3>
+  <p>Measured by the done-when's own rule (whitespace-split words):
+  <code>SKILL.md</code> <strong>11,050</strong> words; the ten reference files together
+  <strong>23,726</strong> words; the two together <strong>34,776</strong> words, against the
+  12,000-word ceiling the rewrite must meet. These are the pre-rewrite figures and are
+  expected to exceed the ceiling; the rewrite is what closes the gap.</p>
+
+  <h3>Reproduce</h3>
+  <pre><code>python3 docs/research/data/crew-contract-baseline/measure.py</code></pre>
+  <p>Run and output: <code>docs/research/data/crew-contract-baseline/baseline.log</code>
+  (2.6 KB), whose first line names the revision, the tree and the command, and which ends
+  with <code>EXIT=0</code>.</p>
+</section>
+</main>
+</body>
+</html>
