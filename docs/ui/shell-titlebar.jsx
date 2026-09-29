@@ -58,6 +58,12 @@ function readerSourceTrail(item, state) {
   }));
 }
 
+function readerStamp(value, numeric = false) {
+  if (value === null || value === undefined || String(value).trim() === "") return "";
+  const stamp = window.ReckonShell.plans?.artifactStamp;
+  return stamp ? stamp(value, numeric) : String(value);
+}
+
 function readerMetadataRows(item, project) {
   if (!item) return [];
   const kind = canonicalReaderKind(item.type);
@@ -72,8 +78,9 @@ function readerMetadataRows(item, project) {
       ]
     : [
         [kind === "research" ? "verdict" : kind === "evidence" ? "gate" : "dimensions", kind === "research" ? item.verdict : kind === "evidence" ? (item.gate || item.verdict) : item.dims],
-        ["created", item.created],
-        ["edited", item.edited || item.last],
+        // Stamped as the index stamps them: created is a unix time, edited ISO.
+        ["created", readerStamp(item.created, true)],
+        ["edited", readerStamp(item.edited || item.last)],
         ["repo", item.repository || project],
       ];
   return rows.filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "");
