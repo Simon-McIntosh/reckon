@@ -20,8 +20,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
-import tempfile
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -57,27 +55,12 @@ def _window(kind: tuple[object, object]) -> float:
 
 
 @pytest.fixture()
-def home(monkeypatch):
-    """Keep pointers, manifests, streams and checkpoints in temporary state.
-
-    The directory is made by ``tempfile.mkdtemp`` rather than taken from
-    ``tmp_path``, and it is removed at teardown. A ``tmp_path`` sits under
-    pytest's basetemp root, and pytest prunes that root to its three newest
-    entries every time a run starts, so several test processes running at once
-    delete a live run's directory — and this fixture's whole fleet state, the
-    pointers, the watch stream and the checkpoints, is inside it. An arming that
-    reads a deleted home finds no fleet and draws no rows, which is the failure
-    the private directory removes. ``mkdtemp`` creates with ``O_EXCL``, so two
-    processes never land on the same one.
-    """
-    root = Path(tempfile.mkdtemp(prefix="reckon-follower-home-"))
-    config_home = root / "config"
+def home(tmp_path, monkeypatch):
+    """Keep pointers, manifests, streams and checkpoints in temporary state."""
+    config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
-    try:
-        yield config_home
-    finally:
-        shutil.rmtree(root, ignore_errors=True)
+    return config_home
 
 
 def _write_pointer(home: Path, run_id: str, node: str, *, phase: str) -> None:
