@@ -43,6 +43,7 @@ import pty
 import re
 import resource
 import shutil
+import signal
 import socket
 import struct
 import subprocess
@@ -98,6 +99,20 @@ TAB_POLL_SECONDS = 0.05
 TAB_SETTLE_SECONDS = 2.5
 TAB_WAIT_SECONDS = 30.0
 DETACH_GRACE_SECONDS = 5.0
+
+# Every zellij command this module runs is bounded. The batch step reads its
+# requests one at a time, so a single zellij call that never returns stops every
+# later session start on the node: measured on the fleet, a tab-name query
+# against a session deleted while it was being sized slept for a day, and each
+# session asked for afterwards timed out in fleet-attach. A query answers in
+# well under a second, and a create returns once the server is up; past these
+# bounds the call is abandoned and read as no answer.
+ZELLIJ_QUERY_SECONDS = 10.0
+ZELLIJ_CREATE_SECONDS = 60.0
+# A whole session start: the create, the tab wait, one query past its deadline,
+# and the client's detach, with room to spare. The request loop kills a start
+# copy that outlives it, so one stuck start cannot hold the reader.
+SESSION_START_SECONDS = 180.0
 
 # A session name and a layout name both reach a process argument, and the layout
 # name is used as a path under the zellij configuration directory. Both are
@@ -367,8 +382,9 @@ def session_running(name: str, environ: Mapping[str, str] | None = None) -> bool
             text=True,
             check=False,
             env=None if environ is None else dict(environ),
+            timeout=ZELLIJ_QUERY_SECONDS,
         )
-    except OSError:
+    except (OSError, subprocess.TimeoutExpired):
         return False
     for line in result.stdout.splitlines():
         if "EXITED" in line:
@@ -397,8 +413,9 @@ def tab_names(name: str, environ: Mapping[str, str] | None = None) -> list[str]:
             text=True,
             check=False,
             env=child_environ,
+            timeout=ZELLIJ_QUERY_SECONDS,
         )
-    except OSError:
+    except (OSError, subprocess.TimeoutExpired):
         return []
     if result.returncode != 0:
         return []
@@ -561,14 +578,21 @@ def start_session(
         argv.append("--force-run-commands")
     argv += ["--create", name]
     with open(runtime / START_LOG_NAME, "ab") as started:
-        result = subprocess.run(
-            argv,
-            cwd=str(Path.home()),
-            stdout=started,
-            stderr=started,
-            check=False,
-            env=None if environ is None else dict(environ),
-        )
+        try:
+            result = subprocess.run(
+                argv,
+                cwd=str(Path.home()),
+                stdout=started,
+                stderr=started,
+                check=False,
+                env=None if environ is None else dict(environ),
+                timeout=ZELLIJ_CREATE_SECONDS,
+            )
+        except subprocess.TimeoutExpired:
+            log(
+                f"zellij start for {name} did not return in {ZELLIJ_CREATE_SECONDS:.0f}s"
+            )
+            return 1
     if result.returncode != 0:
         log(f"zellij start failed for {name}")
         return 1
@@ -642,13 +666,38 @@ def _reexec(exec_: Any) -> None:
 
 
 def _run_session_copy(name: str, layout: str, environ: Mapping[str, str] | None) -> int:
-    """Start a session through a fresh copy of this module."""
+    """Start a session through a fresh copy of this module, bounded.
+
+    The copy leads its own process group, so a copy that outlives
+    :data:`SESSION_START_SECONDS` is stopped together with the zellij call it
+    is blocked on: SIGTERM first, which the copy turns into an ordinary exit so
+    its sizing client is detached, then SIGKILL for whatever remains. A zellij
+    server the copy created leads a session of its own and is not in the group.
+    """
     argv = [sys.executable, "-m", "reckon.crew.fleet_supervisor", START_MODE, name]
     if layout:
         argv.append(layout)
-    return subprocess.run(
-        argv, check=False, env=None if environ is None else dict(environ)
-    ).returncode
+    process = subprocess.Popen(
+        argv,
+        env=None if environ is None else dict(environ),
+        start_new_session=True,
+    )
+    try:
+        return process.wait(timeout=SESSION_START_SECONDS)
+    except subprocess.TimeoutExpired:
+        log(
+            f"session start for {name} outlived {SESSION_START_SECONDS:.0f}s "
+            "and was stopped"
+        )
+        with suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGTERM)
+        try:
+            process.wait(timeout=DETACH_GRACE_SECONDS * 2)
+        except subprocess.TimeoutExpired:
+            with suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
+        return 1
 
 
 def handle_line(
@@ -740,6 +789,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     environ = os.environ
     if arguments and arguments[0] == START_MODE:
+        # A stop from the request loop ends the copy as an exit rather than a
+        # kill, so the sizing client's detach in its finally block still runs.
+        signal.signal(signal.SIGTERM, lambda *_: sys.exit(1))
         strip_inherited_variables(environ)
         runtime = prepare_runtime(environ)
         name = arguments[1] if len(arguments) > 1 else ""

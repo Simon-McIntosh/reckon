@@ -739,3 +739,76 @@ def test_a_resurrection_runs_its_commands_unless_turned_off(reader, tmp_path) ->
         message=f"no session start was recorded; log={_reader_log(reader.log)!r}",
     )
     assert "--force-run-commands" not in _argv_log(stub_log)
+
+
+# A zellij whose queries never return, as a tab-name query against a session
+# deleted while it was being started was measured to do. ``exec`` makes the
+# sleeping process the one a timeout kills, so nothing holds the captured pipe
+# open afterwards.
+HANGING_QUERY_STUB = """#!/bin/sh
+case "$1" in
+  list-sessions) exec sleep 301 ;;
+  action) exec sleep 301 ;;
+esac
+exit 0
+"""
+
+
+def _hanging_zellij(tmp_path: Path) -> dict[str, str]:
+    stub_bin = tmp_path / "hanging-bin"
+    stub_bin.mkdir()
+    stub = stub_bin / "zellij"
+    stub.write_text(HANGING_QUERY_STUB, encoding="utf-8")
+    stub.chmod(0o755)
+    return {**os.environ, "PATH": f"{stub_bin}{os.pathsep}{os.environ['PATH']}"}
+
+
+def test_a_zellij_query_that_never_returns_is_abandoned(tmp_path, monkeypatch) -> None:
+    """A hung query reads as no answer within its bound, so the reader moves on.
+
+    Unbounded, one query against a vanished session held the batch step's only
+    request reader for a day. Each call is now abandoned at its bound, so the
+    tab wait's own deadline is reached rather than never checked.
+    """
+    monkeypatch.setattr(fleet_supervisor, "ZELLIJ_QUERY_SECONDS", 0.5)
+    env = _hanging_zellij(tmp_path)
+    started = time.monotonic()
+    assert fleet_supervisor.tab_names("demo", env) == []
+    assert fleet_supervisor.session_running("demo", env) is False
+    names = fleet_supervisor._wait_for_tab_names("demo", env, settle=0.1, timeout=1.0)
+    elapsed = time.monotonic() - started
+    assert names == []
+    assert elapsed < 10.0, f"three bounded calls and a 1 s wait took {elapsed:.1f}s"
+
+
+def test_a_session_start_that_overruns_does_not_hold_the_reader(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    """The request loop stops a start copy that outlives its bound, and returns."""
+    monkeypatch.setattr(fleet_supervisor, "SESSION_START_SECONDS", 2.0)
+    env = {
+        **_hanging_zellij(tmp_path),
+        "FLEET_RUNTIME_DIR": str(tmp_path / "runtime"),
+        "FLEET_STATE_DIR": str(tmp_path / "state"),
+        "PYTHONPATH": REPO_ROOT,
+    }
+    started = time.monotonic()
+    fleet_supervisor.handle_line("session demo", tmp_path / "runtime", env)
+    elapsed = time.monotonic() - started
+    assert elapsed < 20.0, f"the reader was held for {elapsed:.1f}s"
+    assert "session start for demo outlived" in capsys.readouterr().out
+    # The zellij call the copy was blocked on went with it, not left orphaned.
+    uid = str(os.getuid())
+    leftover = _wait_for(
+        lambda: (
+            subprocess.run(
+                ["pgrep", "-u", uid, "-xf", "sleep 301"],
+                capture_output=True,
+                check=False,
+            ).returncode
+            != 0
+        ),
+        message="the stopped start copy left its blocked zellij call running",
+        timeout=10.0,
+    )
+    assert leftover
