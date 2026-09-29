@@ -17,7 +17,6 @@ import signal
 import socket
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 import uuid
@@ -6212,30 +6211,12 @@ def _supervisor_write(path: Path, payload: Mapping[str, Any]) -> bool:
     a write whose directory has gone is dropped and reported by its return
     value rather than by raising.
     """
-    parent = path.parent
-    if not parent.is_dir():
+    if not path.parent.is_dir():
         return False
-    tmp: Path | None = None
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=parent,
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            tmp = Path(handle.name)
-            json.dump(payload, handle, indent=2, sort_keys=True)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        tmp.replace(path)
+        _store.write_json_atomically(path, payload, create_parents=False)
     except OSError:
         return False
-    finally:
-        if tmp is not None:
-            tmp.unlink(missing_ok=True)
     return True
 
 
