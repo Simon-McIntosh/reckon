@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-title" content="Eleven deferred timestamp readers share one parser">
+  <meta name="plan-summary" content="Eleven readers in cli, flight, ledger, mcp_views, serve and velocity now read their stamps through parse_utc. A table recorded by running the base code over a shared sixteen-input list is asserted cell by cell at the head, and an ast walk shows one retained fromisoformat exception remains.">
+  <meta name="plan-read" content="1">
+  <meta name="evidence-for" content="a-worker-reuses-before-it-writes">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-29">
+  <meta name="evidence-commit" content="a7e28ed7">
+  <meta name="plan-verifies" content="reckon:a-worker-reuses-before-it-writes#2">
+  <meta name="plan-environment" content="Linux workstation; Python 3.14.2; uv; detached git worktree at cea6da07; CEST+0200 host">
+  <meta name="plan-artifacts" content="reckon/cli.py,reckon/flight.py,reckon/ledger.py,reckon/mcp_views.py,reckon/serve.py,reckon/velocity.py,tests/test_timestamp_callers_batch_d.py,docs/figures/a-worker-reuses-before-it-writes/timestamp-callers-batch-d/caller-migration.svg">
+  <title>Eleven deferred timestamp readers share one parser | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <p><a href="../../../plans/a-worker-reuses-before-it-writes.html">Source plan</a></p>
+    <h1>Eleven deferred timestamp readers share one parser</h1>
+    <p class="plan-summary">The deferred readers left after the first migration wave each
+    parsed a timestamp with their own <code>fromisoformat</code> call. All eleven now read
+    through <code>reckon._timestamps.parse_utc</code>, and every one reproduces the output it
+    produced at base <code>cea6da07</code> for all sixteen recorded inputs. One reader is a
+    retained exception, named with its reason.</p>
+  </header>
+
+  <figure>
+    <img src="/reckon/figures/a-worker-reuses-before-it-writes/timestamp-callers-batch-d/caller-migration.svg"
+         alt="Eleven callers across six modules funnel through parse_utc; each keeps its own guard so the shapes it refused before are still refused">
+    <figcaption>The eleven callers, the guard each keeps around the shared call, and the one
+    reader retained on its own parser.</figcaption>
+  </figure>
+
+  <h2 id="recorded-behaviour">The recorded table</h2>
+  <p>One shared sixteen-input list was run through the base code at
+  <code>cea6da07</code>, and every cell below is that run's output. A raised exception is
+  recorded by its type. The clock is frozen for the callers that age a stamp against
+  <code>now</code>, so their cells are values rather than the moment of reading. The gate
+  asserts the migrated callers reproduce this table cell by cell.</p>
+  <p>Three shapes are separated by the table that a single parser would otherwise blur. A
+  stamp padded with whitespace or suffixed with a lowercase <code>z</code> is refused by
+  most readers and must stay refused, because <code>parse_utc</code> strips whitespace and
+  accepts a lowercase zone marker. A bare calendar date carries no hour, and readers
+  disagree about whether it is a stamp at all: the cli follower places such a row at the
+  moment of reading, while flight and serve read it as midnight. A stamp naming an offset
+  of its own is normalised to UTC by <code>parse_utc</code>, so a reader whose value renders
+  in the written zone cannot use the shared result unchanged.</p>
+  <div class="scroll"><table class="recorded"><thead><tr><th>caller</th><th><code>aware_iso</code></th><th><code>z_suffix</code></th><th><code>lowercase_z</code></th><th><code>space_zoned</code></th><th><code>space_naive</code></th><th><code>offset_seconds</code></th><th><code>offset_midnight</code></th><th><code>naive</code></th><th><code>date_only</code></th><th><code>date_prefix_bogus</code></th><th><code>padded_z</code></th><th><code>epoch</code></th><th><code>empty</code></th><th><code>none</code></th><th><code>object</code></th><th><code>garbage</code></th></tr></thead><tbody><tr><th scope="row"><code>cli._follow_row_stamp</code></th><td>1790643723.0</td><td>1790643723.0</td><td>1790643723.0</td><td>1790643723.0</td><td>1790643723.0</td><td>1790643693.0</td><td>1709591400.0</td><td>1790643723.0</td><td>1790647323.0</td><td>1790647323.0</td><td>1790647323.0</td><td>1790647323.0</td><td>1790647323.0</td><td>1790647323.0</td><td>1790647323.0</td><td>1790647323.0</td></tr><tr><th scope="row"><code>flight._observation_age</code></th><td>3600.0</td><td>3600.0</td><td><span class="nil">none</span></td><td>3600.0</td><td>3600.0</td><td>3630.0</td><td>81055923.0</td><td>3600.0</td><td>81050523.0</td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td>81027295.0</td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td></tr><tr><th scope="row"><code>serve._elapsed_since</code></th><td>3600</td><td>3600</td><td><span class="nil">none</span></td><td>3600</td><td>3600</td><td>3630</td><td>81055923</td><td>3600</td><td>81050523</td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td></tr><tr><th scope="row"><code>serve.completion_key</code></th><td>[&#x27;a&#x27;, &#x27;b&#x27;]</td><td>[&#x27;a&#x27;, &#x27;b&#x27;]</td><td>[&#x27;b&#x27;, &#x27;a&#x27;]</td><td>[&#x27;a&#x27;, &#x27;b&#x27;]</td><td>[&#x27;a&#x27;, &#x27;b&#x27;]</td><td>[&#x27;a&#x27;, &#x27;b&#x27;]</td><td>[&#x27;b&#x27;, &#x27;a&#x27;]</td><td>[&#x27;a&#x27;, &#x27;b&#x27;]</td><td>[&#x27;a&#x27;, &#x27;b&#x27;]</td><td>[&#x27;b&#x27;, &#x27;a&#x27;]</td><td>[&#x27;b&#x27;, &#x27;a&#x27;]</td><td>[&#x27;b&#x27;, &#x27;a&#x27;]</td><td>[&#x27;b&#x27;, &#x27;a&#x27;]</td><td>[&#x27;b&#x27;, &#x27;a&#x27;]</td><td>[&#x27;b&#x27;, &#x27;a&#x27;]</td><td>[&#x27;b&#x27;, &#x27;a&#x27;]</td></tr><tr><th scope="row"><code>ledger._worker_seconds</code></th><td>0</td><td>0</td><td><span class="nil">none</span></td><td>0</td><td>0</td><td>0</td><td>27428</td><td>0</td><td>22028</td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td></tr><tr class="retained"><th scope="row"><code>ledger._parse_timestamp</code> (retained)</th><td><span class="dt">2026-09-29T01:02:03+00:00</span></td><td><span class="dt">2026-09-29T01:02:03+00:00</span></td><td><span class="raised">LedgerError</span></td><td><span class="dt">2026-09-29T01:02:03+00:00</span></td><td><span class="dt">2026-09-29T01:02:03+00:00</span></td><td><span class="dt">2026-09-29T01:02:03+00:00:30</span></td><td><span class="dt">2024-03-05T00:30:00+02:00</span></td><td><span class="dt">2026-09-29T01:02:03+00:00</span></td><td><span class="dt">2024-03-05T00:00:00+00:00</span></td><td><span class="raised">LedgerError</span></td><td><span class="raised">LedgerError</span></td><td><span class="raised">LedgerError</span></td><td><span class="raised">LedgerError</span></td><td><span class="raised">LedgerError</span></td><td><span class="raised">LedgerError</span></td><td><span class="raised">LedgerError</span></td></tr><tr><th scope="row"><code>ledger._event_completion</code></th><td>&quot;2026-09-29T01:02:0&quot;</td><td>&quot;2026-09-29T01:02:0&quot;</td><td><span class="nil">none</span></td><td>&quot;2026-09-29 01:02:0&quot;</td><td><span class="nil">none</span></td><td>&quot;2026-09-29T01:02:0&quot;</td><td>&quot;2024-03-05T00:30:0&quot;</td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td></tr><tr><th scope="row"><code>mcp_views._parsed_observation</code></th><td><span class="dt">2026-09-29T01:02:03+00:00</span></td><td><span class="dt">2026-09-29T01:02:03+00:00</span></td><td><span class="nil">none</span></td><td><span class="dt">2026-09-29T01:02:03+00:00</span></td><td><span class="nil">none</span></td><td><span class="dt">2026-09-29T01:01:33+00:00</span></td><td><span class="dt">2024-03-04T22:30:00+00:00</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="raised">TypeError</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="raised">TypeError</span></td><td><span class="nil">none</span></td></tr><tr><th scope="row"><code>mcp_views.compose_review</code></th><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td></tr><tr><th scope="row"><code>velocity.stamp</code></th><td>1790643723.0</td><td>1790643723.0</td><td><span class="nil">none</span></td><td>1790643723.0</td><td>1790643723.0</td><td>1790643693.0</td><td>1709591400.0</td><td>1790643723.0</td><td>1709596800.0</td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td><td><span class="nil">none</span></td></tr><tr><th scope="row"><code>velocity.measure</code></th><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="raised">TypeError</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="map">window</span></td><td><span class="raised">TypeError</span></td><td><span class="raised">TypeError</span></td><td><span class="raised">TypeError</span></td><td><span class="raised">TypeError</span></td><td><span class="raised">TypeError</span></td><td><span class="raised">TypeError</span></td><td><span class="raised">TypeError</span></td></tr></tbody></table></div>
+
+  <h2 id="retained-exception">The retained exception</h2>
+  <p>One reader keeps its own parser, and the gate names it:</p>
+  <ul>
+    <li><code>ledger._parse_timestamp</code> — returns the moment in the zone the stamp was
+    written in, which the ledger compares and renders; the shared parser normalises every
+    zone to UTC, which would change what a stamp carrying an offset of its own resolves to.
+    Its cells for the offset-with-seconds and near-midnight stamps show the difference: base
+    returns <code>2026-09-29T01:02:03+00:00:30</code> and
+    <code>2024-03-05T00:30:00+02:00</code>, where the shared parser resolves the same
+    instants in <code>+00:00</code>.</li>
+  </ul>
+  <p>An <code>ast</code> walk over the six touched modules collects every function that still
+  calls <code>fromisoformat</code> and asserts the set is exactly that one name, so a
+  later reimplementation inside one of these modules fails the gate.</p>
+
+  <h2 id="gate">The gate</h2>
+  <ul>
+    <li><strong>Base arm</strong> at <code>cea6da07</code>: 249 passed, 2 skipped, exit 0.</li>
+    <li><strong>Head arm</strong> at <code>a7e28ed7</code>: see the run's manifest for the
+    armed JSON, the log path and the failure ids.</li>
+    <li><strong>Negative control</strong>: making <code>velocity.stamp</code> read a naive
+    value as local time turns its recorded naive-string cell red, which is the mutation's
+    declared string and the log's first line.</li>
+  </ul>
+  <p>The full project suite is the coordinator's arm, not this node's: this gate measures
+  only this node's own change, over the six modules' own test files plus the recorded
+  table.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 600" width="1020" height="600"
+     font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">
+  <rect width="1020" height="600" fill="#fbfbfd"/>
+  <text x="24" y="34" font-size="17" font-weight="600">Eleven deferred readers, one parser</text>
+  <text x="24" y="56" fill="#555">base cea6da07 &#8594; head; every recorded cell reproduced</text>
+
+  <g>
+    <rect x="24" y="80" width="300" height="44" rx="6" fill="#eef3fb" stroke="#8aa8d0"/>
+    <text x="38" y="107" font-weight="600">cli</text>
+    <text x="38" y="118" font-size="11" fill="#555">_follow_row_stamp</text>
+  </g>
+  <g>
+    <rect x="24" y="134" width="300" height="44" rx="6" fill="#eef3fb" stroke="#8aa8d0"/>
+    <text x="38" y="161" font-weight="600">flight</text>
+    <text x="38" y="172" font-size="11" fill="#555">_observation_age</text>
+  </g>
+  <g>
+    <rect x="24" y="188" width="300" height="60" rx="6" fill="#eef3fb" stroke="#8aa8d0"/>
+    <text x="38" y="215" font-weight="600">serve</text>
+    <text x="38" y="228" font-size="11" fill="#555">_elapsed_since</text>
+    <text x="38" y="241" font-size="11" fill="#555">completion_key</text>
+  </g>
+  <g>
+    <rect x="24" y="258" width="300" height="78" rx="6" fill="#fbeeee" stroke="#c98a8a" stroke-dasharray="5 4"/>
+    <text x="38" y="285" font-weight="600">ledger</text>
+    <text x="38" y="298" font-size="11" fill="#555">_worker_seconds</text>
+    <text x="38" y="311" font-size="11" fill="#555">_event_completion</text>
+    <text x="38" y="326" font-size="11" fill="#a33" font-weight="600">_parse_timestamp &#8212; retained</text>
+  </g>
+  <g>
+    <rect x="24" y="346" width="300" height="60" rx="6" fill="#eef3fb" stroke="#8aa8d0"/>
+    <text x="38" y="373" font-weight="600">mcp_views</text>
+    <text x="38" y="386" font-size="11" fill="#555">_parsed_observation</text>
+    <text x="38" y="399" font-size="11" fill="#555">compose_review</text>
+  </g>
+  <g>
+    <rect x="24" y="416" width="300" height="60" rx="6" fill="#eef3fb" stroke="#8aa8d0"/>
+    <text x="38" y="443" font-weight="600">velocity</text>
+    <text x="38" y="456" font-size="11" fill="#555">stamp</text>
+    <text x="38" y="469" font-size="11" fill="#555">measure (window days)</text>
+  </g>
+
+  <g stroke="#8aa8d0" stroke-width="1.4" fill="none" marker-end="url(#arrow)">
+    <path d="M324 102 C 400 102, 430 250, 500 268"/>
+    <path d="M324 156 C 400 156, 430 250, 500 272"/>
+    <path d="M324 218 C 410 218, 440 258, 500 276"/>
+    <path d="M324 372 C 410 372, 440 292, 500 284"/>
+    <path d="M324 446 C 410 446, 440 300, 500 288"/>
+  </g>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+            orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8aa8d0"/></marker>
+  </defs>
+
+  <g>
+    <rect x="500" y="240" width="230" height="92" rx="8" fill="#e7f3ec" stroke="#5c9a72"/>
+    <text x="615" y="272" text-anchor="middle" font-size="15" font-weight="700">parse_utc</text>
+    <text x="615" y="293" text-anchor="middle" font-size="11" fill="#555">reckon/_timestamps.py</text>
+    <text x="615" y="311" text-anchor="middle" font-size="11" fill="#555">zone kept &#183; naive read as UTC</text>
+    <text x="615" y="325" text-anchor="middle" font-size="11" fill="#555">epoch by magnitude &#183; else None</text>
+  </g>
+
+  <g>
+    <rect x="770" y="60" width="226" height="150" rx="8" fill="#fff" stroke="#c9c9d2"/>
+    <text x="884" y="84" text-anchor="middle" font-weight="600">guards kept in the caller</text>
+    <text x="786" y="108" font-size="11">&#183; whitespace-padded stamp still refused</text>
+    <text x="786" y="126" font-size="11">&#183; lowercase z still refused</text>
+    <text x="786" y="144" font-size="11">&#183; non-text still refused</text>
+    <text x="786" y="162" font-size="11">&#183; date-only handled per reader</text>
+    <text x="786" y="180" font-size="11">&#183; raw string returned where the</text>
+    <text x="798" y="194" font-size="11">caller returns text, not an instant</text>
+  </g>
+
+  <g>
+    <rect x="770" y="430" width="226" height="110" rx="8" fill="#fbeeee" stroke="#c98a8a"/>
+    <text x="884" y="454" text-anchor="middle" font-weight="600" fill="#a33">retained</text>
+    <text x="786" y="478" font-size="11">ledger._parse_timestamp keeps its</text>
+    <text x="786" y="495" font-size="11">own parser: it returns the moment</text>
+    <text x="786" y="512" font-size="11">in the zone the stamp was written</text>
+    <text x="786" y="529" font-size="11">in, and parse_utc normalises to UTC.</text>
+  </g>
+
+  <text x="24" y="540" font-size="11" fill="#555">negative control: velocity.stamp reading a naive value as local time turns its
+    recorded naive-string cell red</text>
+  <text x="24" y="560" font-size="11" fill="#555">the recorded table is asserted cell by cell; an ast walk asserts only the
+    retained exception still calls fromisoformat</text>
+  <text x="24" y="580" font-size="11" fill="#555">full project suite: the coordinator's arm, not this node's</text>
+</svg>
