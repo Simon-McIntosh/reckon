@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="142">
+<meta name="plan-version" content="143">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -392,10 +392,11 @@
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
     <p class="r-fu-outcome">rearm-replays-the-fleet-with-recorded-times merged at 22b36271 (re-review 87, zero added failures by id). Every arming now draws one row per live run in time order, with no run twice. The follow offset is fixed before the replay reads. The live classification stays the authority on state. The four regressions the first review found were fixed in code, with the tests unmodified. Two follow-ons remain before §9 closes: f-tfcctf-replay-stamps-the-state-entry-time and follow-boundary-snaps-to-a-line (in flight).</p>
     </article>
-<article class="r-fu" data-id="f-tfcctf-a-resumed-run-counts-as-working" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfcctf-a-resumed-run-counts-as-working" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="2026-09-29T16:35:49+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">A resumed run with a live worker counts as working, not unpromoted</h4>
     <div class="r-fu-body"><p>Measured 2026-09-29 at 08:14. The follower row read <code>0w 0b 3u</code> while two of the three runs had been resumed with <code>crew resume</code> and had live workers streaming within the last 7 seconds. The third was a review run still exiting. Each resumed run's manifest still reads <code>complete</code> from its previous turn, so the counter classes it as delivered work awaiting a gate. That gives no working runs and three unpromoted ones, and a reader takes the fleet for idle. Every obligation-hook line in that session also listed both resumed runs as <code>promotable-stale</code> with a <code>crew complete</code> command. Following that line would promote a run mid-turn and delete its pointer. Done when a run whose live worker process was launched after its manifest's last write counts as <code>w</code> in the follower counters, and the obligation hook does not offer it for promotion. A test drives a resumed run with a stale <code>complete</code> manifest and a live worker, and asserts both. The declared mutation, reading the manifest status alone, fails.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
+    <p class="r-fu-outcome">a-resumed-run-counts-as-working merged at f3894340 (re-review 97, zero added failures by id). reckon/crew/recovery.py compares the run's worker record with the manifest's last write. A live worker launched after a terminal manifest makes the run working, so the follower counts it w and obligations() offers no crew complete for it. A worker that started before its manifest keeps today's classification. Four cases cover these, and two declared mutations (always False, always True) each fail their own cases.</p>
     </article>
 <article class="r-fu" data-id="f-tfcctf-noise-pair-case-is-deterministic" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="2026-09-29T16:03:38+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">The noise-pair row-policy case passes deterministically</h4>
@@ -632,7 +633,7 @@
     <div class="r-comment-body"><p>docs/evidence/fragments/the-fleet-counters-count-the-fleet/follow-reads-whole-lines.html</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260929T141906421295-a-resumed-run-counts-as-working" data-who="reckon-build" data-when="2026-09-29T16:15:33.482Z">
-    <div class="r-comment-body"><p>9bf9d9eb and 16923c23 — reckon/crew/recovery.py gains `_worker_launched_after_manifest` (the run&#x27;s recorded worker launch time against the manifest&#x27;s mtime) and a `superseded_manifest` arm of `deferred_outcome`, so a terminal manifest older than the worker that would have written it belongs to the superseded attempt; tests/test_a_resumed_run_counts_as_working.py covers the five cases, including the launch order that must not defer. No fragment and no figure: this node&#x27;s done-when names no artifact, so the landing record is this line.</p></div>
+    <div class="r-comment-body"><p>9bf9d9eb and 16923c23 — reckon/crew/recovery.py gains `_worker_launched_after_manifest` (the run's recorded worker launch time against the manifest's mtime) and a `superseded_manifest` arm of `deferred_outcome`, so a terminal manifest older than the worker that would have written it belongs to the superseded attempt; tests/test_a_resumed_run_counts_as_working.py covers the five cases, including the launch order that must not defer. No fragment and no figure: this node's done-when names no artifact, so the landing record is this line.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T130204463138-ticker-row-is-one-aligned-transition" data-who="reckon-build" data-when="2026-09-25T13:46:08Z">
     <div class="r-comment-body"><p>each ticker row is one transition, from → to on an aligned arrow with fixed columns on both sides, chained per run on the pane's last shown state, with no action word; 266 passed; review 86, whose three findings (stale width comment at ticker.py:339, a test assertion that cannot fail, and a wrong rendered-case count in the evidence) go to the next ticker node</p></div>
