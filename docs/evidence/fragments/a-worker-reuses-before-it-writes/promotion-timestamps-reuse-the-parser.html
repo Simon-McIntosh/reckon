@@ -1,0 +1,35 @@
+<section id="promotion-timestamps-reuse-the-parser">
+    <h2>promotion-timestamps-reuse-the-parser &mdash; three promotion readers onto the shared parser</h2>
+    <p>Three timestamp readers in <code>reckon/crew/promotion.py</code> no longer parse
+    <code>fromisoformat</code> themselves. <code>_elapsed_seconds</code> reads
+    <code>reckon._timestamps.parse_utc</code> and keeps its own elapsed policy (two
+    workers' producer bound to one reference pair and a clamp at zero seconds).
+    <code>_assume_utc_if_naive</code> reads <code>parse_iso</code> and keeps its display
+    policy (a stamp that names no zone is rewritten with a trailing <code>Z</code>,
+    anything else is returned as written). The stream-event loop inside
+    <code>_terminal_stream_data</code> is now a named helper,
+    <code>_zone_aware_stream_timestamp</code>, which reads <code>parse_iso</code> and
+    keeps only stamps that name a zone, so the span is decided in one place rather than
+    inline. After the change <code>grep -c fromisoformat</code> over the module is zero;
+    the new test also asserts it by walking the module's AST.</p>
+    <p><strong>One recorded difference, deliberate and stated in the test.</strong>
+    <code>_assume_utc_if_naive</code> called <code>value.replace</code> at base, so a
+    numeric value raised <code>AttributeError: 'int' object has no attribute
+    'replace'</code>. Routed through <code>parse_iso</code>, whose non-string miss
+    returns <code>None</code>, the reader now returns the value unchanged &mdash; the
+    same policy it already applied to a string it could not parse. No caller reaches
+    it: the one caller guards the stamp before the call.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>New test <code>tests/test_promotion_timestamps_reuse_the_parser.py</code></td><td>20 passed, EXIT=0; a behaviour table per reader over a Z stamp, an offset stamp, a naive stamp, an empty string, a malformed string and a numeric value, expectations recorded at base</td></tr>
+        <tr><td>Gate over every <code>tests/</code> file importing <code>reckon.crew.promotion</code> (38 files), base arm <code>db6726ee</code> in a scratch export</td><td>391 passed, EXIT=0 (<code>gate-base.log</code>, no FAILED ids)</td></tr>
+        <tr><td>Same gate at the worktree head plus the new test (<code>-n 4</code>, separate <code>--basetemp</code> each)</td><td>411 passed, EXIT=0 (<code>gate-head.log</code>) &mdash; zero added failing test ids</td></tr>
+        <tr><td><code>fromisoformat</code> calls remaining in <code>reckon/crew/promotion.py</code></td><td>0 (grep and AST walk)</td></tr>
+        <tr><td>Negative control: <code>_assume_utc_if_naive</code> made to return a naive stamp unchanged</td><td><code>test_reader_keeps_its_recorded_output[assume_utc_if_naive-naive]</code> fails, EXIT=1; function restored byte-identical afterwards</td></tr>
+      </tbody>
+    </table>
+    <p>Both basetemps were deleted after their FAILED ids were read (none in either arm).
+    Its own module is the only product source changed; the measure covers only this
+    node's change.</p>
+  </section>

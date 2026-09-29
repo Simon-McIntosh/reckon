@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from reckon import _backends, _store, capabilities, flight, ledger, review_tiers
+from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import review as review_module
 from reckon.crew import rollout
 from reckon.crew.dispatch import (
@@ -2420,27 +2421,21 @@ def _shadow_patch_stat(path: Path, *, cwd: Path) -> dict[str, int]:
 
 def _elapsed_seconds(start: Any, end: Any) -> int | None:
     """Return whole seconds between two ISO-8601 stamps, or None."""
-    try:
-        first = datetime.fromisoformat(str(start).replace("Z", "+00:00"))
-        last = datetime.fromisoformat(str(end).replace("Z", "+00:00"))
-    except (TypeError, ValueError):
+    if not isinstance(start, str) or not isinstance(end, str):
         return None
-    if first.tzinfo is None:
-        first = first.replace(tzinfo=timezone.utc)
-    if last.tzinfo is None:
-        last = last.replace(tzinfo=timezone.utc)
+    first = parse_utc(start)
+    last = parse_utc(end)
+    if first is None or last is None:
+        return None
     return max(0, int((last - first).total_seconds()))
 
 
 def _assume_utc_if_naive(value: str) -> str:
     """Attach UTC to a completion stamp that carries no timezone."""
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
+    parsed = parse_iso(value)
+    if parsed is None or parsed.tzinfo is not None:
         return value
-    if parsed.tzinfo is not None:
-        return value
-    return parsed.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+    return parsed.replace(tzinfo=UTC).isoformat().replace("+00:00", "Z")
 
 
 def _wall_exceeded_budget(wall_seconds: int | None, time_budget: Any) -> bool:
@@ -3029,6 +3024,20 @@ def _commit_landing_writes(
     return {"committed": True, "subject": subject, "paths": [str(p) for p in targets]}
 
 
+def _zone_aware_stream_timestamp(timestamp: object) -> datetime | None:
+    """The moment a stream event states, kept only when it names its zone.
+
+    A stamp that carries a ``Z`` suffix or a numeric offset is a moment the
+    event placed; one that names no zone is dropped, so the span this feeds is
+    measured only from moments that stated where they were rather than from an
+    assumption of UTC.
+    """
+    parsed = parse_iso(timestamp)
+    if parsed is None or parsed.tzinfo is None:
+        return None
+    return parsed
+
+
 def _terminal_stream_data(
     record: Mapping[str, Any],
 ) -> StreamMeasures:
@@ -3081,13 +3090,8 @@ def _terminal_stream_data(
             events, _malformed = _backends.parse_events(handle)
         for event in events:
             timestamp = event.get("timestamp")
-            if not isinstance(timestamp, str) or not timestamp.strip():
-                continue
-            try:
-                parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-            except ValueError:
-                continue
-            if parsed.tzinfo is not None:
+            parsed = _zone_aware_stream_timestamp(timestamp)
+            if parsed is not None:
                 timestamps.append((parsed, timestamp))
     if timestamps:
         first = min(timestamps, key=lambda item: item[0])
