@@ -44,6 +44,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends, crew
+from tests import test_a_live_run_never_reads_dead as liveness
 
 # ``reckon.crew.dispatch`` names the command function on the package, so the
 # module is reached by import rather than by attribute.
@@ -126,6 +127,9 @@ class Fixture:
         monkeypatch.setenv("RECKON_HOME", str(config_home))
 
     def resume(self, *, fence: bool, dialect: str | None = None):
+        # The supervisor recorded this run's end, which is the observation a
+        # resume rests on; the fixture resumes a run whose worker is gone.
+        liveness._write_exit_record(self.run_id)
         record = self.record(fence=fence, dialect=dialect)
         crew._write_json(crew.pointer_path(self.run_id), record)
         plan = crew.resume_plan(self.run_id, "continue", config=CONFIG)
@@ -230,6 +234,7 @@ def test_a_placed_records_command_field_is_still_the_harness(
     fixture = Fixture(tmp_path, "clive")
     fixture.isolate(monkeypatch)
     monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
+    liveness._write_exit_record(fixture.run_id)
     record = fixture.record(fence=False)
     record["argv"] = ["srun", "--job-name", fixture.run_id, *record["argv"]]
     assert Path(record["command"]).name == "clive"

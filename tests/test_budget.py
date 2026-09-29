@@ -33,6 +33,7 @@ from click.testing import CliRunner
 
 from reckon import _backends, budget, crew, ledger, run_store
 from reckon.cli import main as cli_main
+from tests import test_a_live_run_never_reads_dead as liveness
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "backends"
 
@@ -1366,6 +1367,8 @@ def test_a_stuck_worker_check_does_not_claim_a_scheduled_resumption(home, repo) 
         },
     )
 
+    # The supervisor's exit record is the end this resume rests on.
+    liveness._write_exit_record("r-stuck")
     crew.resume_plan("r-stuck", "continue", config=CONFIG)
 
     record = ledger.holds("proj", repo)[0]

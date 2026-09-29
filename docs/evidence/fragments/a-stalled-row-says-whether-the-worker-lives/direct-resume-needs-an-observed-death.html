@@ -1,0 +1,44 @@
+<section id="direct-resume-needs-an-observed-death">
+  <h2>A hand-typed resume waits for an observed end, as the sweep does</h2>
+
+  <p><strong>What changed.</strong> <code>resume_plan</code> in <code>reckon/crew/dispatch.py</code>
+  carried only its own liveness guard — it refused a process this host found alive and nothing else.
+  A run whose worker lives on another machine, or whose pointer recorded no process at all, therefore
+  resumed as though its worker were dead: the collision the sweep's observed-end rule exists to
+  prevent, reached by typing the command by hand rather than by sweeping.</p>
+
+  <p>The launcher now consults the sweep's own helper,
+  <code>resumption._observed_end_refusal</code>, rather than a second composition of the rule, so what
+  counts as an observed end cannot drift between the two doors. An observation is exactly one of two
+  things: a pid checked on this host and found dead, or a supervisor's exit record. The refusal names
+  the reading it holds (<code>liveness unknown</code>). It is consulted after the launcher's other
+  guards — the launch kind, the proven-live process and the budget hold — and after the sweep
+  consults them, so a run that fails several reports the reason the sweep would report for it too.</p>
+
+  <h3>Measured</h3>
+
+  <p><code>tests/test_direct_resume_needs_an_observed_death.py</code> builds four runs in a temporary
+  crew home and calls <code>resume_plan</code> for each. At the head revision all four pass (4 passed
+  in 6.73 s): the run with the supervisor's exit record returns a plan, the run whose pid this host
+  checked and found dead returns a plan, the run launched on another host with no exit record is
+  refused with <code>liveness unknown</code> named, and a real live child on this host keeps the
+  refusal the guard has always given, <code>still has a live process; observe or stop it before
+  resuming</code>.</p>
+
+  <p>The unknown-liveness case fails at the base revision <code>2d792b29</code> — a plan is returned,
+  so the assertion that the resume is refused fails (<code>DID NOT RAISE CrewError</code>) — and
+  passes at the head. The negative control removes the guard in a scratch copy; the mutated
+  <code>dispatch.py</code> is byte-identical to the base revision's (<code>cmp</code> clean), and the
+  same case fails there with an <code>EXIT=1</code> line closing the log.</p>
+
+  <p><strong>Incomplete.</strong> The declared gate — the new file plus every existing file that
+  calls <code>resume_plan</code> or <code>reckon crew resume</code>, both arms — was not finished: the
+  head arm reached roughly 35&nbsp;% of its 28 files before the run's 60-minute budget was spent and
+  was stopped, so it carries no EXIT= line and no failure-id delta, and the base arm covers the new
+  file only. The two completed logs are
+  <code>runs/r-20260929T085357030873-direct-resume-needs-an-observed-death/logs/base-repro.log</code>
+  and <code>.../logs/negative-control.log</code>; the partial head log is
+  <code>.../logs/head-suite.log</code>. Ruff is clean on the new file and adds no finding to
+  <code>dispatch.py</code> (9 findings at base, 9 at head). The two-arm gate over the full file set
+  remains to be run.</p>
+</section>
