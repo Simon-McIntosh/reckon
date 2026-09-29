@@ -15,12 +15,19 @@ editing a file directly, outside the writer is still refused. Every fixture
 here is built in a temporary repository, and the first case closes by asserting
 the write added nothing to that repository beyond the files the ledger already
 held.
+
+The last case pins the writer against itself: two writers prepared from one
+revision, interleaved by a seam, and the reader must still find a readable
+project holding the row that won.
 """
 
 from __future__ import annotations
 
 import errno
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -29,6 +36,65 @@ from reckon import ledger
 
 PROJECT = "proj"
 RUN_ID = "r-20260929T000000000000-node-a"
+
+# One writer's half of the interleaved-write race, run as its own process.
+# Processes rather than threads because the writers are separate commands and
+# the exclusion being measured is the one that holds between them (an advisory
+# process lock); a thread would share it invisibly and report a safety the
+# deployed shape does not have.
+_RACE_CHILD = '''\
+"""One writer's half of the write race, in its own process."""
+
+from __future__ import annotations
+
+import json
+import sys
+import time
+from pathlib import Path
+
+from reckon import ledger
+
+PROJECT = "proj"
+PAUSE_SECONDS = 3.0
+
+
+def main() -> int:
+    role, root, scratch = sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3])
+    data, version = ledger.load(PROJECT, root)
+    data["runs"][0]["outcome"] = f"completed by the {role}"
+    if role == "late":
+        real = ledger._keep_run_files_identical
+
+        def paused(project, rows, root_arg):
+            result = real(project, rows, root_arg)
+            (scratch / "late-paused").write_text("1")
+            deadline = time.monotonic() + PAUSE_SECONDS
+            while (
+                not (scratch / "winner.json").exists()
+                and time.monotonic() < deadline
+            ):
+                time.sleep(0.02)
+            return result
+
+        ledger._keep_run_files_identical = paused
+    else:
+        deadline = time.monotonic() + 30.0
+        while (
+            not (scratch / "late-paused").exists() and time.monotonic() < deadline
+        ):
+            time.sleep(0.02)
+    outcome = {"result": "ok", "text": "completed by the " + role}
+    try:
+        ledger.write(PROJECT, data, version, root)
+    except ledger.LedgerError as exc:
+        outcome = {"result": "conflict", "text": str(exc)}
+    (scratch / (role + ".json")).write_text(json.dumps(outcome))
+    print(json.dumps(outcome))
+    return 0
+
+
+sys.exit(main())
+'''
 
 
 @pytest.fixture()
@@ -194,3 +260,93 @@ def test_a_refused_envelope_puts_the_run_file_back(
     reread, _ = ledger.load(PROJECT, repo)
     assert reread["runs"][0]["time_budget"] == "12m"
     assert _file_text(repo) == ledger.serialize_run(reread["runs"][0])
+
+
+def test_a_loser_of_the_write_race_cannot_overwrite_the_winner(
+    repo: Path, tmp_path: Path
+) -> None:
+    """Two writers from one revision: the loser must not undo the winner.
+
+    A ledger write reads the aggregate at a version, rewrites the per-run files
+    that must follow their rows, and then writes the aggregate under that
+    version. Two writers prepared from the same revision interleave inside that
+    window: the first rewrites its run file, the second rewrites the file and
+    commits, and the first, refused on its stale version, puts back the copy it
+    captured before the second wrote. The per-run file then holds a row the
+    aggregate does not, and the next read refuses the whole project -- the
+    disagreement the write ordering exists to prevent, reached by a writer that
+    reported no success at all.
+
+    The interleaving is forced rather than hoped for. The first writer is held
+    by a seam between its per-run write and its envelope write until the second
+    has committed; each writer runs in its own process, because the exclusion
+    that must hold is the one between processes and a thread shares it
+    invisibly. The claim is weaker than "the first writer wins": either writer
+    may reach the lock first, so the assertions are that exactly one is refused
+    on the version, that the refusal wrote nothing, that the other writer's row
+    survives in both copies, and that the project still reads.
+    """
+    _seed(repo)
+    scratch = tmp_path / "race"
+    scratch.mkdir()
+    script = tmp_path / "race_child.py"
+    script.write_text(_RACE_CHILD, encoding="utf8")
+
+    # The child imports the package under test from the tree this test ran
+    # from, resolved through the module itself so the same file works against
+    # a checkout other than this one.
+    package_root = Path(ledger.__file__).resolve().parents[1]
+    env = dict(os.environ)
+    inherited = env.get("PYTHONPATH")
+    search = [str(package_root)]
+    if inherited:
+        search.append(inherited)
+    env["PYTHONPATH"] = os.pathsep.join(search)
+    transcripts: dict[str, str] = {}
+    children = {
+        role: subprocess.Popen(
+            [sys.executable, str(script), role, str(repo), str(scratch)],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            cwd=str(tmp_path),
+        )
+        for role in ("winner", "late")
+    }
+    for role, process in children.items():
+        output, _ = process.communicate(timeout=120)
+        assert process.returncode == 0, f"{role} exited {process.returncode}: {output}"
+        transcripts[role] = output
+    # The children's own lines are the evidence for every claim below: which
+    # writer was refused, and with what.
+    for role, output in sorted(transcripts.items()):
+        print(f"{role}: {output.strip()}")
+
+    outcomes = {
+        role: json.loads((scratch / f"{role}.json").read_text(encoding="utf-8"))
+        for role in ("winner", "late")
+    }
+    assert sorted(outcome["result"] for outcome in outcomes.values()) == [
+        "conflict",
+        "ok",
+    ], transcripts
+
+    ok_role = next(role for role, o in outcomes.items() if o["result"] == "ok")
+    lost_role = "winner" if ok_role == "late" else "late"
+    assert "moved from version" in outcomes[lost_role]["text"]
+
+    aggregate, _ = ledger.load(PROJECT, repo)
+    row = aggregate["runs"][0]
+    assert row["outcome"] == f"completed by the {ok_role}"
+    assert _file_text(repo) == ledger.serialize_run(row)
+    assert f"completed by the {lost_role}" not in json.dumps(aggregate)
+    assert f"completed by the {lost_role}" not in _file_text(repo)
+
+    # The exclusion lives outside the tree being written: a lock file inside
+    # the checkout would dirty the repository it is protecting and would be
+    # written by the same store whose failures the write already has to
+    # survive.
+    lock_path = ledger.ledger_lock_path(PROJECT)
+    assert repo not in lock_path.parents
+    assert Path(os.environ["RECKON_HOME"]).resolve() in lock_path.parents
