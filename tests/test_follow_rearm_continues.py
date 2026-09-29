@@ -537,6 +537,91 @@ def test_a_transition_appended_after_the_replay_is_read_arrives_once(
     assert str(blocked[0]["observed_at"]) == appended, blocked[0]
 
 
+@pytest.mark.parametrize("boundary_mid_record", [False, True])
+def test_a_record_half_written_at_the_boundary_is_delivered_once_whole(
+    home, monkeypatch, boundary_mid_record
+) -> None:
+    """A record the producer is still writing is delivered once, whole.
+
+    The boundary the replay reads to is captured from the file's size, and that
+    size can fall inside a record the producer has not finished writing. The
+    guard snaps it back to the byte after the last newline at or before it, so
+    the replay stops on a whole record and the read loop opens at the start of
+    the one still being written, which it then reads whole once the newline
+    lands. The record moves a run, so it is news the pane must show exactly
+    once: a boundary taken mid-record would leave the replay reading a fragment
+    the parser drops and the loop reading the completion as a second
+    unparseable fragment, so the move would never reach the pane. The check runs
+    with the record completed before the boundary too, where the size already
+    lands on a newline and the snap is a no-op, so it does not pass by matching
+    a case the snap alone creates.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+        _arm()
+
+        moved = _iso(time.time() - 7 * 60)
+        record = (
+            json.dumps(
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="complete",
+                    observed_at=moved,
+                    previous="working",
+                )
+            )
+            + "\n"
+        )
+        half = len(record) // 2
+        if boundary_mid_record:
+            # The producer has written half a record and not its newline when
+            # the arming captures the boundary.
+            with stream_path.open("a", encoding="utf-8") as handle:
+                handle.write(record[:half])
+        else:
+            # The whole record is there before the arming captures the boundary,
+            # so the size already lands on a newline and the snap is a no-op.
+            with stream_path.open("a", encoding="utf-8") as handle:
+                handle.write(record)
+
+        original = cli._stream_events_upto
+        calls: list[int] = []
+
+        def complete_after_the_replay_read(stream, *, offset, boundary):
+            events = original(stream, offset=offset, boundary=boundary)
+            calls.append(offset)
+            # The first call is the recorded-times read at offset zero; the
+            # second is the replay's own read, after the boundary was captured
+            # and before the loop opens at it. The producer completes the record
+            # here.
+            if len(calls) == 2 and boundary_mid_record:
+                with stream_path.open("a", encoding="utf-8") as handle:
+                    handle.write(record[half:])
+            return events
+
+        monkeypatch.setattr(cli, "_stream_events_upto", complete_after_the_replay_read)
+        second = _arm(resume=None)
+
+    assert len(calls) >= 2, "the injection must have observed the record's read"
+    moved_rows = [
+        event
+        for event in second
+        if str(event.get("run_id")) == RUN_A
+        and str(event.get("to_state")) == "complete"
+    ]
+    assert len(moved_rows) == 1, (
+        f"the record at the boundary is delivered exactly once and whole; got "
+        f"{second!r}"
+    )
+    row = moved_rows[0]
+    assert str(row["observed_at"]) == moved, row
+    assert str(row["node"]) == "node-a", row
+
+
 def test_a_recorded_state_the_live_fleet_denies_is_not_announced(home) -> None:
     """The live fleet is the authority on a run's state, not the stream's history.
 
