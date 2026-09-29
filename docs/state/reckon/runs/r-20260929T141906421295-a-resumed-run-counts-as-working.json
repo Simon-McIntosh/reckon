@@ -80,6 +80,39 @@
     "reason": "corrective-run:resume",
     "verdict": "exempt"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "9202f42cec6a2a15046a412982c9a540b8bff86f",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once",
+        "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+        "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[2026-09-08T10:00:00Z]",
+        "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[None]",
+        "tests/test_recovery_state_typing.py::test_causes_with_opposite_recoveries_have_distinct_types",
+        "tests/test_recovery_state_typing.py::test_ticker_carries_the_recovery_verb_in_an_actionable_row"
+      ],
+      "integrated_revision": "9202f42cec6a2a15046a412982c9a540b8bff86f",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 9202f42cec6a: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q -p no:cacheprovider -rf --basetemp=/tmp/vg-resumed-bt tests/test_a_resumed_run_counts_as_working.py tests/test_coordinator_obligations_hook.py tests/test_crew_monitor_output.py tests/test_crew_obligations.py tests/test_crew_ticker.py tests/test_mcp_crew_obligations.py tests/test_obligations_do_not_mislead.py tests/test_recovery_reads_the_exit_record.py tests/test_recovery_state_typing.py",
+    "gate_command_source": "option",
+    "integrated_revision": "9202f42cec6a2a15046a412982c9a540b8bff86f",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "timed_out": false,
+    "worktree_roots_rewritten": []
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
