@@ -1,0 +1,301 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "77429b6fd472e399b9eb6987033d7518b16eaf6f",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "detail": "no events yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": null,
+    "utilisation_pct": null
+  },
+  "changed_lines": null,
+  "commit_resolution": null,
+  "commits": [],
+  "completed_at": "2026-09-29T14:03:48.352Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T14:02:42Z",
+  "dispute_count": 0,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "not-run",
+  "gate_check": null,
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.45,
+    "plan": "a-worker-reuses-before-it-writes",
+    "reason": "gate-not-passing",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T14:47:21.656452+00:00",
+    "horizon_seconds": 2700,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T14:02:21Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 6,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 14,
+    "headroom": 0,
+    "mean_context": 138462,
+    "observed_at": "2026-09-29T14:02:15Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T14:03:48.352Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T140219791353-cli-settings-writer-reuses-the-store/manifest.md",
+  "member": "disposable-r-20260929T140219791353-cli-settings-writer-reuses-the-store",
+  "negative_control": {
+    "reason": "gate-not-passing",
+    "test_paths": [
+      "tests/test_cli_settings_writer_reuses_the_store.py"
+    ],
+    "verdict": "exempt"
+  },
+  "no_commit": "stopped before any work; the worktree was clean at its base 77429b6f",
+  "node": "cli-settings-writer-reuses-the-store",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 328,
+          "cached_input_tokens": 311084,
+          "input_tokens": 311414,
+          "output_tokens": 635,
+          "reasoning_output_tokens": 102,
+          "total_tokens": 312049,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "cli._write_json_atomically keeps its unchanged-bytes early return and both concurrent-edit refusals in cli.py and delegates only the temporary write and rename to write_json_atomically; a new test tests/test_cli_settings_writer_reuses_the_store.py records, with expected values taken from the base revision's function, the written bytes for a payload with non-ASCII text and unsorted keys, the resulting mode for a new file and for an existing file whose mode is 0o640, the refusal when the file changed since it was read, the refusal when a file appeared that was absent when read, and the absence of leftover temporaries, and asserts them at head. Base and head arms over every tests/ file that imports reckon.cli run with -n 4 and a separate --basetemp under /tmp each, both logs end with an EXIT= line, and the head adds no failing test id; each arm's basetemp is deleted after its FAILED ids are read",
+    "estimated_hours": null,
+    "goal": "delegate the atomic file replacement inside reckon/cli.py _write_json_atomically to reckon._store.write_json_atomically without changing what the function writes or refuses",
+    "id": "cli-settings-writer-reuses-the-store",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T14:02:21Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 6,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 14,
+      "headroom": 0,
+      "mean_context": 138462,
+      "observed_at": "2026-09-29T14:02:15Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T140219791353-cli-settings-writer-reuses-the-store/manifest.md",
+    "negative_control": "drop the mode argument from the delegated write so an existing 0o640 file is rewritten with the writer's default mode; the existing-file mode row must fail",
+    "plan": "a-worker-reuses-before-it-writes",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "exact",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/cli.py",
+      "tests/test_cli_settings_writer_reuses_the_store.py",
+      "docs/evidence/fragments/a-worker-reuses-before-it-writes/cli-settings-writer-reuses-the-store.html",
+      "docs/figures/a-worker-reuses-before-it-writes/cli-settings-writer-reuses-the-store"
+    ]
+  },
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "cli-settings-writer-reuses-the-store",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T14:02:29.773164+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-worker-reuses-before-it-writes",
+  "plan_impl_at_dispatch": 0.45,
+  "promoted_revision": "77429b6fd472e399b9eb6987033d7518b16eaf6f",
+  "resume_remedy": {
+    "command": "reckon crew resume --run r-20260929T140219791353-cli-settings-writer-reuses-the-store --advice continue",
+    "session_id": "6c910c0b-9986-4ba3-97ca-f9cfd6ce51d1",
+    "source": "stream"
+  },
+  "resume_waiver": null,
+  "review": null,
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T140219791353-cli-settings-writer-reuses-the-store",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "6c910c0b-9986-4ba3-97ca-f9cfd6ce51d1",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "time_budget": "45m",
+  "tool_steps": 7.0,
+  "unreconciled_override": null,
+  "wall_seconds": 66,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": null,
+    "exited_at": "2026-09-29T14:04:14Z",
+    "last_record_type": "system",
+    "launched_at": "2026-09-29T14:03:05Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T140219791353-cli-settings-writer-reuses-the-store",
+    "signal": 15,
+    "signal_name": "SIGTERM",
+    "stream_records_seen": 337,
+    "worker_pid": 1106822
+  },
+  "worker_seconds": 26,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": {
+    "classification": "retained-for-resume",
+    "retained_at": "2026-09-29T14:03:48.352Z",
+    "session_id": "6c910c0b-9986-4ba3-97ca-f9cfd6ce51d1",
+    "session_source": "stream",
+    "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/cli-settings-writer-reuses-the-store"
+  }
+}

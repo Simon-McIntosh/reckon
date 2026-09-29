@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-impl" content="0.45">
 </head>
 <body>
@@ -190,7 +190,10 @@
     <div class="r-comment-body"><p>docs/evidence/fragments/a-worker-reuses-before-it-writes/zone-guards-read-tzinfo.html — ticker.row_moment and the _backends cache-stamp reader now read a stamp's zone from reckon._timestamps.parse_iso's tzinfo so +00/-05/+000000 return the instant they name (+00: 1782856800.0 -&gt; 1782864000.0; -05: 1782874800.0 -&gt; 1782882000.0 at TZ=Europe/Paris, a 7200 s shift; +000000: 1782856800.0 -&gt; 1782864000.0); the shared writer removes its sibling temporary on any failure after creation, not only a chmod failure; write_json_atomically gains ensure_ascii (default True) and hooks.install passes False (this node's repairs, head arm 201 passed, base arm 196 passed, negative control 1 failed on the -05 case)</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T122631754373-runs-pointer-writer-reuses-the-store" data-who="reckon-build" data-when="2026-09-29T13:20:42.437Z">
-    <div class="r-comment-body"><p>runs._write_json now stamps the pointer&#x27;s launch host and delegates its temporary, fsync and rename to reckon._store.write_json_atomically, keeping the bytes, the 0o600 mode and the no-leftover-temporary guarantee; tests/test_runs_pointer_writer_reuses_the_store.py asserts those against a replica of the pre-migration writer for a plain, a non-ASCII and a nested payload and covers the launch-host stamp on a fresh and an existing pointer (6 passed at head), and the every-importer gate (124 files, -n 4) head arm added no failure attributable to this change (head 32 failed/1222 passed, base 29 failed/1225 passed; every differing id passes in isolation at base and head)</p></div>
+    <div class="r-comment-body"><p>runs._write_json now stamps the pointer's launch host and delegates its temporary, fsync and rename to reckon._store.write_json_atomically, keeping the bytes, the 0o600 mode and the no-leftover-temporary guarantee; tests/test_runs_pointer_writer_reuses_the_store.py asserts those against a replica of the pre-migration writer for a plain, a non-ASCII and a nested payload and covers the launch-host stamp on a fresh and an existing pointer (6 passed at head), and the every-importer gate (124 files, -n 4) head arm added no failure attributable to this change (head 32 failed/1222 passed, base 29 failed/1225 passed; every differing id passes in isolation at base and head)</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260929T140219791353-cli-settings-writer-reuses-the-store" data-who="reckon-build" data-when="2026-09-29T14:03:48.352Z">
+    <div class="r-comment-body"><p>stopped by the coordinator one minute after dispatch, with no commit or edit in its worktree: s23&#x27;s follow-reads-whole-lines claimed reckon/cli.py 34 s earlier, and the dispatch scope check admitted both claims; the same work will be dispatched under a new node once that claim releases</p></div>
 </div>
 </section>
 </main>
