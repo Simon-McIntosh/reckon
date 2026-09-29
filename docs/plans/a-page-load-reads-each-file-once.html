@@ -22,8 +22,8 @@
   <title>A Page Load Reads Each File Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="30">
+<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-version" content="31">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
 <meta name="plan-impl" content="0.83">
 <meta name="plan-informs" content="a-follower-outlives-its-monitor">
@@ -457,6 +457,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260928T1745-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T15:45:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T142339561173-s21-audit-page). The report is at <code>~/.config/reckon/crew/reports/reckon/s21-audit-page.{json,md}</code>.</p><ul><li><b>Done, with passing tests:</b> §2 (6 passed; its negative control fires, 2 failed and 4 passed), §3 (4 passed), §7 (4 passed) and the six-file regression (129 passed).</li><li><b>§4 and §6:</b> the browser gate skips because this node has no browser binary, so these rest on code reading.</li><li><b>§5: partly done, and its re-measure is unblocked.</b> The only §5 run (at <code>562e3b69</code>) failed its 2 s gate on <code>/_projects/index.json</code> alone, at 13.6 s warm and 25.2 s cold. §7 fixed exactly that request (<code>dae29b19</code>), and f-aplref-004's restart prerequisite (the-page-paints-from-an-index §2, <code>ad7eef98</code>) has landed. What remains is a restart of <code>reckon.service</code> onto the merged head and the two timing passes. That restart is visible to every session, so announce it first.</li></ul><p><b>Wiring.</b> The plan claimed to stand alone, but it hands its residual <code>/_discover</code> cost to a-follower-outlives-its-monitor §9, so it now <code>informs</code> that plan. Its ordering after the-page-paints-from-an-index §2 is already satisfied, and edit_plan cannot write <code>plan-after</code>, so that edge is not recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260929T043717430852-page-load-remeasured-after-fixes" data-who="reckon-build" data-when="2026-09-29T05:00:08.174Z">
+    <div class="r-comment-body"><p>page-load-remeasured-after-fixes measured the six warm requests on pid 2448736 at main 2309c8b9 and the §5 gate FAILS on two of six — /_projects/index.json closes the connection with no response at 2.912 s and /_discover/imas-codex answers 500 at 0.212 s — both from one malformed plan page in imas-codex, docs/plans/migration-project-state.html, whose section records carry no data-id so the parser refuses them and the rollup&#x27;s executor thread dies where the per-project route would have answered; a third recorded miss, /_discover/nova at 3.082 s, re-samples at 0.16-0.18 s and is the next request paying for the failed rollup&#x27;s abandoned workers; the failures attribute to that page&#x27;s last write ec7ec63ae in imas-codex, not to dae29b19.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260923T160312477604-palette-counts-each-inventory-once" data-who="reckon-ship" data-when="2026-09-23T16:39:34.734Z">
     <div class="r-comment-body"><p>palette assertion counts each mounted inventory exactly once with the palette cycled; guard removal doubles every request and fails it; review 96, which found the cycle's close and reopen unasserted, carried to a corrective node</p></div>
