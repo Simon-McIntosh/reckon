@@ -82,6 +82,40 @@
     "reason": "a followup fix to the added-failure canonicaliser, outside the plan's remaining section 5 work, so the plan's impl is not this run's to move",
     "verdict": "waived"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "6864e706aa76eb1946cdac6d503e43cd35916e46",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_ledger.py::test_a_completed_record_carries_every_calibration_input",
+        "tests/test_ledger.py::test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it",
+        "tests/test_ledger.py::test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it",
+        "tests/test_ledger.py::test_completion_promotes_the_pointer_into_the_repositorys_ledger",
+        "tests/test_ledger.py::test_promotion_refuses_a_merge_conflicted_ledger"
+      ],
+      "integrated_revision": "6864e706aa76eb1946cdac6d503e43cd35916e46",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 6864e706aa76: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "env -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/scratch-arm-ids-reduce PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/scratch-arm-ids-reduce TMPDIR=/tmp /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -rf -n 6 --timeout=300 --basetemp=/tmp/rcq3-head-bt tests/test_a_promotion_never_reads_unpromoted.py tests/test_bookkeeping_follows_the_run.py tests/test_call_sites_is_a_checklist_item.py tests/test_crew_obligations.py tests/test_crew_promotion.py tests/test_crew_promotion_requires_review.py tests/test_gate_evidence.py tests/test_ledger.py tests/test_obligations_do_not_mislead.py tests/test_plan_review_prompt.py tests/test_promotion_reads_the_matching_review.py tests/test_promotion_reads_the_review_tier.py tests/test_promotion_reads_the_terminal_record.py tests/test_receipt_after_release.py tests/test_reflex_dispatches_one_repair.py tests/test_review_call_sites.py tests/test_review_counts_added_failures.py tests/test_review_findings_compose_a_repair.py tests/test_review_gate_coverage.py tests/test_review_node_id_canonical_form.py tests/test_review_prompt_contract.py tests/test_review_records_its_revision.py tests/test_review_scores_are_queryable.py tests/test_review_scoring.py tests/test_review_store_reads_and_fences_by_head.py tests/test_role_write_scope.py tests/test_routing_evidence_fields.py tests/test_scoring_dispatches_its_review.py tests/test_scratch_arm_ids_reduce.py tests/test_standing_suite_holds_promotion.py tests/test_sub_floor_dimension_is_an_obligation.py tests/test_sub_floor_disposition_has_a_writer.py tests/test_writer_callers_second_wave.py",
+    "gate_command_source": "stored",
+    "integrated_revision": "6864e706aa76eb1946cdac6d503e43cd35916e46",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163733029191-scratch-arm-ids-reduce/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "timed_out": false,
+    "worktree_roots_rewritten": [
+      "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/scratch-arm-ids-reduce"
+    ]
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
