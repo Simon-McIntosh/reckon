@@ -1187,6 +1187,65 @@ def read_stream_events(path: Path, *, offset: int = 0) -> Iterable[dict[str, Any
                 yield event
 
 
+def read_whole_line(stream) -> str:
+    """Read one complete line, leaving a half-written line for a later read.
+
+    A producer appends one JSON record per line and may still be writing the
+    last one when a follow loop reads: ``readline`` then returns the bytes
+    written so far, without a newline. Admitting that fragment as a whole
+    record would deliver the record truncated, and advancing the handle past it
+    would put the recorded offset inside a line, so the completion would be
+    read as a second fragment and the record would reach a request in two
+    pieces or not at all. So a line that does not end in a newline is not
+    returned: the handle is left where the line began, and the next read
+    returns it whole and once, after the completion lands.
+
+    The empty string is returned both at end of file and while the only bytes
+    left are an unterminated line, which is the same answer the caller acts on:
+    wait, then read again.
+    """
+    start = stream.tell()
+    line = stream.readline()
+    if line and not line.endswith("\n"):
+        stream.seek(start)
+        return ""
+    return line
+
+
+def line_boundary(path: Path, *, chunk: int = 64 * 1024) -> int:
+    """The byte after the last newline in a file, read backward in chunks.
+
+    A stream's size taken while a producer is mid-append falls inside a record.
+    A reader that starts there or reads to there opens or stops inside a line,
+    so the boundary a reader is given must be the byte after the last newline
+    at or before the size. The scan reads at most ``chunk`` bytes per step from
+    the end, so finding one newline no longer costs a full-file read and a
+    same-size buffer: for the ordinary case, where the last record is short, it
+    reads a single chunk and stops. A file with no newline at all is scanned in
+    full, which is the only answer it admits.
+    """
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return 0
+    if size <= 0:
+        return 0
+    try:
+        with path.open("rb") as stream:
+            end = size
+            while end > 0:
+                start = max(0, end - chunk)
+                stream.seek(start)
+                data = stream.read(end - start)
+                newline = data.rfind(b"\n")
+                if newline >= 0:
+                    return start + newline + 1
+                end = start
+    except OSError:
+        return 0
+    return 0
+
+
 def _append_watch_lines(path: Path, events: Iterable[Mapping[str, Any]]) -> None:
     """Durably append complete transition records without replacing history."""
     payload = "".join(
@@ -1331,10 +1390,13 @@ def watch_stream_cursor(
         for snapshot in snapshots.values()
     ]
     path = watch_stream_path(project)
-    try:
-        offset = path.stat().st_size
-    except FileNotFoundError:
-        offset = 0
+    # A reader that starts at the raw size opens inside a record the producer
+    # is still writing, and the fragment it then reads is delivered as a whole
+    # record while the completion arrives as a second one. The offset a reader
+    # is handed is therefore the byte after the last newline, so it opens at
+    # the start of any unterminated line and reads that record whole and once
+    # when its newline lands.
+    offset = line_boundary(path)
     return {
         "stream_path": str(path),
         "offset": offset,
