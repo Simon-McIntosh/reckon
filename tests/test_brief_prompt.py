@@ -263,6 +263,11 @@ CONTRACT — EVIDENCE THAT COULD HAVE FAILED
   Record the commits and paths you changed; a coordinator cannot see your
   tree, so an unfilled field reads as no work.
 
+FENCE — WRITE GRANTS
+  Never write the operator's memory directory or any path outside your
+  granted write paths. The fence enforces this: a write outside your
+  grants is refused as a read-only file system.
+
 NODE     carrier-node
 GOAL     compose the prompt for whichever authority carries this node
 PLAN     proj:plan-a s3
