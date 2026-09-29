@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
+  <title>Writer callers, first wave | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="landing">First wave of writers and decoders onto the shared helpers</h2>
+    <p>Node <code>writer-callers-first-wave</code> extended the shared atomic JSON
+      writer with the parameters its callers needed and moved the first disjoint
+      wave of writers and two numeric decoders onto it. Commit
+      <code>fbc29bca</code> on a detached worktree, base <code>a7895e72</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-reuses-before-it-writes/writer-callers-first-wave/writer-callers.png"
+           alt="Before: nine private temporary-and-rename paths. After: one shared write_json_atomically with per-caller parameters, each caller's recorded file mode unchanged.">
+      <figcaption>Nine callers that each owned a temporary-and-rename collapse
+        onto one shared writer; the recorded output bytes and file modes are
+        identical before and after.</figcaption>
+    </figure>
+
+    <h2 id="writer">The shared writer's new parameters</h2>
+    <p><code>reckon._store.write_json_atomically</code> gained keyword parameters,
+      each defaulting to its previous behaviour: <code>indent</code>,
+      <code>sort_keys</code>, a creation <code>mode</code> applied to the
+      temporary before the rename, <code>fsync_directory</code> to fsync the
+      parent directory after the rename, and <code>create_parents</code> so a
+      caller that must not resurrect a removed directory can refuse. No second
+      writer was added. The temporary sibling is now opened directly
+      (<code>O_CREAT|O_EXCL</code> with a random name and a retry loop) rather
+      than through <code>NamedTemporaryFile</code>, so the creation mode is the
+      caller's and a plain <code>Path.write_text</code> caller (mode
+      <code>None</code>, i.e. the umask-applied process default) is reproduced
+      rather than silently narrowed to <code>0o600</code>.</p>
+
+    <h2 id="migrated">Callers moved onto it</h2>
+    <table>
+      <thead>
+        <tr><th>Caller</th><th>Parameters it passes</th><th>Recorded mode, base = head</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>_backends._write_private_json</code></td>
+            <td><code>indent=2, sort_keys=True, fsync=False, mode=mode</code></td>
+            <td><code>0o600</code> / <code>0o400</code></td></tr>
+        <tr><td><code>capabilities.rebuild_capabilities</code></td>
+            <td><code>…, mode=None</code></td><td><code>0o644</code></td></tr>
+        <tr><td><code>crew.fleet_supervisor._write_json</code></td>
+            <td><code>…, mode=0o600, create_parents=False</code></td>
+            <td><code>0o600</code></td></tr>
+        <tr><td><code>crew.placement.publish_reservation</code></td>
+            <td><code>…, mode=None</code></td><td><code>0o644</code></td></tr>
+        <tr><td><code>crew.plan_review.store_plan_review</code></td>
+            <td><code>…, mode=None</code></td><td><code>0o644</code></td></tr>
+        <tr><td><code>resources.migrate_typed_layout</code> (plain manifest write)</td>
+            <td><code>…, mode=None</code></td><td><code>0o644</code></td></tr>
+        <tr><td><code>serve._store_git_creation_cache</code></td>
+            <td><code>…, mode=0o600</code></td><td><code>0o600</code></td></tr>
+        <tr><td><code>serve._store_git_last_modified_cache</code></td>
+            <td><code>…, mode=0o600</code></td><td><code>0o600</code></td></tr>
+      </tbody>
+    </table>
+    <p>Each caller keeps its serialisation, its file mode, its fsync behaviour
+      and its locking. <code>_write_private_json</code> keeps its owner-only
+      ceiling: the mode is applied to the temporary before the rename, so the
+      destination is never the wider inode. The two private numeric decoders
+      <code>_backends._number</code> and
+      <code>crew.carryover_census._measured</code> were deleted; their call sites
+      now call <code>reckon._observations.optional_number</code>, with each
+      caller's own rounding (<code>_seconds</code>) or summing
+      (<code>_sum_tokens</code>) kept in the line around the call.</p>
+
+    <h3 id="exception">Retained exception in <code>resources.migrate_typed_layout</code></h3>
+    <p>Only the plain no-active-items manifest write moved onto the shared
+      writer. The grouped staging install (<code>transformed[MANIFEST_PATH]</code>
+      written with <code>write_bytes</code> and installed with
+      <code>os.replace</code>, with a byte-restore rollback) is a multi-file
+      group transaction that a single-file atomic writer cannot express, so it
+      is left in place deliberately. The detector that named this caller looks
+      for <code>write</code>/<code>write_text</code>, not
+      <code>write_bytes</code>.</p>
+
+    <h2 id="evidence">Measurement</h2>
+    <p>Before editing, each writer's output bytes and file mode were recorded at
+      base <code>a7895e72</code> for one fixed payload, and each decoder's output
+      over <code>True, False, 0, 1.5, "1", None, [1]</code> — committed as the
+      expectations of <code>tests/test_writer_callers_first_wave.py</code>. The
+      head arm reproduces every writer byte and mode identically, and the shared
+      decoder returns <code>None, None, 0.0, 1.5, None, None, None</code>, the
+      same as each private decoder did at base.</p>
+    <table>
+      <thead>
+        <tr><th>Arm</th><th>Revision</th><th>Result over the same file set</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>base (armed)</td><td><code>a7895e72</code></td>
+            <td>23 failed, 260 passed, 1 skipped</td></tr>
+        <tr><td>head</td><td><code>fbc29bca</code></td>
+            <td>11 failed, 272 passed, 1 skipped</td></tr>
+      </tbody>
+    </table>
+    <p>Delta <strong>0 added, 12 resolved</strong>. The twelve resolved are the
+      new file's delegation, deleted-helper and new-parameter assertions, which
+      cannot pass before the landing. The eleven that remain fail identically at
+      base and at head and are environmental, not regressions: seven
+      <code>capabilities</code> tests and one <code>test_backends</code> test
+      fail on <code>LedgerError … refusing to read conflicting history</code>,
+      two <code>crew_placement</code> and one
+      <code>crew_lane_agnostic_placement</code> test fail on the
+      <code>srun</code> host-shim path and a <code>/reports</code> permission
+      refusal.</p>
+
+    <h3 id="negative-control">Declared negative control</h3>
+    <p>The control drops the <code>mode</code> argument from the
+      <code>_backends._write_private_json</code> call so the file is written with
+      the default mode. The owner-only case then fails: the destination is
+      <code>0o600</code> (384) where <code>0o400</code> (256) is required.
+      Log: <code>negative-control.log</code> in the run directory, exit 1,
+      <code>FAILED
+      tests/test_writer_callers_first_wave.py::test_private_json_owner_only_mode_unchanged</code>.</p>
+
+  </main>
+</body>
+</html>
