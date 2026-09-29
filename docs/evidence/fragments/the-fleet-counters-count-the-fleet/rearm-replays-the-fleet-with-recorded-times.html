@@ -32,14 +32,25 @@
       <p>The rows carry the run's own clock, read from the producer's stream: the
         follower reads each run's last recorded transition
         (<code>_recorded_fleet_times</code> over
-        <code>runs.read_stream_events</code>) and overlays its state and
+        <code>runs.read_stream_events</code>) and overlays that
         <code>observed_at</code> onto the live-pointer baseline before the rows
-        are fed through the row path. A re-arm whose pane is a terminal restores
-        its stored history first, under its frame, and the replayed rows are
-        drawn regardless of the pane's remembered states, so the very states
-        being re-announced do not suppress their own rows. A re-arm then opens the
-        read loop at the stream's end — the replayed stream is the record now — so
-        a run that also moved in the gap is drawn once, not twice.</p>
+        are fed through the row path. The overlay is taken only where the
+        stream's last recorded state for the run agrees with the live
+        classification; where the two disagree the row keeps the live state and
+        the fleet's own clock, never a state the live fleet denies. A re-arm
+        whose pane is a terminal restores its stored history first, under its
+        frame, and the replayed rows are drawn regardless of the pane's
+        remembered states, so the very states being re-announced do not suppress
+        their own rows.</p>
+      <p>The replay is bounded so a re-arm is neither blank nor a burst of rows
+        sharing the attach second. The stream's size is read once, before the
+        replay reads anything, and that boundary fixes both halves: the replay
+        covers the span between the run's recorded place and the boundary, and
+        the read loop that follows opens at exactly the boundary, so a line
+        appended in between falls to one side and arrives once. A first arming
+        has no recorded place in this stream, so it derives the fleet as it
+        stands and leaves the read loop at the cursor's own offset, delivering
+        every line it never replayed.</p>
 
       <figure>
         <img src="/reckon/figures/the-fleet-counters-count-the-fleet/rearm-replays-the-fleet-with-recorded-times/rearm-clock-base-vs-head.png"
@@ -55,8 +66,11 @@
       <p>All six cases the node's done-when names are asserted through the
         follower's own generator in <code>tests/test_follow_rearm_continues.py</code>,
         and the first-arming Monitor case is driven through the real command in
-        <code>tests/test_attach_shows_each_live_run.py</code>. The two files pass
-        at the landed head:</p>
+        <code>tests/test_attach_shows_each_live_run.py</code>. The one case in
+        <code>tests/test_follower_rearm_shows_nothing_twice.py</code> that
+        asserted the superseded silent re-arm — a pipe re-arm with nothing new
+        drew no rows — now asserts the ruling that replaced it: the re-arm draws
+        its one live run exactly once. All these cases pass at the landed head:</p>
       <table>
         <thead><tr><th>Case</th><th>Test</th><th>File</th></tr></thead>
         <tbody>
@@ -67,11 +81,22 @@
           <tr><td>rows arrive in ascending recorded-time order</td><td><code>test_a_rearm_orders_rows_by_recorded_time</code></td><td><code>test_follow_rearm_continues.py</code></td></tr>
           <tr><td>no run appears twice even when it also moved in the gap</td><td><code>test_a_run_that_moved_in_the_gap_appears_once_with_its_new_state</code></td><td><code>test_follow_rearm_continues.py</code></td></tr>
           <tr><td>a first arming under a Monitor draws the fleet under recorded times</td><td><code>test_a_first_arming_under_a_monitor_draws_the_fleet</code></td><td><code>test_attach_shows_each_live_run.py</code></td></tr>
+          <tr><td>a pipe re-arm with nothing new draws its one live run once</td><td><code>test_a_pipe_rearm_with_nothing_new_draws_the_fleet</code></td><td><code>test_follower_rearm_shows_nothing_twice.py</code></td></tr>
         </tbody>
       </table>
       <ul>
-        <li><strong>24 passed</strong> across the two files at <code>905ac171</code>
+        <li>The eight cases in the table pass at the landed head
+          <code>12dc4c68</code>
           (<code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider</code>).</li>
+        <li>Three further cases pin the bounds and the overlay: a transition
+          appended between the replay's read and the start of following arrives
+          exactly once
+          (<code>test_a_transition_appended_after_the_replay_is_read_arrives_once</code>),
+          a re-arm whose runs have not moved still carries the recorded state
+          time rather than the attach second
+          (<code>test_a_rearm_with_nothing_new_carries_the_recorded_state_time</code>),
+          and a recorded state the live fleet denies is not announced
+          (<code>test_a_recorded_state_the_live_fleet_denies_is_not_announced</code>).</li>
         <li>The attach paragraph in
           <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>
           states the contract: the first arming and every re-arm alike open with
@@ -86,22 +111,26 @@
         instead of the recorded state time — the pre-ruling behaviour in a new
         shape. Its log's first line is the declared string, verbatim:</p>
       <pre><code>stamp every replayed row with the arming time instead of the recorded state time</code></pre>
-      <p>The mutation fails the replay cases (<strong>7 failed, 17 passed</strong>),
-        so the tests observe the recorded-time overlay rather than passing on the
-        fleet row alone.</p>
+      <p>The mutation fails the two cases that observe the overlay
+        (<strong>2 failed, 25 passed</strong>) — a quiet re-arm's still runs lose
+        their recorded time, and the first arming's rows do — so those cases
+        observe the recorded-time overlay rather than passing on the attach
+        second. The six replay cases whose runs moved in the gap are unaffected
+        by this mutation, because their rows come from the replayed lines that
+        already carry the recorded stamps.</p>
     </section>
 
     <section id="gates">
       <h2>Suite delta at the base</h2>
       <p>The selection gate is judged by delta against the dispatch base, not by
         absolute green. The base holds three pre-existing failures; the landed
-        head adds five, all in out-of-scope files that encode the superseded
-        contract and are reported as follow-ons rather than fixed here.</p>
+        head adds none, and its two failures are a subset of the base's three —
+        the stale-terminal-window case is flaky and passed on the head run.</p>
       <table>
         <thead><tr><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
         <tbody>
           <tr><td>base <code>16423b79</code></td><td>3 failed, 327 passed</td><td><code>gates/base-selection.log</code></td></tr>
-          <tr><td>head <code>905ac171</code></td><td>8 failed, 321 passed</td><td><code>gates/head-selection.log</code></td></tr>
+          <tr><td>head <code>12dc4c68</code></td><td>2 failed, 333 passed</td><td><code>gates/head-selection.log</code></td></tr>
         </tbody>
       </table>
     </section>
@@ -111,9 +140,9 @@
       <table>
         <thead><tr><th>Item</th><th>Value</th></tr></thead>
         <tbody>
-          <tr><td>Commits</td><td><code>302578fe</code> (replay with recorded times), <code>905ac171</code> (first arming keeps the cursor's offset)</td></tr>
+          <tr><td>Commits</td><td><code>302578fe</code> (replay the fleet with recorded times), <code>905ac171</code> (first arming keeps the cursor's offset), <code>8ef423c6</code> (fix the replay boundary and the stream-versus-live overlay), <code>2932e9d3</code> (leave a first arming's offset to the cursor), <code>12dc4c68</code> (pin a quiet re-arm's recorded state time)</td></tr>
           <tr><td>Base</td><td><code>16423b79</code></td></tr>
-          <tr><td>Changed paths</td><td><code>reckon/cli.py</code>, <code>tests/test_follow_rearm_continues.py</code>, <code>tests/test_attach_shows_each_live_run.py</code>, <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code></td></tr>
+          <tr><td>Changed paths</td><td><code>reckon/cli.py</code>, <code>tests/test_follow_rearm_continues.py</code>, <code>tests/test_follower_rearm_shows_nothing_twice.py</code>, <code>tests/test_attach_shows_each_live_run.py</code>, <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>, <code>docs/evidence/fragments/the-fleet-counters-count-the-fleet/rearm-replays-the-fleet-with-recorded-times.html</code>, <code>docs/figures/the-fleet-counters-count-the-fleet/rearm-replays-the-fleet-with-recorded-times/</code></td></tr>
           <tr><td>Figure script</td><td><code>docs/figures/the-fleet-counters-count-the-fleet/rearm-replays-the-fleet-with-recorded-times/plot_rearm_clock.py</code></td></tr>
           <tr><td>Gate logs</td><td>under the run directory at <code>gates/</code></td></tr>
           <tr><td>Negative control log</td><td><code>gates/negative-control.log</code></td></tr>
