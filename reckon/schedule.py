@@ -35,7 +35,10 @@ def _as_number(value: Any) -> float | None:
 
 
 def _stamp_millis(stamp: Any) -> float | None:
-    parsed = parse_utc(str(stamp))
+    text = str(stamp)
+    if text != text.strip() or text.endswith("z"):
+        return None
+    parsed = parse_utc(text)
     if parsed is None:
         return None
     return parsed.timestamp() * 1000.0

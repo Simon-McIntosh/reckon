@@ -528,6 +528,17 @@ def _review_date(value: Any, field: str) -> str:
     return value
 
 
+def _review_stamp_is_canonical(text: str) -> bool:
+    """Whether a resolution stamp is spelled as a canonical ISO date or datetime.
+
+    The shared parser is deliberately lenient: it strips surrounding whitespace
+    and accepts a lowercase ``z`` zone designator. A validator that accepts a
+    spelling must also accept it downstream, so it refuses the two places where
+    the parser is looser than the stated format it is checking against.
+    """
+    return text == text.strip() and not text.endswith("z")
+
+
 def _review_text(value: Any, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field} must be non-empty text")
@@ -633,7 +644,8 @@ def _validate_review(data: dict[str, Any]) -> dict[str, Any]:
         resolved_by = raw.get("resolved_by") or ""
         outcome = raw.get("outcome") or ""
         if resolved_at:
-            if parse_utc(str(resolved_at)) is None:
+            text = str(resolved_at)
+            if not _review_stamp_is_canonical(text) or parse_utc(text) is None:
                 raise ValueError(f"{field}.resolved_at must be an ISO date or datetime")
             resolved_by = _review_text(resolved_by, f"{field}.resolved_by")
             outcome = _review_text(outcome, f"{field}.outcome")

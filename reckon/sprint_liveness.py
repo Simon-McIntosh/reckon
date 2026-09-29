@@ -81,6 +81,10 @@ def _observed_seconds(observed_at: str) -> float | None:
     """Epoch seconds for a record's own ISO stamp, or None when unreadable."""
     if not observed_at:
         return None
+    if isinstance(observed_at, str) and (
+        observed_at != observed_at.strip() or observed_at.endswith("z")
+    ):
+        return None
     parsed = parse_utc(observed_at)
     if parsed is None:
         return None

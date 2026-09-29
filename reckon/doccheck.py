@@ -59,7 +59,6 @@ from reckon._store import (
     _section_contract_refusal,
     plan_summary_length,
 )
-from reckon._timestamps import parse_utc
 from reckon.lifecycle import TERMINAL_STATUSES
 
 # Required scalar meta tags for plan-family documents. Research, evidence, and
@@ -206,14 +205,20 @@ def modified_age_days(
     *,
     today: date | None = None,
 ) -> int | None:
-    """Return whole calendar days since an ISO-formatted modification date."""
+    """Return whole calendar days since the calendar date a stamp states.
+
+    The first ten characters are the date the value names, and this reader takes
+    that date literally: a plan's modification stamp carries a stated date, not
+    an instant, so a zone on the value must not shift the day it reports.
+    """
 
     if not last_modified:
         return None
-    parsed = parse_utc(str(last_modified))
-    if parsed is None:
+    try:
+        modified = date.fromisoformat(str(last_modified)[:10])
+    except ValueError:
         return None
-    return max(0, ((today or date.today()) - parsed.date()).days)
+    return max(0, ((today or date.today()) - modified).days)
 
 
 def derived_plan_age(

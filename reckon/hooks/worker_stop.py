@@ -116,7 +116,7 @@ def read_status(manifest: Path) -> str | None:
 def _manifest_predates_attempt(manifest: Path) -> bool:
     """Whether a manifest was last written before this worker attempt began."""
     raw = os.environ.get("RECKON_ATTEMPT_STARTED_AT", "").strip()
-    if not raw or not manifest.is_file():
+    if not raw or raw.endswith("z") or not manifest.is_file():
         return False
     if __package__ in (None, ""):
         # The registered hook command is this file's own path, so a bare-script
