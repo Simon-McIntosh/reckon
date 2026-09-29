@@ -64,15 +64,20 @@ def _prefixed(test_id: str, directory: str) -> str:
     return f"{Path(directory).name}/{test_id}"
 
 
-def _log(*failed: str, header: str | None = None) -> str:
+def _log(*failed: str, header: str | None = None, body: str | None = None) -> str:
     """Return a pytest-shaped log, optionally opening with its revision header.
 
     A real gate log's first line names the revision it ran at; the fixtures that
     exercise the reduction omit it, and the case that exercises the revision
-    reader supplies it, so the absence and the presence are both covered.
+    reader supplies it, so the absence and the presence are both covered. The
+    optional ``body`` line stands in for the output a log carries below its
+    header — a traceback frame or a printed path — and is where a
+    revision-shaped token can sit without being the arm's own record.
     """
     lines = [header] if header is not None else []
     lines.extend(f"FAILED {test_id} - AssertionError: boom" for test_id in failed)
+    if body is not None:
+        lines.append(body)
     lines.append(f"{len(failed)} failed")
     return "\n".join(lines) + "\n"
 
@@ -101,6 +106,8 @@ def _annotated_record(
     extra: str = "",
     base_header: str | None = None,
     head_header: str | None = None,
+    base_body: str | None = None,
+    head_body: str | None = None,
 ) -> dict:
     """Write the two arms and read them back through the promotion's own path."""
     config_home = tmp_path / "config"
@@ -109,10 +116,10 @@ def _annotated_record(
     directory = run_dir(RUN)
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "base.log").write_text(
-        _log(*base_ids, header=base_header), encoding="utf-8"
+        _log(*base_ids, header=base_header, body=base_body), encoding="utf-8"
     )
     (directory / "head.log").write_text(
-        _log(*head_ids, header=head_header), encoding="utf-8"
+        _log(*head_ids, header=head_header, body=head_body), encoding="utf-8"
     )
     (directory / "manifest.md").write_text(
         f"node: {RUN}\n"
@@ -289,3 +296,32 @@ def test_the_annotated_review_carries_the_revision_each_arm_log_names(
         "annotated review must carry it so the count can be tied to a commit"
     )
     assert review["head_log_revision"] == HEAD_SHA
+
+
+def test_a_revision_token_below_the_header_is_not_read_as_the_arm_revision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only the header line carries an arm's revision; a body token is output.
+
+    A log's body can carry a revision-shaped token — a traceback frame or a
+    printed path — that names something the arm never measured, so reading it
+    would tie the failures to a commit the arm did not run at. Each header here
+    names no revision and each body names one, so a whole-text search reads the
+    body's token while the header-only reader returns ``None``. The tokens
+    differ between the arms, so a search that reads either body cannot pass by
+    reading the same one from both.
+    """
+    review = _annotated_record(
+        tmp_path,
+        monkeypatch,
+        base_ids=["tests/test_alpha.py"],
+        head_ids=["tests/test_alpha.py"],
+        base_body=f"see artifact at revision {BASE_SHA} for the traceback",
+        head_body=f"see artifact at revision {HEAD_SHA} for the traceback",
+    )
+
+    assert review["base_log_revision"] is None, (
+        "the base log's header names no revision, so the reader must return "
+        "None rather than the revision-shaped token in its body"
+    )
+    assert review["head_log_revision"] is None
