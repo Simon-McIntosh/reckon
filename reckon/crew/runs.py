@@ -338,26 +338,53 @@ def new_run_id(node_id: str, *, now: datetime | None = None) -> str:
     return f"r-{stamp}-{token}"
 
 
+def _recorded_launch_host(path: Path) -> str | None:
+    """Return the launching host a pointer file already names, if any.
+
+    A file that cannot be read back, or one written with no such key, answers
+    None: the caller then carries the payload unchanged rather than inventing a
+    host for it.
+    """
+    try:
+        recorded = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(recorded, Mapping):
+        return None
+    host = recorded.get("launcher_host")
+    return str(host) if host else None
+
+
 def _stamp_pointer_launch_host(
     path: Path, payload: Mapping[str, Any]
 ) -> Mapping[str, Any]:
-    """Record a live pointer's launching host on its first write.
+    """Carry a live pointer's launching host on every write of its file.
 
     A process id is meaningful only on the machine that issued it, and the
     crew configuration home is shared across login nodes, so a run records
     where it was created under the key the classifier reads (``launcher_host``),
     spelled with ``socket.gethostname()`` on both sides so the writer and the
     reader cannot disagree. The host is a property of where the process was
-    created and never changes while it lives, so it is stamped exactly once,
-    when the pointer file is first created. A pointer that predates this
-    change has no recoverable launching host, so rewriting one never invents
-    the rewriter's host on a file that already exists.
+    created and never changes while it lives, so the file records it once and
+    every later write of that file carries it forward rather than trusting the
+    payload to repeat it: a dispatch publishes its claim before its launch is
+    composed, and the full record that replaces the claim is built as its own
+    mapping, so a payload written to an existing pointer arrives without the
+    key and the file's own record of it is dropped. A pointer that predates
+    this change has no recoverable launching
+    host, so rewriting one never invents the rewriter's host on a file that
+    already exists.
     """
     if "launcher_host" in payload:
         return payload
-    if path.parent != live_dir() or path.exists():
+    if path.parent != live_dir():
         return payload
-    host = socket.gethostname()
+    if path.exists():
+        host = _recorded_launch_host(path)
+        if host is None:
+            return payload
+    else:
+        host = socket.gethostname()
     if isinstance(payload, dict):
         payload["launcher_host"] = host
         return payload
