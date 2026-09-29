@@ -56,6 +56,7 @@ from reckon.crew.node import (
     placement_requirement_node_local,
     placement_requirement_unmet,
     refuse_member_in_flight,
+    role_may_write_repository_paths,
     validate_node,
 )
 from reckon.crew.prompts import compose_prompt
@@ -3338,7 +3339,14 @@ def plan_dispatch(
         resolved_authority = dict(
             authority or resolve_dispatch_authority(project, repo)
         )
-        if _can_write_worktree(
+        # A landing grant is for a role that lands work in the tree. Sandbox
+        # writability is necessary but not sufficient: a verifier role's
+        # sandbox can write the worktree (the `test` role is `worktree-full`),
+        # yet promotion refuses a verifier commit that touches any repository
+        # path. Gating on the role predicate as well keeps the default fragment
+        # scope and the promotion refusal reading one authority, so a verifier
+        # is never offered a repository write path it cannot land.
+        if role_may_write_repository_paths(node.role) and _can_write_worktree(
             backend,
             repository=Path(repo).resolve(),
             run_directory=run_dir(resolved_run_id),
