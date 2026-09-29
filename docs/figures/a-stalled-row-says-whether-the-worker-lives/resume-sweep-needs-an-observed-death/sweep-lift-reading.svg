@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 430" width="980" height="430" role="img"
+     aria-label="Four parked runs, the three-way process reading each produces, and the sweep's decision. A pid this host checked and found dead reads process gone and is lifted. A supervisor exit record on a run launched elsewhere also reads process gone and is lifted. A run launched on another host with no exit record reads liveness unknown and is left in place, with the reading named in the refusal. A live local process reads alive and is refused, as before.">
+  <style>
+    .h { font: 600 15px/1.2 system-ui, sans-serif; fill: #10151c; }
+    .c { font: 13px/1.35 system-ui, sans-serif; fill: #10151c; }
+    .m { font: 12px/1.3 ui-monospace, monospace; fill: #3a4756; }
+    .lbl { font: 600 12px/1.2 system-ui, sans-serif; fill: #6b7684; letter-spacing: .04em; }
+    .box { fill: #fbfcfd; stroke: #c6ced8; stroke-width: 1.2; rx: 8; }
+    .gone { fill: #edf7ee; stroke: #6aa87a; stroke-width: 1.6; }
+    .unknown { fill: #fdf3e3; stroke: #c9992f; stroke-width: 1.6; }
+    .alive { fill: #fdecec; stroke: #c07070; stroke-width: 1.6; }
+    .arrow { stroke: #8b97a6; stroke-width: 1.4; fill: none; marker-end: url(#a); }
+    .mono { font: 12px ui-monospace, monospace; fill: #22303f; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b97a6"/>
+    </marker>
+  </defs>
+
+  <text class="h" x="24" y="34">One sweep, four parked runs, and the reading decides</text>
+  <text class="lbl" x="24" y="58">EVIDENCE ABOUT THE WORKER'S END</text>
+  <text class="lbl" x="430" y="58">PROCESS READING</text>
+  <text class="lbl" x="700" y="58">SWEEP</text>
+
+  <g>
+    <rect class="box" x="24" y="72" width="370" height="72"/>
+    <text class="c" x="40" y="98">pid checked on this host, found dead</text>
+    <text class="mono" x="40" y="122">launcher_host = this host, pid gone</text>
+
+    <rect class="box" x="24" y="156" width="370" height="72"/>
+    <text class="c" x="40" y="182">supervisor wrote the run's exit record</text>
+    <text class="mono" x="40" y="206">exit.json beside the live pointer</text>
+
+    <rect class="box" x="24" y="240" width="370" height="72"/>
+    <text class="c" x="40" y="266">worker on another host, no exit record</text>
+    <text class="mono" x="40" y="290">launcher_host = a foreign host</text>
+
+    <rect class="box" x="24" y="324" width="370" height="72"/>
+    <text class="c" x="40" y="350">local process the table answers for</text>
+    <text class="mono" x="40" y="374">pid live here</text>
+  </g>
+
+  <g>
+    <rect class="gone" x="430" y="72" width="230" height="72" rx="8" fill="#edf7ee" stroke="#6aa87a" stroke-width="1.6"/>
+    <text class="c" x="446" y="104">process gone</text>
+    <text class="mono" x="446" y="126">observed</text>
+
+    <rect class="gone" x="430" y="156" width="230" height="72" rx="8" fill="#edf7ee" stroke="#6aa87a" stroke-width="1.6"/>
+    <text class="c" x="446" y="188">process gone</text>
+    <text class="mono" x="446" y="210">observed</text>
+
+    <rect class="unknown" x="430" y="240" width="230" height="72" rx="8"/>
+    <text class="c" x="446" y="269">liveness unknown</text>
+    <text class="mono" x="446" y="291">proven = false</text>
+
+    <rect class="alive" x="430" y="324" width="230" height="72" rx="8"/>
+    <text class="c" x="446" y="356">alive</text>
+    <text class="mono" x="446" y="378">proven = true</text>
+  </g>
+
+  <g>
+    <rect class="gone" x="700" y="72" width="256" height="72" rx="8" fill="#edf7ee" stroke="#6aa87a" stroke-width="1.6"/>
+    <text class="c" x="716" y="104">lifted</text>
+    <text class="mono" x="716" y="126">resumed</text>
+
+    <rect class="gone" x="700" y="156" width="256" height="72" rx="8" fill="#edf7ee" stroke="#6aa87a" stroke-width="1.6"/>
+    <text class="c" x="716" y="188">lifted</text>
+    <text class="mono" x="716" y="210">resumed</text>
+
+    <rect class="unknown" x="700" y="240" width="256" height="72" rx="8"/>
+    <text class="c" x="716" y="272">left in place</text>
+    <text class="mono" x="716" y="294">refusal names unknown</text>
+
+    <rect class="alive" x="700" y="324" width="256" height="72" rx="8"/>
+    <text class="c" x="716" y="356">refused, as before</text>
+    <text class="mono" x="716" y="378">still has a live process</text>
+  </g>
+
+  <g class="arrow">
+    <path d="M394,108 H430"/>
+    <path d="M394,192 H430"/>
+    <path d="M394,276 H430"/>
+    <path d="M394,360 H430"/>
+    <path d="M660,108 H700"/>
+    <path d="M660,192 H700"/>
+    <path d="M660,276 H700"/>
+    <path d="M660,360 H700"/>
+  </g>
+</svg>
