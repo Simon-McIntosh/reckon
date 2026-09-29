@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-29">
-  <meta name="plan-version" content="63">
+  <meta name="plan-version" content="64">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -594,6 +594,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T083730288714-review-of-drain-view-reads-the-host-gated-liveness" data-who="reckon-build" data-when="2026-09-29T09:28:37.478Z">
     <div class="r-comment-body"><p>Independent review of run r-20260929T054906743931-drain-view-reads-the-host-gated-liveness (base 68a5b96b, head 0fb5709a, 6 commits, 4 declared paths, +360/-15): the closure drain classifies through the host-gated local_liveness reading and carries only a proven answer, with the borrowed life reproduced at the base revision and refused at head; scores 20/18/20/19/20; two record findings and zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260929T104217961002-live-view-rechecks-a-killed-worker" data-who="reckon-build" data-when="2026-09-29T12:16:51.180Z">
+    <div class="r-comment-body"><p>reckon/crew/runs.py now carries a live pointer&#x27;s recorded launching host forward on every write of that file, so the pre-spawn claim and the full record agree, the host gate has the fact it requires, and the live view rechecks a killed worker again without reopening the foreign-pid defect.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260926T203548366947-review-of-resume-offer-waits-while-the-worker-lives" data-who="reckon-build" data-when="2026-09-26T21:30:10.385Z">
     <div class="r-comment-body"><p>review node: stored an 88/100 record for r-20260926T201952688203 with one finding recorded as a plan followup (the sweep guard)</p></div>
