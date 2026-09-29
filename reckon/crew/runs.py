@@ -1034,9 +1034,7 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
         # closure fence turns on whether the worker lives now rather than on
         # what a pointer's writer recorded at launch.
         alive, proven = local_liveness(pointer)
-        row = classify_pointer(
-            {**pointer, "process_alive": alive if proven else None}
-        )
+        row = classify_pointer({**pointer, "process_alive": alive if proven else None})
         recorded = pointer.get("closure_disposition")
         disposition = (
             str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
