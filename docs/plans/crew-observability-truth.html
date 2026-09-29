@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="532">
+<meta name="plan-version" content="533">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -1989,10 +1989,11 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
     <div class="r-fu-body"><p>Measured on r-20260928T204215455574. Two minutes after launch, the ticker emitted <code>working → unwritten</code> while the worker process was alive and its stream was growing. It emitted <code>unwritten → working</code> ten minutes later, once the manifest gained a <code>status:</code> line. At that point the manifest held only the <code>orientation_*</code> fields a worker writes as it starts. So a live, working run reads as though its record is missing, and the transition looks like news to a coordinator. Classify a manifest that has orientation fields but no status as the phase its liveness and stream imply, never as unwritten while the process lives.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth</pre>
     </article>
-<article class="r-fu" data-id="f-cot-disposition-refusal-branches-are-tested" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cot-disposition-refusal-branches-are-tested" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="2026-09-29T00:13:28+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The disposition command&#x27;s two head refusals are asserted by a test</h4>
     <div class="r-fu-body"><p>From the final review of a-sub-floor-disposition-is-written-by-a-command (total 94). The command's stored-is-None branch near <code>reckon/cli.py:3943</code> has no case that runs it. That branch holds the mismatched-head refusal at <code>:3945</code> and the no-record refusal at <code>:3950</code>, which guard the defect class this node was sent to close: a disposition recorded against a review whose head is not the run's. Add one case per refusal, each asserting a non-zero exit, the refusal named, and the sub-floor row left standing. Write paths: <code>tests/test_sub_floor_disposition_has_a_writer.py</code> only.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth §21</pre>
+    <p class="r-fu-outcome">disposition-refusal-branches-are-tested merged at 47d392a0 and promoted (review total 97, zero added failures, no findings). Two cases now assert the mismatched-head and no-record refusals: each exits non-zero, names its refusal, and leaves the sub-floor row standing. verify-gate is green at main.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
