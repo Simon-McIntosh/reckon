@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="140">
+<meta name="plan-version" content="141">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -409,10 +409,11 @@
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
     <p class="r-fu-outcome">replay-stamps-the-state-entry-time merged at 9c462893 (review 99, no findings, zero added failures by id). _recorded_fleet_times stamps each run with the first event of its trailing, unbroken sequence in its current state. A baseline re-emitted every 25 minutes no longer moves the time. A run that went working, then blocked, then working replays at its second entry.</p>
     </article>
-<article class="r-fu" data-id="f-tfcctf-follow-reads-whole-lines" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfcctf-follow-reads-whole-lines" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="2026-09-29T16:15:27+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">The follower delivers every stream record once, whole</h4>
     <div class="r-fu-body"><p>Found by the review of <code>follow-boundary-snaps-to-a-line</code> (86, merged at 552a3f0a). The follow read loop in <code>reckon/crew/runs.py</code> admits a final line without its newline as a whole record. When the producer's completing write lands after the loop's first read, the record arrives truncated and in two pieces. The newline snap narrows that window but does not close it. The same review found that <code>_follow_boundary</code> reads the whole stream into memory to find one newline. Done when the loop holds a partial final line until its newline arrives, and never records an offset off a line boundary. <code>_follow_boundary</code> must read backward in bounded chunks. A new <code>tests/test_follow_reads_whole_lines.py</code> asserts both: a record half-written across a loop read arrives once and whole, and the probe reads bounded bytes on a stream over 1 MB. The declared mutation, accepting a newline-less line, fails. Held until s25-coord's <code>runs-pointer-writer-reuses-the-store</code> releases <code>reckon/crew/runs.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
+    <p class="r-fu-outcome">follow-reads-whole-lines merged at 2728ea21 (review 90). The follow read loop reads through runs.read_whole_line, which holds a newline-less final line until its newline arrives, and records only line-boundary offsets (runs.line_boundary). _follow_boundary reads backward in bounded chunks. The two ids the review counted as added were re-run 10 times per arm with logs kept. test_crew_watch_lifetime::test_dispatch_is_admitted_during_the_stale_terminal_window fails 10 of 10 at base too, so it is deterministically red on main. test_follow_lifetime::test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on failed 0 of 10 at base and 1 of 10 at head, below the three-run attribution threshold.</p>
     </article>
 <article class="r-fu" data-id="f-tfcctf-resume-baseline-arming-delivers-no-row" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">A resumed arming never delivers no row where one is due</h4>
