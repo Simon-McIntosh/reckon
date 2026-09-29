@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-29">
-  <meta name="plan-version" content="112">
+  <meta name="plan-version" content="113">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -1195,6 +1195,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20260929T065026468365-fleet-lane-carries-the-dispatch-environment" data-who="reckon-build" data-when="2026-09-29T07:16:16.953Z">
     <div class="r-comment-body"><p>The fleet spawn lane now carries the dispatcher's crew environment into the per-run supervisor (spec.environment over the batch step's own), and dispatch confirms the supervisor survived its first seconds before reporting success, raising CrewError with the supervisor's exit detail and leaving no live pointer or worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20260929T0905-e2e-proof-passed" data-who="s21-1c" data-when="2026-09-29T09:05:00Z">
+    <div class="r-comment-body">Reported by imas-ambix-67 on 2026-09-29: the end-to-end proof with the environment fix (merge dcf231fa, strengthened tests d13744c8) passed on throwaway allocation 1278526 (clu-3141). The job was cancelled by id and its scratch removed. Evidence: ~/.cache/imas-ambix-fleet-leak/spawnprobe/e2e/EVIDENCE.md, with evidence-fleet.json and evidence-control.json. The batch step's reckon.crew.fleet_supervisor (pid 1593107) ran with no RECKON_HOME. The spawned supervisor 1593305 read the scratch RECKON_HOME that the spec carried, and started the worker (bwrap 1593311, sleep 1593312) in step_batch. After scancel of session step 1278526.0 at 08:57:35Z, the dispatcher was gone, while the supervisor, bwrap and worker lived on with the same parents. Flag-off control in step 1278526.3: dispatcher 1593458, forked supervisor 1593503, bwrap 1593509 and worker 1593510 all sat in step_3, and scancel 1278526.3 killed all four. Remaining for §10: the live in-place reload of 1277272, pending the operator's direct go to imas-ambix-67, with the pre-reload guard.</div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260924T213000-discard-leaves-worktree" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
     <div class="r-comment-body">Evidence for this section, 2026-09-24 23:19. crew discard of r-20260924T211759945494-review-of-the-fleet-supervisor-lives-in-reckon removed its pointer but left its worktree, which was clean and at an integrated head. So redispatching the same node id was refused with 'worktree creation failed: worktree path already exists'. The coordinator removed the worktree by hand with a plain `git worktree remove`. The follower then labelled the discarded run 'promoted'. That label is owned by the-fleet-counters-count-the-fleet §3. The discarded run was itself a review-reflex launch with launch in-harness, backend native and pid null in a Claude Code coordinator session that never asked for in-harness. Nothing would ever have run it, yet it held the review's scope claim.</div>
