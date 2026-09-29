@@ -1,17 +1,22 @@
-"""A re-armed follower continues the stream it left instead of replaying it.
+"""Every arming of the follower replays the fleet with each run's recorded time.
 
-A follower's checkpoint used to travel only through the environment an in-place
-process reload hands to its replacement, so a re-arm — a new process, no such
-environment — began from nothing. It replayed a baseline row for every live run,
-each stamped with the moment it attached, and it started reading at the stream's
-current end, so every transition written while nothing was attached was skipped.
-The reader saw a batch of rows under one timestamp and then a gap.
+A follower's checkpoint travels through the environment an in-place reload hands
+to its replacement, so a re-arm — a new process, no such environment — used to
+begin from nothing and re-announce a burst of baseline rows each stamped with
+the moment it attached, then start reading at the stream's end so every
+transition written while nothing was attached was skipped. A re-arm after a
+quiet stretch was blank; a re-arm after a busy one showed a blob under one
+timestamp.
+
+The contract now is a replay. Every arming of a fresh image — the first and
+every re-arm alike — draws one row for each live run, stamped with the time that
+run's own record says it entered its current state and ordered by that time.
+Only an in-place reload, which keeps its grid on screen, continues from its
+recorded offset and delivers just what moved.
 
 These tests drive the follower's own generator against a synthetic config home
-and a real producer, because the property is about what a *second* arming emits
-after a *first* one has ended. The stream's own recorded timestamps are read
-into the expected rows before the second arming runs, so a row stamped with the
-attach time cannot pass by matching a time the test itself chose.
+and a real producer, so a row stamped with the attach time cannot pass by
+matching a time the test itself chose.
 """
 
 from __future__ import annotations
@@ -182,85 +187,18 @@ def _two_live_runs(home: Path) -> None:
     _write_pointer(home, RUN_B, "node-b", phase="working")
 
 
-# ── The gap is delivered, and only the gap ──────────────────────────────────
+# ── Every arming replays the fleet, one row per live run ────────────────────
 
 
-def test_a_rearm_delivers_the_gap_with_the_stream_timestamps_and_no_baseline(
-    home,
-) -> None:
-    """The second arming continues: exactly the transitions written while away.
+def test_a_rearm_with_nothing_new_draws_one_row_per_live_run(home) -> None:
+    """A re-arm with nothing new is the fleet, not a blank pane.
 
-    The first arming delivers two baseline rows. It ends at its lifetime; two
-    more transitions are written with nothing attached; the second arming starts
-    with no environment checkpoint, as a fresh process does. It must emit
-    exactly those gap transitions, in order and carrying the stream's own
-    timestamps, and no row at all for a run whose state did not move.
+    The first arming draws the fleet. Nothing moves while the follower is away,
+    and the second arming begins with no environment checkpoint, exactly as a
+    first attach does. It replays the fleet all the same: one row per live run,
+    so a reader re-arming after a Monitor's end is never left staring at an
+    empty pane.
     """
-    _two_live_runs(home)
-    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
-        assert acquired
-        stream_path = Path(seat["stream_path"])
-        crew.list_live(project=PROJECT)
-
-        first = _arm()
-        assert {event["run_id"] for event in first} == {RUN_A, RUN_B}, first
-        before = len(_read_stream(stream_path))
-
-        early = time.time() - 25 * 60
-        later = time.time() - 12 * 60
-        a_stamp = _iso(early)
-        b_stamp = _iso(later)
-        assert ticker_module.local_clock(a_stamp) != ticker_module.local_clock(b_stamp)
-        _append_stream(
-            stream_path,
-            [
-                _event(
-                    RUN_A,
-                    "node-a",
-                    state="abandoned",
-                    observed_at=a_stamp,
-                    previous="dispatched",
-                ),
-                _event(
-                    RUN_B,
-                    "node-b",
-                    state="blocked",
-                    observed_at=b_stamp,
-                    previous="working",
-                ),
-            ],
-        )
-        gap = _gap_events(stream_path, before)
-        assert [str(event["run_id"]) for event in gap] == [RUN_A, RUN_B], gap
-
-        second = _arm(resume=None)
-
-    assert [event["run_id"] for event in second] == [RUN_A, RUN_B], (
-        f"the gap is delivered in order; got {second!r}"
-    )
-    assert all(event.get("event") != "baseline" for event in second), (
-        f"a continuation emits no baseline; got {second!r}"
-    )
-    assert [str(event["observed_at"]) for event in second] == [a_stamp, b_stamp], (
-        f"the replayed rows carry the stream's own past stamps, not the attach "
-        f"time; wanted {[a_stamp, b_stamp]!r}, got "
-        f"{[event['observed_at'] for event in second]!r}"
-    )
-    # The state is the one the stream recorded, not a re-derived verdict.
-    assert [str(event["to_state"]) for event in second] == ["abandoned", "blocked"], (
-        second
-    )
-    # The stamp reaches the reader as the line's own clock, not merely as a field
-    # beside it: a row stamped with the attach time would render today's second.
-    for row, stamp in zip(second, (a_stamp, b_stamp), strict=True):
-        line = recovery.format_watch_transition(row)
-        assert line.startswith(ticker_module.local_clock(stamp)), (
-            f"the rendered row does not carry the run's recorded time; {line!r}"
-        )
-
-
-def test_a_rearm_with_nothing_new_prints_nothing(home) -> None:
-    """A continuation with no intervening transition is silent, not a replay."""
     _two_live_runs(home)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
@@ -270,20 +208,21 @@ def test_a_rearm_with_nothing_new_prints_nothing(home) -> None:
 
         second = _arm(resume=None)
 
-    assert second == [], f"a re-arm with nothing new must print nothing; got {second!r}"
+    assert [event["run_id"] for event in second] == [RUN_A, RUN_B], (
+        f"a re-arm with nothing new draws one row per live run; got {second!r}"
+    )
 
 
-def test_a_rearm_after_a_quiet_baseline_arming_prints_nothing(home) -> None:
-    """A baseline arming against a quiet stream still leaves a place behind.
+def test_a_rearm_after_a_quiet_baseline_arming_draws_the_fleet(home) -> None:
+    """A baseline arming against a quiet stream still leaves a place, and the
+    next arming still replays the fleet.
 
     The baseline rows are derived from the live fleet, not read from the stream,
     so an arming can emit them having read no line at all. Here the producer
-    holds its claim but has not written a line, so the stream this arming would
-    read does not exist and the read loop that advances the place is never
-    entered. If the place were written only as lines are delivered — or only
-    from a wait pass inside that read loop — the arming would leave nothing
-    behind, and the next arming would find no checkpoint and replay the
-    baseline: the same replay this section removes, on the quiet path.
+    holds its claim but has not written a line, so the stream does not exist and
+    the read loop that advances the place is never entered. The re-arm must
+    still draw the fleet from the live pointers, and with no stream to read it
+    stamps each row from the place the fleet itself records.
     """
     _two_live_runs(home)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
@@ -301,27 +240,122 @@ def test_a_rearm_after_a_quiet_baseline_arming_prints_nothing(home) -> None:
 
         second = _arm(resume=None)
 
-    assert second == [], (
-        f"a re-arm after a quiet baseline arming must print nothing; got {second!r}"
+    assert [event["run_id"] for event in second] == [RUN_A, RUN_B], (
+        f"a re-arm after a quiet baseline arming draws the fleet; got {second!r}"
     )
 
 
-def test_a_replaced_stream_emits_only_moved_runs_with_recorded_times(home) -> None:
-    """When the stream cannot be continued, state decides, never re-derivation.
+def test_a_rearm_carries_each_runs_recorded_state_time(home) -> None:
+    """Each row is stamped with the recorded time its run entered its state.
 
-    The file is replaced between the two arms, so the recorded offset no longer
-    names a boundary. The follower falls back to state: it emits the run whose
-    state differs from its checkpoint and stays quiet about the unchanged one,
-    each row carrying the stream's own recorded transition time. No run that is
-    merely running renders dispatched.
+    A run sitting at its state since long before the arming still carries the
+    clock its own record gave it, and the rendered row leads with that clock. A
+    row stamped with the attach time would render today's second, so the
+    stream's own past stamps are read into the expectation before the second
+    arming runs.
     """
     _two_live_runs(home)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
         assert acquired
         stream_path = Path(seat["stream_path"])
         crew.list_live(project=PROJECT)
+        _arm()
+
+        a_stamp = _iso(time.time() - 25 * 60)
+        b_stamp = _iso(time.time() - 12 * 60)
+        assert ticker_module.local_clock(a_stamp) != ticker_module.local_clock(b_stamp)
+        _append_stream(
+            stream_path,
+            [
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="working",
+                    observed_at=a_stamp,
+                    previous="dispatched",
+                ),
+                _event(
+                    RUN_B,
+                    "node-b",
+                    state="working",
+                    observed_at=b_stamp,
+                    previous="dispatched",
+                ),
+            ],
+        )
+
+        second = _arm(resume=None)
+
+    assert [str(event["observed_at"]) for event in second] == [a_stamp, b_stamp], (
+        f"each row carries its run's recorded time, never the arming time; got "
+        f"{[event['observed_at'] for event in second]!r}"
+    )
+    # The stamp reaches the reader as the line's own clock, not merely as a field
+    # beside it: a row stamped with the attach time would render today's second.
+    for row, stamp in zip(second, (a_stamp, b_stamp), strict=True):
+        line = recovery.format_watch_transition(row)
+        assert line.startswith(ticker_module.local_clock(stamp)), (
+            f"the rendered row does not carry the run's recorded time; {line!r}"
+        )
+
+
+def test_a_rearm_orders_rows_by_recorded_time(home) -> None:
+    """The rows arrive in ascending recorded-time order, not fleet order.
+
+    The fleet as it stands names RUN_A before RUN_B, but RUN_B entered its state
+    first. A re-arm reads as a timeline, so the earlier record leads.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+        _arm()
+
+        b_early = _iso(time.time() - 30 * 60)
+        a_late = _iso(time.time() - 5 * 60)
+        _append_stream(
+            stream_path,
+            [
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="working",
+                    observed_at=a_late,
+                    previous="dispatched",
+                ),
+                _event(
+                    RUN_B,
+                    "node-b",
+                    state="working",
+                    observed_at=b_early,
+                    previous="dispatched",
+                ),
+            ],
+        )
+
+        second = _arm(resume=None)
+
+    assert [str(event["run_id"]) for event in second] == [RUN_B, RUN_A], (
+        f"rows arrive in ascending recorded-time order; got {second!r}"
+    )
+
+
+def test_a_replaced_stream_draws_each_live_run_once_with_recorded_times(home) -> None:
+    """When the stream cannot be continued, the fleet is still replayed whole.
+
+    The file is replaced between the two arms, so the recorded offset names no
+    boundary. The replay does not fall back to "what moved": each live run is
+    drawn once, and each carries the state and recorded time the stream recorded
+    for it. The run that moved carries its transition time; the run that did not
+    carries the earlier clock it entered its state under.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
         first = _arm()
         assert {event["run_id"] for event in first} == {RUN_A, RUN_B}, first
+        stream_path = Path(seat["stream_path"])
 
         a_stamp = "2026-01-02T03:04:05+00:00"
         b_stamp = "2026-01-02T03:14:15+00:00"
@@ -347,27 +381,21 @@ def test_a_replaced_stream_emits_only_moved_runs_with_recorded_times(home) -> No
 
         second = _arm(resume=None)
 
-    assert [event["run_id"] for event in second] == [RUN_B], (
-        f"only the run whose state differs from the checkpoint is emitted; "
-        f"got {second!r}"
+    assert [str(event["run_id"]) for event in second] == [RUN_A, RUN_B], (
+        f"each live run is drawn once; got {second!r}"
     )
-    row = second[0]
-    assert str(row["observed_at"]) == b_stamp, (
-        f"the row carries the run's recorded transition time, never the attach "
-        f"time; got {row['observed_at']!r}"
-    )
-    assert str(row["to_state"]) == "complete", row
-    assert all(str(event.get("to_state")) != "dispatched" for event in second), (
-        f"no already-running run renders dispatched; got {second!r}"
-    )
+    by_run = {str(event["run_id"]): event for event in second}
+    assert str(by_run[RUN_B]["observed_at"]) == b_stamp, by_run[RUN_B]
+    assert str(by_run[RUN_B]["to_state"]) == "complete", by_run[RUN_B]
+    assert str(by_run[RUN_A]["observed_at"]) == a_stamp, by_run[RUN_A]
 
 
-def test_a_rearm_records_its_own_place_for_the_next(home) -> None:
-    """The durable checkpoint advances as the follower delivers.
+def test_a_run_that_moved_in_the_gap_appears_once_with_its_new_state(home) -> None:
+    """No run is delivered twice in one arming, even when it also moved.
 
-    After a continuation the checkpoint's offset must sit at the stream's end,
-    so a third arming is quiet. This asserts the record itself rather than a
-    third arming, because the offset is the fact the next arming resumes from.
+    RUN_A moved while nothing was attached. The replay draws it once, at the
+    state and time the stream now records, and the gap transition is not
+    delivered a second time beside it.
     """
     _two_live_runs(home)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
@@ -375,14 +403,50 @@ def test_a_rearm_records_its_own_place_for_the_next(home) -> None:
         stream_path = Path(seat["stream_path"])
         crew.list_live(project=PROJECT)
         _arm()
-        _deliver(home, RUN_A, "complete")
-        crew.list_live(project=PROJECT)
+
+        moved = _iso(time.time() - 8 * 60)
+        _append_stream(
+            stream_path,
+            [
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="blocked",
+                    observed_at=moved,
+                    previous="working",
+                )
+            ],
+        )
 
         second = _arm(resume=None)
-        assert [event["run_id"] for event in second] == [RUN_A], second
+
+    run_ids = [str(event["run_id"]) for event in second]
+    assert run_ids.count(RUN_A) == 1, f"RUN_A must appear exactly once; got {second!r}"
+    assert run_ids.count(RUN_B) == 1, f"RUN_B must appear exactly once; got {second!r}"
+    moved_row = next(event for event in second if str(event["run_id"]) == RUN_A)
+    assert str(moved_row["to_state"]) == "blocked", moved_row
+    assert str(moved_row["observed_at"]) == moved, moved_row
+
+
+def test_a_rearm_records_its_own_place_for_the_next(home) -> None:
+    """The durable checkpoint advances to the stream's end as the fleet is drawn.
+
+    The replay reads the stream to date, so the place it leaves must sit at the
+    stream's end: an arming that starts there again replays the fleet rather
+    than re-reading the history as transitions.
+    """
+    _two_live_runs(home)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+        _arm()
+
+        second = _arm(resume=None)
+        assert [event["run_id"] for event in second] == [RUN_A, RUN_B], second
 
         record = follow_checkpoint.read(PROJECT, SESSION)
-        assert record, "a continuation leaves a durable checkpoint behind"
+        assert record, "an arming leaves a durable checkpoint behind"
         assert int(record["offset"]) == stream_path.stat().st_size, (
             f"the checkpoint must sit at the stream's end; got {record['offset']} "
             f"against {stream_path.stat().st_size}"
@@ -608,12 +672,12 @@ def test_a_first_arming_replays_no_history(home, follow_lines) -> None:
     )
 
 
-def test_a_pipe_rearm_with_nothing_new_emits_no_rows(home, follow_lines) -> None:
-    """A continuation with nothing new is silent to a pipe, not a replay.
+def test_a_pipe_rearm_draws_the_fleet_and_no_burst(home, follow_lines) -> None:
+    """A pipe re-arm draws one row per live run, not a burst of history.
 
-    Nothing moved while the follower was away, so there is no gap to deliver.
-    The stored rows are the pane's, and a pipe has no pane: it is handed none of
-    them, so the second arming draws nothing at all — no burst and no fresh row.
+    A pipe has no pane, so the stored rows are not handed back: the re-arm draws
+    the fleet afresh, one line per live run. Nothing that moved means nothing
+    extra, and the history burst stays the pane's alone.
     """
     _two_live_runs(home)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
@@ -624,14 +688,14 @@ def test_a_pipe_rearm_with_nothing_new_emits_no_rows(home, follow_lines) -> None
         _run_follow()
 
     assert not [line for line in follow_lines if "\n" in line], (
-        f"a non-TTY re-arm with nothing new writes no burst; got {follow_lines!r}"
+        f"a non-TTY re-arm writes no history burst; got {follow_lines!r}"
     )
-    assert _fleet_lines(follow_lines) == [], (
-        f"a non-TTY re-arm with nothing new emits zero rows; got {follow_lines!r}"
+    drawn = _fleet_lines(follow_lines)
+    assert [line for line in drawn if "node-a" in line], (
+        f"a pipe re-arm draws the fleet's rows; got {follow_lines!r}"
     )
-    fresh = [line for line in follow_lines if "\n" not in line]
-    assert all("follower end" in line for line in fresh), (
-        f"the only single-line output is the follower's own end marker; got {fresh!r}"
+    assert [line for line in drawn if "node-b" in line], (
+        f"a pipe re-arm draws one row for each live run; got {follow_lines!r}"
     )
 
 
@@ -854,18 +918,14 @@ def test_the_replayed_rows_are_dimmed_with_the_tickers_own_escape() -> None:
     assert f"{cli.HISTORY_DIM}plain row{cli.HISTORY_RESET}" in block, block
 
 
-def test_the_pane_memory_suppresses_a_state_it_already_showed(home) -> None:
-    """A run at the state the pane last drew is not a transition.
+def test_the_pane_memory_does_not_suppress_a_replayed_row(home) -> None:
+    """A replay draws the fleet even at a state a checkpoint already named.
 
-    The stream's own record says the run moved; the pane's memory of what it
-    drew says the reader has already seen that state. The memory governs, which
-    is what keeps a run's rows chaining across a re-arm rather than restarting
-    from the producer's record.
-
-    The same stream is armed twice, once with the memory present and once
-    without, so the suppression is shown to be the memory's doing rather than
-    the row never having been deliverable. Both arms start from the same
-    checkpoint, so the checkpoint cannot be the thing doing the suppressing.
+    The checkpoint's memory of what the pane last drew says RUN_A is at
+    ``working``, and the stream records RUN_A at ``working`` too. Under the
+    replay contract the row is still drawn: a re-arm shows the whole fleet, and
+    a checkpoint cannot subtract a live run from it. The row carries the run's
+    recorded state and time, and RUN_B is drawn beside it.
     """
     a_stamp = _iso(time.time() - 30 * 60)
     b_stamp = _iso(time.time() - 20 * 60)
@@ -889,44 +949,25 @@ def test_the_pane_memory_suppresses_a_state_it_already_showed(home) -> None:
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
         assert acquired
         stream_path = Path(seat["stream_path"])
+        follow_checkpoint.write(
+            PROJECT,
+            SESSION,
+            stream_path=stream_path,
+            offset=0,
+            reported={RUN_A: "working"},
+        )
         _two_live_runs(home)
         _append_stream(stream_path, stream_events)
-        follow_checkpoint.write(
-            PROJECT,
-            SESSION,
-            stream_path=stream_path,
-            offset=0,
-            reported={RUN_A: "working"},
-        )
 
-        without_memory = _arm(resume=None)
-        assert [str(event["run_id"]) for event in without_memory] == [RUN_B], (
-            f"the control arm draws the run the checkpoint does not name; "
-            f"got {without_memory!r}"
-        )
+        drawn = _arm(resume=None)
 
-        # The pane's memory: the row it drew for RUN_B at the state it holds now.
-        follow_checkpoint.append_history(
-            PROJECT,
-            SESSION,
-            text="drawn earlier",
-            at=time.time(),
-            run_id=RUN_B,
-            state="blocked",
-        )
-        follow_checkpoint.write(
-            PROJECT,
-            SESSION,
-            stream_path=stream_path,
-            offset=0,
-            reported={RUN_A: "working"},
-        )
-        with_memory = _arm(resume=None)
-
-    assert with_memory == [], (
-        f"a run at the state the pane last drew is not a transition; "
-        f"got {with_memory!r}"
+    assert [str(event["run_id"]) for event in drawn] == [RUN_A, RUN_B], (
+        f"a replayed row is not suppressed by the checkpoint's memory; got {drawn!r}"
     )
+    by_run = {str(event["run_id"]): event for event in drawn}
+    assert str(by_run[RUN_A]["to_state"]) == "working", by_run[RUN_A]
+    assert str(by_run[RUN_A]["observed_at"]) == a_stamp, by_run[RUN_A]
+    assert str(by_run[RUN_B]["observed_at"]) == b_stamp, by_run[RUN_B]
 
 
 def test_the_checkpoint_carries_the_identity_of_the_file_it_read(home) -> None:
