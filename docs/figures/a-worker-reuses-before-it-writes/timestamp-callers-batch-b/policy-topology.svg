@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="620" viewBox="0 0 1120 620" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1120" height="620" fill="#fbfbfd"/>
+  <text x="24" y="34" font-size="20" font-weight="bold" fill="#1a1a2e">Batch B — five readers funnel through one parser; one keeps its own date reading</text>
+  <text x="24" y="56" font-size="13" fill="#555">Each box keeps only the policy its own callers depend on; the five no longer call fromisoformat.</text>
+
+  <!-- central parser -->
+  <rect x="470" y="250" width="200" height="90" rx="10" fill="#e7f0fb" stroke="#2b6cb0" stroke-width="2"/>
+  <text x="570" y="284" font-size="15" font-weight="bold" text-anchor="middle" fill="#1a365d">reckon._timestamps</text>
+  <text x="570" y="306" font-size="14" text-anchor="middle" fill="#1a365d">parse_utc(value)</text>
+  <text x="570" y="326" font-size="11" text-anchor="middle" fill="#555">aware / Z / offset &#8594; UTC&#160;&#160;naive &#8594; UTC</text>
+
+  <!-- readers, left column -->
+  <g font-size="13">
+    <rect x="40" y="96" width="330" height="52" rx="8" fill="#fffaf0" stroke="#b7791f" stroke-dasharray="5 4"/>
+    <text x="56" y="118" font-weight="bold" fill="#111">doccheck.modified_age_days</text>
+    <text x="56" y="138" fill="#8a5a00">retained exception: reads the stated date, not an instant</text>
+
+    <rect x="40" y="164" width="330" height="52" rx="8" fill="#ffffff" stroke="#9aa4b2"/>
+    <text x="56" y="186" font-weight="bold" fill="#111">project_state._review_date</text>
+    <text x="56" y="206" fill="#666">policy kept: TypeError on wrong type check</text>
+
+    <rect x="40" y="232" width="330" height="52" rx="8" fill="#ffffff" stroke="#9aa4b2"/>
+    <text x="56" y="254" font-weight="bold" fill="#111">project_state._validate_review</text>
+    <text x="56" y="274" fill="#666">policy kept: required-vs-malformed messages</text>
+
+    <rect x="40" y="300" width="330" height="52" rx="8" fill="#ffffff" stroke="#9aa4b2"/>
+    <text x="56" y="322" font-weight="bold" fill="#111">schedule._stamp_millis</text>
+    <text x="56" y="342" fill="#666">policy kept: returns epoch millis</text>
+
+    <rect x="40" y="368" width="330" height="52" rx="8" fill="#ffffff" stroke="#9aa4b2"/>
+    <text x="56" y="390" font-weight="bold" fill="#111">sprint_liveness._observed_seconds</text>
+    <text x="56" y="410" fill="#666">policy kept: None when no stamp is recorded</text>
+
+    <rect x="40" y="436" width="330" height="52" rx="8" fill="#ffffff" stroke="#9aa4b2"/>
+    <text x="56" y="458" font-weight="bold" fill="#111">worker_stop._manifest_predates_attempt</text>
+    <text x="56" y="478" fill="#666">policy kept: bool; False when unreadable</text>
+  </g>
+
+  <!-- arrows -->
+  <g stroke="#2b6cb0" stroke-width="1.6" fill="none" marker-end="url(#a)">
+    <path d="M370 190 C 430 190 440 290 470 292"/>
+    <path d="M370 258 C 430 258 440 295 470 296"/>
+    <path d="M370 326 C 430 326 440 300 470 300"/>
+    <path d="M370 394 C 430 394 440 305 470 304"/>
+    <path d="M370 462 C 430 462 440 310 470 308"/>
+  </g>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#2b6cb0"/>
+    </marker>
+  </defs>
+
+  <!-- right notes -->
+  <g font-size="12">
+    <rect x="720" y="96" width="360" height="120" rx="8" fill="#fff8e6" stroke="#d69e2e"/>
+    <text x="736" y="120" font-weight="bold" fill="#7b5800">One caller's recorded behaviour moves</text>
+    <text x="736" y="142" fill="#5f4600">sprint_liveness._observed_seconds read a naive string</text>
+    <text x="736" y="159" fill="#5f4600">as local time through .timestamp(). parse_utc reads a</text>
+    <text x="736" y="176" fill="#5f4600">naive value as UTC, which removes the host-timezone</text>
+    <text x="736" y="193" fill="#5f4600">dependence. Four cells change; each is named in the test.</text>
+
+    <rect x="720" y="232" width="360" height="108" rx="8" fill="#eefaf0" stroke="#2f855a"/>
+    <text x="736" y="256" font-weight="bold" fill="#22543d">Every other cell is preserved</text>
+    <text x="736" y="278" fill="#23543d">All six readers were exercised at base over thirteen shared</text>
+    <text x="736" y="295" fill="#23543d">inputs; the recorded table is asserted at the head. A</text>
+    <text x="736" y="312" fill="#23543d">second test walks the five migrated modules for a residual</text>
+    <text x="736" y="329" fill="#23543d">fromisoformat, and doccheck is declared the exception.</text>
+
+    <rect x="720" y="356" width="360" height="132" rx="8" fill="#f3eefb" stroke="#6b46c1"/>
+    <text x="736" y="380" font-weight="bold" fill="#44337a">The hook still launches bare</text>
+    <text x="736" y="402" fill="#44337a">worker_stop.py is registered as its own path and run by</text>
+    <text x="736" y="419" fill="#44337a">its shebang, so it carries no sys.path entry for the</text>
+    <text x="736" y="436" fill="#44337a">checkout. It imports the parser inside the one function</text>
+    <text x="736" y="453" fill="#44337a">that needs it and bootstraps sys.path from its own file</text>
+    <text x="736" y="470" fill="#44337a">only when not imported as a package.</text>
+
+    <rect x="720" y="500" width="360" height="104" rx="8" fill="#fffaf0" stroke="#b7791f"/>
+    <text x="736" y="524" font-weight="bold" fill="#7b5800">A lenient parser must not widen a reader</text>
+    <text x="736" y="546" fill="#8a5a00">parse_utc strips whitespace and accepts a lowercase z, so</text>
+    <text x="736" y="563" fill="#8a5a00">the validator keeps the strict spelling it had and the two</text>
+    <text x="736" y="580" fill="#8a5a00">stamp readers refuse those two forms before the call.</text>
+  </g>
+</svg>

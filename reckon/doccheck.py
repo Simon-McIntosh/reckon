@@ -205,7 +205,12 @@ def modified_age_days(
     *,
     today: date | None = None,
 ) -> int | None:
-    """Return whole calendar days since an ISO-formatted modification date."""
+    """Return whole calendar days since the calendar date a stamp states.
+
+    The first ten characters are the date the value names, and this reader takes
+    that date literally: a plan's modification stamp carries a stated date, not
+    an instant, so a zone on the value must not shift the day it reports.
+    """
 
     if not last_modified:
         return None

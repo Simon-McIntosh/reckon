@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon._plan_html import parse_meta
+from reckon._timestamps import parse_utc
 from reckon.crew import runs
 from reckon.crew.node import DEFAULT_WATCH_STALL_WINDOW, parse_duration
 from reckon.crew.recovery import _run_stream_mtime, _utc_seconds
@@ -80,9 +81,12 @@ def _observed_seconds(observed_at: str) -> float | None:
     """Epoch seconds for a record's own ISO stamp, or None when unreadable."""
     if not observed_at:
         return None
-    try:
-        parsed = datetime.fromisoformat(observed_at)
-    except ValueError:
+    if isinstance(observed_at, str) and (
+        observed_at != observed_at.strip() or observed_at.endswith("z")
+    ):
+        return None
+    parsed = parse_utc(observed_at)
+    if parsed is None:
         return None
     return parsed.timestamp()
 
