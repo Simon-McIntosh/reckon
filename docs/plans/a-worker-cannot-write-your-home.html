@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="74">
+<meta name="plan-version" content="75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.98">
@@ -1757,7 +1757,10 @@
     <div class="r-comment-body"><p>This is the S21 currency audit of this plan at <code>76e1bf93</code> (run r-20260928T132832487370-s21-audit-fence). The report is at <code>~/.config/reckon/crew/reports/reckon/s21-audit-fence.{json,md}</code>. The 15 fence test files pass at both the audit base and the head: 275 passed, 0 added failures.</p><ul><li><b>§1 and §2: done.</b> §2's declaration lagged the code and is now advanced. Evidence: <code>FENCE_WORKERS = True</code> at <code>dispatch.py:142</code> (<code>d7ba7433</code>), and the whole fence stack merged in <code>e4933730</code>.</li><li><b>§3: still required.</b> There is no <code>protected_paths</code> flight key, no <code>unprotected_paths</code>, no <code>--no-fence</code> and no capability refusal. <code>protected_paths()</code> is hardcoded and excludes the worktree pool, so a fenced worker can still write a sibling run's worktree. <code>the-boundary-check-reads-two-trees</code> §1 is gated on this; see its gate <code>g-tbcrtt-2</code>.</li><li><b>§4: still required.</b> <code>prompts.py</code> carries no rule, and <code>~/.agents/AGENTS.md</code> still says "no dispatch fence covers it", which is stale now that the fence is on.</li><li><b>Followups.</b> Four were resolved as done. Still required: grant-agrees-with-completion, plain-dir-inside-a-checkout, fence-comment-names-worker-launches, harness-seed-stays-out-of-the-cwd, resume-binds-the-run-directory and codex-login-truncation-is-asserted. Partly done: harness-home-carries-config and smoke-record-cites-its-observables.</li><li><b>Gates.</b> All five in-text gates are satisfied at the revision.</li></ul></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T075119343538-fence-protects-the-worktree-pool" data-who="reckon-build" data-when="2026-09-29T09:54:14.145Z">
-    <div class="r-comment-body"><p>reckon/_backends.py: protected_paths now names Code/.reckon-worktrees, so the fence overlays the whole worktree pool read-only while fence_argv re-binds the run&#x27;s own worktree writable after that overlay (commits 409e42c8, 406641db); measure: the 15 cited fence files pass 275/275 at both arms with 0 added failures.</p></div>
+    <div class="r-comment-body"><p>reckon/_backends.py: protected_paths now names Code/.reckon-worktrees, so the fence overlays the whole worktree pool read-only while fence_argv re-binds the run's own worktree writable after that overlay (commits 409e42c8, 406641db); measure: the 15 cited fence files pass 275/275 at both arms with 0 added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260929T083422457612-review-of-fence-protects-the-worktree-pool" data-who="reckon-build" data-when="2026-09-29T09:53:13.289Z">
+    <div class="r-comment-body"><p>stored an independent review of r-20260929T075119343538-fence-protected at reviewed base d0f61409 / head 406641db: parsed, scores 20/17/20/18/17 (total 92), added_failure_count 0 / ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite logs, 5 findings (the head-arm log&#x27;s revision header, the manifest&#x27;s placeholder command, its base-numbered line anchors, a plan-section label in the test docstring, and a bwrap marker on a composition-only test), item_aggregate 6 of 6.</p></div>
 </div>
 </section>
 </main>
