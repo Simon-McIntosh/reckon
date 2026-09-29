@@ -1,0 +1,25 @@
+<article class="landed-report" data-run-id="r-20260929T092802902599-ledger-write-keeps-run-files">
+  <h3>ledger-write-keeps-run-files &#8212; the writer keeps each per-run file identical to its aggregate row</h3>
+  <p>
+    <strong>What changed.</strong> A write to the ledger now re-encodes every written run row
+    that already owns a per-run file through <code>serialize_run</code>, so the aggregate row
+    and its file stay byte-identical. Before this, a write that edited an aggregate row left
+    the file holding the previous revision, and the next <code>ledger.load</code> refused the
+    project with the differs-between refusal &#8212; the writer produced state its own reader
+    cannot read. A row with no file is left alone; creating one remains the explicit,
+    committed run split. The reader is unchanged.
+  </p>
+  <p>
+    <strong>Measure.</strong> Five <code>test_shadow_*</code> ids failed at base
+    <code>57e4ea2e</code> inside <code>ledger.load</code> (log <code>logs/01-base-shadow-ids.log</code>) and pass at
+    head <code>bc444b40</code> (log <code>logs/03-head-shadow-ids.log</code>): 5 failed &#8594; 5 passed. Across the
+    test files importing <code>reckon.ledger</code>, the head arm measured 21 failed / 1640
+    passed (log <code>logs/05-head-arm.log</code>) and a base arm over those same 21 ids failed exactly
+    them at base (log <code>logs/07-base-arm-targeted.log</code>): <strong>0 added failures</strong>. The full
+    101-file base arm (log <code>logs/06-base-arm.log</code>) was discarded as ENOSPC-contaminated (490
+    errors), which is why the base arm here is targeted. The declared negative control &#8212;
+    <em>drop the per-run write from ledger.write; case 1&#8217;s read-back fails with the
+    differs-between refusal</em> &#8212; fires: 1 failed, <code>EXIT=1</code>, log
+    <code>logs/04-negative-control.log</code>. Commits: <code>bc444b40</code>.
+  </p>
+</article>
