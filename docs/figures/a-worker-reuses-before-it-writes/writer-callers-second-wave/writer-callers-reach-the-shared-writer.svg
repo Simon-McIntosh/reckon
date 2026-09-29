@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">
+  <rect width="980" height="560" fill="#0f1117"/>
+  <text x="24" y="30" fill="#e6e6e6" font-size="15">the second wave reaches the shared writer</text>
+  <text x="24" y="50" fill="#8b93a7">parameters reproduce each caller's recorded bytes, mode and fsync</text>
+
+  <!-- caller column -->
+  <g fill="#c8cede">
+    <text x="24" y="86">follow_checkpoint.write</text>
+    <text x="24" y="106">project_state.stamp_legacy_index</text>
+    <text x="24" y="126">project_state._write_resource_unlocked (project)</text>
+    <text x="24" y="146">project_state._publish_move_journal</text>
+    <text x="24" y="166">project_state._mark_move_journal_committed</text>
+    <text x="24" y="186">project_state.create_project_state (project + marker)</text>
+    <text x="24" y="206">paid_lanes.write_document_atomically</text>
+    <text x="24" y="226">resumption._write_lane_probe_cache</text>
+    <text x="24" y="246">review._write_record</text>
+    <text x="24" y="266">hooks.install._write_settings</text>
+  </g>
+
+  <!-- shared writer box -->
+  <rect x="620" y="66" width="330" height="220" rx="10" fill="#151a26" stroke="#3b6ea5" stroke-width="1.5"/>
+  <text x="636" y="92" fill="#7fb0e6" font-size="13">reckon/_store.py</text>
+  <text x="636" y="112" fill="#e6e6e6">write_json_atomically(path, payload, *,</text>
+  <text x="656" y="130" fill="#9fb0c8">indent, sort_keys, mode,</text>
+  <text x="656" y="148" fill="#9fb0c8">fsync, fsync_directory, create_parents)</text>
+  <text x="636" y="176" fill="#8b93a7">unique sibling temp · O_EXCL · chmod</text>
+  <text x="636" y="194" fill="#8b93a7">optional file + dir fsync · temp removed</text>
+  <text x="636" y="212" fill="#8b93a7">on failure · terminal newline</text>
+  <text x="636" y="240" fill="#e0b877">defaults differ per caller —</text>
+  <text x="636" y="258" fill="#e0b877">each passes the ones it had</text>
+  <text x="636" y="276" fill="#e0b877">(mode None ⇔ base 0o644)</text>
+
+  <!-- arrows: migrants -->
+  <g stroke="#4f8fd0" stroke-width="1.4" fill="none">
+    <path d="M300 82 H620"/>
+    <path d="M300 102 H620"/>
+    <path d="M300 122 H620"/>
+    <path d="M300 142 H620"/>
+    <path d="M300 162 H620"/>
+    <path d="M300 182 H620"/>
+    <path d="M300 202 H620"/>
+    <path d="M300 222 H620"/>
+    <path d="M300 242 H620"/>
+    <path d="M300 262 H620"/>
+  </g>
+  <g fill="#4f8fd0">
+    <polygon points="620,82 612,78 612,86"/>
+    <polygon points="620,102 612,98 612,106"/>
+    <polygon points="620,122 612,118 612,126"/>
+    <polygon points="620,142 612,138 612,146"/>
+    <polygon points="620,162 612,158 612,166"/>
+    <polygon points="620,182 612,178 612,186"/>
+    <polygon points="620,202 612,198 612,206"/>
+    <polygon points="620,222 612,218 612,226"/>
+    <polygon points="620,242 612,238 612,246"/>
+    <polygon points="620,262 612,258 612,266"/>
+  </g>
+
+  <!-- retained exceptions -->
+  <text x="24" y="330" fill="#e6e6e6" font-size="13">retained exceptions — own path, with a reason</text>
+
+  <rect x="48" y="348" width="404" height="86" rx="8" fill="#20161a" stroke="#a2536a"/>
+  <text x="64" y="372" fill="#e8a0b4">follow_checkpoint._replace_atomically</text>
+  <text x="64" y="392" fill="#c8cede">the pane's history is a log of JSON</text>
+  <text x="64" y="410" fill="#c8cede">lines, rewritten whole — one document</text>
+  <text x="64" y="428" fill="#c8cede">writer cannot express many lines</text>
+
+  <rect x="476" y="348" width="404" height="86" rx="8" fill="#20161a" stroke="#a2536a"/>
+  <text x="492" y="372" fill="#e8a0b4">project_state rendered HTML branch</text>
+  <text x="492" y="392" fill="#c8cede">typed resources are HTML, which the</text>
+  <text x="492" y="410" fill="#c8cede">JSON writer cannot express; keeps</text>
+  <text x="492" y="428" fill="#c8cede">temp + durable replace</text>
+
+  <!-- decoder note -->
+  <rect x="48" y="452" width="832" height="80" rx="8" fill="#131a16" stroke="#3f8a5c"/>
+  <text x="64" y="476" fill="#8fd8a8" font-size="13">decoders — two private bodies deleted</text>
+  <text x="64" y="498" fill="#c8cede">hold._as_number  →  optional_number      window_reading._numeric  →  optional_number</text>
+  <text x="64" y="520" fill="#8b93a7">True/False → None · 0 → 0.0 · 1.5 → 1.5 · "1" → None · None → None · [1] → None</text>
+</svg>
