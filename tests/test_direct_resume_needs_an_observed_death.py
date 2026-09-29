@@ -350,9 +350,17 @@ def test_a_lane_change_of_unknown_liveness_is_refused(
 def test_a_lane_change_of_an_observed_death_proceeds(
     home: Path, tmp_path: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """An observed end licenses the move, exactly as it licenses the resume."""
+    """An observed end licenses the move, and the move is what the run records.
+
+    The stubbed destination fixes the values the plan reports, so asserting only
+    those would rest on the test's own stub and hold whatever ``change_lane``
+    did with the plan it was handed. The lineage the run now carries is composed
+    by the lane change itself — the attempt it opened, the kind of attempt it
+    is, and the history naming the lane and reason it left — so the case fails
+    if the move is not performed and recorded, not only if the stub is echoed.
+    """
     _stub_destination(monkeypatch)
-    _lane_pointer(
+    before = _lane_pointer(
         tmp_path,
         repo,
         DEAD_PID_RUN,
@@ -364,5 +372,62 @@ def test_a_lane_change_of_an_observed_death_proceeds(
         DEAD_PID_RUN, "beta", "the lane is spent", config=CONFIG, launch=True
     )
 
-    assert moved["backend"] == "beta"
-    assert moved["launch"] == "in-harness"
+    assert moved["attempt"] == int(before["attempt"]) + 1
+    assert moved["attempt_kind"] == "lane-change"
+    assert moved["lane_changes"][-1]["from_backend"] == before["backend"]
+    assert moved["lane_changes"][-1]["reason"] == "the lane is spent"
+    assert moved["lineage"]["kind"] == "lane-change"
+    assert runs.read_pointer(DEAD_PID_RUN)["lane_changes"] == moved["lane_changes"]
+
+
+def test_a_lane_change_preview_reports_the_refusal_a_real_call_raises(
+    home: Path, tmp_path: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A --print-only lane change names the refusal the launch path would raise.
+
+    The resume sweep reads its gates ahead of its dry-run branch so a prediction
+    reads as the thing it predicts. A preview of an unknown-liveness run must
+    therefore name the same refusal a real call raises rather than reporting a
+    lane change the real call refuses.
+    """
+    _stub_destination(monkeypatch)
+    _lane_pointer(
+        tmp_path,
+        repo,
+        UNKNOWN_RUN,
+        pid=liveness._absent_pid(),
+        launcher_host=FOREIGN_HOST,
+    )
+
+    with pytest.raises(CrewError) as raised:
+        change_lane(
+            UNKNOWN_RUN, "beta", "the lane is spent", config=CONFIG, launch=False
+        )
+
+    refusal = str(raised.value)
+    assert UNKNOWN_RUN in refusal
+    assert "liveness unknown" in refusal
+
+
+def test_a_lane_change_preview_of_an_observed_death_reports_without_writing(
+    home: Path, tmp_path: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An observed end is licensed in a preview too, and a preview writes nothing."""
+    _stub_destination(monkeypatch)
+    before = _lane_pointer(
+        tmp_path,
+        repo,
+        DEAD_PID_RUN,
+        pid=liveness._absent_pid(),
+        launcher_host=HOST,
+    )
+
+    preview = change_lane(
+        DEAD_PID_RUN, "beta", "the lane is spent", config=CONFIG, launch=False
+    )
+
+    assert preview["backend"] == "beta"
+    assert preview["launch"] == "in-harness"
+    assert preview["run_id"] == DEAD_PID_RUN
+    # A preview decides and reports; it stops no worker and records no move.
+    assert runs.read_pointer(DEAD_PID_RUN) == before
