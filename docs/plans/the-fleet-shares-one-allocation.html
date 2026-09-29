@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -146,6 +146,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260929T1040-s2-landed" data-who="s21-1c" data-when="2026-09-29T10:40:00Z">
     <div class="r-comment-body">§2 landed as merge f6c8ebab (run r-20260929T085733108021, commit ba07b277, review 95, 0 added failures). The reservation is one unkeyed host-global record at crew_home()/placement/reservation.json. _refuse_over_reservation_roster counts every live pointer that records placement into the reservation, across all projects; unplaced runs are not counted, and a backend declaring no placement is unbounded. A legacy per-project record is still read while no unkeyed record exists, so imas-ambix's placement/imas-ambix/reservation.json, which names 1276262, keeps resolving until the shared record is published. The focused gate went from 46 passed at base to 51 at head, and the negative control (per-project keying restored) makes project B resolve nothing. Carried into the next link: the comment at reckon/crew/placement.py:344 still says the project is carried in the path. Owned elsewhere: reckon/cli.py's crew_placement help and docstring (around line 3567) still describe per-project keying, and cli.py is held by a concurrent run. §3's two-project one-allocation proof waits on the hold-when-none link (a-placement-with-no-reservation-mints-one-per-worker §3).</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260929T085733108021-reservation-is-shared-across-projects" data-who="reckon-build" data-when="2026-09-29T09:41:02.819Z">
+    <div class="r-comment-body"><p>one unkeyed reservation record, so a dispatch under a project that did not publish it resolves the same job id and the roster counts placed runs fleet-wide; focused gate 51 passed head vs 46 base, 0 added failures</p></div>
 </div>
 </section>
 </main>

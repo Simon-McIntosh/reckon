@@ -1,0 +1,435 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "d13744c8eceb0ba6228a3d26672b9957b5cf0fad",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 7549947,
+      "input_tokens_cumulative": 7549947,
+      "output_tokens": 43513,
+      "output_tokens_cumulative": 43513,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 432,
+    "files": 6,
+    "removed": 100
+  },
+  "commit_resolution": null,
+  "commits": [
+    "ba07b277424dc8f611a2e445feef694d82c32e61"
+  ],
+  "completed_at": "2026-09-29T09:41:02.819Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T08:57:48Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/cli.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_reservation_is_shared_across_projects.py tests/test_crew_placement_reservation.py tests/test_placement_steps_under_reservation.py tests/test_writer_callers_first_wave.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T085733108021-reservation-is-shared-across-projects/logs/head-arm.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": null,
+    "plan": "the-fleet-shares-one-allocation",
+    "reason": "no-impl-recorded-at-dispatch",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T09:57:34.526925+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T08:57:34Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 22,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 15,
+    "headroom": -6,
+    "mean_context": 128000,
+    "observed_at": "2026-09-29T08:57:12Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T09:41:02.819Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T085733108021-reservation-is-shared-across-projects/manifest.md",
+  "member": "disposable-r-20260929T085733108021-reservation-is-shared-across-projects",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_reservation_is_shared_across_projects.py::test_placement_under_one_project_resolves_a_record_another_published"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_reservation_is_shared_across_projects.py::test_placement_under_one_project_resolves_a_record_another_published"
+    ],
+    "declaration": "restore per-project keying in read_reservation; case 1's project B then resolves no job id and the test fails",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T085733108021-reservation-is-shared-across-projects/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T085733108021-reservation-is-shared-across-projects/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_crew_placement_reservation.py",
+      "tests/test_placement_steps_under_reservation.py",
+      "tests/test_reservation_is_shared_across_projects.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "reservation-is-shared-across-projects",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 914,
+          "cached_input_tokens": 372772,
+          "input_tokens": 373688,
+          "output_tokens": 75,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 373763,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "caa2d324-580b-4245-9533-3aec9e945566",
+      "session_id": "s21-1c"
+    },
+    "done_when": "tests/test_reservation_is_shared_across_projects.py passes under the root .venv python, in a temporary RECKON_HOME, with four cases. (1) Placement resolution under project B returns the job id that a dispatch under project A published, because one unkeyed host-global record replaces the per-project keying in reckon/crew/placement.py. (2) The reservation roster refusal in reckon/crew/dispatch.py (_refuse_over_reservation_roster) counts only runs whose live pointer records placement into that reservation, across every project. This is asserted over one backend's population holding placed and unplaced runs from two projects: the unplaced runs are not counted, and the placed runs of both projects are. (3) A backend declaring no placement is untouched and unbounded by the roster. (4) Migration: with no host-global record present and only a legacy per-project record on disk (the shape of today's placement/imas-ambix/reservation.json), a dispatch under that project declaring placement still resolves that record's job id. The declared negative control is executed and logged. Existing tests in tests/test_crew_placement_reservation.py and tests/test_placement_steps_under_reservation.py that pin per-project keying are updated, with the before and after assertion stated in the manifest. Those two files, the new test and the other files importing reckon.crew.placement show 0 added failures between a base arm and a head arm. Every log sits under the run directory, headed with revision, tree and command and ending EXIT=. Out of scope, listed as follow_ons: holding a reservation when no record is published, the two-dispatch one-allocation assertion, and adopting 1277272. No real scheduler command runs; nothing touches the operator's real placement records.",
+    "estimated_hours": null,
+    "goal": "Make the placement reservation one record every project resolves, with the roster counting placed runs fleet-wide",
+    "id": "reservation-is-shared-across-projects",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T08:57:34Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 22,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 15,
+      "headroom": -6,
+      "mean_context": 128000,
+      "observed_at": "2026-09-29T08:57:12Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T085733108021-reservation-is-shared-across-projects/manifest.md",
+    "negative_control": "restore per-project keying in read_reservation; case 1's project B then resolves no job id and the test fails",
+    "plan": "the-fleet-shares-one-allocation",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/placement.py",
+      "reckon/crew/dispatch.py",
+      "tests/test_reservation_is_shared_across_projects.py",
+      "tests/test_crew_placement_reservation.py",
+      "tests/test_placement_steps_under_reservation.py",
+      "docs/evidence/fragments/the-fleet-shares-one-allocation/reservation-is-shared-across-projects.html",
+      "docs/figures/the-fleet-shares-one-allocation/reservation-is-shared-across-projects"
+    ]
+  },
+  "orientation_input_tokens": 1382849.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "reservation-is-shared-across-projects",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T08:57:41.572608+00:00",
+    "score": 0.7375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-fleet-shares-one-allocation",
+  "promoted_revision": "ba07b277424dc8f611a2e445feef694d82c32e61",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 18,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 95
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T085733108021-reservation-is-shared-across-projects",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "0db453b5-fe1c-4aac-a0b8-492b52cf497f",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 4,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 7549947,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2567.649,
+    "generated_tokens": 43513,
+    "generation_seconds": 2492.736,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 30.4,
+    "machine_seconds": 74.913,
+    "peak_input_tokens": 146115,
+    "tokens_per_second": 17.46,
+    "wall_tokens_per_second": 16.95
+  },
+  "time_budget": "60m",
+  "tool_steps": 73.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": true,
+        "budget_overrun_seconds": 364,
+        "budget_seconds": 3600,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 3964,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-29T08:38:34Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-29T07:51:55Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260929T075119384060-evidence-citations-resolve",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 9341,
+          "worker_pid": 481444
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 1145,
+        "log_fresh": false,
+        "manifest_commits": [
+          "c164d7ea11748a827579189fb7320a614109b6dc"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "f39bc9fcb10fe7ada27b8575897295cd63c4c3d54ab3a3399f8ac8fc7cd0c446",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T075119384060-evidence-citations-resolve/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan the-suite-is-green-at-head --section '§2' --role review --spec-level exact --node review-of-evidence-citations-resolve --goal 'attach an independent review to run r-20260929T075119384060-evidence-citations-resolve' --done-when 'the review for r-20260929T075119384060-evidence-citations-resolve stores a parsed record scoring all 5 dimensions in the range 0..20, carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T075119384060-evidence-citations-resolve.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T075119384060-evidence-citations-resolve.at-c164d7ea11748a827579189fb7320a614109b6dc.json --time-budget 60m --session s21-1c --allow-unreconciled-runs --local",
+        "node": "evidence-citations-resolve",
+        "phase": "complete",
+        "plan": "the-suite-is-green-at-head",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260929T075119384060-evidence-citations-resolve",
+        "session": "s21-1c",
+        "stored_phase": "starting",
+        "terminal_age_seconds": 1265,
+        "terminal_at": "2026-09-29T08:36:33Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-1c/evidence-citations-resolve"
+      }
+    ]
+  },
+  "wall_seconds": 2594,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T09:41:03Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T08:58:11Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T085733108021-reservation-is-shared-across-projects",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 7092,
+    "worker_pid": 1023313
+  },
+  "worker_seconds": 2545,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
