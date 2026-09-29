@@ -16,9 +16,16 @@ number happened to be live here was handed proof of life this host cannot
 support, and its row read alive with the reading marked proven.
 
 The views share one narrowed reading rather than each taking a probe of its own:
-the directory row is classified through it, and a sprint's liveness asks it
-directly, so a pointer written on another machine cannot arrive alive in one
-view and unreadable in another.
+the directory row is classified through it, a sprint's liveness asks it
+directly, and the closure drain classifies through it, so a pointer written on
+another machine cannot arrive alive in one view and unreadable in another.
+
+The drain is the view a session reads to decide whether it may close, so a
+borrowed life there is the expensive direction in both of the drain's outcomes:
+a run read alive stays out of ``unreconciled_runs`` and the session closes over
+a pointer nobody owns, while a foreign run whose end the supervisor recorded
+reads ``process gone`` through the exit record rather than as a death nothing
+observed.
 
 Each case below is paired with a control that differs in one fact, so what a
 failure names is the fact rather than a neighbour: a run launched here whose pid
@@ -29,9 +36,11 @@ account of a death rather than an inference from a missing process.
 The real config home is fingerprinted before and after every case, so a fixture
 for another host cannot write into a live fleet's own home.
 
-The declared mutation restores the ungated ``list_live`` write in a scratch
-copy; the run launched elsewhere must then fail on its own assertion, with the
-retained-work clause back on a pid this host never issued.
+Two scratch-copy mutations are declared across the views: restoring the ungated
+``list_live`` liveness write makes the run launched elsewhere fail on its own
+assertion, with the retained-work clause back on a pid this host never issued,
+and restoring the bare local probe in the drain view makes the foreign
+launcher's drain case fail on the borrowed life that probe writes.
 """
 
 from __future__ import annotations
@@ -67,8 +76,8 @@ IN_PROGRESS_MANIFEST = "node: {run_id}\nstatus: in-progress\n"
 # The declared mutation, verbatim: the string the promotion audit matches
 # against the red log's first line.
 DECLARED_MUTATION = (
-    "restore the ungated list_live liveness write in a scratch copy; case F "
-    "must fail with dead-pid-with-retained-work"
+    "restore the bare local probe in the drain view in a scratch copy; the "
+    "foreign-launcher drain case must fail"
 )
 
 
@@ -356,3 +365,99 @@ def test_the_directory_row_does_not_read_a_foreign_pid_as_alive(
     assert foreign_row["process_alive"] is not True, foreign_row
     assert foreign_row["process_alive"] is None, foreign_row
     assert local_row["process_alive"] is True, local_row
+
+
+def _drain_row(run_id: str) -> dict:
+    """The closure drain's own row for one run.
+
+    The drain is what a session reads to decide whether it may close, and it
+    classifies each live pointer itself, so this is the row a borrowed life
+    would hand a closing session rather than a reading any one view keeps to
+    itself.
+    """
+    report = runs.drain(PROJECT)
+    matches = [row for row in report["runs"] if row["run_id"] == run_id]
+    assert len(matches) == 1, [row.get("run_id") for row in report["runs"]]
+    return matches[0]
+
+
+def test_the_drain_row_does_not_read_a_foreign_pid_as_alive(tmp_path: Path) -> None:
+    """A closing session may not be handed a life this host never issued.
+
+    The pointer's pid is a process this host really holds, so nothing in the
+    pointer's own facts keeps the drain row from reading alive; the one fact
+    that does is the host the run was launched on. Read as alive, the run stays
+    out of ``unreconciled_runs`` and the session closes over a pointer nobody on
+    this machine owns.
+    """
+    run_id = "r-drain-foreign-row-with-a-local-number"
+    with liveness._live_child() as local_pid:
+        _run_launched_elsewhere(tmp_path, run_id, pid=local_pid)
+        assert runs.process_alive(local_pid) is True, (
+            "the pointer's pid is not a live process on this host, so the "
+            "borrowed-life reading is not under test"
+        )
+        row = _drain_row(run_id)
+
+    assert row["process_alive"] is not True, row
+    assert row["process_alive"] is None, row
+    assert row["liveness_proven"] is False, row
+    assert row["interruption"] is None, row["interruption"]
+
+
+def test_the_drain_row_reads_a_foreign_exit_record_as_process_gone(
+    tmp_path: Path,
+) -> None:
+    """The recorded end is the drain's route to a death on another host.
+
+    A pid this host holds cannot answer for a run launched elsewhere, and the
+    supervisor's exit record is what does: it survives a pointer nobody updated
+    and a pid no other machine can look up. The row must state the process state
+    in words rather than leaving the reader to infer one, and it must not reach
+    the abandoned reading, which claims a death observed by work that stopped.
+    """
+    run_id = "r-drain-foreign-with-a-recorded-exit"
+    with liveness._live_child() as local_pid:
+        _run_launched_elsewhere(tmp_path, run_id, pid=local_pid)
+        liveness._write_exit_record(run_id)
+        row = _drain_row(run_id)
+
+    assert row["exit_record"] is not None, row
+    assert row["process_alive"] is False, row
+    assert row["liveness_proven"] is False, row
+    assert row["classification"] != "abandoned", row["detail"]
+    assert (
+        recovery._process_reading(
+            row["process_alive"],
+            liveness_proven=row["liveness_proven"],
+            exit_record=row["exit_record"],
+        )
+        == "process gone"
+    ), row
+
+
+def test_the_drain_row_still_reads_a_local_run_with_an_absent_pid(
+    tmp_path: Path,
+) -> None:
+    """The control the drain's narrowing is measured against.
+
+    The same fixture and the same drain, with the one fact changed: this host
+    launched the run, and the process table was asked here and answered that
+    nothing holds its pid. That is an observation rather than an inference, so
+    the drain row must still read the process gone.
+    """
+    run_id = "r-drain-launched-here-with-no-process"
+    _run_launched_elsewhere(tmp_path, run_id, launcher_host=HOST)
+
+    row = _drain_row(run_id)
+
+    assert row["process_alive"] is False, row
+    assert row["liveness_proven"] is True, row
+    assert (
+        recovery._process_reading(
+            row["process_alive"],
+            liveness_proven=row["liveness_proven"],
+            exit_record=row["exit_record"],
+        )
+        == "process gone"
+    ), row
