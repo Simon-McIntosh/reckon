@@ -4598,6 +4598,43 @@ def crew_drain(project, session, leaves, pretty):
     )
 
 
+@crew.command(name="ack")
+@click.option(
+    "--run",
+    "run_id",
+    required=True,
+    help="Live run whose obligations are deliberately deferred.",
+)
+@click.option(
+    "--reason",
+    required=True,
+    help="Why the deferral is deliberate, for example awaiting a peer's release.",
+)
+@click.option(
+    "--until",
+    required=True,
+    help="ISO-8601 instant the deferral expires; the obligation returns after it.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_ack(run_id, reason, until, pretty):
+    """Defer one live run's obligations until an instant, recording why."""
+    crew_module, _ = _crew_modules()
+    from reckon.crew import runs as runs_module
+
+    try:
+        updated = runs_module.record_run_acknowledgement(run_id, reason, until)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit(
+        {
+            "ok": True,
+            "run_id": run_id,
+            "acknowledgement": updated.get("acknowledgement"),
+        },
+        pretty,
+    )
+
+
 @crew.group(name="suite")
 def crew_suite():
     """The project's declared suite: run it once, or waive its hold."""

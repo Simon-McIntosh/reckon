@@ -973,6 +973,62 @@ def record_run_disposition(
     return _mutate_pointer(run_id, record)
 
 
+ACKNOWLEDGEMENT_FIELD = "acknowledgement"
+
+
+def record_run_acknowledgement(
+    run_id: str,
+    reason: str,
+    until: str,
+    *,
+    project: str | None = None,
+    session: str | None = None,
+) -> dict[str, Any]:
+    """Record a deliberate deferral of one live run's obligations.
+
+    The deferral is written beside the closure disposition on the live
+    pointer, so it travels with the run it excuses and expires on its own: the
+    obligations reader withholds a run whose deferral has not yet passed and
+    returns it once it has, with no second store to reconcile. ``until`` is
+    normalised to UTC on write so a later comparison never has to know which
+    zone it arrived in.
+    """
+    text = str(reason).strip()
+    if not text:
+        raise CrewError("an acknowledgement requires a non-empty --reason")
+    deadline = parse_utc(until)
+    if deadline is None:
+        raise CrewError(f"acknowledgement --until {until!r} is not an ISO-8601 instant")
+
+    def record(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer_project = str(pointer.get("project") or "")
+        if project is not None and pointer_project != project:
+            raise CrewError(
+                f"live run {run_id!r} belongs to project {pointer_project!r}, "
+                f"not {project!r}"
+            )
+        pointer_session = str(pointer.get("session") or "")
+        if session is not None and pointer_session != session:
+            raise CrewError(
+                f"live run {run_id!r} belongs to session {pointer_session!r}, "
+                f"not {session!r}"
+            )
+        pointer[ACKNOWLEDGEMENT_FIELD] = {
+            "reason": text,
+            "until": deadline.isoformat(),
+            "recorded_at": _utc_now(),
+        }
+        return pointer
+
+    return _mutate_pointer(run_id, record)
+
+
+def run_acknowledgement(pointer: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Return one pointer's recorded deferral, or None when it has none."""
+    recorded = pointer.get(ACKNOWLEDGEMENT_FIELD)
+    return dict(recorded) if isinstance(recorded, Mapping) else None
+
+
 def _project_executable_remainder(project: str) -> tuple[int | None, int | None]:
     """Return a declared-scope lower bound and its uncovered plan count.
 
