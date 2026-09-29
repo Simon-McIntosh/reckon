@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="538">
+<meta name="plan-version" content="539">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -1974,10 +1974,11 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth §21</pre>
     <p class="r-fu-outcome">a-sub-floor-disposition-is-written-by-a-command merged at a742f300 and promoted after three review passes; the last is total 94 with zero added failures. A crew subcommand now writes one disposition: folded with a node id, or exempted with a reason. It writes to the head-keyed record the reader selects, taking the head from the run's own records when no pointer is live. It refuses unknown or mismatched arguments. verify-gate is green at main.</p>
     </article>
-<article class="r-fu" data-id="f-cot-lane-counts-read-through-the-lane-document" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-28" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cot-lane-counts-read-through-the-lane-document" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-28" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="2026-09-29T05:29:57+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The carried lane counts are read through the lane-document reader, and the generating alias is tested</h4>
     <div class="r-fu-body"><p>From the review of lane-reading-carries-generating-and-waiting (total 90, zero added failures). The dispatch payload now carries generating, waiting and throughput, but <code>reckon/crew/dispatch.py:2842</code> reads them from the raw document rather than through <code>reckon/crew/lane_document.py</code>, so a change to the document's shape has two readers to keep in step. The <code>generating</code> alias at <code>:2603</code> has no test. Route the read through the lane-document reader and add a case for the alias. §22's per-row rate half is still open.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth §22</pre>
+    <p class="r-fu-outcome">lane-counts-read-through-the-lane-document merged at 4a4d0d14 and promoted (review total 97, zero added failures). The payload's generating, waiting and throughput figures are now read through lane_document.read_lane_counts, and a test pins the generating alias. verify-gate is green at main. The review's two findings are filed as f-cot-lane-counts-parity-and-remaining-names.</p>
     </article>
 <article class="r-fu" data-id="f-cot-s21-decomposed-into-five-nodes" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-28" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">§21 is decomposed into five nodes; three wait on files, three on the lead</h4>
@@ -1995,6 +1996,11 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
     <div class="r-fu-body"><p>From the final review of a-sub-floor-disposition-is-written-by-a-command (total 94). The command's stored-is-None branch near <code>reckon/cli.py:3943</code> has no case that runs it. That branch holds the mismatched-head refusal at <code>:3945</code> and the no-record refusal at <code>:3950</code>, which guard the defect class this node was sent to close: a disposition recorded against a review whose head is not the run's. Add one case per refusal, each asserting a non-zero exit, the refusal named, and the sub-floor row left standing. Write paths: <code>tests/test_sub_floor_disposition_has_a_writer.py</code> only.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth §21</pre>
     <p class="r-fu-outcome">disposition-refusal-branches-are-tested merged at 47d392a0 and promoted (review total 97, zero added failures, no findings). Two cases now assert the mismatched-head and no-record refusals: each exits non-zero, names its refusal, and leaves the sub-floor row standing. verify-gate is green at main.</p>
+    </article>
+<article class="r-fu" data-id="f-cot-lane-counts-parity-and-remaining-names" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The lane-counts parity case compares independent readings, and dispatch.py names no document key</h4>
+    <div class="r-fu-body"><p>From the review of lane-counts-read-through-the-lane-document (total 97). The parity case at <code>tests/test_lane_reading_carries_counts.py:263</code> resolves both sides through <code>read_lane_counts</code>, so a regression inside it moves both sides and the case stays green. Assert against literal expected counts from the fixture instead. Also, <code>reckon/crew/dispatch.py</code> near :2661 and :2692–:2696 still names lane-document keys, contradicting the node's record that the dispatch holds none. Either route those through <code>lane_document.py</code>, or show they are payload output names rather than document reads.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-observability-truth §22</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -3544,7 +3550,7 @@ if isinstance(argv, list) and argv:
     <div class="r-comment-body"><p>reviewed r-20260928T142644163914-lane-reading-carries-generating-and-waiting at head 1e0688263beed4a427520cd5f4d72efabc1d93f1 against base 687c8cbf124cef66f0a1e0d1ef210c5d65b1fd31: the dispatch payload's lane_reading resolves the lane's generating and waiting counts and its achieved rate with the rate's own vintage and denominator in the single consult, an unpublished figure is withheld as unknown and never zero, the node's own gate added zero failing test ids across the reviewed pair, and the stored record scores it 90 (goal_fidelity 18, evidence 19, scope_discipline 20, durability 16, fit 17) with two findings on a second owner of the count resolution and its unexercised generating alias</p></div>
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20260929T035832849675-lane-counts-read-through-the-lane-document" data-who="reckon-build" data-when="2026-09-29T04:56:11.082Z">
-    <div class="r-comment-body"><p>docs/evidence/fragments/crew-observability-truth/lane-counts-read-through-the-lane-document.html — the lane reading&#x27;s generating/waiting counts and its throughput block are now resolved by reckon/crew/lane_document.py (read_lane_counts, read_lane_throughput, blank_throughput), the module&#x27;s own running field resolves through the same _GENERATING_KEYS list, and dispatch.py holds none of the document&#x27;s names for them; carried values are identical for every document the tests use, including unknown-never-zero.</p></div>
+    <div class="r-comment-body"><p>docs/evidence/fragments/crew-observability-truth/lane-counts-read-through-the-lane-document.html — the lane reading's generating/waiting counts and its throughput block are now resolved by reckon/crew/lane_document.py (read_lane_counts, read_lane_throughput, blank_throughput), the module's own running field resolves through the same _GENERATING_KEYS list, and dispatch.py holds none of the document's names for them; carried values are identical for every document the tests use, including unknown-never-zero.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20260925T082220783770-refusal-names-the-roots-it-checked" data-who="reckon-build" data-when="2026-09-25T11:05:30.283Z">
     <div class="r-comment-body"><p>a write-scope refusal names the delivery roots it matched; review 95, no findings</p></div>
