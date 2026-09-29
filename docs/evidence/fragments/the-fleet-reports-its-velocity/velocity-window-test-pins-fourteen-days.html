@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-reports-its-velocity">
+  <meta name="plan-title" content="The default velocity window is pinned to fourteen days">
+  <meta name="plan-summary" content="tests/test_serve_velocity_route.py asserts the served default velocity window against the literal 14 * DAY rather than against serve.VELOCITY_DEFAULT_WINDOW_DAYS, so the measure is independent of the constant it guards: a change to that constant turns the assertion red instead of moving it.">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-reports-its-velocity">
+  <meta name="plan-node" content="velocity-window-test-pins-fourteen-days">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-environment" content="Linux node; Python 3.14 venv; pytest; synthesised git repositories and an isolated config home under tmp_path">
+  <title>The default velocity window is pinned to fourteen days &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The default velocity window is pinned to fourteen days</h1>
+    <p class="plan-summary">The default-window assertion compares the served span against an
+    independent literal of fourteen days, so it states the contract rather than restating the
+    constant it is meant to guard.</p>
+  </header>
+
+  <p>The pinned assertion in <code>tests/test_serve_velocity_route.py</code> reads
+  <code>assert end - start == pytest.approx(14 * DAY, abs=5 * 60)</code>. Green: the five tests in
+  the file pass at the head. Negative control: with <code>VELOCITY_DEFAULT_WINDOW_DAYS</code> set to
+  <code>7</code> in a scratch copy of <code>reckon/serve.py</code>, the assertion fails with the
+  measured span at <code>604800.0</code> against an expected <code>1209600 &plusmn; 300</code>,
+  exit 1.</p>
+</main>
+</body>
+</html>

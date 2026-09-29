@@ -194,9 +194,7 @@ def test_the_default_window_is_the_last_fourteen_days(served):
     start = velocity.stamp(payload["window"]["start"])
     end = velocity.stamp(payload["window"]["end"])
     assert start is not None and end is not None
-    assert end - start == pytest.approx(
-        serve.VELOCITY_DEFAULT_WINDOW_DAYS * DAY, abs=5 * 60
-    )
+    assert end - start == pytest.approx(14 * DAY, abs=5 * 60)
 
 
 def test_the_spa_loads_velocity_before_shell():
