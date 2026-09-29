@@ -1,0 +1,59 @@
+<section id="timestamp-callers-batch-b">
+      <h2>Batch B &mdash; six top-level readers on one parser</h2>
+      <p>Six timestamp readers outside <code>reckon/crew/</code> no longer parse
+      timestamps themselves: each now calls
+      <code>reckon._timestamps.parse_utc</code> and keeps only the policy around the
+      call that its own callers depend on. Re-parsing locally would have been the
+      smaller edit and is the defect this migration exists to remove, so a reader
+      whose policy differs holds that policy in a line or two rather than reaching
+      for a parser of its own.</p>
+      <figure>
+        <img src="/reckon/figures/a-worker-reuses-before-it-writes/timestamp-callers-batch-b/policy-topology.svg"
+             alt="Six readers on the left converge on one central parse_utc. Each keeps a thin policy: doccheck counts whole calendar days, project_state._review_date raises TypeError on a wrong type, project_state._validate_review distinguishes a required field from a malformed one, schedule._stamp_millis returns epoch millis, sprint_liveness._observed_seconds returns None for a missing stamp, and worker_stop._manifest_predates_attempt returns a bool. Only sprint_liveness._observed_seconds changes a recorded behaviour: it read a naive string as local time and parse_utc reads it as UTC.">
+      </figure>
+      <p>The base outputs were recorded before any edit, at <code>142cdf05</code>,
+      by exercising each reader through the door it already exposed over one shared
+      input list &mdash; aware ISO, <code>Z</code>-suffixed, naive, date-only, epoch
+      number, empty string, <code>None</code>, a non-string object, and garbage text.
+      Those readings are the expectations of
+      <code>tests/test_timestamp_callers_batch_b.py</code>, which asserts every
+      migrated reader still produces the output it had; a raised exception is
+      recorded by its type and message. The five modules this node touched are
+      byte-identical between <code>142cdf05</code> and the worktree base
+      <code>a15e11cb</code>, the parent of the migration commit, so the two base
+      revisions give the same readings.</p>
+      <p>Four of the six readers preserve every recorded cell. One does not.
+      <code>sprint_liveness._observed_seconds</code> read a naive string as local
+      time through <code>.timestamp()</code>, so its reading depended on the host
+      timezone the node ran under; <code>parse_utc</code> reads a naive value as UTC.
+      Four cells move &mdash; the naive and date-only strings, an epoch number the C
+      parser rejected with <code>TypeError</code>, and a non-string object &mdash;
+      and each is named in the test beside its base reading and the reason the
+      unified rule replaces it. In production the value is always
+      <code>Z</code>-suffixed, written by the runs and fleet-supervisor producers, so
+      the change is invisible to every live caller; the difference is the
+      timezone-independence the migration buys.</p>
+      <p>The sixth reader is a hook that runs outside the package.
+      <code>reckon/hooks/worker_stop.py</code> is registered as its own file path and
+      launched by its shebang, so its process carries no <code>sys.path</code> entry
+      for the checkout. A module-scope import of the shared parser broke that launch
+      with <code>ModuleNotFoundError</code>, which surfaced as the hook writing empty
+      stdout and its own test failing to parse it. The import now sits inside the one
+      function that needs it, with a <code>sys.path</code> bootstrap from the file's
+      own location that runs only when the module is not imported as a package, so an
+      ordinary import is untouched and the bare-script launch still resolves the
+      shared parser.</p>
+      <pre><code>ModuleNotFoundError: No module named 'reckon'
+reckon/hooks/worker_stop.py (bare-script launch, no PYTHONPATH)</code></pre>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Migrated readers calling <code>parse_utc</code></td><td>6 of 6; no <code>fromisoformat</code> call remains in the six modules (AST walk)</td></tr>
+          <tr><td>New test <code>tests/test_timestamp_callers_batch_b.py</code></td><td>57 passed, exit 0</td></tr>
+          <tr><td>Gate over the six modules' own test files, base arm <code>a15e11cb</code></td><td>6 failed / 249 passed</td></tr>
+          <tr><td>Same gate at committed head <code>18c3bee7</code></td><td>255 passed, exit 0 &mdash; zero failures</td></tr>
+          <tr><td>Base-arm failures</td><td>The node's own new test before the migration: four <code>sprint_liveness._observed_seconds</code> cells, the <code>fromisoformat</code> walk, and the shared-parser binding walk</td></tr>
+          <tr><td>Negative control</td><td><code>schedule._stamp_millis</code> made to read a naive value as local time: <code>test_migrated_caller_reproduces_recorded_output[schedule._stamp_millis-naive]</code> fails, <code>EXIT=1</code>; the file restored byte-identical to the committed head afterwards</td></tr>
+        </tbody>
+      </table>
+    </section>
