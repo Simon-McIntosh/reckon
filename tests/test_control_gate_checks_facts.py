@@ -87,11 +87,15 @@ def test_a_control_that_adds_no_failure_to_the_baseline_is_refused(
                 "1 failed, 4 passed in 0.19s\n"
                 "EXIT=1\n"
             ),
-            baseline={"failure_ids": [KNOWN_FAILURE], "failure_count": 1},
+            baseline={
+                "completed": True,
+                "failure_ids": [KNOWN_FAILURE],
+                "failure_count": 1,
+            },
         )
 
     message = str(refusal.value)
-    assert "adds no failure" in message
+    assert "adds no failure to the baseline" in message
     assert KNOWN_FAILURE in message
 
 
