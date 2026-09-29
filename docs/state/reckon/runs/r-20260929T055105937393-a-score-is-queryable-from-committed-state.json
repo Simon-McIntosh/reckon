@@ -1,0 +1,373 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "89890b949a10a5baf16ac2a7d68409c1e1122118",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 1388684,
+      "input_tokens_cumulative": 1388684,
+      "output_tokens": 8816,
+      "output_tokens_cumulative": 8816,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 415,
+    "files": 3,
+    "removed": 4
+  },
+  "commit_resolution": null,
+  "commits": [
+    "2523db17406b2d1e94b29ff44a9c6fb2d2e92606",
+    "971b8ecd7c4494ecd18c4453ddca27ece2a1c8a8"
+  ],
+  "completed_at": "2026-09-29T07:04:38.064Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T05:51:28Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker",
+    "reckon/crew/runs.py",
+    "reckon/cli.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "TMPDIR=/tmp/a-score-head-tmp PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-score-is-queryable-from-committed-state /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_scores_are_queryable.py tests/test_ledger.py tests/test_review_scoring.py tests/test_crew_scoring_state.py tests/test_crew_runs_view.py tests/test_crew_lanes_view.py tests/test_mcp_tools.py tests/test_derived_figures_reach_a_reader.py --deselect tests/test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T055105937393-a-score-is-queryable-from-committed-state/logs/gate-head-deselect.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.45,
+    "plan": "crew-observability-truth",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T06:51:08.546057+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T05:51:08Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 3,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 7,
+    "headroom": 10,
+    "mean_context": 108571,
+    "observed_at": "2026-09-29T05:51:05Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T07:04:38.064Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T055105937393-a-score-is-queryable-from-committed-state/manifest.md",
+  "member": "disposable-r-20260929T055105937393-a-score-is-queryable-from-committed-state",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_review_scores_are_queryable.py::test_an_unreviewed_row_is_left_out_rather_than_returned_as_zeros",
+      "tests/test_review_scores_are_queryable.py::test_the_reviewed_row_comes_back_filtered_by_node",
+      "tests/test_review_scores_are_queryable.py::test_the_reviewed_rows_dimensions_come_back_filtered_by_plan"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker",
+      "tests/test_review_scores_are_queryable.py::test_a_review_that_scored_zero_is_not_the_absent_review",
+      "tests/test_review_scores_are_queryable.py::test_an_unparsed_review_returns_its_status_with_no_invented_scores",
+      "tests/test_review_scores_are_queryable.py::test_an_unreviewed_row_is_left_out_rather_than_returned_as_zeros",
+      "tests/test_review_scores_are_queryable.py::test_the_reviewed_row_comes_back_filtered_by_node",
+      "tests/test_review_scores_are_queryable.py::test_the_reviewed_row_comes_back_filtered_by_run_id",
+      "tests/test_review_scores_are_queryable.py::test_the_reviewed_rows_dimensions_come_back_filtered_by_plan"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_review_scores_are_queryable.py::test_an_unreviewed_row_is_left_out_rather_than_returned_as_zeros",
+      "tests/test_review_scores_are_queryable.py::test_the_reviewed_row_comes_back_filtered_by_node",
+      "tests/test_review_scores_are_queryable.py::test_the_reviewed_rows_dimensions_come_back_filtered_by_plan"
+    ],
+    "declaration": "drop the isinstance(block, Mapping) guard in review_scores in a scratch copy; the unreviewed-row case must fail",
+    "head_failure_ids": [
+      "tests/test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T055105937393-a-score-is-queryable-from-committed-state/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T055105937393-a-score-is-queryable-from-committed-state/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_review_scores_are_queryable.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-score-is-queryable-from-committed-state",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1959,
+          "cached_input_tokens": 679742,
+          "input_tokens": 681703,
+          "output_tokens": 1638,
+          "reasoning_output_tokens": 266,
+          "total_tokens": 683341,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "tests/test_review_scores_are_queryable.py builds a fixture ledger in a temporary directory holding a reviewed row, an unreviewed row, plus a row whose review status is unparsed, then calls the new crew MCP view through its production entry point, asserting: the reviewed row's five dimensions come back filtered by plan, by node, by run_id; the unreviewed row is absent; the unparsed row returns its status with no scores. The first assertion fails at the base revision because no such view exists (logged) and passes at the head. The negative control, in a scratch copy, drops the isinstance(block, Mapping) guard in review_scores; the unreviewed-row case fails, with the mutation on the red log's first line and an EXIT= line after pytest's output. The gate is the new test plus the existing test files covering review_scores or the crew MCP views; both arms are recorded as one JSON object each under baseline_suite and after_suite (revision, command, exit_status, one log_path, failure_ids), each log ending in an EXIT= line, with the head arm adding no failing id. ruff check plus ruff format --check on the changed paths add no finding against the base. The test neither reads nor writes the real ledger or ~/.config/reckon.",
+    "estimated_hours": null,
+    "goal": "Plan crew-observability-truth §21, node N1 of the decomposition: per-dimension review scores are readable from committed state through a production surface. Read §21 in docs/plans/crew-observability-truth.html, then node N1 in /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s21-score-reader-decomposition/report.md (lines 272-291). reckon/ledger.py defines review_scores(records, *, plan, node, run_id) with no caller. Give it one production reader: a crew MCP view (the view list near reckon/mcp.py:3865) that returns each reviewed ledger row's five dimension scores filtered by plan, node or run_id, reading committed ledger rows only. A row whose review is absent is left out rather than returned as zeros; a row whose review is unparsed returns its status with no invented scores. Joining a score to the work its run later generated is out of scope: that join key is an open lead decision.",
+    "id": "a-score-is-queryable-from-committed-state",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T05:51:08Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 3,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 7,
+      "headroom": 10,
+      "mean_context": 108571,
+      "observed_at": "2026-09-29T05:51:05Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T055105937393-a-score-is-queryable-from-committed-state/manifest.md",
+    "negative_control": "drop the isinstance(block, Mapping) guard in review_scores in a scratch copy; the unreviewed-row case must fail",
+    "plan": "crew-observability-truth",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§21",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/ledger.py",
+      "reckon/mcp.py",
+      "tests/test_review_scores_are_queryable.py",
+      "docs/evidence/fragments/crew-observability-truth/a-score-is-queryable-from-committed-state.html",
+      "docs/figures/crew-observability-truth/a-score-is-queryable-from-committed-state"
+    ]
+  },
+  "orientation_input_tokens": 2582862.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "a-score-is-queryable-from-committed-state",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T05:51:14.888626+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "crew-observability-truth",
+  "plan_impl_at_dispatch": 0.45,
+  "promoted_revision": "971b8ecd7c4494ecd18c4453ddca27ece2a1c8a8",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 19,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 96
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T055105937393-a-score-is-queryable-from-committed-state",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§21",
+  "session_harness": "claude",
+  "session_id": "402b1f70-84f7-4610-af94-13c3271baa81",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 12170727,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 508.507,
+    "generated_tokens": 111840,
+    "generation_seconds": 225.668,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 29.9,
+    "machine_seconds": 282.839,
+    "peak_input_tokens": 143591,
+    "tokens_per_second": 495.6,
+    "wall_tokens_per_second": 219.94
+  },
+  "time_budget": "60m",
+  "tool_steps": 111.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 4390,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T07:04:38Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T06:56:06Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T055105937393-a-score-is-queryable-from-committed-state",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 23736,
+    "worker_pid": 4126345
+  },
+  "worker_seconds": 4348,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="541">
+<meta name="plan-version" content="542">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -3297,7 +3297,10 @@ PEER SCOPES
     <div class="r-comment-body"><p>review of r-20260928T225758843908-disposition-refusal-branches-are-tested stored at both fenced paths; total 97/100 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19) with 0 findings, 0 added failures measured from the reviewed run's own gate logs, base 38c1cb2f, head f9fa91ee</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20260929T063401348219-review-of-a-score-is-queryable-from-committed-state" data-who="reckon-build" data-when="2026-09-29T07:04:07.572Z">
-    <div class="r-comment-body"><p>Independent review of run r-20260929T055105937393-a-score-is-queryable-from-committed-state (plan crew-observability-truth section 21; base 89890b94, head 971b8ecd, 3 commits, 501 insertions and 4 deletions across 4 paths): the crew view answers view=&quot;scores&quot; from committed ledger rows filtered by plan, node or run_id, and the record scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, total 96; one finding — the figure&#x27;s control footer at docs/figures/crew-observability-truth/a-score-is-queryable-from-committed-state/scores-reach-a-reader.svg:85 claims dropping the stored-block guard reddens nothing else while the run&#x27;s own control log and my own mutated arm both report 3 failed, 3 passed</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20260929T055105937393-a-score-is-queryable-from-committed-state (plan crew-observability-truth section 21; base 89890b94, head 971b8ecd, 3 commits, 501 insertions and 4 deletions across 4 paths): the crew view answers view="scores" from committed ledger rows filtered by plan, node or run_id, and the record scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, total 96; one finding — the figure's control footer at docs/figures/crew-observability-truth/a-score-is-queryable-from-committed-state/scores-reach-a-reader.svg:85 claims dropping the stored-block guard reddens nothing else while the run's own control log and my own mutated arm both report 3 failed, 3 passed</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20260929T055105937393-a-score-is-queryable-from-committed-state" data-who="reckon-build" data-when="2026-09-29T07:04:38.064Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/crew-observability-truth/a-score-is-queryable-from-committed-state.html</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20260915-a-near-miss-key-is-reported-as-an-absent-fact" data-who="reckon-ship" data-when="2026-09-15T06:40:00Z">
     <div class="r-comment-body"><p><strong>A SECOND MANIFEST-KEY DEFECT, ROUTED FROM ANOTHER PROJECT'S COORDINATOR, AND IT IS THIS SECTION'S DEFECT ONE STEP LATER.</strong> A worker wrote <code>commit: 61e85056</code> with its changed paths beneath — singular, where the schema reads <code>commits</code>. Promotion refused with <em>manifest field 'commits' is missing</em> (<code>promotion.py:517</code>). <strong>The statement is true of the key and false of the fact</strong>: the commit was reported, and reported accurately. Reproduced here against the live parser:</p><pre>parse_manifest("node: n\nstatus: complete\ncommit: 61e85056\nchanged_paths: a.py b.py\n")
