@@ -14,6 +14,7 @@ import os
 import shlex
 import subprocess
 import sys
+import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta, timezone
@@ -50,6 +51,42 @@ CONFIG = {
     },
     "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
 }
+
+
+# The running test's manifest directory, held in a mutable cell so the autouse
+# fixture below binds it without a module-level rebinding.
+_NODE_MANIFEST: dict[str, Path | None] = {"directory": None}
+
+
+@pytest.fixture(autouse=True)
+def _node_manifest_directory(tmp_path):
+    """Bind the node helper's default manifest path to this test's temp tree.
+
+    A fixed manifest path is shared by every test process on the machine, so a
+    process that writes a terminal manifest there lands inside another run's
+    dispatch-to-complete window and that run reads a foreign delivery. Each test
+    therefore names its manifests under its own pytest temporary directory,
+    which no other process holds.
+    """
+    previous = _NODE_MANIFEST["directory"]
+    _NODE_MANIFEST["directory"] = tmp_path / "node-manifests"
+    _NODE_MANIFEST["directory"].mkdir(parents=True, exist_ok=True)
+    yield
+    _NODE_MANIFEST["directory"] = previous
+
+
+def _node_manifest_path() -> str:
+    """A manifest path no other test process can name.
+
+    Under pytest the path lives under the running test's temporary directory.
+    Called outside a test run the helper falls back to a per-process directory,
+    so two concurrent processes never share one path either way.
+    """
+    directory = _NODE_MANIFEST["directory"]
+    if directory is None:
+        directory = Path(tempfile.gettempdir()) / f"reckon-node-manifests-{os.getpid()}"
+        directory.mkdir(parents=True, exist_ok=True)
+    return str(directory / "node-a-manifest.md")
 
 
 @pytest.fixture()
@@ -134,11 +171,42 @@ def _node(**overrides) -> crew.TaskNode:
         "done_when": "uv run pytest tests/test_backends.py reports 34 passed",
         "write_paths": ["reckon/_backends.py"],
         "time_budget": "20m",
-        "manifest_path": "/tmp/node-a-manifest.md",
+        "manifest_path": _node_manifest_path(),
         "spec_level": "guided",
     }
     fields.update(overrides)
     return crew.TaskNode(**fields)
+
+
+def test_two_processes_running_the_node_helper_use_distinct_manifest_paths() -> None:
+    """Two processes must never share one node's manifest path.
+
+    The helper once pinned every run's manifest to one fixed path, so a process
+    that wrote a terminal manifest there landed inside another run's
+    dispatch-to-complete window and that run read a foreign delivery. Each
+    process's helper must therefore name a path no other process holds.
+    """
+    root = str(Path(__file__).resolve().parents[1])
+    script = (
+        "import sys; sys.path.insert(0, sys.argv[1]); "
+        "from tests.test_crew import _node; "
+        "print(_node().manifest_path)"
+    )
+    processes = [
+        subprocess.Popen(
+            [sys.executable, "-c", script, root],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=root,
+        )
+        for _ in range(2)
+    ]
+    outputs = [process.communicate(timeout=120) for process in processes]
+
+    assert [process.returncode for process in processes] == [0, 0], outputs
+    paths = [stdout.strip() for stdout, _stderr in outputs]
+    assert len(set(paths)) == 2, paths
 
 
 def _set_plan_hours(repo: Path, hours: float) -> None:
@@ -589,14 +657,15 @@ def test_dry_run_payload_reports_the_resolved_write_paths(
 
     payload = json.loads(result.output)
     assert result.exit_code == 0
-    # The declared paths stand, and the plan's shared landing paths — the
-    # cumulative evidence record, the figure topic and the plan file — are
-    # reported with them so the dry run shows the scope the run will hold.
+    # The declared paths stand, and the node's own landing fragment — its
+    # evidence anchor and figure topic, both keyed by the node id — is reported
+    # with them, so the dry run shows the scope the run will hold. The plan's
+    # shared landing files are withheld by default: a grant every node holds is
+    # the merge conflict the per-node fragment removes.
     assert payload["write_paths"] == [
         *write_paths,
-        "docs/evidence/archive/plan-a-landed.html",
-        "docs/figures/plan-a",
-        "docs/plans/plan-a.html",
+        "docs/evidence/fragments/plan-a/node-a.html",
+        "docs/figures/plan-a/node-a",
     ]
     assert payload["node"]["spec_level"] == "guided"
     _assert_no_dispatch_artifacts(repo)
@@ -1400,14 +1469,14 @@ def test_non_repository_delivery_directories_are_valid_exclusive_scopes(
     )
 
     assert resolution.validation.ok is True
-    # The declared delivery scope stands, and the plan's shared landing paths
-    # — the cumulative evidence record, the figure topic and the plan file —
-    # are appended so every node can land its own record.
+    # The declared delivery scope stands, and the node's own landing fragment
+    # — its evidence anchor and figure topic, both keyed by the node id — is
+    # appended so the node can land its own record without holding a path a peer
+    # shares, which is the merge conflict the per-node fragment removes.
     assert resolution.node.write_paths == [
         str(delivery),
-        "docs/evidence/archive/plan-a-landed.html",
-        "docs/figures/plan-a",
-        "docs/plans/plan-a.html",
+        "docs/evidence/fragments/plan-a/node-a.html",
+        "docs/figures/plan-a/node-a",
     ]
 
 
@@ -2645,9 +2714,8 @@ def test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts
             True,
             [
                 "reckon/_backends.py",
-                "docs/evidence/archive/plan-a-landed.html",
-                "docs/figures/plan-a",
-                "docs/plans/plan-a.html",
+                "docs/evidence/fragments/plan-a/node-a.html",
+                "docs/figures/plan-a/node-a",
             ],
         ),
     ],
@@ -2656,7 +2724,7 @@ def test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts
 def test_an_in_harness_dispatch_returns_a_directive_to_bind(
     home, repo, monkeypatch, may_write_worktree, expected_scope
 ) -> None:
-    # The plan's shared landing paths join the declared scope only when the
+    # The node's own landing fragment joins the declared scope only when the
     # worker can write the worktree it is handed, because a read-only role is
     # never granted a landing deliverable it cannot commit. That judgement is
     # resolved from the sandbox write roots, which include the process temp
@@ -2801,6 +2869,33 @@ def _dispatched(
     return record
 
 
+def _commit_past_base(record: dict, content: str = "first = 1\nsecond = 2\n") -> str:
+    """Commit inside the run's declared scope so its head is past the base.
+
+    Promotion refuses a citation that canonicalises to the dispatch base, and
+    in the fixture repository the base is the repository's own HEAD, so a
+    fixture measuring anything downstream of the citation must give the run a
+    commit on top of that base rather than citing HEAD. The path is the node
+    helper's declared scope, so the promotion's scope check accepts it.
+    """
+    tree = Path(record["worktree"])
+    target = tree / "reckon" / "_backends.py"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content)
+    for args in (
+        ["add", "reckon/_backends.py"],
+        ["commit", "-q", "-m", "feat: the run's own commit"],
+    ):
+        subprocess.run(["git", *args], cwd=tree, check=True, capture_output=True)
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tree,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
 def _set_pointer_pid(run_id: str, pid: int) -> None:
     """Record a pid on the run's pointer, so a test can choose its liveness."""
     pointer = json.loads(crew.pointer_path(run_id).read_text())
@@ -2884,6 +2979,11 @@ def test_member_session_is_reused_when_the_resolved_model_matches(home, repo) ->
     )
     Path(first["log_path"]).write_text((FIXTURES / "codex-turn.jsonl").read_text())
     crew.observe(first["run_id"])
+    # A second live dispatch of one node is a duplicate, and the node's own
+    # landing fragment is an exclusive claim, so the first run is ended before
+    # the second begins. Its session survives on the committed record, which is
+    # what the second dispatch continues.
+    crew.complete(first["run_id"], gate="passed")
 
     # The session belongs to the task, not to the member: the same plan and
     # node id reach the prior run's session, and the resolved model decides
@@ -3380,13 +3480,14 @@ def test_cli_drain_records_dispositions_and_mcp_reads_the_same_projection(
 def test_promoted_run_leaves_the_drain_by_losing_its_pointer(home, repo) -> None:
     manifest = home / "promoted-manifest.md"
     record = _dispatched(home, repo, manifest_path=str(manifest))
-    _deliver_manifest(record, "complete", commits="HEAD")
+    commit = _commit_past_base(record)
+    _deliver_manifest(record, "complete", commits=commit)
     assert crew.drain("proj")["unreconciled_runs"] == 1
 
     promoted = crew.complete(
         record["run_id"],
         gate="passed",
-        commits=["HEAD"],
+        commits=[commit],
         review_waiver="this node measures the drain's pointer bookkeeping; the "
         "review lifecycle has its own coverage",
     )
@@ -3409,7 +3510,11 @@ def test_terminal_phase_without_a_manifest_is_abandoned(home, repo) -> None:
     assert observed["phase"] == "complete"
     assert row["classification"] == "abandoned"
     assert row["manifest_status"] is None
-    assert record["stderr_path"] in row["next_action"]
+    # The run is over as a process, but its session still holds every turn, so
+    # the remedy is to continue it rather than discard the work it had done.
+    assert row["next_action"] == (
+        f"reckon crew resume --run {record['run_id']} --advice continue"
+    )
     assert "complete --run" not in row["next_action"]
 
 
@@ -4426,11 +4531,23 @@ def test_shadow_completion_refuses_commits_and_measures_the_retained_patch(
     assert redispatch["lineage"]["previous_run_id"] == primary["run_id"]
 
 
-@pytest.mark.parametrize("gate", ["failed", "not-run"])
-def test_non_passing_promotion_requires_a_diagnostic_outcome(home, repo, gate) -> None:
+@pytest.mark.parametrize(
+    ("gate", "refusal"),
+    [
+        ("failed", "--failure-classification from:"),
+        ("not-run", "--outcome.*what failed"),
+    ],
+    ids=["failed", "not-run"],
+)
+def test_non_passing_promotion_requires_a_diagnostic_outcome(
+    home, repo, gate, refusal
+) -> None:
+    # A failing gate is refused before the outcome demand is reached: it must be
+    # classified from the closed set first, so the classification is the refusal
+    # the [failed] arm measures and the outcome is the one the [not-run] arm does.
     record = _dispatched(home, repo)
 
-    with pytest.raises(crew.CrewError, match="--outcome.*what failed"):
+    with pytest.raises(crew.CrewError, match=refusal):
         crew.complete(record["run_id"], gate=gate)
 
     assert crew.pointer_path(record["run_id"]).exists()
@@ -4515,7 +4632,8 @@ def test_redispatch_does_not_inherit_a_terminal_delivery(home, repo) -> None:
         session="first",
         launcher=lambda *args, **kwargs: 0,
     )
-    _deliver_manifest(first, "complete", commits="HEAD")
+    commit = _commit_past_base(first)
+    _deliver_manifest(first, "complete", commits=commit)
     _predate_delivery(manifest, first["created_at"])
     # Cite what the manifest recorded: a passing gate that leaves the run's own
     # commits uncited is refused, because that is how a node's work ends up
@@ -4523,7 +4641,7 @@ def test_redispatch_does_not_inherit_a_terminal_delivery(home, repo) -> None:
     crew.complete(
         first["run_id"],
         gate="passed",
-        commits=["HEAD"],
+        commits=[commit],
         review_waiver="this node measures what a redispatch inherits; the "
         "review lifecycle has its own coverage",
     )
@@ -4614,18 +4732,36 @@ def test_a_root_commit_records_an_explicit_absence_rather_than_a_count(
     """The diff runs from the commit's parent, and a root commit has none.
 
     An absence with a reason is the honest answer; a zero would read as a run
-    that changed nothing.
+    that changed nothing. The fixture repository holds a single commit, so its
+    root commit is also the run's dispatch base, and promotion refuses a
+    citation of the base before it reaches the diff — a citation of the base
+    would read as landed work that predates the run. That precedence is asserted
+    here, and the parentless-head measure is taken against the same root commit.
     """
     record = _dispatched(home, repo)
+    tree = Path(record["worktree"])
+    root = subprocess.run(
+        ["git", "rev-list", "--max-parents=0", "HEAD"],
+        cwd=tree,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
 
-    stored = crew.complete(record["run_id"], gate="passed", commits=["HEAD"])["record"]
+    with pytest.raises(
+        crew.CrewError, match="that is the base it was dispatched against"
+    ):
+        crew.complete(record["run_id"], gate="passed", commits=[root])
 
-    assert stored["changed_lines"] == {
-        "available": False,
-        "reason": "unresolvable_revision",
-    }
-    assert "fatal:" not in json.dumps(stored["changed_lines"])
-    assert not crew.pointer_path(record["run_id"]).exists()
+    # The refusal records itself and leaves the run's pointer in place.
+    assert crew.pointer_path(record["run_id"]).is_file()
+    assert ledger.runs("proj", repo) == []
+
+    # A diff from a parentless head's nonexistent parent is the typed absence
+    # the promotion measures a commit by, not a zero and not a git diagnostic.
+    absence = crew.scoped_diff_stat(cwd=tree, base=f"{root}^", head=root, paths=[])
+    assert absence == {"available": False, "reason": "unresolvable_revision"}
+    assert "fatal:" not in json.dumps(absence)
 
 
 def test_promotion_refuses_a_commit_touching_a_path_outside_the_declared_scope(

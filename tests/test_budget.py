@@ -23,8 +23,10 @@ The measures this file exists to demonstrate:
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
+import tempfile
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -201,6 +203,42 @@ def _record(
     return record
 
 
+# The running test's manifest directory, held in a mutable cell so the autouse
+# fixture below binds it without a module-level rebinding.
+_NODE_MANIFEST: dict[str, Path | None] = {"directory": None}
+
+
+@pytest.fixture(autouse=True)
+def _node_manifest_directory(tmp_path):
+    """Bind the node helper's default manifest path to this test's temp tree.
+
+    A fixed manifest path is shared by every test process on the machine, so a
+    process that writes a terminal manifest there lands inside another run's
+    dispatch-to-complete window and that run reads a foreign delivery. Each test
+    therefore names its manifests under its own pytest temporary directory,
+    which no other process holds.
+    """
+    previous = _NODE_MANIFEST["directory"]
+    _NODE_MANIFEST["directory"] = tmp_path / "node-manifests"
+    _NODE_MANIFEST["directory"].mkdir(parents=True, exist_ok=True)
+    yield
+    _NODE_MANIFEST["directory"] = previous
+
+
+def _node_manifest_path() -> str:
+    """A manifest path no other test process can name.
+
+    Under pytest the path lives under the running test's temporary directory.
+    Called outside a test run the helper falls back to a per-process directory,
+    so two concurrent processes never share one path either way.
+    """
+    directory = _NODE_MANIFEST["directory"]
+    if directory is None:
+        directory = Path(tempfile.gettempdir()) / f"reckon-node-manifests-{os.getpid()}"
+        directory.mkdir(parents=True, exist_ok=True)
+    return str(directory / "node-a-manifest.md")
+
+
 def _node(**overrides) -> crew.TaskNode:
     fields = {
         "id": "node-a",
@@ -211,7 +249,7 @@ def _node(**overrides) -> crew.TaskNode:
         "write_paths": ["reckon/budget.py"],
         "spec_level": "exact",
         "time_budget": "20m",
-        "manifest_path": "/tmp/node-a-manifest.md",
+        "manifest_path": _node_manifest_path(),
     }
     fields.update(overrides)
     return crew.TaskNode(**fields)
@@ -770,7 +808,9 @@ def test_a_binding_window_at_the_ceiling_holds_through_preflight(home, repo) -> 
         },
     }
     held_budget = _backends.dialect_for(CONFIG["backends"]["beta"])._budget(info)
-    _record("proj", repo, backend="beta", budget_block=held_budget, run_id="r-window-hold")
+    _record(
+        "proj", repo, backend="beta", budget_block=held_budget, run_id="r-window-hold"
+    )
 
     report = budget.preflight("proj", config, root=repo, backends=["beta"])
 
@@ -791,7 +831,9 @@ def test_a_binding_window_below_the_ceiling_does_not_hold(home, repo) -> None:
         },
     }
     clear_budget = _backends.dialect_for(CONFIG["backends"]["beta"])._budget(info)
-    _record("proj", repo, backend="beta", budget_block=clear_budget, run_id="r-window-clear")
+    _record(
+        "proj", repo, backend="beta", budget_block=clear_budget, run_id="r-window-clear"
+    )
 
     report = budget.preflight("proj", config, root=repo, backends=["beta"])
 
