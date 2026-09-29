@@ -1,0 +1,103 @@
+<article class="r-evidence" data-reckon="evidence" id="noise-pair-case-is-deterministic">
+  <header>
+    <h2>Noise-pair case: the failure reproduces, its source does not resolve to the case</h2>
+    <p class="r-meta">
+      <span class="r-badge" data-state="blocked">blocked</span>
+      node <code>noise-pair-case-is-deterministic</code> &middot;
+      base revision <code>89af9522</code> &middot; 2026-09-29
+    </p>
+  </header>
+
+  <section>
+    <h3>Outcome</h3>
+    <p>
+      The named case was not repaired, because no source of nondeterminism in it
+      could be observed to remove. The case passes 50 of 50 isolated runs at the
+      base revision and 0 failures were measured in 20 base isolated runs, so
+      the failure rate the node was sent to fix is zero here rather than low. A
+      real and reproducible whole-file failure does exist in the same file, on
+      the resume-baseline case that shares the harness
+      <code>_arm</code> with the named case, and it survives every hypothesis
+      tested. It is recorded here as a blocker rather than as a repair.
+    </p>
+    <table>
+      <thead><tr><th>Measure</th><th>Shape</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Named case, base revision</td><td>20 isolated runs</td><td>20 pass, 0 fail</td></tr>
+        <tr><td>Named case, after</td><td>50 isolated runs with a basetemp per run on node-local <code>/tmp</code></td><td>50 pass, 0 fail</td></tr>
+        <tr><td>Named case, whole file</td><td>50 runs of the file under <code>pytest -n 8</code></td><td>0 failures by id</td></tr>
+        <tr><td>Resume-baseline case, whole file</td><td>50 runs, <code>-n 8</code>, basetemp per run, 5 at a time</td><td><strong>9 fail</strong>, all on that case</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The failing assertion is <code>assert RUN_B in by_run</code> with
+      <code>resumed == []</code>: an arming completed and drew no row at all,
+      so the re-derived baseline reached the pane empty.
+    </p>
+  </section>
+
+  <section>
+    <h3>A hypothesis that the measurement withdrew</h3>
+    <p>
+      The home fixture derived the follower's state directory from pytest's
+      <code>tmp_path</code>, which sits under the basetemp root that pytest
+      prunes to its three newest entries whenever a run starts. Failing runs at
+      high concurrency were observed with a basetemp that had been pruned out
+      from under them, and a six-run sample moved from four failures to none
+      after moving the directory. That contrast was drawn across two different
+      command shapes at six runs each, so it measured the shapes.
+    </p>
+    <p>
+      The like-for-like measurement, fifty whole-file runs at a time under one
+      concurrency with a basetemp per run, withdraws it: nine failures before
+      the change and fourteen after. The change was reverted in the session that
+      made it, and the test file is byte-identical to the dispatch base.
+    </p>
+  </section>
+
+  <section>
+    <h3>Hypotheses falsified or unresolved</h3>
+    <ul>
+      <li>
+        <strong>Shared pruned basetemp root</strong> &mdash; falsified: explicit
+        per-run basetemps still fail, 9 of 50.
+      </li>
+      <li>
+        <strong>An unreadable per-process stat record read as a dead owner</strong>
+        &mdash; falsified: 4.8 million probe passes against a live parent
+        returned zero unreadable reads and zero would-end verdicts, with a
+        median probe cost of 61&nbsp;&micro;s.
+      </li>
+      <li>
+        <strong>Arming latency against the 0.75&nbsp;s lifetime</strong> &mdash;
+        falsified at idle: the first delivered row arrives 5&ndash;22&nbsp;ms
+        after the arming starts.
+      </li>
+      <li>
+        <strong>The policy itself in <code>reckon/crew/ticker.py</code></strong>
+        &mdash; not implicated: the policy is pure and takes its clock as a
+        parameter, and 600 in-process replicas of the case ran clean in the same
+        process that carries the failure.
+      </li>
+      <li>
+        <strong>The source of the residual whole-file failure</strong> &mdash;
+        unresolved. It is independent of the home's location, appears only under
+        whole-file concurrency, and its trigger was not found inside the time
+        fence.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h3>What a next attempt should carry</h3>
+    <p>
+      The reproduction is cheap and stable: fifty concurrent whole-file runs
+      yield roughly one failure in five, on one case, with an empty result. The
+      open question is what makes one arming of the resumed path deliver
+      nothing, and it is answerable by recording, inside the resumed arming, the
+      resolved resume mode, the boundary byte, and which condition ended the
+      loop &mdash; state that no current log carries. The named case should not
+      be treated as the defect until such a log shows it failing.
+    </p>
+  </section>
+</article>
