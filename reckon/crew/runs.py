@@ -11,7 +11,6 @@ import socket
 import stat
 import subprocess
 import sys
-import tempfile
 import time
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import contextmanager
@@ -21,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import __version__
-from reckon._store import _config_home
+from reckon._store import _config_home, write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
@@ -394,26 +393,14 @@ def _stamp_pointer_launch_host(
 def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     """Write JSON atomically, so a reader never sees a half-written record."""
     payload = _stamp_pointer_launch_host(path, payload)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=path.parent,
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            tmp = Path(handle.name)
-            json.dump(payload, handle, indent=2, sort_keys=True)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        tmp.replace(path)
-    finally:
-        if tmp is not None:
-            tmp.unlink(missing_ok=True)
+    write_json_atomically(
+        path,
+        payload,
+        indent=2,
+        sort_keys=True,
+        mode=0o600,
+        ensure_ascii=True,
+    )
 
 
 @contextmanager
