@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="620" viewBox="0 0 1120 620" font-family="Helvetica, Arial, sans-serif">
   <rect x="0" y="0" width="1120" height="620" fill="#fbfbfd"/>
-  <text x="24" y="34" font-size="20" font-weight="bold" fill="#1a1a2e">Batch B — six readers now funnel through one parser</text>
-  <text x="24" y="56" font-size="13" fill="#555">Each box keeps only the policy its own callers depend on; the six no longer call fromisoformat.</text>
+  <text x="24" y="34" font-size="20" font-weight="bold" fill="#1a1a2e">Batch B — five readers funnel through one parser; one keeps its own date reading</text>
+  <text x="24" y="56" font-size="13" fill="#555">Each box keeps only the policy its own callers depend on; the five no longer call fromisoformat.</text>
 
   <!-- central parser -->
   <rect x="470" y="250" width="200" height="90" rx="10" fill="#e7f0fb" stroke="#2b6cb0" stroke-width="2"/>
@@ -12,9 +12,9 @@
 
   <!-- readers, left column -->
   <g font-size="13">
-    <rect x="40" y="96" width="330" height="52" rx="8" fill="#ffffff" stroke="#9aa4b2"/>
+    <rect x="40" y="96" width="330" height="52" rx="8" fill="#fffaf0" stroke="#b7791f" stroke-dasharray="5 4"/>
     <text x="56" y="118" font-weight="bold" fill="#111">doccheck.modified_age_days</text>
-    <text x="56" y="138" fill="#666">policy kept: whole calendar days; unreadable &#8594; None</text>
+    <text x="56" y="138" fill="#8a5a00">retained exception: reads the stated date, not an instant</text>
 
     <rect x="40" y="164" width="330" height="52" rx="8" fill="#ffffff" stroke="#9aa4b2"/>
     <text x="56" y="186" font-weight="bold" fill="#111">project_state._review_date</text>
@@ -39,7 +39,6 @@
 
   <!-- arrows -->
   <g stroke="#2b6cb0" stroke-width="1.6" fill="none" marker-end="url(#a)">
-    <path d="M370 122 C 430 122 440 285 470 288"/>
     <path d="M370 190 C 430 190 440 290 470 292"/>
     <path d="M370 258 C 430 258 440 295 470 296"/>
     <path d="M370 326 C 430 326 440 300 470 300"/>
@@ -63,9 +62,10 @@
 
     <rect x="720" y="232" width="360" height="108" rx="8" fill="#eefaf0" stroke="#2f855a"/>
     <text x="736" y="256" font-weight="bold" fill="#22543d">Every other cell is preserved</text>
-    <text x="736" y="278" fill="#23543d">All six readers were exercised at base over nine shared</text>
+    <text x="736" y="278" fill="#23543d">All six readers were exercised at base over thirteen shared</text>
     <text x="736" y="295" fill="#23543d">inputs; the recorded table is asserted at the head. A</text>
-    <text x="736" y="312" fill="#23543d">second test walks the modules for a residual fromisoformat.</text>
+    <text x="736" y="312" fill="#23543d">second test walks the five migrated modules for a residual</text>
+    <text x="736" y="329" fill="#23543d">fromisoformat, and doccheck is declared the exception.</text>
 
     <rect x="720" y="356" width="360" height="132" rx="8" fill="#f3eefb" stroke="#6b46c1"/>
     <text x="736" y="380" font-weight="bold" fill="#44337a">The hook still launches bare</text>
@@ -74,5 +74,11 @@
     <text x="736" y="436" fill="#44337a">checkout. It imports the parser inside the one function</text>
     <text x="736" y="453" fill="#44337a">that needs it and bootstraps sys.path from its own file</text>
     <text x="736" y="470" fill="#44337a">only when not imported as a package.</text>
+
+    <rect x="720" y="500" width="360" height="104" rx="8" fill="#fffaf0" stroke="#b7791f"/>
+    <text x="736" y="524" font-weight="bold" fill="#7b5800">A lenient parser must not widen a reader</text>
+    <text x="736" y="546" fill="#8a5a00">parse_utc strips whitespace and accepts a lowercase z, so</text>
+    <text x="736" y="563" fill="#8a5a00">the validator keeps the strict spelling it had and the two</text>
+    <text x="736" y="580" fill="#8a5a00">stamp readers refuse those two forms before the call.</text>
   </g>
 </svg>
