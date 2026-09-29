@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -143,6 +143,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260929T131121375866-boundary-check-reads-two-trees" data-who="reckon-build" data-when="2026-09-29T15:45:51.106Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-boundary-check-reads-two-trees/boundary-check-reads-two-trees.html</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260929T192830297904-review-of-boundary-check-reads-two-trees" data-who="reckon-build" data-when="2026-09-29T20:44:57.969Z">
+    <div class="r-comment-body"><p>review of run r-20260929T131121375866-boundary-check-reads-two-trees, read at base db6726ee (the previous review&#x27;s base) and delivered head 5c2cdafc, is stored at both granted paths and scores goal_fidelity 20, evidence 20, scope_discipline 20, durability 20, fit 20 (total 100, no dimension absent); it records added_failure_count 1 with the id tests/test_crew.py::test_shadow_inherits_primary_time_budget_instead_of_role_default derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs through the store&#x27;s own reader, files 3 findings each stating that head 5c2cdafc resolves the corresponding finding of the prior review at .at-852e3216 (the constant-sourced fence fact, the fixture that seeded the fact so dispatch-time composition was untested, and the failure_attribution line that under-reported the arms&#x27; difference), and includes the done-when&#x27;s named statement that an in-harness dispatch now records fenced false and keeps the full scan (dispatch.py:4966 records it, tests/test_boundary_check_reads_two_trees.py:422 asserts both the full-registry snapshot and the registered status calls at promotion).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-tbcrtt-baseline-and-order" data-who="reckon-e5" data-when="2026-09-24">
     <div class="r-comment-body"><p><strong>Baseline and agreed order.</strong> Measured by the S20 session on 2026-09-24, with storage healthy and 214 registered worktrees (107 fewer than the day before after cleanup): an env-scope promotion that had run 3 h 10 m before being stopped re-ran in 132 s. That is roughly 0.6 s per tree over its persisted roots, several of which no longer existed. So tree count and filesystem health dominate promotion time, and §2 records both beside each wall time. Order agreed with S20: <code>a-dispatch-returns-without-its-worker</code> §3 first, then this plan's §1 after <code>a-worker-cannot-write-your-home</code> §3, then <code>a-crew-process-ends-with-its-owner</code> §4 on the reduced set. That §4's done-when carries the constraint that untracked files in the run's own worktree are still read.</p></div>
