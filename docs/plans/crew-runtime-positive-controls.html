@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="135">
+<meta name="plan-version" content="136">
 </head>
 <body>
   <main class="plan-doc">
@@ -1427,6 +1427,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260929T163317812547-template-says-what-completed-holds" data-who="reckon-build" data-when="2026-09-29T16:48:55.534Z">
     <div class="r-comment-body"><p>both suite arms of the manifest template in reckon/crew/prompts.py:572-573 now read "completed is true only when the suite ran to its summary line, false otherwise, and null or absent is unreadable", replacing the one-sided "completed=false is absent evidence"; tests/test_brief_prompt.py asserts the rule on each arm's own line of the composed contract (count 2) and on the snapshot literal, and restoring the former lines reddens that assertion (assert 0 == 2); the 22-file gate ran 6 failed, 231 passed at head against 6 failed, 229 passed at base, adding no failure id; fragment at docs/evidence/fragments/crew-runtime-positive-controls/template-says-what-completed-holds.html</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260929T171030404641-repair-of-template-says-what-completed-holds-fe9140e26a53" data-who="reckon-build" data-when="2026-09-29T17:24:51.099Z">
+    <div class="r-comment-body"><p>The manifest template&#x27;s suite arms no longer teach `false` as the ordinary `completed` value; both now read &quot;completed is true only when the suite ran to its summary line; false, null or absent is unreadable&quot;, matching the readers that ask completion as a literal True (reckon/ledger.py:259, both readers in reckon/crew/promotion.py), and a new case drives those readers over true/false/null/absent so the prose and the code cannot drift; gate 6 failed, 232 passed at head against 6 failed, 231 passed at base, no added failure ids, and the negative control reddens with `assert 0 == 2` when the former clause is restored.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
