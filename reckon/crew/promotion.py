@@ -5065,17 +5065,26 @@ def _baseline_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str] 
     admit every control it was meant to refuse. ``None`` therefore decides no
     control: the caller falls through to the head arm when one is readable, and
     refuses when neither is.
+
+    The ``failure_ids`` the arm lists are read the way the head reader reads
+    them: a list of non-empty strings. An unreadable shape is unreadable here
+    too, for the same reason the completion key is — a value read as a set of
+    ids but that is not one says nothing. A ``failure_ids`` recorded as a JSON
+    string would otherwise iterate as its characters and admit a control the
+    same manifest in list form refuses, and a non-iterable value would raise
+    out of the gate; both return ``None``.
     """
     observation = None if manifest is None else manifest.get("baseline_suite")
     if not isinstance(observation, Mapping):
         return set()
     if observation.get("completed") is not True:
         return None
-    return {
-        review_module.canonical_node_id(str(test_id).strip())
-        for test_id in observation.get("failure_ids") or ()
-        if str(test_id).strip()
-    }
+    failure_ids = observation.get("failure_ids")
+    if not isinstance(failure_ids, list) or any(
+        not isinstance(test_id, str) or not test_id.strip() for test_id in failure_ids
+    ):
+        return None
+    return {review_module.canonical_node_id(test_id.strip()) for test_id in failure_ids}
 
 
 def _head_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str] | None:
