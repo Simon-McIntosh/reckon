@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="134">
+<meta name="plan-version" content="135">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -608,6 +608,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260929T122636189413-replay-stamps-the-state-entry-time" data-who="reckon-build" data-when="2026-09-29T13:12:57.677Z">
     <div class="r-comment-body"><p>_recorded_fleet_times now stamps each replayed row with the earliest recorded time in the unbroken trailing run of events whose to_state equals the run's current state, so a re-emitted baseline no longer moves the stamp to the latest re-emission (2 new cases pass; the declared last-event mutation fails; selection delta 0 added failures by id, base 332 passed / head 334 passed).</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20260929T131343368884-review-of-replay-stamps-the-state-entry-time" data-who="reckon-build" data-when="2026-09-29T13:59:38.715Z">
+    <div class="r-comment-body"><p>The stored review record is the deliverable, written to both granted paths /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T122636189413-replay-stamps-the-state-entry-time.json and /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T122636189413-replay-stamps-the-state-entry-time.at-587efce8a771db917900de1b9448a3762654c01a.json, and read back through the store&#x27;s own reader with status parsed, all five dimensions scored (20/20/20/19/20, total 99), call_sites [&#x27;reckon/cli.py:_fleet_replay&#x27;], and added_failure_count 0.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T130204463138-ticker-row-is-one-aligned-transition" data-who="reckon-build" data-when="2026-09-25T13:46:08Z">
     <div class="r-comment-body"><p>each ticker row is one transition, from → to on an aligned arrow with fixed columns on both sides, chained per run on the pane's last shown state, with no action word; 266 passed; review 86, whose three findings (stale width comment at ticker.py:339, a test assertion that cannot fail, and a wrong rendered-case count in the evidence) go to the next ticker node</p></div>
