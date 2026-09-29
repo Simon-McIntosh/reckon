@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A head arm that does not declare completion decides no control">
+  <meta name="plan-summary" content="The control gate's head-arm reader asked completion with `is False`, so an after_suite that omitted the key or carried null read as a completed arm and decided the control. It now asks for a literal True, the way the strict arm validator and the manifest report ask it, so an arm whose completion is absent or null is unreadable and the baseline comparison decides. Three cases hold one manifest that differs only in that key: absent and null refuse the control the declared-complete arm admits.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>A head arm that does not declare completion decides no control &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A head arm that does not declare completion decides no control &mdash; evidence</h1>
+  <p><code>_head_suite_failure_ids</code> in <code>reckon/crew/promotion.py</code> reads the arm a negative control is compared against, falling back to the baseline comparison when no head arm is readable. Its completion test was <code>observation.get("completed") is False</code>, so only the literal <code>False</code> made an arm unreadable: an <code>after_suite</code> that omitted the key, or carried <code>null</code>, was read as a completed arm and decided the control while its own run said nothing about having finished. The strict arm validator (<code>ledger.suite_observation_missing_fields</code>) and the manifest report both refuse that same mapping, and the strict validator runs only for a run whose record carries a <code>suite_command</code> &mdash; the class of run this gate serves carries none, so nothing else caught it.</p>
+  <p>The reader now asks completion as a literal <code>True</code>, the idiom those two validators use. At the head tree a key-less arm reads as <code>None</code> (<code>logs/head_arm.log</code>, line 5: <code>key-less arm reads as: None</code>), so the decision falls to the baseline comparison, which refuses a control whose failing id the baseline also fails. A declared-complete arm is unchanged and still decides.</p>
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>Three cases, one manifest apart.</strong> <code>tests/test_control_is_compared_with_the_head_arm.py</code> gains an <code>after_suite</code> with no <code>completed</code> key, one with <code>completed: null</code>, and one with <code>completed: true</code>. All three carry the same baseline, whose failure set holds the id the control reddens; only the key in the head arm differs. The first two are refused with <em>adds no failure to the baseline's</em>; the third is admitted with <code>comparison_arm: after_suite</code>, which is the arm that decides when completion is declared.</li>
+      <li><strong>Base arm</strong> (<code>64d8c18e</code>, the three cases copied into the unfixed tree): <code>2 failed, 52 passed in 19.26s</code>, <code>EXIT=1</code>, the two failures being exactly the missing-key and null cases, each reporting <code>DID NOT RAISE CrewError</code> &mdash; the head arm decided, which is the defect reproduced. <code>logs/base_arm.log</code>.</li>
+      <li><strong>Head arm</strong> (<code>b4d154e1</code>): <code>54 passed in 18.53s</code>, <code>EXIT=0</code>, no failing id, over the same seven-file gate population. <code>logs/head_arm.log</code>.</li>
+      <li><strong>Negative control</strong> (<code>is False</code> restored in a scratch copy of the head tree): <code>2 failed, 9 passed in 1.91s</code>, <code>EXIT=1</code>, both completion cases reddening again &mdash; the check is load-bearing and the mutation reddens only what it should. <code>logs/negative_control.log</code>.</li>
+    </ul>
+    <p>Both arms are scratch-tree runs whose own headers name the revision, the tree, the command and the imported <code>module.__file__</code>; the base arm's failure set is itself the provenance check, since a run that had imported the fixed reader would have failed nothing.</p>
+  </section>
+  <section id="baseline-arm">
+    <h2>One clause of the followup is not implemented, and cannot be inside this fence</h2>
+    <p>The followup asks that a missing or null <code>completed</code> read as unreadable <em>on both arms</em>. Only the head arm can carry that rule here. The baseline reader's handling of a mapping without the key is pinned outside this node's write scope: <code>tests/test_control_gate_checks_facts.py::test_a_control_that_adds_no_failure_to_the_baseline_is_refused</code> passes a baseline of <code>{"failure_ids": [...], "failure_count": 1}</code> and requires the refusal to come from those ids, and <code>tests/test_control_is_compared_with_the_head_arm.py</code>'s own <code>_gate</code> cases treat a key-less baseline as the deciding arm. Reading that mapping as unreadable would return the empty set, which is the fail-open direction &mdash; a control would then be admitted with no comparison at all, and a manifest omitting the key from both arms would admit every control &mdash; and it would redden that pinned case. The head arm is where the rule changes the decision; the baseline arm needs the key to be made mandatory before the same rule can be applied to it, which is a change to the pinned fixture and belongs to a node holding that file.</p>
+  </section>
+ </main>
+</body>
+</html>
