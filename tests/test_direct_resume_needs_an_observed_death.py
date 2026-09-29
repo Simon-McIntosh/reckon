@@ -57,6 +57,10 @@ UNKNOWN_RUN = "r-unobserved-liveness"
 LIVE_RUN = "r-proven-live"
 HARNESS_RUN = "r-in-harness-live"
 
+# Every run id this file mints. A real run's id carries its launch timestamp, so
+# a path named for one of these is a path only this test creates.
+_RUN_IDS = (EXIT_RUN, DEAD_PID_RUN, UNKNOWN_RUN, LIVE_RUN, HARNESS_RUN)
+
 CONFIG = {
     "default_backend": "alpha",
     "backends": {
@@ -78,29 +82,39 @@ CONFIG = {
 }
 
 
-def _home_fingerprint(home: Path) -> list[tuple[str, int]]:
-    """The real config home's own entries, by name and mtime.
+def _real_crew_home() -> Path:
+    """The crew home a case writes to if its isolation is not in place."""
+    return Path(os.path.expanduser("~")) / ".config" / "reckon" / "crew"
 
-    One directory level only: the point is to catch a write that landed in the
-    reader's own home, and a recursive walk of a live fleet's home on GPFS is
-    the crawl this check must not itself become.
+
+def _case_artifacts(crew_home: Path) -> list[Path]:
+    """The paths this file's cases leave under ``crew_home``.
+
+    Named for the run ids above, so the same list describes the real crew home
+    and a stand-in: a positive control can plant one and see it found.
     """
-    if not home.is_dir():
-        return []
-    return sorted((entry.name, entry.stat().st_mtime_ns) for entry in home.iterdir())
+    return [
+        *(crew_home / "runs" / run_id for run_id in _RUN_IDS),
+        *(crew_home / "live" / f"{run_id}.json" for run_id in _RUN_IDS),
+    ]
 
 
 @pytest.fixture()
 def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Run against a temporary crew home, and prove the real one untouched."""
-    real_home = Path(os.path.expanduser("~")) / ".config" / "reckon"
-    before = _home_fingerprint(real_home)
+    """Run against a temporary crew home, and prove the real one untouched.
+
+    The proof is the absence of a path only this test creates, read after the
+    case: a live fleet writes into the real home while the case runs, so a
+    before-and-after reading of that home's own entries moves under the fleet's
+    hand and cannot say who moved it.
+    """
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     assert runs.crew_home().is_relative_to(tmp_path)
     yield config_home
-    assert _home_fingerprint(real_home) == before
+    landed = [path for path in _case_artifacts(_real_crew_home()) if path.exists()]
+    assert not landed, f"the real crew home carries this file's run paths: {landed}"
 
 
 @pytest.fixture()
