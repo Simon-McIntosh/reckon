@@ -572,7 +572,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable>
   after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable>
   failure_attribution: <armed-only, test role JSON {{failure_id: candidate_commit}} for each newly added failure>
-  artifacts: <paths plus headline metrics>
+  artifacts: <paths plus headline metrics; a metric quoted from a gate log is that log's own summary line, so the record reconciles with the log it cites>
   evidence_inputs: <facts the orchestrator needs for writeback>
   follow_ons: <work you found but were fenced out of, or none>
   blockers: <none, or the exact unmet condition>
