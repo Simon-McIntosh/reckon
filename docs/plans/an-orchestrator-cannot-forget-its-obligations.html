@@ -21,12 +21,12 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-fleet-counters-count-the-fleet">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
   <title>An Orchestrator Cannot Forget Its Obligations | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="57">
+<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-version" content="58">
 <meta name="plan-impl" content="0.45">
 </head>
 <body>
@@ -395,6 +395,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260928-section-declarations-reconciled" data-who="s23-coord" data-when="2026-09-28">
     <div class="r-comment-body"><p><strong>Section declarations reconciled with the landing evidence.</strong> §7 is declared done. All five done-when clauses landed: the Stop hook's three cases, the run environment reaching fresh launches and resumes, the run and session headers, the attempt-start freshness check, and the failing mutation (worker-stop-binds-the-manifest, worker-env-carries-its-run, worker-env-review-fixes). §5 stays open. The hook script, the installer and the digest fixes have landed, but its done-when includes an acknowledged-obligation case that needs §3's <code>crew ack</code>, so §5 closes with §3. §3 and §6 have not started.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260929-s3-crew-ack-lands" data-who="s23-coord" data-when="2026-09-29">
+    <div class="r-comment-body"><p><strong>§3 is declared done.</strong> <code>crew-ack-defers-an-obligation</code> merged at <code>b99662ec</code> (review 100, no findings, zero added failures by id). <code>reckon crew ack --run X --reason ... --until ...</code> records a deferral beside the drain dispositions. The obligations view leaves the item out until <code>--until</code> passes, then returns it, and exposes acknowledged items with their reason in a separate block. <code>tests/test_crew_ack.py</code> covers leaving, returning against a fixture clock, the reason read back, and a malformed <code>--until</code> refused. The declared mutation, ignoring the until time, fails the return case.</p></div>
 </div>
 </section>
   </main>
