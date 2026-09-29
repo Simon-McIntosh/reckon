@@ -2410,19 +2410,9 @@ def _follow_boundary(stream_path: Path) -> int:
     on a newline, the replay reads only whole records, and the loop opens at the
     start of any record still being written, which it then reads whole and once.
     """
-    try:
-        size = stream_path.stat().st_size
-    except OSError:
-        return 0
-    if size <= 0:
-        return 0
-    try:
-        with stream_path.open("rb") as stream:
-            data = stream.read(size)
-    except OSError:
-        return 0
-    newline = data.rfind(b"\n")
-    return newline + 1 if newline >= 0 else 0
+    from reckon.crew import runs
+
+    return runs.line_boundary(stream_path)
 
 
 def _stream_events_upto(stream_path: Path, *, offset: int, boundary: int) -> list[dict]:
@@ -3030,7 +3020,13 @@ def _follow_watch_lines(
             # place must describe the stream this reader is actually reading.
             stream_file_identity = follow_checkpoint.identity_of(stream)
             while True:
-                line = stream.readline()
+                # A half-written record is held, not parsed: readline returns
+                # the producer's bytes so far without their newline, and
+                # admitting that fragment would deliver the record truncated
+                # while its completion arrived as a second one. read_whole_line
+                # leaves the handle at the line's start until the fuller line
+                # arrives, so the record is delivered once and whole.
+                line = runs.read_whole_line(stream)
                 if line:
                     event = runs.parse_stream_line(line)
                     for printed in path.feed(event, now=clock()):
