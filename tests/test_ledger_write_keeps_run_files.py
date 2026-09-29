@@ -55,7 +55,8 @@ from pathlib import Path
 from reckon import ledger
 
 PROJECT = "proj"
-PAUSE_SECONDS = 3.0
+PAUSE_SECONDS = 5.0
+WAIT_SECONDS = 120.0
 
 
 def main() -> int:
@@ -78,10 +79,15 @@ def main() -> int:
 
         ledger._keep_run_files_identical = paused
     else:
-        deadline = time.monotonic() + 30.0
-        while (
-            not (scratch / "late-paused").exists() and time.monotonic() < deadline
-        ):
+        # Wait for the other writer to reach its pause before writing. A writer
+        # that never arrives must fail loudly: on a loaded machine a short wait
+        # can expire, the write then lands first, and the schedule collapses
+        # into the serialised order this case exists to exclude -- a pass the
+        # schedule never produced, which is how this test first reported one.
+        deadline = time.monotonic() + WAIT_SECONDS
+        while not (scratch / "late-paused").exists():
+            if time.monotonic() >= deadline:
+                raise SystemExit("the other writer never reached its pause")
             time.sleep(0.02)
     outcome = {"result": "ok", "text": "completed by the " + role}
     try:
