@@ -25,8 +25,8 @@
   <title>A worker is charged to a job | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="47">
+<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-version" content="48">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -937,6 +937,11 @@ placement path, not as a whole-suite run.</p>
     <div class="r-fu-body"><p>reckon/crew/promotion.py:1095 runs the replayed gate with capture_output=True (:1098) and keeps only result.returncode (:1100). Neither stdout nor stderr reaches the ledger row or any stored artefact. On 2026-09-28, verify-gate recorded exit 1 for the replay-guards gate at bdada7e5. A dedicated node then measured the same two files green before and after the merge (21 and 22 passed), and the ids behind the exit 1 were unrecoverable. Write the replay's output to a log beside the run, record that log's path on the report, and include the failing ids in the finding. Sibling of f-awcj-a-replayed-gate-names-no-worktree; one node can close both.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-is-charged-to-a-job</pre>
     <p class="r-fu-outcome">Same node, merged at a085bb2c. The replay keeps its stdout and stderr in verify-gate.log under the run directory, and the result records the path as report.log_path. Shown live on the node's own verify-gate at main.</p>
+    </article>
+<article class="r-fu" data-id="f-awcj-replay-bound-follows-the-gate" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-worker-is-charged-to-a-job" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">verify-gate&#x27;s re-run bound follows the gate&#x27;s recorded duration, not a fixed 300 s</h4>
+    <div class="r-fu-body"><p>The replay near <code>reckon/crew/promotion.py:1319</code> and <code>:1539</code> stops at <code>timeout_seconds=300.0</code> and reports the gate <code>not-run</code> on the integrated revision. Measured on 2026-09-29 with a-score-is-queryable-from-committed-state: the worker's own gate log records 213 passed in 378 s, so every verify-gate of that run reported not-run until the command was narrowed to one file (6 passed in 25 s). A gate that legitimately takes longer than the bound can never be verified as recorded. Derive the bound from the run's recorded gate duration, with headroom and a ceiling, or let <code>--timeout</code> set it. The result should say which bound applied.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-is-charged-to-a-job</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
