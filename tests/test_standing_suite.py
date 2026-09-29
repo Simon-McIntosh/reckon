@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -204,26 +205,58 @@ def test_a_waiver_lifts_the_hold(tmp_path):
 # ── a run past its budget is stopped and its group reaped ───────────────────
 
 
-def test_a_run_past_its_budget_is_stopped_and_recorded(tmp_path, monkeypatch):
+def _alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    return True
+
+
+def test_a_run_past_its_budget_is_stopped_with_its_whole_group(tmp_path):
+    """The budget stops the runner and everything the runner spawned.
+
+    The declared command is the interpreter directly rather than pytest: a
+    pytest invocation spends the budget on its own startup before the first
+    test body runs, so a tight budget would race the file the assertion reads
+    and report a runner defect whenever the machine was merely busy. This
+    command writes both its pid and its child's pid before it does anything
+    else, then sleeps past the budget with a child of its own in the same
+    process group — so the group is in that group and its death is what is
+    measured.
+    """
     pid_file = tmp_path / "suite.pid"
-    source = (
-        "import os, time\n"
-        "def test_slow():\n"
-        f"    open({str(pid_file)!r}, 'w').write(str(os.getpid()))\n"
-        "    time.sleep(30)\n"
+    script = tmp_path / "suite_command.py"
+    script.write_text(
+        "import os, subprocess, sys, time\n"
+        "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+        f"open({str(pid_file)!r}, 'w').write(f'{{os.getpid()}} {{child.pid}}')\n"
+        "time.sleep(60)\n"
     )
-    project_root = _make_project(tmp_path, tests_source=source)
-    run_record = standing_suite.run(
-        project_root, _declaration("1s"), tmp_path / "slow.log"
+    project_root = _make_project(
+        tmp_path, tests_source="def test_ok():\n    assert 1\n"
     )
+    declaration = review_suite(
+        {
+            "review": {
+                "suite": {"command": [sys.executable, str(script)], "budget": "2s"}
+            }
+        }
+    )
+    run_record = standing_suite.run(project_root, declaration, tmp_path / "slow.log")
 
     assert run_record["over_budget"] is True
-    assert run_record["duration_seconds"] < 20
-    assert run_record["budget_seconds"] == 1
+    assert run_record["budget_seconds"] and run_record["budget_seconds"] == 2
+    assert run_record["duration_seconds"] < 30
 
-    pid = int(pid_file.read_text())
-    with pytest.raises(ProcessLookupError):
-        os.kill(pid, 0)
+    runner_pid, child_pid = (int(value) for value in pid_file.read_text().split())
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline and any(
+        _alive(p) for p in (runner_pid, child_pid)
+    ):
+        time.sleep(0.1)
+    assert not _alive(runner_pid)
+    assert not _alive(child_pid)
 
 
 # ── the record lands under the project's state tree ─────────────────────────
