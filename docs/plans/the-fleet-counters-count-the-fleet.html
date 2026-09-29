@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="143">
+<meta name="plan-version" content="144">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -703,6 +703,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260929-s9-lead-rules-replay-with-recorded-times" data-who="s23-coord" data-when="2026-09-29">
     <div class="r-comment-body"><p><strong>The lead ruled on the re-arm contract: every arming replays the fleet, with recorded times.</strong></p><p>attach-shows-each-live-run merged at <code>4cccc311</code> (review 92, zero added failures by id). It left <code>reckon/cli.py</code> and <code>reckon/crew/ticker.py</code> at base. It stated the contract that code implements in the orchestrator-harness reference: the first arming draws the fleet, and a re-arm prints only what moved. That still leaves the case that reopened this section, a re-armed follower with 10 live runs showing nothing for 16 minutes.</p><p>Asked on 2026-09-29, the lead chose one row per live run on every arming, re-arms included. The lead added: <em>"why can't we replay the list, with the correct timestamps, I don't want to see a blob all at the same time."</em> So each row carries the recorded time the run entered its current state, never the attach time, and the rows arrive in time order. This supersedes the silent re-arm cases in <code>tests/test_follow_rearm_continues.py</code> and the paragraph merged at <code>4cccc311</code>. Both move in the node <code>rearm-replays-the-fleet-with-recorded-times</code>. §9 is declared done when that node lands.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260929-resume-baseline-flake-attributed" data-who="s23-coord" data-when="2026-09-29">
+    <div class="r-comment-body"><p><strong>The resume-baseline flake came after the replay, not from it.</strong> <code>resume-baseline-flake-before-the-replay</code> ran the whole file under <code>-n 8</code> with node-local basetemps (report <code>~/.config/reckon/crew/reports/reckon/resume-baseline-flake-before-the-replay.md</code>, 201 logs). <code>test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows</code> failed 0 of 51 at 16423b79, 0 of 50 at 57e4ea2e, and 0 of 50 at the replay merge 22b36271. It failed 4 of 50 at main 4f37ffe8 (Fisher p = 0.0035). So the cause lies in 22b36271..4f37ffe8. Only <code>reckon/cli.py</code> differs among the imported sources, and the leading candidate is this plan's own follow-boundary snap b1ebba90. The failure is a resumed arming on a replaced stream that returns no rows. The sibling noise-pair case moved the other way: 10 of 101 before the replay merge, 0 of 100 after. So the replay fixed that flake. The repair is dispatched as <code>resume-on-a-replaced-stream-draws-its-rows</code>.</p></div>
 </div>
 </section>
 </main>
