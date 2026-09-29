@@ -14,7 +14,7 @@ from typing import Any
 import click
 
 from reckon import __version__, pages
-from reckon._store import _config_home, _state_root
+from reckon._store import _config_home, _state_root, write_json_atomically
 from reckon._timestamps import parse_utc
 
 
@@ -172,15 +172,17 @@ def _write_json_atomically(path: Path, payload: dict, original: bytes | None) ->
             )
         mode = path.stat().st_mode
 
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.reckon-{os.getpid()}-{time.time_ns()}")
     try:
-        temporary.write_bytes(encoded)
-        if mode is not None:
-            temporary.chmod(mode)
-        os.replace(temporary, path)
+        write_json_atomically(
+            path,
+            payload,
+            fsync=False,
+            indent=2,
+            sort_keys=False,
+            mode=mode,
+            ensure_ascii=False,
+        )
     except OSError as exc:
-        temporary.unlink(missing_ok=True)
         raise click.ClickException(
             f"cannot write harness settings {path}: {exc}"
         ) from exc
