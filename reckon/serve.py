@@ -58,7 +58,7 @@ from datetime import UTC, datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 from urllib.request import urlopen
 
 from reckon import _backends, _plan_html, capabilities, crew, fleet_index, ledger
@@ -309,6 +309,22 @@ def _resolve_paths(mounts_file: Path | None = None) -> None:
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 MAX_POST_BYTES = 1_000_000
 CREW_LOG_TAIL_BYTES = 64 * 1024
+
+# The window the velocity route measures when the caller names none at all, so
+# the SPA's first render needs no date arithmetic of its own. A caller that
+# names a window, even partially, is answered for the window it named.
+VELOCITY_DEFAULT_WINDOW_DAYS = 14
+
+
+def _velocity_default_window() -> tuple[str, str]:
+    """The default velocity window: the last ``VELOCITY_DEFAULT_WINDOW_DAYS``."""
+
+    def clock(epoch: float) -> str:
+        return datetime.fromtimestamp(epoch, UTC).isoformat().replace("+00:00", "Z")
+
+    end = time.time()
+    return clock(end - VELOCITY_DEFAULT_WINDOW_DAYS * 86400), clock(end)
+
 
 CLIENT_ASSETS = {
     "babel.js": (
@@ -2198,6 +2214,60 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(f"event: {event}\ndata: {payload}\n\n".encode())
         self.wfile.flush()
 
+    def _serve_velocity(self, query: dict[str, list[str]]) -> None:
+        """GET /crew/velocity — the velocity view over the server's mounts.
+
+        ``reckon.velocity.view`` composes the window and the tables — the same
+        function the crew read view and the command line call — so the three
+        surfaces answer one payload. This route owns only the transport: it
+        resolves a named project's checkout through the server's own mount
+        table, supplies the default window a caller that names none is measured
+        over, and maps a refusal to the status the client reads.
+        """
+        from reckon import velocity as velocity_module
+
+        def named(name: str) -> str | None:
+            values = query.get(name)
+            return values[0] if values else None
+
+        project = named("project") or "*"
+        if project != "*" and not SAFE_NAME.fullmatch(project):
+            self._send(HTTPStatus.BAD_REQUEST, b"bad project name")
+            return
+        checkout_path = None
+        if project != "*":
+            mounts = load_mounts()
+            if project not in mounts:
+                self._send(HTTPStatus.NOT_FOUND, b"project not found")
+                return
+            checkout_path = str(mounts[project].parent)
+        since, until = named("since"), named("until")
+        if since is None and until is None:
+            since, until = _velocity_default_window()
+        limit = None
+        raw_limit = named("limit")
+        if raw_limit not in (None, ""):
+            try:
+                limit = int(raw_limit)
+            except ValueError:
+                self._send(HTTPStatus.BAD_REQUEST, b"bad limit")
+                return
+        payload = velocity_module.view(
+            project,
+            since=since,
+            until=until,
+            checkout_path=checkout_path,
+            fields=named("fields"),
+            limit=limit,
+            cursor=named("cursor"),
+        )
+        if not payload.get("ok"):
+            # The view refuses a missing or unparseable start by name, so the
+            # client reads the reason as a 400 rather than an empty body.
+            self._send_json(HTTPStatus.BAD_REQUEST, payload)
+            return
+        self._send_json(HTTPStatus.OK, payload)
+
     def do_GET(self) -> None:  # noqa: N802
         path = unquote(urlsplit(self.path).path)
 
@@ -2302,6 +2372,10 @@ class Handler(BaseHTTPRequestHandler):
                 )
             except OSError as e:
                 self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+            return
+
+        if path == "/crew/velocity":
+            self._serve_velocity(parse_qs(urlsplit(self.path).query))
             return
 
         if path == "/crew" or path.startswith("/crew/"):

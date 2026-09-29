@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 520" width="980" height="520" role="img" aria-labelledby="title desc">
+  <title id="title">The velocity view in the SPA: one payload behind three surfaces</title>
+  <desc id="desc">Left panel: the browser's Velocity tab issues GET /crew/velocity with project, an optional since and until, and the fields it names. The route resolves the project checkout through the server's mount table, supplies the last fourteen days when the caller names no window, and calls the same reckon.velocity.view that the crew tool and the command line call. A caller naming only until is refused with 400 carrying the view's own refusal text. Right panel: the three surfaces &#8212; the SPA tab, crew(view="velocity") and reckon crew velocity &#8212; reach the one composition, so the rendered numbers and the agent-read numbers cannot disagree.</desc>
+
+  <style>
+    .box { fill: #f7f9fc; stroke: #33507a; stroke-width: 1.5; rx: 6; }
+    .box.entry { fill: #eaf1fb; }
+    .box.shared { fill: #eef6ee; stroke: #2f6b3a; }
+    .box.refuse { fill: #fdecec; stroke: #a33; }
+    .lbl { font: 13px/1.3 system-ui, sans-serif; fill: #1b2733; }
+    .lbl.small { font-size: 11.5px; fill: #41506b; }
+    .lbl.mono { font: 12px ui-monospace, monospace; fill: #1b2733; }
+    .ttl { font: 15px system-ui, sans-serif; font-weight: 600; fill: #14233a; }
+    .arrow { stroke: #33507a; stroke-width: 1.6; fill: none; marker-end: url(#head); }
+    .arrow.no { stroke: #a33; stroke-dasharray: 4 3; marker-end: url(#headno); }
+  </style>
+
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#33507a"/>
+    </marker>
+    <marker id="headno" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#a33"/>
+    </marker>
+  </defs>
+
+  <!-- left panel: the route -->
+  <text class="ttl" x="24" y="28">GET /crew/velocity &#8212; transport, not a second composition</text>
+
+  <rect class="box entry" x="24" y="46" width="210" height="58" rx="6"/>
+  <text class="lbl mono" x="38" y="70">Velocity tab</text>
+  <text class="lbl small" x="38" y="88">docs/ui/velocity.jsx</text>
+
+  <rect class="box" x="24" y="128" width="210" height="86" rx="6"/>
+  <text class="lbl small" x="38" y="150">project = alpha</text>
+  <text class="lbl small" x="38" y="169">since / until</text>
+  <text class="lbl small" x="38" y="188">fields, limit, cursor</text>
+  <text class="lbl small" x="38" y="207">window picker re-requests</text>
+
+  <rect class="box" x="300" y="46" width="250" height="72" rx="6"/>
+  <text class="lbl" x="314" y="72">mount table lookup</text>
+  <text class="lbl small" x="314" y="92">checkout = mounts[project].parent</text>
+  <text class="lbl small" x="314" y="109">404 when the project is not mounted</text>
+
+  <rect class="box" x="300" y="138" width="250" height="76" rx="6"/>
+  <text class="lbl" x="314" y="163">no window named</text>
+  <text class="lbl small" x="314" y="182">serve.py opens the last</text>
+  <text class="lbl small" x="314" y="199">VELOCITY_DEFAULT_WINDOW_DAYS</text>
+  <text class="lbl small" x="314" y="214">and the response names it</text>
+
+  <rect class="box refuse" x="300" y="234" width="250" height="64" rx="6"/>
+  <text class="lbl" x="314" y="258">until without since</text>
+  <text class="lbl small" x="314" y="277">400, carrying the view's</text>
+  <text class="lbl small" x="314" y="292">own refusal detail</text>
+
+  <rect class="box shared" x="620" y="86" width="330" height="96" rx="6"/>
+  <text class="lbl" x="634" y="112">reckon.velocity.view(...)</text>
+  <text class="lbl small" x="634" y="132">window parse &#183; mount resolve</text>
+  <text class="lbl small" x="634" y="150">report() &#183; compact_summary()</text>
+  <text class="lbl small" x="634" y="168">cells paged by limit / cursor</text>
+
+  <path class="arrow" d="M234 75 H 296"/>
+  <path class="arrow" d="M234 171 H 268 V 82 H 296"/>
+  <path class="arrow" d="M234 171 H 296"/>
+  <path class="arrow" d="M234 171 H 268 V 120 H 616"/>
+  <path class="arrow" d="M550 82 H 584 V 120 H 616"/>
+  <path class="arrow" d="M550 176 H 616"/>
+  <path class="arrow no" d="M550 266 H 584 V 300 H 700" />
+  <text class="lbl small" x="590" y="318" fill="#a33">refusal returned as the HTTP status</text>
+
+  <!-- right panel: three surfaces, one payload -->
+  <line x1="24" y1="356" x2="956" y2="356" stroke="#d5dbe5"/>
+  <text class="ttl" x="24" y="386">Three surfaces, one payload</text>
+
+  <rect class="box" x="24" y="404" width="240" height="50" rx="6"/>
+  <text class="lbl mono" x="38" y="434" font-size="12">SPA Velocity tab</text>
+
+  <rect class="box" x="300" y="404" width="240" height="50" rx="6"/>
+  <text class="lbl mono" x="314" y="434" font-size="12">crew(view="velocity")</text>
+
+  <rect class="box" x="576" y="404" width="240" height="50" rx="6"/>
+  <text class="lbl mono" x="590" y="434" font-size="12">reckon crew velocity</text>
+
+  <rect class="box shared" x="852" y="396" width="104" height="66" rx="6"/>
+  <text class="lbl small" x="866" y="422">one</text>
+  <text class="lbl small" x="866" y="440">payload</text>
+
+  <path class="arrow" d="M264 429 H 296"/>
+  <path class="arrow" d="M540 429 H 572"/>
+  <path class="arrow" d="M816 429 H 848"/>
+  <text class="lbl small" x="24" y="490">The SPA renders these numbers; it derives none of them, so a browser and an agent reading the same project cannot disagree.</text>
+</svg>
