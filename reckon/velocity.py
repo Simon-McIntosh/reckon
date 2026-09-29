@@ -32,6 +32,7 @@ import concurrent.futures
 import datetime as dt
 import hashlib
 import json
+import os
 import re
 import shlex
 import sqlite3
@@ -508,22 +509,70 @@ def plan_cohort(repo, head, *, start=START, end=END, prefix=PLAN_DIRECTORY):
     }
 
 
-def capture_project(
-    project,
-    branch,
-    *,
-    code_root=CODE,
-    repo_path=None,
-    start=START,
-    end=END,
-    run_store_db=RUN_STORE,
-):
-    # ``repo_path`` names a checkout outright, so a caller holding an arbitrary
-    # path does not have to place it at ``code_root/project``; the ledger key
-    # stays ``project`` either way, because the run state lives under the
-    # project's own name. Without it the historical layout resolves.
-    repo = Path(repo_path) if repo_path is not None else Path(code_root) / project
-    head = (
+# A project's captured history is expensive to rebuild from the repository:
+# the ledger and every committed run record are separate object reads, and the
+# primary-branch window is walked commit by commit. The cache below holds one
+# entry per repository so a repeated window read answers from it, and a window
+# whose head has moved extends the captured commits rather than replaying them.
+CACHE_VERSION = 1
+
+
+def _velocity_cache_root():
+    """The directory the captured-history cache lives under.
+
+    Outside every repository, so a cache write never dirties a checkout. The
+    location resolves from ``RECKON_VELOCITY_CACHE`` when a caller names one,
+    else the user's cache directory (``XDG_CACHE_HOME`` or ``~/.cache``). When
+    neither is set but ``RECKON_HOME`` is, the cache stays under that home so a
+    caller that isolated its configuration also isolated its cache.
+    """
+    configured = os.environ.get("RECKON_VELOCITY_CACHE")
+    if configured:
+        return Path(configured).expanduser()
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    if cache_home:
+        return Path(cache_home) / "reckon" / "velocity"
+    reckon_home = os.environ.get("RECKON_HOME")
+    if reckon_home:
+        return Path(reckon_home) / "cache" / "velocity"
+    return Path.home() / ".cache" / "reckon" / "velocity"
+
+
+def _velocity_cache_path(repo, cache_root=None):
+    """One cache file per repository path.
+    """
+    root = Path(cache_root) if cache_root is not None else _velocity_cache_root()
+    digest = hashlib.sha256(str(Path(repo).resolve()).encode()).hexdigest()
+    return root / (digest + ".json")
+
+
+def _load_captured_history(path):
+    """Return the cached entry, or None when it is absent, unreadable or stale.
+
+    A corrupt or version-mismatched entry is never trusted: it is discarded and
+    the caller rebuilds it, so a shape this module no longer writes cannot be
+    read as if it were current.
+    """
+    try:
+        entry = json.loads(Path(path).read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(entry, dict) or entry.get("version") != CACHE_VERSION:
+        return None
+    if not entry.get("window") or not isinstance(entry.get("ledger"), dict):
+        return None
+    return entry
+
+
+def _store_captured_history(path, entry):
+    from reckon._store import write_json_atomically
+
+    write_json_atomically(path, entry, fsync=False, indent=None)
+
+
+def _first_parent_head(repo, branch, end):
+    """The first-parent head a window closes on."""
+    return (
         git(
             repo,
             "log",
@@ -536,6 +585,148 @@ def capture_project(
         .decode()
         .strip()
     )
+
+
+def _is_ancestor(repo, ancestor, descendant):
+    if not ancestor or not descendant or ancestor == descendant:
+        return ancestor == descendant
+    result = subprocess.run(
+        ["git", "-C", str(repo), "merge-base", "--is-ancestor", ancestor, descendant],
+        capture_output=True,
+    )
+    return result.returncode == 0
+
+
+def _blob_sha(repo, head, path):
+    """The blob a path names at ``head``, or None when it is absent there."""
+    raw = subprocess.run(
+        ["git", "-C", str(repo), "ls-tree", head, "--", path],
+        capture_output=True,
+    ).stdout.decode()
+    line = raw.strip()
+    return line.split()[2] if line else None
+
+
+def _run_blobs(repo, head, project):
+    """Map every committed run-record path to its blob, in tree order."""
+    raw = git(
+        repo, "ls-tree", "-r", head, "--", "docs/state/" + project + "/runs"
+    ).decode()
+    blobs = {}
+    for line in raw.splitlines():
+        meta, path = line.split("\t", 1)
+        blobs[path] = meta.split()[2]
+    return blobs
+
+
+def _read_ledger(repo, head, project, cache):
+    """Read the committed ledger, reusing a cached parse when the blob matches.
+
+    The ledger is tens of megabytes on a mature project, so it is read through
+    its blob identity: an unchanged blob answers from the cache and the parse is
+    skipped, and the raw digest the snapshot reports is kept beside it.
+    """
+    path = "docs/state/" + project + "/crew.json"
+    blob = _blob_sha(repo, head, path)
+    if cache is not None and blob is not None and cache.get("blob") == blob:
+        return dict(cache["records"]), cache["sha256"]
+    raw = git(repo, "show", head + ":" + path)
+    payload = json.loads(raw)
+    records = {r["run_id"]: r for r in payload.get("data", payload).get("runs", [])}
+    digest = hashlib.sha256(raw).hexdigest()
+    if cache is not None and blob is not None:
+        cache.clear()
+        cache.update({"blob": blob, "sha256": digest, "records": records})
+    return records, digest
+
+
+def _read_run_rows(repo, head, project, cache):
+    """Read each committed run record, reusing cached rows by blob identity."""
+    blobs = _run_blobs(repo, head, project)
+    rows = {}
+    for path in blobs:
+        if not path.endswith(".json"):
+            continue
+        sha = blobs[path]
+        row = cache.get(sha) if cache is not None else None
+        if row is None:
+            row = json.loads(git(repo, "show", head + ":" + path))
+            row = row.get("data", row)
+            if cache is not None:
+                cache[sha] = row
+        if row.get("run_id"):
+            rows[row["run_id"]] = row
+    return rows, len(blobs)
+
+
+def _capture_commits(repo, base, head):
+    """Capture the primary-branch commits in ``base..head`` and their patches."""
+    history = parse_stats(
+        git(
+            repo,
+            "log",
+            "--first-parent",
+            "--reverse",
+            "--diff-merges=first-parent",
+            "--find-renames",
+            "--numstat",
+            "-z",
+            "--format=%x1e%H%x09%ct%x09%P%x09%s%x00",
+            base + ".." + head,
+        )
+    )
+    product = [
+        c for c in history if any(f["class"] in {"source", "tests"} for f in c["files"])
+    ]
+
+    def patches(c):
+        paths = sorted(
+            {
+                p
+                for f in c["files"]
+                if f["class"] in {"source", "tests"}
+                for p in (f["path"], f["old_path"])
+            }
+        )
+        raw = git(
+            repo,
+            "diff",
+            "--no-ext-diff",
+            "--find-renames",
+            "--unified=3",
+            c["parents"][0],
+            c["sha"],
+            "--",
+            *paths,
+        )
+        return c["sha"], parse_hunks(raw)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+        patch_index = dict(pool.map(patches, product))
+    for c in history:
+        c["product_patches"] = patch_index.get(c["sha"], [])
+    return history
+
+
+def capture_project(
+    project,
+    branch,
+    *,
+    code_root=CODE,
+    repo_path=None,
+    start=START,
+    end=END,
+    run_store_db=RUN_STORE,
+    prior=None,
+    ledger_cache=None,
+    run_cache=None,
+):
+    # ``repo_path`` names a checkout outright, so a caller holding an arbitrary
+    # path does not have to place it at ``code_root/project``; the ledger key
+    # stays ``project`` either way, because the run state lives under the
+    # project's own name. Without it the historical layout resolves.
+    repo = Path(repo_path) if repo_path is not None else Path(code_root) / project
+    head = _first_parent_head(repo, branch, end)
     graph = {}
     for line in (
         git(repo, "log", "--format=%H%x09%ct%x09%P%x09%s", head).decode().splitlines()
@@ -553,44 +744,30 @@ def capture_project(
         sha for sha in first if stamp(start) <= graph[sha]["epoch"] <= stamp(end)
     ]
     base = first[first.index(selected[0]) - 1]
-    history = parse_stats(
-        git(
-            repo,
-            "log",
-            "--first-parent",
-            "--reverse",
-            "--diff-merges=first-parent",
-            "--find-renames",
-            "--numstat",
-            "-z",
-            "--format=%x1e%H%x09%ct%x09%P%x09%s%x00",
-            base + ".." + head,
-        )
-    )
+    # A prior capture of the same window extends: its commits up to its own
+    # head are reused and only the commits after that head are captured, so a
+    # repeated read over the same window does not replay the whole range. The
+    # ancestry assertion below still holds, so a head that is not an ancestor
+    # of the current one falls back to the full capture.
+    history = None
+    if prior is not None:
+        cached_head = prior.get("head")
+        if (
+            prior.get("base") == base
+            and cached_head
+            and _is_ancestor(repo, cached_head, head)
+        ):
+            history = prior["commits"] + _capture_commits(repo, cached_head, head)
+    if history is None:
+        history = _capture_commits(repo, base, head)
     # Keep ancestry order, including any skewed commit clocks between endpoints.
     assert [c["sha"] for c in history] == first[first.index(base) + 1 :]
-    ledger_raw = git(repo, "show", head + ":docs/state/" + project + "/crew.json")
-    ledger = json.loads(ledger_raw)
-    records = {r["run_id"]: r for r in ledger.get("data", ledger).get("runs", [])}
-    paths = (
-        git(
-            repo,
-            "ls-tree",
-            "-r",
-            "--name-only",
-            head,
-            "--",
-            "docs/state/" + project + "/runs",
-        )
-        .decode()
-        .splitlines()
-    )
-    for path in paths:
-        if path.endswith(".json"):
-            row = json.loads(git(repo, "show", head + ":" + path))
-            row = row.get("data", row)
-            if row.get("run_id"):
-                records[row["run_id"]] = row
+    # The ledger and every committed run record are read through their blob
+    # identity, so an unchanged blob answers from the cache and the object read
+    # is skipped.
+    records, ledger_sha256 = _read_ledger(repo, head, project, ledger_cache)
+    run_rows, per_run_files = _read_run_rows(repo, head, project, run_cache)
+    records.update(run_rows)
     # Map every newly reachable commit to its first primary-branch appearance.
     seen = set(git(repo, "rev-list", base).decode().splitlines())
     introduction = {}
@@ -699,36 +876,11 @@ def capture_project(
         row["resolved_commits"] = resolved
         row["unresolved_or_unreachable_commits"] = unresolved
         compact.append(row)
-    product = [
-        c for c in history if any(f["class"] in {"source", "tests"} for f in c["files"])
-    ]
-
-    def patches(c):
-        paths = sorted(
-            {
-                p
-                for f in c["files"]
-                if f["class"] in {"source", "tests"}
-                for p in (f["path"], f["old_path"])
-            }
-        )
-        raw = git(
-            repo,
-            "diff",
-            "--no-ext-diff",
-            "--find-renames",
-            "--unified=3",
-            c["parents"][0],
-            c["sha"],
-            "--",
-            *paths,
-        )
-        return c["sha"], parse_hunks(raw)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-        patch_index = dict(pool.map(patches, product))
-    for c in history:
-        c["product_patches"] = patch_index.get(c["sha"], [])
+    product_commits = sum(
+        1
+        for c in history
+        if any(f["class"] in {"source", "tests"} for f in c["files"])
+    )
     print(
         project,
         "head",
@@ -738,7 +890,7 @@ def capture_project(
         "ledger_runs",
         len(compact),
         "product_commits",
-        len(product),
+        product_commits,
         flush=True,
         file=sys.stderr,
     )
@@ -747,9 +899,9 @@ def capture_project(
         "primary_branch": branch,
         "head": head,
         "base": base,
-        "ledger_sha256": hashlib.sha256(ledger_raw).hexdigest(),
+        "ledger_sha256": ledger_sha256,
         "plan_census": plan_census(repo, head, start=start, end=end),
-        "per_run_files": len(paths),
+        "per_run_files": per_run_files,
         "recovered_from_sqlite": recovered,
         "promotion_ids_without_record": sorted(
             rid
@@ -761,6 +913,77 @@ def capture_project(
         "runs": compact,
         "commits": history,
     }
+
+
+def _capture_project_cached(
+    project,
+    branch,
+    *,
+    code_root=CODE,
+    repo_path=None,
+    start=START,
+    end=END,
+    run_store_db=RUN_STORE,
+    cache_root=None,
+):
+    """Capture a project through the per-repository captured-history cache.
+
+    A read over a window whose head is unchanged answers from the cached
+    capture; a head that has moved extends it with only the commits after the
+    cached head, and the ledger and committed run records are re-read only
+    where their blobs changed. The values returned are exactly those
+    ``capture_project`` returns, so a warm read and a cold read agree by
+    construction.
+    """
+    repo = Path(repo_path) if repo_path is not None else Path(code_root) / project
+    path = _velocity_cache_path(repo, cache_root)
+    entry = _load_captured_history(path)
+    ledger_cache = (entry or {}).get("ledger")
+    if not isinstance(ledger_cache, dict):
+        ledger_cache = {}
+    run_cache = (entry or {}).get("run_rows")
+    if not isinstance(run_cache, dict):
+        run_cache = {}
+    window = (entry or {}).get("window") or {}
+    prior = window.get("project")
+    if not (
+        isinstance(prior, dict)
+        and window.get("branch") == branch
+        and window.get("start") == start
+    ):
+        prior = None
+    if prior is not None and window.get("end") == end:
+        head = _first_parent_head(repo, branch, end)
+        if head and head == prior.get("head"):
+            return prior
+    payload = capture_project(
+        project,
+        branch,
+        code_root=code_root,
+        repo_path=repo_path,
+        run_store_db=run_store_db,
+        start=start,
+        end=end,
+        prior=prior,
+        ledger_cache=ledger_cache,
+        run_cache=run_cache,
+    )
+    _store_captured_history(
+        path,
+        {
+            "version": CACHE_VERSION,
+            "repo": str(repo.resolve()),
+            "window": {
+                "branch": branch,
+                "start": start,
+                "end": end,
+                "project": payload,
+            },
+            "ledger": ledger_cache,
+            "run_rows": run_cache,
+        },
+    )
+    return payload
 
 
 def replay(commits):
@@ -2227,7 +2450,7 @@ def report(
         "window": [start, end],
         "august_baseline": baseline,
         "projects": [
-            capture_project(
+            _capture_project_cached(
                 name,
                 branches.get(name, "HEAD"),
                 repo_path=path,
