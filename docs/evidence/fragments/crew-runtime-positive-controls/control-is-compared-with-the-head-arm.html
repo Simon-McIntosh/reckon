@@ -73,7 +73,7 @@
 
   <section id="hygiene">
     <h2>Lint and format</h2>
-    <p><code>ruff check</code> and <code>ruff format --check</code> over the changed paths add no finding against the base: <code>reckon/crew/promotion.py</code> carries ten findings before the change and ten after, and the new test file carries none &mdash; counted per finding with <code>--output-format=concise</code> rather than by line count, because a clean file prints its own summary line.</p>
+    <p><code>ruff check</code> and <code>ruff format</code> over the changed paths add no finding against the base: <code>reckon/crew/promotion.py</code> carries ten lint findings at both revisions and nine format hunks at both, and the new test file and the two figure scripts carry none. Both revisions are judged under the repository's own ruff selection &mdash; the base revision read through <code>--stdin-filename</code>, because a copy of it checked from <code>/tmp</code> is measured under ruff's default rules instead and reports eleven lint findings for the same bytes. Findings are counted per finding with <code>--output-format=concise</code> rather than by line count, since a clean file prints its own summary line. The file's nine pre-existing format hunks sit outside every line this change touches and are deliberately left alone: reformatting them would rewrite lines the commit does not otherwise carry.</p>
   </section>
 
   <section id="scope">
