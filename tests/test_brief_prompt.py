@@ -366,8 +366,8 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   measurement_cwd: <only for a gate or base-arm measurement run in a scratch tree: the resolved working directory the run resolved from>
   negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. The log's first line repeats the declared mutation verbatim, so a log that failed for any other reason is refused
   negative_control_note: <where an explanation goes: one line of commentary on the red log named above, since that value stands alone; omit when the log is self-explanatory>
-  baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed=false is absent evidence>
-  after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed=false is absent evidence>
+  baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line, false otherwise, and null or absent is unreadable>
+  after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line, false otherwise, and null or absent is unreadable>
   failure_attribution: <armed-only, test role JSON {failure_id: candidate_commit} for each newly added failure>
   artifacts: <paths plus headline metrics>
   evidence_inputs: <facts the orchestrator needs for writeback>
@@ -397,3 +397,39 @@ the necessary change exceeds your write scope; the evidence cannot be produced
 with the tools or data available; the time budget is spent with the measure
 still unmet. Asking costs one turn; thrashing costs the node.
 """
+
+
+# ── Both suite arms say what `completed` holds ──────────────────────────────
+#
+# An arm is evidence only when its suite ran to the summary line, and the gate
+# reads a null or absent `completed` as unreadable. A template that merely
+# listed the key left the worker to guess, and an arm it guessed wrong on was
+# refused hours later at promotion with nothing in the contract to point at.
+
+COMPLETED_RULE = (
+    "completed is true only when the suite ran to its summary line, "
+    "false otherwise, and null or absent is unreadable"
+)
+
+
+def _arm_line(text: str, arm: str) -> str:
+    """The arm's own line, so a rule stated anywhere else in the contract
+    cannot satisfy the assertion: the wording has to sit on the JSON shape the
+    worker fills in."""
+    for line in text.splitlines():
+        if line.strip().startswith(arm):
+            return line
+    raise AssertionError(f"the contract carries no {arm} line")
+
+
+def test_the_manifest_template_states_what_completed_holds() -> None:
+    composed = _compose()
+
+    assert composed.count(COMPLETED_RULE) == 2
+    for arm in ("baseline_suite:", "after_suite:"):
+        assert COMPLETED_RULE in _arm_line(composed, arm)
+
+
+def test_the_literal_copy_of_the_suite_lines_carries_the_completed_rule() -> None:
+    for arm in ("baseline_suite:", "after_suite:"):
+        assert COMPLETED_RULE in _arm_line(PLAN_PROMPT_SNAPSHOT, arm)
