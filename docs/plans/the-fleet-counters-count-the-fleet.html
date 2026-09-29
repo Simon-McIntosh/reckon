@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="130">
+<meta name="plan-version" content="131">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -405,6 +405,11 @@
 <article class="r-fu" data-id="f-tfcctf-replay-stamps-the-state-entry-time" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">A replayed row carries the time its run entered its state, not the last re-baseline</h4>
     <div class="r-fu-body"><p>Measured on the first arming after 22b36271 (2026-09-29, 11:34 local). The replay stamped <code>review-of-rearm-replays-the-fleet-with-recorded-times</code> at 11:30:33, but the run entered <code>working</code> at 10:18:06. The producer re-emits a <code>baseline</code> event for every live run about every 25 minutes: at 08:24, 08:49, 09:12 and 09:30 UTC for this run. <code>_recorded_fleet_times</code> keeps the last event naming a run, so the stamp is the latest re-baseline rather than the entry time. The lead asked for correct timestamps. Done when the replay stamps each row with the observed_at of the first event in the run's trailing sequence of events whose to_state equals its current state, so a re-emitted baseline never resets it. A test with a transition into working followed by three re-baselines asserts that the row carries the transition's time. The declared mutation, keeping the last event, fails.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
+    </article>
+<article class="r-fu" data-id="f-tfcctf-follow-reads-whole-lines" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The follower delivers every stream record once, whole</h4>
+    <div class="r-fu-body"><p>Found by the review of <code>follow-boundary-snaps-to-a-line</code> (86, merged at 552a3f0a). The follow read loop in <code>reckon/crew/runs.py</code> admits a final line without its newline as a whole record. When the producer's completing write lands after the loop's first read, the record arrives truncated and in two pieces. The newline snap narrows that window but does not close it. The same review found that <code>_follow_boundary</code> reads the whole stream into memory to find one newline. Done when the loop holds a partial final line until its newline arrives, and never records an offset off a line boundary. <code>_follow_boundary</code> must read backward in bounded chunks. A new <code>tests/test_follow_reads_whole_lines.py</code> asserts both: a record half-written across a loop read arrives once and whole, and the probe reads bounded bytes on a stream over 1 MB. The declared mutation, accepting a newline-less line, fails. Held until s25-coord's <code>runs-pointer-writer-reuses-the-store</code> releases <code>reckon/crew/runs.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
     </article>
 </section>
