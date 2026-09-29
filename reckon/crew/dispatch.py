@@ -66,6 +66,7 @@ from reckon.crew.reserve import admit as reserve_admit
 from reckon.crew.review import review_store_root
 from reckon.crew.routing import (
     _agent_configuration,
+    _boundary_tree_roots,
     _budget_verdict,
     _competence_verdict,
     _create_worktree,
@@ -4743,6 +4744,12 @@ def dispatch(
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,
             "sandbox": backend.get("sandbox"),
+            # Whether this launch was composed inside the fence wrapper. The
+            # boundary check reads this recorded fact rather than the current
+            # default, so a later change to the default cannot redefine what an
+            # already-dispatched run is checked against. A record written before
+            # the field existed carries neither value and keeps the full scan.
+            "fenced": FENCE_WORKERS,
             "sandbox_write_roots": (
                 None
                 if resolution.sandbox_write_roots is None
@@ -5059,7 +5066,10 @@ def dispatch(
                 # the supervisor: it spawns synchronously and the boundary
                 # baseline is taken inline, exactly as the supervisor would.
                 record["repository_tree_snapshot"] = _repository_tree_snapshot(
-                    repo_root
+                    repo_root,
+                    roots=_boundary_snapshot_roots(
+                        repo_root, Path(worktree["path"]), fenced=FENCE_WORKERS
+                    ),
                 )
             spawned_start_time = _process_start_time(spawned_pid)
             record["pid"] = spawned_pid
@@ -5070,7 +5080,12 @@ def dispatch(
             # take the boundary baseline after dispatch's writes. Dispatch takes
             # it here instead, in the same last repository-facing step, so the
             # baseline still predates every write this run's worker will make.
-            _write_boundary_tree_snapshot(directory, repo_root)
+            _write_boundary_tree_snapshot(
+                directory,
+                repo_root,
+                worktree=Path(str(worktree["path"])),
+                fenced=FENCE_WORKERS,
+            )
     except Exception:
         _unwire_peer_channels(run_id, wired_peer_run_ids)
         if spawned_pid is not None:
@@ -6475,6 +6490,10 @@ def _supervisor_spec(
         # starts this supervisor under the dispatcher's home rather than its own.
         "environment": _carried_crew_environment(),
         "worktree": str(worktree),
+        # Whether this launch was composed inside the fence, carried so the
+        # supervisor's boundary baseline reads the same two trees the dispatch
+        # record names.
+        "fenced": FENCE_WORKERS,
         "prompt_path": str(prompt_path),
         "log_path": str(log_path),
         "stderr_path": str(stderr_path),
@@ -6813,8 +6832,26 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     return process.pid
 
 
+def _boundary_snapshot_roots(
+    repo_root: Path, worktree: Path | None, *, fenced: bool
+) -> list[Path] | None:
+    """The trees a boundary snapshot reads, or None for the full registry.
+
+    A fenced run reads only its own worktree and the main checkout. A run that
+    was not fenced keeps the full registry scan, because nothing stopped it
+    from writing elsewhere.
+    """
+    if not fenced or worktree is None:
+        return None
+    return _boundary_tree_roots(repo_root, worktree)
+
+
 def _write_boundary_tree_snapshot(
-    run_directory: Path, repo_root: Path
+    run_directory: Path,
+    repo_root: Path,
+    *,
+    worktree: Path | None = None,
+    fenced: bool = False,
 ) -> dict[str, Any]:
     """Write the boundary baseline into the run directory and return it.
 
@@ -6830,9 +6867,15 @@ def _write_boundary_tree_snapshot(
     spawns nothing, so dispatch takes it inline, in the same last
     repository-facing step. Promotion reads it from the run directory either
     way, so a stray uncommitted edit in another tree is refused for both.
+
+    A fenced launch reads only the run's own worktree and the main checkout;
+    the rest of the worktree registry is a write the fence already refused.
     """
     try:
-        snapshot: dict[str, Any] = _repository_tree_snapshot(repo_root)
+        snapshot: dict[str, Any] = _repository_tree_snapshot(
+            repo_root,
+            roots=_boundary_snapshot_roots(repo_root, worktree, fenced=fenced),
+        )
     except Exception as exc:  # noqa: BLE001 - a scan failure never kills a launch
         snapshot = {"available": False, "detail": f"{type(exc).__name__}: {exc}"}
     _supervisor_write(run_directory / TREE_SNAPSHOT_NAME, snapshot)
@@ -6841,8 +6884,12 @@ def _write_boundary_tree_snapshot(
 
 def _supervisor_tree_snapshot(spec: Mapping[str, Any]) -> None:
     """Write the boundary snapshot, or its failure, into the run directory."""
+    worktree_value = str(spec.get("worktree") or "").strip()
     _write_boundary_tree_snapshot(
-        Path(str(spec["run_directory"])), Path(str(spec["repo"]))
+        Path(str(spec["run_directory"])),
+        Path(str(spec["repo"])),
+        worktree=Path(worktree_value) if worktree_value else None,
+        fenced=bool(spec.get("fenced")),
     )
 
 

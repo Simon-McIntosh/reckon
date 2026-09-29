@@ -46,6 +46,7 @@ from reckon.crew.reports import (
 from reckon.crew.routing import (
     RECLAIMABLE_CLASSES,
     WITHHELD_REASONS,
+    _boundary_tree_roots,
     _git,
     _inspect_workspace,
     _repository_tree_snapshot,
@@ -2224,19 +2225,28 @@ def _repository_tree_boundary_violations(
     before_trees = snapshot.get("trees")
     if not isinstance(before_trees, list):
         return []
-    roots = [
-        str(tree.get("path") or "")
-        for tree in before_trees
-        if isinstance(tree, Mapping) and str(tree.get("path") or "")
-    ]
     repository = Path(str(record.get("repo") or ".")).resolve()
+    own_tree = Path(str(record.get("worktree") or "")).resolve()
+    # A fenced run's boundary check reads only its own worktree and the main
+    # checkout: every other tree is a write the operating system already
+    # refused. The recorded fact is read rather than the current default, so a
+    # later change to the default cannot redefine what a run already dispatched
+    # is checked against. A record written before the field existed carries
+    # neither value and keeps the full scan.
+    if record.get("fenced") is True and str(record.get("worktree") or "").strip():
+        roots: list[str | Path] | None = _boundary_tree_roots(repository, own_tree)
+    else:
+        roots = [
+            str(tree.get("path") or "")
+            for tree in before_trees
+            if isinstance(tree, Mapping) and str(tree.get("path") or "")
+        ]
     current = _repository_tree_snapshot(repository, roots=roots)
     after_by_path = {
         str(tree.get("path") or ""): tree
         for tree in current["trees"]
         if isinstance(tree, Mapping)
     }
-    own_tree = Path(str(record.get("worktree") or "")).resolve()
     declared = (record.get("node") or {}).get("write_paths") or ()
     declared_roots = _repository_scope_paths(
         declared, worktree=own_tree, repository=repository

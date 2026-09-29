@@ -559,6 +559,18 @@ def _tree_state(path: Path) -> dict[str, Any]:
     }
 
 
+def _boundary_tree_roots(repository: str | Path, worktree: str | Path) -> list[Path]:
+    """The two trees a fenced run's boundary check reads.
+
+    A fenced worker cannot write outside its own worktree, so a boundary check
+    over the rest of the worktree registry looks for a write the operating
+    system already refused. The main checkout stays in the set as a second line
+    behind the fence, because a write there goes live for every session on the
+    repository.
+    """
+    return sorted({Path(repository).resolve(), Path(worktree).resolve()}, key=str)
+
+
 def _repository_tree_snapshot(
     repo: Path, *, roots: Iterable[str | Path] | None = None
 ) -> dict[str, Any]:
