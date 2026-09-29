@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="8">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="9">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -143,6 +143,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260929T0750-joint-node-reuse" data-who="s21-1c" data-when="2026-09-29T07:50:00Z">
     <div class="r-comment-body">Reuse, recorded at hand-off from s21-coord. The joint node, which covers this §2 and §3 together with a-placement-with-no-reservation-mints-one-per-worker §3, f-pnr-001 and f-fsa-001, builds on reckon/crew/fleet_node.py. That module is `reckon fleet-node hold|status|place`, merged at 15390017. It finds allocations by the reckon-fleet or ambix-fleet job comment (find_allocations, find_allocation, recorded_job_id) and composes step placement (placement_argv). Do not add a second hold path beside it. Per-project keying lives at reckon/crew/placement.py:97-115. The allocation to adopt is the supervisor-running kind, 1277272 on clu-2018 (locked decision; see f-tfsoa-handoff-01). Every test uses a recording scheduler: no node submits, cancels or reloads a real allocation. Operator authorisation, 2026-09-29: once the joint node has merged, the coordinator may cancel 1276262 (clu-2002) by its job id, if squeue shows no step running in it. The coordinator performs that cancel and reports its printed output. No worker does.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260929T1040-s2-landed" data-who="s21-1c" data-when="2026-09-29T10:40:00Z">
+    <div class="r-comment-body">§2 landed as merge f6c8ebab (run r-20260929T085733108021, commit ba07b277, review 95, 0 added failures). The reservation is one unkeyed host-global record at crew_home()/placement/reservation.json. _refuse_over_reservation_roster counts every live pointer that records placement into the reservation, across all projects; unplaced runs are not counted, and a backend declaring no placement is unbounded. A legacy per-project record is still read while no unkeyed record exists, so imas-ambix's placement/imas-ambix/reservation.json, which names 1276262, keeps resolving until the shared record is published. The focused gate went from 46 passed at base to 51 at head, and the negative control (per-project keying restored) makes project B resolve nothing. Carried into the next link: the comment at reckon/crew/placement.py:344 still says the project is carried in the path. Owned elsewhere: reckon/cli.py's crew_placement help and docstring (around line 3567) still describe per-project keying, and cli.py is held by a concurrent run. §3's two-project one-allocation proof waits on the hold-when-none link (a-placement-with-no-reservation-mints-one-per-worker §3).</div>
 </div>
 </section>
 </main>
