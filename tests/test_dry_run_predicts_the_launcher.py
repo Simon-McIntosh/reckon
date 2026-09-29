@@ -143,7 +143,7 @@ def test_the_dry_run_still_offers_a_run_the_launcher_would_resume(
 ) -> None:
     """The positive control: consulting guards must not silence a real resume."""
     run_id = "r-20260917T120000000000-node-a"
-    _refused_run(tmp_path, run_id)
+    _refused_run(tmp_path, run_id, observed_end=True)
     moment = _stated_reset() + timedelta(minutes=1)
 
     dry = sweep(PROJECT, dry_run=True, now=moment)
