@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="147">
+<meta name="plan-version" content="148">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -642,7 +642,7 @@
     <div class="r-comment-body"><p>measured the named case over whole-file pytest -n 8 runs — 0 of 51 at 16423b79, 0 of 50 at 57e4ea2e, 0 of 50 at 22b36271, 4 of 50 at 4f37ffe8 — so it does not reproduce before the replay merge and the merge is excluded by direct measurement (candidate b1ebba90, merged 552a3f0a); the sibling noise-pair case is the pre-existing one (7/51 base, 3/50 parent, 0/50 merge, 0/50 main)</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260929T163739248062-review-of-resume-baseline-flake-before-the-replay" data-who="reckon-build" data-when="2026-09-29T17:08:32.651Z">
-    <div class="r-comment-body"><p>stored the parsed review of run r-20260929T160437028032-resume-baseline-flake-before-the-replay at both fence paths, byte-identical to each other (14073 bytes, sha256 069d6f90d230b9e70c8ef131aece8d899a76d52d15a27e736b8b2c9527c1c9ec, read from sha256sum): scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 17, fit 19, total 92, all six checklist items carried, four findings, added_failure_count 1 from the reviewed run&#x27;s own gate logs</p></div>
+    <div class="r-comment-body"><p>stored the parsed review of run r-20260929T160437028032-resume-baseline-flake-before-the-replay at both fence paths, byte-identical to each other (14073 bytes, sha256 069d6f90d230b9e70c8ef131aece8d899a76d52d15a27e736b8b2c9527c1c9ec, read from sha256sum): scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 17, fit 19, total 92, all six checklist items carried, four findings, added_failure_count 1 from the reviewed run's own gate logs</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T130204463138-ticker-row-is-one-aligned-transition" data-who="reckon-build" data-when="2026-09-25T13:46:08Z">
     <div class="r-comment-body"><p>each ticker row is one transition, from → to on an aligned arrow with fixed columns on both sides, chained per run on the pane's last shown state, with no action word; 266 passed; review 86, whose three findings (stale width comment at ticker.py:339, a test assertion that cannot fail, and a wrong rendered-case count in the evidence) go to the next ticker node</p></div>
@@ -715,6 +715,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260929-resume-baseline-flake-attributed" data-who="s23-coord" data-when="2026-09-29">
     <div class="r-comment-body"><p><strong>The resume-baseline flake came after the replay, not from it.</strong> <code>resume-baseline-flake-before-the-replay</code> ran the whole file under <code>-n 8</code> with node-local basetemps (report <code>~/.config/reckon/crew/reports/reckon/resume-baseline-flake-before-the-replay.md</code>, 201 logs). <code>test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows</code> failed 0 of 51 at 16423b79, 0 of 50 at 57e4ea2e, and 0 of 50 at the replay merge 22b36271. It failed 4 of 50 at main 4f37ffe8 (Fisher p = 0.0035). So the cause lies in 22b36271..4f37ffe8. Only <code>reckon/cli.py</code> differs among the imported sources, and the leading candidate is this plan's own follow-boundary snap b1ebba90. The failure is a resumed arming on a replaced stream that returns no rows. The sibling noise-pair case moved the other way: 10 of 101 before the replay merge, 0 of 100 after. So the replay fixed that flake. The repair is dispatched as <code>resume-on-a-replaced-stream-draws-its-rows</code>.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260929-resume-baseline-attribution-corrected" data-who="s23-coord" data-when="2026-09-29">
+    <div class="r-comment-body"><p><strong>Correction to c-20260929-resume-baseline-flake-attributed.</strong> The review of <code>resume-baseline-flake-before-the-replay</code> (92) confirmed the rates and that the test file is byte-identical across the four trees. It did not confirm the localisation. The comment above says only <code>reckon/cli.py</code> differs among the imported sources. In fact 327 tracked paths differ between 16423b79 and 4f37ffe8, 38 of them under <code>reckon/</code>. So the cause lies somewhere in 22b36271..4f37ffe8, not necessarily in <code>cli.py</code>. The follow-boundary snap b1ebba90 remains the leading candidate because it alone changes what an arming reads. <code>resume-on-a-replaced-stream-draws-its-rows</code> may need a wider fence if the cause is elsewhere.</p></div>
 </div>
 </section>
 </main>
