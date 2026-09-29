@@ -80,6 +80,38 @@
     "reason": "section 9 stays open for follow-reads-whole-lines, queued behind a peer's claim on reckon/crew/runs.py",
     "verdict": "waived"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "8d9db8be03a73be28c305af202e4c350adb69d2d",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+        "tests/test_watch_arming_isolation.py::test_an_opted_in_caller_is_not_refused",
+        "tests/test_watch_arming_isolation.py::test_arming_refuses_a_configuration_home_under_a_test_directory"
+      ],
+      "integrated_revision": "8d9db8be03a73be28c305af202e4c350adb69d2d",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 8d9db8be03a7: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "env -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q -p no:cacheprovider -rf --basetemp=/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T122636189413-replay-stamps-the-state-entry-time/gates/bt-after /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_attach_shows_each_live_run.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_crew_ticker.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_crew_ticker_layout.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_crew_watch_ensure.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_crew_watch_lifetime.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_crew_watch_stream.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_crew_watch_visibility.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_crew_watchlife.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follow_counts_its_session.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follow_lifetime.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follow_lifetime_survives_reload.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follow_observes_other_sessions.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follow_rearm_continues.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follow_sweep_cadence.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follower_checks_its_owner.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follower_freshness.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follower_keeps_memory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follower_prints_only_policy_rows.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follower_rearm_shows_nothing_twice.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follower_reload_is_safe.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follower_survives_a_config_change.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_follower_survives_a_host_change.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_ticker_node_names_keep_their_ends.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_ticker_reads_cleanly.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_ticker_reason_cut_at_a_word.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_ticker_renders_wait_facts.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_ticker_row_drops_unread_cells.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_ticker_row_is_one_transition.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_watch_arming_isolation.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_watch_reports_death_at_once.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_watch_seat_across_hosts.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_watch_version_stamp.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_watcher_arming_fallback.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time/tests/test_watcher_unit_restart.py",
+    "gate_command_source": "stored",
+    "integrated_revision": "8d9db8be03a73be28c305af202e4c350adb69d2d",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T122636189413-replay-stamps-the-state-entry-time/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "timed_out": false,
+    "worktree_roots_rewritten": [
+      "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/replay-stamps-the-state-entry-time"
+    ]
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
