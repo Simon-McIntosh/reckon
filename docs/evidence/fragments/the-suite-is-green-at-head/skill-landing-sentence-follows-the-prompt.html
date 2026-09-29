@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The suite's landing sentence follows the prompt">
+  <meta name="plan-summary" content="The skills' landing sentence and the two prompt tests are brought in line with the runtime prompt's fragment landing contract.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,skills,prompt-parity,evidence">
+  <title>The suite's landing sentence follows the prompt | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="skill-landing-sentence-follows-the-prompt" data-reckon="landed" data-when="2026-09-29">
+  <h2>The suite's landing sentence follows the prompt</h2>
+  <p>The runtime prompt <code>PLAN_LANDING_CONTRACT</code> in
+  <code>tests/test_crew_prompts.py</code> and the four path-parity ids in
+  <code>tests/test_skill_contract_parity.py</code> still pinned the pre-fragment
+  landing wording after the prompt rewrote it, and the three ship-skill files
+  still carried the retired sentence. <code>landing_record</code> derives the
+  landing requirement from the prompt at test time, so the locators were repaired
+  to the prompt's own anchors and the derived sentence was placed verbatim into
+  the skills.</p>
+  <p><strong>Measured on the worktree at <code>4c91e7bb6</code>.</strong> The six
+  ids failed at the base arm (6 failed, EXIT=1) and pass in the head arm (6
+  passed, EXIT=0). Over the three subject files the base arm reads
+  <strong>6 failed, 52 passed</strong> and the head arm <strong>58 passed</strong>:
+  six repair, none added. The declared negative control rewrites the landing
+  anchor in a scratch copy of <code>reckon/crew/prompts.py</code>; the parity
+  locator then raises <code>ValueError: substring not found</code> and the four
+  parity ids fail, confirming the check is load-bearing rather than passing on a
+  stale literal.</p>
+</article>
+</body>
+</html>
