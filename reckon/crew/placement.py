@@ -19,10 +19,13 @@ axis that binds and cores are the cheap one.
 
 from __future__ import annotations
 
+import contextlib
+import fcntl
 import json
+import os
 import subprocess
 import time
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -70,6 +73,15 @@ RESERVATION_REASON_QUERY = ("squeue", "-h", "-j", "{job}", "-o", "%R")
 
 _ALLOCATION_TIMEOUT_SECONDS = 60.0
 
+# How long an ensure waits, and how often it asks again, while the liveness
+# probe cannot be completed at all. A question that never reached the scheduler
+# says nothing about the allocation, so the ensure waits and asks again rather
+# than reading the silence as an absent reservation; the bound is what stops an
+# unreachable controller from hanging the command, and it ends in a reported
+# unknown rather than in a second allocation.
+_UNKNOWN_PROBE_INTERVAL_SECONDS = 0.25
+_UNKNOWN_PROBE_ATTEMPTS = 4
+
 
 def reservation_path() -> Path:
     """Path of the published reservation record, one record for the host.
@@ -85,6 +97,43 @@ def reservation_path() -> Path:
 
     base = crew_home() / "placement"
     return base / "reservation.json"
+
+
+def reservation_lock_path() -> Path:
+    """Path of the lock that serialises holding the one reservation.
+
+    The lock lives beside the record it guards, in the same crew state every
+    dispatch on the workstation reads, because the thing it protects is the one
+    shared allocation rather than any single session's copy of it.
+    """
+    from reckon.crew.runs import crew_home
+
+    return crew_home() / "placement" / "reservation.lock"
+
+
+@contextlib.contextmanager
+def _reservation_hold_lock() -> Iterator[None]:
+    """Hold the lock that makes holding the reservation idempotent under a race.
+
+    The claim is a POSIX advisory lock on a file beside the record — an
+    operation that is atomic between the separate processes dispatching on this
+    workstation, which a lock held inside one process is not. Several dispatches
+    starting at once therefore produce one allocation rather than one each:
+    exactly one proceeds through the read, the probe and the submission while
+    the rest block here, and each of those reads the record it published once
+    the lock is released. Without it every racer sees no record, concludes the
+    reservation is absent, and mints an allocation of its own — the per-worker
+    minting this module exists to remove.
+    """
+    path = reservation_lock_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(handle, fcntl.LOCK_UN)
+        os.close(handle)
 
 
 def legacy_reservation_path(project: str) -> Path:
@@ -262,6 +311,72 @@ def _parse_job_id(completed: subprocess.CompletedProcess[str]) -> str | None:
     return None
 
 
+def _probe_answer(
+    record: Mapping[str, Any],
+    alive_probe: Callable[[Mapping[str, Any] | None], bool] | None,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> bool | None:
+    """What the probe says about a recorded allocation: held, gone, or unasked.
+
+    Three answers, and the last two mean opposite things. True the allocation
+    may be placed into, False the scheduler ran and named no such job so it has
+    left, None the question could not be asked at all. The ensure decides on
+    that distinction, never on the presence of a record: a record naming no job
+    is not a reservation and answers False, while a question that never reached
+    the scheduler is unknown and must not read as a released allocation.
+    """
+    if alive_probe is not None:
+        return bool(alive_probe(record))
+    if not record.get("job_id"):
+        return False
+    return reservation_state(record, runner)
+
+
+def _await_probe(
+    record: Mapping[str, Any],
+    alive_probe: Callable[[Mapping[str, Any] | None], bool] | None,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> bool | None:
+    """The probe's answer after retrying while it stays unknown, or None.
+
+    The unknown case is the one a dispatch must not turn into a second
+    allocation: the record names a job, the scheduler could not be asked about
+    it, and the allocation may well be alive and merely invisible, so the ensure
+    waits and asks again and never submits while the answer stays unknown. The
+    wait is bounded so an unreachable controller ends in a reported unknown
+    rather than a hang; a definite answer reached meanwhile is returned as it is.
+    """
+    for _ in range(_UNKNOWN_PROBE_ATTEMPTS - 1):
+        time.sleep(_UNKNOWN_PROBE_INTERVAL_SECONDS)
+        answer = _probe_answer(record, alive_probe, runner)
+        if answer is not None:
+            return answer
+    return None
+
+
+def _held_result(record: Mapping[str, Any], *, unknown: bool = False) -> dict[str, Any]:
+    """The report for a reservation that is already held and not replaced."""
+    job_id = record.get("job_id")
+    if unknown:
+        detail = (
+            f"the reservation {job_id} is recorded but the scheduler could not "
+            "be asked about it; started nothing"
+        )
+    else:
+        detail = f"the reservation {job_id} is held; started nothing"
+    result: dict[str, Any] = {
+        "job_id": job_id,
+        "held": True,
+        "started": False,
+        "record": record,
+        "detail": detail,
+        "reason": "already-held",
+    }
+    if unknown:
+        result["probe"] = "unknown"
+    return result
+
+
 def ensure_reservation(
     *,
     project: str | None = None,
@@ -286,24 +401,52 @@ def ensure_reservation(
     ask holds it and every later session, whatever project it dispatches for,
     finds it already held and starts nothing.
 
+    It is also idempotent under a race, because several dispatches start at
+    once and the allocation is shared: the whole read-decide-hold-publish
+    sequence runs under a single cross-process lock, so exactly one of the
+    racers asks the scheduler for an allocation and the rest read the record it
+    published. Idempotence rests on the liveness probe, never on the absence of
+    a record, which is equally true while another dispatch is mid-hold.
+
     A record the scheduler cannot be asked about is reported rather than
     replaced, for the same reason a held one is: a query that did not run says
     nothing about the job, and minting an id for it spends a second allocation
-    on a reservation that may well be held.
+    on a reservation that may well be held. Where the probe stays unanswerable
+    the ensure waits and retries, submitting nothing, and reports the unknown
+    once its bound is reached.
     """
+    with _reservation_hold_lock():
+        return _ensure_reservation_locked(
+            project=project,
+            session=session,
+            runner=runner,
+            alive_probe=alive_probe,
+            partition=partition,
+            cores=cores,
+            memory_gb=memory_gb,
+            now=now,
+        )
+
+
+def _ensure_reservation_locked(
+    *,
+    project: str | None,
+    session: str | None,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+    alive_probe: Callable[[Mapping[str, Any] | None], bool] | None,
+    partition: str,
+    cores: int,
+    memory_gb: int,
+    now: float | None,
+) -> dict[str, Any]:
+    """Hold the reservation, called with the cross-process lock already held."""
     existing = read_reservation(project)
-    probe = alive_probe or reservation_alive
-    if existing and probe(existing):
-        return {
-            "job_id": existing.get("job_id"),
-            "held": True,
-            "started": False,
-            "record": existing,
-            "detail": (
-                f"the reservation {existing.get('job_id')} is held; started nothing"
-            ),
-            "reason": "already-held",
-        }
+    if existing:
+        answer = _probe_answer(existing, alive_probe, runner)
+        if answer is None:
+            answer = _await_probe(existing, alive_probe, runner)
+        if answer is not False:
+            return _held_result(existing, unknown=answer is None)
 
     argv = [
         RESERVATION_SCHEDULER,
@@ -341,8 +484,9 @@ def ensure_reservation(
         "partition": partition,
         "roster_limit": RESERVATION_ROSTER_LIMIT,
         "roster_basis": RESERVATION_ROSTER_BASIS,
-        # Carried in the record as well as in the path, so a reader holding the
-        # record alone can still say whose allocation it is.
+        # The project that held it is named here and carried nowhere else: the
+        # record's path is unkeyed, because one shared allocation has one record
+        # every project reads.
         "held_for_project": project,
         "held_by_session": session,
         "held_at": time.time() if now is None else now,
