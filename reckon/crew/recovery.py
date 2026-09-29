@@ -15,6 +15,7 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
+from reckon._timestamps import parse_utc
 from reckon.crew import metering, quota_weight, runs
 from reckon.crew import review as review_module
 from reckon.crew.node import (
@@ -1533,12 +1534,12 @@ def _budget_timing(
             budget_seconds = int(record["attempt_budget_seconds"])
         else:
             budget_seconds = parse_duration(str(node.get("time_budget") or ""))
-        started = datetime.fromisoformat(
-            str(
-                record.get("attempt_started_at") or record.get("created_at") or ""
-            ).replace("Z", "+00:00")
+        started = parse_utc(
+            str(record.get("attempt_started_at") or record.get("created_at") or "")
         )
     except (CrewError, TypeError, ValueError):
+        started = None
+    if started is None:
         if token_budget is not None:
             return _token_budget_timing(
                 token_budget,
@@ -1552,8 +1553,6 @@ def _budget_timing(
             "budget_overrun": False,
             "budget_overrun_seconds": 0,
         }
-    if started.tzinfo is None:
-        started = started.replace(tzinfo=timezone.utc)
     moment = _utc_seconds() if now_seconds is None else float(now_seconds)
     elapsed_to = None
     if record.get("process_alive") is False:
@@ -1562,13 +1561,8 @@ def _budget_timing(
         except (CrewError, OSError):
             completion = None
         if isinstance(completion, str) and completion:
-            try:
-                finished = datetime.fromisoformat(completion)
-            except ValueError:
-                finished = None
-            else:
-                if finished.tzinfo is None:
-                    finished = finished.replace(tzinfo=UTC)
+            finished = parse_utc(completion)
+            if finished is not None:
                 elapsed_to = finished.timestamp()
     if elapsed_to is None:
         elapsed = max(0, int(moment - started.timestamp()))
@@ -3089,12 +3083,9 @@ def _worker_launched_after_manifest(record: Mapping[str, Any], manifest: Path) -
     raw = str(data.get("launched_at") or "").strip()
     if not raw:
         return False
-    try:
-        launched = datetime.fromisoformat(raw)
-    except ValueError:
+    launched = parse_utc(raw)
+    if launched is None:
         return False
-    if launched.tzinfo is None:
-        launched = launched.replace(tzinfo=UTC)
     try:
         written = manifest.stat().st_mtime
     except OSError:
@@ -3242,12 +3233,9 @@ def _attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
             raw = marker.get("attempt_started_at")
     if not raw:
         return None
-    try:
-        started = datetime.fromisoformat(str(raw))
-    except ValueError:
+    started = parse_utc(str(raw))
+    if started is None:
         return None
-    if started.tzinfo is None:
-        started = started.replace(tzinfo=UTC)
     return started.timestamp()
 
 
@@ -3433,13 +3421,9 @@ def _manifest_wait(
     started_value = str(manifest_data.get("wait_started_at") or "").strip()
     if started_value:
         timestamp_value = _unquote_wait_declaration_scalar(started_value)
-        try:
-            started = datetime.fromisoformat(timestamp_value)
-        except ValueError:
+        started = parse_utc(timestamp_value)
+        if started is None:
             missing.append("readable wait_started_at")
-        else:
-            if started.tzinfo is None:
-                started = started.replace(tzinfo=UTC)
     if started is None:
         try:
             started_seconds = manifest.stat().st_mtime
@@ -3580,13 +3564,13 @@ def _run_chain_manifest_freshness(record: Mapping[str, Any]) -> tuple[bool, bool
     try:
         attempt = int(record.get("attempt") or 1)
         attempt_baseline = int(record["manifest_baseline_mtime_ns"])
-        first_dispatch = datetime.fromisoformat(str(record.get("created_at") or ""))
     except (KeyError, TypeError, ValueError):
+        return _manifest_freshness(record)
+    first_dispatch = parse_utc(str(record.get("created_at") or ""))
+    if first_dispatch is None:
         return _manifest_freshness(record)
     if attempt <= 1:
         return _manifest_freshness(record)
-    if first_dispatch.tzinfo is None:
-        first_dispatch = first_dispatch.replace(tzinfo=UTC)
     first_dispatch_ns = (
         int(first_dispatch.timestamp()) * 1_000_000_000
         + first_dispatch.microsecond * 1_000
@@ -3755,12 +3739,9 @@ def _seconds_since_dispatch(record: Mapping[str, Any], moment: float) -> float |
     time cannot be read has taken no measurement, and a zero would place every
     such run outside the launch window on no evidence.
     """
-    try:
-        dispatched = datetime.fromisoformat(str(record.get("created_at") or ""))
-    except (TypeError, ValueError):
+    dispatched = parse_utc(str(record.get("created_at") or ""))
+    if dispatched is None:
         return None
-    if dispatched.tzinfo is None:
-        dispatched = dispatched.replace(tzinfo=UTC)
     return moment - dispatched.timestamp()
 
 
