@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-title" content="Dispatch timestamps read through the shared parser">
+  <meta name="plan-summary" content="The three dispatch timestamp readers that could reuse the shared parser now do, each reproducing its base output over a six-input behaviour table; the lane reading retains its own fromisoformat call to quote the parser's exception text in its refusal.">
+  <meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-verdict" content="qualified">
+  <title>Dispatch timestamps read through the shared parser &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Dispatch timestamps read through the shared parser &mdash; evidence</h1>
+  <p>Three of the four timestamp readers in <code>reckon/crew/dispatch.py</code> now resolve through <code>reckon._timestamps</code>: the budget-hold evidence stamp and the repository clock parse through <code>parse_utc</code>, and <code>_lane_advisory_instant</code> through <code>parse_iso</code>. Each reproduces its base-revision output on all six inputs of <code>tests/test_dispatch_timestamps_reuse_the_parser.py</code>. The lane reading keeps its own <code>datetime.fromisoformat</code> call so its refusal can quote the parser's exception text, which the shared parser swallows.</p>
+ </main>
+</body>
+</html>
