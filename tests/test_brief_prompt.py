@@ -364,10 +364,10 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; a gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
   measurement_module: <only for a gate or base-arm measurement run in a scratch tree: the absolute path of the module under test as imported — the value the run printed for `module.__file__`>
   measurement_cwd: <only for a gate or base-arm measurement run in a scratch tree: the resolved working directory the run resolved from>
-  negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. The log's first line repeats the declared mutation verbatim, so a log that failed for any other reason is refused
+  negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. The log's first line repeats the declared mutation verbatim, so a log that failed for any other reason is refused. The log's last line is a bare line reading `EXIT=` followed by the exit code
   negative_control_note: <where an explanation goes: one line of commentary on the red log named above, since that value stands alone; omit when the log is self-explanatory>
-  baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable>
-  after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable>
+  baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable; command is the literal command that ran, with absolute paths and no angle-bracket placeholder>
+  after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable; command is the literal command that ran, with absolute paths and no angle-bracket placeholder>
   failure_attribution: <armed-only, test role JSON {failure_id: candidate_commit} for each newly added failure>
   artifacts: <paths plus headline metrics; a metric quoted from a gate log is that log's own summary line, so the record reconciles with the log it cites>
   evidence_inputs: <facts the orchestrator needs for writeback>
@@ -518,3 +518,52 @@ def test_the_literal_copy_of_the_artifacts_line_carries_the_metric_rule() -> Non
     assert RECONCILABLE_METRIC_RULE in _flat(
         _arm_line(PLAN_PROMPT_SNAPSHOT, "artifacts:")
     )
+
+
+# ── The red log closes with the exit record the gate reads ──────────────────
+#
+# A declared mutation is discharged by the run's own log: promotion reads the
+# run's facts from that log's text, and a terminal `EXIT=<n>` record is how it
+# tells a control that ran from one that was never produced. A worker who said
+# so in prose left the gate nothing to read, so the clause sits on the arm line
+# the worker writes it in. The suite arms carry the same problem from the other
+# side — the recorded command is re-executed at the merged head, so a
+# description of a check rather than the command costs the promotion — and each
+# arm states that the command is the one that ran, expanded to absolute paths
+# with no placeholder.
+
+NEGATIVE_CONTROL_EXIT_RULE = (
+    "The log's last line is a bare line reading `EXIT=` followed by the exit code"
+)
+
+SUITE_COMMAND_RULE = (
+    "command is the literal command that ran, with absolute paths and no "
+    "angle-bracket placeholder"
+)
+
+
+def test_the_manifest_template_states_the_red_logs_exit_line() -> None:
+    composed = _compose()
+
+    assert NEGATIVE_CONTROL_EXIT_RULE in _flat(
+        _arm_line(composed, "negative_control_log:")
+    )
+
+
+def test_the_manifest_template_states_the_suite_arm_command_rule() -> None:
+    composed = _compose()
+
+    assert composed.count(SUITE_COMMAND_RULE) == 2
+    for arm in ("baseline_suite:", "after_suite:"):
+        assert SUITE_COMMAND_RULE in _flat(_arm_line(composed, arm))
+
+
+def test_the_literal_copy_carries_the_exit_line_rule() -> None:
+    assert NEGATIVE_CONTROL_EXIT_RULE in _flat(
+        _arm_line(PLAN_PROMPT_SNAPSHOT, "negative_control_log:")
+    )
+
+
+def test_the_literal_copy_of_the_suite_lines_carries_the_command_rule() -> None:
+    for arm in ("baseline_suite:", "after_suite:"):
+        assert SUITE_COMMAND_RULE in _flat(_arm_line(PLAN_PROMPT_SNAPSHOT, arm))
