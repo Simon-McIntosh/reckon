@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-boundary-check-reads-two-trees">
+  <meta name="plan-title" content="The boundary check reads two trees for a fenced run">
+  <meta name="plan-summary" content="A dispatch records a snapshot of every registered worktree and every promotion takes it again, at one git status per tree. A fenced worker cannot write outside its own worktree, so the scan over the other trees looks for a write the operating system already refused. The launch now records whether the fence was composed and the check reads exactly the run's own worktree and the repository's main checkout. The boundary check is unchanged when the fence was not composed.">
+  <meta name="plan-evidence-for" content="the-boundary-check-reads-two-trees">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <title>The boundary check reads two trees for a fenced run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The boundary check reads two trees for a fenced run</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>Every dispatch records a snapshot of every worktree registered in the
+        repository, and every promotion takes it again, at one <code>git status</code>
+        per tree. A fenced worker runs read-only outside its own worktree, so the
+        scan over the other trees looks for a write the operating system already
+        refused. The cost is one <code>git status</code> per registered worktree on
+        every launch and every promotion, on a registry that grows with the fleet.</p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>reckon.crew.routing._boundary_tree_roots</code> names the two trees a
+          fenced run's boundary check reads: the run's own worktree and the repository's
+          main checkout. The main checkout stays in the set as a second line behind the
+          fence, because a write there goes live for every session on the repository.</li>
+        <li>The launch records whether the fence was composed as
+          <code>record["fenced"] = FENCE_WORKERS</code> in the dispatch record and the
+          supervisor spec.</li>
+        <li>Both dispatch-side snapshot writes (<code>dispatch.dispatch</code> for the
+          inline launch and <code>dispatch._write_boundary_tree_snapshot</code> for the
+          supervisor and delegated lanes) pass the two roots when the record is fenced.</li>
+        <li><code>promotion._repository_tree_boundary_violations</code> reads the recorded
+          fact: a record whose <code>fenced</code> is <code>True</code> scans the two
+          roots, and any other record keeps the full scan of every registered worktree.</li>
+      </ol>
+    </section>
+
+    <section id="callers">
+      <h2>Callers of the two routing functions</h2>
+      <p>Base line numbers from the dispatch brief, head in parentheses.</p>
+      <ul>
+        <li><code>_repository_tree_snapshot</code> &mdash; <code>dispatch.dispatch</code>
+          inline launch (base <code>dispatch.py:5061</code>, head
+          <code>dispatch.py:5068</code>); <code>dispatch._write_boundary_tree_snapshot</code>
+          supervisor and delegated lanes (base <code>dispatch.py:6835</code>, head
+          <code>dispatch.py:6875</code>); <code>promotion._repository_tree_boundary_violations</code>
+          at promotion (base <code>promotion.py:2233</code>, head
+          <code>promotion.py:2244</code>); <code>promotion._worktree_audit</code> single-tree
+          audit (base <code>promotion.py:4162</code>, head <code>promotion.py:4172</code>).</li>
+        <li><code>_tree_state</code> &mdash; only inside
+          <code>routing._repository_tree_snapshot</code> (base <code>routing.py:578</code>,
+          head <code>routing.py:590</code>), one <code>git status</code> per resolved tree.</li>
+      </ul>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><code>tests/test_boundary_check_reads_two_trees.py</code> (6 passed under the root
+        <code>.venv</code> python) drives a temporary repository with fifty registered
+        worktrees and a <code>git</code> shim on <code>PATH</code> counting
+        <code>status</code> calls:</p>
+      <ul>
+        <li>a fenced snapshot holds 2 trees and makes 2 status calls; an unfenced one holds
+          51 and makes 51;</li>
+        <li>a fenced promotion makes 2 status calls and an unfenced one 51;</li>
+        <li>a record without the <code>fenced</code> field keeps the full scan of 51;</li>
+        <li>a fenced run driven through the <code>crew complete</code> entry point opens no
+          peer worktree, while the unfenced positive control opens 49;</li>
+        <li>a fenced run that wrote the main checkout is still refused, naming that tree.</li>
+        <li>negative control: routing the fenced branch through the full scan makes the
+          fenced run's promotion take 51 status calls and the test fails
+          (<code>assert 51 == 2</code>).</li>
+      </ul>
+      <p>The importing-test-file suite over <code>reckon.crew.routing</code>,
+        <code>reckon.crew.promotion</code> and <code>reckon.crew.dispatch</code> (
+        <code>pytest -n 8</code>, separate <code>--basetemp</code> per arm) shows
+        <strong>0 added failures</strong> between the base revision and the head: 33
+        failures both arms, the same ids. One failure differed each way and each passes
+        serially on both arms, so the difference is parallel-load flake, not this change.</p>
+    </section>
+
+    <section id="landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/the-boundary-check-reads-two-trees/boundary-check-reads-two-trees.html</code></p>
+    </section>
+  </main>
+</body>
+</html>
