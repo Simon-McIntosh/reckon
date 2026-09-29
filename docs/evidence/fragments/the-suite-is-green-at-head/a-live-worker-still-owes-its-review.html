@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="the-suite-is-green-at-head">
   <meta name="plan-title" content="A delivered run owes the review its tier requires">
-  <meta name="plan-summary" content="Promotion reads the review obligation from the delivery it proceeds on -- the terminal manifest released for this attempt -- so a delivered run whose recorded process is still alive owes its tier's review instead of promoting unreviewed.">
+  <meta name="plan-summary" content="Promotion reads the review obligation from the delivery it proceeds on -- the terminal manifest released for this attempt -- so a delivered run whose recorded process is still alive owes its tier's review instead of promoting unreviewed, and the refusal names that run's real classification and the review dispatch.">
   <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
   <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
   <meta name="plan-recorded-at" content="2026-09-29">
@@ -30,28 +30,48 @@
   reads the obligation from the delivery the promotion proceeds on, the terminal manifest released
   for this attempt (<code>_release_terminal_manifest</code>), so a delivered run owes its tier's
   review whether or not its process has stopped and <code>--waive-unreviewed-promotion</code> is
-  admitted as the waiver of that obligation.</p>
-  <p>Measured on the worktree at <code>296c44a3c</code>. The five ledger cases named by the brief's
-  report pass (<code>logs/five-cases-after-edit.log</code>, <code>EXIT=0</code>), including
-  <code>test_completion_promotes_the_pointer_into_the_repositorys_ledger</code> and
-  <code>test_promotion_refuses_a_merge_conflicted_ledger</code>, with
-  <code>tests/test_ledger.py</code> unedited. The new case promotes a run whose manifest is terminal
-  and whose recorded pid is the live test process -- so the classifier's <code>running</code> arm is
-  proven from the kernel, not assumed -- and asserts the no-waiver promotion is refused while the
-  waived promotion is admitted. Restoring the classification-only reading in a scratch copy of the
-  head turns that case red with <code>DID NOT RAISE CrewError</code>: the no-waiver case promotes
-  unreviewed instead of being refused
-  (<code>logs/negative-control-classification-only-reading.log</code>).</p>
-  <p>The gate population -- the 34 test files that import <code>reckon.crew.promotion</code> -- ran
-  374 passed at base (<code>logs/gate-base-60708b078.log</code>, <code>EXIT=0</code>); the head arm
-  is recorded in the manifest with its failure ids. One test outside that population is reddened by
-  the change: <code>tests/test_ledger.py::test_a_promoted_record_names_the_member_and_its_session</code>
-  promotes a delivered run at a review tier with no stored review and no waiver, and passing only
-  because the gate was open is the defect this change removes, so it fails at head while passing at
-  base. It lies outside this node's write fence and is reported for a scope widening rather than
-  edited here; the selection criterion is the reason it was missed, not an oversight, because
-  <code>test_ledger.py</code> reaches <code>crew.complete</code> without importing the module by
-  name.</p>
+  admitted as the waiver of that obligation. The delivered arm covers any terminal status, not
+  <code>complete</code> alone: the release path already permits promoting a run whose manifest reads
+  complete, blocked or failed, and a delivery of any of those statuses is one this gate must not wave
+  past unreviewed.</p>
+  <p>The refusal was corrected in the same change. A run refused under the deferred classification
+  carries, for its own lifecycle, the action of watching it, and the refusal text named neither the
+  classification it was reached under nor a command that produces a review -- it said the run is
+  classified <code>scoring</code> whatever the classifier actually said. <code>_unreviewed_refusal</code>
+  now states the classification the refusal was reached under, and a delivery-driven refusal names
+  the review dispatch (<code>reckon crew dispatch ... --role review ...</code>) rather than an
+  observation that produces no review.</p>
+  <p><strong>Measured on the worktree at <code>219fe1d71</code>.</strong> The five ledger cases the
+  ledger fixture reported fail at the base revision and pass at the delivered revision, whose only
+  edit in that file is a waiver added to a neighbouring promotion-plumbing fixture and no change to
+  any assertion of theirs; they pass in the head arm below rather than in a targeted run alone. The
+  new case promotes a run whose manifest is terminal with no stored review: the classifier's
+  <code>running</code> arm is proven from the kernel (the launcher records <code>os.getpid()</code>,
+  the pid of the test process), the no-waiver promotion is refused with the classification and the
+  review dispatch named, and the waived promotion is admitted with its reason written on the row.
+  Restoring the classification-only reading in a scratch copy of the head turns that case red with
+  <code>DID NOT RAISE CrewError</code>: the no-waiver case promotes unreviewed instead of being
+  refused (<code>logs/negative-control-classification-only-reading.log</code>).</p>
+  <p>Three fixtures promote a live-worker run as promotion plumbing and stated no review obligation,
+  so each now states the waiver its promotion needs, with no assertion changed. In
+  <code>tests/test_ledger.py</code>, <code>test_a_promoted_record_names_the_member_and_its_session</code>
+  reads the member and session a promoted row carries, and reuses the file's existing
+  <code>_UNREVIEWED_PROMOTION_WAIVED</code> ("the fixture exercises promotion plumbing rather than
+  reviewing this run; the review lifecycle has its own coverage").
+  <code>tests/test_crew_promotion.py::test_a_passing_gate_promotes_whatever_its_session</code> asserts
+  that delivered work is not a resume candidate however live its session, so its subject is the
+  pointer's release, not the review store. <code>tests/test_promotion_release.py::test_a_clean_ancestor_worktree_and_its_process_are_both_released</code>
+  asserts the release of a clean worktree and of the process holding it, so its subject is the
+  release path. Each received the equivalent literal reason in place, naming its own subject.</p>
+  <p>The gate population -- the test files that import <code>reckon.crew.promotion</code>, now
+  including <code>tests/test_ledger.py</code> -- ran <strong>5 failed, 465 passed</strong> at the base
+  revision (<code>logs/gate-base-60708b078-with-ledger.log</code>, <code>EXIT=1</code>; all five are
+  the ledger cases above) and <strong>471 passed</strong> at the delivered revision
+  (<code>logs/gate-head-219fe1d71.log</code>, <code>EXIT=0</code>), with the new case included in the
+  head arm. The head arm adds no failure id: its failure set is empty against a base failure set of
+  <code>tests/test_ledger.py</code>'s five. That file joins the population because it reaches
+  <code>crew.complete</code> without importing the module by name, which is why an import-based
+  selection missed the very tests this repair reddens and then redresses.</p>
 </article>
 </body>
 </html>
