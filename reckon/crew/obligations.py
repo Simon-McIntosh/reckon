@@ -144,6 +144,51 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
     ]
 
 
+def _acknowledgements_in_force(
+    project: str, *, now: datetime
+) -> dict[str, dict[str, Any]]:
+    """Return each live run's recorded deferral that has not yet expired.
+
+    A deferral whose ``until`` has passed is not returned, so the run it named
+    re-enters the list on the next read rather than lingering in the
+    acknowledged block. A run whose deferral cannot be parsed as an instant is
+    treated as undeferred: an unreadable deadline is no excuse to withhold an
+    obligation.
+    """
+    in_force: dict[str, dict[str, Any]] = {}
+    for pointer in runs.list_live(project=project):
+        run_id = str(pointer.get("run_id") or "")
+        record = runs.run_acknowledgement(pointer)
+        if not run_id or not record:
+            continue
+        until = parse_utc(record.get("until"))
+        if until is not None and until > now:
+            in_force[run_id] = record
+    return in_force
+
+
+def _partition_acknowledged(
+    items: list[dict[str, Any]],
+    acknowledgements: Mapping[str, Mapping[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Split duties into those still owed and those deliberately deferred."""
+    owed: list[dict[str, Any]] = []
+    deferred: list[dict[str, Any]] = []
+    for item in items:
+        record = acknowledgements.get(str(item.get("run_id") or ""))
+        if record is None:
+            owed.append(item)
+            continue
+        deferred.append(
+            {
+                **item,
+                "reason": str(record.get("reason") or ""),
+                "until": str(record.get("until") or ""),
+            }
+        )
+    return owed, deferred
+
+
 def _live_item(row: Mapping[str, Any], *, kind: str, now: datetime) -> dict[str, Any]:
     """Project one recovery row into the stable obligation shape."""
     return {
@@ -378,9 +423,18 @@ def obligations(project: str, session: str) -> dict[str, Any]:
         )
     )
     items.extend(_held_worktrees(project, session, now=now))
+    acknowledgements = _acknowledgements_in_force(project, now=now)
+    items, acknowledged = _partition_acknowledged(items, acknowledgements)
     items.sort(
         key=lambda item: (
             -int(item["age_seconds"]),
+            str(item["run_id"]),
+            str(item["kind"]),
+        )
+    )
+    acknowledged.sort(
+        key=lambda item: (
+            str(item["until"]),
             str(item["run_id"]),
             str(item["kind"]),
         )
@@ -390,6 +444,7 @@ def obligations(project: str, session: str) -> dict[str, Any]:
         "project": project,
         "session": session,
         "obligations": items,
+        "acknowledged": acknowledged,
         "summary": {
             "count": len(items),
             "oldest_age_seconds": max(
