@@ -80,6 +80,7 @@ from reckon.lifecycle import (
     unpassed_gate_blockers,
     unresolved_dependencies,
 )
+from reckon.project_state import ProjectStateError
 from reckon.resources import (
     ROOT_TYPES,
     ResourceCollision,
@@ -664,17 +665,39 @@ def _finished_crew_rows(
     return sorted(records, key=completion_key, reverse=True)
 
 
+class PlanPageRefusalError(ValueError):
+    """A plan page the parser refuses, carrying the file and the refusal text.
+
+    ``_plan_html`` raises a bare ``ValueError`` when a document violates the
+    record contract, and the message names the offending record rather than the
+    file. Wrapping it where the page is read carries the file too, so one
+    project's refused page is reported against that project instead of taking
+    down every other project's row.
+    """
+
+    def __init__(self, path: Path, reason: str) -> None:
+        super().__init__(f"{path.name}: {reason}")
+        self.path = path
+
+
+# A project row's own failures, isolated to that row so the rollup still serves
+# the other projects.
+_PROJECT_ROW_ISOLATED_ERRORS: tuple[type[BaseException], ...] = (
+    OSError,
+    ProjectStateError,
+    PlanPageRefusalError,
+)
+
+
 def collect_projects(mounts: dict[str, Path]) -> dict:
     from concurrent.futures import ThreadPoolExecutor
-
-    from reckon.project_state import ProjectStateError
 
     def project_entry(name: str, path: Path) -> dict:
         proj: dict = {"project": name, "path": str(path)}
         try:
             row = fleet_index.compute_project_row(path, name, state_root=_STATE_ROOT)
             proj["data"] = {"projects": [row]}
-        except (OSError, ProjectStateError) as e:
+        except _PROJECT_ROW_ISOLATED_ERRORS as e:
             proj["error"] = str(e)
             proj["data"] = {}
         return proj
@@ -1769,7 +1792,10 @@ def _read_readiness_uncached(
     except OSError:
         return [], [], []
     has_gates = 'data-reckon="gates"' in text or "data-reckon='gates'" in text
-    state = _plan_html.read_state(text)
+    try:
+        state = _plan_html.read_state(text)
+    except ValueError as exc:
+        raise PlanPageRefusalError(path, str(exc)) from exc
     gates = list(state.get("gates") or []) if has_gates else []
     decisions = state.get("decisions") or {}
     decision_rows = [
