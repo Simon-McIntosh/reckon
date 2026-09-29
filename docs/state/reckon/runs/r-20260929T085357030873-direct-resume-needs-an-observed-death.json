@@ -85,6 +85,34 @@
     "reason": "corrective-run:resume",
     "verdict": "exempt"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "0e5722a7d798cfe9394020518d0b852388040bf3",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_direct_resume_needs_an_observed_death.py::test_a_supervisor_recorded_exit_licenses_the_resume"
+      ],
+      "integrated_revision": "0e5722a7d798cfe9394020518d0b852388040bf3",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 0e5722a7d798: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "env -C /home/ITER/mcintos/Code/reckon TMPDIR=/tmp PYTHONPATH=/home/ITER/mcintos/Code/reckon /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 6 tests/test_direct_resume_needs_an_observed_death.py tests/test_crew_lane_change.py tests/test_resume_anchors_the_run_harness_home.py tests/test_fenced_resume_reaches_its_harness.py tests/test_session_resumes_only_its_own_task.py",
+    "gate_command_source": "option",
+    "integrated_revision": "0e5722a7d798cfe9394020518d0b852388040bf3",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T085357030873-direct-resume-needs-an-observed-death/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "timed_out": false,
+    "worktree_roots_rewritten": []
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
