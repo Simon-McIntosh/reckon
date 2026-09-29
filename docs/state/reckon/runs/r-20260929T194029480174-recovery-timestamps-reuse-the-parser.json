@@ -1,0 +1,386 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "25dabb312d926dfc7081e887f9628e51a45062ce",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 14021340,
+      "input_tokens_cumulative": 14021340,
+      "output_tokens": 68942,
+      "output_tokens_cumulative": 68942,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 257,
+    "files": 3,
+    "removed": 37
+  },
+  "commit_resolution": null,
+  "commits": [
+    "2335dd269d38d627a9582eed9bc1edb918135017",
+    "e455cc0752e0888e693fad808255662e04414eee"
+  ],
+  "completed_at": "2026-09-29T20:31:10.763Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T19:40:53Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q -p no:cacheprovider -n 4 tests/test_recovery_timestamps_reuse_the_parser.py tests/test_a_resumed_run_counts_as_working.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194029480174-recovery-timestamps-reuse-the-parser/merge-gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.7,
+    "at_dispatch": 0.6,
+    "plan": "a-worker-reuses-before-it-writes",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T20:40:31.180220+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T19:40:31Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 18,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 6,
+    "headroom": 3,
+    "mean_context": 126667,
+    "observed_at": "2026-09-29T19:40:13Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T20:31:10.763Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194029480174-recovery-timestamps-reuse-the-parser/manifest.md",
+  "member": "disposable-r-20260929T194029480174-recovery-timestamps-reuse-the-parser",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_recovery_timestamps_reuse_the_parser.py::test_reader_reproduces_recorded_output[seconds_since_dispatch-offset]"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_crew.py::test_a_root_commit_records_an_explicit_absence_rather_than_a_count",
+      "tests/test_crew.py::test_an_in_harness_dispatch_returns_a_directive_to_bind[worktree-writable]",
+      "tests/test_crew.py::test_dry_run_payload_reports_the_resolved_write_paths",
+      "tests/test_crew.py::test_member_session_is_reused_when_the_resolved_model_matches",
+      "tests/test_crew.py::test_non_passing_promotion_requires_a_diagnostic_outcome[failed]",
+      "tests/test_crew.py::test_non_repository_delivery_directories_are_valid_exclusive_scopes[reports_dir]",
+      "tests/test_crew.py::test_non_repository_delivery_directories_are_valid_exclusive_scopes[review_store_root]",
+      "tests/test_crew.py::test_non_repository_delivery_directories_are_valid_exclusive_scopes[runs_dir]",
+      "tests/test_crew.py::test_promoted_run_leaves_the_drain_by_losing_its_pointer",
+      "tests/test_crew.py::test_redispatch_does_not_inherit_a_terminal_delivery",
+      "tests/test_crew.py::test_shadow_refuses_an_unreachable_primary_base_without_artifacts",
+      "tests/test_crew.py::test_shadow_refuses_plan_unreadable_at_primary_base",
+      "tests/test_crew.py::test_shadow_refuses_primary_without_recorded_agent_configuration",
+      "tests/test_crew.py::test_shadow_refuses_section_absent_at_primary_base",
+      "tests/test_crew.py::test_shadow_without_recorded_time_budget_uses_role_default_and_records_fallback",
+      "tests/test_crew.py::test_terminal_phase_without_a_manifest_is_abandoned",
+      "tests/test_crew_watch_lifetime.py::test_dispatch_is_admitted_during_the_stale_terminal_window"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_recovery_timestamps_reuse_the_parser.py::test_reader_reproduces_recorded_output[seconds_since_dispatch-offset]"
+    ],
+    "declaration": "make _seconds_since_dispatch return None for an offset stamp; the offset-stamp row of its table must fail",
+    "head_failure_ids": [
+      "tests/test_crew.py::test_a_root_commit_records_an_explicit_absence_rather_than_a_count",
+      "tests/test_crew.py::test_an_in_harness_dispatch_returns_a_directive_to_bind[worktree-writable]",
+      "tests/test_crew.py::test_dry_run_payload_reports_the_resolved_write_paths",
+      "tests/test_crew.py::test_member_session_is_reused_when_the_resolved_model_matches",
+      "tests/test_crew.py::test_non_passing_promotion_requires_a_diagnostic_outcome[failed]",
+      "tests/test_crew.py::test_non_repository_delivery_directories_are_valid_exclusive_scopes[reports_dir]",
+      "tests/test_crew.py::test_non_repository_delivery_directories_are_valid_exclusive_scopes[review_store_root]",
+      "tests/test_crew.py::test_non_repository_delivery_directories_are_valid_exclusive_scopes[runs_dir]",
+      "tests/test_crew.py::test_promoted_run_leaves_the_drain_by_losing_its_pointer",
+      "tests/test_crew.py::test_redispatch_does_not_inherit_a_terminal_delivery",
+      "tests/test_crew.py::test_shadow_refuses_an_unreachable_primary_base_without_artifacts",
+      "tests/test_crew.py::test_shadow_refuses_plan_unreadable_at_primary_base",
+      "tests/test_crew.py::test_shadow_refuses_primary_without_recorded_agent_configuration",
+      "tests/test_crew.py::test_shadow_refuses_section_absent_at_primary_base",
+      "tests/test_crew.py::test_shadow_without_recorded_time_budget_uses_role_default_and_records_fallback",
+      "tests/test_crew.py::test_terminal_phase_without_a_manifest_is_abandoned",
+      "tests/test_crew_watch_lifetime.py::test_dispatch_is_admitted_during_the_stale_terminal_window"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194029480174-recovery-timestamps-reuse-the-parser/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194029480174-recovery-timestamps-reuse-the-parser/negative-control.log",
+    "test_paths": [
+      "tests/test_recovery_timestamps_reuse_the_parser.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "recovery-timestamps-reuse-the-parser",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1405,
+          "cached_input_tokens": 455924,
+          "input_tokens": 457331,
+          "output_tokens": 2298,
+          "reasoning_output_tokens": 50,
+          "total_tokens": 459629,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "no datetime.fromisoformat call remains in reckon/crew/recovery.py, or any that remains is named in the test as a retained exception with the input on which the shared parser would differ; a new test tests/test_recovery_timestamps_reuse_the_parser.py holds a behaviour table per reader, with rows for a Z stamp, an offset stamp, a naive stamp, an empty string, a malformed string and a non-string value, expected values taken from the base revision's functions, asserted at head. Edits stay inside those six functions and the import block, since another node is editing the reflex region of this file. Base and head arms over every tests/ file whose AST imports reckon.crew.recovery run with -n 4 and a separate --basetemp under /tmp each, the file list is written into both logs, both logs end with an EXIT= line, and the head adds no failing test id; each arm's basetemp is deleted after its FAILED ids are read",
+    "estimated_hours": null,
+    "goal": "move the timestamp readers in reckon/crew/recovery.py (_budget_timing, _worker_launched_after_manifest, _attempt_started_seconds, _manifest_wait, _run_chain_manifest_freshness, _seconds_since_dispatch) onto reckon._timestamps.parse_utc or parse_iso, keeping each reader's current results",
+    "id": "recovery-timestamps-reuse-the-parser",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T19:40:31Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 18,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 6,
+      "headroom": 3,
+      "mean_context": 126667,
+      "observed_at": "2026-09-29T19:40:13Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194029480174-recovery-timestamps-reuse-the-parser/manifest.md",
+    "negative_control": "make _seconds_since_dispatch return None for an offset stamp; the offset-stamp row of its table must fail",
+    "plan": "a-worker-reuses-before-it-writes",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/recovery.py",
+      "tests/test_recovery_timestamps_reuse_the_parser.py",
+      "docs/evidence/fragments/a-worker-reuses-before-it-writes/recovery-timestamps-reuse-the-parser.html",
+      "docs/figures/a-worker-reuses-before-it-writes/recovery-timestamps-reuse-the-parser"
+    ]
+  },
+  "orientation_input_tokens": 1957767.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "recovery-timestamps-reuse-the-parser",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T19:40:39.406244+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-worker-reuses-before-it-writes",
+  "plan_impl_at_dispatch": 0.6,
+  "promoted_revision": "e455cc0752e0888e693fad808255662e04414eee",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 17,
+      "fit": 18,
+      "goal_fidelity": 17,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 90
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T194029480174-recovery-timestamps-reuse-the-parser",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "d426635e-d6ad-4c5d-8a48-0ca47944cca6",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 14021340,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2992.484,
+    "generated_tokens": 68942,
+    "generation_seconds": 2517.946,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 37.4,
+    "machine_seconds": 474.538,
+    "peak_input_tokens": 179548,
+    "tokens_per_second": 27.38,
+    "wall_tokens_per_second": 23.04
+  },
+  "time_budget": "60m",
+  "tool_steps": 123.0,
+  "unreconciled_override": null,
+  "wall_seconds": 3017,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T20:31:11Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T19:41:14Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T194029480174-recovery-timestamps-reuse-the-parser",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 10943,
+    "worker_pid": 676229
+  },
+  "worker_seconds": 2979,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

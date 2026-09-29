@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="44">
-<meta name="plan-impl" content="0.65">
+<meta name="plan-version" content="46">
+<meta name="plan-impl" content="0.7">
 </head>
 <body>
   <main class="plan-doc">
@@ -162,6 +162,9 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260929T152112213957-review-of-dispatch-timestamps-reuse-the-parser" data-who="reckon-build" data-when="2026-09-29T16:28:50.874Z">
     <div class="r-comment-body"><p>Independent review of r-20260929T141227143352-dispatch-timestamps-reuse-the-parser stored at both granted paths — parsed, five dimensions goal_fidelity 17 / evidence 17 / scope_discipline 20 / durability 18 / fit 19 (stored total 91; read back as 5 under the read-time added-failure cap, see note), added_failure_count 3 with added_failure_ids taken from the reviewed run's own arm logs, and four findings: the fragment claims each migrated reader reproduces its base output when the node's own table records four cells that do not; the evidence stamp and the lane advisory newly accept padded and lowercase-z stamps the base revision read as unreadable, recorded nowhere; both suite commands carry a file list no log records; and the head arm's log header names the base revision.</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260929T194029480174-recovery-timestamps-reuse-the-parser" data-who="reckon-build" data-when="2026-09-29T20:31:10.763Z">
+    <div class="r-comment-body"><p>recovery-timestamps-reuse-the-parser: the six timestamp readers in reckon/crew/recovery.py (_budget_timing, _worker_launched_after_manifest, _attempt_started_seconds, _manifest_wait, _run_chain_manifest_freshness, _seconds_since_dispatch) now read through reckon._timestamps.parse_utc keeping each reader&#x27;s str coercion and naive-as-UTC rule; the base-recorded behaviour table&#x27;s 36 of 36 cells agree between base and head, no fromisoformat call remains, and the head gate adds no failing test id against base.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:04:52.771Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder stored under the crew review store as a parsed record (goal_fidelity 16, evidence 15, scope_discipline 20, durability 16, fit 19; total 86) with three findings</p></div>
 </div>
@@ -220,7 +223,7 @@
     <div class="r-comment-body"><p>cli-settings-writer-delegates-the-replace — cli._write_json_atomically keeps its unchanged-bytes early return and both concurrent-edit refusals and delegates the temporary write and rename to reckon._store.write_json_atomically (fsync=False, indent=2, sort_keys=False, ensure_ascii=False, the revision's own mode); 9 new tests assert the bytes, both modes, both refusals and no leftover temporary against a replica of the pre-migration writer</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T193250144358-review-of-cli-settings-writer-delegates-the-replace" data-who="reckon-build" data-when="2026-09-29T20:14:15.980Z">
-    <div class="r-comment-body"><p>review of run r-20260929T141132754558-cli-settings-writer-delegates-the-replace, read at base fdb116e2 and head 6862bd999, is stored at both granted paths and scores goal_fidelity 20, evidence 14, scope_discipline 20, durability 19, fit 19 (total 92, no dimension absent), records added_failure_count 1 with the id tests/test_follower_rearm_shows_nothing_twice.py::test_a_terminal_rearm_shows_the_burst_under_one_frame_line derived by the store&#x27;s own reader from the reviewed run&#x27;s baseline_suite and after_suite gate logs, and files two findings: the 117-file arm population excludes the node&#x27;s own new test file, and the manifest&#x27;s measurement_module/measurement_cwd name the trees of the earlier arms killed at the node time fence rather than the arms the suite records carry.</p></div>
+    <div class="r-comment-body"><p>review of run r-20260929T141132754558-cli-settings-writer-delegates-the-replace, read at base fdb116e2 and head 6862bd999, is stored at both granted paths and scores goal_fidelity 20, evidence 14, scope_discipline 20, durability 19, fit 19 (total 92, no dimension absent), records added_failure_count 1 with the id tests/test_follower_rearm_shows_nothing_twice.py::test_a_terminal_rearm_shows_the_burst_under_one_frame_line derived by the store's own reader from the reviewed run's baseline_suite and after_suite gate logs, and files two findings: the 117-file arm population excludes the node's own new test file, and the manifest's measurement_module/measurement_cwd name the trees of the earlier arms killed at the node time fence rather than the arms the suite records carry.</p></div>
 </div>
 </section>
 </main>
