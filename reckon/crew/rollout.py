@@ -31,7 +31,7 @@ from datetime import date, datetime
 from enum import StrEnum, auto
 from pathlib import Path
 
-from reckon._timestamps import parse_utc
+from reckon._timestamps import parse_iso
 from reckon.crew.quota_weight import RequestTokenUsage, UnknownQuotaWeight, quota_weight
 
 CLIENT_SESSIONS_DIR = Path.home() / ".codex" / "sessions"
@@ -227,30 +227,15 @@ def _quota_readings(
     return readings
 
 
-_ZONE_DESIGNATOR = re.compile(r"(?:[Zz]|[+-]\d{2}:?\d{2})$")
-
-
-def _states_zone(value: str) -> bool:
-    """Whether a stamp's own text names a zone.
-
-    A stamp names its zone by ending in a UTC designator or a numeric offset.
-    The date and time may be separated by ``T`` or a space, so the offset is
-    read from the text's tail rather than from where a ``T`` happens to sit.
-    """
-    return bool(_ZONE_DESIGNATOR.search(value.strip()))
-
-
 def _parse_timestamp(value: object) -> datetime | None:
-    """Parse a rollout record's ISO timestamp, tolerating the trailing Z."""
-    if not isinstance(value, str):
-        return None
-    moment = parse_utc(value)
-    if moment is None:
-        return None
-    # The record's own text names its zone: a stamp that names no zone is
-    # returned as written rather than pinned to UTC, while a stated zone is
-    # normalised. A date with no time names no zone either.
-    return moment if _states_zone(value) else moment.replace(tzinfo=None)
+    """Parse a rollout record's ISO timestamp, tolerating the trailing Z.
+
+    A stamp that states its zone is returned aware, one that names no zone is
+    returned naive, and the distinction is read from the parsed result's
+    ``tzinfo`` rather than from the text's shape — so an offset that carries
+    seconds is no longer mistaken for a zoneless wall clock.
+    """
+    return parse_iso(value)
 
 
 def _segment_cumulative(readings: Sequence[int]) -> int:

@@ -403,6 +403,7 @@ def _open_sibling_temporary(
                 os.chmod(candidate, exact_mode)
         except OSError:
             os.close(descriptor)
+            candidate.unlink(missing_ok=True)
             raise
         return os.fdopen(descriptor, "w", encoding="utf-8"), candidate
     raise FileExistsError(f"could not create a temporary sibling for ``{path}``")
