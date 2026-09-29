@@ -1,0 +1,363 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "85b3ad0ec3fd2ffe2746b4f99a98aaa1a31be11f",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 12591243,
+      "input_tokens_cumulative": 12591243,
+      "output_tokens": 98997,
+      "output_tokens_cumulative": 98997,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 39,
+    "files": 3,
+    "removed": 3
+  },
+  "commit_resolution": null,
+  "commits": [
+    "c768040eeea68f2a54ee238a1f63d5d109d09f84",
+    "99321db9978c1cf5b4fabf0ffb3a4a6e48cd22b7"
+  ],
+  "completed_at": "2026-09-29T09:56:04.333Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T08:19:49Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "TMPDIR=/tmp PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/met-wait-classification-red-ids /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/mwrid-after2 tests/test_a_met_wait_is_ready_not_abandoned.py tests/test_external_wait.py tests/test_resume_offer_needs_a_dead_process.py tests/test_resume_sweep_needs_an_observed_death.py tests/test_crew_wait_stanza_validation.py tests/test_wait_declaration_parses_both_forms.py tests/test_wait_facts_reach_the_event.py tests/test_wait_marker_is_not_a_stub.py tests/test_wait_shapes.py tests/test_worker_wait_contract.py tests/test_ticker_renders_wait_facts.py tests/test_ticker_row_is_one_transition.py tests/test_ticker_reads_cleanly.py tests/test_paused_is_not_blocked.py tests/test_crew_recover.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T081926268637-met-wait-classification-red-ids/logs/after-gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.45,
+    "at_dispatch": 0.45,
+    "plan": "crew-observability-truth",
+    "reason": "repairs four pre-existing red wait-classification ids under crew-observability-truth; no section moves",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T09:19:28.812129+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T08:19:28Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 25,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 14,
+    "headroom": -5,
+    "mean_context": 136000,
+    "observed_at": "2026-09-29T08:19:03Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T09:56:04.333Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T081926268637-met-wait-classification-red-ids/manifest.md",
+  "member": "disposable-r-20260929T081926268637-met-wait-classification-red-ids",
+  "negative_control": {
+    "added_failure_ids": [
+      "mwrid-neg2/tests/test_a_met_wait_is_ready_not_abandoned.py::test_wait_classification_ranges_over_liveness_and_condition_state[False-met-ready]",
+      "mwrid-neg2/tests/test_a_met_wait_is_ready_not_abandoned.py::test_wait_classification_ranges_over_liveness_and_condition_state[True-met-ready]"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_a_met_wait_is_ready_not_abandoned.py::test_a_successful_terminal_probe_is_ready_to_resume",
+      "tests/test_a_met_wait_is_ready_not_abandoned.py::test_wait_classification_ranges_over_liveness_and_condition_state[False-met-ready]",
+      "tests/test_a_met_wait_is_ready_not_abandoned.py::test_wait_classification_ranges_over_liveness_and_condition_state[True-met-ready]",
+      "tests/test_external_wait.py::test_an_old_wait_surfaces_its_age_without_becoming_blocked"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "mwrid-neg2/tests/test_a_met_wait_is_ready_not_abandoned.py::test_wait_classification_ranges_over_liveness_and_condition_state[False-met-ready]",
+      "mwrid-neg2/tests/test_a_met_wait_is_ready_not_abandoned.py::test_wait_classification_ranges_over_liveness_and_condition_state[True-met-ready]"
+    ],
+    "declaration": "revert one edited assertion or code line to its base form in a scratch copy of the head; that id must fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T081926268637-met-wait-classification-red-ids/logs/negative-control-fixture.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T081926268637-met-wait-classification-red-ids/logs/negative-control-fixture.log",
+    "test_paths": [
+      "tests/test_a_met_wait_is_ready_not_abandoned.py",
+      "tests/test_external_wait.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "met-wait-classification-red-ids",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 675,
+          "cached_input_tokens": 747866,
+          "input_tokens": 748543,
+          "output_tokens": 1517,
+          "reasoning_output_tokens": 128,
+          "total_tokens": 750060,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "Each of the four ids is either green at the head or named in the manifest as a blocker with file, line, expected versus observed behaviour. For each id turned green, the manifest names the commit that changed the behaviour it asserts, read from the code at that commit, and whether the test or the code moved, with the assertion count per edited test function equal at base and head. The gate is tests/test_a_met_wait_is_ready_not_abandoned.py plus tests/test_external_wait.py plus the other test files exercising wait classification; both arms are recorded as one JSON object each under baseline_suite and after_suite (revision, command, exit_status, one log_path, failure_ids), each log ending in an EXIT= line, with the head arm adding no failing id. The negative control, in a scratch copy of the head, reverts one edited assertion or code line to its base form; that id fails, with the mutation on the red log's first line and an EXIT= line after pytest's output. ruff check plus ruff format --check on the changed paths add no finding against the base.",
+    "estimated_hours": null,
+    "goal": "Plan crew-observability-truth: four red ids at main in the wait-classification tests pass. The ids: tests/test_a_met_wait_is_ready_not_abandoned.py::test_wait_classification_ranges_over_liveness_and_condition_state[True-met-ready], ::test_wait_classification_ranges_over_liveness_and_condition_state[False-met-ready], ::test_a_successful_terminal_probe_is_ready_to_resume, plus tests/test_external_wait.py::test_an_old_wait_surfaces_its_age_without_becoming_blocked. All four already failed at 5636e306, so they predate this week's liveness merges. First reproduce each at main, then establish from the code which change moved the behaviour each asserts, never by bisecting. Where the test encodes a contract the code deliberately changed, update the test to the current contract without deleting any assertion. Where the code is wrong, repair it in reckon/crew/recovery.py; if the defect lies in any other file, name it as a blocker rather than editing it.",
+    "id": "met-wait-classification-red-ids",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T08:19:28Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 25,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 14,
+      "headroom": -5,
+      "mean_context": 136000,
+      "observed_at": "2026-09-29T08:19:03Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T081926268637-met-wait-classification-red-ids/manifest.md",
+    "negative_control": "revert one edited assertion or code line to its base form in a scratch copy of the head; that id must fail",
+    "plan": "crew-observability-truth",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§22",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_a_met_wait_is_ready_not_abandoned.py",
+      "tests/test_external_wait.py",
+      "reckon/crew/recovery.py",
+      "docs/evidence/fragments/crew-observability-truth/met-wait-classification-red-ids.html",
+      "docs/figures/crew-observability-truth/met-wait-classification-red-ids"
+    ]
+  },
+  "orientation_input_tokens": 3712628.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "met-wait-classification-red-ids",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T08:19:36.524020+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "crew-observability-truth",
+  "plan_impl_at_dispatch": 0.45,
+  "promoted_revision": "99321db9978c1cf5b4fabf0ffb3a4a6e48cd22b7",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 18,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 94
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "run_id": "r-20260929T081926268637-met-wait-classification-red-ids",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§22",
+  "session_harness": "claude",
+  "session_id": "74a62d38-d20f-4b0d-823e-f80f837abbf6",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 12757829,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 5751.348,
+    "generated_tokens": 108865,
+    "generation_seconds": 5471.01,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 34.4,
+    "machine_seconds": 280.338,
+    "peak_input_tokens": 165286,
+    "tokens_per_second": 19.9,
+    "wall_tokens_per_second": 18.93
+  },
+  "time_budget": "60m",
+  "tool_steps": 114.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 5775,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T09:56:04Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T08:20:09Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T081926268637-met-wait-classification-red-ids",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 24970,
+    "worker_pid": 726337
+  },
+  "worker_seconds": 5732,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
