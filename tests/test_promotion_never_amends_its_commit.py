@@ -147,6 +147,11 @@ def test_complete_preserves_the_promotion_commit_through_release(
                 str(gate_log),
                 "--completed-at",
                 "2026-01-01T00:00:01Z",
+                *(
+                    ["--no-commit", "the worker's own file is not registered here"]
+                    if dirty_worktree
+                    else []
+                ),
             ],
         )
         assert result.exit_code == 0, result.output
@@ -186,6 +191,12 @@ def test_complete_preserves_the_promotion_commit_through_release(
         )
         row = json.loads(_git(repo, "show", f"HEAD:{relative}"))
         assert row == payload["record"]
+        # The override is recorded on the ledger with the paths it covered, so
+        # the row says which uncommitted repository work was declined a commit
+        # rather than only that a commit was declined.
+        assert row.get("no_commit_uncommitted_paths", []) == (
+            ["keep.txt"] if dirty_worktree else []
+        )
         assert row["release"] == payload["release"]
         assert run_file.read_text() == ledger.serialize_run(row)
         if peer_commit:

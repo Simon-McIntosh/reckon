@@ -573,7 +573,8 @@ def _worktree_repository_changes(record: Mapping[str, Any]) -> tuple[str, ...]:
         changed.update(
             path
             for path in untracked
-            if Path(path).parts and Path(path).parts[0] not in _PROVISIONED_WORKTREE_ENTRIES
+            if Path(path).parts
+            and Path(path).parts[0] not in _PROVISIONED_WORKTREE_ENTRIES
         )
     return tuple(sorted(changed))
 
@@ -1868,8 +1869,8 @@ def _changed_paths_inside_repository(
 
 
 def _require_commit_for_changed_manifest(
-    run_id: str, record: Mapping[str, Any]
-) -> None:
+    run_id: str, record: Mapping[str, Any], *, no_commit_reason: str = ""
+) -> tuple[str, ...]:
     """Refuse a run whose claim and worktree disagree about a repository change.
 
     Two questions, one rule each. For a role that carries no repository work —
@@ -1884,6 +1885,13 @@ def _require_commit_for_changed_manifest(
     the paths git found. The declared fields still say whether the run *claims*
     no change, and that claim is what the second question reads.
 
+    A reason passed as ``no_commit_reason`` is the one thing that overrides the
+    measurement: it is a coordinator's deliberate, auditable declaration that
+    the worktree's changes are not being recorded as a commit, and the paths it
+    covers are returned for the caller to record on the ledger beside the
+    reason. No text a worker writes can do this — the manifest is never the
+    authority — so a worktree read without that reason is refused.
+
     The second question is the older one and is unchanged: the manifest names a
     changed path that resolves under the run's own repository, so it needs the
     commit that contains it, and the field is empty or declares an absence. A run
@@ -1894,20 +1902,22 @@ def _require_commit_for_changed_manifest(
     """
     manifest_present, fresh = _manifest_freshness(record)
     if not manifest_present or not fresh:
-        return
+        return ()
     try:
         manifest_text = Path(str(record["manifest_path"])).read_text(encoding="utf-8")
         manifest = parse_manifest(manifest_text)
     except (OSError, KeyError, ValueError):
-        return
+        return ()
     if str(manifest.get("status") or "").strip().lower() != "complete":
-        return
+        return ()
     cites_commit = _manifest_cites_a_commit(manifest, record, manifest_text)
     from reckon.crew.recovery import _pointer_role
 
     role = _pointer_role(record)
     if role in _COMMITLESS_ROLES and not cites_commit:
         changed = _worktree_repository_changes(record)
+        if changed and str(no_commit_reason).strip():
+            return changed
         if changed:
             raise CrewError(
                 f"run {run_id!r} is a {role} run whose worktree has repository "
@@ -1925,7 +1935,7 @@ def _require_commit_for_changed_manifest(
         or cites_commit
         or not _changed_paths_inside_repository(manifest, record)
     ):
-        return
+        return ()
     raise CrewError(
         f"run {run_id!r} has a complete manifest with changed_paths, but the "
         "manifest field 'commits' is missing. Promotion cannot verify changed "
@@ -3775,7 +3785,9 @@ def complete(
             root = resolve_project_repository(
                 landing_project, root, flag="--checkout-path"
             )
-        _require_commit_for_changed_manifest(run_id, record)
+        overridden_worktree_changes = _require_commit_for_changed_manifest(
+            run_id, record, no_commit_reason=no_commit
+        )
         _require_recognised_manifest_status(run_id, record)
         # A run whose own worker is still alive and not finished is refused
         # before any store is written: deleting its live pointer now would
@@ -3885,6 +3897,7 @@ def complete(
             failure_classification=classification,
             commits=commit_list,
             no_commit=no_commit,
+            no_commit_uncommitted=overridden_worktree_changes,
             outcome=outcome,
             tests_added=tests_added,
             scope_changed=scope_changed,
@@ -5204,6 +5217,7 @@ def _complete_locked(
     failure_classification: str = "",
     commits: Iterable[str] = (),
     no_commit: str = "",
+    no_commit_uncommitted: Iterable[str] = (),
     outcome: str = "",
     tests_added: int | None = None,
     scope_changed: bool = False,
@@ -5616,6 +5630,15 @@ def _complete_locked(
     # so a later reader can tell it from one that recorded nothing by accident.
     if str(no_commit).strip():
         run["no_commit"] = str(no_commit).strip()
+    # A deliberate override of the worktree-evidence guard records the paths it
+    # covered, so the ledger says which uncommitted repository work was declined
+    # a commit beside the reason given, rather than only that a commit was
+    # declined. No manifest field can put a path here.
+    uncommitted = sorted(
+        {str(path).strip() for path in no_commit_uncommitted if str(path).strip()}
+    )
+    if uncommitted:
+        run["no_commit_uncommitted_paths"] = uncommitted
     # The impl comparison and its outcome ride the row, so a later audit can
     # separate a plan that moved from one promoted against a recorded waiver.
     if impl_move.get("at_dispatch") is not None:

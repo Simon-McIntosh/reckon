@@ -426,6 +426,35 @@ def test_a_review_with_an_untracked_repository_file_is_refused(
     assert ledger.runs(PROJECT, root=repository) == []
 
 
+def test_an_investigate_run_with_a_dirty_worktree_is_refused_without_an_override(
+    repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
+) -> None:
+    """A dirty worktree promotes commitless only under a coordinator override.
+
+    The same run passes with --no-commit, which records the path it declined;
+    without it the guard names the file git found.
+    """
+    tree, base_sha = run_tree
+    run_id = RUN_IDS[12]
+    (tree / "keep.txt").write_text("uncommitted worker result\n", encoding="utf-8")
+    _pointer(
+        repository,
+        run_id,
+        _manifest(tmp_path, run_id, changed_paths="none"),
+        role="investigate",
+        node_id=f"investigate-of-{PLAN}",
+        tree=tree,
+        base_sha=base_sha,
+    )
+
+    with pytest.raises(crew.CrewError, match="cites no commit") as refusal:
+        crew.complete(run_id, gate="passed", root=repository)
+
+    assert "keep.txt" in str(refusal.value)
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
 def test_a_review_naming_an_in_repository_path_with_no_commit_is_refused(
     repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
 ) -> None:
