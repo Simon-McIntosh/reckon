@@ -67,7 +67,7 @@ import re
 import secrets
 import fcntl
 import hashlib
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, suppress
 from datetime import date
 from pathlib import Path
 from typing import Any, TextIO
@@ -401,11 +401,13 @@ def _open_sibling_temporary(
         try:
             if exact_mode is not None:
                 os.chmod(candidate, exact_mode)
-        except OSError:
-            os.close(descriptor)
+            handle = os.fdopen(descriptor, "w", encoding="utf-8")
+        except BaseException:
+            with suppress(OSError):
+                os.close(descriptor)
             candidate.unlink(missing_ok=True)
             raise
-        return os.fdopen(descriptor, "w", encoding="utf-8"), candidate
+        return handle, candidate
     raise FileExistsError(f"could not create a temporary sibling for ``{path}``")
 
 
@@ -463,6 +465,7 @@ def write_json_atomically(
     mode: int | None = 0o600,
     fsync_directory: bool = False,
     create_parents: bool = True,
+    ensure_ascii: bool = True,
 ) -> Path:
     """Write ``payload`` as JSON so a reader never observes a partial file.
 
@@ -475,7 +478,9 @@ def write_json_atomically(
 
     The remaining keyword arguments exist so a caller keeps the behaviour it had
     before it moved onto this writer. ``indent`` and ``sort_keys`` are the
-    serialisation, defaulting to this writer's own. ``mode`` is the temporary's
+    serialisation, defaulting to this writer's own; ``ensure_ascii`` defaults on
+    and escapes non-ASCII characters, so a caller whose file must hold a path or
+    string literally passes ``False``. ``mode`` is the temporary's
     permission bits and defaults to ``0o600``, the private mode this writer has
     always produced; a caller whose file was an ordinary whole-file write passes
     ``None`` to take the process's default creation mode instead.
@@ -489,7 +494,13 @@ def write_json_atomically(
         target.parent.mkdir(parents=True, exist_ok=True)
 
     def render(handle: TextIO) -> None:
-        json.dump(payload, handle, indent=indent, sort_keys=sort_keys)
+        json.dump(
+            payload,
+            handle,
+            indent=indent,
+            sort_keys=sort_keys,
+            ensure_ascii=ensure_ascii,
+        )
         handle.write("\n")
 
     _write_through_sibling_temporary(

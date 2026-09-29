@@ -387,6 +387,7 @@ def _write_settings(
             mode=mode,
             fsync=False,
             create_parents=True,
+            ensure_ascii=False,
         )
     except OSError as exc:
         raise HookInstallError(f"cannot write harness settings {path}: {exc}") from exc

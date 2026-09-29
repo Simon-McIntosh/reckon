@@ -34,7 +34,7 @@ from collections.abc import Callable, Iterable, Mapping
 from numbers import Real
 from typing import Any
 
-from reckon._timestamps import parse_utc
+from reckon._timestamps import parse_iso, parse_utc
 
 CLOCK = 8
 # The cell is 28, not 36: a name already elides from the middle, so the eight
@@ -1121,26 +1121,27 @@ class PaneRowPath:
         return self._remember(self._policy.flush(now=now))
 
 
-# A stamp names its zone by ending in a UTC designator or a numeric offset; a
-# zoneless stamp is read as a local wall clock in row_moment's contract.
-_NAMED_ZONE = re.compile(r"(?:Z|[+-]\d{2}:?\d{2}(?::\d{2})?)$")
-
-
 def row_moment(event: Mapping[str, Any]) -> float:
     """The epoch a row carried, which is what a replay measures windows against.
 
     A stamp that names no zone reads as a local wall clock here, the epoch a
     replay measures its windows against on the machine doing the replay; a
-    stamp naming a zone reads as that instant. A stamp whose own text is not
-    spelled strictly, or names nothing, contributes no moment.
+    stamp naming a zone reads as that instant. Whether a stamp names a zone is
+    read from the parsed result's ``tzinfo`` rather than from the text's shape,
+    so every offset spelling an ISO-8601 parser accepts is honoured. A stamp
+    whose own text is not spelled strictly, or names nothing, contributes no
+    moment.
     """
     text = str(event.get("observed_at") or "")
     if text != text.strip() or text.endswith("z"):
         return 0.0
+    zoned = parse_iso(text)
+    if zoned is None:
+        return 0.0
     moment = parse_utc(text)
     if moment is None:
         return 0.0
-    if _NAMED_ZONE.search(text):
+    if zoned.tzinfo is not None:
         return moment.timestamp()
     return moment.replace(tzinfo=None).astimezone().timestamp()
 
