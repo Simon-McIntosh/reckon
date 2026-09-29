@@ -62,13 +62,50 @@
     same way. The view takes one project, resolved through the server's existing
     <code>_docs_dir_for_project</code>, or <code>"*"</code> for every mounted project, resolved
     through <code>mounted_project_docs()</code>; each mount's repository root is the docs
-    directory's parent. The response is the compact summary, never the commit census.</p>
+    directory's parent. The response is drawn from the compact summary, never the commit census.</p>
 
     <p>The view is deliberately hermetic: <code>report</code> defaults
     <code>transcript_root</code> to <code>None</code>, so the read does not walk a coordinator
     transcript tree the caller did not name, and the fallback run store is opened only when a
     promotion in the window has no committed ledger record. Over the test fleet the store is never
     opened.</p>
+
+    <p>The response is shaped to fit the crew tool's response ceiling. Its default is the
+    per-project, per-lane and per-day tables, the window and the count of the project-lane-day
+    cells; every other block of the compact summary &mdash; the cells included &mdash; is served
+    only when the caller names it in <code>fields</code>, and an unrecognised field is refused with
+    the accepted set named. The cells are paged by <code>limit</code> and <code>cursor</code>
+    through the same <code>paginate</code> helper the other crew views use. Measured over the
+    mounted <code>reckon</code> checkout at each window's derived head, serialised with
+    <code>mcp_budget.serialised_characters</code> against a ceiling of 80,000:</p>
+
+    <table>
+      <thead><tr><th>Window</th><th>Whole payload</th><th>Cells</th><th>Summary without cells</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td>2026-09-26 &rarr; 2026-09-28</td><td>102,727</td><td>50,846 (18 cells)</td><td>51,858</td><td><strong>29,383</strong></td></tr>
+        <tr><td>2026-09-12 &rarr; 2026-09-26 10:00</td><td>379,597</td><td>256,816 (90 cells)</td><td>122,758</td><td><strong>67,958</strong></td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <img src="/reckon/figures/the-fleet-reports-its-velocity/velocity-view-is-served-over-mcp/velocity-response-ceiling.svg" alt="Two windows measured against an 80,000-character ceiling line. The whole payload with cells is 102,727 over the two-day window and 379,597 over the pinned one; with the cells withheld it is 51,858 and 122,758, and only the two-day figure is under the line; the repaired default is 29,383 and 67,958, both well under it. A note records that asking for the cells without a limit still crosses the line at 80,308 over the two-day window and 138,848 over the pinned one.">
+      <figcaption>What each window's payload costs against the ceiling the crew tool enforces. Withholding
+      the cells is enough for the two-day window and not for the pinned one; the default is the three
+      aggregate tables plus the count.</figcaption>
+    </figure>
+
+    <p>The pinned window is why withholding the cells alone would not have been enough: its summary
+    without them is 122,758 characters, still past the ceiling, and the per-day table is most of
+    it. The default is therefore the three tables and the count, and every heavier block is opt-in.
+    Asking for the cells without a <code>limit</code> can still exceed the ceiling: the default plus
+    one default-size page of them is 80,308 characters over the two-day window. Over the pinned window the
+    same page is 138,848, so there the caller has to page with a smaller <code>limit</code> than the
+    default page size as well &mdash; each page comes back as its own response, so every window's
+    cells are reachable this way. Both parameters that hint names, <code>limit</code> and
+    <code>fields</code>, are accepted by this branch. Its suggested <code>fields</code> value is a
+    runs-view placeholder rather than a velocity field, so a caller who passes it verbatim is
+    refused by name with the accepted set beside it. The measurement is
+    <code>velocity-size-measurement.log</code>.</p>
   </section>
 
   <section id="tests">
@@ -77,18 +114,23 @@
     <p><code>tests/test_crew_velocity_view.py</code> synthesises two git repositories under
     <code>tmp_path</code> with a committed run ledger at their heads, mounting both through an
     isolated <code>mounts.json</code>, and calls the view through the MCP function. Nothing outside
-    <code>tmp_path</code> is read. Four assertions: the implementation-class/review-or-investigate
+    <code>tmp_path</code> is read. Seven tests: the implementation-class/review-or-investigate
     promotion split and its review share on hand-computable fixtures; one project-by-lane-by-day
-    cell with its counts; the refusal on a missing and an unparseable <code>since</code>; and a
-    commit dated after <code>until</code> excluded from the measured head.</p>
+    cell with its counts, walked across the pages; the refusal on a missing and an unparseable
+    <code>since</code>; a commit dated after <code>until</code> excluded from the measured head; the
+    default response's shape and its size, serialised by
+    <code>mcp_budget.serialised_characters</code> and compared with
+    <code>mcp_budget.DEFAULT_RESPONSE_CEILING</code> rather than a copied figure; the cells returned
+    on request and paged by <code>limit</code> and <code>cursor</code>; and an unrecognised field
+    refused by name with the accepted set.</p>
 
     <table>
       <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
       <tbody>
         <tr><td>Base</td><td><code>348688e8</code></td><td>25 passed, exit 0 — the two files that exist at base; the new test file is introduced by this node, so it has no base arm</td><td><code>base-arm.log</code></td></tr>
-        <tr><td>Head</td><td><code>a5de014c</code></td><td>29 passed, exit 0 — all three files at the committed head</td><td><code>head-arm.log</code></td></tr>
-        <tr><td>Gate</td><td><code>a5de014c</code></td><td>29 passed, exit 0 — the three files plus the runs view</td><td><code>gate-three-files.log</code></td></tr>
-        <tr><td>Negative control</td><td><code>a5de014c</code></td><td>ignoring <code>until</code> fails <code>test_a_commit_dated_after_until_is_excluded</code> (16 vs 9), exit 1</td><td><code>negative-control-until.log</code></td></tr>
+        <tr><td>Head</td><td><code>188a9d03</code></td><td>32 passed, exit 0 — all three files at the committed head, which is also the gate the change reaches</td><td><code>head-arm.log</code></td></tr>
+        <tr><td>Negative control</td><td><code>188a9d03</code></td><td>ignoring <code>until</code> fails <code>test_a_commit_dated_after_until_is_excluded</code> (16 vs 9), exit 1</td><td><code>negative-control-until.log</code></td></tr>
+        <tr><td>Sizes</td><td><code>188a9d03</code></td><td>the payload sizes above, from the mounted <code>reckon</code> checkout</td><td><code>velocity-size-measurement.log</code></td></tr>
       </tbody>
     </table>
 
@@ -99,9 +141,9 @@
     names the revision, the served <code>module.__file__</code> (the scratch tree) and the working
     directory.</p>
 
-    <p><strong>Head arm.</strong> At the committed head <code>a5de014c</code> over
+    <p><strong>Head arm.</strong> At the committed head <code>188a9d03</code> over
     <code>tests/test_crew_velocity_view.py</code>, <code>tests/test_velocity.py</code> and
-    <code>tests/test_crew_runs_view.py</code>: 29 passed, exit 0. The two pre-existing files pass at
+    <code>tests/test_crew_runs_view.py</code>: 32 passed, exit 0. The two pre-existing files pass at
     base as well, so the node adds no failure to either.</p>
 
     <p><strong>Negative control.</strong> The declared mutation &mdash;
@@ -116,10 +158,13 @@
   <section id="scope">
     <h2>Scope</h2>
 
-    <p>Three paths changed in this node: <code>reckon/velocity.py</code>,
-    <code>reckon/mcp.py</code> and <code>tests/test_crew_velocity_view.py</code>. The
-    <code>reckon crew velocity</code> command in <code>reckon/cli.py</code> is held by a peer node
-    and is not touched here; the report function is shaped so that surface calls it unchanged.</p>
+    <p>Three paths carry this node's work: <code>reckon/velocity.py</code>,
+    <code>reckon/mcp.py</code> and <code>tests/test_crew_velocity_view.py</code>. Bringing the
+    response inside the ceiling changed <code>reckon/mcp.py</code> and the test file and left
+    <code>reckon/velocity.py</code> as it was: <code>report</code> still returns every block, and the
+    surface decides what to withhold and page. The <code>reckon crew velocity</code> command in
+    <code>reckon/cli.py</code> is held by a peer node and is not touched here; the report function
+    is shaped so that surface calls it unchanged.</p>
   </section>
 </main>
 </body>
