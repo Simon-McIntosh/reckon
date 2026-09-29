@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <title>The roadmap reads the checkout it inventoried | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The roadmap reads the checkout it inventoried</h1>
+      <p class="lead">Every production caller of <code>build_roadmap</code> now names the checkout its inventory came from, so the wiring scan reads <code>plan-standalone</code> from the same tree as the rows it judges instead of the registered mount.</p>
+    </header>
+
+    <section id="the-defect-and-the-change">
+      <h2>The defect and the change</h2>
+      <p><code>build_roadmap</code> took a <code>docs_dir</code> naming the inventoried checkout and passed it to the wiring scan, which falls back to the registered mount when none is supplied. All five production callers omitted it, so a worktree-scoped roadmap inventoried one tree's plans and read another tree's standalone declarations: a plan that declares it stands alone in the checkout was still reported <em>unwired</em>, because the mount's copy of that plan was silent. The finding is the only roadmap output the declaration reaches, which is why the fix is a call-site change and not a scan change.</p>
+      <table>
+        <thead><tr><th>Caller</th><th>Inventoried tree</th><th>Now passes</th></tr></thead>
+        <tbody>
+          <tr><td><code>serve._attach_ready_set</code>, both call sites in <code>_discover_plans_uncached</code></td><td>the docs dir the discovery walk was scoped to</td><td><code>docs_dir=docs_dir</code>, threaded through a keyword-only parameter of <code>_attach_ready_set</code> (the ready-set projection does not return the roadmap, so it is read from the recorded call)</td></tr>
+          <tr><td><code>flight._project_roadmap</code></td><td>the tree it discovered</td><td><code>docs_dir=docs_dir</code>, naming that same tree</td></tr>
+          <tr><td><code>mcp._roadmap</code></td><td>the caller's <code>checkout_path</code></td><td><code>docs_dir=_docs_dir_for_project(project, checkout_path)</code></td></tr>
+          <tr><td><code>audit-doc</code> (<code>mcp._audit</code>)</td><td>the header's <code>docs_dir</code></td><td><code>docs_dir=docs_dir</code></td></tr>
+          <tr><td><code>roadmap.resolve_graph_target</code></td><td>the per-project state it is handed</td><td><code>docs_dir=state.get("docs_dir")</code>; the MCP graph branch now sets that key alongside the project manifest</td></tr>
+        </tbody>
+      </table>
+      <p>The graph path had no docs dir to thread: its per-project state carried an inventory and a manifest but nothing naming their tree, so the MCP graph branch now sets <code>docs_dir</code> there and the resolver reads it. Nothing else about the roadmap changed &mdash; the mount fallback remains for a caller that supplies no checkout.</p>
+      <figure>
+        <img src="/reckon/figures/section-contract-and-computed-impl/the-roadmap-reads-the-checkout-it-inventoried/wiring-scan-reads-the-inventoried-tree.svg"
+             alt="Above: five callers inventory a worktree whose plan carries plan-standalone, while the roadmap's wiring scan falls back to the registered mount, whose copy carries no declaration, and reports an unwired-plan finding for a plan that declares it is not. Below: each caller passes its own docs dir, so the scan reads the tree the rows came from and reports no wiring finding.">
+      </figure>
+    </section>
+
+    <section id="gate">
+      <h2>Gate</h2>
+      <p><code>tests/test_roadmap_wiring_reads_its_own_checkout.py::test_a_worktree_roadmap_reads_that_worktrees_declaration</code> synthesises a registered mount and a second checkout under temporary directories. Both trees hold the same plan; only the second declares <code>plan-standalone</code>. It then drives each caller at the second checkout and requires the wiring finding to follow the tree the rows were inventoried from. An opening positive control builds a roadmap scoped to the mount and asserts the finding <em>is</em> reported there, so the arms cannot pass on an instrument that sees no plan at all. The test redirects <code>RECKON_HOME</code>, <code>RECKON_STATE_ROOT</code> and <code>RECKON_MOUNTS_PATH</code> into its temporary tree and reads or writes no real mount.</p>
+      <p>Two callers do not hand the roadmap back &mdash; the HTTP discovery projection consumes it, and the graph resolver schedules from it &mdash; so the test records the call itself: a wrapper is patched over <code>build_roadmap</code> in both modules it is imported into, delegating to the real builder and asserting exactly one roadmap per caller.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>The new test at this tree's head</td><td>1 passed, exit 0</td><td><code>head-new-test.log</code></td></tr>
+          <tr><td>The same test at base <code>58405bd6</code></td><td>1 failed at the serve arm, exit 1</td><td><code>base-new-test.log</code></td></tr>
+          <tr><td>Gate at head</td><td>1 failed, 524 passed, 3 skipped, exit 1 &mdash; zero added failures by id against base</td><td><code>after-suite.log</code></td></tr>
+          <tr><td>Gate at base</td><td>2 failed, 523 passed, 3 skipped, exit 1</td><td><code>baseline-suite.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The gate is the new test plus the existing roadmap, serve, flight and MCP test files that call <code>build_roadmap</code>, 45 files in all, each arm listed on disk with its header naming the revision, the tree, the command, the served <code>reckon.__file__</code> and the resolved cwd, and each ending in an <code>EXIT=</code> line.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>drop the <code>docs_dir</code> argument from one caller in a scratch copy; the worktree-declaration test must fail for that caller</em>. In a scratch tree copy of base plus this change with <code>docs_dir</code> removed from <code>reckon/flight.py::_project_roadmap</code>, the test fails at the flight arm &mdash; the finding the checkout's declaration should silence is reported &mdash; while the other arms stay green. The red log's first line repeats the declaration verbatim, and its header parses the served <code>module.__file__</code> and cwd inside the scratch tree, so the failure cannot have come from the head tree.</p>
+      <p>An earlier attempt failed for the wrong reason: pytest ran from a shell whose working directory still pointed at the base tree, so the test resolved base's modules and died at the serve arm. The re-run under <code>env -C</code> is the log this record cites.</p>
+    </section>
+
+    <section id="open-outside-this-node">
+      <h2>Open, outside this node's fence</h2>
+      <p><code>tests/test_mcp_vocabulary_is_complete.py::test_op_vocab_names_every_dispatchable_op</code> fails on both arms of the gate, identically: <code>_OP_VOCAB</code> omits <code>append_evidence</code>. Both gate logs fail on this id at base and at head, so the failure is pre-existing rather than added by this change, and it lies outside this node's scope to triage. Recorded for the coordinator.</p>
+      <p>The worker does not resolve the driving followup or change terminal plan state.</p>
+    </section>
+  </main>
+</body>
+</html>

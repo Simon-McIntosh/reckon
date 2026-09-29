@@ -1,0 +1,92 @@
+<article class="landed-report" data-run-id="r-20260928T193532461213-receipt-rollback-classification-red">
+  <h3>receipt-rollback-classification-red &#8212; four red ids against the per-run ledger contract</h3>
+  <p>
+    Four ids failed at base <code>ba1a26e4</code> for one reason each: the ledger no longer
+    stores a project's runs in one aggregate file. Each run now lives in its own file
+    under the project's <code>runs/</code> directory (<code>reckon/ledger.py</code>
+    <code>run_path()</code>, introduced with per-run files by <code>98ac4ced</code>), and
+    <code>append_run()</code> creates that file exclusively and returns its path rather
+    than the aggregate ledger's (<code>e7b5051d</code>, <code>reckon/ledger.py</code>
+    <code>append_run()</code> return at line 2002 of that commit). Reading the union back
+    is no longer append order: <code>load()</code> orders rows by completion stamp with
+    the run id breaking ties (<code>3d02a02f</code>). Three of the four tests still
+    asserted the aggregate-file contract and the fourth still indexed rows by append
+    position, so all four encoded a contract the code deliberately changed.
+  </p>
+  <p>
+    <strong>Cause group.</strong> All four are one group: a stale expectation after a
+    deliberate behaviour change, the class named in the plan's inventory &#8212; the shipped
+    behaviour is intended and the test moves to it. This node moved the assertion, not the
+    behaviour. No product defect was found, and nothing under <code>reckon/</code> was
+    modified. The rollback's per-path report, the receipt's wording for both cases, and the
+    summary payload each read correctly against the current store, so each red id was
+    repaired by updating the test to the contract the code now holds, with no assertion
+    deleted.
+  </p>
+  <figure>
+    <img src="/reckon/figures/the-suite-is-green-at-head/receipt-rollback-classification-red/red-ids-and-the-change-that-moved-them.svg"
+         alt="Two lanes: per-run file commits 98ac4ced and e7b5051d feeding the rollback receipt behaviour and three ids; commit 3d02a02f feeding the read-order behaviour and one id; a gate strip with base 4 failed and head 27 passed.">
+    <figcaption>
+      Each red id, the commit that moved the behaviour it asserts, and what the code does
+      at head. The lower lane is the same change seen from the reader's side: the row a
+      test indexed by position is now ordered by completion stamp.
+    </figcaption>
+  </figure>
+  <table>
+    <caption>The four ids, base &#8594; head, and what each now asserts</caption>
+    <thead>
+      <tr><th>Id</th><th>Base</th><th>Head</th><th>What the test now asserts</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>test_receipt_names_the_rolled_back_row.py::test_rolled_back_row_receipt_names_re_promotion_as_the_recovery</code></td>
+        <td>failed</td><td>passed</td>
+        <td>the receipt names the <em>run file</em> as the rolled-back store; that file is
+        gone and HEAD never carried it, so re-promoting is the recovery</td>
+      </tr>
+      <tr>
+        <td><code>test_receipt_names_the_rolled_back_row.py::test_survived_row_receipt_keeps_the_do_not_re_promote_wording</code></td>
+        <td>failed</td><td>passed</td>
+        <td>the second case is now reached by committing the run file into HEAD first; a
+        refused restore preserves a path only while HEAD carries it, so the row survives
+        and the receipt keeps the wording against re-promoting</td>
+      </tr>
+      <tr>
+        <td><code>test_rollback_asks_head.py::test_failure_after_append_names_the_row_state[stage]</code></td>
+        <td>failed</td><td>passed</td>
+        <td>the expectation is still derived from the recorded git trace, now including the
+        case where a refused restore drops a run file HEAD never carried</td>
+      </tr>
+      <tr>
+        <td><code>test_failure_classification.py::test_worker_pass_rate_uses_only_work_rejected_failures</code></td>
+        <td>failed</td><td>passed</td>
+        <td>the row is found by its run id rather than by its append position, because the
+        read is ordered by completion stamp</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    <strong>Assertion counts.</strong> Per edited test function, base &#8594; head:
+    9 &#8594; 11, 5 &#8594; 5, 14 &#8594; 14, 6 &#8594; 6. The two additions are in the
+    first id, which now asserts the dropped run file directly and that HEAD never carried
+    it; no assertion was deleted anywhere.
+  </p>
+  <p>
+    <strong>Negative control.</strong> In a scratch copy of the head, one edited assertion
+    was reverted to its base form &#8212; <code>rolled back with {ledger_path}</code> in
+    place of <code>rolled back with {run_path}</code> &#8212; and the test fails:
+    <code>1 failed, 2 passed</code>, <code>EXIT=1</code>, with
+    <code>__file__</code> resolving to the scratch tree's
+    <code>reckon/crew/promotion.py</code>. The mutation is repeated verbatim on the red
+    log's first line; the log is
+    <code>logs/negative-control-receipt-path.log</code> under the run directory.
+  </p>
+  <p>
+    <strong>Gate.</strong> The three test files ran as two arms, one log each, each opening
+    with the revision, tree, command and ending in an <code>EXIT=</code> line. At base
+    <code>ba1a26e4</code>: 4 failed, 23 passed, <code>EXIT=1</code>, and the four failing
+    ids are exactly the four named. At head <code>d9999ede</code>: 27 passed,
+    <code>EXIT=0</code>, zero failing ids. The head arm shows no failing id absent from
+    the base arm.
+  </p>
+</article>

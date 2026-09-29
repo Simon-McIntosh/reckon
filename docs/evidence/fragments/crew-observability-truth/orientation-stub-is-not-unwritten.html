@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <title>An orientation stub is not unwritten | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>An orientation stub is not unwritten</h1>
+      <p class="lead">A live worker whose manifest holds only its orientation write no longer reads <code>unwritten</code>: the recovery word is read from the run's own evidence, the same evidence the phase already used, and only a worker that is gone keeps the missing-verdict reading.</p>
+    </header>
+
+    <section id="orientation-stub">
+      <h2>The reading under test</h2>
+      <p>A dispatch's first write records where the worker is working — the worktree, the base commit, the paths it may write — and nothing else, because there is nothing else to report yet. That body and a delivery whose author forgot its verdict are the same bytes, and the classifier told them apart by the clock alone: inside the launch window the reading was held back, and past it the run was named <code>unwritten</code> for ten minutes on <code>r-20260928T204215455574-directory-row-reads-the-derived-phase</code> while its process lived and its stream grew. The row's phase already read <code>working</code>, because the phase derivation reads the run's own newest stream for an assistant record; the typed cause did not, and the ticker renders the typed cause in place of the state, so a worker mid-turn was drawn as a run to resume.</p>
+      <p><code>_orientation_write_of_a_run_in_motion</code> in <code>reckon/crew/recovery.py</code> answers the recovery word from the same evidence the phase derivation uses: the run must be positively alive, its manifest must be the orientation write with no status line, and its own evidence must show motion — a worker record naming a pid, or an assistant record in the run's newest stream. A positive answer leaves the cause at the classification the chain already composed (<code>running</code>, whose verb is <code>observe</code>, matching the arm's own advice); anything else keeps <code>unwritten</code>. A worker whose process is gone never reaches the reading, so the stub it left behind still classifies as the missing verdict it may well be.</p>
+      <figure class="plan-figure">
+        <img src="/reckon/figures/crew-observability-truth/orientation-stub-is-not-unwritten/orientation-stub-liveness-gate.svg"
+             alt="A live worker with an orientation-only manifest: the phase derivation reads its newest stream and calls the run working, while the recovery word was read from the absent status and called it unwritten, which is the contradiction the gate removes. The gate keeps unwritten for a gone worker and for a live one whose stream holds no assistant record.">
+        <figcaption>One run, two readings: the phase and the recovery word are taken from the same evidence, and the liveness-plus-stream gate is what keeps them from disagreeing.</figcaption>
+      </figure>
+    </section>
+
+    <section id="negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>restore the unconditional unwritten assignment in a scratch copy; the live orientation-stub case must fail with unwritten</em>. Run in a scratch tree whose <code>reckon/crew/recovery.py</code> assigns <code>recovery_classification = "unwritten"</code> for every unwritten manifest, the live case fails with the row reading <code>unwritten</code> beside <code>classification 'running'</code> and <code>phase 'working'</code>, while the dead control beside it still passes.</p>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Base arm (<code>923b75e0</code>)</td><td>5 failed, 177 passed, exit 1</td><td><code>gate-base.log</code>: the live case reads <code>unwritten</code> — the defect, measuring the fix's absence — and four pre-existing ids fail.</td></tr>
+          <tr><td>Head arm (this tree)</td><td>4 failed, 178 passed, exit 1</td><td><code>gate-head.log</code>: the live case passes; the four pre-existing ids are the base arm's own and no failing id is added.</td></tr>
+          <tr><td>Declared negative control, scratch tree</td><td>1 failed as required, 1 passed, exit 1</td><td><code>negative-control.log</code>, whose first line repeats the declaration verbatim; the failing case is the live one.</td></tr>
+        </tbody>
+      </table>
+      <p>Both gate arms cover the new test beside the existing files that exercise manifest classification in <code>reckon/crew/recovery.py</code>: <code>test_a_run_in_motion_is_not_unwritten.py</code>, <code>test_live_process_outranks_classification.py</code>, <code>test_recovery_state_typing.py</code>, <code>test_unreadable_names_its_word.py</code>, <code>test_a_live_run_never_reads_dead.py</code>, <code>test_a_finished_run_never_reads_dispatched.py</code>, <code>test_a_live_workers_report_is_not_an_outcome.py</code>, <code>test_crew_recovery.py</code>, <code>test_working_reads_working_at_once.py</code>, <code>test_directory_row_reads_the_derived_phase.py</code> and <code>test_newest_stream_is_read_everywhere.py</code>. The four ids failing on both arms are a ticker-verb rendering case and a ledger departure word, none of them reachable from the reading this node changes.</p>
+      <p>Still standing, outside this node's fence: a live run whose manifest is an orientation write and whose stream carries no assistant record still reads <code>unwritten</code>, which <code>test_a_run_in_motion_is_not_unwritten.py</code> pins for a stub written an hour after dispatch; the gate here is the stream evidence, not bare liveness, and that shape is recorded as a follow-on.</p>
+      <p>The worker does not resolve the driving followup or change terminal plan state.</p>
+    </section>
+  </main>
+</body>
+</html>

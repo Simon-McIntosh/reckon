@@ -1,0 +1,100 @@
+<section id="replayed-gate-runs-at-the-checkout-with-its-output">
+  <h2>A replayed gate runs at the checkout it is replayed in, and keeps what it printed</h2>
+
+  <p><strong>What changed.</strong> A verify-gate replay now rewrites each worker worktree root the
+  run records to the checkout it is replaying at, and keeps the replay's own output in a log under
+  the run directory whose path the report cites. Both halves exist because the replay is the second
+  measurement of a gate whose first measurement happened somewhere else: the command was authored in
+  a worker worktree, and by the time it is replayed at the merged tree that worktree has been
+  released.</p>
+
+  <h3>The defect, reproduced before the repair</h3>
+
+  <p>A stored command of the shape <code>env -C &lt;worker-worktree&gt; … pytest -q
+  &lt;worker-worktree&gt;/tests/…</code> names its tree twice — as the directory it runs in and as the
+  path of every test it names. At the base revision, with that worktree removed and a checkout whose
+  copy of the probe passes, the replay reported:</p>
+
+  <p><code>'exit_status': 125, 'integrated_verdict': 'failed', 'base_verdict': 'passed'</code> —
+  <code>env</code> refusing to enter the directory it was told to, recorded as the merged tree
+  failing a gate that passed where it was written. <code>env: '&lt;worktree&gt;/tests/…': No such
+  file or directory</code> was printed into the void: the replay kept
+  <code>result.returncode</code> and let the runner's stdout and stderr go, so the one artifact that
+  said why was unrecoverable and the ids behind a genuinely red replay had to be re-measured by a
+  second node at the same revision.</p>
+
+  <h3>The repair</h3>
+
+  <figure>
+    <img src="/reckon/figures/a-worker-is-charged-to-a-job/replayed-gate-runs-at-the-checkout-with-its-output/replay-at-the-checkout.svg"
+         alt="Two panels. Above, the stored command names the released worker worktree and env exits 125, recorded as the gate failing. Below, the run's release audit supplies the worktree root, each root is rewritten to the checkout at path-segment boundaries, the checkout's own probe passes, and the replay's output lands in verify-gate.log beside the run, whose path and failing ids the report and the committed row carry." />
+    <figcaption>The rewrite and the capture, from the run's release audit to the log beside the run.</figcaption>
+  </figure>
+
+  <ul>
+    <li><strong>Where the roots come from.</strong> The run's own release audit —
+    <code>release.worktree_audit.worktrees[].path</code>, present on real rows — plus a top-level
+    <code>worktree</code> when the row carries one. A row that records no root replays exactly as
+    before; there is nothing to rewrite.</li>
+    <li><strong>The rewrite is at path-segment boundaries</strong> and skips a root that already
+    resolves to the checkout, so a root is replaced where it is named as a path and never as a
+    substring of a longer word. The text that ran is reported as
+    <code>worktree_roots_rewritten</code>; the recorded <code>gate_command</code> stays the text the
+    worker stored, because that is the record of what was measured at the base.</li>
+    <li><strong>The log.</strong> stdout and stderr are captured as one stream and written to
+    <code>verify-gate.log</code> under the run directory, in the fleet's gate-log convention — header
+    lines naming the replayed revision, the replay's cwd and the command as executed, then the
+    output, then a terminal <code>EXIT=&lt;n&gt;</code>. The report cites it as <code>log_path</code>,
+    and the finding carries <code>failure_ids</code> extracted from that text by the same helper the
+    gate-log readers use. A replay killed by its timeout writes what it produced with no
+    <code>EXIT=</code> line, the absence being the fact.</li>
+  </ul>
+
+  <h3>Measured</h3>
+
+  <p>The gate is the two new cases plus the four existing test files that drive verify-gate, run as
+  one arm per revision — each arm an <code>env -C</code>-pinned interpreter, its own tree on
+  <code>PYTHONPATH</code>, and the arm's own <code>reckon.__file__</code> printed into its log:</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline</td><td><code>b5c8ce92</code> + the new cases</td><td><strong>2 failed, 72
+      passed</strong> — the two failures are the new cases, both on the removed worktree</td></tr>
+      <tr><td>after</td><td><code>a9ce802d</code></td><td><strong>74 passed</strong>, exit 0</td></tr>
+    </tbody>
+  </table>
+
+  <p>The failing ids are two removed and none added. The first case asserts the replay ran at the
+  checkout and reported exit 0, not 125 — and that the probe's marker file exists in the checkout,
+  which is the executed-command receipt: the tree the command names no longer exists, so nothing
+  else could have written it. The second replays a gate that genuinely fails and asserts the log
+  sits under the run directory, holds the failing id and the replay's stderr, ends in
+  <code>EXIT=1</code>, and that the committed row's <code>integrated_gate_check</code> cites the same
+  path.</p>
+
+  <h3>The negative control</h3>
+
+  <p>In a scratch copy of the committed tree, the declared mutation — restore the discard of the
+  replay's stdout and stderr in a scratch copy; the failing-gate case must fail — was applied as a
+  <code>return</code> at the top of the log write, so the replay's output is discarded again while
+  everything else stands. The failing-gate case turns red in 2.8 s with
+  <code>the report cites no replay log … 'log_path': None</code>, exit 1: the case fails on the
+  missing log and not on anything else, which is the discrimination. The red log's first line
+  repeats the mutation verbatim, the mutated helper's text is printed under it, and the log ends in
+  <code>EXIT=1</code>; it is named in the node's manifest under <code>negative_control_log</code>.</p>
+
+  <h3>What is not here</h3>
+
+  <p>No suite-wide run: this change is measured by the verify-gate gate set (74 ids), which is the
+  set that reaches the code. The rewrite covers whichever command actually executes — stored or
+  supplied by <code>--command</code> in the shape the existing cases exercise — but the new cases
+  pin the stored path. The logs live under the run directory on this workstation, so a later reader
+  opens them by path rather than by URL. No worker worktree is recreated and no real fleet run is
+  replayed: the cases build a promoted row in a temporary config home and the real one is asserted
+  untouched by this run's own id. The row's <code>release</code> key is read, not written, so a
+  ledger row assembled without it is replayed unchanged.</p>
+
+  <p><strong>Commits.</strong> Implementation and cases: <code>a9ce802d</code>. The landing record
+  and the figure are the commit that carries this fragment.</p>
+</section>

@@ -1,0 +1,61 @@
+<section id="derive-the-row-phase-from-the-stream">
+  <h2>A working run reads working within one poll</h2>
+  <p class="lead">A run's row state was read from the pointer's stored phase, which only a stream fold advances, so a worker that had been thinking and editing for an hour kept the pre-spawn label its launcher wrote and rendered as <code>dispatched</code> until somebody folded its stream by hand. The phase is now derived from the run's own newest stream, and a record of type <code>assistant</code> there reads as <code>working</code>.</p>
+
+  <figure>
+    <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/derive-the-row-phase-from-the-stream/row-phase-from-stream.svg" alt="One run's stream gains its first assistant record while the stored label stays starting. Before the change the row reads dispatched at every poll. After it, the poll that sees the record steps the row from dispatched to working.">
+    <figcaption>The stored label is the launcher's word and it never moves on its own; the run's own stream is what says a turn is under way.</figcaption>
+  </figure>
+
+  <h3>What changed</h3>
+  <table>
+    <thead><tr><th>Piece</th><th>Behaviour</th></tr></thead>
+    <tbody>
+      <tr><td><code>_newest_stream_shows_work</code></td><td>Asks the module's shared newest-stream reader — the same one the stall clock uses, so neither can disagree about which file is the run's current one — and reports whether that file holds an <code>assistant</code> record. A resumed turn's <code>resume-*.jsonl</code> and a lane change's <code>lane-change-*.jsonl</code> are reached by that reader rather than by name.</td></tr>
+      <tr><td><code>_observed_phase</code></td><td>Consults the stream last, after the terminal-manifest, exit-record and worker-record arms, so a stronger answer always decides first. Only a stored phase that is still pre-spawn is ever asked about, which is the one reading the answer can change.</td></tr>
+      <tr><td>Row keys</td><td><code>phase</code> now carries the derived phase and the launcher's label is kept beside it as <code>stored_phase</code>, so a reader sees why a run left the pre-spawn bucket without anything having run a fold.</td></tr>
+      <tr><td>Live readout</td><td><code>reckon/mcp_views.py</code> needed no change: the live row is the classifier's own projection, so it carries the derived phase under <code>phase</code>. Case 4 asserts that, so the pane and the tool agree rather than only appearing to.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>What this does not reach</h3>
+  <p>The live readout and the watcher's rows both carry the derived phase. The command-line fleet listing renders the pointer's own <code>phase</code> field, so for the same run it still reports the launcher's label — the stored label beside it is what makes the disagreement legible rather than silent. That surface is outside this change and is reported to the coordinator to schedule rather than widened here.</p>
+
+  <h3>Cases</h3>
+  <table>
+    <thead><tr><th>Case</th><th>What it holds fixed</th><th>What it asserts</th><th>At the base revision</th></tr></thead>
+    <tbody>
+      <tr><td>An assistant record in <code>stream.jsonl</code></td><td>One live pointer, stored phase <code>starting</code>, a real process recorded by pid, a stream holding only <code>thread.started</code></td><td>The baseline reads <code>dispatched</code>; the poll after the record emits <code>dispatched &#8594; working</code></td><td>Fails: no transition is emitted, and the watcher is reached with nothing to publish</td></tr>
+      <tr><td>The same record in <code>resume-1.jsonl</code></td><td>Same pointer and label; only the file differs, and the assertion checks the resume stream is the newer one</td><td>The same transition, so a reader that opened <code>stream.jsonl</code> by name would fail here</td><td>Fails the same way</td></tr>
+      <tr><td>A stream with no assistant record</td><td>An existing stream holding <code>system</code> and <code>turn.started</code> only</td><td>The row stays <code>dispatched</code>, with <code>phase</code>, <code>stored_phase</code> and <code>effective_phase</code> all <code>starting</code></td><td>Fails on the keys the row did not yet carry</td></tr>
+      <tr><td>The live readout</td><td>Same record, read through <code>crew(view="live")</code></td><td>The row carries <code>phase = working</code> and <code>stored_phase = starting</code></td><td>Fails: the row reads <code>starting</code></td></tr>
+    </tbody>
+  </table>
+  <p>Every process a case starts is a real one, ended in a <code>finally</code> block, and the case fails if any part of it survives. The configuration home is redirected to the case's own temporary directory and the fixture asserts the resolved home stays inside it, so nothing here reads or writes the operator's real fleet state.</p>
+
+  <h3>Gate</h3>
+  <table>
+    <thead><tr><th>Arm</th><th>Tree</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>The new test at the base revision</td><td>a scratch extraction of <code>5636e306</code>, module resolved from it</td><td><code>4 failed</code>, exit 1 — the first case fails with no transition emitted</td></tr>
+      <tr><td>The gate at the base revision</td><td>the same scratch extraction, 37 existing test files plus the new one</td><td><code>14 failed, 396 passed</code>, exit 1</td></tr>
+      <tr><td>The gate at this change</td><td>the worktree, the same 37 files plus the new one</td><td><code>10 failed, 400 passed</code>, exit 1</td></tr>
+    </tbody>
+  </table>
+  <p>The two arms separate cleanly: comparing failing ids, <strong>no id fails at the change that does not also fail at the base revision</strong>, and the only ids that differ are the four new cases, which fail at the base and pass here. The ten shared ids are pre-existing on this checkout and are reported to the coordinator rather than repaired here, because the finalizer owns what is downstream of it.</p>
+
+  <h3>The refusal, made to happen</h3>
+  <p>A suite passing at the change does not show the new reading is what moved the row, so the reducer was returned to reading the stored phase in a scratch copy of the tree — the derivation removed, everything else left as it is. The first case then fails with no transition, which is the same failure the base revision produces and is the one this change removes. The log opens with that mutation as its first line, names the module it imported and its digest, and carries a distinct digest from the change under test, so the two trees cannot be confused for one another.</p>
+
+  <h3>Paths and commit</h3>
+  <table>
+    <thead><tr><th>Path</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td><code>reckon/crew/recovery.py</code></td><td>The stream reader, the reducer's new arm, and the row's two phase keys</td></tr>
+      <tr><td><code>tests/test_working_reads_working_at_once.py</code></td><td>The four cases above</td></tr>
+      <tr><td><code>docs/figures/&#8230;/row-phase-from-stream.svg</code></td><td>The figure on this page</td></tr>
+      <tr><td><code>docs/evidence/fragments/&#8230;/derive-the-row-phase-from-the-stream.html</code></td><td>This record</td></tr>
+    </tbody>
+  </table>
+  <p>Landed at commit <code>af224ba7</code>; this fragment and the figure it embeds travel with the commit that carries them.</p>
+</section>

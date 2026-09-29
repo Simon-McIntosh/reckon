@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="replayed-gate-merged-tree-delta">
+  <meta name="plan-title" content="Replayed gate: the merged tree adds no failing test">
+  <meta name="plan-summary" content="The merge that brings the replayed-gate rewrite onto a main already carrying three other promotion changes adds no failing test: 11 tests fail in both arms, the same 11 ids, and the set difference is empty.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-is-charged-to-a-job">
+  <meta name="plan-verifies" content="reckon:a-worker-is-charged-to-a-job#s5">
+  <meta name="plan-commits" content="3efc2b0a">
+  <meta name="plan-artifacts" content="docs/figures/a-worker-is-charged-to-a-job/replayed-gate-merged-tree-delta/arm-comparison.svg">
+  <meta name="plan-recorded-at" content="2026-09-28">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,merge,regression,gates">
+  <title>Replayed gate: the merged tree adds no failing test — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="replayed-gate-merged-tree-delta" data-reckon="landed" data-when="2026-09-28">
+  <h2>Replayed gate: the merged tree adds no failing test</h2>
+
+  <p><strong>What was measured.</strong> Merge commit <code>355a8864</code> has first parent
+  <code>19d9f51f</code> (<code>main</code> at the time of this run, and this node's base) and second parent
+  <code>3a9eec99</code>. Against its first parent the merge changes three paths:
+  <code>reckon/crew/promotion.py</code> (+223/−5), a new <code>tests/test_verify_gate_replay_is_diagnosable.py</code>
+  (297 lines), and one figure SVG. The question was whether those changes redden any test against the parent. Two
+  scratch trees were built with <code>git archive</code>, one per revision, each carried on <code>PYTHONPATH</code> with
+  its imported module asserted inside it, and the same population was run in both.</p>
+
+  <figure>
+    <img src="/reckon/figures/a-worker-is-charged-to-a-job/replayed-gate-merged-tree-delta/arm-comparison.svg"
+         alt="Base arm 19d9f51f: 34 files, 351 tests, 340 passed, 11 failed. Merged arm 355a8864: 35 files, 353 tests, 342 passed, 11 failed. The 11 failing ids are identical, so the added set is empty."
+         style="max-width:100%">
+    <figcaption>Failure counts in the two arms, the identical failing set, and the three checks that keep the empty
+    difference from being a blind one.</figcaption>
+  </figure>
+
+  <p><strong>Result.</strong> Base <code>19d9f51f</code>: <strong>11 failed, 340 passed</strong>, exit 1, over 34 files
+  (351 tests). Merged <code>355a8864</code>: <strong>11 failed, 342 passed</strong>, exit 1, over 35 files (353 tests).
+  The failing id set is identical in both arms, so the <strong>set difference is empty</strong>: <em>no test fails at the
+  merged head that passes at its first parent</em>. There is no added failure to attribute and therefore no candidate
+  commit for one. The crossed figure is the merge's own new test file: both of its tests pass, and they account for the
+  whole +2 in the merged arm's pass count (353 − 351 = 2).</p>
+
+  <p><strong>The 11 pre-existing failures, identical in both arms.</strong> Four parameterisations of
+  <code>test_complete_preserves_the_promotion_commit_through_release</code> in
+  <code>tests/test_promotion_never_amends_its_commit.py</code>; two cases in
+  <code>tests/test_receipt_names_the_rolled_back_row.py</code>
+  (<code>test_rolled_back_row_receipt_names_re_promotion_as_the_recovery</code> and
+  <code>test_survived_row_receipt_keeps_the_do_not_re_promote_wording</code>); two in
+  <code>tests/test_crew_test_role.py</code>
+  (<code>test_synthetic_wave_attribution_survives_in_the_promoted_ledger</code> and
+  <code>test_test_role_cannot_waive_missing_attribution_for_an_added_failure</code>); and one each in
+  <code>tests/test_a_short_commit_list_is_reported.py</code>
+  (<code>test_a_shortfall_promotion_completes_and_reports_on_the_record</code>),
+  <code>tests/test_failure_classification.py</code>
+  (<code>test_worker_pass_rate_uses_only_work_rejected_failures</code>) and
+  <code>tests/test_rollback_asks_head.py</code>
+  (<code>test_failure_after_append_names_the_row_state[stage]</code>). Their first assertion lines are the same sentence
+  in each arm, differing only in the pytest tmp path prefix: five raise the review-gate refusal (<em>run 'r-release' /
+  'r-test-attributed-wave' is classified scoring because no complete independent review is stored</em>), two assert on
+  the rollback receipt wording, one on the ledger row state, one on failure classification, one on a shortfall
+  promotion, one on a survival receipt. Each is red at the base for the same reason it is red at the merged head.</p>
+
+  <p><strong>The empty difference is measured, not blind.</strong> Three checks stand behind it. A synthetic control on
+  the comparison itself: one <code>FAILED</code> line injected into a copy of the merged log is reported by the differ as
+  added, so the instrument that returned the empty set can see a new failure. A provenance assert before every run: each
+  arm printed <code>reckon.crew.promotion.__file__</code> and required it to lie inside its own tree
+  (<code>/tmp/promotion-arms/base/reckon/crew/promotion.py</code> and
+  <code>/tmp/promotion-arms/merged/reckon/crew/promotion.py</code>), probe exit 0 in both arms — and the assert was
+  load-bearing, since a first probe run from the worktree resolved the worktree's module rather than the tree's. And the
+  failures reproduce serially: the six files carrying them, run serially (no xdist) in each arm, give the same
+  <strong>11 failed, 43 passed</strong> in both, so the identity is not an artefact of parallel test order.</p>
+
+  <p><strong>What this node did not do.</strong> It changed no source file: the repository is read-only for this role and
+  the scratch trees are exports under a node-local <code>/tmp</code>, so no worktree is touched and
+  <code>git status --porcelain</code> is empty. The trees are archive exports with no <code>.git</code>, so a test that
+  resolved the enclosing repository through git would read that absence in both arms; the measurement is a comparison
+  between the arms and both share the shape. The population differs by exactly one file between arms (the merge's new
+  test file, absent at base and therefore not runnable there); the common 34 files are the comparison basis. No defect
+  was found in <code>reckon/crew/promotion.py</code>, so no blocker arises. It touches no plan state: the driving
+  followup stays open and no terminal status is set, because only the coordinator observes the other nodes.</p>
+</article>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<article class="landed-fragment" data-node="disposition-refusal-branches-are-tested">
+  <section id="disposition-refusal-branches-are-tested">
+    <h2>The disposition writer&rsquo;s two head refusals, each pinned by a case whose control turns red</h2>
+    <p>
+      Commit <code>c1660880</code> (2026-09-29, 120 insertions / 3 deletions over one file,
+      <code>tests/test_sub_floor_disposition_has_a_writer.py</code>). The disposition command&rsquo;s
+      <code>stored&nbsp;is&nbsp;None</code> branch holds two refusals &mdash; one for a review
+      record describing a revision the run&rsquo;s work is not at, one for a run with no stored
+      record at all &mdash; and no case under <code>tests/</code> ran either. A regression that
+      recorded a disposition against another revision&rsquo;s review would have gone unnoticed,
+      which is the defect this node closes. No file under <code>reckon/</code> was changed: the
+      module is the same at both arms, and only the test file moved.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Refusal</th><th>Condition the branch is reached under</th><th>What the refusal names</th><th>Case</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>mismatched head</td>
+          <td>the store holds a record for the run, keyed to a revision other than the run&rsquo;s own
+            resolved head, so the head-first reader selects nothing while a record for the run exists</td>
+          <td>both revisions &mdash; the one the stored record describes and the one the work is at</td>
+          <td><code>test_a_review_keyed_to_another_revision_is_refused_by_head</code></td>
+        </tr>
+        <tr>
+          <td>no record</td>
+          <td>the store holds no record for the run under any head</td>
+          <td>the missing record, naming the run id and the project</td>
+          <td><code>test_a_run_with_no_stored_review_is_refused_by_name</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/disposition-refusal-branches-are-tested/head-refusal-branches.svg"
+           alt="The command resolves the run's own head, reads the review store for it, and when no record carries that head reaches the stored-is-None branch, which holds the mismatched-head refusal and the no-record refusal; each case exercises one of them and both leave the sub-floor row standing. Below, a scratch copy with the mismatched-head refusal deleted: the base test file still passes, the test file this change adds fails and reports the sibling refusal's text."
+           style="max-width:820px;width:100%">
+      <figcaption>One branch, two refusals, and the control that separates them: deleting the
+      mismatched-head refusal makes the new case fail by reporting the no-record refusal instead,
+      which is only possible because each case asserts the distinct text of its own
+      refusal.</figcaption>
+    </figure>
+
+    <h3>Gate: the whole test file, both arms</h3>
+    <p>
+      Both arms ran the file in full against base <code>38c1cb2f</code>. The head arm adds two
+      cases and no failing id.
+    </p>
+    <ul>
+      <li><strong>Baseline</strong> &mdash; <code>38c1cb2f</code>: <strong>15 passed in
+        46.76&nbsp;s, EXIT=0</strong>. Log:
+        <code>~/.config/reckon/crew/runs/r-20260928T225758843908-disposition-refusal-branches-are-tested/logs/baseline-suite.log</code>.</li>
+      <li><strong>After</strong> &mdash; <code>c1660880</code>: <strong>17 passed in
+        31.74&nbsp;s, EXIT=0</strong>. Log:
+        <code>~/.config/reckon/crew/runs/r-20260928T225758843908-disposition-refusal-branches-are-tested/logs/after-suite.log</code>.</li>
+    </ul>
+    <p>
+      Every log opens with the revision, the tree and the command it was run with, and ends in an
+      <code>EXIT=</code> line. Both arms ran the worktree&rsquo;s interpreter directly
+      (<code>PYTHONPATH=&lt;worktree&gt;</code> against the main checkout&rsquo;s <code>.venv</code>),
+      not through <code>uv</code>, so neither arm could sync a shared environment.
+    </p>
+
+    <h3>The control: a passing suite never shows a guard fires</h3>
+    <p>
+      The declared control was <em>delete the mismatched-head refusal from
+      <code>reckon/cli.py</code> in a scratch copy; the mismatched-head case must fail</em>. The
+      mutation was made on a scratch tree checked out at the head revision, where the
+      <code>if described:</code> refusal block was removed outright; the same mutation was then
+      run against both test files.
+    </p>
+    <ul>
+      <li><strong>Base test file + mutation:</strong> <strong>15 passed in 26.44&nbsp;s,
+        EXIT=0</strong> &mdash; the whole file green with the refusal deleted. That is the
+        reproduction: at base, no case reached the branch, so the guard could be removed with
+        nothing noticing. Log:
+        <code>negative-control-reproduction.log</code>.</li>
+      <li><strong>Head test file + mutation:</strong> <strong>1 failed, 16 passed,
+        EXIT=1</strong>, the failure being the mismatched-head case, which reported the sibling
+        refusal&rsquo;s text:
+        <code>Error: no stored review for run 'run-sub-floor' in project 'disposition-fixture' to record a disposition against</code>.
+        Log: <code>negative-control.log</code>.</li>
+    </ul>
+    <p>
+      The second arm failed for the right reason. With the mismatched-head refusal deleted, the
+      command falls through to the no-record refusal &mdash; the case does not merely observe a
+      non-zero exit, it asserts the text of its own refusal and the absence of the sibling&rsquo;s,
+      so a fall-through fails. Both control logs carry the header lines that make the run
+      self-checking: <code>module.__file__=/tmp/negctl-head/reckon/cli.py</code> and
+      <code>cwd=/tmp/negctl-head</code> show the mutated copy is the module that was imported and
+      the tree that was run, not the worktree; and
+      <code>mutation_phrase_scratch=0</code> against <code>mutation_phrase_worktree=1</code> shows
+      the refusal text is absent from the scratch copy and present in the worktree &mdash; the
+      check that the mutation landed, verified against something known present.
+    </p>
+
+    <h3>What each case measures, and one reading worth keeping</h3>
+    <p>
+      <strong>Mismatched head.</strong> The case stores a review keyed to the run&rsquo;s <em>base</em>
+      revision (carrying a sub-floor <code>durability</code> score), removes the head-keyed record,
+      and premises the reading two ways before invoking the command: the same reader still returns
+      the stored record, and returns <code>None</code> for the run&rsquo;s head &mdash; so the
+      mismatch is a reading the store really holds, not a broken lookup. The command then exits
+      non-zero, names both revisions, does not speak the no-record refusal, writes no disposition,
+      and the sub-floor finding is still undisposed.
+    </p>
+    <p>
+      <strong>The row left standing is asserted through the reader for the described revision, and
+      that is a finding rather than a convenience.</strong> The obligations walk selects a review
+      for each live pointer&rsquo;s tree head, so a store keyed to another revision yields
+      <em>no live row at all</em> for that run. The disposition command refuses in exactly that
+      state. Reading only the live rows would therefore show nothing to protect; the case
+      therefore measures the row the command was aimed at, through
+      <code>_undisposed_rows(run_id, described)</code>, before and after.
+    </p>
+    <p>
+      <strong>No record.</strong> A second live pointer is written for a run whose store holds no
+      review, beside the fixture run that still has one. The case asserts the sibling&rsquo;s live
+      sub-floor row is standing, invokes the command against the recordless run, and requires:
+      non-zero exit, the refusal naming the missing run id, the absence of the mismatched-head
+      refusal&rsquo;s text, the live row untouched, and the store still empty for that run.
+    </p>
+  </section>
+</article>
