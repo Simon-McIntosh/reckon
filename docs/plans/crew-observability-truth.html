@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="533">
+<meta name="plan-version" content="534">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -3279,6 +3279,9 @@ PEER SCOPES
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20260928T225758843908-disposition-refusal-branches-are-tested" data-who="reckon-build" data-when="2026-09-28T23:57:20.721Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/crew-observability-truth/disposition-refusal-branches-are-tested.html committed as f9fa91ee7423649a2411150153ecb1b6b3a532f4, with its figure at docs/figures/crew-observability-truth/disposition-refusal-branches-are-tested/head-refusal-branches.svg; the fragment adds zero doccheck findings to the composed record (6 before, 6 after, 0 added, with composition verified by the fragment marker and an 8142-byte delta).</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20260928T235803689302-review-of-disposition-refusal-branches-are-tested" data-who="reckon-build" data-when="2026-09-29T00:20:52.077Z">
+    <div class="r-comment-body"><p>review of r-20260928T225758843908-disposition-refusal-branches-are-tested stored at both fenced paths; total 97/100 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19) with 0 findings, 0 added failures measured from the reviewed run&#x27;s own gate logs, base 38c1cb2f, head f9fa91ee</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20260915-a-near-miss-key-is-reported-as-an-absent-fact" data-who="reckon-ship" data-when="2026-09-15T06:40:00Z">
     <div class="r-comment-body"><p><strong>A SECOND MANIFEST-KEY DEFECT, ROUTED FROM ANOTHER PROJECT'S COORDINATOR, AND IT IS THIS SECTION'S DEFECT ONE STEP LATER.</strong> A worker wrote <code>commit: 61e85056</code> with its changed paths beneath — singular, where the schema reads <code>commits</code>. Promotion refused with <em>manifest field 'commits' is missing</em> (<code>promotion.py:517</code>). <strong>The statement is true of the key and false of the fact</strong>: the commit was reported, and reported accurately. Reproduced here against the live parser:</p><pre>parse_manifest("node: n\nstatus: complete\ncommit: 61e85056\nchanged_paths: a.py b.py\n")
