@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="101">
+<meta name="plan-version" content="102">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1217,7 +1217,7 @@
     </article>
 <article class="r-fu" data-id="f-sgh-terminal-record-settle-reads-gpfs-mtime" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The terminal-record settle test passes whatever filesystem holds its basetemp</h4>
-    <div class="r-fu-body"><p>Measured 2026-09-29 by <code>test-terminal-record-settle-at-the-merge</code> (report <code>~/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md</code>). <code>tests/test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row</code> fails 11 of 20 isolated runs and 7 of 20 under <code>-n 6</code> when its basetemp is on GPFS. It fails identically at 87bcae7d and at its parent dc520696, and passes 5 of 5 with the basetemp on xfs <code>/tmp</code>. The test's first observation calls <code>os.utime(stream, None)</code> so the stream reads fresh. On GPFS the following <code>stat</code> returns the pre-utime mtime in 42 of 60 trials, about 0.3 s stale, and the suite shrinks <code>_STREAM_SETTLE_QUIESCENCE_SECONDS</code> to 0.05 s. <code>_wait_out_stream_tail</code> then sees a quiet stream at the first observation, and the assertion reads 1 where it needs 3. Production windows are far above 0.3 s, so this is a fixture fragility, not a promotion defect. Done when the test passes 20 of 20 with its basetemp on GPFS and 20 of 20 on xfs, without loosening <code>reads["count"] >= 3</code>. For example, it can drive freshness through the patched observation function rather than filesystem mtime, or use a quiescence window above the measured GPFS lag.</p></div>
+    <div class="r-fu-body"><p>Measured 2026-09-29 by <code>test-terminal-record-settle-at-the-merge</code> (report <code>~/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md</code>). <code>tests/test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row</code> fails 11 of 20 isolated runs and 7 of 20 under <code>-n 6</code> when its basetemp is on GPFS. It fails identically at 87bcae7d and at its parent dc520696, and passes 5 of 5 with the basetemp on xfs <code>/tmp</code>. The test's first observation calls <code>os.utime(stream, None)</code> so the stream reads fresh. On GPFS the following <code>stat</code> returns the pre-utime mtime in 42 of 60 trials, about 0.3 s stale, and the suite shrinks <code>_STREAM_SETTLE_QUIESCENCE_SECONDS</code> to 0.05 s. <code>_wait_out_stream_tail</code> then sees a quiet stream at the first observation, and the assertion reads 1 where it needs 3. Production windows are far above 0.3 s, so this is a fixture fragility, not a promotion defect. Done when the test passes 20 of 20 with its basetemp on GPFS and 20 of 20 on xfs, without loosening <code>reads["count"] &gt;= 3</code>. For example, it can drive freshness through the patched observation function rather than filesystem mtime, or use a quiescence window above the measured GPFS lag.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head</pre>
     </article>
 </section>
@@ -1428,6 +1428,21 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260929T1255-shared-manifest-path" data-who="s21-1c" data-when="2026-09-29T12:55:00Z">
     <div class="r-comment-body">Cause found for test_crew.py::test_shadow_cli_routes_the_candidate_and_derives_the_node failing under the population (run r-20260929T115000035243; report ~/.config/reckon/crew/reports/reckon/s21-shadow-cli-population.md). It is a test-isolation defect, not a product one. The canonical node helper pins manifest_path to the fixed path /tmp/node-a-manifest.md (tests/test_crew.py:136, duplicated at tests/test_budget.py:213). A concurrent process that writes a terminal manifest there inside a target run's dispatch-to-complete window makes that run read a foreign manifest, and promotion refuses. Reproduced at both 4568a555 and f6c8ebab with a concurrent writer; in six population repeats the id failed once, and that was at base. The shared-reservation merge is exonerated. The repair gives each test its own manifest path under its temporary directory, in both files. It folds into the queued tests/test_crew.py node, which also takes tests/test_budget.py, after s22's two nodes on test_crew.py merge.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260929T134023333221-review-of-ledger-write-keeps-run-files" data-who="reckon-build" data-when="2026-09-29T14:36:03.642Z">
+    <div class="r-comment-body"><p>Independent review of run r-20260929T092802902599-ledger-write-keeps-run-files stored to both
+fenced paths. The record carries all five dimensions scored 0..20 (durability 14, evidence 18,
+fit 18, goal_fidelity 17, scope_discipline 19; total 86), the six item verdicts, four call
+sites, added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own
+baseline_suite/after_suite arms, and an explicit resolution for each of the four findings of
+the prior record at .at-a55213dd9c2c0c89c0b082bcc79c709fb7eeae09.json: three resolved, one
+resolved in substance. One new finding is recorded: the restore added by the repair puts back a
+snapshot taken before a competing writer&#x27;s commit, so a two-writer version race can leave the
+per-run file and the aggregate disagreeing and make ledger.load refuse the project. Verified by
+reading the record back through the store: _complete_review_exists true, stored_record selects
+both, and parse_review of the stored raw_text reproduces the five scores and the total.
+No repository commit was made — the two fenced paths are outside the worktree — and the
+reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
