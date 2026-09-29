@@ -31,6 +31,7 @@ from datetime import date, datetime
 from enum import StrEnum, auto
 from pathlib import Path
 
+from reckon._timestamps import parse_utc
 from reckon.crew.quota_weight import RequestTokenUsage, UnknownQuotaWeight, quota_weight
 
 CLIENT_SESSIONS_DIR = Path.home() / ".codex" / "sessions"
@@ -230,10 +231,17 @@ def _parse_timestamp(value: object) -> datetime | None:
     """Parse a rollout record's ISO timestamp, tolerating the trailing Z."""
     if not isinstance(value, str):
         return None
-    try:
-        return datetime.fromisoformat(value)
-    except ValueError:
+    moment = parse_utc(value)
+    if moment is None:
         return None
+    # The record's own text names its zone: a stamp that names no zone is
+    # returned as written rather than pinned to UTC, while a stated zone is
+    # normalised. A date with no time names no zone either.
+    _, separator, tail = value.strip().rpartition("T")
+    zone_stated = bool(separator) and (
+        tail.endswith(("Z", "z")) or "+" in tail or "-" in tail
+    )
+    return moment if zone_stated else moment.replace(tzinfo=None)
 
 
 def _segment_cumulative(readings: Sequence[int]) -> int:

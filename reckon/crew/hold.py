@@ -35,6 +35,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from reckon._timestamps import parse_utc
 from reckon.crew import staleness
 
 #: The four facts a hold cannot be constructed without, in the order a caller
@@ -187,9 +188,5 @@ def _as_moment(value: object) -> datetime | None:
     if isinstance(value, datetime):
         return value.replace(tzinfo=UTC) if value.tzinfo is None else value
     if isinstance(value, str):
-        try:
-            parsed = datetime.fromisoformat(value)
-        except ValueError:
-            return None
-        return parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed
+        return parse_utc(value)
     return None

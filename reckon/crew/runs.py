@@ -22,6 +22,7 @@ from typing import Any
 
 from reckon import __version__
 from reckon._store import _config_home
+from reckon._timestamps import parse_utc
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     DEFAULT_WATCH_STALL_WINDOW,
@@ -3159,14 +3160,8 @@ def _stream_quiet_seconds(record: Mapping[str, Any], *, now_seconds: float) -> i
         if run_id and pointer.is_file():
             latest = pointer.stat().st_mtime
         else:
-            try:
-                created = datetime.fromisoformat(str(record.get("created_at") or ""))
-            except ValueError:
-                latest = now_seconds
-            else:
-                if created.tzinfo is None:
-                    created = created.replace(tzinfo=UTC)
-                latest = created.timestamp()
+            created = parse_utc(str(record.get("created_at") or ""))
+            latest = now_seconds if created is None else created.timestamp()
     return max(0, int(now_seconds - latest))
 
 
