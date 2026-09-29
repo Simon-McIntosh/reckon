@@ -946,13 +946,17 @@ def _capture_project_cached(
         run_cache = {}
     window = (entry or {}).get("window") or {}
     prior = window.get("project")
-    if not (
-        isinstance(prior, dict)
-        and window.get("branch") == branch
-        and window.get("start") == start
-    ):
+    # The window start fixes the base commit, so a match on it makes the cached
+    # capture extendable; the branch name may differ because it only resolves
+    # the head, and the cached commits sit on the same line of history either
+    # way.
+    if not (isinstance(prior, dict) and window.get("start") == start):
         prior = None
-    if prior is not None and window.get("end") == end:
+    if (
+        prior is not None
+        and window.get("branch") == branch
+        and window.get("end") == end
+    ):
         head = _first_parent_head(repo, branch, end)
         if head and head == prior.get("head"):
             return prior
