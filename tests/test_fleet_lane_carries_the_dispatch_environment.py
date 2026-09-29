@@ -37,7 +37,21 @@ import pytest
 
 from reckon import crew
 from reckon.crew import fleet_supervisor, runs
-from reckon.crew.dispatch import CREW_STATE_ENVIRONMENT, WATCH_ARMING_ENV
+from reckon.crew.dispatch import (
+    CREW_STATE_ENVIRONMENT,
+    WATCH_ARMING_ENV,
+    _carried_crew_environment,
+)
+
+# The variables that relocate reckon's crew state, written out so the carried
+# list is checked against a statement rather than against itself.
+CARRIED_NAMES = {
+    "RECKON_HOME",
+    "RECKON_STATE_ROOT",
+    "RECKON_MOUNTS_PATH",
+    "RECKON_FLIGHT_CONFIG",
+    "RECKON_RUN_STORE",
+}
 
 REPO_ROOT = str(Path(__file__).resolve().parents[1])
 
@@ -281,6 +295,9 @@ def test_a_dispatch_confirms_its_supervisor_reached_the_run(
     """
     config_home, repo, marker = host
     dispatcher_home = os.environ["RECKON_HOME"]
+    # A second crew-state variable, so the spec is shown to carry the whole
+    # set rather than the crew home alone.
+    monkeypatch.setenv("RECKON_RUN_STORE", str(tmp_path / "runs.sqlite"))
     other_home = tmp_path / "batch-home"
     other_home.mkdir()
     batch_environ = {
@@ -302,11 +319,16 @@ def test_a_dispatch_confirms_its_supervisor_reached_the_run(
         spec = json.loads(
             (run_directory / "supervisor.json").read_text(encoding="utf-8")
         )
-        # The spec carries the dispatcher's crew home, not the batch step's.
+        # The spec carries the dispatcher's crew home, not the batch step's,
+        # and exactly the crew-state variables the dispatcher had set.
         assert isinstance(spec["environment"], dict), spec["environment"]
         assert spec["environment"]["RECKON_HOME"] == dispatcher_home, spec[
             "environment"
         ]
+        assert spec["environment"] == {
+            name: os.environ[name] for name in CARRIED_NAMES if os.environ.get(name)
+        }, spec["environment"]
+        assert spec["environment"]["RECKON_RUN_STORE"] == str(tmp_path / "runs.sqlite")
 
         # The real supervisor acknowledged, and dispatch reported its pid.
         assert stub.spawned and stub.spawned[0]["pid"] == supervisor_pid
@@ -328,10 +350,33 @@ def test_a_dispatch_confirms_its_supervisor_reached_the_run(
 
 
 def test_the_carried_variables_are_the_ones_that_relocate_crew_state() -> None:
-    """The carried list names every crew-state variable the readers resolve."""
-    assert "RECKON_HOME" in CREW_STATE_ENVIRONMENT
-    for name in ("RECKON_STATE_ROOT", "RECKON_MOUNTS_PATH", "RECKON_FLIGHT_CONFIG"):
-        assert name in CREW_STATE_ENVIRONMENT
+    """The carried list is exactly the crew-state variables, named here.
+
+    The expected set is written out rather than read back from the constant,
+    so a name dropped from the constant fails this case instead of passing it.
+    """
+    assert set(CREW_STATE_ENVIRONMENT) == CARRIED_NAMES
+
+
+def test_every_set_crew_variable_is_carried_and_an_unset_one_is_not(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each set variable arrives with its value; an unset one stays absent.
+
+    Absent and empty resolve differently in every reader that falls back on a
+    default, so an unset variable must not arrive as an empty string.
+    """
+    for name in CARRIED_NAMES:
+        monkeypatch.setenv(name, f"/carried/{name.lower()}")
+    assert _carried_crew_environment() == {
+        name: f"/carried/{name.lower()}" for name in CARRIED_NAMES
+    }
+    monkeypatch.delenv("RECKON_FLIGHT_CONFIG")
+    monkeypatch.setenv("RECKON_STATE_ROOT", "")
+    carried = _carried_crew_environment()
+    assert "RECKON_FLIGHT_CONFIG" not in carried
+    assert "RECKON_STATE_ROOT" not in carried
+    assert set(carried) == CARRIED_NAMES - {"RECKON_FLIGHT_CONFIG", "RECKON_STATE_ROOT"}
 
 
 def _write_spec(run_directory: Path, environment: object) -> Path:
