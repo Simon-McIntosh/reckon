@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-refusal-is-about-the-work-dispatch-declares-the-run-it-repairs">
+  <meta name="plan-title" content="A dispatch declares the promoted run it repairs — node evidence">
+  <meta name="plan-summary" content="Node evidence for a-refusal-is-about-the-work §4: a dispatch may name the promoted run it repairs with --repairs, and its promotion is exempt from the impl move the way a resume or redispatch already is.">
+  <meta name="plan-evidence-for" content="a-refusal-is-about-the-work">
+  <meta name="plan-verifies" content="a-refusal-is-about-the-work#s4">
+  <meta name="plan-recorded-at" content="2026-09-28">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux compute node 98dci4-clu-2018 (SLURM job 1277272); a detached worktree with the main checkout's environment reached through PYTHONPATH and pytest -p no:cacheprovider; base and negative-control arms run in scratch archive trees under TMPDIR; the negative-control mutation applied to promotion.py and restored, verified byte-identical against the committed head; suite run to a log file, EXIT captured">
+  <meta name="plan-commits" content="c710b880,abfef36e">
+  <meta name="plan-artifacts" content="reckon/cli.py,reckon/crew/dispatch.py,reckon/crew/promotion.py,tests/test_dispatch_declares_the_run_it_repairs.py,docs/figures/a-refusal-is-about-the-work/dispatch-declares-the-run-it-repairs/declaration-decision.svg">
+  <title>A dispatch declares the promoted run it repairs — node evidence | reckon</title>
+  <meta name="plan-tags" content="crew,dispatch,promotion,refusals">
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>&sect;4 &mdash; A dispatch declares the promoted run it repairs</h1>
+    <p class="plan-summary">One node's evidence: the impl-move exemption a
+    corrective run already carried now has a name a fresh dispatch can declare,
+    so a repair of an already-promoted run lands without a hand-written operator
+    flag.</p>
+  </header>
+
+  <section id="dispatch-declares-the-run-it-repairs">
+    <h2>Outcome</h2>
+    <p><code>reckon crew dispatch</code> gains <code>--repairs RUN_ID</code>. The
+    named run must already be promoted in this project's own ledger; a dispatch
+    that names a run which is unknown, still in flight, or owned by another
+    project is refused <em>before launch</em>, and the refusal says which of the
+    three it is. A run dispatched with the declaration records <code>repairs:
+    RUN_ID</code> on its run record beside <code>attempt_kind</code>, and
+    <code>reckon/crew/promotion.py</code> reads that field through the
+    <em>same</em> corrective-attempt check it already uses for the
+    <code>resume</code> and <code>redispatch</code> kinds: the promotion records
+    <code>impl_move</code> as <code>exempt</code>, names the repaired run in the
+    reason, and needs no <code>--no-impl-change</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-refusal-is-about-the-work/dispatch-declares-the-run-it-repairs/declaration-decision.svg"
+           alt="A dispatch declaring --repairs RUN_ID asks whether RUN_ID is promoted in this project's ledger. No sends it to one of three refusals named before launch — an unknown run, a run still in flight, or a run owned by another project. Yes writes repairs: RUN_ID on the new run's pointer beside attempt_kind, and promotion reads it through the existing corrective-attempt check, recording impl_move as exempt with reason corrective-run:repairs:RUN_ID.">
+      <figcaption>One question at admission and one field on the record: the
+      refusals name which of the three the target is, and the exemption the
+      promotion reads is the one a resume already reads.</figcaption>
+    </figure>
+
+    <h3>Change</h3>
+    <p>The corrective-attempt exemption in <code>_require_impl_moved</code> read
+    its marker from the record's <code>attempt_kind</code> alone, so only a run
+    that continued an earlier one &mdash; a resume or a redispatch &mdash; could
+    inherit the plan movement its predecessor produced. A node dispatched
+    <em>fresh</em> to repair an already-promoted run carried no such marker, its
+    own landing moved nothing, and the promotion was refused for an unmoved impl
+    unless the coordinator recorded a reason by hand. This node names that gap.</p>
+    <p><code>reckon/crew/dispatch.py</code> gains
+    <code>_require_repairs_target</code>, which refuses a <code>--repairs</code>
+    target that is not a promoted run of the project's ledger. It reads the
+    project's ledger first; a target absent there but present as a live pointer
+    is distinguished from one that is nowhere &mdash; the live pointer's own
+    <code>project</code> separates a foreign run from one still in flight, so
+    each refusal names which of the three the target is. It runs from
+    <code>plan_dispatch</code>, so both the launching path and the dry run reach
+    it before any run is created. The declaration lands on the record beside
+    <code>attempt_kind</code>.</p>
+    <p><code>reckon/crew/promotion.py</code> extends the existing corrective
+    check rather than adding a second one: after the <code>attempt_kind</code>
+    branch, a record carrying <code>repairs</code> takes the same
+    <code>exempt</code> verdict, with the reason spelling the chain
+    <code>corrective-run:repairs:RUN_ID</code>. <code>reckon/cli.py</code> adds
+    the <code>--repairs</code> option and forwards it to both
+    <code>plan_dispatch</code> and <code>dispatch</code>.</p>
+    <p>The admission check reads this project's ledger, and a ledger whose
+    history cannot be read is a fourth refusal of its own: the target may well
+    be promoted in it, so the dispatch is refused with the ledger path and the
+    read's error rather than presented as an unknown run. <code>CorruptEnvelopeError</code>
+    &mdash; the form a merge-conflict marker takes &mdash; is caught alongside
+    <code>LedgerError</code>, because both are a history the check could not
+    establish.</p>
+
+    <h3>Evidence</h3>
+    <ul>
+      <li><strong>The declaration lands, and the landing is exempt.</strong>
+      The new file's
+      <code>test_a_repairs_dispatch_records_the_field_and_promotes_exempt</code>
+      promotes a predecessor whose landing advanced the plan's impl
+      (<code>verdict: moved</code>), dispatches a fresh node with that
+      predecessor named, and asserts both that the returned record and the
+      written pointer carry <code>repairs: predecessor</code> and that the
+      fresh node's own promotion records
+      <code>impl_move.verdict == "exempt"</code> with reason
+      <code>corrective-run:repairs:&lt;predecessor&gt;</code>. The plan genuinely
+      did not move a second time under the repair, so removing the exemption
+      refuses this run &mdash; which the negative control shows.</li>
+      <li><strong>Unknown, in-flight and foreign targets are each refused before
+      launch.</strong> Three cases assert the reason text: an id in no ledger and
+      no pointer refuses with <em>"names no run in project"</em>; a live pointer
+      refuses with <em>"is not yet promoted"</em>; a live pointer owned by another
+      project refuses with <em>"belongs to project"</em> and names that project.
+      None creates a run.</li>
+      <li><strong>An unreadable ledger refuses with its own reason.</strong>
+      <code>test_an_unreadable_ledger_refuses_with_the_ledger_reason</code>
+      writes a conflict marker over the project's ledger and asserts the refusal
+      names the ledger path and the read error and does <em>not</em> carry the
+      unknown-run text. Against the delivered head
+      (<code>c34d88cc</code>) the same case fails, because the read failure was
+      reduced to an absent ledger and the target was refused as an unknown run;
+      the log is named below.</li>
+      <li><strong>A dispatch with no declaration is unchanged.</strong>
+      <code>test_a_dispatch_with_no_repairs_is_still_refused_when_the_impl_did_not_move</code>
+      promotes a run whose plan impl did not move and is refused, naming
+      <code>--no-impl-change</code> &mdash; the behaviour the declaration
+      replaces for a repair, and which stays in force for everything else.</li>
+      <li><strong>The reuse holds.</strong> <code>_require_impl_moved</code>
+      carries one corrective branch after its <code>attempt_kind</code> test
+      rather than a parallel one, and the new test's exempt case reaches it
+      through <code>crew.complete</code>, the same entry the
+      <code>attempt_kind</code> forms use.</li>
+    </ul>
+
+    <h3>Measured</h3>
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Head arm &mdash; the node's file and the two sibling files at <code>abfef36e</code></td><td>35 passed, exit&nbsp;0</td></tr>
+        <tr><td>Base arm &mdash; the same three files over the pre-change tree at <code>9e727bd0</code>, run in a scratch archive tree</td><td>4 failed, 30 passed, exit&nbsp;1 &mdash; all four new cases fail on <code>TypeError: dispatch() got an unexpected keyword argument 'repairs'</code>, the two sibling files pass</td></tr>
+        <tr><td>The unreadable-ledger case at the delivered head <code>c34d88cc</code>, in a scratch copy with the tests directory carried alongside</td><td>1 failed, 5 passed, exit&nbsp;1 &mdash; the new case fails on <code>reckon._store.CorruptEnvelopeError</code> escaping where the ledger reason is required</td></tr>
+        <tr><td>Declared negative control</td><td><code>test_a_repairs_dispatch_records_the_field_and_promotes_exempt</code> fails, exit&nbsp;1 &mdash; the exempt case refused with <em>"impl did not move: 0.6 at dispatch and 0.6 at completion"</em>, the other four cases pass</td></tr>
+        <tr><td>Ruff on the changed paths, by delta against the base</td><td>check baseline 25, after 22 &mdash; none added; <code>format --check</code> baseline 4, after 4 &mdash; clean</td></tr>
+        <tr><td><code>reckon/crew/promotion.py</code> after the negative-control revert</td><td>byte-identical to <code>c710b880</code> (<code>git diff</code> empty on the tracked tree)</td></tr>
+      </tbody>
+    </table>
+    <p>The base arm carries the new test file into a scratch archive of the
+    base revision, so the same four cases are measured on both arms and the only
+    difference is the change under test. The head arm is rerun at each committed
+    head. Every log header prints the revision and the imported
+    <code>reckon.__file__</code>, and the negative-control log prints
+    <code>c710b880-mutated-no-repairs-branch</code> with its scratch-tree module
+    path, so a reader can tell which tree each arm resolved through.</p>
+    <p>The declared negative control is applied to the committed head and logged:
+    dropping the <code>repairs</code> branch from the corrective-attempt check in
+    <code>reckon/crew/promotion.py</code> makes the exempt case refuse for the
+    unchanged impl &mdash; <em>"0.6 at dispatch and 0.6 at completion"</em>
+    &mdash; while the four admission cases stay green, which shows the exemption
+    is the declaration and not the fixture. The mutation is reverted and
+    <code>promotion.py</code> is verified byte-identical to the committed head
+    before the final commit. The arm logs are
+    <code>logs/head-arm.txt</code>, <code>logs/base-arm.txt</code>,
+    <code>logs/new-case-at-delivered-head.txt</code> and
+    <code>logs/negative-control.txt</code> in the run's own directory.</p>
+  </section>
+</main>
+</body>
+</html>

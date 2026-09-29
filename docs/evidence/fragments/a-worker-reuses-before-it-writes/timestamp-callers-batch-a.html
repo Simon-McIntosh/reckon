@@ -1,0 +1,57 @@
+<section id="timestamp-callers-batch-a">
+      <h2>Batch A &mdash; thirteen crew readers on one parser</h2>
+      <p>Thirteen timestamp readers in <code>reckon/crew/</code> no longer parse
+      timestamps themselves: each now calls <code>reckon._timestamps.parse_utc</code>
+      and keeps only the policy around the call that its own callers depend on. A
+      second parser would have been the smaller local edit and the defect the
+      migration exists to remove, so a reader whose policy differs holds that policy
+      in a line or two rather than re-parsing.</p>
+      <figure>
+        <img src="/reckon/figures/a-worker-reuses-before-it-writes/timestamp-callers-batch-a/policy-topology.svg"
+             alt="Eleven of the thirteen readers funnel a string straight into parse_utc and take its UTC instant. Two keep a policy around the call: query returns unknown for a zoneless stamp rather than UTC, and rollout returns a naive stamp as written. lane_evidence raised AttributeError on a naive stamp at base and the migration repairs it to a UTC instant. Every one of the thirteen gates numeric input off before the call, so parse_utc's epoch branch is never reached from the crew.">
+      </figure>
+      <p>The base outputs were recorded before any edit, at
+      <code>142cdf05</code> (the caller files are byte-identical at
+      <code>a15e11cb</code>, the revision the base-arm log records), by exercising
+      each reader through the door it already exposed over one shared input list
+      &mdash; aware ISO, <code>Z</code>-suffixed, naive, space-separated zoned,
+      space-separated naive, date-only, epoch number, empty string, <code>None</code>,
+      a non-string object, and garbage text. Those readings are the expectations of
+      <code>tests/test_timestamp_callers_batch_a.py</code>, which asserts every
+      migrated reader still produces the output it had. A datetime is recorded as the
+      instant it names and whether it is zone-aware: the wall offset a value carries
+      cannot survive a <code>parse_utc</code> migration without a second parser, and
+      the eleven normalising readers compare equal as instants either way.</p>
+      <p>Two readers keep a policy, and a third carried a defect the migration
+      exposed. <code>query._normalize_stamp</code> still reports a zoneless value as
+      <code>unknown</code> rather than adopting <code>parse_utc</code>'s
+      naive&nbsp;&rarr;&nbsp;UTC reading &mdash; a stamp with no zone is not evidence
+      of when a run happened. <code>rollout._parse_timestamp</code> still returns a
+      naive stamp unchanged. Both decide whether a stamp names a zone from its
+      trailing offset designator, so the separator between date and time is
+      irrelevant: <code>2026-09-29 01:02:03+00:00</code>, which ISO&nbsp;8601 permits,
+      is normalised exactly as the <code>T</code>-separated form is.
+      <code>lane_evidence._moment</code> raised on any naive stamp at base, because it
+      referenced <code>datetime.UTC</code> on the class rather than the module:</p>
+      <pre><code>AttributeError: type object 'datetime.datetime' has no attribute 'UTC'
+reckon/crew/lane_evidence.py:209</code></pre>
+      <p>The migration repairs that by routing the stamp through
+      <code>parse_utc</code>; the recorded output for its naive, space-separated
+      naive and date-only cells is the corrected UTC instant, marked as a delta above
+      the row. No private helper was left without a caller, so none was removed.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Migrated readers calling <code>parse_utc</code></td><td>13 of 13; no <code>fromisoformat</code> call remains in the thirteen modules (AST walk)</td></tr>
+          <tr><td>New test <code>tests/test_timestamp_callers_batch_a.py</code></td><td>145 passed, exit 0 (<code>d8fa30bf</code>, <code>head_test.txt</code>)</td></tr>
+          <tr><td>Gate over the thirteen modules' own test files, base arm <code>a15e11cb</code> (<code>base_arm.txt:1</code>)</td><td>5 failed / 371 passed</td></tr>
+          <tr><td>Same gate at the committed head <code>d8fa30bf</code> (<code>head_arm.txt:1</code>)</td><td>1 failed / 375 passed &mdash; zero added failures</td></tr>
+          <tr><td>Failure common to both arms</td><td><code>test_routing_surface.py::test_routing_counts_tool_steps_from_a_durable_stream</code>, a <code>LedgerError</code> from a fixture run id, unchanged by this work</td></tr>
+          <tr><td>Negative control: <code>hold._as_moment</code> made to return a naive datetime</td><td><code>test_migrated_caller_keeps_its_recorded_output[hold._as_moment-naive]</code> fails, <code>EXIT=1</code>; the reader restored byte-identical afterwards</td></tr>
+        </tbody>
+      </table>
+      <p>The base arm's other four failures are this node's own new test before the
+      migration: three recorded-output cells for the <code>lane_evidence</code> crash
+      and the <code>fromisoformat</code> walk. They are the delta the migration
+      closes.</p>
+    </section>

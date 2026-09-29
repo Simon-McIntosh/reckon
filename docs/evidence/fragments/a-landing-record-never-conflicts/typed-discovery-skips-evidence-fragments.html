@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <title>Typed discovery skips evidence fragments | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>Typed discovery skips evidence fragments</h1>
+      <p class="lead">A node's landing record lives as its own fragment under <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html</code>. A typed-resource discovery walk now passes over that subtree instead of refusing the path, so a fragment no longer breaks every plan read while still composing into its own record.</p>
+    </header>
+
+    <section id="the-defect">
+      <h2>The defect: a fragment is a mis-shaped typed resource</h2>
+      <p>A typed resource is canonical at <code>&lt;root&gt;/&lt;slug&gt;.html</code> or <code>&lt;root&gt;/archive/&lt;slug&gt;.html</code>. A discovery walk that meets any other shape under a typed root raises <code>ResourceCollision</code>. The fragment path <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html</code> is two levels deeper than the <code>evidence</code> root allows, so every walk that did not pass a tolerant flag refused it — and the first fragment landed in the tree took <code>read_plan</code>, the served SPA and <code>audit-doc</code> down for the whole project until it was withdrawn.</p>
+      <p>The walk inside <code>reckon/resources.py</code> is where the fix belongs: the fragment subtree is a known non-resource, so every rglob site that discovers typed resources and <code>_path_context</code> adopt one shared predicate, <code>_is_evidence_fragment</code>, keyed on the leading <code>evidence/fragments</code> parts of the relative path.</p>
+    </section>
+
+    <section id="what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>EVIDENCE_FRAGMENTS_SUBTREE</code> and <code>_is_evidence_fragment</code> in <code>reckon/resources.py</code> name the skip in one place.</li>
+        <li><code>_path_context</code> returns a non-typed context for a fragment, so <code>_path_type</code> never calls <code>ResourceCollision</code> for it.</li>
+        <li><code>identify_resource</code> returns <code>None</code> for a fragment, so it is not minted as a resource.</li>
+        <li>Each discovery rglob loop (<code>_scan_resources</code>, <code>_migration_candidates</code>) and the <code>migrate_typed_layout</code> rewrite loop skips the subtree before identifying a resource.</li>
+        <li><code>reckon.evidence.compose_landed_record</code> is untouched: it reads the fragment directory directly, so the skip cannot hide an anchor from the record a reader sees.</li>
+      </ul>
+      <p>The skip is exactly the fragment subtree. A document outside it that is still mis-shaped — <code>docs/evidence/extra/x.html</code> — keeps raising <code>ResourceCollision</code>, so the change narrows the refusal rather than removing it.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>remove the evidence/fragments skip from reckon/resources.py; the unrelated-plan read_plan case must then fail</em>. Run in a scratch tree whose <code>reckon/resources.py</code> has no skip, <code>tests/test_discovery_skips_evidence_fragments.py</code> fails at base with <code>ResourceCollision: evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html</code>, and <code>test_read_plan_of_the_unrelated_plan_is_not_refused</code> — the read_plan case the done-when names — is among the failures.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Declared negative control, no skip</td><td>2 failed / 2 passed, <code>EXIT=1</code>; fails <code>test_read_plan_of_the_unrelated_plan_is_not_refused</code> and <code>test_the_fragment_is_walked_past_rather_than_discovered</code></td><td><code>logs/negative_control.log</code>, whose first line repeats the declaration verbatim</td></tr>
+          <tr><td>Base at <code>a2ad2010</code>, this test file</td><td>2 failed / 2 passed, <code>EXIT=1</code> — the read_plan case fails at base as required</td><td><code>logs/gate_base.log</code></td></tr>
+          <tr><td>Head at this tree, this test file and <code>tests/test_typed_resources.py</code></td><td>43 passed, <code>EXIT=0</code></td><td><code>logs/gate_head.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The read path the tool exposes already swallows the collision through a tolerant walk, so the read itself is not the half that moves. The case the tool is named for therefore also asserts the non-tolerant walk the read resolves through — <code>iter_resources(docs, project)</code> — and that assertion is what turns red when the skip is removed.</p>
+      <p>Each log header prints its revision, <code>reckon.__file__</code> and the resolved cwd, so the tree that served each arm is checkable.</p>
+    </section>
+
+    <section id="the-test">
+      <h2>The gate: <code>tests/test_discovery_skips_evidence_fragments.py</code></h2>
+      <p>A synthesised docs tree under <code>tmp_path</code> holds two plans, one cumulative record and one fragment owned by only one of the plans. Four cases:</p>
+      <ul>
+        <li>both plans read through <code>reckon.mcp._read_plan_tool</code>, including the plan the fragment does not belong to, and the non-tolerant walk discovers both;</li>
+        <li>the fragment is walked past rather than discovered — neither the strict walk nor the tolerant map yields it;</li>
+        <li>the composed record still carries the fragment's anchor, so the skip did not hide it from its reader;</li>
+        <li>a mis-shaped document outside the fragment subtree is still refused with <code>ResourceCollision</code>.</li>
+      </ul>
+      <p>The figure <a href="/reckon/figures/a-landing-record-never-conflicts/typed-discovery-skips-evidence-fragments/typed-discovery-skips-evidence-fragments.svg">the walk with the skip, the refused mis-shaped path, and the composer that still reads the fragment</a> draws the three routes.</p>
+      <p>The worker does not resolve the driving followup or change terminal plan state.</p>
+    </section>
+  </main>
+</body>
+</html>

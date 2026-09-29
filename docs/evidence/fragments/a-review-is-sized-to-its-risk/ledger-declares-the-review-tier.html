@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en-locale">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-is-sized-to-its-risk">
+  <meta name="plan-title" content="A Review Is Sized To Its Risk — ledger declares the review tier">
+  <meta name="plan-summary" content="The promoted-row schema declared neither the review_tier key promotion writes nor the always-carried emission that keeps RECORD_FIELDS a subset of every built row.">
+  <meta name="plan-evidence-for" content="a-review-is-sized-to-its-risk">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Review Is Sized To Its Risk — ledger declares the review tier | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The promoted-row schema declares the review tier</h1>
+  <p>Once promotion resolved and wrote each run's review tier, the tier rode every promoted row as an
+    <em>undeclared</em> key. <code>RECORD_FIELDS</code> in <code>reckon/ledger.py</code> omitted
+    <code>review_tier</code>, so the declared-field check that reads the mounted promoted rows reported the key the
+    moment any promoted row was read, and <code>build_record</code> did not carry the key at all, so declaring it
+    alone would have broken the invariant that <code>RECORD_FIELDS ⊆ build_record(...)</code>.</p>
+
+  <figure>
+    <a href="/reckon/figures/a-review-is-sized-to-its-risk/ledger-declares-the-review-tier/schema-and-row.svg">the two
+      seams the tier rides, and the check that reads them</a>
+    <figcaption>The tier is written by promotion, must be emitted by every built row, and is declared in the schema.
+      The mounted-row check compares the last against the first: before the change the difference was
+      <code>{"review_tier"}</code>; after it is empty.</figcaption>
+  </figure>
+
+  <h2>Reproduction</h2>
+  <p>The defect is the declared-field check's own subject matter. At the base revision <code>ba1a26e4</code>,
+    <code>git grep -l '"review_tier"' docs/state/reckon/runs/</code> matches <strong>19</strong> committed rows, and
+    <code>"review_tier" in ledger.RECORD_FIELDS</code> is <code>False</code> — a key present on real promoted rows
+    and absent from the schema that describes them. <code>reckon/crew/promotion.py</code> has set
+    <code>run["review_tier"] = review_tier</code> on every promotion since <code>13f950ff</code>.</p>
+
+  <h2>The change</h2>
+  <ul>
+    <li>Commit <code>106e0c16</code> (<code>fix(ledger):</code>) adds <code>"review_tier"</code> to
+      <code>RECORD_FIELDS</code> and adds <code>tests/test_ledger_declares_the_review_tier.py</code>, which mounts a
+      synthesised promoted row and runs the mounted-row declared-field check, reusing that check's own
+      <code>_promoted_ledger_key_union</code> rather than a second copy of the walk.</li>
+    <li>Commit <code>45f54d6c</code> (<code>fix(ledger):</code>) makes <code>build_record</code> emit the key
+      (<code>record.setdefault("review_tier", None)</code>), so declaring the key leaves
+      <code>RECORD_FIELDS</code> a subset of every built row. The first commit alone reddened two
+      <code>tests/test_ledger.py</code> cases that assert exactly that subset relation; the second restores them.</li>
+  </ul>
+
+  <h2>Gate</h2>
+  <p>Three files, run at the committed head <code>45f54d6c</code>:
+    <code>tests/test_ledger_declares_the_review_tier.py</code>, <code>tests/test_ledger.py</code>,
+    <code>tests/test_record_fields_declare_every_key.py</code> — <strong>98 passed, 1 skipped, EXIT=0</strong>. The
+    one skip is the mounted-row check itself, which skips when the config home mounts no ledger (as in the test
+    environment); the new case supplies its own mounted row, so it exercises the same check's collection directly
+    rather than resting on the skip.</p>
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>files</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>ba1a26e4</code></td><td>the two pre-existing files (the new file does not exist at
+        base)</td><td>96 passed, 1 skipped, EXIT=0</td></tr>
+      <tr><td>head</td><td><code>45f54d6c</code></td><td>all three</td><td>98 passed, 1 skipped, EXIT=0</td></tr>
+    </tbody>
+  </table>
+  <p>Added failures: <strong>none</strong>. Verifying the merged result belongs to a separately dispatched test node;
+    this gate measures only this node's own change.</p>
+
+  <h2>Negative control</h2>
+  <p>The declared mutation — remove <code>review_tier</code> from <code>RECORD_FIELDS</code> in
+    <code>reckon/ledger.py</code> — was applied in a scratch tree extracted from the head revision and the new case
+    run against it. Both new cases fail (EXIT=1):
+    <code>test_review_tier_is_a_declared_record_field</code> and
+    <code>test_a_promoted_row_carrying_review_tier_has_no_undeclared_key</code>. The check is load-bearing: it fails
+    on the mutation and passes without it.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li>Head arm log: <code>head-arm.log</code> — first line names revision, tree and command.</li>
+    <li>Base arm log: <code>base-arm.log</code>, module and cwd on its header lines.</li>
+    <li>Negative-control log: <code>negative-control-removing-review-tier.log</code>, first line the declared
+      mutation verbatim.</li>
+  </ul>
+ </main>
+</body>
+</html>

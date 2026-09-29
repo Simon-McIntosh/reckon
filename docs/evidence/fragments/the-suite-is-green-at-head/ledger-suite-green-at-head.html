@@ -1,0 +1,80 @@
+<section id="ledger-suite-green-at-head">
+      <h2>ledger-suite-green-at-head — 11 failing ids in <code>tests/test_ledger.py</code> repaired</h2>
+
+      <p><strong>Cause group repaired.</strong> The eleven failures are one file's stale
+      expectations against guards that shipped after the fixtures were written. Five ids cite
+      their own base sha as the run's work; a further four of those then meet the review gate
+      on the way to promotion; one reads the aggregate ledger that a dispatch no longer
+      creates; one reaches the crew tool's view vocabulary, which has since grown; one expects
+      <code>MemberInFlight</code> from an unnamed dispatch, which is now disposable; and one
+      dispatches one node id twice while both claims are live, colliding on the default
+      landing fragment the second <code>0e3530ab</code> now grants each node.</p>
+
+      <p><strong>Class: stale expectation on every id. Product defects 0.</strong> Each repair
+      corrects the assertion to the shipped behaviour, or moves the fixture onto the contract
+      it never met, and none weakens a case: no test is skipped, xfailed, deleted or
+      disqualified, and <code>reckon/</code> was not touched. The fixture work is a real commit
+      made in the synthesised repository (<code>_commit_work</code>), the ledger a read surface
+      resolves is seeded explicitly (<code>_init_ledger</code>), a fixture that measures a
+      non-review subject waives the review gate by name
+      (<code>_UNREVIEWED_PROMOTION_WAIVED</code>), the member guard's fixture names the member
+      the guard is now keyed to, and the session-reuse fixture stops its first attempt before
+      its retry claims the same fragment.</p>
+
+      <table>
+        <thead>
+          <tr><th>Failing id</th><th>Cause</th><th>Test or code</th><th>Change</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>test_completion_promotes_the_pointer_into_the_repositorys_ledger</code></td>
+            <td>cited the base sha; read the absent aggregate ledger; asserted a roster row for a disposable member</td>
+            <td>test</td><td>commit real work and cite it; seed the ledger; assert the disposable member and empty roster</td></tr>
+          <tr><td><code>test_a_killed_run_that_delivered_is_scoring_pending_review</code></td>
+            <td>cited the base sha</td><td>test</td><td>cite the run's own commit</td></tr>
+          <tr><td><code>test_derived_member_guard_spans_work_repositories</code></td>
+            <td>unnamed dispatch is disposable; the guard is keyed to a named member</td>
+            <td>test</td><td>name the member whose foreign pointer must refuse the dispatch</td></tr>
+          <tr><td><code>test_promotion_refuses_a_merge_conflicted_ledger</code></td>
+            <td>the review gate refused before the ledger read it measures</td>
+            <td>test</td><td>waive the unreviewed promotion so the ledger read is reached</td></tr>
+          <tr><td><code>test_a_second_node_reaches_the_members_captured_session</code></td>
+            <td>two live claims of one node id share the default landing fragment</td>
+            <td>test</td><td>stop the first attempt before the retry, so a stopped empty claim no longer fences the fragment or the member</td></tr>
+          <tr><td><code>test_a_promoted_record_names_the_member_and_its_session</code></td>
+            <td>cited the base sha</td><td>test</td><td>cite the run's own commit</td></tr>
+          <tr><td><code>test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it</code></td>
+            <td>cited the base sha; review gate preempted the release it measures</td>
+            <td>test</td><td>cite the run's own commit; waive the unreviewed promotion</td></tr>
+          <tr><td><code>test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it</code></td>
+            <td>cited the base sha; review gate preempted the release it measures</td>
+            <td>test</td><td>cite the run's own commit; waive the unreviewed promotion</td></tr>
+          <tr><td><code>test_a_completed_record_carries_every_calibration_input</code></td>
+            <td>cited the base sha; review gate preempted promotion</td>
+            <td>test</td><td>cite the run's own commit; waive the unreviewed promotion</td></tr>
+          <tr><td><code>test_the_crew_tool_reads_the_ledger_and_the_live_pointers</code></td>
+            <td>read the absent aggregate ledger</td><td>test</td><td>seed the ledger before reading it</td></tr>
+          <tr><td><code>test_an_unknown_crew_view_names_every_view_it_has</code></td>
+            <td>the crew view vocabulary grew</td><td>test</td><td>assert the current vocabulary</td></tr>
+        </tbody>
+      </table>
+
+      <p><img src="/reckon/figures/the-suite-is-green-at-head/ledger-suite-green-at-head/ids-by-cause-base-vs-head.png"
+      alt="Failing-id count per cause group in tests/test_ledger.py: base 1ae39477 on the left of
+      each pair and the repaired head on the right, eleven at base and zero at head."></p>
+
+      <p><strong>Base arm at <code>1ae39477</code>, head arm at the repaired working tree of
+      <code>6c9561c3</code>.</strong> Each arm ran the whole file in its own pytest process.
+      Base: 11 failed, 85 passed (<code>logs/base-arm.log</code>). Head: 96 passed
+      (<code>logs/head-arm.log</code>). Base <code>FAILED</code> ids and head
+      <code>FAILED</code> ids are disjoint only in the repaired direction — every base id
+      passes at head and no id moved from pass to fail, so added failures are zero. The
+      file was byte-identical at <code>1ae39477</code> and <code>6c9561c3</code> before the
+      repair (blob <code>f23bf16c</code>), so the base arm's red is the same code the head
+      arm's green is measured against.</p>
+
+      <p><strong>Not evidence for.</strong> This section claims only this node's own change: the
+      file passes in the node's working tree. The plan's §2 measure "Green at the integrated
+      head" is answered by one full-suite run at the merged head after every node lands, which a
+      file-local reading cannot stand in for. No product defect was found, so this node raises
+      no follow-on.</p>
+    </section>

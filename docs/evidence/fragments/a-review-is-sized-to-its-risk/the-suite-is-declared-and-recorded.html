@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-declared-and-recorded">
+  <meta name="plan-title" content="The suite is declared and recorded — landed evidence">
+  <meta name="plan-summary" content="A project now declares its own suite command and whole-run budget in the project layer of flight config; a runner executes it under that budget and records one JSON row per run at a named revision; and a hold function says when tier none and light promotions must wait because the latest run failed to collect or overran.">
+  <meta name="plan-evidence-for" content="reckon:a-review-is-sized-to-its-risk">
+  <meta name="plan-verifies" content="reckon:a-review-is-sized-to-its-risk#s6">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktree; gates run against the root environment's interpreter">
+  <meta name="plan-commits" content="a366947c,5caf7559,6f97c185,468a24ba">
+  <meta name="plan-artifacts" content="reckon/crew/standing_suite.py,tests/test_standing_suite.py,reckon/flight.py,reckon/_flight_schema.py,reckon/schema/flight.yaml,docs/_shared/flight.schema.json,docs/state/reckon/flight.yaml">
+  <meta name="plan-reviewed-by" content="r-20260928T233552756785">
+  <title>The suite is declared and recorded — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The suite is declared and recorded — landed evidence</h1>
+    <p class="plan-summary">A per-node gate runs only the tests its brief names. A project whose
+    default command stopped at collection — or whose suite quietly outgrew its budget — could
+    therefore keep promoting without anyone running the whole tree. This change gives the project
+    a place to <em>declare</em> its own suite and the ceiling it is held to, a runner that
+    <em>records</em> what each run observed at a named revision, and a hold that says when the
+    lighter promotions must <em>wait</em>.</p>
+  </header>
+
+  <section id="declared">
+    <h2>The declaration</h2>
+    <p>The project layer of flight config now accepts a <code>review.suite</code> block holding a
+    <code>command</code> (an argument vector, run from the checkout root) and a <code>budget</code>
+    (an integer followed by <code>s</code>, <code>m</code> or <code>h</code>). Reckon's own project
+    layer declares it:</p>
+    <pre><code>review:
+  suite:
+    command: [.venv/bin/python, -m, pytest, -n, "8", -p, no:cacheprovider, -q, tests/]
+    budget: 20m</code></pre>
+    <p><code>review_suite(config)</code> in <code>reckon/flight.py</code> returns <code>None</code>
+    when nothing is declared — so a project that has not adopted this is unaffected — and refuses a
+    malformed block <em>by name</em>, naming <code>review.suite.command</code> or
+    <code>review.suite.budget</code> rather than failing somewhere downstream.
+    <code>SuiteDeclaration.budget_seconds()</code> converts the declared budget, so
+    <code>20m</code> reads as <code>1200</code>.</p>
+  </section>
+
+  <section id="recorded">
+    <h2>The record</h2>
+    <p><code>reckon/crew/standing_suite.py</code> provides three functions:</p>
+    <ul>
+      <li><code>run</code> executes the declared command from the checkout root under its budget.
+      The runner is started in its own session, so when the budget is reached the whole process
+      group is killed — not just the runner, which would leave forked children behind. The combined
+      output is captured to a caller-named path and the returned record carries the revision, the
+      command, the exit status, the collected/passed/failed/errored counts, the duration and budget,
+      the failure ids, and the flags a hold reads.</li>
+      <li><code>record</code> writes one JSON file per run under the project's state tree
+      (<code>docs/state/reckon/suite-runs/</code> for this repository), named by the observation
+      time so a listing sorts by when each run was taken.</li>
+      <li><code>hold_reason(project_root, tier)</code> returns a sentence naming the revision, the
+      observation time and whichever failure occurred — or <code>None</code> to proceed.</li>
+    </ul>
+    <p>Counts are read by the parsers this repository already uses: the FAILED and ERROR ids with
+    <code>reckon.crew.review</code>'s reader, the result-count tokens with
+    <code>reckon.crew.promotion</code>'s. Both are imported, not copied, and neither file was
+    edited. The collection line is read in both its plain ("collected 12 items") and
+    pytest-xdist ("[12 items]") forms.</p>
+
+    <h3>A collection failure is decided from evidence, never from a non-zero exit</h3>
+    <p>Under <code>-q</code> — the form reckon's own suite declares — pytest prints neither the
+    plain collection line nor the xdist one. So the collected count reads as absent unless
+    something else supplies it, and the first version of this hold collapsed to "the exit status is
+    non-zero". That is wrong in the direction that matters: <strong>pytest exits 1 for a suite that
+    collected, ran and failed</strong>, and such a suite was then recorded as a collection failure
+    and held as one — the lighter tiers waiting on a suite that is merely red, which a writer knows
+    perfectly well what to do with.</p>
+    <p>The rule now in the module is a short one. Only three things mark a collection failure:</p>
+    <ul>
+      <li>pytest's own <code>errors during collection</code> line, printed inside its
+      <code>Interrupted:</code> banner;</li>
+      <li>exit status <code>5</code>, which pytest documents as "no tests collected";</li>
+      <li>any other non-zero status that is neither <code>0</code> nor <code>1</code>
+      <em>and</em> a summary showing no test ran.</li>
+    </ul>
+    <p>Exit <code>1</code> is deliberately not among them, and exit <code>2</code> alone is not
+    either — pytest uses 2 for an interruption, so it is a collection failure only when the summary
+    also shows nothing ran. The collected count is read from pytest's collection line when it
+    prints one and otherwise summed from the final summary counts, passed + failed + errors +
+    skipped + xfailed + xpassed. A run with no evidence of collection records zero, the honest
+    count, rather than an absent one.</p>
+    <p>Promotion is deliberately <strong>not</strong> wired here. This node builds the declaration,
+    the record and the hold; connecting the hold to the promotion path is separate work.</p>
+  </section>
+
+  <section id="holds">
+    <h2>When the lighter tiers wait</h2>
+    <figure>
+      <img src="/reckon/figures/a-review-is-sized-to-its-risk/the-suite-is-declared-and-recorded/hold-decision.svg"
+           alt="Decision flow for hold_reason: only a tier none or light promotion, against a latest run that failed to collect or overran its budget, with no later waiver, is held."
+           style="max-width:100%">
+      <figcaption>Every branch out of the left column leaves the hold unset. Only the bottom path —
+      a lightweight promotion beside a latest run that failed to collect or overran its budget, with
+      no later waiver — holds.</figcaption>
+    </figure>
+    <p>A hold exists only while the latest recorded run failed to collect or overran its budget and
+    no later waiver has lifted it. A tier <code>full</code> is never held: a full review reads the
+    run for itself, so it is not made to wait on the project's suite. A latest record that is a
+    waiver, a latest run that collected and ran a test (even if a test <em>failed</em>), a project
+    with no records, and an undeclared suite all return <code>None</code>.
+    <code>record_waiver</code> writes the waiver, carrying who excused it and why.</p>
+    <p>The distinction that matters: a suite with one failing test is a <em>failing suite</em>, and
+    a writer knows what to do with it. A suite that failed to collect is a suite that no longer
+    runs at all, and it is the failure this hold exists for. The rule that separates them is stated
+    in §&nbsp;recorded above, and it is why exit 1 is not a hold.</p>
+    <p>One case deliberately <strong>raises</strong> rather than returning <code>None</code>. When
+    no project name is passed and the checkout root resolves to no mounted project, the records
+    cannot be read at all, and answering "no hold" there would let a suite that failed to collect
+    read exactly like a suite that passed. <code>hold_reason</code> raises
+    <code>StandingSuiteError</code> naming the unresolved root; a caller that names the project
+    still gets its answer. That path was silent in the first version, and it is the same defect as
+    the one above — a true statement standing in for the one that was needed.</p>
+  </section>
+
+  <section id="measured">
+    <h2>What was measured</h2>
+    <table>
+      <thead><tr><th>Arm</th><th>Revision / tree</th><th>Command</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>base (gate file present at base)</td>
+          <td><code>348688e8</code>, <code>git archive</code> of the base revision</td>
+          <td>pytest -q tests/test_flight.py</td>
+          <td>85 passed, 2 skipped — <code>EXIT=0</code>, no FAILED ids</td>
+        </tr>
+        <tr>
+          <td>base (whole gate)</td>
+          <td><code>348688e8</code></td>
+          <td>pytest -q tests/test_flight.py tests/test_standing_suite.py</td>
+          <td><code>EXIT=4</code>, file not found — <code>tests/test_standing_suite.py</code> does
+          not exist at the base revision</td>
+        </tr>
+        <tr>
+          <td>head</td>
+          <td><code>468a24ba</code>, committed head</td>
+          <td>pytest -q tests/test_standing_suite.py tests/test_flight.py</td>
+          <td>95 passed, 2 skipped — <code>EXIT=0</code>, no FAILED ids</td>
+        </tr>
+        <tr>
+          <td>negative control</td>
+          <td><code>468a24ba</code> with <code>hold_reason</code> mutated to return
+          <code>None</code> whenever the latest record has <code>collection_failed</code></td>
+          <td>pytest -q tests/test_standing_suite.py::test_a_collection_failure_is_recorded_and_holds_none_and_light</td>
+          <td><code>EXIT=1</code>, <code>1 failed</code> — the test fails as required</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The ten tests added by this node build throwaway projects under <code>tmp_path</code> and
+    run each with <code>sys.executable</code> or a generated script it starts, so nothing is
+    written outside the test's own temporary tree. They cover: the reader returning
+    <code>None</code> when undeclared; the reader refusing a malformed block by name; the declared
+    budget converting to seconds; a collection failure (a syntax error, run under <code>-q</code>)
+    being recorded with <code>collected==0</code> and holding <code>none</code> and
+    <code>light</code> but not <code>full</code>; <strong>a suite that collects, runs and fails
+    under <code>-q</code> recording a positive collected count, <code>failed==1</code> and
+    <code>collection_failed</code> false, and holding nothing</strong>; a later passing run lifting
+    the hold; a waiver lifting the hold; a run past its budget being stopped with its whole process
+    group gone; an unresolvable checkout root raising rather than reading as no hold; and the
+    record landing under the project's state tree.</p>
+    <p>The head and control arms were run at <code>468a24ba</code>. The commit carrying this fragment
+    changes only this document, so the source the arms measured is the source the fragment
+    describes.</p>
+    <p>The full project suite was <strong>not</strong> run by this node; the wave close runs it once
+    at the merged head, and that declaration is this node's own subject.</p>
+  </section>
+
+  <section id="review-round">
+    <h2>What a review round changed</h2>
+    <p>An independent review of the first landing scored it and named three defects, all repaired in
+    one round. Two were in the hold itself, and both had the same shape: a value absent from the
+    log read as a fact rather than as an absence. The collected count was one, because
+    <code>-q</code> prints no collection line; the project identity was the other, because an
+    unresolved root returned "no hold" for records it could not read. The repairs are stated under
+    §&nbsp;recorded and §&nbsp;holds, and each is covered by a case that fails without it. The third
+    named defect was a missing test, added.</p>
+    <p>Repairing them exposed a fourth, which is worth recording because it is the kind that reaches
+    a promotion arm as somebody else's failure. The over-budget case declared a pytest suite with a
+    one-second budget and had the inner test write its pid before sleeping. The head arm went red
+    <em>under load</em>: interpreter startup had consumed the budget before the test body ran, the
+    pid file was never written, and the case failed with <code>FileNotFoundError</code> against a
+    runner that was behaving correctly. It passed in three earlier runs on an idle machine. The
+    command is now the interpreter directly, writing its own pid and its child's before anything
+    else, which makes the group-reaping claim deterministic rather than dependent on machine load.</p>
+  </section>
+
+  <section id="notes">
+    <h2>Two deviations, stated plainly</h2>
+    <p><strong>The schema source, not only its generated artifacts.</strong> The assigned write
+    paths named the generated pair (<code>reckon/_flight_schema.py</code>,
+    <code>docs/_shared/flight.schema.json</code>). Those files carry a generator banner and the
+    repository holds byte-identity parity tests between them and their LinkML source at
+    <code>reckon/schema/flight.yaml</code>, so hand-editing them would have been reverted by the
+    next regeneration and would have failed parity. The LinkML source was therefore edited and the
+    generated pair regenerated from it. <code>reckon/schema/flight.yaml</code> is outside the
+    assigned paths and is the one file touched beyond the fence.</p>
+    <p><strong>The atomic writer.</strong> The record is written through the JSON writer this
+    repository already uses for a run record, imported at call time. The writer named in the brief
+    as living in <code>reckon/_store.py</code> is not present at this revision — that helper arrives
+    with separate work — so the equivalent existing writer was used rather than a third one
+    introduced. <code>write_json_atomically</code> has since landed on <code>main</code> at
+    <code>7599e8bc</code>, after this node's base, so this call site keeps
+    <code>reckon.crew.runs._write_json</code> and joins the atomic-writer migration tracked by
+    <code>a-worker-reuses-before-it-writes</code> §3.</p>
+  </section>
+</main>
+</body>
+</html>

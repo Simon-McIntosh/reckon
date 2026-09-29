@@ -1,0 +1,114 @@
+<section id="s2-review-tier-suite-fallout">
+    <h2>§2 — The tier gate's suite fallout, reconciled</h2>
+    <p>The review tier is decided at completion from what a run actually changed, so a run that touches no
+      runtime source promotes with no stored review. Seven tests outside the fourteen review and promotion files
+      the gate's own node was checked against promoted report-only or non-runtime runs through the <em>retired</em>
+      role rule, and were turned red when the gate began reading the tier instead. Each is reconciled with the tier
+      contract: no assertion is deleted and none is weakened.</p>
+    <p>The mechanism the reconciliation turns on is the empty-scope boundary. A run that cites no commit has only
+      its manifest's <code>changed_paths</code> to measure, and a manifest that declares no path — a bare
+      <code>none</code> or an empty list — is read as <em>silence</em> about what changed, not as the claim that
+      nothing changed. Silence is granted the fuller review, so a report-only run declaring an empty scope is
+      refused for a review it does not owe. Naming the artefact the run delivered, outside the repository, measures
+      a scope that holds no runtime source and resolves the run to the tier that owes no review.</p>
+    <figure>
+      <img src="/reckon/figures/a-review-is-sized-to-its-risk/review-tier-suite-fallout/empty-scope-boundary.svg"
+           alt="A report-only run that declares no path resolves to tier full and is refused; one that declares its report artefact, outside the repository, resolves to tier none and promotes.">
+      <figcaption>The empty-scope boundary: two report-only runs that change the same thing — nothing in the
+        repository — reach different tiers only because one declared a scope and the other declared a bare
+        <code>none</code>.</figcaption>
+    </figure>
+    <table>
+      <thead>
+        <tr><th>Test id</th><th>Cause</th><th>Change</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release</code> (4 parameter sets)</td>
+          <td>The release fixture's run cites no commit and declares <code>changed_paths: []</code>, so it measures
+            no scope and the gate grants it the fuller review, refusing it for one it does not owe.</td>
+          <td>The manifest names the report artefact the run delivers (<code>tmp_path/reports/r-release.md</code>,
+            outside the repository), so the scope is measured and holds no runtime source: tier <code>none</code>.</td>
+        </tr>
+        <tr>
+          <td><code>test_crew_test_role.py::test_synthetic_wave_attribution_survives_in_the_promoted_ledger</code></td>
+          <td>Its attribution manifest declares <code>changed_paths: none</code> — read as silence — so the
+            report-only test node is refused before its ledger row can be checked.</td>
+          <td>The manifest names the attribution report it delivers beside the manifest, outside the repository:
+            tier <code>none</code>, and the promotion reports its suite attribution.</td>
+        </tr>
+        <tr>
+          <td><code>test_crew_test_role.py::test_test_role_cannot_waive_missing_attribution_for_an_added_failure</code></td>
+          <td>Same fixture and the same refusal: the tier gate fired before the suite-delta validation the case
+            means to exercise.</td>
+          <td>Same change. With the run at tier <code>none</code> the gate passes and the missing-attribution
+            refusal (<code>SuiteDeltaError</code>) is what the case measures, as it did before the tier gate.</td>
+        </tr>
+        <tr>
+          <td><code>test_a_short_commit_list_is_reported.py::test_a_shortfall_promotion_completes_and_reports_on_the_record</code></td>
+          <td>The shortfall run cites commits changing only root-level <code>.txt</code> files — no runtime source —
+            so it is tier <code>none</code> and has no unreviewed promotion, but the fixture still passed
+            <code>--waive-unreviewed-promotion</code> from the retired role rule.</td>
+          <td>The stale waiver flag is removed; the run promotes without one and the shortfall report under test is
+            unchanged. No assertion touched.</td>
+        </tr>
+        <tr>
+          <td><code>test_cited_identifier_resolves.py</code> — <code>test_a_full_commit_sha_that_resolves_is_admitted</code>,
+            <code>test_an_abbreviated_commit_sha_that_resolves_is_admitted</code>,
+            <code>test_a_citation_naming_a_tag_is_admitted</code>,
+            <code>test_the_refusal_turns_on_resolvability_and_not_on_the_spelling</code> (4 ids)</td>
+          <td>The shared promotion helper declares no changed scope and waives the unreviewed-promotion gate. Its runs
+            cite root-level text files, so they are tier <code>none</code> and have no unreviewed promotion, and the
+            waiver errors on a promotion it has nothing to waive.</td>
+          <td>The helper's manifest now names the report artefact each run delivers outside the repository — a measured
+            scope holding no runtime source — and the stale waiver is dropped. The citation check each case measures
+            is untouched.</td>
+        </tr>
+        <tr>
+          <td><code>test_promotion_stages_its_one_run_file.py::test_complete_commits_one_run_file_per_promotion</code>
+            (2 parameter sets)</td>
+          <td>The staged run declares <code>changed_paths: []</code> — read as silence — so it is granted the fuller
+            review and refused for one it does not owe before its run file can be staged.</td>
+          <td>The manifest names the report artefact the run delivers outside the repository:
+            tier <code>none</code>, and the one-run-file staging under test is unchanged.</td>
+        </tr>
+        <tr>
+          <td><code>test_review_store_reads_and_fences_by_head.py::test_a_refusal_names_two_revisions_and_never_one_twice</code></td>
+          <td>The fixture's run changed only a <code>.txt</code> file, so it resolved to the tier that owes no review
+            and the review-head refusal the case expects never fired.</td>
+          <td>The run now changes runtime source (<code>reckon/region.py</code>), so a review is required and the
+            refusal that names the two disagreeing revisions fires as before. No assertion touched.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The whole <code>tests/</code> directory was run at both revisions with <code>-n 8</code>, and the fourteen
+      reconciled ids appear in neither arm's failure list: they pass at the base revision (before the tier gate)
+      and they pass again at the new head, where the gate had turned them red. Commits <code>ce2ac203</code> and
+      <code>1bfda485</code>.</p>
+    <table>
+      <thead>
+        <tr><th>Arm</th><th>Command</th><th>Result</th><th>Failing ids</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>base <code>0805d391</code></td>
+          <td><code>pytest -p no:cacheprovider -n 8 -q tests/</code></td>
+          <td>100 failed, 7595 passed, 72 skipped, 4 errors, exit 1</td>
+          <td>100 (<code>runs/…-review-tier-suite-fallout/base-armed.json</code>)</td>
+        </tr>
+        <tr>
+          <td>head <code>1bfda485</code></td>
+          <td><code>pytest -p no:cacheprovider -n 8 -q tests/</code></td>
+          <td>82 failed, 7690 passed, 72 skipped, exit 1</td>
+          <td>82 (<code>runs/…-review-tier-suite-fallout/head-armed.json</code>)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The head arm adds one id against the base arm —
+      <code>tests/test_crew.py::test_shadow_explicit_time_budget_override_is_used_and_recorded</code> — which
+      passes when re-run serially at the same head, so it is a parallel-run artefact and not the tier gate; no
+      added id is attributable to the tier. The base arm, run beside this arm and another session's suite, carries
+      nineteen ids the head arm does not, all contention noise in unrelated files. The fourteen reconciled ids
+      appear in neither arm's failure list: each passes at the base revision and again at the head, where the gate
+      had turned it red.</p>
+   </section>
