@@ -118,13 +118,16 @@ def _artifact_allowance(done_when: str) -> str:
 
 
 # The worktree-landing contract, embedded only when the worker can write its
-# assigned worktree, so a repository change is the deliverable it can actually
-# commit. It lives here for the same reason its siblings do: the prompt embeds no
-# protocol reference by design, so a discipline carried only by a reference file
-# reaches nobody. The read-only tiers (review, investigate) operate in a delivery
-# directory and receive no instruction to edit a repository they cannot write -
-# the same condition that raises the RUNTIME FILESYSTEM note. The record goes to
-# the node's own fragment and its landing to a single manifest line rather than to
+# assigned worktree and the plan landing contract is stated only when its
+# fragment is in the node's own write scope, so the record goes to a path the
+# worker can both write and land. It lives here for the same reason its siblings
+# do: the prompt embeds no protocol reference by design, so a discipline carried
+# only by a reference file reaches nobody. The read-only tiers (review,
+# investigate) operate in a delivery directory and receive no instruction to edit
+# a repository they cannot write - the same condition that raises the RUNTIME
+# FILESYSTEM note. A role that can write the worktree but whose fence withholds
+# the fragment reads the run-record carrier instead. The record goes to the
+# node's own fragment and its landing to a single manifest line rather than to
 # the plan, so two nodes on one plan never edit the same file and their merged
 # records need no manual union. Figure placement and the meta-line ban are stated
 # because a worker still edits the plan in its tree when it must. Kept as a
@@ -340,6 +343,7 @@ def compose_prompt(
     peer_channels: Mapping[str, Mapping[str, str]] | None = None,
     peer_channel_path: str = "",
     can_write_worktree: bool | None = None,
+    writes_landing_fragment: bool | None = None,
     host_line: str = "",
     brief: str = "",
 ) -> str:
@@ -427,13 +431,23 @@ RUNTIME FILESYSTEM
     if not can_land:
         landing_contract = ""
     else:
+        # The plan-target carrier states the record goes to the node's own
+        # fragment inside the repository, so it is stated only when that
+        # fragment is in the node's resolved write paths. A role whose fence
+        # withholds the fragment — a verifier whose sandbox can still write the
+        # worktree — would otherwise be told to write a path its fence
+        # withholds; its record goes to the run's own directory, which is the
+        # carrier a brief already reads. A caller that resolves no plan
+        # authority leaves the fact unset and keeps the plan carrier for a
+        # writable node, the shape every direct composer has used.
+        run_record_carrier = bool(brief) or writes_landing_fragment is False
         # The small-node rule ends on a conditional the worker cannot resolve
         # from inside its own node, so the clause stating which side of it this
         # node is on is composed per node from the node's own done-when. It is
         # appended rather than spliced into the constant, so masking either
         # contract still reproduces the prompt with exactly that block removed.
         landing_contract = (
-            (BRIEF_LANDING_CONTRACT if brief else PLAN_LANDING_CONTRACT)
+            (BRIEF_LANDING_CONTRACT if run_record_carrier else PLAN_LANDING_CONTRACT)
             + "\n"
             + _artifact_allowance(node.done_when)
         )

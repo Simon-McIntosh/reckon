@@ -1427,6 +1427,90 @@ def _grant_landing_write_paths(
     )
 
 
+def _writes_its_landing_fragment(
+    node: TaskNode,
+    *,
+    authority: Mapping[str, Any],
+) -> bool:
+    """Return whether this node's write scope carries its own landing fragment.
+
+    The plan landing contract tells the worker to write its evidence anchor to
+    the node's fragment and its figures to the node's figure directory, so it
+    is stated only when that fragment is one of the node's resolved write
+    paths. The default grant withholds the fragment from a role that may not
+    land work in the tree, so a contract composed on worktree writability alone
+    would tell such a worker to write a path its fence withholds. The fragment
+    is derived by the same function the grant uses and each declared path is
+    resolved against the same repository, so the contract and the grant cannot
+    disagree about which scope is which.
+    """
+    plan = authority.get("plan")
+    if not isinstance(plan, Mapping):
+        return False
+    try:
+        plan_repo = Path(str(plan["repository"])).expanduser().resolve()
+    except (KeyError, TypeError, ValueError):
+        return False
+    fragments = _landing_fragment_paths(node, authority=authority)
+    if not fragments:
+        return False
+    return any(
+        _resolve_declared_path(declared, plan_repo) in fragments
+        for declared in node.write_paths
+    )
+
+
+def _compose_dispatch_prompt(
+    *,
+    node: TaskNode,
+    project: str,
+    authority: Mapping[str, Any],
+    backend: Mapping[str, Any],
+    repo_root: Path,
+    run_directory: Path,
+    worktree: str,
+    working_directory: str,
+    needs_help_after_failures: int,
+    peer_scopes: Mapping[str, Iterable[str]] | None = None,
+    run_id: str = "",
+    peer_channels: Mapping[str, Mapping[str, str]] | None = None,
+    peer_channel_path: str = "",
+    host_line: str = "",
+    brief: str = "",
+) -> str:
+    """Compose a worker prompt from a resolved node and its write scope.
+
+    Both landing facts are resolved here — the worker's writability of its
+    assigned worktree, and whether the node's own scope carries the landing
+    fragment — so the contract, the fragment grant and the sandbox fence read
+    one decision rather than three that can drift apart. Keeping the pair behind
+    one call site lets a test compose exactly the prompt dispatch composes, so a
+    change to either fact is visible rather than masked by a test that supplies
+    its own copy.
+    """
+    return compose_prompt(
+        node=node,
+        project=project,
+        worktree=worktree,
+        working_directory=working_directory,
+        can_write_worktree=_can_write_worktree(
+            backend,
+            repository=repo_root,
+            run_directory=run_directory,
+        ),
+        writes_landing_fragment=_writes_its_landing_fragment(node, authority=authority),
+        manifest_path=node.manifest_path,
+        time_budget=node.time_budget,
+        needs_help_after_failures=needs_help_after_failures,
+        peer_scopes=peer_scopes,
+        run_id=run_id,
+        peer_channels=peer_channels,
+        peer_channel_path=peer_channel_path,
+        host_line=host_line,
+        brief=brief,
+    )
+
+
 def _candidate_scope_entries(
     node: TaskNode,
     *,
@@ -4577,18 +4661,15 @@ def dispatch(
             except _backends.BackendError as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
         dispatch_host = _current_host_facts()
-        prompt = compose_prompt(
+        prompt = _compose_dispatch_prompt(
             node=node,
             project=project,
+            authority=authority,
+            backend=backend,
+            repo_root=repo_root,
+            run_directory=directory,
             worktree=worktree["path"],
             working_directory=working_directory,
-            can_write_worktree=_can_write_worktree(
-                backend,
-                repository=repo_root,
-                run_directory=directory,
-            ),
-            manifest_path=node.manifest_path,
-            time_budget=node.time_budget,
             needs_help_after_failures=int(fences.get("needs_help_after_failures", 2)),
             peer_scopes=peers,
             run_id=run_id,
