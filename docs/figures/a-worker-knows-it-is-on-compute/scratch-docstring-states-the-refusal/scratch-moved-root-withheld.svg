@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 440" width="980" height="440" font-family="system-ui, sans-serif" font-size="14">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#334155"/>
+    </marker>
+  </defs>
+  <style>
+    .box { fill:#f8fafc; stroke:#334155; stroke-width:1.5; rx:6; }
+    .phase { fill:#e2e8f0; stroke:#334155; stroke-width:1.5; rx:6; }
+    .keep { fill:#dcfce7; stroke:#166534; stroke-width:1.5; rx:6; }
+    .withheld { fill:#fee2e2; stroke:#991b1b; stroke-width:1.5; rx:6; }
+    .lbl { fill:#0f172a; }
+    .code { font-family: ui-monospace, monospace; font-size:12.5px; fill:#0f172a; }
+    .small { font-size:12px; fill:#475569; }
+    .arrow { fill:none; stroke:#334155; stroke-width:1.6; marker-end:url(#arrow); }
+  </style>
+
+  <text x="24" y="30" font-size="16" font-weight="600" fill="#0f172a">A scratch record under a moved root is withheld, never removed</text>
+
+  <!-- Create phase -->
+  <rect class="phase" x="24" y="52" width="180" height="34"/>
+  <text x="114" y="74" text-anchor="middle" class="lbl" font-weight="600">create (root A)</text>
+
+  <rect class="box" x="232" y="52" width="220" height="34"/>
+  <text x="342" y="74" text-anchor="middle" class="code">root = $RECKON_WORKER_SCRATCH_ROOT = A</text>
+
+  <rect class="box" x="480" y="52" width="230" height="34"/>
+  <text x="595" y="74" text-anchor="middle" class="code">ensure_worker_scratch(run) → A/&lt;run&gt;</text>
+
+  <rect class="box" x="738" y="52" width="218" height="34"/>
+  <text x="847" y="74" text-anchor="middle" class="code">pointer.scratch = "A/&lt;run&gt;"</text>
+
+  <path class="arrow" d="M204,69 H232"/>
+  <path class="arrow" d="M452,69 H480"/>
+  <path class="arrow" d="M710,69 H738"/>
+
+  <!-- Moved-root arrow -->
+  <path class="arrow" d="M342,86 C342,140 595,140 595,150" stroke-dasharray="5 4"/>
+  <text x="470" y="132" text-anchor="middle" class="small">root moves: $RECKON_WORKER_SCRATCH_ROOT := B</text>
+
+  <!-- Remove phase -->
+  <rect class="phase" x="24" y="150" width="180" height="34"/>
+  <text x="114" y="172" text-anchor="middle" class="lbl" font-weight="600">remove (root B)</text>
+
+  <rect class="box" x="232" y="150" width="220" height="34"/>
+  <text x="342" y="172" text-anchor="middle" class="code">root = B</text>
+
+  <rect class="box" x="480" y="150" width="476" height="34"/>
+  <text x="718" y="172" text-anchor="middle" class="code">remove_worker_scratch(run, recorded_path="A/&lt;run&gt;")</text>
+
+  <!-- Decision -->
+  <rect class="box" x="232" y="220" width="724" height="52"/>
+  <text x="594" y="242" text-anchor="middle" class="code">_removable_scratch_target: resolved_path.parent == resolved_root ?</text>
+  <text x="594" y="261" text-anchor="middle" class="code">A != B  →  "scratch path is not the directory this run owns"</text>
+
+  <path class="arrow" d="M718,184 V220"/>
+
+  <!-- Outcome -->
+  <rect class="withheld" x="232" y="300" width="356" height="52"/>
+  <text x="410" y="322" text-anchor="middle" class="lbl" font-weight="600">removed = False</text>
+  <text x="410" y="341" text-anchor="middle" class="small">scratch_withheld = "…not the directory this run owns"</text>
+
+  <rect class="keep" x="604" y="300" width="352" height="52"/>
+  <text x="780" y="322" text-anchor="middle" class="lbl" font-weight="600">A/&lt;run&gt; still present</text>
+  <text x="780" y="341" text-anchor="middle" class="small">worker-temp.txt untouched</text>
+
+  <path class="arrow" d="M594,272 V300"/>
+  <path class="arrow" d="M588,326 H604"/>
+
+  <text x="24" y="408" class="small">The recorded path narrows what may be removed; it never reaches a directory this run no longer owns. The guard is what withholds, so the mutation that drops it removes the directory.</text>
+</svg>

@@ -5718,8 +5718,10 @@ def _removable_scratch_target(
     from the run id: it must resolve to a direct child of the resolved scratch
     root, its final component must equal the validated run id, and it must be a
     real directory rather than a symlink. A recorded path is therefore only ever
-    allowed to equal ``<scratch root>/<run id>`` — its value is resilience to a
-    root that moved, never a licence to name a directory the run does not own.
+    allowed to equal ``<scratch root>/<run id>`` beneath the root that resolves
+    now, so it narrows what may be removed rather than widening it. A record made
+    under a scratch root that has since moved names a directory no longer a child
+    of the resolved root; it is withheld and left in place, never removed.
     """
     name = str(run_id or "").strip()
     # A run id is a single path component and is never a parent reference. A
@@ -5753,9 +5755,11 @@ def remove_worker_scratch(
 
     The path removed is ``<scratch root>/<run id>``, or the ``recorded_path`` a
     dispatch recorded when it created the directory — which is accepted only
-    when it names exactly that directory (see ``_removable_scratch_target``), so
-    a record whose scratch field names a different run's directory removes
-    nothing. An absent directory is reported rather than raised: a run whose
+    when it names exactly that directory beneath the root that resolves now (see
+    ``_removable_scratch_target``), so a record whose scratch field names a
+    different run's directory removes nothing. A record made under a scratch
+    root that has since moved is therefore withheld and left in place, never
+    removed. An absent directory is reported rather than raised: a run whose
     scratch was already reclaimed has nothing left to remove.
     """
     name = str(run_id or "").strip()
