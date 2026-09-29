@@ -1,0 +1,464 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "6d528821ab6b1866727e7f3e3ac4dfbdd394a7a4",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "inference_geo": "",
+      "input_tokens": 9594281,
+      "input_tokens_cumulative": 9594281,
+      "output_tokens": 48559,
+      "output_tokens_cumulative": 48559,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 194,
+    "files": 4,
+    "removed": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "3a35ded043b77bf7843c3b07fe1bf91572c03e1b"
+  ],
+  "completed_at": "2026-09-29T11:23:53.107Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T10:47:12Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_brief_prompt.py",
+    "reckon.crew.prompts",
+    "tests/test_brief_prompt.py'.",
+    "tests/test_crew_prompts.py",
+    "tests/test_skill_contract_parity.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_worker_prompt_states_the_fence_rule.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104659287120-worker-prompt-states-the-fence-rule/logs/gate-new-test.log"
+  },
+  "impl_move": {
+    "at_complete": 0.98,
+    "at_dispatch": 0.98,
+    "plan": "a-worker-cannot-write-your-home",
+    "reason": "impl 0.98 predates the 2026-09-29 audit that re-opened sections 3 and 4; this node lands section 4's prompt half, while its AGENTS.md half waits for section 3 to merge, so impl holds until the section closes",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T11:32:00.889965+00:00",
+    "horizon_seconds": 2700,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T10:47:00Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 27,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 15,
+    "headroom": -1,
+    "mean_context": 117500,
+    "observed_at": "2026-09-29T10:46:33Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T11:23:53.107Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104659287120-worker-prompt-states-the-fence-rule/manifest.md",
+  "member": "disposable-r-20260929T104659287120-worker-prompt-states-the-fence-rule",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_implement_prompt_states_the_fence_rule",
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_review_prompt_states_the_fence_rule",
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_rule_and_reason_sit_in_one_place_in_the_prompt",
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_rule_holds_only_through_the_declared_contract_text",
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_rule_reaches_a_node_with_no_write_paths",
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_rule_reaches_a_node_with_several_write_paths"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_crew_prompts.py::test_landing_clause_names_the_figure_convention_and_src_form",
+      "tests/test_crew_prompts.py::test_repo_writing_role_is_told_to_land_both_records_in_the_tree",
+      "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[SKILL.md]",
+      "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[sprint-orchestration.md]",
+      "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[worker-protocol.md]",
+      "tests/test_skill_contract_parity.py::test_the_extracted_sentences_are_the_prompt_s_own_words"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_implement_prompt_states_the_fence_rule",
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_review_prompt_states_the_fence_rule",
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_rule_and_reason_sit_in_one_place_in_the_prompt",
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_rule_holds_only_through_the_declared_contract_text",
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_rule_reaches_a_node_with_no_write_paths",
+      "tests/test_worker_prompt_states_the_fence_rule.py::test_rule_reaches_a_node_with_several_write_paths"
+    ],
+    "declaration": "delete the rule sentence from the composed contract; both prompt assertions then fail",
+    "head_failure_ids": [
+      "tests/test_crew_prompts.py::test_landing_clause_names_the_figure_convention_and_src_form",
+      "tests/test_crew_prompts.py::test_repo_writing_role_is_told_to_land_both_records_in_the_tree",
+      "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[SKILL.md]",
+      "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[sprint-orchestration.md]",
+      "tests/test_skill_contract_parity.py::test_paths_carry_the_landing_requirement_from_the_prompt[worker-protocol.md]",
+      "tests/test_skill_contract_parity.py::test_the_extracted_sentences_are_the_prompt_s_own_words"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104659287120-worker-prompt-states-the-fence-rule/logs/negative-control-red.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104659287120-worker-prompt-states-the-fence-rule/logs/negative-control-red.log",
+    "test_paths": [
+      "tests/test_worker_prompt_states_the_fence_rule.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "worker-prompt-states-the-fence-rule",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 588,
+          "cached_input_tokens": 517144,
+          "input_tokens": 517734,
+          "output_tokens": 242,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 517976,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "caa2d324-580b-4245-9533-3aec9e945566",
+      "session_id": "s21-1c"
+    },
+    "done_when": "tests/test_worker_prompt_states_the_fence_rule.py passes under the root .venv python. It composes a worker prompt through reckon.crew.prompts.compose_prompt, the production composer, for an implement role and for a review role. It asserts that each composed prompt states the rule: a worker never writes the operator's memory directory or any path outside its grants. It also asserts that the prompt states the reason: the fence enforces it, and a write outside the grants is refused as a read-only file system. The declared negative control is executed and logged. The test files that import reckon.crew.prompts show 0 added failures between a base arm and a head arm. Every log sits under the run directory, headed with revision, tree and command and ending EXIT=. The user-global ~/.agents/AGENTS.md is out of scope for this node; its rewrite waits for the rest of section 3 to merge.",
+    "estimated_hours": null,
+    "goal": "State the write-fence rule and its reason in every composed worker prompt",
+    "id": "worker-prompt-states-the-fence-rule",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T10:47:00Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 27,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 15,
+      "headroom": -1,
+      "mean_context": 117500,
+      "observed_at": "2026-09-29T10:46:33Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T104659287120-worker-prompt-states-the-fence-rule/manifest.md",
+    "negative_control": "delete the rule sentence from the composed contract; both prompt assertions then fail",
+    "plan": "a-worker-cannot-write-your-home",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§4",
+    "spec_level": "guided",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/prompts.py",
+      "tests/test_worker_prompt_states_the_fence_rule.py",
+      "docs/evidence/fragments/a-worker-cannot-write-your-home/worker-prompt-states-the-fence-rule.html",
+      "docs/figures/a-worker-cannot-write-your-home/worker-prompt-states-the-fence-rule"
+    ]
+  },
+  "orientation_input_tokens": 1733223.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "worker-prompt-states-the-fence-rule",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T10:47:06.911595+00:00",
+    "score": 0.6625,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-worker-cannot-write-your-home",
+  "plan_impl_at_dispatch": 0.98,
+  "promoted_revision": "3a35ded043b77bf7843c3b07fe1bf91572c03e1b",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 16
+    },
+    "status": "parsed",
+    "total": 91
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T104659287120-worker-prompt-states-the-fence-rule",
+  "scope_acceptances": [
+    {
+      "path": "tests/test_brief_prompt.py",
+      "reason": "the plan-prompt byte-identity snapshot exists to fail whenever the composed prompt changes, so adding the fence rule to the prompt requires refreshing it; no concurrent run held it"
+    }
+  ],
+  "scope_changed": false,
+  "section": "§4",
+  "session_harness": "claude",
+  "session_id": "8b682367-e94f-4374-a007-ce5e0e8d19d2",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 9,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 9594281,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2177.126,
+    "generated_tokens": 48559,
+    "generation_seconds": 1953.083,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 32.2,
+    "machine_seconds": 224.043,
+    "peak_input_tokens": 154630,
+    "tokens_per_second": 24.86,
+    "wall_tokens_per_second": 22.3
+  },
+  "time_budget": "45m",
+  "tool_steps": 86.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": true,
+        "budget_overrun_seconds": 821,
+        "budget_seconds": 1800,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 2621,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-29T10:31:20Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-29T10:03:52Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260929T100311825253-fence-pool-test-follows-the-naming-rules",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 6516,
+          "worker_pid": 1265524
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": false,
+        "log_age_seconds": 950,
+        "log_fresh": false,
+        "manifest_commits": [
+          "b554bbd2 22ff7c64"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "39b720c2605f6b04115a96b09736fb06c029447351c8eaf35db4973e5320f3f2",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T100311825253-fence-pool-test-follows-the-naming-rules/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan a-worker-cannot-write-your-home --section '§3' --role review --spec-level exact --node review-of-fence-pool-test-follows-the-naming-rules --goal 'attach an independent review to run r-20260929T100311825253-fence-pool-test-follows-the-naming-rules' --done-when 'the review for r-20260929T100311825253-fence-pool-test-follows-the-naming-rules stores a parsed record scoring all 5 dimensions in the range 0..20, carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T100311825253-fence-pool-test-follows-the-naming-rules.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T100311825253-fence-pool-test-follows-the-naming-rules.at-22ff7c64c06b2c40d12015ad2ddd9345d627aeb8.json --time-budget 30m --session s21-1c --allow-unreconciled-runs --local",
+        "node": "fence-pool-test-follows-the-naming-rules",
+        "phase": "complete",
+        "plan": "a-worker-cannot-write-your-home",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20260929T100311825253-fence-pool-test-follows-the-naming-rules",
+        "session": "s21-1c",
+        "stored_phase": "starting",
+        "terminal_age_seconds": 968,
+        "terminal_at": "2026-09-29T10:30:56Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-1c/fence-pool-test-follows-the-naming-rules"
+      }
+    ]
+  },
+  "wall_seconds": 2201,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T11:23:53Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T10:47:32Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T104659287120-worker-prompt-states-the-fence-rule",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 8785,
+    "worker_pid": 1745127
+  },
+  "worker_seconds": 2166,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
