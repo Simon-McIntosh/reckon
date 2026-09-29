@@ -5073,15 +5073,19 @@ def _head_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str] | No
     exactly the sound controls that redden those cases.
 
     ``None`` means no readable head arm is recorded: an absent ``after_suite``,
-    an observation marked incomplete, or one whose ``failure_ids`` cannot be
-    read as a list of ids says nothing about what the head arm passed. Reading
-    such an arm as failing nothing would admit every control, so the caller
-    falls back to the baseline comparison instead.
+    an observation that does not declare its run complete, or one whose
+    ``failure_ids`` cannot be read as a list of ids says nothing about what the
+    head arm passed. Reading such an arm as failing nothing would admit every
+    control, so the caller falls back to the baseline comparison instead.
+
+    Completion is asked the way the strict arm validator and the manifest report
+    ask it — a literal ``True``, never a truthy stand-in — so an arm that omits
+    the key or carries null is unreadable here and decides nothing.
     """
     observation = None if manifest is None else manifest.get("after_suite")
     if not isinstance(observation, Mapping):
         return None
-    if observation.get("completed") is False:
+    if observation.get("completed") is not True:
         return None
     failure_ids = observation.get("failure_ids")
     if not isinstance(failure_ids, list) or any(
