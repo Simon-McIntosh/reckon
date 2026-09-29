@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pending-plan triage — third batch (seventeen plans)</title>
+<meta name="reckon-type" content="evidence">
+<meta name="docs-project" content="reckon">
+<meta name="plan" content="open-work-is-capped">
+<meta name="plan-section" content="s2">
+<meta name="read-at" content="032b03fc2295dd8eada1f7c294b0cb95d0163343">
+</head>
+<body>
+
+<h1>Triage of the third seventeen pending reckon plans</h1>
+
+<p class="meta">
+Node <code>triage-pending-plans-third-batch</code> · plan
+<code>open-work-is-capped</code> §2 · read at main HEAD
+<code>032b03fc2295dd8eada1f7c294b0cb95d0163343</code>.
+</p>
+
+<figure>
+<img alt="Horizontal bar chart of deliverable presence for each of the seventeen triaged plans, coloured by disposition (keep, merge, close)."
+     src="/reckon/figures/open-work-is-capped/triage-pending-plans-third-batch/presence.svg">
+<figcaption>Deliverable presence per plan at head <code>032b03fc</code>, coloured by
+disposition. Bar length is counted-present sections over declared implementable
+sections.</figcaption>
+</figure>
+
+<h2 id="method">Method</h2>
+
+<p>This is the third of four batches of seventeen plans staged against the
+open-work limit. The lead has locked that limit at twenty-five pending plans;
+four batches of seventeen cover the sixty-eight the sweep found, so a batch may
+propose at most six keeps. Nine of the seventeen are already at or near zero
+remaining work: they were dispatched alongside the first two batches and are
+either complete at head or superseded, so this batch spends its keep budget on
+the plans that still carry live, unfinished work.</p>
+
+<p>A plan's denominator is its declared implementable section count, as
+reckon's own reader reports it: the <code>plan-section-declarations</code> head
+meta maps each authored section to <code>done</code>, <code>implementable</code>
+or <code>deferred</code>, and a section counts toward the denominator when it is
+declared <code>implementable</code> or <code>done</code> — §1 only when it is
+itself declared implementable. The command that prints each denominator, run
+read-only against the main checkout at head
+<code>032b03fc</code>, is:</p>
+
+<pre><code>for S in consumers-read-reckon-through-verbs crew-observability-truth \
+  crew-runtime-positive-controls dependency-edge-semantics derived-gate-state \
+  execution-orchestration-hardening figures-are-allocated-by-topic-directory \
+  history-persists-as-detail-washes-out landed-record-at-closure \
+  monitor-renders-what-it-is-given new-work-gets-a-new-worker \
+  one-fact-has-one-reader open-work-is-capped plan-lifecycle-hygiene \
+  plan-writes-are-not-fenced rendered-evidence-on-this-host \
+  roadmap-answers-both-shapes; do
+  git -C /home/ITER/mcintos/Code/reckon show "032b03fc:docs/plans/$S.html" \
+  | python3 -c 'import sys,json,re;h=sys.stdin.read();m=re.search(r"plan-section-declarations\" content='"'"'(.*?)'"'"'",h,re.S);d=json.loads(m.group(1).replace("&quot;","\""));print(sum(1 for k,v in d.items() if v!="deferred"))'
+done</code></pre>
+
+<p>Presence is verified per section against the product tree at
+<code>032b03fc</code>, never against a plan's own prose: every section counted
+present cites the file and symbol that carries it, located with
+<code>git -C &lt;worktree&gt; grep -nE "&lt;symbol&gt;" 032b03fc -- &lt;paths&gt;</code>
+and confirmed by reading the file at that revision. A section whose declared
+content is a scope exclusion or a framing statement — a rule about what the plan
+does <em>not</em> own — has no product symbol to cite; it is counted present
+when the plan declares it <code>done</code> and the exclusion is reflected in
+the tree, and the citation column records it as <em>no deliverable</em>. A
+test file alone is not a citation for a product deliverable. The remaining
+sections are counted absent and carry no citation.</p>
+
+<p>Dispositions follow the batch rule: a plan whose deliverables are all present
+or no longer wanted is <em>close</em>, never <em>keep</em>; a plan whose
+remaining work belongs to another plan's subject is <em>merge</em>, naming the
+target. Every non-keep states why it is not in the top six.</p>
+
+<p><strong>Batch keep count: 6</strong> of seventeen.</p>
+
+<h2 id="triage">Triage table</h2>
+
+<table>
+<thead>
+<tr>
+<th>Plan</th>
+<th>Present / checked (citation per counted section)</th>
+<th>Last coordinator (live?)</th>
+<th>Disposition</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td><code>open-work-is-capped</code></td>
+<td>0 / 2 — §2 pending (this batch's record is not yet at head); §3 absent (no write-time wip-limit or serial-merge rule)</td>
+<td><code>s25-coord</code>, 2026-09-28 · <strong>LIVE</strong></td>
+<td><strong>keep</strong> — rank 1</td>
+<td>The cap itself is unbuilt and the triage of four batches is mid-flight; the only plan whose own deliverable is the pending-work ceiling.</td>
+</tr>
+
+<tr>
+<td><code>crew-observability-truth</code></td>
+<td>9 / 11 — §11 <code>reckon/crew/node.py:702</code> (delivery-roots refusal); §12 <code>reckon/crew/promotion.py:271</code> (<code>_manifest_freshness</code> age check); §14 <code>reckon/_schema.py:696</code> (<code>plan_section_anchors</code>); §15 <code>reckon/crew/dispatch.py:3784</code> (<code>dry_run</code> plan); §16 <code>reckon/crew/resumption.py:749</code> (terminal reason); §17 <code>reckon/crew/dispatch.py:7878</code> (terminate path); §18 <code>reckon/crew/dispatch.py:2332</code> (lane shape); §21 <code>reckon/_flight_schema.py:331</code> (dimension floor); §22 <code>reckon/crew/lane_document.py:73</code> (<code>kv_occupancy</code>). §1 framing; §19 absent (§5 from the plan is undeclared, so it is not counted)</td>
+<td><code>s22-coord</code>, 2026-09-28 · <strong>LIVE</strong></td>
+<td><strong>keep</strong> — rank 2</td>
+<td>Two lanes are mid-flight against it and §19 alone is absent; it is the observability surface a dozen other contracts read.</td>
+</tr>
+
+<tr>
+<td><code>new-work-gets-a-new-worker</code></td>
+<td>5 / 6 — §2 <code>reckon/crew/dispatch.py:6827</code> (<code>_task_identity</code>); §3 <code>reckon/crew/runs.py:84</code> (session read from the run record, not the roster); §4 <code>reckon/crew/dispatch.py:71</code> (<code>_disposable_member_id</code>); §5 <code>skills/reckon-build/references/sprint-orchestration.md:745</code> (the rule text); §6 <code>docs/research/data/codex-resume-burn-after.json</code> (measurement). §7 absent</td>
+<td><code>s22-coord</code>, 2026-09-28</td>
+<td><strong>keep</strong> — rank 3</td>
+<td>Dispatched today with a section still absent; the §3/§4 gap (a no-member dispatch still binds one member per session) is stated open work in the rule's own text.</td>
+</tr>
+
+<tr>
+<td><code>plan-writes-are-not-fenced</code></td>
+<td>2 / 4 — §1 <code>reckon/_store.py:272</code> (lost-update comment); §2 <code>reckon/_store.py:98</code> (<code>VersionConflict</code>). §3 absent (no per-plan write fence); §4, §5 absent</td>
+<td><code>crew-attention</code>, 2026-09-18</td>
+<td><strong>keep</strong> — rank 4</td>
+<td>Half its sections are unbuilt — the fence against concurrent plan writes — and no live run carries it; it is genuine remaining work.</td>
+</tr>
+
+<tr>
+<td><code>plan-lifecycle-hygiene</code></td>
+<td>3 / 5 — §3 <code>reckon/cli.py:5904</code> (<code>reckon audit</code> row scan); §4 <code>reckon/cli.py:5703</code> (evidence archive pass); §6 <code>reckon/roadmap.py:1405</code> (<code>active_sprint_id</code>). §2, §5 framing (write-time invariants and the plan-creation diet are declared but deliberately not implemented)</td>
+<td><code>ev-lifecycle</code>, 2026-09-01</td>
+<td><strong>keep</strong> — rank 5</td>
+<td>The audit cadence and archive pass landed; the write-time invariant and sprint-close gate are declared and unanswered, and this plan is the named home for the lifecycle rules the merges below fold in.</td>
+</tr>
+
+<tr>
+<td><code>roadmap-answers-both-shapes</code></td>
+<td>2 / 4 — §2 <code>reckon/roadmap.py:68</code> (entry/closure error path); §4 <code>reckon/roadmap.py:1475</code> (<code>shipped_of_total</code>). §3 absent (one call answering both the live shape and the closure shape); §5 absent</td>
+<td><code>codex-h</code>, 2026-09-15</td>
+<td><strong>keep</strong> — rank 6</td>
+<td>The one-call two-shape answer is still unbuilt and this plan is the named merge target for <code>one-fact-has-one-reader</code>, so keeping it preserves that plan's remaining work.</td>
+</tr>
+
+<tr>
+<td><code>consumers-read-reckon-through-verbs</code></td>
+<td>2 / 5 — §2 <code>reckon/cli.py:3710</code> (<code>reckon crew</code> path subcommand); §3 <code>reckon/crew/lane_document.py:344</code> (<code>read_lane_document_file</code>). §4, §5, §6 absent</td>
+<td>none recorded (last dispatch 2026-09-25)</td>
+<td><strong>merge</strong> → <code>served-surface-data-contracts</code></td>
+<td>Not top six: no live run and no coordinator has touched it in three days, while three of its five verbs are unbuilt. Its remaining subject is the data contract a consumer reads, which that plan owns.</td>
+</tr>
+
+<tr>
+<td><code>derived-gate-state</code></td>
+<td>2 / 3 — §2 <code>reckon/_plan_html.py:517</code> (gates section render); §4 <code>reckon/_plan_html.py:1367</code> (<code>compatibility_warnings</code>). §5 absent (the repo-wide gate-consistency sweep)</td>
+<td><code>skill-verb-surface</code>, 2026-09-15</td>
+<td><strong>merge</strong> → <code>plan-lifecycle-hygiene</code></td>
+<td>Not top six: two of three landed, and the one absent section is the sweep that plan-lifecycle-hygiene already owns as its archive cadence.</td>
+</tr>
+
+<tr>
+<td><code>execution-orchestration-hardening</code></td>
+<td>3 / 3 — §2 <code>reckon/mcp_views.py:1834</code> (<code>_cursor</code> slice); §3 <code>skills/reckon-build/SKILL.md:216</code> (portable dispatch contract); §4 <code>reckon/cli.py:4676</code> (<code>crew_verify_gate</code>)</td>
+<td><code>crew-admission</code>, 2026-09-15</td>
+<td><strong>close</strong></td>
+<td>All three declared sections are present at head; the plan's deliverables have landed and nothing further is wanted.</td>
+</tr>
+
+<tr>
+<td><code>figures-are-allocated-by-topic-directory</code></td>
+<td>3 / 3 — §2 <code>reckon/crew/dispatch.py:1304</code> (per-node topic claim, excluded from the launch collision index); §3 <code>skills/reckon-build/references/worker-protocol.md:228</code> (the topic-directory rule); §4 exclusion (no deliverable — a rule about what is <em>not</em> claimed)</td>
+<td><code>crew-budget-instrument</code>, 2026-09-15</td>
+<td><strong>close</strong></td>
+<td>The topic-directory rule is implemented in the launch claim and stated in the worker protocol; §4 records only an exclusion. All present.</td>
+</tr>
+
+<tr>
+<td><code>crew-runtime-positive-controls</code></td>
+<td>19 / 19 — §1 <code>reckon/crew/dispatch.py:5552</code> (<code>shutil.which</code>); §2 <code>reckon/crew/dispatch.py:4916</code> (<code>LAUNCH_FAILED_PHASE</code>); §3 <code>reckon/cli.py:3420</code> (<code>ensure_watcher_service</code>); §4 <code>reckon/crew/recovery.py:2285</code> (no-probe-state terminal path); §5 <code>skills/reckon-build/SKILL.md:420</code>; §6 <code>reckon/crew/dispatch.py:2933</code> (<code>repository_roots</code>); §7 <code>reckon/crew/promotion.py</code> (negative-control helpers); §8 <code>reckon/crew/ticker.py:309</code> (<code>_CELLS</code>); §9 <code>reckon/crew/runs.py:2454</code> (<code>Restart=always</code>); §10 <code>reckon/cli.py:3420</code>; §11 <code>reckon/crew/promotion.py:4262</code> (<code>_negative_control_log_text</code>); §12 <code>reckon/_store.py:1449</code> (decision write); §13 <code>reckon/_backends.py:1918</code> (stale-copy read); §14 <code>tests/test_crew_orphan.py:190</code>; §15 <code>reckon/crew/recovery.py:2285</code>; §16 <code>reckon/crew/resumption.py:1106</code>; §17 <code>reckon/cli.py:1944</code> (<code>module.__file__</code>); §18 <code>reckon/crew/promotion.py:2346</code> (<code>cat-file</code>); §19 <code>reckon/crew/node.py:915</code> (gate population); §20 <code>reckon/crew/promotion.py:32</code> (<code>negative_control_is_none</code>)</td>
+<td><code>s22-coord</code>, 2026-09-28</td>
+<td><strong>close</strong></td>
+<td>Every declared section is present at head; the runtime's observable failure surfaces are all wired and nothing remains.</td>
+</tr>
+
+<tr>
+<td><code>dependency-edge-semantics</code></td>
+<td>6 / 6 — §2 <code>reckon/roadmap.py:2402</code> (ready/blocked section edges); §3 <code>reckon/doccheck.py:181</code> (<code>FOLLOWUP_FOREIGN_TERMINAL</code>); §4 <code>reckon/_schema.py:1008</code> (<code>pending_transition_gates</code>); §5 exclusion (no deliverable); §6 <code>reckon/lifecycle.py:52</code> (<code>unpassed_gate_blockers</code>); §7 <code>reckon/roadmap.py:568</code> (<code>after</code> ordering)</td>
+<td><code>s22-coord</code>, 2026-09-28</td>
+<td><strong>close</strong></td>
+<td>All six declared sections are present at head; the scoped-decision remainder is carried as a followup, which is not a section of this plan.</td>
+</tr>
+
+<tr>
+<td><code>history-persists-as-detail-washes-out</code></td>
+<td>4 / 5 — §2 <code>reckon/run_store.py:19</code> (sqlite3 store); §3 <code>reckon/run_store.py:609</code> (<code>run_store.import_ledger</code>); §4 <code>reckon/ledger.py:780</code> (export); §5 <code>reckon/crew/runs.py:2981</code> (rotation). §6 absent</td>
+<td><code>s19-review-compact</code>, 2026-09-23</td>
+<td><strong>merge</strong> → <code>crew-run-ledger</code></td>
+<td>Not top six: the per-run store, the ledger export and rotation all landed, leaving a single absent section whose subject — the durable ledger store — is that plan's whole remit.</td>
+</tr>
+
+<tr>
+<td><code>landed-record-at-closure</code></td>
+<td>3 / 4 — §2 <code>reckon/_store.py:562</code> (<code>append_evidence</code>); §3 <code>reckon/_store.py:632</code> (<code>_landed_record_shell</code>); §5 <code>reckon/cli.py:5703</code> (archive pass). §4 absent</td>
+<td><code>crew-resume-evidence</code>, 2026-09-15</td>
+<td><strong>merge</strong> → <code>plan-lifecycle-hygiene</code></td>
+<td>Not top six: the landed-record shell and the archive pass are in place, and the one absent section is the closure step plan-lifecycle-hygiene already owns.</td>
+</tr>
+
+<tr>
+<td><code>monitor-renders-what-it-is-given</code></td>
+<td>5 / 6 — §3 <code>reckon/crew/recovery.py:4711</code> (<code>wait_condition_state</code>); §4 <code>reckon/crew/ticker.py:1169</code> (<code>wait_overdue</code>); §5 <code>reckon/crew/ticker.py:310</code> (<code>_WAIT_CELL</code>); §6 <code>reckon/crew/resumption.py:892</code> (<code>dry_run</code>); §9 <code>reckon/crew/AGENTS.md</code> (abandoned classifier rule). §10 absent</td>
+<td><code>crew-surface-consistent</code>, 2026-09-17</td>
+<td><strong>merge</strong> → <code>crew-observability-truth</code></td>
+<td>Not top six: five of six landed, and the derived wait-state classification it renders is the observability payload that plan owns and is actively building.</td>
+</tr>
+
+<tr>
+<td><code>one-fact-has-one-reader</code></td>
+<td>2 / 4 — §2 <code>reckon/_schema.py:1509</code> (<code>IndexState</code>); §3 <code>reckon/roadmap.py:2113</code> (<code>plan-sprint-missing-item</code>). §4, §5 absent</td>
+<td>none dispatched</td>
+<td><strong>merge</strong> → <code>roadmap-answers-both-shapes</code></td>
+<td>Not top six: never dispatched, and its remaining two sections are the roadmap's own single-reader shape, which that plan answers.</td>
+</tr>
+
+<tr>
+<td><code>rendered-evidence-on-this-host</code></td>
+<td>2 / 4 — §5 <code>tests/test_build.py:220</code> (environment-skip classification); §6 <code>tests/test_build.py:216</code> (file-loading capability gate). §2, §4 absent</td>
+<td><code>crew-attention</code>, 2026-09-09</td>
+<td><strong>merge</strong> → <code>spa-surface-contract-health</code></td>
+<td>Not top six: no live run and three weeks since dispatch; the two absent sections concern whether a surface can be exercised in a given environment, which that plan owns.</td>
+</tr>
+
+</tbody>
+</table>
+
+<h2 id="summary">Batch totals</h2>
+
+<ul>
+<li><strong>keep</strong> (6): <code>open-work-is-capped</code>, <code>crew-observability-truth</code>, <code>new-work-gets-a-new-worker</code>, <code>plan-writes-are-not-fenced</code>, <code>plan-lifecycle-hygiene</code>, <code>roadmap-answers-both-shapes</code>.</li>
+<li><strong>merge</strong> (7): <code>consumers-read-reckon-through-verbs</code>, <code>derived-gate-state</code>, <code>history-persists-as-detail-washes-out</code>, <code>landed-record-at-closure</code>, <code>monitor-renders-what-it-is-given</code>, <code>one-fact-has-one-reader</code>, <code>rendered-evidence-on-this-host</code>.</li>
+<li><strong>close</strong> (4): <code>crew-runtime-positive-controls</code>, <code>dependency-edge-semantics</code>, <code>execution-orchestration-hardening</code>, <code>figures-are-allocated-by-topic-directory</code>.</li>
+</ul>
+
+<p>Keep 6 + merge 7 + close 4 = 17. The batch keep count, against the limit
+of twenty-five pending plans, is <strong>6</strong>.</p>
+
+</body>
+</html>
