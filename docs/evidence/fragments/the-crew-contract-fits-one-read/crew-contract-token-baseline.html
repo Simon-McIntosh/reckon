@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-crew-contract-fits-one-read">
+  <meta name="plan-verifies" content="reckon:the-crew-contract-fits-one-read#s3">
+  <meta name="evidence-verdict" content="pass-with-limitation">
+  <meta name="evidence-date" content="2026-09-29">
+  <meta name="evidence-commit" content="097a3e61">
+  <title>Pre-dispatch skill-load token baseline, 26 September 2026 | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="crew-contract-token-baseline">
+  <h2>The 26 September pre-dispatch skill-load baseline</h2>
+
+  <p><strong>Baseline: a coordinator spends a median of 20,484 input tokens loading the
+  reckon-build skill and its references before its first <code>reckon crew dispatch</code>
+  call.</strong> The figure is the median of the <em>per-session totals</em> of five
+  sessions, each total being the sum of every skill load that session recorded before it
+  dispatched. Recorded from the transcripts under <code>~/.claude/projects</code> read
+  read-only, from the frozen usage figures those transcripts carry. The section 3 rewrite
+  is judged against this number; the "at most half" target it implies is therefore about
+  <strong>10,000</strong> tokens.</p>
+
+  <figure>
+    <img src="/reckon/figures/the-crew-contract-fits-one-read/crew-contract-token-baseline/baseline-per-session.png"
+         alt="Bar chart of per-session pre-dispatch skill-load input tokens. Complete sessions: 1d1d2f0d 25,904; 38dec84a 25,650; 79d34100 20,484; b6ff9a12 19,362; 5b2accfd 5,889. Median 20,484. Four further sessions are unmeasured.">
+    <figcaption>Per-session cost, one bar per selected session. Grey bars are sessions whose
+    load the instrument could not isolate; they are excluded from the median.</figcaption>
+  </figure>
+
+  <h3>What is counted, and what is not</h3>
+  <p>A <strong>load</strong> is the skill reaching a coordinator from its installed
+  location: a <code>Skill</code> invocation of <code>reckon-build</code>, an injected
+  <code>SKILL.md</code> body, or a whole-file <code>Read</code> of a path under
+  <code>~/.claude/skills/reckon-build</code>.</p>
+  <p>Two things that <em>look</em> like loads are excluded, and both had to be excluded to
+  get a number that means anything:</p>
+  <ul>
+    <li><strong>A repository's own copy of the skill.</strong> Sessions on 25 September that
+    read <code>&lt;worktree&gt;/skills/reckon-build/SKILL.md</code> are <em>authoring</em>
+    the skill, not loading it. Counting them put partial 219- and 1,726-token file reads
+    into a distribution of 20,000-token skill loads.</li>
+    <li><strong>A partial read.</strong> A <code>Read</code> carrying an
+    <code>offset</code> or a <code>limit</code> reads a fragment of a file; it does not
+    load the skill. Forty-line reads of a 75 KB skill are code reads.</li>
+  </ul>
+
+  <h3>Token accounting</h3>
+  <p>Each assistant request records a usage block whose total input is
+  <code>input_tokens + cache_creation_input_tokens + cache_read_input_tokens</code>. A
+  load's cost is the rise in that total across the load, and the lower bracket is
+  <strong>the load's own request</strong>, not the request before it. That is what keeps a
+  tool result which landed earlier in the same turn out of the figure: where a turn issues
+  the load alongside another tool call, the other tool's result is already inside the
+  load's own request total. A turn issuing more than one tool is still reported in the log
+  as an upper bound. Nothing is estimated from characters.</p>
+  <p>A load is reported <em>unmeasured</em> rather than as a zero when no request precedes
+  it (the skill was injected at session start), when no request follows it, or when the
+  context shrank across it — a compaction landed between the two requests and bundled the
+  re-injection with its summary.</p>
+
+  <h3>Selection</h3>
+  <p>Sessions are selected when they record a skill load on the baseline date, widening
+  <em>symmetrically</em> to neighbouring days until at least five have a complete
+  per-session total. The baseline date, 2026-09-26, is a Saturday: it holds four qualifying
+  sessions and only two complete ones. <strong>Dates used: 2026-09-26 and
+  2026-09-25.</strong> The five complete totals are the headline; five further selected
+  sessions had at least one load the instrument could not isolate and are listed in the log
+  with the reason.</p>
+
+  <h3>Sessions measured</h3>
+  <table>
+    <thead><tr><th>Session</th><th>Date</th><th>Loads counted</th><th>Session total</th></tr></thead>
+    <tbody>
+      <tr><td><code>1d1d2f0d-d00a-4244-9ce2-d47d56b14ae8</code></td><td>2026-09-26</td><td>Skill: SKILL.md</td><td>25,904</td></tr>
+      <tr><td><code>38dec84a-7cb6-4b27-ace6-501cc76dbec0</code></td><td>2026-09-25</td><td>Skill: SKILL.md</td><td>25,650</td></tr>
+      <tr><td><code>79d34100-114d-4334-b29d-434783b2e6bf</code></td><td>2026-09-25</td><td>Skill: SKILL.md</td><td>20,484</td></tr>
+      <tr><td><code>b6ff9a12-ea0f-404a-b079-43a915ab9a21</code></td><td>2026-09-25</td><td>Skill: SKILL.md ×2</td><td>19,362</td></tr>
+      <tr><td><code>5b2accfd-6ddc-4250-b78f-fb482fefcddc</code></td><td>2026-09-26</td><td>Read: worker-verification.md</td><td>5,889</td></tr>
+      <tr><td><code>6f6c5410-a944-473f-8ca9-1f558a522c59</code></td><td>2026-09-26</td><td>Read: claude-code.md</td><td>5,410 <em>(partial)</em></td></tr>
+      <tr><td><code>1acc0b99</code>, <code>3955c8d2</code>, <code>bd47f8f3</code>, <code>e6394022</code></td><td>2026-09-25</td><td>load not isolable</td><td>unmeasured</td></tr>
+    </tbody>
+  </table>
+  <p>Median over the five complete sessions: <strong>20,484</strong> tokens
+  (min 5,889, max 25,904, mean 19,458). Five sessions is a small sample; every per-load
+  figure and the reason for each exclusion is printed in the log.</p>
+
+  <h3>Separate figures</h3>
+  <p><strong>The clean full <code>SKILL.md</code> load</strong> is <strong>25,904</strong>
+  tokens, at <strong>2.32 tokens per word</strong> against the current 11,181-word file.
+  That is a first delivery of the whole body into a context that did not already hold it,
+  measured in <code>1d1d2f0d</code>. The other whole-body loads land at 25,650, 20,484 and
+  17,427, and one at 1,935 — that last is a <em>re-invocation</em> in a session that had
+  already loaded the body, so it is cheap and is not a comparable full-load figure.</p>
+  <p><strong>Per-reference loads:</strong> <code>worker-verification.md</code>
+  <strong>5,889</strong> tokens; <code>orchestrator-harness/claude-code.md</code>
+  <strong>5,410</strong> tokens. A single reference read therefore costs a coordinator
+  roughly a quarter of a full skill load — which is why the headline is a per-session
+  <em>sum</em> rather than the cost of one load.</p>
+
+  <h3>Word counts</h3>
+  <p>Measured by the done-when's own rule (whitespace-split words):
+  <code>SKILL.md</code> <strong>11,181</strong> words; the ten reference files together
+  <strong>23,726</strong> words; the two together <strong>34,907</strong> words, against the
+  12,000-word ceiling the rewrite must meet — a deficit of 22,907 words.</p>
+  <p><strong>These word counts date from the measurement time, not from the baseline
+  date.</strong> The load figures come from frozen transcripts and cannot move; the files do.
+  <code>SKILL.md</code> was last written 2026-09-29 05:09 UTC, minutes before this
+  measurement, so the word counts describe the file as it stands now and should be re-read
+  rather than quoted forward. The 11,050-word figure this fragment previously carried was
+  taken at revision <code>a34a62bb</code> and no longer describes the file.</p>
+
+  <h3>Controls</h3>
+  <p>The log prints two checks, both passing:</p>
+  <ul>
+    <li>A session known to invoke the skill (<code>1d1d2f0d</code>) is detected, and
+    <code>1225959a</code> — a session that merely quotes a transcript containing the skill
+    body inside a tool result — is rejected.</li>
+    <li>A bracketing control reproduces the attribution defect that this measurement
+    corrects: <code>6f6c5410</code>'s reference read follows an 821-token <code>Bash</code>
+    control result in the same turn. Bracketed on the load's own request the load costs
+    5,410 tokens; a looser bracket on the preceding request would have charged 6,231 and
+    silently added the Bash result to the skill-load figure. The control asserts the loose
+    bracket is <em>not</em> in use.</li>
+  </ul>
+
+  <h3>Reproduce</h3>
+  <pre><code>python3 docs/research/data/crew-contract-baseline/measure.py
+python3 docs/research/data/crew-contract-baseline/figure.py \
+  docs/research/data/crew-contract-baseline/baseline.log \
+  docs/figures/the-crew-contract-fits-one-read/crew-contract-token-baseline/baseline-per-session.png</code></pre>
+  <p>Run and output: <code>docs/research/data/crew-contract-baseline/baseline.log</code>
+  (5.9 KB), whose first line names the revision, the tree and the command, and which ends
+  with <code>EXIT=0</code>.</p>
+</section>
+</main>
+</body>
+</html>
