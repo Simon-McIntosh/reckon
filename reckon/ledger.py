@@ -48,6 +48,7 @@ from typing import Any, Iterable, Mapping
 # rebinds the store's classes in place, and a captured exception class would
 # then no longer match the one its own function raises.
 from reckon import _store
+from reckon._timestamps import parse_utc
 
 # The slug the ledger occupies in a project's state directory. It sits beside
 # index.json rather than inside it because project config and implementation
@@ -2426,6 +2427,32 @@ def _run_streams(run_id: str, streams_root: Path) -> list[Path]:
     return [path for path in candidates if path.is_file()]
 
 
+_EXPLICIT_ZONE = re.compile(r"(?:Z|[+-]\d{2}:?\d{2}(?::\d{2})?)$")
+
+
+def _parsed_stamp(value: Any) -> datetime | None:
+    """Parse one ledger stamp, reading a value without a zone as UTC.
+
+    A value padded with whitespace or suffixed with a lowercase zone marker is
+    not a stamp this ledger writes, so it is refused rather than read.
+    """
+
+    text = str(value)
+    if not text or text != text.strip() or text.endswith("z"):
+        return None
+    return parse_utc(text)
+
+
+def _zoned_stamp(value: Any) -> datetime | None:
+    """Parse a stamp that must state its zone, refusing one that does not."""
+
+    if not isinstance(value, str) or not value.strip():
+        return None
+    if value != value.strip() or not _EXPLICIT_ZONE.search(value):
+        return None
+    return parse_utc(value)
+
+
 def _event_completion(paths: Iterable[Path]) -> str | None:
     """Return the newest aware event timestamp across surviving streams."""
 
@@ -2442,11 +2469,8 @@ def _event_completion(paths: Iterable[Path]) -> str | None:
                 timestamp = event.get("timestamp")
                 if not isinstance(timestamp, str) or not timestamp.strip():
                     continue
-                try:
-                    parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-                except ValueError:
-                    continue
-                if parsed.tzinfo is not None:
+                parsed = _zoned_stamp(timestamp)
+                if parsed is not None:
                     timestamps.append((parsed, timestamp))
     return max(timestamps, key=lambda item: item[0])[1] if timestamps else None
 
@@ -2469,15 +2493,10 @@ def _stream_completion(paths: list[Path]) -> tuple[str, str]:
 def _worker_seconds(dispatched_at: Any, completed_at: Any) -> int | None:
     """Return elapsed seconds, treating timestamps without an offset as UTC."""
 
-    try:
-        start = datetime.fromisoformat(str(dispatched_at).replace("Z", "+00:00"))
-        finish = datetime.fromisoformat(str(completed_at).replace("Z", "+00:00"))
-    except (TypeError, ValueError):
+    start = _parsed_stamp(dispatched_at)
+    finish = _parsed_stamp(completed_at)
+    if start is None or finish is None:
         return None
-    if start.tzinfo is None:
-        start = start.replace(tzinfo=timezone.utc)
-    if finish.tzinfo is None:
-        finish = finish.replace(tzinfo=timezone.utc)
     return max(0, int((finish - start).total_seconds()))
 
 
@@ -2581,7 +2600,13 @@ def repair_completion(
 
 
 def _parse_timestamp(value: Any, label: str) -> datetime:
-    """Parse one labelled ledger timestamp as an aware instant."""
+    """Parse one labelled ledger timestamp as an aware instant.
+
+    Retained rather than routed through ``reckon._timestamps.parse_utc``: this
+    returns the moment in the zone the stamp was written in, and the shared
+    parser normalises every zone to UTC, which would change the value a stamp
+    carrying an offset of its own resolves to.
+    """
     try:
         parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except (TypeError, ValueError) as exc:

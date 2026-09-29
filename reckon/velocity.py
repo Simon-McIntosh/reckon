@@ -39,6 +39,7 @@ import statistics
 import subprocess
 from pathlib import Path
 
+from reckon._timestamps import parse_utc
 from reckon.path_classes import file_class, path_class
 
 __all__ = [
@@ -111,13 +112,21 @@ _PLAN_ARCHIVED = re.compile(rb'name="plan-archived" content="([^"]*)"')
 
 
 def stamp(value):
-    if not value:
+    if not value or not isinstance(value, str):
         return None
-    try:
-        parsed = dt.datetime.fromisoformat(str(value))
-        return parsed.replace(tzinfo=parsed.tzinfo or dt.UTC).timestamp()
-    except ValueError:
+    if value != value.strip() or value.endswith("z"):
         return None
+    parsed = parse_utc(value)
+    return parsed.timestamp() if parsed is not None else None
+
+
+def _window_day(text: str):
+    """The calendar day a window stamp names at its front, as a date."""
+
+    parsed = parse_utc(text[:10])
+    if parsed is None:
+        raise ValueError(f"window stamp names no day: {text!r}")
+    return parsed.date()
 
 
 def iso(epoch):
@@ -1871,14 +1880,8 @@ def measure(
         }
 
     days = [
-        (dt.date.fromisoformat(window_start[:10]) + dt.timedelta(days=i)).isoformat()
-        for i in range(
-            (
-                dt.date.fromisoformat(window_end[:10])
-                - dt.date.fromisoformat(window_start[:10])
-            ).days
-            + 1
-        )
+        (_window_day(window_start) + dt.timedelta(days=i)).isoformat()
+        for i in range((_window_day(window_end) - _window_day(window_start)).days + 1)
     ]
 
     def cells(keys):
@@ -1898,9 +1901,9 @@ def measure(
         ]
 
     if weekly_cells is not None:
-        first_day = dt.date.fromisoformat(window_start[:10])
+        first_day = _window_day(window_start)
         monday = first_day - dt.timedelta(days=first_day.weekday())
-        last_day = dt.date.fromisoformat(window_end[:10])
+        last_day = _window_day(window_end)
         while monday <= last_day:
             next_monday = monday + dt.timedelta(days=7)
             first, last = monday.isoformat(), next_monday.isoformat()

@@ -68,6 +68,7 @@ from reckon._store import (
     _state_root,
     write_json_atomically,
 )
+from reckon._timestamps import parse_utc
 from reckon.evidence import (
     EvidenceSynthesisError,
     compose_landed_record,
@@ -536,14 +537,13 @@ def _log_activity(pointer: dict) -> tuple[str | None, float | None, list[str]]:
 
 def _elapsed_since(stamp: object) -> int | None:
     """Return whole elapsed seconds from an ISO timestamp, when available."""
-    if not stamp:
+    if not stamp or not isinstance(stamp, str):
         return None
-    try:
-        started = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
-    except ValueError:
+    if stamp != stamp.strip() or stamp.endswith("z"):
         return None
-    if started.tzinfo is None:
-        started = started.replace(tzinfo=timezone.utc)
+    started = parse_utc(stamp)
+    if started is None:
+        return None
     return max(0, int((datetime.now(tz=timezone.utc) - started).total_seconds()))
 
 
@@ -653,13 +653,12 @@ def _finished_crew_rows(
     def completion_key(record: dict) -> datetime:
         for field in ("completed_at", "dispatched_at"):
             value = str(record.get(field) or "")
-            if not value:
+            if not value or value != value.strip() or value.endswith("z"):
                 continue
-            try:
-                parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-            except ValueError:
+            parsed = parse_utc(value)
+            if parsed is None:
                 continue
-            return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+            return parsed
         return datetime.min.replace(tzinfo=timezone.utc)
 
     return sorted(records, key=completion_key, reverse=True)

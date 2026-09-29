@@ -15,6 +15,7 @@ import click
 
 from reckon import __version__, pages
 from reckon._store import _config_home, _state_root
+from reckon._timestamps import parse_utc
 
 
 def _asset_root() -> Path:
@@ -2928,17 +2929,17 @@ def _follow_row_stamp(event: Mapping[str, Any]) -> float:
     The history window is measured against the time each row carried, not the
     time the log was written, so a re-arm after a long outage replays the rows
     that are still inside the window rather than the ones written most recently.
-    A row whose stamp cannot be read is placed at the moment of reading.
+    A row whose stamp cannot be read is placed at the moment of reading. Only a
+    stamp that states a time of day is read; a bare calendar date carries no
+    hour to place the row at, so it is placed at the moment of reading too.
     """
     text = str(event.get("observed_at") or "")
-    for candidate in (text.replace("Z", "+00:00"), f"{text}+00:00"):
-        try:
-            moment = datetime.fromisoformat(candidate)
-        except ValueError:
-            continue
-        if moment.tzinfo is not None:
-            return moment.timestamp()
-    return time.time()
+    if text != text.strip() or ("T" not in text and " " not in text):
+        return time.time()
+    moment = parse_utc(text)
+    if moment is None:
+        return time.time()
+    return moment.timestamp()
 
 
 def _follow_replay_visible() -> bool:

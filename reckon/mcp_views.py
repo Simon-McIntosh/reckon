@@ -8,7 +8,7 @@ import re
 import threading
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup, Tag
 
 from reckon import _backends, ledger
 from reckon import budget as budget_module
+from reckon._timestamps import parse_utc
 from reckon.crew import lane_document as lane_document_module
 from reckon.crew import rollout as rollout_module
 from reckon.crew import staleness as staleness_module
@@ -95,18 +96,37 @@ def _receipt_observed_at(run: Mapping[str, Any]) -> str | None:
     return budget_module.run_observed_stamp(run)
 
 
+_EXPLICIT_ZONE = re.compile(r"(?:Z|[+-]\d{2}:?\d{2}(?::\d{2})?)$")
+
+
+def _stated_day(text: str, *, truncated: bool) -> date | None:
+    """The calendar day a stamp states, read as a day rather than an instant.
+
+    A ``truncated`` stamp carries the day at its front and whatever follows; a
+    stamp that is not truncated must state nothing but the day. Text that
+    states no day returns None, so a comparison against it is not made.
+    """
+
+    candidate = text[:10] if truncated else text
+    if not truncated and len(candidate) > 10:
+        return None
+    parsed = parse_utc(candidate)
+    return parsed.date() if parsed is not None else None
+
+
 def _parsed_observation(value: str | None) -> datetime | None:
-    """Parse a receipt observation stamp without treating malformed text as fresh."""
+    """Parse a receipt observation stamp without treating malformed text as fresh.
+
+    The stamp must state a zone: a receipt is only fresh against a moment it
+    names, so a value without one is refused. A value that is not text is not a
+    receipt stamp at all and is refused before any parsing.
+    """
 
     if not value:
         return None
-    try:
-        parsed = datetime.fromisoformat(value)
-    except ValueError:
+    if not _EXPLICIT_ZONE.search(value):
         return None
-    if parsed.tzinfo is None:
-        return None
-    return parsed.astimezone(UTC)
+    return parse_utc(value)
 
 
 def _serving_state(
@@ -1114,7 +1134,6 @@ def compose_review(
     """Join a stored review to current project state."""
 
     from copy import deepcopy
-    from datetime import date
 
     from reckon._schema import parse_plan_ref
 
@@ -1172,13 +1191,14 @@ def compose_review(
         status = str((live or {}).get("status") or "")
         checked_at = str(row.get("checked_at") or "")
         changed_at = str((live or {}).get("modified") or (live or {}).get("last") or "")
-        moved = False
-        try:
-            moved = bool(changed_at) and date.fromisoformat(
-                changed_at[:10]
-            ) > date.fromisoformat(checked_at)
-        except ValueError:
-            moved = False
+        changed_day = _stated_day(changed_at, truncated=True)
+        checked_day = _stated_day(checked_at, truncated=False)
+        moved = bool(
+            changed_at
+            and changed_day is not None
+            and checked_day is not None
+            and changed_day > checked_day
+        )
         row.update(
             {
                 "subject_found": live is not None,
@@ -1211,13 +1231,15 @@ def compose_review(
         sprint = (live or {}).get("sprint")
         landed = effective in TERMINAL_STATUSES
         modified = str((live or {}).get("modified") or (live or {}).get("last") or "")
-        moved = False
-        try:
-            moved = bool(modified and reviewed_at) and date.fromisoformat(
-                modified[:10]
-            ) > date.fromisoformat(reviewed_at[:10])
-        except ValueError:
-            moved = False
+        modified_day = _stated_day(modified, truncated=True)
+        reviewed_day = _stated_day(reviewed_at, truncated=True)
+        moved = bool(
+            modified
+            and reviewed_at
+            and modified_day is not None
+            and reviewed_day is not None
+            and modified_day > reviewed_day
+        )
         row.update(
             {
                 "status": status,
