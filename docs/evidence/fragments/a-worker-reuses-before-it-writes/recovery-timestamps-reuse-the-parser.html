@@ -1,0 +1,48 @@
+<article class="landed-report" data-run-id="r-20260929T194029480174-recovery-timestamps-reuse-the-parser">
+      <h3>recovery-timestamps-reuse-the-parser — six readers join the shared parser</h3>
+      <p>
+        The six timestamp readers in <code>reckon/crew/recovery.py</code> —
+        <code>_budget_timing</code>, <code>_worker_launched_after_manifest</code>,
+        <code>_attempt_started_seconds</code>, <code>_manifest_wait</code>,
+        <code>_run_chain_manifest_freshness</code> and
+        <code>_seconds_since_dispatch</code> — now resolve their stamps through
+        <code>reckon._timestamps.parse_utc</code>. No
+        <code>datetime.fromisoformat</code> call remains in the module.
+      </p>
+      <p>
+        The change is a substitution, not a behaviour change. Every reader kept
+        the <code>str</code> coercion and the naive-as-UTC rule it already had,
+        so the only thing replaced is the parser call itself. The base
+        revision's functions were driven over one shared six-input list (a
+        <code>Z</code> stamp, an offset stamp, a naive stamp, an empty string, a
+        malformed string and a non-string value) and the table captured;
+        <strong>36 of 36 cells
+        agree between base and head</strong>, so no reader moves on any recorded
+        input and there is no retained exception to name.
+      </p>
+      <p>
+        <code>tests/test_recovery_timestamps_reuse_the_parser.py</code> holds that
+        table per reader and asserts it at head (39 tests: 36 cells plus a
+        no-<code>fromisoformat</code> AST check, a table-coverage check and an
+        import check). It turns red under the declared mutation — making
+        <code>_seconds_since_dispatch</code> return <code>None</code> for an
+        offset stamp fails exactly the offset row of its table.
+      </p>
+      <table>
+        <caption>The gate: base and head arms over the tests importing
+        <code>reckon.crew.recovery</code> (-n 4, separate basetemps)</caption>
+        <thead>
+          <tr><th>arm</th><th>files</th><th>result</th><th>log</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>base</td><td>7</td><td>17 failed, 247 passed, EXIT=1</td>
+              <td><code>base-arm.log</code></td></tr>
+          <tr><td>head</td><td>8</td><td>17 failed, 286 passed, EXIT=1</td>
+              <td><code>head-arm.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>
+        The 17 failing ids are identical between arms — none added, none fixed.
+        They are pre-existing environment failures that reproduce at base.
+      </p>
+</article>
