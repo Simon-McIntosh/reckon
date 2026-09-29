@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-impl" content="0.7">
 </head>
 <body>
@@ -163,7 +163,10 @@
     <div class="r-comment-body"><p>Independent review of r-20260929T141227143352-dispatch-timestamps-reuse-the-parser stored at both granted paths — parsed, five dimensions goal_fidelity 17 / evidence 17 / scope_discipline 20 / durability 18 / fit 19 (stored total 91; read back as 5 under the read-time added-failure cap, see note), added_failure_count 3 with added_failure_ids taken from the reviewed run's own arm logs, and four findings: the fragment claims each migrated reader reproduces its base output when the node's own table records four cells that do not; the evidence stamp and the lane advisory newly accept padded and lowercase-z stamps the base revision read as unreadable, recorded nowhere; both suite commands carry a file list no log records; and the head arm's log header names the base revision.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260929T194029480174-recovery-timestamps-reuse-the-parser" data-who="reckon-build" data-when="2026-09-29T20:31:10.763Z">
-    <div class="r-comment-body"><p>recovery-timestamps-reuse-the-parser: the six timestamp readers in reckon/crew/recovery.py (_budget_timing, _worker_launched_after_manifest, _attempt_started_seconds, _manifest_wait, _run_chain_manifest_freshness, _seconds_since_dispatch) now read through reckon._timestamps.parse_utc keeping each reader&#x27;s str coercion and naive-as-UTC rule; the base-recorded behaviour table&#x27;s 36 of 36 cells agree between base and head, no fromisoformat call remains, and the head gate adds no failing test id against base.</p></div>
+    <div class="r-comment-body"><p>recovery-timestamps-reuse-the-parser: the six timestamp readers in reckon/crew/recovery.py (_budget_timing, _worker_launched_after_manifest, _attempt_started_seconds, _manifest_wait, _run_chain_manifest_freshness, _seconds_since_dispatch) now read through reckon._timestamps.parse_utc keeping each reader's str coercion and naive-as-UTC rule; the base-recorded behaviour table's 36 of 36 cells agree between base and head, no fromisoformat call remains, and the head gate adds no failing test id against base.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260929T203125982758-review-of-recovery-timestamps-reuse-the-parser" data-who="reckon-build" data-when="2026-09-29T21:05:55.407Z">
+    <div class="r-comment-body"><p>Independent review of r-20260929T194029480174-recovery-timestamps-reuse-the-parser stored at both granted paths — parsed, five dimensions goal_fidelity 17 / evidence 17 / scope_discipline 20 / durability 18 / fit 18 (total 90, no dimension absent, no read-time cap), added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs, and three findings: the fragment&#x27;s &quot;substitution, not a behaviour change&quot; is falsified by my own probe (11 of 96 cells move on padded and lowercase-z stamps in five readers); _budget_timing:1537 returns budget_overrun True where the base returned its neutral no-measurement verdict; and the head arm&#x27;s log header names the base revision.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:04:52.771Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder stored under the crew review store as a parsed record (goal_fidelity 16, evidence 15, scope_discipline 20, durability 16, fit 19; total 86) with three findings</p></div>
