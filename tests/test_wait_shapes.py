@@ -50,6 +50,7 @@ def _absent_pid() -> int:
     """A pid the kernel will never allocate: beyond the pid_max ceiling."""
     return int(Path("/proc/sys/kernel/pid_max").read_text().strip()) + 4096
 
+
 # A three-file condition, the ordinary shape: the worker is parked on a job
 # whose logs land in its own worktree.
 FILE_CONDITION = "the job writes its three logs"

@@ -45,6 +45,7 @@ def _absent_pid() -> int:
     """A pid the kernel will never allocate: beyond the pid_max ceiling."""
     return int(Path("/proc/sys/kernel/pid_max").read_text().strip()) + 4096
 
+
 # The measured probe, verbatim from the run's manifest except that the report
 # directory is a fixture path. `$q` is filled from `squeue`, and the branch
 # guarded by a non-empty `$q` is the one taken while the job is still queued.
