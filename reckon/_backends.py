@@ -68,7 +68,7 @@ from typing import Any
 
 from reckon._observations import optional_number
 from reckon._store import write_json_atomically
-from reckon._timestamps import parse_utc
+from reckon._timestamps import parse_iso, parse_utc
 
 # Sandbox tiers named by the flight schema. The mapping to concrete flags is
 # per-dialect; the tier names are shared vocabulary.
@@ -736,20 +736,20 @@ def _parse_claude_account(payload: object) -> dict[str, Any]:
 # leaves the reading unknown rather than showing a figure with no age.
 ACCOUNT_CACHE_STAMP = "fetch_stamp"
 
-# The cache stamp is trusted only when its own text names a zone, so the
-# check reads the text's tail rather than assuming a missing zone means UTC.
-_CACHED_STAMP_ZONE = re.compile(r"(?:Z|[+-]\d{2}:?\d{2}(?::\d{2})?)$")
 
-
+# The cache stamp is trusted only when the parsed value names a zone, which the
+# reader decides from the result's own ``tzinfo`` rather than the text's tail.
 def _parse_cached_fetch_stamp(payload: object) -> datetime | None:
     """Return when the cached block was written, or None when untrustworthy.
 
-    The stamp is accepted as epoch seconds or a zoned ISO-8601 string, the
-    shapes a durable cache can write without a zone, and read as UTC. A
+    The stamp is accepted as epoch seconds or a zoned ISO-8601 string. A
     missing, malformed or unzoned value returns None: without a trusted moment
     the copy's age cannot be stated, so the copy must not be shown bare. The
     shared parser reads a zoneless value as UTC, so a value whose text names no
-    zone is refused here before it is parsed.
+    zone is refused here before it is parsed — decided from the parsed result's
+    ``tzinfo`` so every offset spelling an ISO-8601 parser accepts is honoured.
+    A lowercase ``z`` is refused too: the shared parser normalises it to a zero
+    offset, but it is not the strict ISO-8601 designator this reader trusts.
     """
     if not isinstance(payload, Mapping):
         return None
@@ -759,7 +759,10 @@ def _parse_cached_fetch_stamp(payload: object) -> datetime | None:
     if isinstance(stamp, (int, float)):
         return parse_utc(stamp)
     text = stamp.strip()
-    if text != stamp or not _CACHED_STAMP_ZONE.search(text):
+    if text != stamp or text.endswith("z"):
+        return None
+    moment = parse_iso(text)
+    if moment is None or moment.tzinfo is None:
         return None
     return parse_utc(text)
 
