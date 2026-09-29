@@ -490,40 +490,73 @@ def _opens_with_an_absence_word(value: str) -> bool:
     )
 
 
-def _commits_field_declares_absence(
-    manifest_text: str, record: Mapping[str, Any]
+def _commitless_field_declares_absence(
+    manifest_text: str, record: Mapping[str, Any], key: str
 ) -> bool:
-    """Whether a commitless run's ``commits`` field declares an absence.
+    """Whether a commitless run's ``key`` field declares an absence.
 
     A report-only node writes one sentence into the field — ``commits: none
-    (review node, no repository change)`` or ``commits: none, no repository
-    change``. The list reader splits the field on commas and empties a field
-    holding only an absence word, so once parsed neither shape still opens with
-    the declaration: the first arrives as ``['none (review node', 'no repository
-    change)']`` and the second as ``['no repository change']``. Read entry by
-    entry, the surviving tail looks like an unresolvable citation and the line
-    has to be blanked by hand — the symptom this recognition removes.
+    (review node, no repository change)``, ``changed_paths: none under the
+    repository; the sole deliverable is the report``. The list reader splits the
+    field on commas and empties a field holding only an absence word, so once
+    parsed neither shape still opens with the declaration: the first arrives as
+    ``['none (review node', 'no repository change)']`` and the second as
+    ``['no repository change']``. Read entry by entry, the surviving tail looks
+    like an unresolvable citation and the line has to be blanked by hand — the
+    symptom this recognition removes.
 
-    So the declaration is read from the raw ``commits`` value the node wrote, by
-    its first token: the value declares absence when, after leading whitespace,
-    it opens with one of the absence words the reports module defines and that
-    word stands alone — at the end of the value or before a separator. A value
-    whose first token is anything else, a revision included, is not a
-    declaration.
+    So the declaration is read from the raw value the node wrote, by its first
+    token: the value declares absence when, after leading whitespace, it opens
+    with one of the absence words the reports module defines and that word
+    stands alone — at the end of the value or before any character that is not a
+    letter, digit or underscore. A value whose first token is anything else, a
+    revision or a path included, is not a declaration.
 
     The reading is given only to a role that carries no repository work. A role
-    that commits keeps the entry-by-entry reading, so a field opening with
-    ``none`` beside further text is still resolved and still refused when that
-    text names nothing.
+    that commits keeps the existing entry-by-entry reading, so a field opening
+    with ``none`` beside further text is still resolved and still refused when
+    that text names nothing.
     """
     from reckon.crew.recovery import _pointer_role
 
     if _pointer_role(record) not in _COMMITLESS_ROLES:
         return False
-    raw = _raw_manifest_field(manifest_text, "commits")
+    raw = _raw_manifest_field(manifest_text, key)
     if raw is None:
         return False
     return _opens_with_an_absence_word(raw)
+
+
+def _commits_field_declares_absence(
+    manifest_text: str, record: Mapping[str, Any]
+) -> bool:
+    """Whether a commitless run's ``commits`` field declares an absence."""
+    return _commitless_field_declares_absence(manifest_text, record, "commits")
+
+
+def _changed_paths_field_declares_absence(
+    manifest_text: str, record: Mapping[str, Any]
+) -> bool:
+    """Whether a commitless run's ``changed_paths`` field declares an absence.
+
+    The same rule the ``commits`` field follows reads this one: a report-only
+    node writes ``changed_paths: none. review only`` or ``changed_paths: none,
+    no repository change`` and that declares no changed repository path. The
+    list reader cannot answer it — it splits the field on commas and leaves
+    punctuation attached — so the raw value the node wrote is read instead. A
+    field naming a real path does not open with an absence word and is
+    untouched, so the paths it names are still the paths a commit is required
+    for.
+    """
+    return _commitless_field_declares_absence(manifest_text, record, "changed_paths")
+
+
+def _manifest_text(record: Mapping[str, Any]) -> str:
+    """The run's manifest bytes, or the empty string when it cannot be read."""
+    try:
+        return Path(str(record["manifest_path"])).read_text(encoding="utf-8")
+    except (OSError, KeyError):
+        return ""
 
 
 def _unresolved_citations(root: Path, entries: Iterable[str]) -> list[str]:
@@ -1687,6 +1720,27 @@ def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:
     )
 
 
+def _changed_paths_declare_no_paths(
+    manifest: Mapping[str, Any], record: Mapping[str, Any]
+) -> bool:
+    """Whether a manifest's ``changed_paths`` field declares no repository paths.
+
+    Two shapes say it. A prose sentence that opens with the declaration word —
+    the shape ``_prose_changed_paths_name_no_paths`` reads from the parsed list
+    — is a no-paths declaration for any role, so a committing role keeps the
+    entry-by-entry behaviour it has always had. A commitless role additionally
+    gets the raw-field reading its ``commits`` field follows, so ``none. review
+    only`` and ``none, no repository change`` are honoured too: the list reader
+    splits the comma shape and leaves punctuation attached to the full stop, so
+    both would otherwise resolve as paths and be refused. A field that names a
+    real path does not open with an absence word, so a committing role still
+    needs the commit for it.
+    """
+    if _prose_changed_paths_name_no_paths(manifest):
+        return True
+    return _changed_paths_field_declares_absence(_manifest_text(record), record)
+
+
 def _changed_paths_inside_repository(
     manifest: Mapping[str, Any], record: Mapping[str, Any]
 ) -> tuple[str, ...]:
@@ -1762,7 +1816,7 @@ def _require_commit_for_changed_manifest(
     if (
         str(manifest.get("status") or "").strip().lower() != "complete"
         or not manifest.get("changed_paths")
-        or _prose_changed_paths_name_no_paths(manifest)
+        or _changed_paths_declare_no_paths(manifest, record)
         or _manifest_cites_a_commit(manifest, record, manifest_text)
         or not _changed_paths_inside_repository(manifest, record)
     ):
@@ -3150,7 +3204,7 @@ def _manifest_repository_paths(record: Mapping[str, Any]) -> tuple[str, ...]:
     run that changed nothing there.
     """
     manifest = _fresh_manifest(record)
-    if manifest is None or _prose_changed_paths_name_no_paths(manifest):
+    if manifest is None or _changed_paths_declare_no_paths(manifest, record):
         return ()
     return _changed_paths_inside_repository(manifest, record)
 
@@ -3337,7 +3391,7 @@ def _review_changed_scope(
     declares_paths = bool(
         declared
         and declared.get("changed_paths")
-        and not _prose_changed_paths_name_no_paths(declared)
+        and not _changed_paths_declare_no_paths(declared, record)
     )
     return _manifest_repository_paths(record), None, declares_paths
 
