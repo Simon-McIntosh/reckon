@@ -51,12 +51,13 @@
       <table>
         <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
         <tbody>
-          <tr><td>Declared negative control, unconditional grant</td><td>5 failed, <code>EXIT=1</code>; first line repeats the declaration verbatim</td><td><code>gate-logs/role-scope-negative-control.log</code></td></tr>
-          <tr><td>Base at <code>29af302f</code>, this gate</td><td>see the run manifest for the base-arm count; the two implement cases fail there as required</td><td><code>gate-logs/role-scope-base.log</code></td></tr>
-          <tr><td>This tree at <code>4e82a893</code>, this gate</td><td>see the run manifest for the after-arm count</td><td><code>gate-logs/role-scope-after.log</code></td></tr>
+          <tr><td>Declared negative control, unconditional grant</td><td>5 failed / 17 deselected, <code>EXIT=1</code>; first line repeats the declaration verbatim</td><td><code>gate-logs/role-scope-negative-control.log</code></td></tr>
+          <tr><td>Base at <code>29af302f</code>, this gate</td><td>19 failed / 207 passed, <code>EXIT=1</code>; the two implement cases fail there as required, plus 17 pre-existing <code>tests/test_crew.py</code> failures</td><td><code>gate-logs/role-scope-base.log</code></td></tr>
+          <tr><td>This tree at <code>4e82a893</code>, this gate</td><td>16 failed / 211 passed, <code>EXIT=1</code>; zero added failures — the two implement ids clear and no id enters the set, the 16 being the same pre-existing <code>tests/test_crew.py</code> cases</td><td><code>gate-logs/role-scope-after.log</code></td></tr>
+          <tr><td>This tree, <code>tests/test_role_write_scope.py</code> alone</td><td>22 passed, <code>EXIT=0</code></td><td><code>gate-logs/role-scope-file.log</code></td></tr>
         </tbody>
       </table>
-      <p>Each log header prints its revision, the module under test as imported, and the resolved working directory, so the tree that served each arm is checkable.</p>
+      <p>Each log header prints its revision, the module under test as imported, and the resolved working directory, so the tree that served each arm is checkable. The <code>tests/test_crew.py</code> failures are present at base and out of this node's declared scope: reported, not triaged.</p>
       <p>The worker does not resolve the driving followup or change terminal plan state.</p>
     </section>
   </main>
