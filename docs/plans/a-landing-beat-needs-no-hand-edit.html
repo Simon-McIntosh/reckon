@@ -19,14 +19,14 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-standalone" content="Adds two edit_plan ops on top of the section records S22 landed; nothing upstream must land first, and the op table it writes is sequenced by live claims.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
   <title>A Landing Beat Needs No Hand Edit | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-commits" content="cf26c6df,91e978cc,5ca9701f,7a8d7051">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-impl" content="0.75">
 </head>
 <body>
   <main class="plan-doc">
@@ -87,6 +87,11 @@
     <div class="r-fu-body"><p>§2 and §3 both write <code>reckon/_store.py</code> and run in order. §4 follows them.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-beat-needs-no-hand-edit</pre>
     </article>
+<article class="r-fu" data-id="f-albnnhe-ambiguous-span-refusal-is-tested" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The ambiguous-span refusal in collapse_section has a test</h4>
+    <div class="r-fu-body"><p>From the 93 re-review of <code>collapse-section-op-lands-a-section</code>. collapse_section refuses a section whose card span cannot be delimited unambiguously, leaving the file unchanged. No test exercises that refusal; the gate's only refusal case is a card missing its closing tag. So a regression that deleted the guard would leave the gate green. Done when a case in <code>tests/test_edit_plan_collapse_section.py</code> builds an ambiguous span, for example two landed cards under one heading, and asserts the refusal with the file byte-identical. The declared mutation, deleting the guard, fails it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-beat-needs-no-hand-edit §3</pre>
+    </article>
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
@@ -100,7 +105,10 @@
     <div class="r-comment-body"><p>re-review of re-review-of-evidence-append-op stored</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T194149534579-review-of-collapse-section-op-lands-a-section" data-who="reckon-build" data-when="2026-09-29T20:29:07.455Z">
-    <div class="r-comment-body"><p>independent review of run r-20260929T190319353906-collapse-section-op-lands-a-section at head f6b02a2fc247cd67f93447013fc54b277eb151c4 stored a parsed five-dimension record — goal_fidelity 19, evidence 18, scope_discipline 20, durability 13, fit 18, total 88, added_failure_count 0 with no ids — with every clause of §3&#x27;s done-when reproduced on an independently built fixture, the audit-doc absence carried by a positive control, and the declared mutation reproduced red; two findings recorded, the substantive one at reckon/_store.py:868 where a second collapse of an already-collapsed section succeeds and leaves a nested card whose document fails audit-doc.</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20260929T190319353906-collapse-section-op-lands-a-section at head f6b02a2fc247cd67f93447013fc54b277eb151c4 stored a parsed five-dimension record — goal_fidelity 19, evidence 18, scope_discipline 20, durability 13, fit 18, total 88, added_failure_count 0 with no ids — with every clause of §3's done-when reproduced on an independently built fixture, the audit-doc absence carried by a positive control, and the declared mutation reproduced red; two findings recorded, the substantive one at reckon/_store.py:868 where a second collapse of an already-collapsed section succeeds and leaves a nested card whose document fails audit-doc.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260929-s3-collapse-section-lands" data-who="s23-coord" data-when="2026-09-29">
+    <div class="r-comment-body"><p><strong>§3 is declared done.</strong> <code>collapse-section-op-lands-a-section</code> merged at <code>bd388c8e</code>. The first review (88) found that collapsing an already-collapsed section nested a second card, destroyed the first summary and left the section unclosed. The fix derives the section's extent from its own structure and replaces an existing card in place. The re-review scored 93 with zero added failures by id. Every collapsed result in the tests passes <code>reckon audit-doc</code>.</p></div>
 </div>
 </section>
   </main>
