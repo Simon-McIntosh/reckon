@@ -217,3 +217,36 @@ def test_a_resumed_run_owes_no_promotion_obligation(
 
     owed = [item for item in result["obligations"] if item["run_id"] == run_id]
     assert owed == []
+
+
+def test_a_live_worker_that_predates_its_manifest_keeps_todays_verdict(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Launch order decides: a worker older than the manifest wrote nothing.
+
+    The deferral reads a terminal manifest as the superseded attempt's only when
+    the worker started after it. A worker that was already running when the
+    manifest was last written could have written it, so the verdict stands
+    untouched and the run is still offered for promotion exactly as it is today.
+    """
+    run_id = "run-worker-predates-manifest"
+    pointer = _write_resumed_run(
+        run_id=run_id,
+        status="complete",
+        worker_launched_after_manifest=False,
+        worker_live=True,
+    )
+
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "scoring"
+
+    snapshot = _snapshot(pointer)
+    assert snapshot["state"] not in recovery.FLEET_WORKING_STATES
+    counts = recovery._fleet_counts({run_id: snapshot})
+    assert counts["working"] == 0
+    assert counts["unpromoted"] == 1
+
+    _stub_drain(monkeypatch)
+    result = obligations_module.obligations(PROJECT, SESSION)
+    owed = [item for item in result["obligations"] if item["run_id"] == run_id]
+    assert owed != []
