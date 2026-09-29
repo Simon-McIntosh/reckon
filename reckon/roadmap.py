@@ -9,12 +9,13 @@ graph traversal in each surface.
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Mapping
-from datetime import datetime
+from collections.abc import Iterable, Mapping
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 from reckon._plan_html import read_state
+from reckon._timestamps import parse_utc
 from reckon._schema import (
     GATE_TRANSITIONS,
     GRAPH_HANDLE_GRAMMAR,
@@ -1109,8 +1110,159 @@ def _open_sprints(
     return result
 
 
+# A sprint carrying one of these stored statuses has closed. It is finished work
+# rather than a container holding work, and it belongs in a summary only while
+# its close is recent enough to sit beside the open sprints.
+CLOSED_SPRINT_STATUSES = frozenset({"done", "shipped"})
+
+
+def _sprint_closed_at(sprint: Mapping[str, Any]) -> datetime | None:
+    """The instant a closed sprint closed, or None when no readable date exists.
+
+    The close is read from the sprint's own record. ``closed_at`` is the field a
+    close writes; ``ends`` is the declared end a sprint may carry instead, and is
+    accepted only as a fallback because it is a plan-like date rather than an
+    observation. A sprint with neither cannot prove its close is recent, so it
+    is left out of the window rather than guessed into it.
+    """
+    for key in ("closed_at", "ends"):
+        raw = sprint.get(key)
+        if isinstance(raw, str) and raw.strip():
+            parsed = parse_utc(raw.strip())
+            if parsed is not None:
+                return parsed
+    return None
+
+
+def _sprint_member_counts(members: list[Mapping[str, Any]]) -> tuple[int, int, float]:
+    """Member count, pending count and completion percentage for one sprint.
+
+    A member is a plan the sprint names; a pending member is one that has not
+    reached a terminal status, including a member that did not resolve — a ref
+    that names no plan is work nothing has finished. The percentage is the share
+    of members whose status is terminal, so a sprint with no members reads 0.0
+    rather than a division on an empty set.
+    """
+    members_count = len(members)
+    pending = sum(
+        1
+        for member in members
+        if not member.get("found")
+        or str(member.get("status") or "") not in TERMINAL_STATUSES
+    )
+    if not members_count:
+        return 0, 0, 0.0
+    return members_count, pending, round(100 * (members_count - pending) / members_count, 1)
+
+
+def _sprint_recent_days(project: str, docs_dir: str | Path | None) -> int:
+    """The configured recently-closed window for ``project``, or the default.
+
+    The window is read from the project's resolved flight config so a host or
+    project layer can retune it. A project whose config cannot be resolved — no
+    mount, no layer, a malformed layer — falls back to the shipped default
+    rather than failing a summary read on routing configuration.
+    """
+    from reckon import flight
+
+    if docs_dir is None:
+        return flight.DEFAULT_SPRINT_RECENT_DAYS
+    try:
+        config = flight.resolve(project, checkout_path=Path(docs_dir).parent).config
+    except (flight.FlightConfigError, OSError):
+        return flight.DEFAULT_SPRINT_RECENT_DAYS
+    return flight.sprint_recent_days(config)
+
+
+def sprint_summary_rows(
+    project: str,
+    sprints: list[dict[str, Any]],
+    plans: Mapping[str, dict[str, Any]],
+    *,
+    recent_days: int,
+    docs_dir: str | Path | None = None,
+    live_records: Iterable[Mapping[str, Any]] | None = None,
+    liveness: Mapping[str, Mapping[str, Any]] | None = None,
+    resolved_items: Mapping[str, list[dict[str, Any]]] | None = None,
+    moment: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """The compact sprint list a discovery or roadmap summary carries.
+
+    One row per sprint a reader needs to see: every sprint a crew is working
+    now, every sprint whose stored status is not ``done`` or ``shipped``, and
+    every sprint closed within ``recent_days``. Rows are ordered live first,
+    then open, then recently closed.
+
+    Liveness is §2's: the same derived read the fleet pane uses, never a stored
+    marker. ``liveness`` and ``resolved_items`` may be passed in when the caller
+    has already derived them — the roadmap does — so one read serves every
+    surface; when they are omitted the function derives them itself from
+    ``docs_dir``. Nothing here writes.
+    """
+    moment = moment or datetime.now(UTC)
+    if liveness is None:
+        liveness = (
+            sprint_liveness(project, docs_dir, live_records)
+            if docs_dir is not None
+            else {}
+        )
+    if resolved_items is None:
+        resolved_items = _resolved_sprint_items(project, sprints, plans)
+
+    rows: list[dict[str, Any]] = []
+    for sprint in sprints:
+        sprint_id = str(sprint.get("id") or "")
+        if not sprint_id:
+            continue
+        sprint_ref = str(sprint.get("_ref") or sprint_id)
+        status = str(sprint.get("status") or "").lower()
+        live_row = liveness.get(sprint_id) or liveness.get(sprint_ref) or {}
+        live = bool(live_row.get("live"))
+        closed_at = _sprint_closed_at(sprint) if status in CLOSED_SPRINT_STATUSES else None
+        if not live and status not in CLOSED_SPRINT_STATUSES:
+            include = True
+        elif not live and status in CLOSED_SPRINT_STATUSES:
+            include = (
+                closed_at is not None
+                and moment - closed_at <= timedelta(days=max(0, recent_days))
+            )
+        else:
+            include = True
+        if not include:
+            continue
+
+        members = list(resolved_items.get(sprint_ref, []))
+        members_count, pending, completion_pct = _sprint_member_counts(members)
+        rows.append(
+            {
+                "id": sprint_id,
+                "theme": str(sprint.get("theme") or ""),
+                "status": status,
+                "live": live,
+                "live_runs": list(live_row.get("live_runs") or []),
+                "live_sessions": list(live_row.get("live_sessions") or []),
+                "last_activity_at": live_row.get("last_activity_at"),
+                "members": members_count,
+                "pending": pending,
+                "completion_pct": completion_pct,
+                "closed_at": closed_at.isoformat() if closed_at is not None else None,
+            }
+        )
+
+    def order(row: dict[str, Any]) -> tuple[int, str]:
+        if row["live"]:
+            bucket = 0
+        elif row["status"] in CLOSED_SPRINT_STATUSES:
+            bucket = 2
+        else:
+            bucket = 1
+        return (bucket, row["id"])
+
+    rows.sort(key=order)
+    return rows
+
+
 def _schedule_horizon(project_manifest: dict[str, Any] | None) -> int | None:
-    """Read the declared number of open sprints allowed in the schedule window."""
 
     value = (project_manifest or {}).get("schedule_horizon_sprints")
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
@@ -2676,6 +2828,14 @@ def _build_roadmap(
             if isinstance(row, dict) and not row.get("resolved_at")
         ]
     findings.extend(review_findings)
+    summary_sprints = sprint_summary_rows(
+        project,
+        sprints,
+        all_plans,
+        recent_days=_sprint_recent_days(project, resolved_docs),
+        liveness=liveness,
+        resolved_items=resolved_sprint_items,
+    )
     return {
         "project": project,
         "scope": {"sprint": sprint_id, "plans": len(plan_values)},
@@ -2721,6 +2881,7 @@ def _build_roadmap(
         "north_stars": _north_star_rows(plans, north_stars),
         "endpoints": endpoint_rows,
         "sprints": sprint_rows,
+        "summary_sprints": summary_sprints,
         "pending_work": pending,
         "ready_now": ready,
         "blocked": blocked,

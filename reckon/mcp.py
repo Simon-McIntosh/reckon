@@ -880,7 +880,19 @@ def _read_plan(
             "source_format": discovered.get("source_format", "legacy-index"),
             "resource_versions": discovered.get("resource_versions", {}),
             "tag_inventory": _tag_inventory(inventory),
-            "summary": _discovery_summary(plans, followups, questions),
+            "summary": _discovery_summary(
+                project,
+                plans,
+                followups,
+                questions,
+                sprints=list(discovered.get("sprints") or []),
+                all_plans={
+                    str(item.get("slug")): item
+                    for item in inventory
+                    if item.get("slug")
+                },
+                docs_dir=_docs_dir_for_project(project, checkout_path),
+            ),
         }
 
     # ── single-plan mode (original shape) ──
@@ -1988,10 +2000,61 @@ def _tag_audit_findings(
     return findings
 
 
+def _summary_sprint_rows(
+    project: str,
+    sprints: list[dict[str, Any]] | None,
+    all_plans: Mapping[str, dict[str, Any]] | None,
+    *,
+    docs_dir: str | Path | None,
+    recent_days: int | None,
+) -> list[dict[str, Any]]:
+    """The compact sprint list a discovery summary carries.
+
+    The rows come from one shared derivation — :func:`roadmap.sprint_summary_rows`
+    — so the discovery and roadmap summaries answer the same question the same
+    way rather than each building its own. The window is the caller's when it
+    passed one, otherwise it is the project's flight config, and the default when
+    nothing resolves.
+    """
+    if recent_days is None:
+        recent_days = _resolved_sprint_recent_days(project, docs_dir)
+    return roadmap.sprint_summary_rows(
+        project,
+        list(sprints or []),
+        all_plans or {},
+        recent_days=recent_days,
+        docs_dir=docs_dir,
+    )
+
+
+def _resolved_sprint_recent_days(project: str, docs_dir: str | Path | None) -> int:
+    """The project's configured recently-closed window, or the shipped default.
+
+    Routing configuration must not be able to fail a summary read: a project
+    with no mount, no layer or a malformed layer falls back to the default.
+    """
+    default = flight_module.DEFAULT_SPRINT_RECENT_DAYS
+    if docs_dir is None:
+        return default
+    try:
+        config = flight_module.resolve(
+            project, checkout_path=Path(docs_dir).parent
+        ).config
+    except (flight_module.FlightConfigError, OSError):
+        return default
+    return flight_module.sprint_recent_days(config)
+
+
 def _discovery_summary(
+    project: str,
     plans: list[dict[str, Any]],
     followups: list[dict[str, Any]],
     questions: list[dict[str, Any]],
+    *,
+    sprints: list[dict[str, Any]] | None = None,
+    all_plans: Mapping[str, dict[str, Any]] | None = None,
+    docs_dir: str | Path | None = None,
+    recent_days: int | None = None,
 ) -> dict[str, Any]:
     actionable = [item for item in plans if item.get("type", "plan") == "plan"]
     sprint_values = [plan.get("sprint") or "—" for plan in actionable]
@@ -1999,7 +2062,7 @@ def _discovery_summary(
         plan.get("milestone") or plan.get("ms") or "—" for plan in actionable
     ]
     impl_values = [float(plan.get("impl", 0.0) or 0.0) for plan in actionable]
-    return {
+    summary = {
         "plans": len(actionable),
         "artifacts": len(plans),
         "sprints": len({sid for sid in sprint_values if sid != "—"}),
@@ -2020,6 +2083,16 @@ def _discovery_summary(
         "by_sprint": _rollup_counts(sprint_values),
         "by_milestone": _rollup_counts(milestone_values),
     }
+    sprint_rows = _summary_sprint_rows(
+        project,
+        sprints,
+        all_plans,
+        docs_dir=docs_dir,
+        recent_days=recent_days,
+    )
+    if sprint_rows:
+        summary["sprints"] = sprint_rows
+    return summary
 
 
 def _finding(
@@ -4889,7 +4962,15 @@ def _audit(
         "milestones": discovered.get("milestones", []),
         "plans": sum(1 for item in plans if item.get("type", "plan") == "plan"),
         "artifacts": len(plans),
-        "summary": _discovery_summary(plans, followups, questions),
+        "summary": _discovery_summary(
+            project,
+            plans,
+            followups,
+            questions,
+            sprints=list(discovered.get("sprints") or []),
+            all_plans=plan_lookup,
+            docs_dir=docs_dir,
+        ),
     }
     finding_counts = {
         "total": len(findings),

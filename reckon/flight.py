@@ -63,6 +63,15 @@ PLAN_REVIEW_GATE_KEY = "plan_review_gate"
 PLAN_REVIEW_GATE_MODES = ("report", "enforce")
 PLAN_REVIEW_GATE_DEFAULT = "report"
 
+# How far back a closed sprint still appears beside the open ones in a
+# discovery or roadmap summary. A reader deciding what to pick up next wants the
+# work that just finished next to the work that is still open, and no further
+# back than that. Reckon-owned in the same sense as the plan-review gate: the
+# provider-neutral schema names no such key, so the resolved config carries it
+# and a layer may set it, while the schema check is shown a copy without it.
+SPRINT_RECENT_DAYS_KEY = "sprint_recent_days"
+DEFAULT_SPRINT_RECENT_DAYS = 14
+
 # The review tier thresholds. The shipped defaults layer carries both, so a
 # resolved config always supplies them; the module constants are the fallback
 # for a config assembled by hand — an in-process caller or a test — which
@@ -262,6 +271,7 @@ def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     cleaned = dict(data)
     cleaned.pop(HARNESS_HOME_FILES, None)
     cleaned.pop(HARNESS_HOME_ADJACENT_FILES, None)
+    cleaned.pop(SPRINT_RECENT_DAYS_KEY, None)
     backends = cleaned.get("backends")
     if isinstance(backends, Mapping):
         cleaned["backends"] = {
@@ -576,6 +586,41 @@ def _validate_plan_review_gate(data: Mapping[str, Any], source: str | Path) -> N
         )
 
 
+def _validate_sprint_recent_days(data: Mapping[str, Any], source: str | Path) -> None:
+    """Check the reckon-owned recent-closed window, which the schema omits.
+
+    Absence is the shipped default; a present value must be a non-negative whole
+    number of days, and anything else is refused by name, because a string or a
+    negative window would silently drop or widen the column a reader trusts.
+    """
+    if SPRINT_RECENT_DAYS_KEY not in data:
+        return
+    value = data[SPRINT_RECENT_DAYS_KEY]
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise FlightConfigError(
+            source,
+            SPRINT_RECENT_DAYS_KEY,
+            "must be a non-negative whole number of days",
+        )
+
+
+def sprint_recent_days(config: Mapping[str, Any] | None) -> int:
+    """Return the configured window, in days, for a recently closed sprint.
+
+    Read from the resolved config so a host or project layer can retune it
+    without a code change. A config declaring no such key — an in-process caller
+    or a hand-assembled test config — falls back to the shipped default rather
+    than failing, and a value of the wrong shape is treated the same way rather
+    than widening the window.
+    """
+    value = (config or {}).get(SPRINT_RECENT_DAYS_KEY, DEFAULT_SPRINT_RECENT_DAYS)
+    if isinstance(value, bool) and isinstance(value, int):
+        return DEFAULT_SPRINT_RECENT_DAYS
+    if not isinstance(value, int) or value < 0:
+        return DEFAULT_SPRINT_RECENT_DAYS
+    return value
+
+
 def plan_review_gate_enforces(config: Mapping[str, Any] | None) -> bool:
     """Whether a resolved config selects the plan-review gate's enforced mode.
 
@@ -752,6 +797,7 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
 
     _validate_harness_home_files(data, source)
     _validate_plan_review_gate(data, source)
+    _validate_sprint_recent_days(data, source)
 
     for backend_name, backend in (data.get("backends") or {}).items():
         if not isinstance(backend, Mapping):

@@ -2901,6 +2901,9 @@ def _roadmap_project_summary(raw: dict[str, Any]) -> dict[str, Any]:
         },
         "finding_counts": _roadmap_finding_counts(findings),
     }
+    sprint_rows = list(raw.get("summary_sprints") or [])
+    if sprint_rows:
+        summary["sprints"] = sprint_rows
     scope = raw.get("scope")
     if isinstance(scope, Mapping) and str(scope.get("sprint") or "").strip():
         summary["pending_plans"] = [
