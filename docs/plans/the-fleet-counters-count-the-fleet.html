@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="122">
+<meta name="plan-version" content="123">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -386,6 +386,11 @@
     <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet f-tfcctf-resume-baseline-feed-is-tested</pre>
     <p class="r-fu-outcome">Landed: resume-baseline-feed-is-tested (merged 4a38ea02, promoted 97cbd2b7, review 94, 0 added failures by id). A committed test drives an arming whose checkpoint no longer matches the stream and asserts that a row the pane already showed is not printed again. Bypassing the resume baseline feed site turns it red. Its evidence fragment was withdrawn at ae10dc0b because the reader refused the fragments path. Its content is at 8fd9d1e4, to be restored once the reader accepts fragments.</p>
     </article>
+<article class="r-fu" data-id="f-tfcctf-rearm-replays-the-fleet-with-recorded-times" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Every arming replays one row per live run at its recorded time</h4>
+    <div class="r-fu-body"><p>Land the lead's 2026-09-29 ruling. Every arming of <code>crew follow</code>, first or re-arm, draws one row per live run. Each row is stamped with the recorded time the run entered its current state, the rows are in time order, and no run appears twice in one arming. The silent re-arm cases in <code>tests/test_follow_rearm_continues.py</code> and the attach paragraph in the orchestrator-harness reference move to this contract.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §9</pre>
+    </article>
 </section>
 
     
@@ -562,7 +567,7 @@
     <div class="r-comment-body"><p>The attach contract is now stated and tested where it is read: a session's first arming opens with one line per live run and no history burst under a Monitor, a re-arm continues from where the previous arming stopped and prints only what moved, so a re-arm with nothing new is silent, and a live read is the way to ask for the current fleet. No source behaviour changed: reckon/cli.py and reckon/crew/ticker.py are byte-identical to base.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260928T181740479459-review-of-attach-shows-each-live-run" data-who="reckon-build" data-when="2026-09-28T18:49:57.603Z">
-    <div class="r-comment-body"><p>review of run r-20260928T151319429903-attach-shows-each-live-run at head a60a3095 scored 92 (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19), 0 added failures by id against base 0e091e8d, 1 finding — the reviewed run&#x27;s after_suite.log names revision=0e091e8d in its header while the arm ran in the head worktree.</p></div>
+    <div class="r-comment-body"><p>review of run r-20260928T151319429903-attach-shows-each-live-run at head a60a3095 scored 92 (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19), 0 added failures by id against base 0e091e8d, 1 finding — the reviewed run's after_suite.log names revision=0e091e8d in its header while the arm ran in the head worktree.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T130204463138-ticker-row-is-one-aligned-transition" data-who="reckon-build" data-when="2026-09-25T13:46:08Z">
     <div class="r-comment-body"><p>each ticker row is one transition, from → to on an aligned arrow with fixed columns on both sides, chained per run on the pane's last shown state, with no action word; 266 passed; review 86, whose three findings (stale width comment at ticker.py:339, a test assertion that cannot fail, and a wrong rendered-case count in the evidence) go to the next ticker node</p></div>
@@ -629,6 +634,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260928-s9-reopened-attach-blank" data-who="s23-coord" data-when="2026-09-28">
     <div class="r-comment-body"><p><strong>§9 reopened: a fresh arm shows a blank pane.</strong> Measured by the S25 coordinator at 16:55. A follower re-armed with 10 live, streaming runs printed nothing for 16 minutes, until the first transition, and the lead asked whether anything was running. The row policy from <code>6f8be09a</code> drops "a re-derived baseline". On a fresh arm that removes the attach baseline too, and <code>8f58d31a</code> suppresses the history burst under a Monitor, so the pane opens empty. That breaks the orchestrator-harness contract (<code>skills/reckon-build/references/orchestrator-harness/claude-code.md:178</code>, "Attaching opens with one line per live run"), which names this failure: an empty pane reads as a dead follower. The fix is dispatched as <code>attach-shows-each-live-run</code>. A fresh arm opens with one baseline row per live run, and only a baseline re-derived for runs this arming has already shown is dropped. §9 is declared done again when it lands.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260929-s9-lead-rules-replay-with-recorded-times" data-who="s23-coord" data-when="2026-09-29">
+    <div class="r-comment-body"><p><strong>The lead ruled on the re-arm contract: every arming replays the fleet, with recorded times.</strong></p><p>attach-shows-each-live-run merged at <code>4cccc311</code> (review 92, zero added failures by id). It left <code>reckon/cli.py</code> and <code>reckon/crew/ticker.py</code> at base. It stated the contract that code implements in the orchestrator-harness reference: the first arming draws the fleet, and a re-arm prints only what moved. That still leaves the case that reopened this section, a re-armed follower with 10 live runs showing nothing for 16 minutes.</p><p>Asked on 2026-09-29, the lead chose one row per live run on every arming, re-arms included. The lead added: <em>"why can't we replay the list, with the correct timestamps, I don't want to see a blob all at the same time."</em> So each row carries the recorded time the run entered its current state, never the attach time, and the rows arrive in time order. This supersedes the silent re-arm cases in <code>tests/test_follow_rearm_continues.py</code> and the paragraph merged at <code>4cccc311</code>. Both move in the node <code>rearm-replays-the-fleet-with-recorded-times</code>. §9 is declared done when that node lands.</p></div>
 </div>
 </section>
 </main>
