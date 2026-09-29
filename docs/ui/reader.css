@@ -542,3 +542,100 @@
   font-size: 13.5px;
   line-height: 1.5;
 }
+
+/* ── Print: the reader is the document ─────────────────────────────────
+   Printing, including the server's PDF export, keeps the reading column and
+   drops everything that navigates or acts. The panes that scroll on screen
+   are unrolled so the document flows across pages instead of being clipped
+   to the first one. */
+
+@media print {
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+    background: #fff;
+  }
+
+  .r-topbar,
+  .r-titlebar,
+  .r-dependency-cone,
+  .r-reading-controls,
+  .r-reader-save-bar,
+  .r-reader-attachment-bars,
+  .r-reader-source-failure,
+  .r-inflight-band,
+  .r-float-btn,
+  .r-pop,
+  .r-modal-scrim,
+  .r-comment-compose,
+  .r-comment-review,
+  #__saved-toast {
+    display: none !important;
+  }
+
+  .r-app,
+  .r-canvas-view,
+  .r-content,
+  .r-reader-with-attachments,
+  .r-reader-with-attachments > .r-body,
+  .r-page,
+  .r-reading,
+  .r-reading-viewport {
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .r-reading-metadata {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .r-reading-content {
+    max-width: none;
+    padding: 12px 0 0;
+  }
+
+  .r-plan-html img,
+  .r-plan-html svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .r-plan-html h1,
+  .r-plan-html h2,
+  .r-plan-html h3,
+  .r-plan-html h4,
+  .r-reading h2 {
+    break-after: avoid;
+  }
+
+  figure,
+  .r-plan-html img,
+  .r-plan-html svg,
+  .r-plan-html pre,
+  .r-plan-html tr,
+  .r-plan-html blockquote,
+  .r-research-banner,
+  .r-reader-decisions .r-dec {
+    break-inside: avoid;
+  }
+
+  .r-plan-html p,
+  .r-plan-html li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* The PDF export supplies STIX Two Math, because a serving host without a
+     math font draws MathML identifiers as missing glyphs; a browser printing
+     for itself falls back to its own math font. */
+  math {
+    font-family: "STIX Two Math", math;
+  }
+}

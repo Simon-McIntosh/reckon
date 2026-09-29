@@ -81,6 +81,13 @@ from reckon.lifecycle import (
     unresolved_dependencies,
 )
 from reckon.project_state import ProjectStateError
+from reckon.reader_pdf import (
+    FontFace,
+    ReaderPdfError,
+    ReaderPdfUnavailableError,
+    reader_hash,
+    render_reader_pdf,
+)
 from reckon.resources import (
     ROOT_TYPES,
     ResourceCollision,
@@ -340,6 +347,90 @@ CLIENT_ASSETS = {
         "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
     ),
 }
+_GEIST = "https://unpkg.com/geist@1.7.2/dist/fonts"
+_STIX_MATH = "https://unpkg.com/@fontsource/stix-two-math@5.3.0/files"
+# The typefaces the reader's stylesheets name first, at the weights and styles
+# they set, and a math face for MathML. The PDF renderer runs on the serving
+# host, which may have none of them. Static faces, because Chromium embeds a
+# variable font in a PDF as outlines without their own advances, and the
+# spacing breaks.
+READER_PDF_FACES = (
+    # (family, weight, style, url, sha256)
+    (
+        "Geist",
+        400,
+        "normal",
+        f"{_GEIST}/geist-sans/Geist-Regular.woff2",
+        "d8bce822db092746889bcf3f57350b41f53708b025458fe7af30729ec4ce0df2",
+    ),
+    (
+        "Geist",
+        400,
+        "italic",
+        f"{_GEIST}/geist-sans/Geist-Italic.woff2",
+        "15a1e65b88bdf22469784aed5fca115f17061bab4c3c85cfe7c07839c46a31b4",
+    ),
+    (
+        "Geist",
+        500,
+        "normal",
+        f"{_GEIST}/geist-sans/Geist-Medium.woff2",
+        "b0a0867cda44efef4529a4b13ce37fd9fd6e1597708615287542a51bc7452ab4",
+    ),
+    (
+        "Geist",
+        600,
+        "normal",
+        f"{_GEIST}/geist-sans/Geist-SemiBold.woff2",
+        "b1e6a1dd2122485d0a1f3a8d30a45443aa9453224f83018bec35f8266bc77915",
+    ),
+    (
+        "Geist",
+        700,
+        "normal",
+        f"{_GEIST}/geist-sans/Geist-Bold.woff2",
+        "04f948593dca628e846e6b41b3ef66bc39ad59fee3571c589a3cd4e267122be2",
+    ),
+    (
+        "Geist Mono",
+        400,
+        "normal",
+        f"{_GEIST}/geist-mono/GeistMono-Regular.woff2",
+        "e4507fb4fb5f832fbbb6c06aea4206274ba3083007f23fa8cbc0e87a10acf95b",
+    ),
+    (
+        "Geist Mono",
+        500,
+        "normal",
+        f"{_GEIST}/geist-mono/GeistMono-Medium.woff2",
+        "85b99e603f84a47dc8118b5af058ad8f387d7c507a00faeef1b5b60eb371e844",
+    ),
+    (
+        "Geist Mono",
+        600,
+        "normal",
+        f"{_GEIST}/geist-mono/GeistMono-SemiBold.woff2",
+        "8416445afd947018ffeb31844da808bd7f4356f5dc7d73a084659c32eae26548",
+    ),
+    (
+        "Geist Mono",
+        700,
+        "normal",
+        f"{_GEIST}/geist-mono/GeistMono-Bold.woff2",
+        "c1287452c531c82457793da41dd5512af95d01fbc851c8b928203f9ca4967279",
+    ),
+    (
+        "STIX Two Math",
+        400,
+        "normal",
+        f"{_STIX_MATH}/stix-two-math-latin-400-normal.woff2",
+        "8b2a6834cfe1f4e0f3724ffa59fe92000013fc5a4c41e6a3f438006c26c60f0d",
+    ),
+)
+CLIENT_ASSETS.update(
+    {url.rsplit("/", 1)[1]: (url, digest) for *_, url, digest in READER_PDF_FACES}
+)
+READER_PDF_TYPES = frozenset({"plan", "research", "evidence"})
 _CLIENT_ASSET_LOCK = threading.Lock()
 
 
@@ -1542,6 +1633,9 @@ def _discover_plans_uncached(
                 ).with_suffix("")
             ),
             "canonical_href": resource.canonical_href,
+            # A document saves as a print of its reader, rendered on request
+            # at its canonical route with a .pdf suffix.
+            "download": f"{resource.canonical_href}.pdf",
             "legacy": resource.legacy,
             "title": rec["title"],
             "type": artifact_type,
@@ -2141,6 +2235,60 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-cache")
         self.send_header("ETag", etag)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_reader_pdf(self, project: str, resource) -> None:
+        """Print one document's reader through this server and send the PDF.
+
+        The browser loads the reader from this same server over loopback, so
+        the PDF shows exactly what the reader shows and a tunnelled client
+        receives a finished file.
+        """
+        host, port = self.server.server_address[:2]
+        if host in ("", "0.0.0.0", "::"):  # noqa: S104 — a wildcard bind is reached on loopback
+            host = "127.0.0.1"
+        authority = f"[{host}]" if ":" in host else host
+        hash_route = reader_hash(
+            resource.type, resource.slug, archived=resource.archived
+        )
+        url = f"http://{authority}:{port}/{project}/#{hash_route}"
+        try:
+            title = _plan_html.parse_meta(resource.path).get("title") or resource.slug
+        except OSError:
+            title = resource.slug
+        fonts: list[FontFace] = []
+        for family, weight, style, source, _ in READER_PDF_FACES:
+            try:
+                payload = _client_asset(source.rsplit("/", 1)[1]).read_bytes()
+            except (OSError, ClientAssetError) as exc:
+                # A missing face degrades the PDF's look, not its content.
+                LOGGER.warning("printing %s without %s: %s", resource.slug, source, exc)
+                continue
+            fonts.append(FontFace(family, weight, style, payload))
+        try:
+            body, missing = render_reader_pdf(url, title=title, fonts=fonts)
+        except ReaderPdfUnavailableError as exc:
+            self._send(HTTPStatus.SERVICE_UNAVAILABLE, str(exc).encode(), "text/plain")
+            return
+        except ReaderPdfError as exc:
+            LOGGER.warning("PDF export of %s failed: %s", resource.slug, exc)
+            self._send(HTTPStatus.BAD_GATEWAY, str(exc).encode(), "text/plain")
+            return
+        if missing:
+            LOGGER.warning(
+                "printed %s with %d image(s) that did not load: %s",
+                resource.slug,
+                len(missing),
+                ", ".join(missing),
+            )
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/pdf")
+        self.send_header(
+            "Content-Disposition", f'attachment; filename="{resource.slug}.pdf"'
+        )
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
 
@@ -2768,6 +2916,17 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self._send_json(HTTPStatus.OK, {})
             return
+
+        if rel.endswith(".pdf"):
+            # A document's route with a .pdf suffix is its reader printed. Any
+            # other .pdf path, such as a file under figures, is served as a file.
+            try:
+                printed, _ = resolve_route(root, project, rel.removesuffix(".pdf"))
+            except ResourceCollision:
+                printed = None
+            if printed is not None and printed.type in READER_PDF_TYPES:
+                self._send_reader_pdf(project, printed)
+                return
 
         try:
             resource, legacy_alias = resolve_route(root, project, rel)

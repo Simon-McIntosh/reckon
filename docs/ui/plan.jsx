@@ -331,14 +331,25 @@ function readerDownloadName(downloadHref) {
   }
 }
 
-function saveReaderArtifact(downloadHref) {
+// Fetches before saving so a failure is reported rather than saved: a document
+// is printed to PDF on request, which takes seconds and can be refused.
+async function saveReaderArtifact(downloadHref) {
+  const name = readerDownloadName(downloadHref);
+  const response = await fetch(downloadHref, { cache: "no-store" });
+  if (!response.ok) {
+    const detail = (await response.text().catch(() => "")).trim();
+    throw new Error(detail || `HTTP ${response.status}`);
+  }
+  const objectUrl = URL.createObjectURL(await response.blob());
   const link = document.createElement("a");
-  link.href = downloadHref;
-  link.download = readerDownloadName(downloadHref);
+  link.href = objectUrl;
+  link.download = name;
   link.hidden = true;
   document.body.appendChild(link);
   link.click();
   link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+  return name;
 }
 
 function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus }) {
@@ -371,6 +382,18 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
   const projectSource = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
   const project = metadataValueIsPresent(projectSource) ? projectSource : "";
   const downloadHref = readerDownloadHref(PG);
+  const [saving, setSaving] = useState(false);
+  const saveArtifact = async () => {
+    setSaving(true);
+    try {
+      const name = await saveReaderArtifact(downloadHref);
+      window.flashSaved?.(`${name} saved`);
+    } catch (error) {
+      window.flashSaved?.({ state: "failed", text: `save failed · ${error.message}` });
+    } finally {
+      setSaving(false);
+    }
+  };
   const [liveRuns, setLiveRuns] = useState([]);
   const [dependenciesOpen, setDependenciesOpen] = useState(false);
   const [figureZoom, setFigureZoom] = useState(1);
@@ -762,9 +785,14 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
     return () => el.removeEventListener("click", handleClick);
   }, [comments]);
 
+  // Settled once the authored body and the parsed state have each arrived or
+  // failed; the PDF export prints the reader only after this.
+  const readerReady = htmlReady
+    && (usesImageReader || !project || fullState !== null || stateFailure !== null);
+
   return (
     <div className="r-page">
-      <article className={`r-reading ${focusMode ? "is-focus-mode" : ""}`} ref={articleRef} data-focus-mode={provenanceSignals.focusMode ? "true" : "false"} data-reader-kind={kind}>
+      <article className={`r-reading ${focusMode ? "is-focus-mode" : ""}`} ref={articleRef} data-focus-mode={provenanceSignals.focusMode ? "true" : "false"} data-reader-kind={kind} data-reader-ready={readerReady ? "true" : "false"}>
           <window.ReckonShell.title.ReaderChrome
             item={PG}
             state={M}
@@ -787,13 +815,14 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
               type="button"
               className="r-reader-save"
               data-download={downloadHref}
-              disabled={!downloadHref}
+              disabled={!downloadHref || saving}
+              aria-busy={saving}
               aria-label={downloadHref ? `Save ${readerDownloadName(downloadHref)}` : "Save unavailable"}
               title={downloadHref ? `Save ${readerDownloadName(downloadHref)}` : "No downloadable file available"}
-              onClick={() => saveReaderArtifact(downloadHref)}
-              style={{ padding: "5px 12px", border: "1px solid var(--line-2)", borderRadius: 5, background: "var(--bg)", color: "var(--ink-2)", fontFamily: "var(--mono)", fontSize: 11.5, cursor: downloadHref ? "pointer" : "not-allowed", opacity: downloadHref ? 1 : 0.45 }}
+              onClick={saveArtifact}
+              style={{ padding: "5px 12px", border: "1px solid var(--line-2)", borderRadius: 5, background: "var(--bg)", color: "var(--ink-2)", fontFamily: "var(--mono)", fontSize: 11.5, cursor: !downloadHref ? "not-allowed" : saving ? "progress" : "pointer", opacity: downloadHref ? 1 : 0.45 }}
             >
-              Save
+              {saving ? "Saving…" : "Save"}
             </button>
           </div>
           <div className="r-reading-viewport">
