@@ -17,9 +17,60 @@
     passed (log <code>logs/05-head-arm.log</code>) and a base arm over those same 21 ids failed exactly
     them at base (log <code>logs/07-base-arm-targeted.log</code>): <strong>0 added failures</strong>. The full
     101-file base arm (log <code>logs/06-base-arm.log</code>) was discarded as ENOSPC-contaminated (490
-    errors), which is why the base arm here is targeted. The declared negative control &#8212;
+    errors), which is why the base arm of that pass was targeted; the full arm was obtained
+    later, under <em>Repair measure</em> below. The declared negative control &#8212;
     <em>drop the per-run write from ledger.write; case 1&#8217;s read-back fails with the
     differs-between refusal</em> &#8212; fires: 1 failed, <code>EXIT=1</code>, log
-    <code>logs/04-negative-control.log</code>. Commits: <code>bc444b40</code>.
+    <code>logs/04-negative-control.log</code>.
+  </p>
+  <p>
+    <strong>Repair.</strong> The first form of the fix rewrote the per-run files after the
+    aggregate envelope had already advanced, with no way back. A store that refused a single
+    file write &#8212; a read-only tree, a full disk &#8212; therefore left the aggregate on the
+    new revision while the file kept the old one, and the next read refused the whole project:
+    the writer causing the very disagreement it exists to prevent, from a call that reported no
+    success at all. The files are now brought into line with the rows they copy
+    <em>before</em> the envelope advances, each through a sibling temporary and
+    <code>os.replace</code> so a failed write cannot leave a file holding a prefix of its own
+    content, and each replaced file yields the revision it held. A file that refuses its write
+    abandons the write while the aggregate still holds the revision it read, putting back what
+    it had already changed; an envelope refused on a stale version, or that fails its own
+    write, puts them all back in turn.
+  </p>
+  <p>
+    <strong>Repair measure.</strong> Two cases were added. The first injects
+    <code>OSError(ENOSPC)</code> on any write under the
+    project&#8217;s <code>runs/</code> directory: at <code>a55213dd</code>, before the repair,
+    <code>ledger.write</code> reported no error and the read that followed died with the
+    <code>differs between &#8230; refusing to read conflicting history</code> refusal &#8212;
+    1 failed, <code>EXIT=1</code> (log <code>logs/08-unwritable-case-before-repair.log</code>).
+    After the repair the same case shows <code>ledger.write</code> raising and the read
+    returning the run the reader already had, alongside a second case where the envelope itself
+    refuses and the file is put back: 4 passed, <code>EXIT=0</code>
+    (log <code>logs/09-unwritable-case-after-repair.log</code>). The declared negative control
+    was re-run against the reordered writer and still fires: 1 failed, <code>EXIT=1</code>
+    (log <code>logs/11-negative-control-reordered.log</code>).
+  </p>
+  <p>
+    <strong>Repair measure.</strong> A symmetric pair of arms over the 101 test files that
+    import <code>reckon.ledger</code>, each with its own <code>--basetemp</code> under
+    <code>/tmp</code> and <code>pytest-xdist -n 8</code>: at the committed base
+    <code>22 failed / 1637 passed / 1 skipped</code>
+    (log <code>logs/baseline-arm-suite.log</code>), and at the repaired head
+    <code>21 failed / 1638 passed / 1 skipped</code>
+    (log <code>logs/head-arm-suite.log</code>). <strong>No id fails at head that does not fail
+    at base &#8212; 0 added failures.</strong> Each arm&#8217;s basetemp was deleted before the
+    next arm, and the deletion is recorded at the end of its log. The head arm was run three
+    times: twice with no head-only id, and once with a single intermittent id
+    (<code>test_shadow_inherits_primary_time_budget_instead_of_role_default</code>) that passes
+    three times in isolation at the same revision (log
+    <code>logs/12-head-only-id-repeat.log</code>) and fails inside
+    <code>crew.complete</code>&#8217;s gate-evidence guard in <code>reckon/crew/promotion.py</code>,
+    which this change does not touch.
+  </p>
+  <p>
+    <strong>Commits.</strong> <code>bc444b40</code> (the writer keeps each per-run file
+    identical to its row), <code>a55213dd</code> (this record), <code>1f87d481</code> (the
+    fail-safe ordering, and the two cases that pin it).
   </p>
 </article>
