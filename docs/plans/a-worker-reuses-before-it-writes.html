@@ -26,7 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
+<meta name="plan-impl" content="0.4">
 </head>
 <body>
   <main class="plan-doc">
@@ -85,10 +86,11 @@
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
-<div class="r-gate" data-id="g-awrbiw-velocity-view" data-section="s5" data-gated-sections="s5" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-awrbiw-velocity-view" data-section="s5" data-gated-sections="s5" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the velocity view exists to carry the interface counts</h4>
     <p class="r-gate-required-evidence">the-fleet-reports-its-velocity#s2</p>
-    </div>
+    <a class="r-gate-evidence" href="The velocity view shipped: one function in reckon/velocity.py served as crew(view=&quot;velocity&quot;) (03ebd642), reckon crew velocity (3629a275) and the plan SPA&#x27;s Velocity tab (da6b7606), with a head-keyed cache answering a warm read in 5.2 s (993f1501). the-fleet-reports-its-velocity is shipped at impl 1.0.">Evidence</a>
+</div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -145,6 +147,9 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260929T030610092194-timestamp-callers-batch-d" data-who="reckon-build" data-when="2026-09-29T03:53:09.515Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-d.html</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-20260929T101000-reuse-state" data-who="s25-coord" data-when="2026-09-29T10:10:00Z">
+    <div class="r-comment-body"><p>State at main 58d65ae2, so this plan's impl reflects what has landed:</p><ul><li><strong>Section 2, one timestamp parser.</strong> <code>reckon/_timestamps.py:parse_utc</code> and <code>parse_iso</code>, its zone-preserving view, are on main. The readers of batches A to D, 38 callers across the crew modules, the top-level modules, <code>_backends</code>, <code>budget</code>, <code>metering</code>, <code>ticker</code>, <code>cli</code>, <code>flight</code>, <code>ledger</code>, <code>mcp_views</code>, <code>serve</code> and <code>velocity</code>, are migrated behind base-recorded behaviour tables. A caller with different semantics is kept as a named exception. The deferred readers in <code>dispatch.py</code> (4), <code>promotion.py</code> (3) and <code>recovery.py</code> (5) remain, now that peer claims on those files have released.</li><li><strong>Section 3, one writer and one decoder.</strong> <code>write_json_atomically</code> carries indent, sort_keys, mode, directory fsync and ensure_ascii. Two waves moved 15 writers and 4 decoders onto it. Three writers remain: <code>runs._write_json</code>, <code>dispatch._supervisor_write</code> and <code>cli._write_json_atomically</code>. The <code>metering.run_streams</code> consolidation of the stream enumeration in promotion and the ledger is not started.</li><li><strong>Sections 4 and 5</strong> are not started. Section 5's gate has now passed.</li></ul></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:04:52.771Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder stored under the crew review store as a parsed record (goal_fidelity 16, evidence 15, scope_discipline 20, durability 16, fit 19; total 86) with three findings</p></div>
 </div>
@@ -182,7 +187,7 @@
     <div class="r-comment-body"><p>Independent review of r-20260929T044307469729-zone-guards-read-tzinfo (base 92274925, head 900af213, 2 commits, 336 changed lines across 7 fenced paths): the three repairs land with both zone regex guards deleted, and each reproduces as changed behaviour against the reviewed worktree and the surviving base scratch tree /tmp/basepkg-2594104 — ticker.row_moment for 2026-07-01T00:00:00-05 under Europe/Paris read 1782874800.0 at base and the aware 1782882000.0 at head, the _backends cache stamp was None at base and an aware moment at head, and a patched os.fdopen left .dest.json.2802945.7fba818b3900133a.tmp at base and nothing at head; scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 17 (total 94); added_failure_count 0 derived from the run's own gate_baseline_arm.log and gate_after_suite_head.log with the instrument positively controlled; two findings — tests/test_zone_guards_read_tzinfo.py:22 names a plan stage in a source docstring, and the workspace log gate_zone_guards.log:1 labels a working-tree run with the base revision; the review record is stored at both granted paths.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T044307469729-zone-guards-read-tzinfo" data-who="reckon-build" data-when="2026-09-29T05:50:55.606Z">
-    <div class="r-comment-body"><p>docs/evidence/fragments/a-worker-reuses-before-it-writes/zone-guards-read-tzinfo.html — ticker.row_moment and the _backends cache-stamp reader now read a stamp&#x27;s zone from reckon._timestamps.parse_iso&#x27;s tzinfo so +00/-05/+000000 return the instant they name (+00: 1782856800.0 -&gt; 1782864000.0; -05: 1782874800.0 -&gt; 1782882000.0 at TZ=Europe/Paris, a 7200 s shift; +000000: 1782856800.0 -&gt; 1782864000.0); the shared writer removes its sibling temporary on any failure after creation, not only a chmod failure; write_json_atomically gains ensure_ascii (default True) and hooks.install passes False (this node&#x27;s repairs, head arm 201 passed, base arm 196 passed, negative control 1 failed on the -05 case)</p></div>
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-worker-reuses-before-it-writes/zone-guards-read-tzinfo.html — ticker.row_moment and the _backends cache-stamp reader now read a stamp's zone from reckon._timestamps.parse_iso's tzinfo so +00/-05/+000000 return the instant they name (+00: 1782856800.0 -&gt; 1782864000.0; -05: 1782874800.0 -&gt; 1782882000.0 at TZ=Europe/Paris, a 7200 s shift; +000000: 1782856800.0 -&gt; 1782864000.0); the shared writer removes its sibling temporary on any failure after creation, not only a chmod failure; write_json_atomically gains ensure_ascii (default True) and hooks.install passes False (this node's repairs, head arm 201 passed, base arm 196 passed, negative control 1 failed on the -05 case)</p></div>
 </div>
 </section>
 </main>
