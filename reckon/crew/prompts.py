@@ -53,6 +53,29 @@ FALSIFIABLE_EVIDENCE_CONTRACT = (
     "  tree, so an unfilled field reads as no work."
 )
 
+# The small-node rule, embedded beside the landing sentence in the
+# worktree-landing contract so a worker knows when its node is small and what a
+# small node owes. It lives here for the same reason its siblings do: the prompt
+# embeds no protocol reference by design, so a discipline carried only by a
+# reference file reaches nobody. Every clause states a mechanical threshold and
+# names no repository, path, tool, model or project, because this text reaches
+# workers on every project that syncs this package. The two limbs of the size
+# test are disjoint by construction — a diff reaching product source or tests
+# answers the first limb's 50-line bound, while a record-only diff answers the
+# second's wider 300-line bound — so the pair is one rule with one verdict per
+# node rather than two that could disagree. Kept as a standalone constant so a
+# test can compose with it masked out and diff against the live prompt, which
+# proves the addition is removable and scoped.
+SMALL_NODE_RULE = (
+    "  A node is small when its diff has at most 50 changed lines (added plus\n"
+    "  deleted), or when it changes no product source or tests and has at most\n"
+    "  300 changed lines. A small node writes one `landing:` line in its manifest,\n"
+    "  stating what changed and its measure's figure, and writes neither evidence\n"
+    "  prose nor a figure unless its done-when names that artifact; naming one\n"
+    "  does not permit the other. Any single data file above 300,000 bytes belongs\n"
+    "  in the run directory, not the repository.\n"
+)
+
 # The worktree-landing contract, embedded only when the worker can write its
 # assigned worktree, so a repository change is the deliverable it can actually
 # commit. It lives here for the same reason its siblings do: the prompt embeds no
@@ -73,7 +96,8 @@ PLAN_LANDING_CONTRACT = (
     "  docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:`\n"
     "  line in your manifest in place of a plan edit. The fragment goes into your\n"
     "  final commit; promotion lands the `landing:` line on your plan section.\n"
-    "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
+    + SMALL_NODE_RULE
+    + "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
     "  shown than described, under your own docs/figures/<plan>/<node-id>/ with the\n"
     "  project-absolute src /<project>/figures/<plan>/<node-id>/...; never an image\n"
     "  of what is naturally a table.\n"
