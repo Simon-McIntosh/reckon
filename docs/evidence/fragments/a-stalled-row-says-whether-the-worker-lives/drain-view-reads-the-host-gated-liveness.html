@@ -1,0 +1,119 @@
+<section id="drain-view-reads-the-host-gated-liveness">
+  <h2>The closure drain asks liveness through the same gate</h2>
+
+  <p><strong>What changed.</strong> The closure drain is the view a session reads to decide whether
+  it may close, and the retained-work reading inside it turned on whether a run's worker is still
+  working. The drain took that reading itself: it probed the pointer's pid on the reading host and
+  wrote the answer into <code>process_alive</code> — the field <code>classify_pointer</code> reads
+  as the last observer's own account — before classifying the record. The process table answers
+  only on the host that issued the pid while the crew home is shared across login nodes, so a run
+  launched elsewhere whose number this host happened to hold read <em>alive</em>, and one whose end
+  the supervisor had recorded read its exit record as absent, because a live reading outranks it.
+  The drain now classifies through the same host-gated reading the sibling views use, and carries
+  only a reading this host stands behind into the classification.</p>
+
+  <p>The narrowing the drain already had is kept rather than dropped: a stored boolean is not
+  evidence that a delivery on disk can be deferred on. It is now expressed as
+  <code>alive if proven else None</code> against the reading <code>local_liveness</code> returns,
+  which is the same rule the retained-work clause states in the other direction — a death is
+  consumed only when it was proven here or recorded by the run itself.</p>
+
+  <h3>The defect, reproduced before the repair</h3>
+
+  <p>At the base revision <code>68a5b96b</code> the two new drain cases fail on the borrowed life
+  the probe writes. Case A builds a pointer whose <code>launcher_host</code> is another machine and
+  whose pid is a process this host really holds, then reads the drain row: the case asserts
+  <code>row["process_alive"] is not True</code> and the log records <code>assert True is not
+  True</code> — the drain handed a closing session the life of an unrelated local process. Case B
+  builds the same foreign pointer with the supervisor's exit record on disk and asserts the row
+  carries it; the log records <code>assert None is not None</code> at <code>row["exit_record"] is
+  not None</code>, because the probe's live answer is exactly what suppresses the fold
+  (<code>ended_exit</code> is taken only where the process is not alive). The recorded end of a run
+  launched elsewhere was unreadable in the view that decides whether a session may close.</p>
+
+  <figure>
+    <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/drain-view-reads-the-host-gated-liveness/drain-row-reads-the-host-gate.svg"
+         alt="A live pointer in the shared crew home names host A and pid 4242; the process lives only on host A. The drain listed the live pointers and, before the repair, probed 4242 on the reading host and wrote the answer into process_alive. The pointer is now classified through the host-gated reading: launcher_host equal to this host asks the process table and the reading is proven, any other launcher carries the stored answer unproven, and an exit record on disk is the observed end whatever the stored answer says. Three outcomes follow: another host's run whose number is held here read process_alive true and running before, and now reads null and unproven, liveness unknown; another host's run with a recorded exit now reads process gone through the exit record rather than having it outranked by the probe; a run launched here whose pid nothing holds reads process gone, proven, in both arms." />
+    <figcaption>One pointer, three runs. The drain row is what a session reads to decide whether it
+    may close, so a reading taken on the wrong machine is a row a coordinator acts on.</figcaption>
+  </figure>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_a_foreign_pid_never_reads_dead.py</code> plus the drain-test files
+  (<code>tests/test_crew.py</code>, <code>tests/test_crew_drain_by_coordinator.py</code>,
+  <code>tests/test_crew_runs_view.py</code>, <code>tests/test_closure_fence_agreement.py</code>,
+  <code>tests/test_obligations_do_not_mislead.py</code>, <code>tests/test_paused_is_not_blocked.py</code>),
+  one arm per revision, one log each, each ending in <code>EXIT=</code>. Both arms collected 261
+  tests from the same file list, and both logs carry the same test-file digest.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline</td><td><code>68a5b96b</code></td><td><strong>19 failed, 242 passed</strong>, exit 1</td></tr>
+      <tr><td>after</td><td><code>c84429e5</code></td><td><strong>17 failed, 244 passed</strong>, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>Failure ids added by the change: <strong>none</strong>. The baseline's two extra failures are
+  this node's new drain cases — the foreign row and the recorded exit — and both pass at the head.
+  The 17 ids common to both arms are pre-existing in this environment and are outside the drain's
+  liveness reading: they are delivery-path expectations (fragment versus archive delivery roots)
+  plus shadow and promotion scaffolding, and three of them were re-run alone at the base revision
+  and still fail there (<code>gate-pre-existing.log</code>). They are reported rather than repaired
+  here, because their files are outside this node's write scope.</p>
+
+  <p>One failure that the pass-through reading produced was found by the tree's own guard rail
+  rather than by these cases, and that check is worth recording: with the pointer classified
+  untouched, <code>test_still_working_disposition_expires_when_the_run_turns_terminal</code> —
+  pre-existing, in a file outside this node's scope — read a pointer with a stored
+  <code>process_alive: True</code>, no pid and no <code>launcher_host</code> as deferred past its
+  terminal manifest, leaving the run out of <code>unreconciled_runs</code> and letting a session
+  close over a delivery. The narrowed reading restores the base revision's answer there, and the id
+  is green in the head arm. Without it the head arm would have added a failing id, which the fence
+  this node was given forbids.</p>
+
+  <p>The new cases keep the narrowing honest in both directions. Case C — a run launched
+  <em>here</em> whose pid nothing holds — reads <code>process_alive False</code>,
+  <code>liveness_proven True</code>, <code>process gone</code>, and passes in both arms. And case B
+  reads the recorded end rather than an inference: <code>exit_record</code> present,
+  <code>process_alive False</code>, unproven, classification not <code>abandoned</code>.</p>
+
+  <p>Ruff, measured in mirrored trees carrying the repository's own pyproject so the rule set is the
+  declared one: <code>ruff check</code> reports 3 findings on <code>reckon/crew/runs.py</code> at
+  both revisions (the same <code>I001</code> import-block ids, one shifted line number) and 1
+  <code>I001</code> on the test file at both revisions, and the change adds none.
+  <code>ruff format --check</code> is unchanged on both files — <code>runs.py</code> would be
+  reformatted at the base revision and still would be, the test file is already formatted in both
+  arms — so the delta is zero on both declared paths.</p>
+
+  <h3>The negative control</h3>
+
+  <p>The declared mutation is <code>restore the bare local probe in the drain view in a scratch
+  copy; the foreign-launcher drain case must fail</code>, repeated verbatim as the red log's first
+  line. The scratch copy is the head tree with exactly the repair reversed — the reversed diff in
+  the log is the import line and the loop body, nothing else — and the test file is byte-identical
+  to the head arm's, so a failure names the probe and not the fixture. Case A fails as declared,
+  <code>assert True is not True</code> on <code>row["process_alive"] is not True</code>, and case B
+  fails with it at <code>assert None is not None</code>, both by the same restored probe: the
+  borrowed life and the suppressed exit record are one defect. The seven other cases pass in the
+  mutant, case C among them, so the mutation removes the repair's discrimination rather than
+  breaking the fixture. The log ends in <code>EXIT=1</code>.</p>
+
+  <h3>What is not here</h3>
+
+  <p>Three things are recorded rather than touched. <code>dispatch.py</code>'s <code>fold()</code>
+  still writes <code>process_alive</code> from a local probe without a host gate, carried over from
+  the sibling node's landing. <code>ruff</code> reports "All checks passed" for the same bytes from
+  inside the <code>.reckon-worktrees</code> path that it reports 3 <code>I001</code> findings for in
+  a mirrored temporary tree, which is an instrument difference worth a reading of its own before
+  anyone trusts a lint count taken in a worktree. And the 17 common failures above belong to their
+  own repair. No suite-wide run: this change touches one function and one test file, and
+  verification of the merged result belongs to a separately dispatched node.</p>
+
+  <p><strong>Commits.</strong> The drain repair as first written: <code>713dbde8</code>, narrowed to
+  a proven-only reading by <code>c84429e5</code>. The landing record and the figure are the commit
+  that carries this fragment. Gate logs (<code>gate-base.log</code>, <code>gate-head.log</code>,
+  <code>negative-control.log</code>, <code>gate-pre-existing.log</code>) are in the run directory
+  <code>~/.config/reckon/crew/runs/r-20260929T054906743931-drain-view-reads-the-host-gated-liveness/</code>.</p>
+</section>
