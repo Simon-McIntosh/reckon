@@ -25,10 +25,12 @@ which of the two went wrong.
 
 from __future__ import annotations
 
+import json
 import os
 import shlex
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -39,16 +41,21 @@ from reckon.crew import runs
 
 REPO_ROOT = Path(cli.__file__).resolve().parents[1]
 PROJECT = "proj"
-SESSION = "s1"
-RUN_ID = "r-1"
+# Distinctive on purpose: the shared-home check looks for these tokens, so an id
+# short enough to appear inside a stranger's pointer would report a false hit.
+SESSION = "s-follow-lifetime"
+RUN_ID = "r-follow-lifetime-own"
 NODE = "n1"
 
 # The granted lifetime, the bound on reaching an arm, and the bound on ending
-# once armed. The last is generous over the granted lifetime because the
-# follower acts on its deadline at the next pass of its own poll loop.
+# once armed. The last waits on the follower's own end and is deliberately wide:
+# the follower acts on its deadline at the next pass of its own poll loop, and a
+# loaded login node stretches the interpreter's own exit past the deadline it
+# acts on. A bound tight enough to report that load as a failure measures the
+# node rather than the lifetime, which is what a fixed five-second observation did.
 LIFETIME = "3s"
 ARM_WITHIN_SECONDS = 30.0
-END_WITHIN_SECONDS = 5.0
+END_WITHIN_SECONDS = 30.0
 STILL_ARMED_SECONDS = 5.0
 POLL_SECONDS = 0.05
 
@@ -217,10 +224,62 @@ def _real_crew_home() -> Path:
     return Path.home() / ".config" / "reckon" / "crew"
 
 
-def _tree(root: Path) -> set[str]:
-    if not root.is_dir():
-        return set()
-    return {str(path.relative_to(root)) for path in root.rglob("*")}
+# The directories a follower could leave a trace in: its per-session
+# registration under watch/, and a live pointer under live/. The rest of the
+# shared home — runs/, reports/, reviews/ — holds thousands of durable files on
+# a busy workstation, so a walk of the whole home measures someone else's data
+# and crawls on the network filesystem for no reading this test needs.
+TRACE_DIRS = ("watch", "live")
+
+
+def _own_traces(root: Path, *needles: str) -> list[str]:
+    """Files under ``root`` whose name or content carries any of ``needles``.
+
+    A follower pointed at a temporary home must leave the shared home with
+    nothing that names this test. Both a path's own name and its text are read,
+    so a pointer filed under the run id and a registration whose body records
+    the session are each caught. Reading for these tokens rather than comparing
+    the directory against an earlier snapshot is the whole point: the crew home
+    is shared with every other session on the workstation, so a peer filing its
+    own pointer between two readings moves the tree without anything being
+    wrong, and tree equality reported exactly that as a failure.
+    """
+    hits: list[str] = []
+    for name in TRACE_DIRS:
+        directory = root / name
+        if not directory.is_dir():
+            continue
+        for path in directory.rglob("*"):
+            if not path.is_file():
+                continue
+            named = any(needle in path.name for needle in needles)
+            text = "" if named else _read_text(path)
+            if named or any(needle in text for needle in needles):
+                hits.append(str(path))
+    return hits
+
+
+def _read_text(path: Path) -> str:
+    try:
+        return path.read_text(errors="replace")
+    except OSError:
+        return ""
+
+
+def _assert_no_own_traces(root: Path, session: str, run_id: str) -> None:
+    """The shared home must carry nothing naming this test's session or run.
+
+    A file naming *this* session or run can only have come from the follower
+    this test armed, which was pointed at a temporary home precisely so it
+    would not write here. A peer's own pointer names the peer, so it is not a
+    hit — which is the reading tree equality could not make.
+    """
+    hits = _own_traces(root, session, run_id)
+    assert not hits, (
+        "a follower pointed at a temporary home must leave the shared crew home "
+        f"carrying nothing that names this test, but {hits!r} carry "
+        f"{session!r} or {run_id!r}"
+    )
 
 
 def test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on(home) -> None:
@@ -233,7 +292,6 @@ def test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on(home) -> No
     """
     _write_unpromoted_run(home)
     shared = _real_crew_home()
-    before = (_tree(shared / "watch"), _tree(shared / "live"))
 
     process = _arm(home, "--lifetime", LIFETIME)
     try:
@@ -270,10 +328,7 @@ def test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on(home) -> No
         f"the release is what ended it; got {state['not_live_because']!r}"
     )
 
-    assert (_tree(shared / "watch"), _tree(shared / "live")) == before, (
-        "the shared config home must be untouched by a follower pointed at a "
-        "temporary home"
-    )
+    _assert_no_own_traces(shared, SESSION, RUN_ID)
 
 
 def test_without_a_lifetime_the_follower_keeps_running(home) -> None:
@@ -293,3 +348,56 @@ def test_without_a_lifetime_the_follower_keeps_running(home) -> None:
     finally:
         if process.poll() is None:
             _kill(process)
+
+
+def test_a_peer_filing_its_pointer_does_not_condemn_the_follower(
+    home, tmp_path
+) -> None:
+    """Concurrency control: a stranger's pointer in the shared home is not ours.
+
+    The stand-in stands for the shared crew home, and a peer keeps filing its
+    own live pointers into it while this test's follower runs against a
+    temporary home. The check must pass, because none of what the peer wrote
+    names this test's session or run — which is the reading tree equality could
+    not make, and the reason a peer's ordinary write turned the case red.
+    """
+    shared = tmp_path / "shared" / "crew"
+    (shared / "watch").mkdir(parents=True)
+    (shared / "live").mkdir(parents=True)
+    stop = threading.Event()
+    total = 0
+
+    def _peer_files_pointers() -> None:
+        nonlocal total
+        while not stop.is_set():
+            total += 1
+            pointer = shared / "live" / f"r-peer-{total:04d}.json"
+            try:
+                pointer.write_text(
+                    json.dumps({"run_id": f"r-peer-{total:04d}", "session": "s-peer"})
+                )
+            except OSError:
+                return
+            stop.wait(POLL_SECONDS)
+
+    peer = threading.Thread(target=_peer_files_pointers, daemon=True)
+    peer.start()
+    _write_unpromoted_run(home)
+    try:
+        process = _arm(home, "--lifetime", LIFETIME)
+        try:
+            _wait_until_armed(process)
+            _wait_until_ended(process)
+            process.communicate(timeout=ARM_WITHIN_SECONDS)
+        finally:
+            if process.poll() is None:
+                _kill(process)
+    finally:
+        stop.set()
+        peer.join(timeout=ARM_WITHIN_SECONDS)
+
+    assert total > 0, "the control filed no peer pointer, so it shows nothing"
+    _assert_no_own_traces(shared, SESSION, RUN_ID)
+    assert list((shared / "live").glob("r-peer-*.json")), (
+        "the peer's pointers must be present or the check proved nothing"
+    )
