@@ -83,6 +83,37 @@
     "reason": "corrective-run:resume",
     "verdict": "exempt"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "23a116863cf2e66c2c6e52c7a8a46ef2d60ddc00",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_met_wait_is_ready_not_abandoned.py::test_a_successful_terminal_probe_is_ready_to_resume",
+        "tests/test_a_met_wait_is_ready_not_abandoned.py::test_wait_classification_ranges_over_liveness_and_condition_state[False-met-ready]",
+        "tests/test_a_met_wait_is_ready_not_abandoned.py::test_wait_classification_ranges_over_liveness_and_condition_state[True-met-ready]",
+        "tests/test_external_wait.py::test_an_old_wait_surfaces_its_age_without_becoming_blocked"
+      ],
+      "integrated_revision": "23a116863cf2e66c2c6e52c7a8a46ef2d60ddc00",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 23a116863cf2: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "env -C /home/ITER/mcintos/Code/reckon TMPDIR=/tmp PYTHONPATH=/home/ITER/mcintos/Code/reckon /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_resume_sweep_needs_an_observed_death.py tests/test_crew_recover.py tests/test_wait_shapes.py tests/test_external_wait.py tests/test_a_met_wait_is_ready_not_abandoned.py tests/test_crew_wait_stanza_validation.py tests/test_dry_run_predicts_the_launcher.py tests/test_wait_marker_is_not_a_stub.py",
+    "gate_command_source": "option",
+    "integrated_revision": "23a116863cf2e66c2c6e52c7a8a46ef2d60ddc00",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T055030354322-resume-sweep-needs-an-observed-death/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "timed_out": false,
+    "worktree_roots_rewritten": []
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
