@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-title" content="The follow loop holds a half-written record until its newline arrives">
+  <meta name="plan-summary" content="The follow read loop no longer admits a final line without its newline as a whole record. It holds the partial bytes, records no offset past them, and completes the record on a later read, so a record the producer is still writing reaches the pane once and whole. The boundary probe now scans backward in bounded chunks rather than reading the whole stream.">
+  <meta name="plan-evidence-for" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The follow loop holds a half-written record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The follow loop holds a half-written record until its newline arrives</h1>
+
+    <section id="measure">
+      <h2>What the loop now does</h2>
+      <p>A producer appends one JSON record per line to the watch stream, and
+        may still be writing the last one when the follow loop reads it.
+        <code>readline</code> returns the bytes written so far with no trailing
+        newline and no error: admitting that fragment as a whole record
+        delivers the record truncated, parses it through the legacy fallback,
+        and the producer's completion then arrives as a second fragment. Snapping
+        the opening offset to the last newline narrows the window but does not
+        close it — the loop can still open on a record whose newline has not
+        landed.</p>
+      <p>The loop now reads through <code>read_whole_line</code>, which leaves the
+        handle at the line's start when the line has no newline, returns nothing
+        for it, and lets the fuller line arrive on a later read. The record is
+        delivered once and whole, and the recorded stream offset only ever lands
+        on a line boundary. The boundary probe that gives the reader its opening
+        offset (<code>_follow_boundary</code>) reads backward in chunks of at
+        most 64 KiB rather than loading the whole stream to find one newline.</p>
+
+      <section id="gate">
+        <h2>Gate</h2>
+        <table>
+          <thead><tr><th>Check</th><th>Result</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>The new test — a record half-written across a loop read</td>
+              <td>1 passed</td>
+              <td>Arms the real follow loop, writes half a record, lets the loop
+                read, completes the record, asserts it is delivered exactly once
+                with its full content.</td>
+            </tr>
+            <tr>
+              <td>The new test — bounded boundary probe on a &gt;1 MB stream</td>
+              <td>1 passed</td>
+              <td>Reads at most 64 KiB to find the last newline; asserts the
+                probe read a positive but bounded number of bytes and returned
+                the true size.</td>
+            </tr>
+            <tr>
+              <td>Declared negative control — accepting a line without its
+                newline</td>
+              <td>1 failed as required</td>
+              <td><code>gates/negative-control-accept-partial.log</code>, first
+                line the declaration verbatim, ending <code>EXIT=1</code>.</td>
+            </tr>
+            <tr>
+              <td>Head vs base over the follow/ticker/watch/row-policy files and
+                the new file, by failure id</td>
+              <td>zero added ids</td>
+              <td>The two head-only ids reproduce on the base arm under a
+                focused run — pre-existing timing flakes, not regressions (see
+                the manifest's <code>failure_attribution</code>).</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
