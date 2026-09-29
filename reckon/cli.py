@@ -2397,6 +2397,133 @@ def follower_row_path(
     )
 
 
+def _stream_events_upto(
+    stream_path: Path, *, offset: int, boundary: int
+) -> list[dict]:
+    """Read a stream's events from one byte offset up to a fixed boundary.
+
+    The boundary is captured before the read rather than taken from the file
+    afterwards, so a line appended while the read is in progress belongs to the
+    read that follows rather than to this one. That is what makes a transition
+    written between the replay and the read loop arrive exactly once: the replay
+    stops at the boundary, and the loop opens at the same boundary.
+    """
+    from reckon.crew import runs as runs_module
+
+    events: list[dict] = []
+    if boundary <= offset:
+        return events
+    try:
+        stream = Path(stream_path).open(encoding="utf-8")
+    except OSError:
+        return events
+    with stream:
+        stream.seek(offset)
+        while stream.tell() < boundary:
+            line = stream.readline()
+            if not line:
+                break
+            if stream.tell() > boundary:
+                # A line that runs past the boundary is not this read's to
+                # deliver: the reader that follows opens at the boundary and
+                # reads it whole, so it arrives once rather than in halves.
+                break
+            event = runs_module.parse_stream_line(line)
+            if event is not None:
+                events.append(event)
+    return events
+
+
+def _recorded_fleet_times(
+    stream_path: Path, *, boundary: int
+) -> dict[str, tuple[str, str]]:
+    """The state each run was last recorded in, and the time it entered it.
+
+    A row that re-announces a run should carry the clock the run's own record
+    gave it rather than the moment the pane happened to attach, so the time is
+    read from the stream the producer wrote. The last event naming a run wins,
+    because the stream is appended in order, and the read stops at the boundary
+    the replay was given so the answer describes the same span the rows do.
+    """
+    latest: dict[str, tuple[str, str]] = {}
+    for event in _stream_events_upto(stream_path, offset=0, boundary=boundary):
+        if event.get("legacy"):
+            continue
+        run_id = str(event.get("run_id") or "")
+        to_state = event.get("to_state")
+        if not run_id or not to_state:
+            continue
+        latest[run_id] = (str(event.get("observed_at") or ""), str(to_state))
+    return latest
+
+
+def _fleet_replay(
+    path,
+    *,
+    baseline,
+    stream_path: Path,
+    clock,
+    reannounce: bool,
+    resume_from: int,
+    boundary: int,
+) -> list[dict]:
+    """One row per live run, under its own recorded clock and in time order.
+
+    The rows come from two places and neither may deliver a run twice. A run
+    whose record moved between the place this arming resumes from and the
+    boundary the replay read to is news: the transitions in that span are handed
+    to the row path in recorded order, so the policy that holds a noise pair,
+    resolves one silently, or withholds a row until its window closes applies to
+    a gap exactly as it does to a live read. A run with no news of its own in
+    that span is re-announced instead — one row carrying the state the live
+    fleet gives it, stamped with the time its own record entered that state.
+
+    The recorded time is taken only where the stream's last word for the run
+    agrees with the live classification. Where they disagree the live fleet is
+    the authority, because it is the current pointer while the stream is
+    history, so the row keeps the live state and the fleet's own clock rather
+    than a state the live classification contradicts: a row never announces a
+    state the fleet denies.
+
+    The rows are ordered by their own stamp, so a re-arm reads as a timeline and
+    an old transition leads a run that has sat at its state since.
+
+    Only an arming that is re-announcing the fleet marks its rows
+    ``reannounced``: the stored history is the pane's record of what it was
+    handed, so a first arming that draws the fleet records it, while a re-arm
+    that draws the same fleet leaves the history it restores alone rather than
+    doubling it. A gap transition is news and is recorded.
+    """
+    recorded = _recorded_fleet_times(stream_path, boundary=boundary)
+    rows: list[dict] = []
+    announced: set[str] = set()
+    for event in _stream_events_upto(
+        stream_path, offset=resume_from, boundary=boundary
+    ):
+        run_id = str(event.get("run_id") or "")
+        if run_id:
+            announced.add(run_id)
+        rows.append(dict(event))
+    for event in baseline:
+        row = dict(event)
+        run_id = str(row.get("run_id") or "")
+        if run_id and run_id in announced:
+            continue
+        latest = recorded.get(run_id)
+        if latest is not None:
+            stamp, state = latest
+            if stamp and state == str(row.get("to_state") or ""):
+                row["observed_at"] = stamp
+        if reannounce:
+            row["reannounced"] = True
+        rows.append(row)
+    rows.sort(key=_follow_row_stamp)
+    printed: list[dict] = []
+    for row in rows:
+        printed.extend(path.feed(row, now=clock()))
+    return printed
+
+
 def _follow_watch_lines(
     project: str,
     *,
@@ -2424,10 +2551,27 @@ def _follow_watch_lines(
     wave armed a fresh producer while the session's monitor had already exited.
     Waiting for the next producer instead makes one arming cover the session.
 
-    A follower reports state, not lines. On re-attaching it re-derives the
-    fleet and emits only what changed since it last spoke, so a reconnect is
-    quiet when nothing moved and cannot swallow a transition that happened
-    while no producer was up.
+    A follower replays the fleet, and a re-arm's gap is news. Every arming of a
+    fresh image — a first attach and a re-arm alike — draws one row for each
+    live run, stamped with the recorded time that run entered its current state
+    and ordered by it. A reader that re-arms therefore sees the whole fleet with
+    its own clocks rather than a blank pane, and never a burst of rows sharing
+    the moment the arming attached.
+
+    A re-arm did have a place in the stream, and what the stream gained between
+    that place and the arming's own start is delivered as news ahead of the
+    fleet: those transitions go through the row path in recorded order, so the
+    same policy that governs a live read governs them — a noise pair still
+    prints nothing, a held row is still held — and a run that moved while the
+    pane was away appears once, in its new state, at its recorded transition
+    time, rather than being drawn twice. A first arming, having no place in the
+    stream, derives the fleet as it stands. Only an in-place reload, which
+    replaces the process image with the grid still on screen, continues from its
+    recorded offset and delivers just what moved.
+
+    The byte the replay reads to is captured once, before it reads, and the read
+    loop then opens at exactly that byte, so a transition appended in between
+    falls to one side or the other and is delivered once.
 
     ``observed`` names sessions delivered for oversight alongside the owning
     ``session``. They carry no registration: the attachment and its dispatch
@@ -2715,48 +2859,100 @@ def _follow_watch_lines(
             stream_path=stream_path,
             resume_state=resume_state,
         )
-        if mode == "baseline":
-            for event in cursor["baseline"]:
-                for printed in path.feed(event, now=clock()):
-                    yield printed
-        else:
-            # A continuation picks the stream up where the previous arming left
+        if reloading:
+            # An in-place reload replaces the process image with the grid still
+            # on screen, so it picks the stream up where the previous image left
             # it: at the recorded offset for a file that has only advanced, or
             # at the file's own start when it was replaced or truncated — with
-            # the states the pane already showed restored either way, so only
-            # what moved is delivered and nothing is re-announced.
+            # the states the pane already showed restored, so only what moved is
+            # delivered and nothing is re-announced.
             cursor["offset"] = offset
             path.reseed(recorded)
             if first_attach:
                 # Continue each run's chain from what the pane last showed it,
                 # for the runs the checkpoint does not name. The checkpoint is
                 # the primary carrier and is read first; the log is the memory
-                # for a re-arm whose checkpoint is gone, so a run renders
+                # for a reload whose checkpoint is gone, so a run renders
                 # ``abandoned → working`` rather than restarting from a state
                 # the reader never saw. A state the checkpoint already names
                 # keeps the checkpoint's word, so the log cannot overwrite it.
-                # This runs on a reload too: the
-                # replacement image's grid starts empty, so it needs the same
-                # memory a re-arm does, or the first row it draws falls back to
-                # the producer's own ``from_state``.
+                # The replacement image's grid starts empty, so it needs the
+                # same memory a re-arm does, or the first row it draws falls
+                # back to the producer's own ``from_state``.
                 for run_id, state in follow_checkpoint.seed_states(
                     follow_checkpoint.read_history(project, session)
                 ).items():
                     path.remember(run_id, state)
-            # The pane's own line, before the gap's: a restored history or the
-            # format switch, never a run's row and never a baseline re-derived
-            # from the fleet as it stands now. It carries the remembered states
-            # so the renderer can seed its grid from the same map, which is what
-            # keeps a row's left side on the state the pane last showed.
+            # The pane's own line, before the rows': the format switch, never a
+            # run's row. It carries the remembered states so the renderer can
+            # seed its grid from the same map, which is what keeps a row's left
+            # side on the state the pane last showed.
             if first_attach:
                 yield {
-                    "event": (
-                        FOLLOWER_FORMAT_EVENT if reloading else FOLLOWER_RESUME_EVENT
-                    ),
+                    "event": FOLLOWER_FORMAT_EVENT,
                     "project": project,
                     "session": session or "",
                     "reported": dict(path.reported),
                 }
+        else:
+            # Every arming of a fresh image — a first attach and a re-arm alike
+            # — replays the fleet: one row per live run, each stamped with the
+            # recorded time the run entered its current state, in ascending time
+            # order. A re-arm is therefore never blank and never a burst of rows
+            # all stamped with the moment it attached. A re-arm whose pane is a
+            # terminal restores the stored history first, under its frame; the
+            # remembered states travel on that event rather than through the row
+            # path, so the replay below is not suppressed by the very states it
+            # is about to re-announce.
+            #
+            # The boundary is read from the file once, before the replay reads
+            # anything, and the read loop then opens at exactly that byte. A
+            # transition appended in between therefore falls on one side of the
+            # boundary or the other — the replay's list or the loop's read — and
+            # arrives once, where taking the size afterwards would drop it from
+            # both.
+            try:
+                boundary = stream_path.stat().st_size
+            except OSError:
+                boundary = 0
+            if mode != "baseline" and first_attach:
+                # The event restores the pane's stored history for a terminal,
+                # and carries no remembered states: the replay below is about to
+                # draw the whole fleet, and seeding the pane's memory with the
+                # very states it is re-announcing would suppress every row of
+                # it. The rows themselves restore the memory as they are drawn.
+                yield {
+                    "event": FOLLOWER_RESUME_EVENT,
+                    "project": project,
+                    "session": session or "",
+                    "reported": {},
+                }
+            # A first arming has no place in this stream, so it has no gap to
+            # deliver and derives the fleet as it stands: the place the replay
+            # resumes from is the boundary itself. A re-arm did have a place, and
+            # everything the stream gained between it and the boundary is what
+            # the pane missed.
+            resume_from = boundary if mode == "baseline" else offset
+            for printed in _fleet_replay(
+                path,
+                baseline=cursor["baseline"],
+                stream_path=stream_path,
+                clock=clock,
+                reannounce=mode != "baseline",
+                resume_from=resume_from,
+                boundary=boundary,
+            ):
+                yield printed
+            # A re-arm's replay delivered its gap as news up to the boundary, so
+            # the read loop opens there: the gap it already covered is not read
+            # again, which is what stops a run that moved from being drawn twice
+            # — as a replay row and then as a transition. A first arming read
+            # nothing to the boundary — it derives the fleet — so it leaves every
+            # line already in the stream to the read loop, which opens at the
+            # cursor's own offset and delivers them. Opening a first arming at
+            # the boundary would drop the lines it never replayed.
+            if mode != "baseline":
+                cursor["offset"] = boundary
         # Left behind before the first read rather than after the first line:
         # an arming that starts against a quiet stream and then ends has still
         # established its place. Without this the baseline's own arming wrote
@@ -3260,6 +3456,11 @@ def crew_follow(
             # follower's own bookkeeping rather than part of the pane's event,
             # so it is taken off before the event goes on to the reader.
             _seed_ticker_memory(grid, event.pop("reported", None))
+            # A row the arming re-announced rather than drew as news: it is a
+            # fresh line for the pane, but the run's row is already the one the
+            # stored history carries, so recording it again would replay the
+            # same run twice on the next burst.
+            reannounced = bool(event.pop("reannounced", False))
             if event.get("event") == FOLLOWER_END_EVENT:
                 # This one line is about the follower, not the fleet, so it is
                 # printed as it was written rather than rendered as a fleet row.
@@ -3339,7 +3540,7 @@ def crew_follow(
                     session=session,
                 )
                 _echo_follow_line(rendered)
-                if history_caps is not None:
+                if history_caps is not None and not reannounced:
                     # The row's bytes as drawn, and the stamp it carried, so a
                     # later re-arm replays the pane rather than a re-derivation
                     # of it: the clock a reader saw is the clock that returns.

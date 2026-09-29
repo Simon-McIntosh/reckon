@@ -3,14 +3,14 @@
 A follower persists the rows it drew, so a re-arm can restore the pane a reader
 was watching. Two defects made that restore read as news.
 
-The first is the same, every arming. When the follower's checkpoint continues,
-the re-arm emits no gap rows at all, so the restored history was the whole of
-its output — and it was printed unframed, so a consumer that reads the stream
-line by line was handed rows it had already acted on and could not tell them
-from fresh transitions. The fix is that only a terminal is handed the history,
-and there is no scrollback to fill when the reader is a pipe; when a terminal
-is watching, the burst opens under one dim frame line that names it as earlier
-history.
+The first is the same, every arming. A re-arm draws the fleet itself — one row
+per live run, at the recorded time that run entered its current state — and on
+top of that had been printing the stored history unframed, so a consumer that
+reads the stream line by line was handed rows it had already acted on and could
+not tell them from fresh transitions. The fix is that the stored history is
+handed only to a terminal, under one dim frame line that names it as earlier
+history; there is no scrollback to fill when the reader is a pipe, which is
+handed only the fleet rows and the gap transitions.
 
 The second is cross-session and much longer. A stream written by an older
 producer carries rendered text lines rather than transition objects. Such a
@@ -241,17 +241,18 @@ def _count_polls() -> int:
     return polls
 
 
-# ── Case 1: a non-TTY re-arm with nothing new draws nothing ─────────────────
+# ── Case 1: a re-arm draws the fleet, whether or not anything moved ─────────
 
 
-def test_a_pipe_rearm_with_nothing_new_draws_no_rows(home, follow_lines) -> None:
-    """The replay is not for a pipe: a reader with no scrollback gets nothing.
+def test_a_pipe_rearm_with_nothing_new_draws_the_fleet(home, follow_lines) -> None:
+    """A re-arm draws each live run once, even when nothing moved.
 
     The first arming draws the baseline and leaves a place behind. Nothing moves
-    after the stop, so the re-arm continues to the stream's end and has no gap
-    to deliver. Today's code re-prints the stored history here, unframed, so
-    every row the reader already acted on arrives again as a transition. Under
-    the fix a pipe reader is handed none of it.
+    after the stop, so no gap transition is waiting. The re-arm still draws the
+    live run — one row, at the run's own recorded state time — so a reader that
+    re-arms is never handed a blank pane. The run is drawn exactly once: it is
+    not also re-delivered as a transition, and the stored history is not replayed
+    for a pipe.
     """
     _write_pointer(home, RUN_A, "node-a", session=SESSION, phase="working")
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
@@ -266,10 +267,12 @@ def test_a_pipe_rearm_with_nothing_new_draws_no_rows(home, follow_lines) -> None
 
         _run_follow()
 
-    assert _fleet_rows(follow_lines) == [], (
-        f"a non-TTY re-arm with nothing new must draw no rows at all; "
-        f"got {follow_lines!r}"
+    rows = _fleet_rows(follow_lines)
+    assert len(rows) == 1, (
+        f"a re-arm draws its one live run exactly once; got {rows!r}"
     )
+    assert "node-a" in rows[0], rows[0]
+    assert "working" in rows[0], rows[0]
 
 
 # ── Case 2: a non-TTY re-arm delivers exactly the new transitions ───────────

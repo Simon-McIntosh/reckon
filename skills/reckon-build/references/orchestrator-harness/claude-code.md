@@ -175,12 +175,15 @@ stall or a failure included), and `unpromoted` is delivered work awaiting a gate
 They add up to the runs in flight, which is why none of them is called `live` —
 a pointer count in that position is read as work in progress and is not.
 
-The first arming for a session opens with one line per live run, so a reader
-attaching for the first time is never looking at a blank pane. A re-arm
-continues from where the previous arming stopped and prints only what moved
-since, so a re-arm with nothing new is silent — the runs it already showed are
-not replayed. To read the fleet as it stands at any moment, ask for it directly
-with `crew(view="live")` rather than re-arming:
+The first arming for a session and every re-arm alike open with one line per
+live run, each stamped with the recorded time that run entered its current state
+and ordered by it. A reader attaching for the first time is never looking at a
+blank pane, and a reader re-arming after a Monitor's end is never blank either,
+nor faced with a burst of rows sharing the moment it attached — each row carries
+its own run's clock. An in-place reload is the one case that does not replay:
+it replaces the process image with the grid still on screen and prints only what moved.
+To read the fleet as it stands at any moment, ask for it directly with
+`crew(view="live")`:
 
 ```
 12:30:11  <model>/<effort>   hdg-cache-replay    → dispatched        2 working · 0 blocked · 0 unpromoted
