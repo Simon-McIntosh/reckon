@@ -97,11 +97,16 @@ def test_declared_budget_converts_to_seconds():
 
 
 def test_a_collection_failure_is_recorded_and_holds_none_and_light(tmp_path):
+    # BASE_COMMAND carries -q, so this is the quiet form the reckon suite
+    # declares. A syntax error exits 2 with pytest's own collection-error line
+    # and no summary token at all.
     project_root = _make_project(tmp_path, tests_source="def test_broken(:\n")
     run_record = standing_suite.run(
         project_root, _declaration(), tmp_path / "collection.log"
     )
     assert run_record["collection_failed"] is True
+    assert run_record["collected"] == 0
+    assert run_record["exit_status"] == 2
     standing_suite.record(project_root, PROJECT, run_record)
 
     assert standing_suite.hold_reason(project_root, "none", PROJECT) is not None
@@ -111,6 +116,52 @@ def test_a_collection_failure_is_recorded_and_holds_none_and_light(tmp_path):
     reason = standing_suite.hold_reason(project_root, "none", PROJECT)
     assert run_record["revision"] in reason
     assert run_record["observed_at"] in reason
+
+
+def test_a_suite_that_collects_and_fails_is_not_a_collection_failure(tmp_path):
+    """A red suite that ran is an ordinary failing suite, not a broken one.
+
+    Under ``-q`` pytest prints no collection line, so a run that collected,
+    ran and failed leaves only its summary behind. Reading that as a collection
+    failure would hold the lighter tiers against a suite that is merely red.
+    """
+    project_root = _make_project(
+        tmp_path, tests_source="def test_fails():\n    assert 1 == 2\n"
+    )
+    run_record = standing_suite.run(
+        project_root, _declaration(), tmp_path / "failing.log"
+    )
+
+    assert run_record["collected"] == 1
+    assert run_record["failed"] == 1
+    assert run_record["collection_failed"] is False
+    assert run_record["exit_status"] == 1
+
+    standing_suite.record(project_root, PROJECT, run_record)
+    assert standing_suite.hold_reason(project_root, "none", PROJECT) is None
+    assert standing_suite.hold_reason(project_root, "light", PROJECT) is None
+
+
+def test_an_unresolvable_root_raises_rather_than_reading_as_no_hold(tmp_path):
+    """A root that cannot be named is a question that cannot be answered.
+
+    The record is a collection failure — the exact case the hold exists for —
+    so returning ``None`` because the mount table does not know the project
+    would let a broken suite read exactly like a passing one. Naming the
+    project still answers the question, which is the escape hatch.
+    """
+    project_root = _make_project(tmp_path, tests_source="def test_broken(:\n")
+    standing_suite.record(
+        project_root,
+        PROJECT,
+        standing_suite.run(project_root, _declaration(), tmp_path / "unmounted.log"),
+    )
+
+    with pytest.raises(standing_suite.StandingSuiteError) as excinfo:
+        standing_suite.hold_reason(project_root, "none")
+    assert str(project_root) in str(excinfo.value)
+
+    assert standing_suite.hold_reason(project_root, "none", PROJECT) is not None
 
 
 def test_a_later_passing_run_lifts_the_hold(tmp_path):

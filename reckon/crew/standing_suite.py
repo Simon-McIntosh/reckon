@@ -18,6 +18,16 @@ The FAILED and ERROR ids are read with the parser in
 :mod:`reckon.crew.review`, and the result-count tokens with the parser in
 :mod:`reckon.crew.promotion`, so a log is read the one way this repository
 already reads a gate log.
+
+**A collection failure is decided from evidence, never from a non-zero exit.**
+pytest exits 1 for a suite that collected, ran and failed, and that is an
+ordinary failing suite a writer knows what to do with — not a suite to hold.
+Only three things mark a collection failure: pytest's own collection-error
+line, an exit status of 5 ("no tests collected"), or a non-zero status that is
+neither 0 nor 1 and a summary showing no test ran. The collected count is read
+from pytest's collection line when it prints one and otherwise summed from the
+final summary counts, because under ``-q`` — the form this project's own suite
+declares — pytest prints no collection line at all.
 """
 
 from __future__ import annotations
@@ -43,6 +53,11 @@ from reckon.flight import SuiteDeclaration
 # only worth its cost beside a check that sees the whole project.
 HELD_TIERS = frozenset({"none", "light"})
 
+
+class StandingSuiteError(RuntimeError):
+    """A standing-suite question the inputs given cannot answer."""
+
+
 # The state subdirectory, under a project's docs state tree, that holds one
 # file per suite run and one file per waiver.
 SUITE_RUNS_DIRNAME = "suite-runs"
@@ -53,17 +68,41 @@ RUN_KIND = "run"
 WAIVER_KIND = "waiver"
 
 # The plain pytest collection line ("collected 12 items") and the pytest-xdist
-# form (`[12 items]`), each carrying the count the runner collected.
+# form (`[12 items]`). Under `-q` — the form this repository's own suite
+# declares — pytest prints neither, so the summary counts below are what a
+# quiet run leaves behind.
 _COLLECTED_RE = re.compile(r"collected\s+(\d+)\s+items?")
 _XDIST_ITEMS_RE = re.compile(r"\[\s*(\d+)\s+items?\s*\]")
+
+# Positive evidence that collection itself broke, as opposed to a test that ran
+# and failed: pytest's own "N errors during collection" line, which it prints
+# inside an "Interrupted:" banner, and the per-file "ERROR collecting" line
+# other runners emit.
+_COLLECTION_ERROR_RE = re.compile(r"errors?\s+during collection|ERROR collecting")
+
+# pytest's exit status for a run that collected nothing. Exit 1 is deliberately
+# NOT here: pytest documents it as "tests were collected and run but some
+# failed", so it is evidence the test phase was reached.
+_NOTHING_COLLECTED_EXIT = 5
 
 # One result-count token ("518 passed") split into its number and its word, so
 # a token the runner-summary parser matched can be attributed to its category.
 _RUNNER_TOKEN_RE = re.compile(r"(\d+)\s+(\w+)")
 
-# The runner words that name each count this record carries.
-_FAILED_WORDS = {"failed"}
-_ERRORED_WORDS = {"error", "errors"}
+# The runner words that name each count, mapped to the field carrying it. Every
+# outcome pytest summarises is evidence the runner reached the test phase, so
+# the fields carried here are also the terms of the derived collected count.
+# Both "error" and "errors" name the same field, since a one-error run is
+# summarised in the singular.
+_RESULT_WORDS = {
+    "passed": "passed",
+    "failed": "failed",
+    "error": "errored",
+    "errors": "errored",
+    "skipped": "skipped",
+    "xfailed": "xfailed",
+    "xpassed": "xpassed",
+}
 
 
 def suite_runs_dir(project_root: str | Path, project: str) -> Path:
@@ -123,26 +162,35 @@ def _collected(log_text: str) -> int | None:
 
 
 def _result_counts(log_text: str) -> dict[str, int | None]:
-    """The passed, failed and errored counts a runner summary reports.
+    """The counts a runner summary reports, one field per outcome.
 
     The tokens are matched by the runner-summary parser this repository already
     uses for a gate log; each matched token is then split into its number and
-    its word and attributed to a count. The last occurrence of a word wins, so
+    its word and attributed to a field. The last occurrence of a word wins, so
     a log that quotes an earlier summary does not shadow the final one.
     """
-    counts: dict[str, int | None] = {"passed": None, "failed": None, "errored": None}
+    counts: dict[str, int | None] = dict.fromkeys(_RESULT_WORDS.values())
     for token in _RUNNER_SUMMARY.findall(log_text):
         match = _RUNNER_TOKEN_RE.fullmatch(token.strip())
         if match is None:
             continue
         number, word = int(match.group(1)), match.group(2).lower()
-        if word == "passed":
-            counts["passed"] = number
-        elif word in _FAILED_WORDS:
-            counts["failed"] = number
-        elif word in _ERRORED_WORDS:
-            counts["errored"] = number
+        field = _RESULT_WORDS.get(word)
+        if field is not None:
+            counts[field] = number
     return counts
+
+
+def _ran_count(counts: Mapping[str, int | None]) -> int | None:
+    """How many items reached the test phase, summed from the summary.
+
+    passed + failed + errors + skipped + xfailed + xpassed, which is the count
+    a quiet run leaves behind when pytest prints no collection line at all.
+    ``None`` when the log carried none of those words, so "no summary yet" stays
+    distinguishable from a summary reporting nothing.
+    """
+    reported = [value for value in counts.values() if value is not None]
+    return sum(reported) if reported else None
 
 
 def run(
@@ -237,21 +285,51 @@ def _build_record(
 def _build_counts(log_text: str, exit_status: int | None) -> dict[str, Any]:
     """The counts and flags one log and exit status support.
 
-    A run failed to collect when it exited non-zero having collected nothing:
-    the runner stopped before it ran a test. A run that collected items and
-    then failed is an ordinary failing suite, not a collection failure.
+    A run failed to collect when there is evidence that collection itself
+    broke — pytest's own collection-error line, or an exit status that asserts
+    nothing ran. It is never decided from a non-zero exit alone: pytest exits 1
+    for a suite that collected, ran and failed, and recording that as a
+    collection failure would hold the lighter tiers against a suite that is
+    merely red.
+
+    The collected count is read from pytest's own collection line when it
+    prints one, and otherwise derived from the final summary counts, because
+    under ``-q`` — the form this project's own suite declares — pytest prints
+    no collection line at all. A run with no evidence of collection records
+    zero, which is the honest count rather than an absent one.
     """
-    collected = _collected(log_text)
     results = _result_counts(log_text)
-    failure_ids = sorted(_pytest_failure_ids(log_text))
-    collection_failed = exit_status not in (None, 0) and (collected in (None, 0))
+    collected_line = _collected(log_text)
+    ran = _ran_count(results)
+
+    if (
+        _COLLECTION_ERROR_RE.search(log_text) is not None
+        or exit_status == _NOTHING_COLLECTED_EXIT
+    ):
+        collection_failed = True
+    elif exit_status in (None, 0, 1):
+        # 0 is a clean run and 1 is pytest's "tests ran and some failed"; both
+        # are evidence the test phase was reached.
+        collection_failed = False
+    else:
+        # Any other status means the runner stopped before finishing. It is a
+        # collection failure only when the summary also shows no test ran.
+        collection_failed = ran is None
+
+    if collected_line is not None:
+        collected = collected_line
+    elif collection_failed:
+        collected = 0
+    else:
+        collected = ran
+
     return {
         "collected": collected,
         "passed": results["passed"],
         "failed": results["failed"],
         "errored": results["errored"],
         "collection_failed": collection_failed,
-        "failure_ids": failure_ids,
+        "failure_ids": sorted(_pytest_failure_ids(log_text)),
     }
 
 
@@ -334,13 +412,22 @@ def hold_reason(
     is a waiver all return ``None``. The sentence names the revision, when the
     run was observed, and which of the two failures it recorded, so a reader
     sees what must be answered rather than only that something is holding.
+
+    When no project name is passed the root is resolved against the mount
+    table. An unresolvable root raises rather than returning ``None``: a
+    directory whose project cannot be named is a directory whose records cannot
+    be read, and answering "no hold" there would let a suite that failed to
+    collect read exactly like a suite that passed.
     """
     if tier not in HELD_TIERS:
         return None
     if project is None:
         project = _project_for_root(project_root)
-    if project is None:
-        return None
+        if project is None:
+            raise StandingSuiteError(
+                f"no mounted project resolves to {project_root!s}; pass the "
+                "project name so a failing suite cannot read as no hold"
+            )
     latest = _latest_record(project_root, project)
     if latest is None or latest.get("kind") == WAIVER_KIND:
         return None
