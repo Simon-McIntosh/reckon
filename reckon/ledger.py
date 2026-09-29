@@ -42,7 +42,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Mapping, Sequence
 
 # Reached through the module rather than by importing its names: a reload
 # rebinds the store's classes in place, and a captured exception class would
@@ -779,6 +779,45 @@ def _run_store_location() -> str:
     return str(run_store.store_path())
 
 
+def _keep_run_files_identical(
+    project: str, rows: Sequence[Any], root: str | Path | None
+) -> None:
+    """Rewrite a per-run file so it equals the aggregate row it copies.
+
+    A completed run may be recorded in both the aggregate run list and its own
+    file under ``runs/``, and :func:`load` refuses the whole project when the
+    two serialisations disagree. A write that edited an aggregate row and left
+    the file behind would therefore hand the caller a project its own reader
+    cannot read, so every written row that already owns a file is re-encoded by
+    :func:`serialize_run` here, keeping the two copies byte-identical.
+
+    A row with no file is left alone: writing one is the layout move
+    :func:`_split_project_runs` performs explicitly and commits, not a side
+    effect an unrelated write should carry. The file already agreeing with the
+    row is also left alone, so a write that changes no run still touches no run
+    file.
+    """
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        run_id = row.get("run_id")
+        if not run_id or not _SAFE_ID.fullmatch(str(run_id)):
+            continue
+        target = run_path(project, str(run_id), root)
+        encoded = serialize_run(row)
+        try:
+            if not (target.exists() or target.is_symlink()):
+                continue
+            if target.read_text(encoding="utf-8") == encoded:
+                continue
+            target.write_text(encoded, encoding="utf-8")
+        except OSError as exc:
+            raise LedgerError(
+                f"cannot keep run {run_id!r} readable for {project!r}: "
+                f"{target} could not be made identical to its ledger row: {exc}"
+            ) from exc
+
+
 def write(
     project: str,
     data: Mapping[str, Any],
@@ -888,6 +927,7 @@ def write(
             f"ledger for {project!r} moved from version {exc.expected} to "
             f"{exc.current} while this write was being prepared; re-read and retry"
         ) from exc
+    _keep_run_files_identical(project, payload["runs"], root)
     if commit and obstruction is None:
         _commit_roster_write(
             project, "chore(roster): retire " + ", ".join(dropped), path
