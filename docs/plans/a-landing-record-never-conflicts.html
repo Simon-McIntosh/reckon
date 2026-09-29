@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-landing-record-never-conflicts">
   <meta name="plan-title" content="A Landing Record Never Conflicts">
   <meta name="plan-summary" content="Nodes share a plan file and a cumulative evidence record, so 38% of documentation merges conflict; each node writes its own record fragment instead.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 <meta name="plan-commits" content="a69f554f,5bb66c48,41bc0eea,380dcd14,cf9160ff,32d932b2,53ceb356,cc44c453,65f5a378,3157768e,8602efcf,16ca61e7,d85fba28,6cdc5b8d,65c03d26,18719f5d,d41e0231">
 <meta name="plan-artifacts" content="reckon/evidence.py,tests/test_evidence_record_composition.py,reckon/serve.py,reckon/doccheck.py,tests/test_readers_compose_the_record.py,reckon/mcp.py,tests/test_read_plan_composes_the_record.py,reckon/crew/promotion.py,tests/test_promotion_writes_the_landing_line.py">
-<meta name="plan-impl" content="0.98">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -259,10 +259,11 @@
     <pre class="r-fu-prompt">/reckon-build a-landing-record-never-conflicts §2</pre>
     <p class="r-fu-outcome">fragment-scope-for-landing-roles-only merged at 7f4f7758 with review 97. Dispatch grants the fragment and figure paths only to roles that land work in the tree, so review and read-only investigate roles receive neither. The two role-scope tests that failed at main now pass. The full suite at the merged tree removes three failing ids and adds none.</p>
     </article>
-<article class="r-fu" data-id="f-alrnc-003" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-29T06:55:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alrnc-003" data-status="resolved" data-written-by="s25-coord" data-written-at="2026-09-29T06:55:00Z" data-recommends-skill="" data-resolved-at="2026-09-29T08:25:02+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Compose the landing contract from the granted paths</h4>
     <div class="r-fu-body"><p>The review of the role-scope fix found the last mismatch. The worker prompt chooses the plan landing contract by worktree writability alone, near <code>reckon/crew/dispatch.py:4577</code>. So a writable test-role node, whose fence no longer carries the fragment path, is still told by <code>PLAN_LANDING_CONTRACT</code> to write <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html</code> and the figure directory. The prompt should state the landing contract only when the node's write paths hold the fragment path, and otherwise say that its landing line stays on its run record.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-record-never-conflicts §2</pre>
+    <p class="r-fu-outcome">done — no followup. landing-contract-follows-the-grant merged at 5064a3e5 with review 99 and no findings. A worker is told the plan landing contract only when its fence holds the fragment path, and otherwise is told its landing line stays on its run record. The full suite at the merged tree adds no failing test. With this, every section is delivered. Nodes write their own fragments, which a measure showed merging with zero conflicts against one conflicting path before; records are composed at read time; the default scope reaches landing roles only; and each prompt matches its fence.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -372,7 +373,7 @@
     <div class="r-comment-body"><p>Independent review of run r-20260929T053221615781-fragment-scope-for-landing-roles-only (base 29af302f, head 6b32f1b3, 3 commits, 210 lines added and 7 deleted across 4 paths): the default fragment and figure grant now reads the role predicate as well as sandbox writability, so a verifier role's write scope carries neither path (goal_fidelity 19, evidence 19, scope_discipline 20, durability 20, fit 19, total 97); one finding — the landing contract is still composed on worktree writability alone at reckon/crew/dispatch.py:4577, so the writable-sandbox verifier whose fragment this change withholds is still told by PLAN_LANDING_CONTRACT to write docs/evidence/fragments/&lt;plan&gt;/&lt;node-id&gt;.html</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260929T053221615781-fragment-scope-for-landing-roles-only" data-who="reckon-build" data-when="2026-09-29T06:08:19.310Z">
-    <div class="r-comment-body"><p>fragment-scope-for-landing-roles-only — the default fragment and figure grants now reach only roles that land work in the tree; a verifier role&#x27;s write scope carries neither</p></div>
+    <div class="r-comment-body"><p>fragment-scope-for-landing-roles-only — the default fragment and figure grants now reach only roles that land work in the tree; a verifier role's write scope carries neither</p></div>
 </div>
 </section>
 </main>
