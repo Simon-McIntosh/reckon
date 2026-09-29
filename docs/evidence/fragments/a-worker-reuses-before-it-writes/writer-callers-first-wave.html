@@ -16,8 +16,10 @@
     <h2 id="landing">First wave of writers and decoders onto the shared helpers</h2>
     <p>Node <code>writer-callers-first-wave</code> extended the shared atomic JSON
       writer with the parameters its callers needed and moved the first disjoint
-      wave of writers and two numeric decoders onto it. Commit
-      <code>fbc29bca</code> on a detached worktree, base <code>a7895e72</code>.</p>
+      wave of writers and two numeric decoders onto it. Commits
+      <code>fbc29bca</code> (the migration) and <code>d6a72a6e</code> (an
+      explicit write mode made exact past the umask) on a detached worktree,
+      base <code>a7895e72</code>.</p>
 
     <figure>
       <img src="/reckon/figures/a-worker-reuses-before-it-writes/writer-callers-first-wave/writer-callers.png"
@@ -30,16 +32,20 @@
     <h2 id="writer">The shared writer's new parameters</h2>
     <p><code>reckon._store.write_json_atomically</code> gained keyword parameters,
       each defaulting to its previous behaviour: <code>indent</code>,
-      <code>sort_keys</code>, a creation <code>mode</code> applied to the
-      temporary before the rename, <code>fsync_directory</code> to fsync the
+      <code>sort_keys</code>, a <code>mode</code> applied to the temporary
+      before the rename, <code>fsync_directory</code> to fsync the
       parent directory after the rename, and <code>create_parents</code> so a
       caller that must not resurrect a removed directory can refuse. No second
       writer was added. The temporary sibling is now opened directly
       (<code>O_CREAT|O_EXCL</code> with a random name and a retry loop) rather
-      than through <code>NamedTemporaryFile</code>, so the creation mode is the
-      caller's and a plain <code>Path.write_text</code> caller (mode
-      <code>None</code>, i.e. the umask-applied process default) is reproduced
-      rather than silently narrowed to <code>0o600</code>.</p>
+      than through <code>NamedTemporaryFile</code>. An explicit
+      <code>mode</code> is then set with <code>os.chmod</code> on the temporary
+      before the rename, so it lands exactly under any umask — the open's own
+      mode is filtered by the umask, and a caller asking for <code>0o600</code>
+      would otherwise land <code>0o400</code> under a umask such as
+      <code>0o277</code>. A plain <code>Path.write_text</code> caller (mode
+      <code>None</code>) still takes the umask-applied process default, so it is
+      reproduced rather than silently narrowed to <code>0o600</code>.</p>
 
     <h2 id="migrated">Callers moved onto it</h2>
     <table>
@@ -69,8 +75,8 @@
     </table>
     <p>Each caller keeps its serialisation, its file mode, its fsync behaviour
       and its locking. <code>_write_private_json</code> keeps its owner-only
-      ceiling: the mode is applied to the temporary before the rename, so the
-      destination is never the wider inode. The two private numeric decoders
+      ceiling: the mode is set on the temporary before the rename (and made
+      exact with a chmod), so the destination is never the wider inode. The two private numeric decoders
       <code>_backends._number</code> and
       <code>crew.carryover_census._measured</code> were deleted; their call sites
       now call <code>reckon._observations.optional_number</code>, with each
@@ -101,9 +107,9 @@
       </thead>
       <tbody>
         <tr><td>base (armed)</td><td><code>a7895e72</code></td>
-            <td>23 failed, 260 passed, 1 skipped</td></tr>
-        <tr><td>head</td><td><code>fbc29bca</code></td>
-            <td>11 failed, 272 passed, 1 skipped</td></tr>
+            <td>23 failed, 261 passed, 1 skipped</td></tr>
+        <tr><td>head</td><td><code>d6a72a6e</code></td>
+            <td>11 failed, 273 passed, 1 skipped</td></tr>
       </tbody>
     </table>
     <p>Delta <strong>0 added, 12 resolved</strong>. The twelve resolved are the
