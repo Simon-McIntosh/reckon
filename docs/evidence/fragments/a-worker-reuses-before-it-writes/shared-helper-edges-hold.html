@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-title" content="Two edge defects in the shared helpers' callers">
+  <meta name="plan-summary" content="The atomic JSON writer's failed chmod now removes the sibling temporary it created, and the watch-stream and rollout callers read a stamp's zone from the parsed result's tzinfo so an offset carrying seconds is no longer mistaken for a zoneless wall clock. Both are fixed by test against the pre-migration base outputs.">
+  <meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-verdict" content="qualified">
+  <title>Two edge defects in the shared helpers' callers &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Two edge defects in the shared helpers' callers &mdash; evidence</h1>
+  <p>Two behaviours that review of the first migration wave found broken are repaired: the atomic JSON writer leaked its sibling temporary when the chmod applying a requested mode raised, and the watch-stream and rollout callers decided whether a stamp names a zone from the text's shape, so an offset carrying seconds was read as naming no zone. Both fixes are asserted against the pre-migration base outputs by <code>tests/test_shared_helper_edges.py</code>.</p>
+
+  <figure>
+    <img src="/reckon/figures/a-worker-reuses-before-it-writes/shared-helper-edges-hold/edges.svg" alt="Panel A is the writer's create-chmod-render-rename sequence, with the chmod failure branch shown before the fix leaving a sibling temporary and after the fix unlinking it. Panel B shows the seconds-offset stamp read as zoneless by the text-shape test and as zoned by the parsed-tzinfo test.">
+    <figcaption>The two edges. The writer's cleanup gap sits on the failure branch between creation and the caller's own <code>finally</code>; the zone test's gap is reading the text's tail instead of the parsed instant's <code>tzinfo</code>.</figcaption>
+  </figure>
+
+  <section id="defects">
+    <h2>The defects and their repairs</h2>
+    <p><strong>The leaked temporary.</strong> <code>_open_sibling_temporary</code> creates a unique sibling with <code>os.open</code>, then applies the caller's exact mode with <code>os.chmod</code>. When the chmod raises, the descriptor is closed and the exception propagates, but the file the open just created stays on disk. The caller's own <code>finally</code> cannot reach it: it unlinks only a <em>returned</em> temporary, and the assignment never completed. Reproduced at the base revision before the repair by patching <code>os.chmod</code> to raise, leaving <code>.dest.json.&lt;pid&gt;.&lt;hex&gt;.tmp</code> beside an untouched destination. The chmod-failure branch now unlinks the candidate before re-raising, so a failure after the temporary is created removes it.</p>
+    <p><strong>The seconds offset read as zoneless.</strong> Both callers tested the text with <code>_ZONE_DESIGNATOR = re.compile(r"(?:[Zz]|[+-]\d{2}:?\d{2})$")</code>, which matches an offset ending in minutes but not one carrying seconds. For <code>2026-09-29T01:02:03+00:00:30</code> the base <code>c786e44a</code> returned <code>("2026-09-29T01:01:33+00:00", "utc")</code> from <code>query._normalize_stamp</code> and an aware <code>2026-09-29T01:01:33+00:00</code> from <code>rollout._parse_timestamp</code>; the migrated callers returned <code>(None, "unknown")</code> and a naive <code>2026-09-29 01:01:33</code>. The zone is now read from the parsed result's <code>tzinfo</code> through <code>reckon/_timestamps.py:parse_iso</code>, a shared helper beside <code>parse_utc</code> that keeps a zoneless string naive rather than pinning it to UTC. Both outputs again match the base: the watch-stream caller reports the UTC instant and <code>"utc"</code>, the rollout caller returns the aware instant.</p>
+  </section>
+
+  <section id="evidence">
+    <h2>Evidence arms</h2>
+    <p><strong>Base arm</strong> at <code>cea6da07</code> in a scratch tree at <code>/tmp/edge-base-rl6jcF</code>, the fact gate run against the base code with the new test file present: <code>3 failed, 186 passed</code>, exit 1 (<code>logs/baseline-base-4files.log</code>). The three failures are exactly this node's new cases &mdash; <code>test_chmod_failure_leaves_no_temporary_beside_the_destination</code>, <code>test_query_reads_a_seconds_offset_as_a_zone</code>, <code>test_rollout_reads_a_seconds_offset_as_a_zone</code> &mdash; so each defect reproduces at the base and the gate is armed against it. The log's first line names the revision, the scratch tree, the served <code>module.__file__</code> (the scratch <code>reckon/crew/query.py</code>) and the command.</p>
+    <p><strong>Head arm</strong> at the committed head, the same four test files run in the worktree with <code>PYTHONPATH</code> pinned to it: <code>189 passed</code>, exit 0 (<code>logs/after-head-4files.log</code>). The log's first line names the revision, the tree, the command and the served <code>module.__file__</code>; the revision it prints is this record's head commit, <code>git rev-parse HEAD</code>.</p>
+    <p><strong>Negative control.</strong> The declared mutation &mdash; remove the temporary cleanup on the chmod failure path &mdash; is applied to <code>reckon/_store.py</code> and the file re-run: <code>1 failed, 2 passed</code>, exit 1 (<code>logs/negative-control-chmod.log</code>, whose first line repeats the declared string verbatim; the failing id is the chmod case). The fix was then restored and the worktree confirmed clean against the committed head.</p>
+  </section>
+
+  <section id="scope">
+    <h2>Scope note</h2>
+    <p>The fix requires a naive-preserving parse reachable by both callers. It cannot live in <code>reckon/crew/query.py</code> or <code>reckon/crew/rollout.py</code>: <code>tests/test_timestamp_callers_batch_a.py:test_no_caller_parses_iso_strings_itself</code> asserts that no migrated crew module calls <code>datetime.fromisoformat</code>, and <code>parse_utc</code> normalises a zoneless string to UTC, discarding the very distinction the zone test needs. The helper therefore lands in <code>reckon/_timestamps.py</code> &mdash; the home the batch-a review names ("one shared helper belongs beside <code>parse_utc</code>") &mdash; which is outside this node's declared write paths &mdash; since authorised by the coordinator and now inside the fence. <code>parse_iso</code> is the zone-preserving view of the one parser: it names whatever zone the text states and leaves a zoneless string naive, while <code>parse_utc</code> is the normalising view of the same parser, pinning a zoneless string to UTC for callers that need one instant.</p>
+  </section>
+
+  <section id="verification">
+    <h2>Why this is the fix, not a re-guard</h2>
+    <p>The recorded behaviour is the base's, not a new one: the seconds-offset outputs above are the values <code>c786e44a</code> produced, transcribed from the caller doors already exposed. The repaired writer's failure branch is exercised by making the chmod actually raise, so the refusal is shown rather than inferred from a green suite.</p>
+  </section>
+ </main>
+</body>
+</html>

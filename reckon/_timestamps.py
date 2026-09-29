@@ -59,15 +59,32 @@ def _from_epoch(value: float) -> datetime | None:
         return None
 
 
-def _from_iso8601(text: str) -> datetime | None:
-    candidate = text.strip()
+def parse_iso(value: object) -> datetime | None:
+    """Parse an ISO-8601 string keeping the zone it carries, or ``None``.
+
+    Unlike :func:`parse_utc`, a string that names no zone yields a *naive*
+    datetime rather than being read as UTC, so a caller can tell a stamp that
+    states its zone from one that does not by reading the result's ``tzinfo``
+    instead of inspecting the text. A ``Z`` or ``z`` suffix is read as a zero
+    offset and left aware. A value of any other type, and a string that is not
+    a valid ISO-8601 timestamp, is ``None``.
+    """
+    if not isinstance(value, str):
+        return None
+    candidate = value.strip()
     if not candidate:
         return None
     if candidate[-1] in ("Z", "z"):
         candidate = candidate[:-1] + "+00:00"
     try:
-        parsed = datetime.fromisoformat(candidate)
+        return datetime.fromisoformat(candidate)
     except ValueError:
+        return None
+
+
+def _from_iso8601(text: str) -> datetime | None:
+    parsed = parse_iso(text)
+    if parsed is None:
         return None
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=UTC)
