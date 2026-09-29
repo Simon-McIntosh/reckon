@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="124">
+<meta name="plan-version" content="125">
 </head>
 <body>
   <main class="plan-doc">
@@ -1394,6 +1394,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260929T145500577980-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5" data-who="reckon-build" data-when="2026-09-29T15:17:27.138Z">
     <div class="r-comment-body"><p>The baseline arm now asks completion the way the head arm does — `_baseline_suite_failure_ids` returns None for a `baseline_suite` that omits `completed` or carries null, so an unreadable baseline decides no control, and the gate refuses when neither arm is readable instead of admitting against a comparison that was never made (head arm 21 passed EXIT=0).</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260929T151804927069-review-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5" data-who="reckon-build" data-when="2026-09-29T16:14:31.154Z">
+    <div class="r-comment-body"><p>review of run r-20260929T145500577980-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5 (base f459724bba2c398fcf1f8a7a058cdbc5c98c5687, head 09d4deea12b86a52a2e454053a0ffce8a8685917) stored as a parsed record at the revision-keyed path and byte-identically at the legacy path beside it (12843 bytes each, sha256 c7b9219b417cc4285a6a825dfbe753cdb1d203969ea4e274f444e994a14af09e) — scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 20 (total 96, no dimension absent, every item verdict present), added_failure_count 0 with an empty id list derived by the project&#x27;s own set-difference instrument from the reviewed run&#x27;s own two arm logs (logs/negative_control.log as the base arm, logs/head_arm.log as the after arm), and two findings (reckon/crew/promotion.py:5074 the baseline reader lacks the shape validation its head-arm twin applies, so a string failure_ids is read as its characters and admits a control the same manifest in list form refuses and a non-iterable raises TypeError out of the gate; tests/test_control_gate_checks_facts.py:90 the fixture passes a baseline with no `completed` key, so the case now refuses through the no-readable-comparison-arm branch instead of the baseline comparison its name describes)</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
