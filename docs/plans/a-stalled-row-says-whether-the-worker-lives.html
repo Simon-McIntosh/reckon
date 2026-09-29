@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-29">
-  <meta name="plan-version" content="53">
+  <meta name="plan-version" content="54">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -498,6 +498,11 @@
     <div class="r-fu-body"><p>From the review of derive-the-row-phase-from-the-stream (total 90). §7 derives the classifier's and live view's phase from the run's newest stream, but <code>reckon/crew/directory.py:78</code> still copies the pointer's stored phase into the directory row, which both the CLI and the MCP directory view render. So one run's <code>phase</code> means the derived phase in one view and the launcher's label in another. Route the directory row through the same derivation, and add a case where a run with an assistant record reads <code>working</code> in the directory. The same review notes that the mtime assertion at <code>tests/test_working_reads_working_at_once.py:273</code> guards nothing, because both files are written by the case itself. Replace it or drop it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
     <p class="r-fu-outcome">directory-row-reads-the-derived-phase merged at 8eec039f and promoted (review total 97, zero added failures). The directory row now carries classify_pointer's derived phase, with the stored label as fallback. The mtime assertion that could not fail is replaced by one naming the stream the derivation selects. verify-gate is green at main.</p>
+    </article>
+<article class="r-fu" data-id="f-asrswtwl-drain-view-reads-a-foreign-pid" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The drain view classifies a foreign run from a bare local probe</h4>
+    <div class="r-fu-body"><p>From the second review of a-foreign-pid-never-reads-dead (total 92). That node gated list_live, the retained-work interruption, sprint_liveness and the directory row on this-host proof or an exit record. The drain view near <code>reckon/crew/runs.py:1028</code> still writes a bare local probe into the record before classifying it. So for a run launched on another host whose pid number this host happens to hold, the drain row reads <code>process_alive</code> true, and one with an exit record on disk can read abandoned. Route the drain view through the same host-gated reading, and add a foreign-launcher case to <code>tests/test_a_foreign_pid_never_reads_dead.py</code>. Write paths: <code>reckon/crew/runs.py</code> plus that test.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
