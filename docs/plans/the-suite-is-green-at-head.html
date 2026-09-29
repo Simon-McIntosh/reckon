@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="102">
+<meta name="plan-version" content="103">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1433,11 +1433,11 @@
     <div class="r-comment-body"><p>Independent review of run r-20260929T092802902599-ledger-write-keeps-run-files stored to both
 fenced paths. The record carries all five dimensions scored 0..20 (durability 14, evidence 18,
 fit 18, goal_fidelity 17, scope_discipline 19; total 86), the six item verdicts, four call
-sites, added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own
+sites, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own
 baseline_suite/after_suite arms, and an explicit resolution for each of the four findings of
 the prior record at .at-a55213dd9c2c0c89c0b082bcc79c709fb7eeae09.json: three resolved, one
 resolved in substance. One new finding is recorded: the restore added by the repair puts back a
-snapshot taken before a competing writer&#x27;s commit, so a two-writer version race can leave the
+snapshot taken before a competing writer's commit, so a two-writer version race can leave the
 per-run file and the aggregate disagreeing and make ledger.load refuse the project. Verified by
 reading the record back through the store: _complete_review_exists true, stored_record selects
 both, and parse_review of the stored raw_text reproduces the five scores and the total.
@@ -1509,6 +1509,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T142353317590-s21-audit-placement" data-who="reckon-build" data-when="2026-09-28T15:23:36.908Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-suite-is-green-at-head/s21-audit-placement.html</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260929-settle-mechanism-rate-unreconciled" data-who="s23-coord" data-when="2026-09-29">
+    <div class="r-comment-body"><p><strong>A caveat on f-sgh-terminal-record-settle-reads-gpfs-mtime.</strong> The review of <code>test-terminal-record-settle-at-the-merge</code> (88) confirmed the attribution: the failure rate is the same at 87bcae7d and dc520696, and the case passes on xfs. It did not confirm the mechanism as a full account. The reviewer's replication on a GPFS basetemp read 14 of 20 utime-to-stat probes stale but failed only 2 of 13 runs. The node measured 42 of 60 stale probes and 11 of 20 failed runs. So the stale-mtime chain explains why a failing run's settle observes once, but it does not yet explain how often that happens. The repair should be judged by its pass counts on both filesystems, not by that mechanism alone.</p></div>
 </div>
 </section>
 </main>
