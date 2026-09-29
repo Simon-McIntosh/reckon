@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-title" content="Zone guards read the parsed tzinfo; writer cleanup closes">
+  <meta name="plan-summary" content="ticker.row_moment and the _backends cache-stamp reader now decide whether a stamp names a zone from reckon._timestamps.parse_iso's tzinfo rather than a regex over the text's tail, so the offset spellings fromisoformat accepts (+00, -05, +000000) return the instant they name; the shared writer removes its sibling temporary on any failure after creation, not only a chmod failure; and write_json_atomically gains an ensure_ascii keyword the hook installer sets False so a non-ASCII script path lands literally.">
+  <meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-verdict" content="qualified">
+  <title>Zone guards read the parsed tzinfo &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Zone guards read the parsed tzinfo &mdash; evidence</h1>
+  <p>Three defects are repaired by test against the pre-migration base outputs. Two callers decided whether a stamp named a zone from the text's shape, so every offset spelling the shared parser accepts but the regex did not match &mdash; <code>+00</code>, <code>-05</code>, <code>+000000</code> &mdash; read as naming no zone. The shared writer removed its sibling temporary on a failed <code>os.chmod</code> but not on a failed <code>os.fdopen</code>, leaving the file the open had created on disk. And the hook installer escaped a non-ASCII script path that the pre-wave writer had written literally.</p>
+
+  <figure>
+    <img src="/reckon/figures/a-worker-reuses-before-it-writes/zone-guards-read-tzinfo/zones.svg" alt="Panel A is the writer's os.open, chmod, fdopen, render, rename sequence: the chmod failure branch unlinks the temporary (a prior repair), and the fdopen failure branch leaves the temporary at the base and unlinks it at the head. Panel B places the stamp 2026-07-01T00:00:00-05 on a time axis: the -05 offset names 05:00Z, the base text guard read it as a local wall clock under Europe/Paris and landed at 03:00Z, a 7200 second shift.">
+    <figcaption>The two gaps. The writer's cleanup sits on the failure branch between creation and the caller's own <code>finally</code>, which only reaches a <em>returned</em> temporary; the zone guard read the text&rsquo;s tail instead of the parsed instant&rsquo;s <code>tzinfo</code>.</figcaption>
+  </figure>
+
+  <section id="defects">
+    <h2>The defects and their repairs</h2>
+    <p><strong>The offset spellings read as zoneless.</strong> <code>row_moment</code> and <code>_parse_cached_fetch_stamp</code> each tested the text with <code>re.compile(r"(?:Z|[+-]\d{2}:?\d{2}(?::\d{2})?)$")</code>. The pattern needs four or six digits in the offset, so the spellings <code>datetime.fromisoformat</code> accepts but it did not &mdash; <code>+00</code>, <code>-05</code>, <code>+000000</code> &mdash; matched nothing. Under <code>TZ=Europe/Paris</code> with the summer stamp <code>2026-07-01T00:00:00-05</code>, the base <code>92274925</code> returned <code>1782874800</code> from <code>row_moment</code> &mdash; a <code>7200</code> s shift from the instant the offset names &mdash; and <code>None</code> from the cache reader. The zone is now read from the parsed result&rsquo;s <code>tzinfo</code> through <code>reckon/_timestamps.py:parse_iso</code>, the zone-preserving view of the shared parser; both return the aware instant the pre-migration base <code>cea6da07</code> returned (<code>datetime.fromisoformat(text).timestamp()</code>). The cache reader keeps its strict spelling rule, refusing a lowercase <code>z</code> that <code>parse_iso</code> normalises to a zero offset, because the recorded migration contract holds <code>lowercase_z &rarr; None</code>.</p>
+    <p><strong>The leaked temporary on a failed fdopen.</strong> <code>_open_sibling_temporary</code> creates a unique sibling with <code>os.open</code>, chmods it, then <code>os.fdopen</code>s it. When the <code>fdopen</code> raised, the base closed nothing and removed nothing: the file <code>os.open</code> created stayed on disk, and the caller&rsquo;s <code>finally</code> could not reach it because <code>_open_sibling_temporary</code> never returned. Reproduced before the repair by patching <code>reckon._store.os.fdopen</code> to raise, leaving <code>.dest.json.&lt;pid&gt;.&lt;hex&gt;.tmp</code> beside an untouched destination. Every failure after the temporary exists now closes the descriptor and unlinks the candidate before re-raising.</p>
+    <p><strong>The escaped non-ASCII settings path.</strong> The second writer wave routed <code>hooks.install._write_settings</code> through <code>write_json_atomically</code>, whose <code>json.dump</code> defaulted to <code>ensure_ascii=True</code>, so a hook-script path with non-ASCII characters landed as <code>\uXXXX</code> escapes rather than literal bytes. <code>write_json_atomically</code> gains an <code>ensure_ascii</code> keyword defaulting on; the installer passes <code>False</code>, restoring the literal bytes the pre-wave writer produced and matching <code>_render</code>, which already printed with <code>ensure_ascii=False</code>.</p>
+  </section>
+
+  <section id="evidence">
+    <h2>Evidence arms</h2>
+    <p><strong>Base arm</strong> at <code>92274925</code> in a scratch tree at <code>/tmp</code>, materialised with <code>git archive</code> because the worktree&rsquo;s <code>.git</code> is read-only; the three pre-existing test files run there: <code>196 passed</code>, exit 0 (<code>gate_baseline_arm.log</code> in the run directory). Its header lines name the revision, the scratch tree, the served <code>module.__file__</code> (<code>/tmp/basepkg-&lt;pid&gt;/reckon/crew/ticker.py</code>) and the resolved <code>cwd</code>. The node&rsquo;s new test file is absent at the base, so it is not in this arm.</p>
+    <p><strong>Head arm</strong> at the committed head, the same three files plus <code>tests/test_zone_guards_read_tzinfo.py</code> run in the worktree with <code>PYTHONPATH</code> pinned to it: <code>201 passed</code>, exit 0 (<code>gate_after_suite_head.log</code>). No failure is added against the base arm.</p>
+    <p><strong>Negative control.</strong> The declared mutation &mdash; restore ticker&rsquo;s <code>_NAMED_ZONE</code> regex guard &mdash; is applied to <code>reckon/crew/ticker.py</code> and the node&rsquo;s test file re-run: <code>1 failed, 4 passed</code>, exit 1 (<code>negative_control_named_zone.log</code>, whose first line repeats the declared string verbatim). The failing id is <code>test_row_moment_reads_a_stamp_zone_from_tzinfo</code>, and the assertion it fails is the <code>-05</code> case: <code>1782874800.0 == 1782882000.0</code>. The mutation was then reverted and the worktree confirmed clean against the committed head.</p>
+  </section>
+
+  <section id="scope">
+    <h2>Scope note</h2>
+    <p>The zone decision needs a view of the shared parser that keeps a zoneless string naive, so the caller can tell a stamp that states its zone from one that does not. <code>parse_utc</code> normalises a zoneless value to UTC and discards that distinction; <code>parse_iso</code>, already present beside it in <code>reckon/_timestamps.py</code>, keeps it and is what both callers now read. The lowercase-<code>z</code> strictness the fixed cache reader keeps is a caller policy, not a zone test: the shared parser deliberately reads <code>z</code> as a zero offset, so the reader refuses the spelling itself.</p>
+  </section>
+ </main>
+</body>
+</html>

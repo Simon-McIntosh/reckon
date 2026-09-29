@@ -44,8 +44,10 @@ from reckon.hooks.install import install_hook_settings
 # A summer stamp, so Europe/Paris carries its own ``+02:00`` offset and the
 # misread the base produced is the full two hours the shift statement names.
 PARIS_OFFSET_SPELLINGS = (
-    "2026-07-01T00:00:00+00",
+    # -05 first: the two-hour shift under Europe/Paris is the case the text
+    # guard misread most visibly, so a failure names it before the others.
     "2026-07-01T00:00:00-05",
+    "2026-07-01T00:00:00+00",
     "2026-07-01T00:00:00+000000",
 )
 

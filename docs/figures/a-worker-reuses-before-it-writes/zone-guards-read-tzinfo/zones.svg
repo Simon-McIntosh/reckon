@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 430" role="img"
+     aria-label="Panel A: the atomic writer's create, chmod, fdopen, render, rename sequence, with the fdopen failure branch shown leaving a sibling temporary at the base and unlinking it at the head. Panel B: the stamp 2026-07-01T00:00:00-05, which names 05:00Z, read by the base text-shape guard as a local wall clock under Europe/Paris and landing at 03:00Z, a 7200 second shift.">
+  <style>
+    .t { font-family: system-ui, -apple-system, Segoe UI, sans-serif; fill: #1a2027; }
+    .muted { fill: #5b6672; }
+    .box { fill: #f3f6f9; stroke: #8a97a6; stroke-width: 1.4; rx: 7; }
+    .ok { fill: #e6f4ea; stroke: #2f9e59; }
+    .bad { fill: #fdecea; stroke: #d64545; }
+    .line { stroke: #8a97a6; stroke-width: 1.6; fill: none; }
+    .arrhead { fill: #8a97a6; }
+    .badline { stroke: #d64545; stroke-width: 1.6; fill: none; }
+    .badhead { fill: #d64545; }
+  </style>
+
+  <text class="t" x="28" y="30" font-size="17" font-weight="600">Zone guards and the writer&#8217;s failure branch</text>
+
+  <!-- ── Panel A ─────────────────────────────────────────────── -->
+  <text class="t" x="28" y="62" font-size="13" font-weight="600">A. _open_sibling_temporary / _write_through_sibling_temporary</text>
+
+  <rect class="box" x="28" y="78" width="210" height="34" rx="7"/>
+  <text class="t" x="40" y="100" font-size="12">os.open(create, O_EXCL) &#8594; .NAME.PID.HEX.tmp</text>
+
+  <rect class="box" x="28" y="122" width="210" height="34" rx="7"/>
+  <text class="t" x="40" y="144" font-size="12">os.chmod(exact_mode)</text>
+
+  <rect class="box" x="28" y="166" width="210" height="34" rx="7"/>
+  <text class="t" x="0" y="0" font-size="12" transform="translate(40,188)">os.fdopen(descriptor, "w")</text>
+
+  <rect class="box" x="28" y="210" width="210" height="34" rx="7"/>
+  <text class="t" x="40" y="232" font-size="12">render(handle) &#8594; fsync</text>
+
+  <rect class="box" x="28" y="254" width="210" height="34" rx="7"/>
+  <text class="t" x="40" y="276" font-size="12">temporary.replace(path)</text>
+
+  <path class="line" d="M133 112 L133 122" marker-end="url(#a)"/>
+  <path class="line" d="M133 156 L133 166" marker-end="url(#a)"/>
+  <path class="line" d="M133 200 L133 210" marker-end="url(#a)"/>
+  <path class="line" d="M133 244 L133 254" marker-end="url(#a)"/>
+
+  <!-- fdopen failure branch -->
+  <path class="badline" d="M238 183 L300 183" marker-end="url(#ab)"/>
+  <rect class="bad" x="300" y="150" width="176" height="66" rx="7"/>
+  <text class="t" x="312" y="173" font-size="12" font-weight="600">fdopen raises</text>
+  <text class="t muted" x="312" y="192" font-size="11.5">base: .tmp left on disk</text>
+  <text class="t muted" x="312" y="208" font-size="11.5">head: descriptor closed, .tmp removed</text>
+
+  <!-- chmod failure branch, already covered -->
+  <path class="badline" d="M238 139 L300 139" marker-end="url(#ab)"/>
+  <rect class="ok" x="300" y="118" width="176" height="42" rx="7"/>
+  <text class="t" x="312" y="138" font-size="12" font-weight="600">chmod raises</text>
+  <text class="t muted" x="312" y="154" font-size="11.5">already removes the temp (prior repair)</text>
+
+  <!-- ── Panel B ─────────────────────────────────────────────── -->
+  <text class="t" x="512" y="62" font-size="13" font-weight="600">B. Stamp 2026-07-01T00:00:00-05 (Europe/Paris, summer)</text>
+
+  <line x1="530" y1="230" x2="872" y2="230" stroke="#8a97a6" stroke-width="1.6"/>
+  <g class="t" font-size="11" text-anchor="middle">
+    <line x1="540" y1="224" x2="540" y2="236" stroke="#8a97a6"/><text x="540" y="252">02:00Z</text>
+    <line x1="606" y1="224" x2="606" y2="236" stroke="#8a97a6"/><text x="606" y="252">03:00Z</text>
+    <line x1="738" y1="224" x2="738" y2="236" stroke="#8a97a6"/><text x="738" y="252">05:00Z</text>
+    <line x1="804" y1="224" x2="804" y2="236" stroke="#8a97a6"/><text x="804" y="252">06:00Z</text>
+  </g>
+
+  <!-- true instant -->
+  <circle cx="738" cy="230" r="7" fill="#2f9e59"/>
+  <text class="t" x="738" y="205" font-size="12" text-anchor="middle" font-weight="600">names 05:00Z</text>
+  <text class="t muted" x="738" y="190" font-size="11" text-anchor="middle">the -05 offset</text>
+
+  <!-- base read -->
+  <circle cx="606" cy="230" r="7" fill="#d64545"/>
+  <text class="t" x="560" y="285" font-size="12" text-anchor="middle" font-weight="600">base read 03:00Z</text>
+  <text class="t muted" x="560" y="300" font-size="11" text-anchor="middle">local wall clock</text>
+
+  <!-- shift arrow -->
+  <path class="badline" d="M606 258 L738 258" marker-end="url(#ab)"/>
+  <text class="t" x="672" y="276" font-size="12" text-anchor="middle" fill="#d64545" font-weight="600">7200 s shift</text>
+
+  <text class="t muted" x="512" y="340" font-size="11.5">head reads the zone from parse_iso&#8217;s tzinfo, so +00, -05 and +000000</text>
+  <text class="t muted" x="512" y="357" font-size="11.5">each land on the instant the offset names; the base text guard matched none of them.</text>
+
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="4.5" refY="4.5" orient="auto">
+      <path class="arrhead" d="M0 0 L9 4.5 L0 9 z"/>
+    </marker>
+    <marker id="ab" markerWidth="9" markerHeight="9" refX="4.5" refY="4.5" orient="auto">
+      <path class="badhead" d="M0 0 L9 4.5 L0 9 z"/>
+    </marker>
+  </defs>
+</svg>
