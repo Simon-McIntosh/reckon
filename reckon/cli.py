@@ -2891,6 +2891,17 @@ def _follow_watch_lines(
             stream_path=stream_path,
             resume_state=resume_state,
         )
+        if reloading and mode != "continue":
+            # An in-place reload continues only where its recorded place still
+            # names this stream. A resume whose checkpoint names a replaced
+            # stream has no place here to continue from, so it is treated as a
+            # fresh arm: the fleet baseline is re-derived from the live runs and
+            # fed through the row path on this same first pass, rather than
+            # reading a stream whose recorded offset never described it. Reading
+            # instead defers the owed rows to a pass gated on this arming's
+            # remaining lifetime, which a slow fleet snapshot can exhaust first,
+            # leaving the pane with none of the rows it was owed.
+            reloading = False
         if reloading:
             # An in-place reload replaces the process image with the grid still
             # on screen, so it picks the stream up where the previous image left

@@ -503,3 +503,40 @@ def test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows(home) ->
         # The row that did reach the pane came from the re-derived baseline, so
         # the arming took the baseline branch rather than a continuation.
         assert by_run[RUN_B]["event"] == "baseline", resumed
+
+
+def test_a_resume_that_names_a_replaced_stream_owes_its_rows_on_its_first_pass(
+    home,
+) -> None:
+    """A replaced-stream resume derives the baseline on one pass, budget or none.
+
+    A resume whose checkpoint names a replaced stream re-derives the fleet
+    baseline, and that derivation happens on the arming's first pass — before
+    any wait — so a run the pane does not yet show reaches it however little of
+    the arming's lifetime is left. An arming that instead read the replaced
+    stream would deliver the row only on a pass gated on the remaining
+    lifetime, and an arming whose lifetime is already spent never reaches it.
+    This drives the same case with no budget left and requires the row anyway,
+    so the owed row cannot depend on how much of the arming's time remains.
+    """
+    _live_runs(home, RUN_A, RUN_B)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
+        assert acquired
+        stream_path = Path(seat["stream_path"])
+        crew.list_live(project=PROJECT)
+        first = _arm()
+        states = {event["run_id"]: event["to_state"] for event in first}
+        assert set(states) == {RUN_A, RUN_B}, first
+
+        resumed = _arm(
+            lifetime=0.0,
+            resume={
+                "stream_path": f"{stream_path}.replaced",
+                "offset": 0,
+                "reported": {RUN_A: states[RUN_A]},
+            },
+        )
+        by_run = {event["run_id"]: event for event in resumed}
+        assert RUN_A not in by_run, resumed
+        assert RUN_B in by_run, resumed
+        assert by_run[RUN_B]["event"] == "baseline", resumed
