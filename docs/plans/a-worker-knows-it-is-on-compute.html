@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-worker-knows-it-is-on-compute">
   <meta name="plan-title" content="A Worker Knows It Is On Compute">
   <meta name="plan-summary" content="Reckon can tell whether a process is already inside the allocation, refuses a nested srun that fans out per task, and bounds its own test suite.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="5.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,12 +20,12 @@
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Reckon has no host-environment model today; nothing upstream must land first, and the one consumer (worker launch) is sequenced by the trigger in §4 rather than by a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;}">
   <title>A Worker Knows It Is On Compute | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="25">
+<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-version" content="26">
 <meta name="plan-commits" content="9e695b0c,bf1725d6,2700bda6,a4bbb242,f2810b50,87a3ed30,c0b25024,20822ec8,b0ffdd18,a690ab92,f2784a34,7326f7fe,2130295f">
 <meta name="plan-impl" content="0.8">
 </head>
@@ -250,10 +250,11 @@
     <pre class="r-fu-prompt">/reckon-build a-worker-knows-it-is-on-compute</pre>
     <p class="r-fu-outcome">§2 (host_facts probe), §3 (nested-launch shims), §4 (shims on the worker PATH) and §5 (suite bounds) have landed, per their landing comments, with reckon/host.py and reckon/nested_launch.py on main. They are declared done. §6, worker scratch, is the only remaining work. Its trigger files, dispatch.py and promotion.py, are both on the shared-write list, so it is now implementable and carried by f-awkioc-scratch-lives-with-its-run.</p>
     </article>
-<article class="r-fu" data-id="f-awkioc-scratch-lives-with-its-run" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awkioc-scratch-lives-with-its-run" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="2026-09-29T03:48:26+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">Land §6: a worker&#x27;s scratch lives and dies with its run</h4>
     <div class="r-fu-body"><p>Dispatch gives each worker a private scratch directory under node-local <code>/tmp</code>, named for its run id, and sets it as the worker's <code>TMPDIR</code>. Promotion and discard each remove that directory and print what they removed. A directory that belongs to another run survives. Gate logs and evidence stay in the run directory on GPFS. The done-when is §6's own.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-knows-it-is-on-compute §6</pre>
+    <p class="r-fu-outcome">Landed on main. worker-scratch-lives-with-its-run merged at e51437f2 (re-review 99, zero added failures by id). Dispatch points each worker's TMPDIR at a per-run directory under a pinned scratch root and records the path on the run. Promotion and discard remove only that run's own directory: a record naming a sibling run, a symlink, or a path outside the root is withheld with its reason and nothing is removed. scratch-docstring-states-the-refusal merged at 3aa118cd (review 98) corrects the docstrings: a record made under a root that has since moved is withheld and left in place. Every section is done: done — no followup.</p>
     </article>
 </section>
 
