@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="36">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="38">
+<meta name="plan-impl" content="0.6">
 </head>
 <body>
   <main class="plan-doc">
@@ -154,7 +154,7 @@
     <div class="r-comment-body"><p>The three timestamp readers in reckon/crew/promotion.py now read reckon._timestamps (_elapsed_seconds via parse_utc, _assume_utc_if_naive via parse_iso, and the stream-event loop now the named _zone_aware_stream_timestamp via parse_iso), keeping each reader's policy; zero fromisoformat calls remain, 20 new table tests pass, and the gate over the 38 tests/ files importing reckon.crew.promotion shows base 391 passed EXIT=0 vs head 411 passed EXIT=0 with no added failing id.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260929T135330043757-review-of-promotion-timestamps-reuse-the-parser" data-who="reckon-build" data-when="2026-09-29T14:50:57.208Z">
-    <div class="r-comment-body"><p>Independent review of r-20260929T130827936760-promotion-timestamps-reuse-the-parser stored at both granted paths — parsed, five dimensions goal_fidelity 18 / evidence 18 / scope_discipline 20 / durability 19 / fit 19 (total 94), added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own gate logs, with three findings (after_suite revision and command do not match its own named log; _elapsed_seconds returns None for a datetime where base computed 3600, unrecorded; whitespace-padded stamps newly accepted while the fragment claims one recorded difference).</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20260929T130827936760-promotion-timestamps-reuse-the-parser stored at both granted paths — parsed, five dimensions goal_fidelity 18 / evidence 18 / scope_discipline 20 / durability 19 / fit 19 (total 94), added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own gate logs, with three findings (after_suite revision and command do not match its own named log; _elapsed_seconds returns None for a datetime where base computed 3600, unrecorded; whitespace-padded stamps newly accepted while the fragment claims one recorded difference).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:04:52.771Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder stored under the crew review store as a parsed record (goal_fidelity 16, evidence 15, scope_discipline 20, durability 16, fit 19; total 86) with three findings</p></div>
@@ -203,6 +203,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T132120460206-review-of-runs-pointer-writer-reuses-the-store" data-who="reckon-build" data-when="2026-09-29T14:05:20.420Z">
     <div class="r-comment-body"><p>review of run r-20260929T122631754373-runs-pointer-writer-reuses-the-store stored as a parsed record at the revision-keyed path and byte-identically at the legacy path beside it — scores goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 19 (total 94, no dimension absent), added_failure_count 4 with its four ids derived by my own reader from the run's gate_baseline_arm.log and gate_after_suite_head.log, three findings (manifest.md:10's head probe figure not reproducible across two head samples of the same command, manifest.md population of 124 files with no list beside it against my AST count of 171, negative_control.log:2 naming recknon/crew/runs.py which does not exist)</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260929T141158362929-supervisor-write-reuses-the-store" data-who="reckon-build" data-when="2026-09-29T14:47:57.143Z">
+    <div class="r-comment-body"><p>_supervisor_write hands its payload to reckon._store.write_json_atomically with create_parents=False, keeping the missing-directory guard in dispatch.py and the False-on-OSError return, so a discarded run&#x27;s directory is never materialised and the bytes and the 0o600 mode are unchanged (commit 2eda3920); measure: the new test&#x27;s four rows pass at head, and the two-arm gate over the 40 tests/ files importing reckon.crew.dispatch adds no failing test id (head 22 failed/535 passed, base 23 failed/534 passed; the single differing id is the head-only delegation row that fails at base because base&#x27;s _supervisor_write does not call the shared writer).</p></div>
 </div>
 </section>
 </main>
