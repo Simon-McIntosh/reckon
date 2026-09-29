@@ -51,7 +51,7 @@ reckon/hooks/worker_stop.py (bare-script launch, no PYTHONPATH)</code></pre>
           <tr><td>Migrated readers calling <code>parse_utc</code></td><td>6 of 6; no <code>fromisoformat</code> call remains in the six modules (AST walk)</td></tr>
           <tr><td>New test <code>tests/test_timestamp_callers_batch_b.py</code></td><td>57 passed, exit 0</td></tr>
           <tr><td>Gate over the six modules' own test files, base arm <code>a15e11cb</code></td><td>6 failed / 249 passed</td></tr>
-          <tr><td>Same gate at committed head <code>18c3bee7</code></td><td>255 passed, exit 0 &mdash; zero failures</td></tr>
+          <tr><td>Same gate at the committed head</td><td>255 passed, exit 0 &mdash; zero failures</td></tr>
           <tr><td>Base-arm failures</td><td>The node's own new test before the migration: four <code>sprint_liveness._observed_seconds</code> cells, the <code>fromisoformat</code> walk, and the shared-parser binding walk</td></tr>
           <tr><td>Negative control</td><td><code>schedule._stamp_millis</code> made to read a naive value as local time: <code>test_migrated_caller_reproduces_recorded_output[schedule._stamp_millis-naive]</code> fails, <code>EXIT=1</code>; the file restored byte-identical to the committed head afterwards</td></tr>
         </tbody>
