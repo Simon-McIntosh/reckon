@@ -1294,8 +1294,10 @@ def count_open_decisions(text: str) -> int:
 
 
 _META_RE = re.compile(r"<meta\b[^>]*>", re.IGNORECASE)
-_NAME_RE = re.compile(r'\bname=["\']([^"\']+)["\']', re.IGNORECASE)
-_CONTENT_RE = re.compile(r'\bcontent=["\']([^"\']*)["\']', re.IGNORECASE)
+# an attribute value runs to the quote that opened it, so a double-quoted value may
+# carry apostrophes and a single-quoted one double quotes
+_NAME_RE = re.compile(r'\bname=(["\'])(.+?)\1', re.IGNORECASE)
+_CONTENT_RE = re.compile(r'\bcontent=(["\'])(.*?)\1', re.IGNORECASE)
 _TITLE_RE = re.compile(r"<title>(.*?)</title>", re.IGNORECASE | re.DOTALL)
 
 
@@ -1335,7 +1337,7 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
         if not nm:
             continue
         ct = _CONTENT_RE.search(tag)
-        metas[nm.group(1).lower()] = ct.group(1) if ct else ""
+        metas[nm.group(2).lower()] = ct.group(2) if ct else ""
     for name, content in metas.items():
         if not name.startswith("plan-") or content == "":
             continue
