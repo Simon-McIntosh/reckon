@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="80">
+<meta name="plan-version" content="81">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
 <meta name="plan-impl" content="0.88">
@@ -730,7 +730,10 @@
     <div class="r-comment-body"><p>acted f2653dc4cc9: 0bdd53a17 — a dispatch whose unwind fails no longer replaces the cause its original already carries; when the surfaced error already names a cause (a launch refusal carrying the OSError that ended the spawn), the unwind failure rides as a note a traceback prints beside it, and is chained as the cause only when no cause exists. Gate: new case red at base 153767e48 (surfaced.__cause__ was the removal error, FileNotFoundError reachable only inside the message), 6 passed at head 0bdd53a17, declared-mutation red log 1 failed.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T194410210092-review-of-repair-of-a-rollback-keeps-its-cause-153767e488bd" data-who="reckon-build" data-when="2026-09-30T20:02:51.079Z">
-    <div class="r-comment-body"><p>review of r-20260930T193022707126-repair-of-a-rollback-keeps-its-cause-153767e488bd stored parsed at both fenced paths, scoring goal_fidelity 20, evidence 16, scope_discipline 20, durability 18, fit 19 (total 93); added_failure_count 0 with no ids, derived from the reviewed run&#x27;s own two gate logs (repro-new-test.log base arm at 153767e48, 1 failed; gate-worktree.log head arm at 0bdd53a17, 6 passed); two findings.</p></div>
+    <div class="r-comment-body"><p>review of r-20260930T193022707126-repair-of-a-rollback-keeps-its-cause-153767e488bd stored parsed at both fenced paths, scoring goal_fidelity 20, evidence 16, scope_discipline 20, durability 18, fit 19 (total 93); added_failure_count 0 with no ids, derived from the reviewed run's own two gate logs (repro-new-test.log base arm at 153767e48, 1 failed; gate-worktree.log head arm at 0bdd53a17, 6 passed); two findings.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T185746215809-rollback-population" data-who="reckon-build" data-when="2026-09-30T21:03:18.591Z">
+    <div class="r-comment-body"><p>whole-suite comparison, base deab5e16 vs candidate merge b2d19be: base 75 failed + 4 setup errors, candidate 76 failed + 5 setup errors, 74 failed and 4 error ids shared; the three ids failing only at the candidate are all non-attributable (two pass alone 3/3 at both revisions, one is a real-home artifact race that fails alone at base too), so 0 added failures are attributed to b2d19be; lists in report.md beside the arm logs</p></div>
 </div>
 </section>
 </main>
