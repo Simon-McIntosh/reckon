@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="stale crew expectations and the shared manifest path follow the shipped contracts">
+  <meta name="plan-summary" content="Eleven tests in tests/test_crew.py pinned contracts the product no longer holds: the per-node landing-fragment grant, the base-citation guard, the failure-classification demand, the abandoned run's resume remedy, and a same-node second dispatch while the first is live. The node helper's manifest path was a fixed /tmp path shared by every process; it is now per-test and per-process. All eleven pass at head and no assertion was deleted.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,tests,dispatch,promotion,landing-fragment">
+  <title>stale crew expectations and the shared manifest path follow the shipped contracts | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="test-crew-follows-the-shipped-contracts" data-reckon="landed" data-when="2026-09-29">
+  <h2>Stale crew expectations and the shared manifest path follow the shipped contracts</h2>
+  <p>Eleven ids in <code>tests/test_crew.py</code> were red at the node base because they pinned
+  contracts the product no longer holds. Each was repaired to the shipped contract rather than the
+  product being reverted, and no assertion was deleted.</p>
+  <table>
+    <thead><tr><th>id</th><th>shipped contract now asserted</th></tr></thead>
+    <tbody>
+      <tr><td>test_dry_run_payload_reports_the_resolved_write_paths, test_non_repository_delivery_directories_are_valid_exclusive_scopes[runs_dir|reports_dir|review_store_root], test_an_in_harness_dispatch_returns_a_directive_to_bind[worktree-writable]</td><td>the default landing grant is the node's own fragment (docs/evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html and docs/figures/&lt;plan&gt;/&lt;node&gt;/), not the shared evidence record, figures topic and plan file</td></tr>
+      <tr><td>test_promoted_run_leaves_the_drain_by_losing_its_pointer, test_redispatch_does_not_inherit_a_terminal_delivery</td><td>a promotion refuses a citation of the dispatch base, so the fixture's run owns a commit past its base and cites it</td></tr>
+      <tr><td>test_a_root_commit_records_an_explicit_absence_rather_than_a_count</td><td>the base-citation guard refuses a parentless head by precedence, and the parentless-head measurement through the public diff helper is the typed absence unresolvable_revision</td></tr>
+      <tr><td>test_non_passing_promotion_requires_a_diagnostic_outcome[failed]</td><td>a failing gate is refused for a --failure-classification from the closed set; the [not-run] sibling still demands --outcome</td></tr>
+      <tr><td>test_terminal_phase_without_a_manifest_is_abandoned</td><td>an abandoned run's next action is its resume remedy: reckon crew resume --run &lt;id&gt; --advice continue</td></tr>
+      <tr><td>test_member_session_is_reused_when_the_resolved_model_matches</td><td>a second live dispatch of one node is refused on the node's own exclusive fragment claim, so the fixture ends the first run before the second dispatch and the session survives on the committed record</td></tr>
+    </tbody>
+  </table>
+  <p>The canonical node helper pinned <code>manifest_path</code> to a fixed
+  <code>/tmp/node-a-manifest.md</code> in both <code>tests/test_crew.py</code> and
+  <code>tests/test_budget.py</code>. A concurrent process writing a terminal manifest there landed
+  inside another run's dispatch-to-complete window and that run read a foreign delivery. The helper
+  now names a per-test path under the running test's temporary directory, with a per-process fallback
+  outside pytest; a new case runs two processes and shows the two paths differ. Restoring the fixed
+  path makes that case fail.</p>
+</article>
+</body>
+</html>
