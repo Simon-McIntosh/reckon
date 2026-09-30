@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="A dispatch whose fence cannot be built is refused">
+  <meta name="plan-summary" content="A cli dispatch is refused before any worktree when bubblewrap is absent or a user namespace cannot be created, with --no-fence REASON as the one recorded way through.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s3">
+  <meta name="plan-commits" content="__SHA__">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fence,dispatch">
+  <title>A dispatch whose fence cannot be built is refused — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-fence-fails-closed" data-reckon="landed" data-when="2026-09-30">
+  <h2>A dispatch whose fence cannot be built is refused</h2>
+  <p><code>fence_capability_problem</code> reports the capability that stops the fence — bubblewrap absent from PATH, or a user namespace the kernel refuses — and <code>dispatch</code> asks it before any worktree, pointer or run directory exists, refusing with the capability named. <code>--no-fence REASON</code> launches the same dispatch unfenced and records the reason on the run, its composed plan and its ledger row. <code>tests/test_the_fence_fails_closed.py</code> drives six cases at head in a temporary <code>RECKON_HOME</code> with a stub launcher: bwrap absent is refused leaving nothing behind, a forced namespace-probe failure is refused naming the namespace, the flag launches and rides the pointer, promotion writes the reason onto the ledger row, an ordinary fenced dispatch is unchanged, and a fenced stub's write into a sibling worktree is refused read-only while its own write lands. The declared negative control, with the capability check forced to succeed while bwrap is absent, lets the dispatch pass the check and fails case 1.</p>
+</article>
+</body>
+</html>

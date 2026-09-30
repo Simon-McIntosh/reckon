@@ -4417,6 +4417,7 @@ def dispatch(
     default_backend_override: str | None = None,
     repairs: str = "",
     accept_directory_claim: bool = False,
+    no_fence_reason: str = "",
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -4653,6 +4654,33 @@ def dispatch(
     backend = resolution.backend_settings
     launch_kind = resolution.launch
     run_id = resolution.run_id
+
+    # A cli worker launches inside the fence, and the fence is bubblewrap over a
+    # user namespace. A host with neither cannot seal a worker's writes, so the
+    # dispatch is refused before any worktree, pointer or run directory exists
+    # rather than launched unfenced: a fence that disappears silently still
+    # reports a protection it does not have. ``--no-fence REASON`` is the one
+    # deliberate way through, and the reason is recorded on the run, its
+    # composed plan and its ledger row.
+    fence_waiver = str(no_fence_reason).strip()
+    compose_fence = launch_kind == "cli" and FENCE_WORKERS
+    if compose_fence and not fence_waiver:
+        capability_problem = _backends.fence_capability_problem()
+        if capability_problem is not None:
+            missing, detail = capability_problem
+            raise CrewError(
+                format_refusal(
+                    "D22",
+                    f"refusing to dispatch run {run_id!r}: {detail} "
+                    f"(missing capability: {missing}). The fence is what keeps "
+                    "a worker out of the operator's home and every other run's "
+                    "worktree, so a dispatch that cannot build one is refused "
+                    "rather than launched unprotected; pass --no-fence REASON to "
+                    "launch unfenced and record why",
+                )
+            )
+    if fence_waiver:
+        compose_fence = False
 
     # The pace this dispatch is judged against, composed once here — before
     # anything is created — and reused on the record below, so the bookend
@@ -5134,12 +5162,19 @@ def dispatch(
         if resolution.lane_advisory is not None:
             record["lane_advisory"] = resolution.lane_advisory
 
+        # A deliberate unfenced dispatch survives on the record with its reason,
+        # so a later reader can tell a launch that declined the fence from one
+        # that never asked for it — the field is written only when the flag was
+        # given, never as a null that would read as a fence that was built.
+        if launch_kind == "cli" and fence_waiver:
+            record["fence_waiver"] = {"reason": fence_waiver}
+
         if launch_kind == "cli":
             try:
                 # Refused before composition, which seeds the run's harness
                 # home: an absent backend must leave no run behind.
                 preflight_launch_command(
-                    backend_name, backend, fence=FENCE_WORKERS, facts=dispatch_host
+                    backend_name, backend, fence=compose_fence, facts=dispatch_host
                 )
                 fence_roots = _fence_write_roots(
                     backend=backend,
@@ -5159,7 +5194,8 @@ def dispatch(
                         writable_directories=fence_roots,
                         final_message_path=str(final_path),
                         resume_session=reuse_session,
-                        fence=FENCE_WORKERS,
+                        fence=compose_fence,
+                        fence_waiver=fence_waiver or None,
                     ),
                     facts=dispatch_host,
                 )

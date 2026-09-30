@@ -56,6 +56,7 @@ import json
 import os
 import queue
 import re
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -336,6 +337,7 @@ class LaunchPlan:
     environment: dict[str, str]
     final_message_path: str | None
     resumed_session: str | None
+    fence_waiver: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
@@ -345,6 +347,7 @@ class LaunchPlan:
             "cwd": self.cwd,
             "dialect": self.dialect,
             "final_message_path": self.final_message_path,
+            "fence_waiver": self.fence_waiver,
             "resumed_session": self.resumed_session,
         }
 
@@ -1927,6 +1930,59 @@ CODEX_AUTH_FILENAME = "auth.json"
 FENCE_BINARY = "bwrap"
 
 
+def _probe_user_namespace() -> subprocess.CompletedProcess[str]:
+    """Run one throwaway fence to prove a user namespace can be created.
+
+    The probe is the fence itself in miniature: the same binary, the same
+    namespace the real composition needs, and a command that does nothing.
+    A host that can run this can build the fence; a host that cannot cannot
+    seal a worker either, so the probe measures exactly the capability the
+    refusal names rather than a proxy for it.
+    """
+    return subprocess.run(
+        [FENCE_BINARY, "--unshare-user", "--dev-bind", "/", "/", "--", "/bin/true"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def fence_capability_problem(
+    probe: Callable[[], subprocess.CompletedProcess[str]] | None = None,
+) -> tuple[str, str] | None:
+    """Return the capability that stops the fence, or None when it can be built.
+
+    The fence is bubblewrap over a user namespace, so it has two prerequisites:
+    the binary must be on PATH and the kernel must let the process create a user
+    namespace. Either missing leaves a fence that cannot be composed, and a
+    fence that cannot be composed is refused rather than silently dropped — a
+    launch that proceeds unfenced still reports a protection it does not have.
+    The probe is injectable so a caller can pin it, and every test of the
+    refusal drives the real one by hiding the binary or forcing the probe.
+
+    The returned pair is ``(capability, detail)``: a short name for what is
+    missing and the refusal text that names it for the operator.
+    """
+    if shutil.which(FENCE_BINARY) is None:
+        return (
+            FENCE_BINARY,
+            f"{FENCE_BINARY} is not on PATH, so the fence cannot be built",
+        )
+    run = probe or _probe_user_namespace
+    try:
+        result = run()
+    except OSError as exc:
+        return (
+            "user namespace",
+            f"the user-namespace probe could not run: {exc}",
+        )
+    if result.returncode != 0:
+        reported = (result.stderr or "").strip()
+        detail = reported or f"the probe exited {result.returncode}"
+        return ("user namespace", f"a user namespace cannot be created: {detail}")
+    return None
+
+
 def harness_home(dialect_name: str, run_directory: str | Path) -> Path | None:
     """Return the config home a run owns for its harness, or None.
 
@@ -2589,6 +2645,7 @@ def launch_plan(
     images: Iterable[str | Path] = (),
     fence: bool = True,
     fence_home: str | Path | None = None,
+    fence_waiver: str | None = None,
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
 
@@ -2709,6 +2766,7 @@ def launch_plan(
         environment=environment,
         final_message_path=final_path,
         resumed_session=resume_session,
+        fence_waiver=fence_waiver,
     )
 
 

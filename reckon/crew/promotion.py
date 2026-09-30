@@ -5977,6 +5977,14 @@ def _complete_locked(
     execution_fit = record.get("execution_fit")
     if isinstance(execution_fit, Mapping):
         run["execution_fit"] = dict(execution_fit)
+    # A run launched without the fence carries the reason it was waived onto the
+    # committed row, so the ledger says which runs ran unprotected and why. The
+    # pointer holds it only until promotion deletes it, and a reader asking why
+    # a worker could write outside its grant needs it in the durable row. An
+    # ordinary fenced dispatch records no such key.
+    fence_waiver = record.get("fence_waiver")
+    if isinstance(fence_waiver, Mapping):
+        run["fence_waiver"] = dict(fence_waiver)
     # The advisory a dispatch computed rides the committed row the same way it
     # rode the live pointer, together with the lane declaration and reading it
     # was derived from. Promotion deletes that pointer, so an advisory reaching

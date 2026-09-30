@@ -1328,6 +1328,16 @@ def crew_preflight(
     ),
 )
 @click.option(
+    "--no-fence",
+    "no_fence_reason",
+    default="",
+    help=(
+        "Launch the worker without the filesystem fence and record REASON on "
+        "the run and its ledger row. This is the only way through when bwrap "
+        "is absent or a user namespace cannot be created."
+    ),
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Validate and resolve only: no worktree, no process, no record.",
@@ -1366,6 +1376,7 @@ def crew_dispatch(
     local,
     repairs,
     accept_directory_claim,
+    no_fence_reason,
     dry_run,
     pretty,
 ):
@@ -1555,6 +1566,7 @@ def crew_dispatch(
             default_backend_override=flight_backend_override,
             repairs=repairs,
             accept_directory_claim=accept_directory_claim,
+            no_fence_reason=no_fence_reason,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
