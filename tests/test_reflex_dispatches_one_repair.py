@@ -375,12 +375,18 @@ def test_the_repair_keeps_the_reviewed_runs_test_paths(
 ) -> None:
     """A finding citing only source still grants the reviewed run's test paths.
 
-    The repair's gate is the reviewed run's own tests. A fence holding a source
-    path and a test path, with the finding naming only the source, must carry
-    the test path into the repair's scope; the uncited source path must not.
+    The repair's gate is the reviewed run's own tests. A fence holding two
+    source paths and a test path, with the finding naming only one source, must
+    carry the test path into the repair's scope; the source path no finding
+    named must not be carried, so a composer that granted the whole fence would
+    fail this test rather than pass it.
     """
     config_home, repo, head_sha = isolated_project
-    reviewed_fence = ["reckon/crew/thing.py", "tests/test_reviewed_run.py"]
+    reviewed_fence = [
+        "reckon/crew/thing.py",
+        "reckon/crew/new_module.py",
+        "tests/test_reviewed_run.py",
+    ]
     _completed_pointer(
         config_home,
         repo,
