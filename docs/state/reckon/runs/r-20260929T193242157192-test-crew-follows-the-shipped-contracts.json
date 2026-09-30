@@ -1,0 +1,378 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "e4b64b7aa02d536fb9b87dbd2a3db6d45e876041",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 23171937,
+      "input_tokens_cumulative": 23171937,
+      "output_tokens": 78234,
+      "output_tokens_cumulative": 78234,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 260,
+    "files": 3,
+    "removed": 36
+  },
+  "commit_resolution": null,
+  "commits": [
+    "a8ac415ae87e6402df947ec62d03d60990f2fa04"
+  ],
+  "completed_at": "2026-09-29T20:34:50.842Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T19:32:59Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 --timeout=300 tests/test_crew.py tests/test_budget.py",
+    "exit_status": 1,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/logs/arm-head.log"
+  },
+  "impl_move": {
+    "at_complete": 0.96,
+    "at_dispatch": 0.96,
+    "plan": "the-suite-is-green-at-head",
+    "reason": "impl 0.96 was set before 2026-09-29, when these repairs and the red ids were folded into section 2; impl is monotonic, so it stays until section 2 closes rather than rising on a denominator that has since grown",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T20:32:44.042763+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T19:32:44Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 2,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 9,
+    "headroom": 7,
+    "mean_context": 115556,
+    "observed_at": "2026-09-29T19:32:42Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T20:34:50.842Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/manifest.md",
+  "member": "disposable-r-20260929T193242157192-test-crew-follows-the-shipped-contracts",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_crew.py::test_two_processes_running_the_node_helper_use_distinct_manifest_paths"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_crew.py::test_a_root_commit_records_an_explicit_absence_rather_than_a_count",
+      "tests/test_crew.py::test_an_in_harness_dispatch_returns_a_directive_to_bind[worktree-writable]",
+      "tests/test_crew.py::test_dry_run_payload_reports_the_resolved_write_paths",
+      "tests/test_crew.py::test_member_session_is_reused_when_the_resolved_model_matches",
+      "tests/test_crew.py::test_non_passing_promotion_requires_a_diagnostic_outcome[failed]",
+      "tests/test_crew.py::test_non_repository_delivery_directories_are_valid_exclusive_scopes[reports_dir]",
+      "tests/test_crew.py::test_non_repository_delivery_directories_are_valid_exclusive_scopes[review_store_root]",
+      "tests/test_crew.py::test_non_repository_delivery_directories_are_valid_exclusive_scopes[runs_dir]",
+      "tests/test_crew.py::test_promoted_run_leaves_the_drain_by_losing_its_pointer",
+      "tests/test_crew.py::test_redispatch_does_not_inherit_a_terminal_delivery",
+      "tests/test_crew.py::test_shadow_refuses_an_unreachable_primary_base_without_artifacts",
+      "tests/test_crew.py::test_shadow_refuses_plan_unreadable_at_primary_base",
+      "tests/test_crew.py::test_shadow_refuses_primary_without_recorded_agent_configuration",
+      "tests/test_crew.py::test_shadow_refuses_section_absent_at_primary_base",
+      "tests/test_crew.py::test_shadow_without_recorded_time_budget_uses_role_default_and_records_fallback",
+      "tests/test_crew.py::test_terminal_phase_without_a_manifest_is_abandoned"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_crew.py::test_two_processes_running_the_node_helper_use_distinct_manifest_paths"
+    ],
+    "declaration": "restore the fixed /tmp/node-a-manifest.md path in the node helper; the two-process case then sees one shared manifest path and fails",
+    "head_failure_ids": [
+      "tests/test_crew.py::test_shadow_refuses_an_unreachable_primary_base_without_artifacts",
+      "tests/test_crew.py::test_shadow_refuses_plan_unreadable_at_primary_base",
+      "tests/test_crew.py::test_shadow_refuses_primary_without_recorded_agent_configuration",
+      "tests/test_crew.py::test_shadow_refuses_section_absent_at_primary_base",
+      "tests/test_crew.py::test_shadow_without_recorded_time_budget_uses_role_default_and_records_fallback"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_budget.py",
+      "tests/test_crew.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "test-crew-follows-the-shipped-contracts",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1942,
+          "cached_input_tokens": 739374,
+          "input_tokens": 741318,
+          "output_tokens": 488,
+          "reasoning_output_tokens": 177,
+          "total_tokens": 741806,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "caa2d324-580b-4245-9533-3aec9e945566",
+      "session_id": "s21-1c"
+    },
+    "done_when": "Before any edit, the 11 ids in groups G1 (5), G3 (3), G5 (1), G6 (1) and G7 (1) named in the the-suite-is-green-at-head section 2 comment c-20260929T0930-red-ids-causes are each run at the node's base and logged failing. After the change each passes, and no assertion is deleted. For every changed assertion, the manifest states the before and after text and the contract it now follows. G1 follows the per-node landing fragment grant from f6e41cc7. G3's fixtures own a commit past their dispatch base; the root-commit case either still exercises a parentless head or asserts the guard's precedence explicitly. G5 matches the --failure-classification refusal. G6 asserts the resume remedy. G7 ends the first run before its second dispatch. The canonical node helper's manifest_path, at tests/test_crew.py:136 and tests/test_budget.py:213, becomes a per-test path under that test's temporary directory. A new case proves that two concurrent processes running the helper receive distinct manifest paths. The declared negative control is executed and logged. tests/test_crew.py and tests/test_budget.py show 0 added failures between a base arm and a head arm, run with pytest-xdist -n 8, and the manifest lists the ids still red at head. Each arm has its own --basetemp under /tmp, deleted afterwards. Stop and log df if /tmp has under 5 GB free. Every log sits under the run directory, headed with revision, tree and command and ending EXIT=. Out of scope: the five test_shadow_* ids in group G4, which wait for the ledger fix.",
+    "estimated_hours": null,
+    "goal": "Bring the stale test_crew.py expectations and the shared manifest path in line with the shipped contracts",
+    "id": "test-crew-follows-the-shipped-contracts",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T19:32:44Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 2,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 9,
+      "headroom": 7,
+      "mean_context": 115556,
+      "observed_at": "2026-09-29T19:32:42Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193242157192-test-crew-follows-the-shipped-contracts/manifest.md",
+    "negative_control": "restore the fixed /tmp/node-a-manifest.md path in the node helper; the two-process case then sees one shared manifest path and fails",
+    "plan": "the-suite-is-green-at-head",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_crew.py",
+      "tests/test_budget.py",
+      "docs/evidence/fragments/the-suite-is-green-at-head/test-crew-follows-the-shipped-contracts.html",
+      "docs/figures/the-suite-is-green-at-head/test-crew-follows-the-shipped-contracts"
+    ]
+  },
+  "orientation_input_tokens": 7410674.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "test-crew-follows-the-shipped-contracts",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T19:32:52.381087+00:00",
+    "score": 0.6625,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-suite-is-green-at-head",
+  "plan_impl_at_dispatch": 0.96,
+  "promoted_revision": "a8ac415ae87e6402df947ec62d03d60990f2fa04",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 16,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 91
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "run_id": "r-20260929T193242157192-test-crew-follows-the-shipped-contracts",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session_harness": "claude",
+  "session_id": "1f1d2769-2286-451f-8a1d-c15cf27f4703",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 23171937,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 3681.718,
+    "generated_tokens": 78234,
+    "generation_seconds": 2989.021,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 49.3,
+    "machine_seconds": 692.697,
+    "peak_input_tokens": 236500,
+    "tokens_per_second": 26.17,
+    "wall_tokens_per_second": 21.25
+  },
+  "time_budget": "60m",
+  "tool_steps": 146.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 3711,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T20:34:51Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T19:33:25Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T193242157192-test-crew-follows-the-shipped-contracts",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 15352,
+    "worker_pid": 642891
+  },
+  "worker_seconds": 3660,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
