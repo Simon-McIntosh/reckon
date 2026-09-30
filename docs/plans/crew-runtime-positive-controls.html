@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="150">
+<meta name="plan-version" content="151">
 </head>
 <body>
   <main class="plan-doc">
@@ -1475,6 +1475,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260929T211819978587-a-stale-manifest-does-not-license-promotion" data-who="reckon-build" data-when="2026-09-30T11:32:11.017Z">
     <div class="r-comment-body"><p>_require_worker_stopped_before_promotion reads a run whose recorded worker is alive and which has delivered no manifest of its own as unfinished, which is the shape a real resume produces because record_resumption sets the new attempt's baseline to the inherited manifest's own mtime; a terminal manifest fresh by the run's baseline but written before the launch is still refused, with superseded reusing recovery._worker_launched_after_manifest rather than composing a second reading; _unreviewed_refusal states the classification beside the absent review instead of as caused by it. The contract change the coordinator decided is landed in tests/test_complete_refuses_a_live_run.py: the case that asserted a live run with no manifest is left to recovery now asserts the refusal, and that the live-run waiver admits it with the waiver riding the stored row, because promotion deletes the live pointer and the worker is orphaned whether or not a manifest exists. The one fixture the caller-derived population found red, tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger, now carries the same waiver with its reason at the call and passes; no assertion changed in it.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260930T114259862036-stale-manifest-guard-at-merged-main" data-who="reckon-build" data-when="2026-09-30T12:06:49.487Z">
+    <div class="r-comment-body"><p>no repository file changed (read-only measurement role); report /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/stale-manifest-guard-at-merged-main/report.md finds merge 7c77b761386380e3b7d83286da8adc7a6d286870 adds 0 failing test ids over base 4663e8f47d835ce2452f37a79a107ef7ea4b52e1 across the 57-file complete()-calling population — base 3 failed 935 passed EXIT=1, head 3 failed 939 passed EXIT=1, failure sets identical</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
