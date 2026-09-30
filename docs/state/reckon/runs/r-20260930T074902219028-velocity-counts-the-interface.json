@@ -1,0 +1,357 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "4e05e287aa429d7c9a9aa2d290ffb1103316e4e7",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 3304400,
+      "input_tokens_cumulative": 3304400,
+      "output_tokens": 6074,
+      "output_tokens_cumulative": 6074,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 869,
+    "files": 4,
+    "removed": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "4544e7ea2c14734b9014792a7822d139169b29ea",
+    "6a54b91b8fd35960c462214bc13f29b88943d287",
+    "03a1adeada2bb0a6a873f1e2e471b35014121d05"
+  ],
+  "completed_at": "2026-09-30T08:49:24.699Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-30T07:49:23Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_velocity_work_in_progress.py::test_reckon_cohort_reading_at_the_pinned_commit"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q -p no:cacheprovider -n 4 tests/test_velocity_interface_counts.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074902219028-velocity-counts-the-interface/merge-gate.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.75,
+    "plan": "a-worker-reuses-before-it-writes",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-30T08:49:04.007027+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-30T07:49:04Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 23,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 2,
+    "headroom": 14,
+    "mean_context": 120000,
+    "observed_at": "2026-09-30T07:48:41Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-30T08:49:24.699Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074902219028-velocity-counts-the-interface/manifest.md",
+  "member": "disposable-r-20260930T074902219028-velocity-counts-the-interface",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_velocity_interface_counts.py::test_the_week_after_a_change_reports_its_delta"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_velocity_work_in_progress.py::test_reckon_cohort_reading_at_the_pinned_commit"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_velocity_interface_counts.py::test_the_week_after_a_change_reports_its_delta"
+    ],
+    "declaration": "make the MCP view counter always return zero; the synthetic second-week MCP view delta assertion must fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074902219028-velocity-counts-the-interface/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074902219028-velocity-counts-the-interface/negative-control.log",
+    "test_paths": [
+      "tests/test_velocity_interface_counts.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "velocity-counts-the-interface",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 972,
+          "cached_input_tokens": 608702,
+          "input_tokens": 609676,
+          "output_tokens": 1412,
+          "reasoning_output_tokens": 372,
+          "total_tokens": 611088,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "a new module reckon/interface_counts.py ports the counting rules of interfaces() and the public-definition count from docs/research/data/crew-pattern-review/code-depth/census.py, and nothing in reckon/ imports from docs/. It counts one revision's reckon/ tree read through git, without a checkout. velocity.report gains an interfaces block listing, for each ISO week in the window, the revision at the week's end, the four counts at that revision and their change from the previous week, with results cached by revision sha so a warm read recomputes nothing. tests/test_velocity_interface_counts.py builds a synthetic two-commit repository in which the second commit adds one public function, one click option and one MCP view, and asserts the counts and deltas for both weeks. It also asserts that at the current HEAD of this repository the counts equal the census function's counts over the same tree. Base and head arms over every tests/ file whose AST imports reckon.velocity run with -n 4 and a separate --basetemp under /tmp each, both logs end with an EXIT= line, the file list is in both logs, and the head adds no failing test id. Before status complete, delete every directory you created under /tmp, print what you delete, and list it in artifacts.",
+    "estimated_hours": null,
+    "goal": "report in the velocity view, for the reckon/ package, the interface level at each week's end and its weekly change, counting public definitions, CLI options, MCP views and coded refusal families by the census definitions",
+    "id": "velocity-counts-the-interface",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-30T07:49:04Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 23,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 2,
+      "headroom": 14,
+      "mean_context": 120000,
+      "observed_at": "2026-09-30T07:48:41Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074902219028-velocity-counts-the-interface/manifest.md",
+    "negative_control": "make the MCP view counter always return zero; the synthetic second-week MCP view delta assertion must fail",
+    "plan": "a-worker-reuses-before-it-writes",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§5",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/interface_counts.py",
+      "reckon/velocity.py",
+      "tests/test_velocity_interface_counts.py",
+      "docs/evidence/fragments/a-worker-reuses-before-it-writes/velocity-counts-the-interface.html",
+      "docs/figures/a-worker-reuses-before-it-writes/velocity-counts-the-interface"
+    ]
+  },
+  "orientation_input_tokens": 1461541.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "velocity-counts-the-interface",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-30T07:49:10.782009+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-worker-reuses-before-it-writes",
+  "plan_impl_at_dispatch": 0.75,
+  "promoted_revision": "03a1adeada2bb0a6a873f1e2e471b35014121d05",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 15,
+      "fit": 18,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 91
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260930T074902219028-velocity-counts-the-interface",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§5",
+  "session_harness": "claude",
+  "session_id": "2e35a69f-54a0-4a49-a24f-d4b37e21aac9",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 13907726,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 185.627,
+    "generated_tokens": 69018,
+    "generation_seconds": 162.308,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 46.6,
+    "machine_seconds": 23.319,
+    "peak_input_tokens": 223791,
+    "tokens_per_second": 425.23,
+    "wall_tokens_per_second": 371.81
+  },
+  "time_budget": "60m",
+  "tool_steps": 75.0,
+  "unreconciled_override": null,
+  "wall_seconds": 3601,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-30T08:49:25Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-30T08:46:13Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260930T074902219028-velocity-counts-the-interface",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 14333,
+    "worker_pid": 727629
+  },
+  "worker_seconds": 3583,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
