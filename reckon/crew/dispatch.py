@@ -7123,14 +7123,14 @@ def supervised_launch(
 def _start_supervisor(spec_path: Path, run_directory: Path, run_id: str) -> int:
     """Start the per-run supervisor and return the pid that runs it.
 
-    Off the fleet this double-forks the supervisor: an intermediate starts it in
-    a session of its own and exits at once, so the supervisor's parent is never
-    the launching process and it outlives that launcher. Its pid is a process
-    group ``crew stop`` can signal, since the worker is spawned inside that
-    group. On the fleet node the fork would be
-    reaped with the session step that made it, so the same argv is handed to
-    the allocation's batch step instead and the caller waits, bounded, for the
-    pid the step acknowledges.
+    Off the fleet this starts the supervisor through a short-lived intermediate
+    that puts it in a session of its own and exits at once, so the supervisor's
+    parent is never the launching process and it outlives that launcher. Its pid
+    is a process group ``crew stop`` can signal, since the worker is spawned
+    inside that group. On the fleet node a spawned supervisor would be reaped
+    with the session step that made it, so the same argv is handed to the
+    allocation's batch step instead and the caller waits, bounded, for the pid
+    the step acknowledges.
     """
     fleet = _read_fleet_record()
     if (
@@ -7159,86 +7159,57 @@ def _spawn_detached_supervisor(argv: list[str], stderr_path: Path) -> int:
 
     A single ``Popen`` makes the supervisor the launcher's child, so the
     launcher's own end — a coordinator turn, a shell that returns — takes the
-    supervisor with it. The extra fork here means the launching process is never
-    the supervisor's parent: the intermediate forks the supervisor, hands its
-    pid back over a pipe and exits, and the supervisor is reparented away from
-    both before it does any work. The supervisor calls ``setsid`` for itself, so
-    the returned pid is the leader of its own session and process group — the
-    group ``crew stop`` signals, with the worker spawned inside it.
+    supervisor with it. A short-lived intermediate runs here instead: it starts
+    the supervisor in a session of its own, hands its pid back and exits, so the
+    supervisor is reparented away from the launching process before it does any
+    work. The returned pid leads its own session and process group — the group
+    ``crew stop`` signals, with the worker spawned inside it.
+
+    The intermediate is a fresh interpreter rather than an in-process ``fork``:
+    the launcher may be threaded (the MCP server is one), where a forked child
+    that runs Python is not safe. Every ``Popen`` here keeps ``close_fds=True``,
+    so neither the supervisor nor the intermediate inherits the launcher's
+    descriptors.
     """
-    read_fd, write_fd = os.pipe()
-    intermediate = os.fork()
-    if intermediate == 0:
-        # The intermediate must not run any of the launcher's Python cleanup,
-        # which would flush a parent's buffers and run its atexit handlers in a
-        # forked copy, so it works in raw syscalls and ends with ``_exit``.
-        try:
-            os.close(read_fd)
-            _detach_supervisor(argv, write_fd, stderr_path)
-        finally:
-            os._exit(0)
-    os.close(write_fd)
-    try:
-        pid = _read_supervisor_pid(read_fd)
-    finally:
-        os.close(read_fd)
-        os.waitpid(intermediate, 0)
-    return pid
-
-
-def _detach_supervisor(argv: list[str], write_fd: int, stderr_path: Path) -> None:
-    """Fork the supervisor into its own session and report its pid.
-
-    Runs in the intermediate process. The supervisor is the fork's child; it
-    calls ``setsid`` so it leads its own session and process group, wires the
-    standard streams to the devnull and the run's stderr log, closes every
-    inherited descriptor above them, and execs the supervisor argv. The
-    intermediate writes the child's pid and returns without
-    waiting: the immediate exit is what reparents the supervisor away from the
-    launching process.
-    """
-    supervisor = os.fork()
-    if supervisor == 0:
-        os.close(write_fd)
-        os.setsid()
-        stdin_fd = os.open(os.devnull, os.O_RDONLY)
-        stdout_fd = os.open(os.devnull, os.O_WRONLY)
-        stderr_fd = os.open(
-            stderr_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644
+    payload = json.dumps({"argv": list(argv), "stderr": str(stderr_path)})
+    intermediate = subprocess.Popen(
+        [sys.executable, "-c", _SUPERVISOR_LAUNCHER_SOURCE],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        close_fds=True,
+    )
+    stdout, _ = intermediate.communicate(f"{payload}\n")
+    reported = stdout.strip()
+    if not reported:
+        raise CrewError(
+            "the supervisor's launcher exited without reporting a pid"
         )
-        os.dup2(stdin_fd, 0)
-        os.dup2(stdout_fd, 1)
-        os.dup2(stderr_fd, 2)
-        # The subprocess.Popen this replaced used close_fds=True, so the
-        # supervisor must not inherit a launcher's non-close-on-exec descriptors
-        # — a pipe held by the MCP server or the fleet batch step, for instance —
-        # into a process that may run for an hour. Everything a supervisor needs
-        # was just wired onto 0, 1 and 2, so every higher descriptor goes.
-        try:
-            open_max = os.sysconf("SC_OPEN_MAX")
-        except (OSError, ValueError):
-            open_max = 1024
-        os.closerange(3, open_max)
-        # The argv is the supervisor's own composed vector, never user input.
-        os.execv(argv[0], argv)  # noqa: S606
-    os.write(write_fd, f"{supervisor}\n".encode())
-    os.close(write_fd)
+    return int(reported.splitlines()[0])
 
 
-def _read_supervisor_pid(read_fd: int) -> int:
-    """Read the pid the intermediate wrote, or raise on an empty pipe."""
-    chunks: list[bytes] = []
-    while True:
-        data = os.read(read_fd, 4096)
-        if not data:
-            break
-        chunks.append(data)
-        if data.endswith(b"\n"):
-            break
-    payload = b"".join(chunks)
-    if not payload.strip():
-        raise CrewError("the supervisor's launcher exited without reporting a pid")
-    return int(payload.split(b"\n", 1)[0])
+# The intermediate: start the supervisor from the argv it is handed and report
+# the pid, then exit. Kept as a source string because it is run by a fresh
+# interpreter, which is what keeps the launcher's own process image — and any
+# lock a threaded launcher holds — out of the child.
+_SUPERVISOR_LAUNCHER_SOURCE = """
+import json
+import subprocess
+import sys
+
+payload = json.loads(sys.stdin.readline())
+with open(payload["stderr"], "ab") as errors:
+    process = subprocess.Popen(
+        payload["argv"],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=errors,
+        start_new_session=True,
+        close_fds=True,
+    )
+print(process.pid, flush=True)
+"""
 
 
 def _worker_default_signals() -> None:

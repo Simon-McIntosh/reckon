@@ -237,25 +237,29 @@ from pathlib import Path
 
 _FLAG = os.environ.get("RECKON_GATE_HOLD_FLAG")
 _SECONDS = float(os.environ.get("RECKON_GATE_HOLD_SECONDS") or "60")
-_ENTRY = "__supervise__"
 
 if _FLAG:
-    import subprocess
+    # The hold is taken at the seam that starts the supervisor, not at the
+    # process-spawn call beneath it, so it survives a change to how the
+    # supervisor is spawned. Imported lazily so an interpreter that never
+    # reaches dispatch — a child of the launcher, say — pays nothing.
+    try:
+        import importlib
 
-    class _Holding(subprocess.Popen):
-        def __init__(self, args, *rest, **kwargs):
-            super().__init__(args, *rest, **kwargs)
-            try:
-                holding = _ENTRY in args
-            except TypeError:
-                holding = False
-            if holding:
-                Path(_FLAG).write_text(str(self.pid) + "\\n", encoding="utf-8")
-                deadline = time.monotonic() + _SECONDS
-                while time.monotonic() < deadline:
-                    time.sleep(0.02)
+        _dispatch = importlib.import_module("reckon.crew.dispatch")
+        _spawn = _dispatch._spawn_detached_supervisor
 
-    subprocess.Popen = _Holding
+        def _holding(argv, stderr_path):
+            pid = _spawn(argv, stderr_path)
+            Path(_FLAG).write_text(str(pid) + "\\n", encoding="utf-8")
+            deadline = time.monotonic() + _SECONDS
+            while time.monotonic() < deadline:
+                time.sleep(0.02)
+            return pid
+
+        _dispatch._spawn_detached_supervisor = _holding
+    except Exception:
+        pass
 '''
 
 
