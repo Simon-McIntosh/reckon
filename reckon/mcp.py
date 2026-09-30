@@ -2014,11 +2014,11 @@ def _summary_sprint_rows(
     The rows come from one shared derivation — :func:`roadmap.sprint_summary_rows`
     — so the discovery and roadmap summaries answer the same question the same
     way rather than each building its own. The window is the caller's when it
-    passed one, otherwise it is the project's flight config, and the default when
-    nothing resolves.
+    passed one, otherwise :func:`roadmap._sprint_recent_days` resolves it from the
+    project's flight config so both surfaces window through one resolver.
     """
     if recent_days is None:
-        recent_days = _resolved_sprint_recent_days(project, docs_dir)
+        recent_days = roadmap._sprint_recent_days(project, docs_dir)
     return roadmap.sprint_summary_rows(
         project,
         list(sprints or []),
@@ -2026,24 +2026,6 @@ def _summary_sprint_rows(
         recent_days=recent_days,
         docs_dir=docs_dir,
     )
-
-
-def _resolved_sprint_recent_days(project: str, docs_dir: str | Path | None) -> int:
-    """The project's configured recently-closed window, or the shipped default.
-
-    Routing configuration must not be able to fail a summary read: a project
-    with no mount, no layer or a malformed layer falls back to the default.
-    """
-    default = flight_module.DEFAULT_SPRINT_RECENT_DAYS
-    if docs_dir is None:
-        return default
-    try:
-        config = flight_module.resolve(
-            project, checkout_path=Path(docs_dir).parent
-        ).config
-    except (flight_module.FlightConfigError, OSError):
-        return default
-    return flight_module.sprint_recent_days(config)
 
 
 def _discovery_summary(
