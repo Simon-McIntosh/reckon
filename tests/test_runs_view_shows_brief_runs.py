@@ -141,7 +141,9 @@ def test_a_promoted_brief_run_shows_a_null_plan_and_its_digest(
     rows = {row["run_id"]: row for row in result["rows"]}
     brief_row = rows[run_id]
     assert brief_row["plan"] is None
-    assert brief_row["brief_sha256"] == BRIEF_SHA
+    # Read through ``get`` so a dropped digest reads as a wrong value rather
+    # than a KeyError, which is the failure the declared mutation produces.
+    assert brief_row.get("brief_sha256") == BRIEF_SHA
 
     plan_row = rows["r-20260930T125900000000-node-plan"]
     assert plan_row["plan"] == "plan-a"
