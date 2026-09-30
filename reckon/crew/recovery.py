@@ -1038,17 +1038,36 @@ def _record_review_dispatch(
 
 
 def _failed_review_backend(record: Mapping[str, Any]) -> str:
-    """The lane a run's most recent recorded attempt used, or empty.
+    """The lane the run's most recent recorded attempt used for its current head.
 
     A recorded attempt that produced neither a stored nor an in-flight review
-    has failed, and the caller reaches selection only when neither exists — so
-    whatever backend the record names is one this run has already been dropped
-    by, and recomposing onto it repeats the attempt rather than advancing it.
+    has failed, and the caller reaches selection only when neither exists — so a
+    backend the record names *for this head* is one the run has already been
+    dropped by, and recomposing onto it repeats the attempt rather than
+    advancing it.
+
+    The head the attempt composed for gates that reading. A run that has since
+    moved past the recorded revision is owed a different review, so the lane
+    that dropped the earlier attempt is free to carry the new one: counting it
+    as dropped would refuse the re-review on the very lane that carried the run.
+    An attempt naming no head cannot be tied to the current head and is not
+    counted either — the conservative direction, because recomposing onto a lane
+    that did drop this exact head costs one refused dispatch, whereas wrongly
+    withholding a lane leaves a run with no review at all.
     """
     recorded = record.get(REVIEW_DISPATCH_FIELD)
     if not isinstance(recorded, Mapping):
         return ""
-    return str(recorded.get("backend") or "").strip()
+    backend = str(recorded.get("backend") or "").strip()
+    if not backend:
+        return ""
+    recorded_head = str(recorded.get("head") or "").strip()
+    if not recorded_head:
+        return ""
+    current_head = _reviewed_run_head(record)
+    if not current_head or not same_revision(recorded_head, current_head):
+        return ""
+    return backend
 
 
 def _review_excluded_backends(config: Mapping[str, Any]) -> set[str]:
