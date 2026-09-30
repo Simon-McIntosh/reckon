@@ -10,12 +10,12 @@ contract a worker actually reads, so the shape belongs there: the value is the
 path alone, with no other text on the line, and anything worth saying about the
 log goes on a ``negative_control_note`` line beside it.
 
-The assertions enter through ``compose_prompt``, which is where a worker's
-contract is rendered, and cover three facts: the template says the value is the
-path alone and emits a note line beside it; the long description that invited a
+The assertions enter through ``compose_prompt``, which is where a worker reads
+the contract, and cover three facts: the template says the value is the path
+alone and emits a note line beside it; the long description that invited a
 trailing sentence is gone, asserted as an absence rather than inferred; and the
-first-line convention the template already stated survives, so this change
-cannot silently drop it.
+admission rule the template states — the run's recorded facts, never the log's
+wording — survives, so this change cannot silently drop it.
 """
 
 from __future__ import annotations
@@ -33,12 +33,10 @@ INVITING_DESCRIPTION = (
     "whose content names that mutation"
 )
 
-# The convention the template already carried before this change: the red log's
-# own first line repeats the declared mutation verbatim. It must survive.
-FIRST_LINE_CONVENTION = (
-    "The log's first line repeats the declared mutation verbatim, so a log "
-    "that failed for any other reason is refused"
-)
+# The convention the template carries beside the path: admission is judged on
+# the facts the control's run recorded, never on the log's wording. The verbatim
+# first-line rule this test used to pin is the rule the gate no longer applies.
+FACTS_ADMISSION_RULE = "Admission is judged on the facts the run recorded"
 
 
 def _node() -> TaskNode:
@@ -91,5 +89,13 @@ def test_template_no_longer_invites_a_trailing_sentence():
     assert INVITING_DESCRIPTION not in _flat(_prompt())
 
 
-def test_first_line_convention_survives():
-    assert FIRST_LINE_CONVENTION in _flat(_prompt())
+def test_the_gloss_states_the_facts_admission_rule():
+    prompt = _prompt()
+    gloss = next(
+        line
+        for line in prompt.splitlines()
+        if line.strip().startswith("negative_control_log:")
+    )
+
+    assert FACTS_ADMISSION_RULE in _flat(gloss)
+    assert "verbatim" not in _flat(prompt)

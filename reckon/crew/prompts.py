@@ -248,24 +248,32 @@ MANIFEST_CHECK_CONTRACT = (
 )
 
 # A node that writes a check declares the mutation that check must fail against,
-# and promotion matches that declaration against the delivered red log's own text.
-# The declaration was never shown to the worker, so the only available response
-# was a paraphrase — refused by the same substring test the prompt gave it nothing
-# to satisfy. The node's declaration is interpolated here beside the manifest
-# requirement it answers, so the worker copies a string rather than inventing one.
-# The declaration is rendered as written and never reflowed or re-indented: it is
-# the exact string the log's first line has to repeat. A node that declares
-# nothing keeps the subject and is told so, because an omitted subject reads as a
-# requirement that does not apply.
+# and the declaration is discharged by the red log that mutation's run produced.
+# Promotion judges that log on the facts it records — a non-zero exit line and a
+# failing test id the head arm does not fail, with the baseline's ids deciding
+# only when no readable head arm is recorded — and reads no wording, so the
+# declaration is not a string the log has to repeat: it is what the worker
+# applies and what a reader compares the delivered log against. The declaration
+# was never shown to the worker, so the requirement it answers arrived as a
+# paraphrase; interpolating it here lets the worker copy a string rather than
+# invent one. It is rendered as written and never reflowed or re-indented, so
+# the prompt, the manifest and the node record carry one string. A node that
+# declares nothing keeps the subject and is told so, because an omitted subject
+# reads as a requirement that does not apply.
 NEGATIVE_CONTROL_DECLARATION_HEADER = (
     "CONTRACT — THE NEGATIVE CONTROL THIS NODE DECLARES\n"
 )
 
 NEGATIVE_CONTROL_DECLARED_RULE = (
-    "  This node writes a check, so it declares the mutation that check must fail\n"
-    "  against. The string your red log's first line must repeat, verbatim, is the\n"
-    "  one below: promotion matches that exact string against the log's own text,\n"
-    "  so a paraphrase, or a log that failed for any other reason, is refused.\n"
+    "  This node writes a check, so it declares the mutation that check must\n"
+    "  fail against. Apply the declared mutation and keep the log its run\n"
+    "  produced: admission is judged on the facts that log records — a non-zero\n"
+    "  `EXIT=` line and at least one failing test id the head arm does not fail,\n"
+    "  falling back to the baseline's failing ids only when the manifest records\n"
+    "  no readable head arm, an arm being readable only when it declares its run\n"
+    "  complete — never on the log's wording. The declared string is what you\n"
+    "  apply and what a reader compares the log against, not a string any gate\n"
+    "  matches.\n"
     "  Name that log's path in the `negative_control_log` line. Declared string:\n"
 )
 
@@ -305,12 +313,17 @@ def _negative_control_declaration(node: TaskNode) -> str:
     """Render this node's declared negative control where the worker can copy it.
 
     The declaration is interpolated as written and never reflowed or re-indented,
-    because it is the string a delivered red log's first line has to repeat and
-    promotion matches it against that log's text. A node that declares nothing is
-    told so rather than having the subject dropped. A declared mutation is stated
-    as a required red log only when the node's write paths reach a test path — the
-    predicate promotion applies before it reads the declaration — so a node whose
-    scope holds no test path is not told a property of its own node that is false.
+    so the string the worker applies, the string the node record carries and the
+    string a reader compares a delivered log against are one string. Promotion
+    judges that log on the facts it records — a non-zero exit line and a failing
+    test id the head arm does not fail, falling back to the baseline's ids only
+    when the manifest records no readable head arm — and reads no wording. A
+    node that declares nothing is told so rather than having the subject
+    dropped. A
+    declared mutation is stated as a required red log only when the node's write
+    paths reach a test path — the predicate promotion applies before it reads
+    the declaration — so a node whose scope holds no test path is not told a
+    property of its own node that is false.
     """
     declaration = str(node.negative_control or "").strip()
     if not declaration:
@@ -567,7 +580,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; a gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
   measurement_module: <only for a gate or base-arm measurement run in a scratch tree: the absolute path of the module under test as imported — the value the run printed for `module.__file__`>
   measurement_cwd: <only for a gate or base-arm measurement run in a scratch tree: the resolved working directory the run resolved from>
-  negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. The log's first line repeats the declared mutation verbatim, so a log that failed for any other reason is refused. The log's last line is a bare line reading `EXIT=` followed by the exit code
+  negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. Admission is judged on the facts the run recorded — a non-zero `EXIT=` line and at least one failing test id the head arm does not fail, falling back to the baseline's failing ids only when the manifest records no readable head arm, an arm being readable only when it declares its run complete — never on the log's wording. The log's last line is a bare line reading `EXIT=` followed by the exit code
   negative_control_note: <where an explanation goes: one line of commentary on the red log named above, since that value stands alone; omit when the log is self-explanatory>
   baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable; command is the literal command that ran, with absolute paths and no angle-bracket placeholder>
   after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable; command is the literal command that ran, with absolute paths and no angle-bracket placeholder>

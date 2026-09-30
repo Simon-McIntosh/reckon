@@ -1,12 +1,12 @@
-"""The declaration a red log must repeat reaches the worker that writes the log.
+"""The declaration the gate discharges reaches the worker that writes the log.
 
-Promotion matches the node's declared negative control against the delivered red
-log's text, so a worker that never saw the declaration can only paraphrase it —
-and a paraphrase is refused by the same substring test the prompt gave the worker
-nothing to satisfy. The refusal lands after the worker's process has ended, so
+The gate judges the delivered log on the facts its run recorded, not on any
+wording, so the declaration is what the worker applies and what a reader
+compares the log against — and a worker that never saw it can only invent it.
+The refusal lands after the worker's process has ended, so
 the only party who can answer it is the coordinator. These cases measure the
 repair at the surface the worker reads: the composed prompt states this node's
-declaration string verbatim, states that the red log's first line must repeat it,
+declaration string as written, states the facts rule the gate applies,
 tells a node that declares nothing that none was declared rather than dropping
 the subject, carries a declaration containing quotes and newlines unaltered, and
 selects the branch that requires a red log on the same predicate promotion
@@ -71,11 +71,14 @@ def test_the_prompt_carries_the_declaration_string_exactly():
     assert prompt.count(DECLARATION) == 1
 
 
-def test_the_prompt_states_that_string_is_what_the_red_log_first_line_repeats():
+def test_the_prompt_states_the_facts_rule_the_gate_applies():
     prompt = _flat(_declaration_block(_prompt(negative_control=DECLARATION)))
 
-    assert "red log's first line must repeat" in prompt
-    assert "verbatim" in prompt
+    assert (
+        "a non-zero `EXIT=` line and at least one failing test id the head arm does not fail"
+        in prompt
+    )
+    assert "never on the log's wording" in prompt
 
 
 def test_the_declaration_sits_beside_the_requirement_it_answers():
@@ -90,9 +93,11 @@ def test_the_declaration_sits_beside_the_requirement_it_answers():
     # still states the manifest requirement the declaration is the answer to.
     assert prompt.index(BLOCK_HEADER) < prompt.index(MANIFEST_BOUNDARY)
     assert prompt.index(DECLARATION) < prompt.index("negative_control_log:")
-    assert "first line" in gloss
-    assert "verbatim" in gloss
-    assert "declared mutation" in gloss
+    assert (
+        "a non-zero `EXIT=` line and at least one failing test id the head arm does not fail"
+        in gloss
+    )
+    assert "never on the log's wording" in gloss
 
 
 # ── A node that declares nothing keeps the subject ────────────────────────

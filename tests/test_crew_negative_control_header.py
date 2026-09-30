@@ -8,9 +8,9 @@ something is missing, because a worker meets it when the run is over and the
 log cannot be rewritten from the mutation's description alone.
 
 The manifest template's gloss beside ``negative_control_log`` states, before
-the run, that the log's first line repeats the declared mutation verbatim; that
-line is the log's label for a human reader. What admission reads is the run's
-facts, and the refusal names the fact it found absent.
+the run, the rule admission applies: the log is judged on the facts its run
+recorded — a non-zero exit line and a failing test id the head arm does not
+fail — never on its wording. The refusal names the fact it found absent.
 """
 
 from __future__ import annotations
@@ -67,15 +67,17 @@ def _template_gloss() -> str:
     ).strip()
 
 
-def test_the_emitted_template_states_the_first_line_requirement() -> None:
-    """The convention reaches the worker before the refusal does."""
+def test_the_emitted_template_states_the_facts_admission_rule() -> None:
+    """The rule reaches the worker before the refusal does."""
     gloss = _template_gloss()
 
-    # The requirement is the line's position and its exactness, not merely that
-    # the log names the mutation somewhere.
-    assert "first line" in gloss
-    assert "verbatim" in gloss
-    assert "declared mutation" in gloss
+    # The facts admission reads, stated where the worker writes the path in:
+    # a non-zero exit line and a failing test id the head arm does not fail.
+    assert "`EXIT=`" in gloss
+    assert "failing test id the head arm does not fail" in gloss
+    assert "never on the log's wording" in gloss
+    assert "verbatim" not in gloss
+    assert "first line" not in gloss
 
 
 # ── The refusal a worker meets when the facts are missing ──────────────────
