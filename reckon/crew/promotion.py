@@ -3381,31 +3381,53 @@ def _require_worker_stopped_before_promotion(
     Promotion deletes the live pointer, so a run promoted while its own process
     is still running carries on with no pointer, no follower row and no
     obligation to any coordinator — an orphaned process whose worktree cannot be
-    reclaimed until it exits. The guard fires only on the conjunction that makes
-    that harm real: the recorded process is alive *and* its manifest states a
-    status that is not terminal. A run whose process has exited, or whose
-    manifest reads complete, blocked or failed, promotes as before.
+    reclaimed until it exits. The guard fires on the conjunction that makes that
+    harm real: the recorded process is alive *and* this attempt has delivered no
+    finished verdict of its own — it has written no manifest, its manifest
+    states a status that is not terminal, or the terminal status on file belongs
+    to an attempt the live one superseded. A run whose process has exited, or
+    whose manifest is this attempt's own and reads complete, blocked or failed,
+    promotes as before.
 
-    A manifest that is absent or not fresh states no status, so there is nothing
-    to judge and the guard stays silent: a live process with no manifest is a
-    recovery case rather than a promotion one, and the release step that signals
-    a finished writer already draws the same line on a fresh terminal manifest,
-    so the two cannot disagree about which live process belongs to closed work.
+    A resumed attempt reuses its run directory, so the manifest beside the
+    pointer may be the verdict a superseded turn left. Its own launch time is
+    the fact that separates the two: a worker that started after the manifest
+    was last written cannot have written it, so a terminal status still on the
+    file states nothing about the attempt now running and the guard reads that
+    attempt as unfinished. A worker started before the manifest keeps the
+    reading its record already earns. The comparison is recovery's own, so the
+    classifier that defers such a run and the gate that refuses to promote it
+    cannot disagree about which attempt a manifest belongs to.
+
+    A manifest that is absent, or older than the baseline this attempt began
+    from, is no verdict on the work running now: the attempt has written
+    nothing, so the guard reads it as unfinished for the same reason it reads a
+    non-terminal status that way, and the live-run waiver is the only way to
+    land it. A resumed attempt is the ordinary shape of that — its baseline is
+    the inherited manifest's own mtime, so an inherited status is never fresh
+    for it — and refusing there is the harm this guard exists for, because
+    promotion would delete the live pointer under the worker the resume just
+    started.
 
     ``waiver_reason`` is the operator's own statement of why the run may be
     promoted anyway, and it is recorded on the promoted row rather than erased.
     An unconditional waiver would stop meaning anything, so a waiver offered
     against a run with nothing to waive is itself refused.
     """
+    from reckon.crew.recovery import _worker_launched_after_manifest
+
     manifest = _fresh_manifest(record)
     status = (
         "" if manifest is None else str(manifest.get("status") or "").strip().lower()
     )
     reason = str(waiver_reason).strip()
-    live = (
+    superseded = (
         manifest is not None
-        and status not in TERMINAL_MANIFEST_STATUSES
-        and record_process_alive(record, process_alive) is True
+        and status in TERMINAL_MANIFEST_STATUSES
+        and _worker_launched_after_manifest(record, Path(str(record["manifest_path"])))
+    )
+    live = record_process_alive(record, process_alive) is True and (
+        manifest is None or status not in TERMINAL_MANIFEST_STATUSES or superseded
     )
     if not live:
         if reason:
@@ -3416,12 +3438,21 @@ def _require_worker_stopped_before_promotion(
         return None
     if reason:
         return {"reason": reason, "pid": str(record.get("pid")), "status": status}
+    if manifest is None:
+        reading = "no manifest written by this attempt is on file"
+    elif superseded:
+        reading = (
+            f"its manifest's {status!r} status was written before this attempt was "
+            "launched, so it reads a superseded attempt rather than the work running "
+            "now"
+        )
+    else:
+        reading = f"its manifest status is {status!r}"
     raise CrewError(
         f"run {run_id!r} cannot be promoted: its recorded worker process "
-        f"{record.get('pid')} is still alive and its manifest status is "
-        f"{status!r}. Promotion would delete the live pointer and orphan the "
-        "worker. Wait for the process to exit, or state why it may land "
-        "anyway with --waive-live-run REASON"
+        f"{record.get('pid')} is still alive and {reading}. Promotion would "
+        "delete the live pointer and orphan the worker. Wait for the process to "
+        "exit, or state why it may land anyway with --waive-live-run REASON"
     )
 
 
@@ -3721,7 +3752,10 @@ def _unreviewed_refusal(
     The classification is the one the refusal was reached under, so a delivery
     that owes a review while its process is still running is reported as the
     deferred run it is, rather than under the scoring word the gate's other arm
-    usually reaches.
+    usually reaches. It is stated beside the absent review rather than as its
+    cause: a run is classified from its own record, so "classified running
+    because no review is stored" would read as a claim that producing a review
+    changes the classification the run already holds.
     """
     revision = (
         f"the stored review read revision {stale_head[:12]} and this promotion "
@@ -3731,7 +3765,7 @@ def _unreviewed_refusal(
         else "no complete independent review is stored"
     )
     return (
-        f"run {run_id!r} is classified {classification} because {revision}. "
+        f"run {run_id!r} is classified {classification}; {revision}. "
         f"Produce it with `{review_action}`, or promote anyway with "
         "--waive-unreviewed-promotion REASON stating why this run may land "
         "without review"

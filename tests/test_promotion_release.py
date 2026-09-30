@@ -283,6 +283,11 @@ def test_a_run_with_no_terminal_manifest_is_never_signalled(repository: Path) ->
             outcome="no manifest, no signal",
             completed_at="2026-09-03T00:05:00Z",
             root=repository,
+            live_run_waiver=(
+                "the stub process stands in for the worker; this case asserts "
+                "the release spares a writer whose manifest states nothing, "
+                "which the waiver is what admits"
+            ),
         )
 
         release = promoted["release"]
