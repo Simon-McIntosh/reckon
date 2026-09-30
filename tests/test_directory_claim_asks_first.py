@@ -341,3 +341,61 @@ def test_an_absent_directory_claim_classifier_judges_a_suffix_as_a_file(
     assert _directory_claim_overlaps(claim / "new-topic", claim)
     assert not _directory_claim_overlaps(claim / "new-topic.html", claim)
     assert not _directory_claim_overlaps(claim / "sibling" / "other.py", claim)
+
+
+def test_an_absent_dotted_directory_inside_a_live_claim_warns_and_does_not_proceed(
+    home: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A topic directory whose name carries a dot is still a directory.
+
+    A version-style topic name such as ``2026.09`` is declared by its tree and
+    sits inside the live claim, so it must warn exactly as ``new-topic`` does;
+    reading its ``.09`` as a file extension would let the broad claim proceed
+    unseen, the silent collision this check exists to prevent.
+    """
+    _config_home, repo = home
+    _publish_claim(repo, ["docs/evidence"])
+
+    result = _dry_run(repo, monkeypatch, "docs/evidence/2026.09")
+    payload = json.loads(result.output)
+    warning = "\n".join(_warnings(payload))
+
+    assert "docs/evidence" in warning
+    assert "--accept-directory-claim" in warning
+    assert result.exit_code == 2, result.output
+    assert payload["ok"] is False
+    assert not payload.get("directory_claim_acceptances")
+
+
+def test_the_flag_lets_an_absent_dotted_directory_claim_proceed(
+    home: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With the flag the dotted absent-directory claim proceeds, and is recorded."""
+    _config_home, repo = home
+    _publish_claim(repo, ["docs/evidence"])
+
+    result = _dry_run(
+        repo, monkeypatch, "docs/evidence/2026.09", accept_directory_claim=True
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0, result.output
+    assert payload["ok"] is True
+    acceptances = payload.get("directory_claim_acceptances") or []
+    assert {row["claimed_path"] for row in acceptances} == {"docs/evidence"}
+    assert "docs/evidence/2026.09" in {row["candidate_path"] for row in acceptances}
+
+
+def test_age_names_a_directory_and_a_file_extension_names_a_file(
+    tmp_path: Path,
+) -> None:
+    """A dotted directory name and a leaf file name are told apart by their name.
+
+    The suffix alone does not settle it: a numeric suffix such as ``.09`` is a
+    directory name, while an alphabetic extension such as ``.html`` names a
+    leaf file inside the peer's claim.
+    """
+    claim = tmp_path / "docs" / "evidence"
+    assert _directory_claim_overlaps(claim / "2026.09", claim)
+    assert _directory_claim_overlaps(claim / "2026.09.15", claim)
+    assert not _directory_claim_overlaps(claim / "notes.html", claim)

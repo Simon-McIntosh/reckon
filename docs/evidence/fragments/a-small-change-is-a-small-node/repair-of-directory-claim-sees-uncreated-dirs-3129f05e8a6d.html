@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-small-change-is-a-small-node">
+  <meta name="plan-title" content="Repair: a dotted directory claim asks first">
+  <meta name="plan-summary" content="The absent-path directory judgement no longer keys on an empty file suffix, so a version-style topic directory such as docs/evidence/2026.09 inside a live claim is read as a directory and warns.">
+  <meta name="plan-evidence-for" content="reckon:a-small-change-is-a-small-node">
+  <meta name="plan-verifies" content="reckon:a-small-change-is-a-small-node#s5">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,directory-claim,scope">
+  <title>Repair: a dotted directory claim asks first — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d" data-reckon="landed" data-when="2026-09-30">
+  <h2>Repair: a dotted directory claim asks first</h2>
+  <p>The absent-path directory judgement in <code>_directory_claim_overlaps</code> no longer keys on <code>Path.suffix == ""</code>: <code>_absent_path_names_a_directory</code> reads a final component as a leaf file only when its suffix carries a letter, so a numeric, version-style topic directory such as <code>docs/evidence/2026.09</code> sitting inside a live <code>docs/evidence</code> claim is now judged a directory, and dispatch warns and requires <code>--accept-directory-claim</code> exactly as for <code>new-topic</code>; <code>notes.html</code> inside the same claim keeps the plain file refusal. <code>tests/test_directory_claim_asks_first.py</code> gains a dry-run warn case, a flag-proceeds case and a classifier case, 12 passed at <code>EXIT=0</code> with the declared mutation red at <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>
