@@ -1700,11 +1700,11 @@ def dispatch_repair_for_run(
     Four guards keep the reflex off a run it must not touch, each measured
     against a live fleet failure: only an implement run's findings open a
     repair, and a repair's own findings open none; a run whose worker is live or
-    resumed is left to its own worker; every finding that names only a run
-    record or an evidence document is dropped from the scope and, when nothing
-    remains, dispatches nothing; and the reviewed run's pointer is re-read
-    immediately before the launch so a run promoted in that window is not
-    repaired.
+    resumed is left to its own worker; a round whose findings name only the
+    reflex's own record — a manifest, a gate log, a review-store path — cites no
+    repository path, so it composes no repair and is recorded decline-only; and
+    the reviewed run's pointer is re-read immediately before the launch so a run
+    promoted in that window is not repaired.
     """
     run_id = str(record.get("run_id") or "")
     refusal = _repair_source_refusal(record)
@@ -1791,18 +1791,30 @@ def dispatch_repair_for_run(
         }
     node_id = str(composed["node_id"])
     round_id = str(composed["round_id"])
-    scope = _repairable_scope(composed["write_paths"])
-    if not scope:
+    # The round is decline-only when no *finding* cites a repository path. The
+    # composed scope below also carries the reviewed run's test paths, granted so
+    # the repair can run the reviewed gate, so a decision read from that scope is
+    # never empty for a run holding a test path: a round whose findings name only
+    # a manifest, a gate log or a review-store path would dispatch a repair with
+    # nothing in the repository to answer. The decision is read from the
+    # findings' own cited paths, which is the only place the cited files appear.
+    if not _repairable_scope(str(finding.get("file") or "") for finding in findings):
+        reason = "no finding cites a repository path, so the round is decline-only"
+        _record_repair_dispatch(
+            run_id,
+            status="decline-only",
+            reason=reason,
+            round_id=round_id,
+            node_id=node_id,
+        )
         return {
             "run_id": run_id,
             "dispatched": False,
             "node_id": node_id,
             "round_id": round_id,
-            "reason": (
-                "every finding cites only a run record or an evidence document, "
-                "so no repository path is granted"
-            ),
+            "reason": reason,
         }
+    scope = _repairable_scope(composed["write_paths"])
     standing = _repair_in_flight(record, node_id=node_id, project=project)
     if standing:
         return {
