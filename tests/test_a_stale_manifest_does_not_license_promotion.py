@@ -7,11 +7,17 @@ the same file as delivery, so ``crew complete`` on such a run recorded the
 previous attempt's outcome and deleted the live pointer under a worker still
 mid-turn.
 
-The fixture is the pair recovery already defers. A run is dispatched against
-this live test process, so the pointer names a running pid; a complete manifest
-is written and then ordered against a worker record naming the same process.
-The ordering is set with ``os.utime`` rather than waited for, so the two cases
-below differ only in which of the manifest and the launch is the later one.
+Two shapes reach the guard here and they are not the same defect. A first
+dispatch leaves its manifest fresh by the run's own baseline, so the attempt's
+own terminal status has to be judged against its launch time. A real resume
+sets its baseline to the inherited manifest's mtime, so the inherited status is
+never fresh and the attempt has written no verdict at all -- refusing that is
+the rescission the resume forces, because the worker it just started is alive
+and would be orphaned by a promotion.
+
+The fixture dispatches a run against this live test process, so the pointer
+names a running pid, and it orders the manifest against the attempt with
+``os.utime`` or the real resumption record rather than waiting.
 """
 
 from __future__ import annotations
@@ -27,6 +33,7 @@ import pytest
 
 from reckon import crew
 from reckon.crew import recovery, runs
+from reckon.crew.dispatch import record_resumption
 
 PROJECT = "proj"
 
@@ -51,6 +58,8 @@ _WAIVED = (
     "the fixture promotes a delivered run whose worker is still alive to "
     "exercise the promotion plumbing; the review lifecycle has its own coverage"
 )
+
+_NO_MANIFEST_YET = "no manifest written by this attempt is on file"
 
 
 @pytest.fixture()
@@ -113,6 +122,24 @@ def _dispatch_live_run(repo: Path) -> dict:
     )
 
 
+def _resume_live_run(record: dict) -> dict:
+    """Resume the run the way the resume command does.
+
+    ``record_resumption`` is the writer the command itself calls: it records the
+    new attempt's pid and takes its manifest baseline from the manifest already
+    on disk, so the inherited manifest is not fresh for the attempt it starts.
+    """
+    directory = runs.run_dir(record["run_id"])
+    return record_resumption(
+        record["run_id"],
+        pid=os.getpid(),
+        turn=1,
+        log_path=directory / "resume-1.jsonl",
+        stderr_path=directory / "resume-1.stderr.log",
+        attempt_started_at=runs._utc_now(),
+    )
+
+
 def _stamp(seconds_before_now: float) -> str:
     """A UTC stamp in the form a worker record carries, offset from now."""
     moment = datetime.now(UTC) - timedelta(seconds=seconds_before_now)
@@ -160,6 +187,52 @@ def _commit_work(repo: Path) -> str:
     return _git(repo, "rev-parse", "HEAD")
 
 
+def test_a_resumed_run_with_no_manifest_of_its_own_is_refused(home, repo) -> None:
+    record = _dispatch_live_run(repo)
+    work = _commit_work(repo)
+    run_id = record["run_id"]
+
+    # The attempt before this one delivered, and this one has not: the resume
+    # command takes the inherited manifest's mtime as the new baseline, and the
+    # supervisor records the launch of the worker it started.
+    _write_manifest(record, seconds_before_now=120)
+    _write_worker_record(record, seconds_before_now=0)
+    _resume_live_run(record)
+
+    fresh = crew.read_pointer(run_id)
+    assert fresh["manifest_baseline_mtime_ns"] == runs._manifest_mtime_ns(
+        record["manifest_path"]
+    )
+    assert runs._manifest_freshness(fresh) == (True, False)
+    assert recovery._worker_launched_after_manifest(
+        fresh, Path(record["manifest_path"])
+    )
+    # The precondition: recovery reads the resumed run as working.
+    assert recovery.classify_pointer(fresh)["classification"] == "running"
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(run_id, gate="passed", commits=[work])
+    refusal_text = str(refusal.value)
+    assert "cannot be promoted" in refusal_text
+    assert _NO_MANIFEST_YET in refusal_text
+    assert "--waive-live-run" in refusal_text
+    assert crew.pointer_path(run_id).exists()
+
+
+def test_a_live_attempt_that_has_written_no_manifest_is_refused(home, repo) -> None:
+    record = _dispatch_live_run(repo)
+    work = _commit_work(repo)
+    run_id = record["run_id"]
+
+    # A run in progress: the worker is alive and has delivered nothing yet.
+    assert not Path(record["manifest_path"]).exists()
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(run_id, gate="passed", commits=[work])
+    assert _NO_MANIFEST_YET in str(refusal.value)
+    assert crew.pointer_path(run_id).exists()
+
+
 def test_a_manifest_older_than_the_attempt_does_not_license_promotion(
     home, repo
 ) -> None:
@@ -167,15 +240,10 @@ def test_a_manifest_older_than_the_attempt_does_not_license_promotion(
     work = _commit_work(repo)
     run_id = record["run_id"]
 
-    # The previous attempt's verdict, written before the attempt now running.
+    # A first dispatch: the manifest is fresh for this attempt by its baseline,
+    # so its terminal status has to be judged against the attempt's launch.
     _write_manifest(record, seconds_before_now=120)
     _write_worker_record(record, seconds_before_now=60)
-
-    # The precondition recovery already reads: a live worker launched after its
-    # manifest defers the run's outcome rather than calling it delivered.
-    assert recovery.classify_pointer(crew.read_pointer(run_id))["classification"] == (
-        "running"
-    )
 
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", commits=[work])
@@ -183,7 +251,6 @@ def test_a_manifest_older_than_the_attempt_does_not_license_promotion(
     assert "cannot be promoted" in refusal_text
     assert "was written before this attempt was launched" in refusal_text
     assert "--waive-live-run" in refusal_text
-    # Nothing landed: the refusal precedes every store write.
     assert crew.pointer_path(run_id).exists()
 
 
@@ -195,6 +262,16 @@ def test_a_manifest_newer_than_the_attempt_licenses_promotion(home, repo) -> Non
     # The same run, with the verdict written by the attempt now running.
     _write_worker_record(record, seconds_before_now=120)
     _write_manifest(record, seconds_before_now=60)
+
+    # The verdict is the attempt's own, so the live-run guard has nothing to
+    # say and the next gate refuses: the classification is stated as its own
+    # fact, never as the consequence of the review the run does not have.
+    with pytest.raises(crew.CrewError) as unreviewed:
+        crew.complete(run_id, gate="passed", commits=[work])
+    review_refusal = str(unreviewed.value)
+    assert "is classified running" in review_refusal
+    assert "no complete independent review is stored" in review_refusal
+    assert "because no complete independent review" not in review_refusal
 
     promoted = crew.complete(
         run_id, gate="passed", commits=[work], review_waiver=_WAIVED

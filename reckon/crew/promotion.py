@@ -3383,10 +3383,13 @@ def _require_worker_stopped_before_promotion(
     Promotion deletes the live pointer, so a run promoted while its own process
     is still running carries on with no pointer, no follower row and no
     obligation to any coordinator — an orphaned process whose worktree cannot be
-    reclaimed until it exits. The guard fires only on the conjunction that makes
-    that harm real: the recorded process is alive *and* its manifest states a
-    status that is not terminal. A run whose process has exited, or whose
-    manifest reads complete, blocked or failed, promotes as before.
+    reclaimed until it exits. The guard fires on the conjunction that makes that
+    harm real: the recorded process is alive *and* this attempt has delivered no
+    finished verdict of its own — it has written no manifest, its manifest
+    states a status that is not terminal, or the terminal status on file belongs
+    to an attempt the live one superseded. A run whose process has exited, or
+    whose manifest is this attempt's own and reads complete, blocked or failed,
+    promotes as before.
 
     A resumed attempt reuses its run directory, so the manifest beside the
     pointer may be the verdict a superseded turn left. Its own launch time is
@@ -3398,11 +3401,15 @@ def _require_worker_stopped_before_promotion(
     classifier that defers such a run and the gate that refuses to promote it
     cannot disagree about which attempt a manifest belongs to.
 
-    A manifest that is absent or not fresh states no status, so there is nothing
-    to judge and the guard stays silent: a live process with no manifest is a
-    recovery case rather than a promotion one, and the release step that signals
-    a finished writer already draws the same line on a fresh terminal manifest,
-    so the two cannot disagree about which live process belongs to closed work.
+    A manifest that is absent, or older than the baseline this attempt began
+    from, is no verdict on the work running now: the attempt has written
+    nothing, so the guard reads it as unfinished for the same reason it reads a
+    non-terminal status that way, and the live-run waiver is the only way to
+    land it. A resumed attempt is the ordinary shape of that — its baseline is
+    the inherited manifest's own mtime, so an inherited status is never fresh
+    for it — and refusing there is the harm this guard exists for, because
+    promotion would delete the live pointer under the worker the resume just
+    started.
 
     ``waiver_reason`` is the operator's own statement of why the run may be
     promoted anyway, and it is recorded on the promoted row rather than erased.
@@ -3419,14 +3426,10 @@ def _require_worker_stopped_before_promotion(
     superseded = (
         manifest is not None
         and status in TERMINAL_MANIFEST_STATUSES
-        and _worker_launched_after_manifest(
-            record, Path(str(record["manifest_path"]))
-        )
+        and _worker_launched_after_manifest(record, Path(str(record["manifest_path"])))
     )
-    live = (
-        manifest is not None
-        and (status not in TERMINAL_MANIFEST_STATUSES or superseded)
-        and record_process_alive(record, process_alive) is True
+    live = record_process_alive(record, process_alive) is True and (
+        manifest is None or status not in TERMINAL_MANIFEST_STATUSES or superseded
     )
     if not live:
         if reason:
@@ -3437,13 +3440,16 @@ def _require_worker_stopped_before_promotion(
         return None
     if reason:
         return {"reason": reason, "pid": str(record.get("pid")), "status": status}
-    reading = (
-        f"its manifest's {status!r} status was written before this attempt was "
-        "launched, so it reads a superseded attempt rather than the work running "
-        "now"
-        if superseded
-        else f"its manifest status is {status!r}"
-    )
+    if manifest is None:
+        reading = "no manifest written by this attempt is on file"
+    elif superseded:
+        reading = (
+            f"its manifest's {status!r} status was written before this attempt was "
+            "launched, so it reads a superseded attempt rather than the work running "
+            "now"
+        )
+    else:
+        reading = f"its manifest status is {status!r}"
     raise CrewError(
         f"run {run_id!r} cannot be promoted: its recorded worker process "
         f"{record.get('pid')} is still alive and {reading}. Promotion would "
