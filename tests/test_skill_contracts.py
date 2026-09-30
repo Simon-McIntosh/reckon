@@ -923,6 +923,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
     assert "Peer scopes come from live pointers" in ship
     assert "`--peer <other-node>=<their-paths>` is optional" in ship
     expected = {
+        ("crew", "ack"): {"--run", "--reason", "--until"},
         ("crew", "attach"): {"--run", "--task"},
         ("crew", "complete"): {
             "--run",
@@ -1224,3 +1225,42 @@ def test_the_plan_is_named_as_the_only_passing_surface() -> None:
     assert "a second store is a second stale source of truth" in ship
     # Large inputs already have an answer that is not a copy.
     assert "travel by reference" in ship
+
+
+def test_the_obligations_view_is_the_coordinator_inbox() -> None:
+    """§4d and §5 make the obligations view the inbox, and the harness reference
+    names how the hook enforces it.
+
+    The inbox is a derived view, so the skill points at what reckon computes
+    rather than at remembered state; the enforcement is the harness hook, so the
+    reference must name both of its modes and the command that installs them, or
+    a coordinator cannot arm the thing the fence leans on.
+    """
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
+    closure = ship.split("### 4d.", 1)[1].split("### 4e.", 1)[0]
+    verify = ship.split("### 5. Verify every worker", 1)[1].split("### 5b.", 1)[0]
+
+    for section in (closure, verify):
+        assert "obligations view" in section
+        assert "reckon crew ack" in section
+
+    # The closure fence names the inbox sentence the mutation deletes, and the
+    # hook that refuses the Stop while an item is unacknowledged.
+    assert "The obligations view is the inbox" in closure
+    assert "refuses a Stop" in closure
+
+    reference = (
+        ROOT
+        / "skills"
+        / "reckon-build"
+        / "references"
+        / "orchestrator-harness"
+        / "claude-code.md"
+    ).read_text()
+    assert "reckon/hooks/coordinator_obligations.py" in reference
+    assert "--hook prompt" in reference
+    assert "--hook stop" in reference
+    for event in ("UserPromptSubmit", "SessionStart", "Stop"):
+        assert event in reference, event
+    assert "reckon hooks install --scope user" in reference
+    assert "--write" in reference

@@ -248,3 +248,38 @@ did. A resumption nobody can see is as opaque as the hold it lifted.
 and stops. That is degraded, not broken: the hold, its figure and its reset are
 all recorded, and a human resumes with one invocation. A harness that cannot
 schedule itself must never respond by dispatching into a spent quota instead.
+
+## Installing the coordinator-obligations hooks
+
+The inbox §4d works to empty is enforced by the harness only when the hook
+scripts are registered in `~/.claude/settings.json`, the user-scope file every
+project's coordinator reads. `reckon/hooks/coordinator_obligations.py` runs in
+two modes, selected by `--hook`:
+
+- **`--hook prompt`** is registered under **`SessionStart`** and
+  **`UserPromptSubmit`**. It carries the unacknowledged duties into the turn as
+  `additionalContext`, so the duties open every turn and survive compaction.
+- **`--hook stop` is registered under `Stop`**. It answers with a decision block
+  while an item is unacknowledged, so the agent cannot end its turn into
+  forgotten work; the block fires once per list, so a continued turn is not
+  looped.
+
+Both commands run the hook under the checkout's own `.venv/bin/python`, because
+the hook imports `reckon.crew.obligations` to derive the duties it puts in front
+of the turn. Launched through the script's bare path its `env python3` shebang
+fails with `No module named 'reckon'` and the hook silently does nothing. The
+installer composes each command from its own module's location, so the fragment
+always names the scripts of the checkout that composed it.
+
+Install it with:
+
+```text
+reckon hooks install --scope user          # print the settings fragment
+reckon hooks install --scope user --write  # merge it into ~/.claude/settings.json
+```
+
+The default is a dry run: it prints the fragment and opens no file. `--write`
+merges each entry not already registered under its own event, preserves every
+other key in the settings file, and leaves a file that already carries the whole
+fragment byte for byte unchanged. A command registered under a *different* event
+suppresses nothing, because the two events mean different things.
