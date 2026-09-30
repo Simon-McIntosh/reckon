@@ -14,6 +14,10 @@ Every case drives the ``crew dispatch`` entry the operator uses, through its
 worktree or process is created. The live claimant's launcher pid is this process,
 so its claim is binding for the honest reason — its worker is alive — rather than
 because a stub named an exited pid.
+
+A declared directory need not exist on disk yet: a node writes into a topic
+directory the live claim already covers, so an absent path with no file suffix
+that sits inside a live claim is judged the same as one that is already there.
 """
 
 from __future__ import annotations
@@ -285,3 +289,55 @@ def test_a_directory_overlapping_no_live_claim_dispatches_without_a_warning(
         "claims a directory overlapping" in line for line in _warnings(payload)
     )
     assert not payload.get("directory_claim_acceptances")
+
+
+def test_an_absent_directory_inside_a_live_claim_warns_and_does_not_proceed(
+    home: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A topic directory not yet on disk still sits inside the live claim."""
+    _config_home, repo = home
+    _publish_claim(repo, ["docs/evidence"])
+
+    result = _dry_run(repo, monkeypatch, "docs/evidence/new-topic")
+    payload = json.loads(result.output)
+    warning = "\n".join(_warnings(payload))
+
+    assert "docs/evidence" in warning
+    assert "--accept-directory-claim" in warning
+    assert result.exit_code == 2, result.output
+    assert payload["ok"] is False
+    assert not payload.get("directory_claim_acceptances")
+
+
+def test_the_flag_lets_an_absent_directory_claim_proceed(
+    home: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With the flag the absent-directory claim proceeds, and is recorded."""
+    _config_home, repo = home
+    _publish_claim(repo, ["docs/evidence"])
+
+    result = _dry_run(
+        repo, monkeypatch, "docs/evidence/new-topic", accept_directory_claim=True
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0, result.output
+    assert payload["ok"] is True
+    acceptances = payload.get("directory_claim_acceptances") or []
+    assert {row["claimed_path"] for row in acceptances} == {"docs/evidence"}
+    assert "docs/evidence/new-topic" in {row["candidate_path"] for row in acceptances}
+
+
+def test_an_absent_directory_claim_classifier_judges_a_suffix_as_a_file(
+    tmp_path: Path,
+) -> None:
+    """The classifier reads an absent no-suffix path inside a claim as a tree.
+
+    The path is not created, so the directory judgement is made from its shape
+    alone: no suffix and a path-component prefix of the live claim. A path with
+    a file suffix inside the same claim names a file, not a directory.
+    """
+    claim = tmp_path / "docs" / "evidence"
+    assert _directory_claim_overlaps(claim / "new-topic", claim)
+    assert not _directory_claim_overlaps(claim / "new-topic.html", claim)
+    assert not _directory_claim_overlaps(claim / "sibling" / "other.py", claim)

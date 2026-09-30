@@ -1685,19 +1685,32 @@ def _directory_claim_overlaps(candidate: Path, claim: Path) -> bool:
     """Whether a candidate write path claims a directory, not an exact file.
 
     A directory claim can sweep up paths a peer already holds, so it is judged
-    apart from an exact-file claim. Two arms: the path exists as a directory on
-    disk, or it strictly contains the live claim by path component — a topic
-    directory with nothing on disk yet is still claimed as a tree. A candidate
-    that is an exact leaf inside a peer's directory claim is neither, so it keeps
-    the plain refusal.
+    apart from an exact-file claim. Three arms: the path exists as a directory
+    on disk; or it strictly contains the live claim by path component; or it is
+    a directory that does not exist yet and sits strictly inside the live claim,
+    since its subtree lies within the peer's claim. A candidate that names a
+    plain file — an exact leaf inside a peer's directory claim — is none of
+    these, so it keeps the plain refusal.
+
+    A path with no file suffix is read as a directory when it is absent: a
+    topic directory such as ``docs/evidence/new-topic`` is declared by its
+    tree, while ``tests/test_x.py`` names a file and its collision is a plain
+    file conflict.
     """
     if candidate.is_dir():
         return True
     candidate_parts = candidate.parts
     claim_parts = claim.parts
-    return (
+    if (
         len(candidate_parts) < len(claim_parts)
         and claim_parts[: len(candidate_parts)] == candidate_parts
+    ):
+        return True
+    return (
+        not candidate.exists()
+        and candidate.suffix == ""
+        and len(candidate_parts) > len(claim_parts)
+        and candidate_parts[: len(claim_parts)] == claim_parts
     )
 
 
