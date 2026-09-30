@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-worker-can-take-a-brief">
+  <meta name="plan-title" content="A Worker Can Take A Brief">
+  <meta name="plan-evidence-for" content="reckon:a-worker-can-take-a-brief">
+  <meta name="plan-verifies" content="reckon:a-worker-can-take-a-brief#s5">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-30">
+  <title>The skill names the brief when a brief fits | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-skill-names-when-a-brief-fits" data-reckon="landed" data-when="2026-09-30">
+  <h2>The skill names the brief when a brief fits</h2>
+
+  <p>Section 3b of <code>skills/reckon-build/SKILL.md</code> no longer states
+  that there is deliberately no flag for passing prose to a worker. It names
+  <code>reckon crew dispatch --brief &lt;file&gt;</code> as the carrier for a
+  probe, a measurement, a review or an investigation, says work that changes a
+  plan's product still carries its plan, states that the brief meets the same
+  eight node properties, and keeps the done-when as the specification.</p>
+
+  <p>The runs view in <code>reckon/crew/query.py</code> carries a brief run's
+  digest beside its null plan, read from the <code>brief</code> block promotion
+  writes onto the ledger row; a plan row's shape is unchanged, its digest key
+  absent and its <code>plan</code> the section's plan. A plan-less row's plan is
+  now null rather than an empty string.</p>
+
+  <p><strong>Measure.</strong> Base arm at
+  <code>2be39bd4ed86488151147931833843063eb6864c</code> (a scratch export):
+  3 failed, 115 passed. Head arm at this worktree, clean tree: 4 failed, 116
+  passed. Every base failure id is a head failure id. The one added id is
+  <code>tests/test_skill_contracts.py::test_the_plan_is_named_as_the_only_passing_surface</code>,
+  which asserts the retired sentence is present; its update belongs to the
+  session that owns that file's next change, so it is left untouched and
+  recorded as a follow-on rather than repaired here.</p>
+
+  <p><strong>Declared mutation observed to fail.</strong> Dropping the brief
+  digest from the runs-view row reds exactly the brief-run case, 1 failed and 1
+  passed, <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>
