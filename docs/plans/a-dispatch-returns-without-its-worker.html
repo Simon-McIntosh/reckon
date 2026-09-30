@@ -17,8 +17,8 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-modified" content="2026-09-29">
-  <meta name="plan-version" content="113">
+  <meta name="plan-modified" content="2026-09-30">
+  <meta name="plan-version" content="114">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -1234,6 +1234,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260925T025720461845-review-of-the-worker-exit-test-says-what-promotion-releases" data-who="reckon-build" data-when="2026-09-25T03:28:05.167Z">
     <div class="r-comment-body"><p>review of the worker-exit test docstring fix stored at 88, no findings</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260930T090907477530" data-who="" data-when="">
+    <div class="r-comment-body">One refusal-beside-a-launch mechanism is removed at merge 1859c0d19. _confirm_supervisor_survived refused a dispatch whose supervisor had already written a clean completion record for the worker it spawned: a fast two-tree launch finishes inside the two-second survival window. That is this section's defect, a refusal returned for a dispatch that launched. The check now accepts a record naming the spawned worker and returns the run. A supervisor that exits in the window with no such record is still refused. Test test_dispatch_returns_when_its_supervisor_finished_the_launch in tests/test_dispatch_returns_without_worker.py covers it, and its negative control (the acceptance removed) is red. Its review found one weakness to repair: the case asserts only that dispatch returned, so a launch slower than the window would pass on the deadline, not the acceptance. A follow-on node pins the return to the record. This section's own test file, tests/test_dispatch_result_matches_launch.py, should drive this mechanism among the others it reproduces.</div>
 </div>
 </section>
 </main>
