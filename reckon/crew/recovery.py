@@ -1745,6 +1745,58 @@ def _repair_launch_refusal(run_id: str, project: str) -> str:
     return ""
 
 
+def _reviewed_run_suite_command(
+    record: Mapping[str, Any], config: Mapping[str, Any] | None
+) -> str:
+    """The suite command the repair inherits from the run it repairs.
+
+    The repair's own review derives its added-failure count from the pair of
+    suite observations its manifest carries, and it can only reconcile that pair
+    against the reviewed run when both were measured with the same command. So
+    the repair inherits the reviewed run's own recorded suite command, read from
+    its pointer's ``suite_command``, and falls back to the project's standing
+    ``review.suite`` declaration when the pointer names none. An unreadable or
+    undeclared standing suite is no command rather than a refusal: the repair
+    then carries the same absence a fresh run would.
+    """
+    recorded = str(record.get("suite_command") or "").strip()
+    if recorded:
+        return recorded
+    try:
+        from reckon import flight
+
+        declaration = flight.review_suite(config)
+    except Exception:  # noqa: BLE001 - an unreadable declaration is no suite
+        return ""
+    if declaration is None:
+        return ""
+    return " ".join(declaration.command)
+
+
+def _config_carrying_suite(
+    config: Mapping[str, Any], suite_command: str
+) -> Mapping[str, Any]:
+    """Return ``config`` carrying the given suite command in its gates block.
+
+    A run's pointer records the suite command dispatch reads from
+    ``config.gates.suite_command``, so a caller composing a run against another's
+    recorded measurement supplies the inherited command here. The original
+    mapping is left untouched, because the lane above already resolved against
+    it and the caller owns it. An empty command returns the config unchanged, so
+    a run with no inherited suite records the project declaration's value rather
+    than a blank that would overwrite it.
+    """
+    if not suite_command:
+        return config
+    gates = config.get("gates")
+    merged = dict(config)
+    merged["gates"] = {
+        **(dict(gates) if isinstance(gates, Mapping) else {}),
+        "suite_command": suite_command,
+    }
+    return merged
+
+
 def dispatch_repair_for_run(
     record: Mapping[str, Any],
     *,
@@ -1975,12 +2027,22 @@ def dispatch_repair_for_run(
             "refused": True,
             "reason": launch_refusal,
         }
+    # The repair carries the reviewed run's suite command so its own review,
+    # reading the pair of suite observations the repair's manifest records,
+    # measures added failures against the same suite the reviewed run was
+    # measured with. dispatch stamps the command it records on a run's pointer
+    # from ``config.gates.suite_command``, so the inherited command rides the
+    # config handed to the launch rather than editing the resolved config the
+    # lane above already read.
+    repair_config = _config_carrying_suite(
+        resolved, _reviewed_run_suite_command(record, resolved)
+    )
     try:
         launched = dispatch_module.dispatch(
             node=node,
             project=project,
             repo=repo,
-            config=resolved,
+            config=repair_config,
             session=str(composed["session"]),
             # Cut the repair's worktree at the head the review read, so the
             # reviewed head is an ancestor of the repair's tree. The reviewed

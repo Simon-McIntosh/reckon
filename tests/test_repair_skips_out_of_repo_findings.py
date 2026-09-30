@@ -326,3 +326,70 @@ def test_a_mixed_round_dispatches_with_only_the_repository_path(
     finding_scope = [path for path in scope if path not in landing]
     assert finding_scope == ["reckon/crew/recovery.py"]
     assert not any(Path(path).is_absolute() or path.startswith("~") for path in scope)
+
+
+def test_the_repair_carries_the_reviewed_runs_suite_command(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """The composed repair inherits the reviewed run's recorded suite command.
+
+    The repair's own review derives its added-failure count from the pair of
+    suite observations its manifest records, and it can only reconcile that pair
+    against the reviewed run when both were measured with the same command. The
+    dispatch therefore hands the reviewed run's own suite command over, so the
+    repair's live pointer records it rather than a null the review cannot use.
+    """
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo, suite_command="uv run pytest -q")
+    _store_review(
+        head_sha,
+        [
+            _finding(
+                "reckon/crew/recovery.py",
+                "1748",
+                "the repair drops the reviewed run's suite command",
+            )
+        ],
+    )
+    with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
+        resumption.sweep(PROJECT, config=CONFIG)
+
+    repairs = _repair_calls(calls)
+    assert len(repairs) == 1
+    assert repairs[0]["config"]["gates"]["suite_command"] == "uv run pytest -q"
+
+
+def test_the_repair_falls_back_to_the_projects_standing_suite(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A reviewed pointer naming no suite inherits the standing declaration.
+
+    A run recorded before the project declared a standing suite carries no
+    ``suite_command`` of its own, so the repair falls back to the ``review.suite``
+    command the project declares now, joining its argument vector into the same
+    string a recorded suite command carries.
+    """
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo)
+    _store_review(
+        head_sha,
+        [
+            _finding(
+                "reckon/crew/recovery.py",
+                "1748",
+                "the repair drops the reviewed run's suite command",
+            )
+        ],
+    )
+    standing = {
+        **CONFIG,
+        "review": {
+            "suite": {"command": ["uv", "run", "pytest", "-q"], "budget": "10m"}
+        },
+    }
+    with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
+        resumption.sweep(PROJECT, config=standing)
+
+    repairs = _repair_calls(calls)
+    assert len(repairs) == 1
+    assert repairs[0]["config"]["gates"]["suite_command"] == "uv run pytest -q"
