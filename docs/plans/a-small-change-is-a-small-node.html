@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-impl" content="0.55">
 </head>
 <body>
@@ -146,7 +146,10 @@
     <div class="r-comment-body"><p>an independent review of run r-20260930T075109733525-directory-claim-asks-first is stored beside the reviewed head 005ea2a42fa2aed0f6ea70152f6b1ef14d7cbcae, scoring goal_fidelity 17, evidence 16, scope_discipline 19, durability 18, fit 17 (total 87, no absent dimension, complete True), with two findings: dispatch.py:1694 leaves the goal's "contained in" arm unhandled for a not-yet-created directory inside a live claim, and the reviewed run's manifest names no baseline_suite/after_suite so its added-failure count is unmeasured from its own record</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T201307113692-review-of-directory-claim-sees-uncreated-dirs" data-who="reckon-build" data-when="2026-09-30T20:24:42.677Z">
-    <div class="r-comment-body"><p>review(r-20260930T195602586443-directory-claim-sees-uncreated-dirs): stored beside head 3129f05e scoring goal_fidelity 18, evidence 19, scope_discipline 20, durability 19, fit 19 (total 95, no absent dimension), with one FINDING — the absent-directory arm keys on Path.suffix == &quot;&quot; at reckon/crew/dispatch.py:1711, so a declared directory whose name carries a dot inside a live claim stays unwarned — and added_failure_count 0 measured from a base arm at 84b6364f (6 passed) against the reviewed head gate (9 passed).</p></div>
+    <div class="r-comment-body"><p>review(r-20260930T195602586443-directory-claim-sees-uncreated-dirs): stored beside head 3129f05e scoring goal_fidelity 18, evidence 19, scope_discipline 20, durability 19, fit 19 (total 95, no absent dimension), with one FINDING — the absent-directory arm keys on Path.suffix == "" at reckon/crew/dispatch.py:1711, so a declared directory whose name carries a dot inside a live claim stays unwarned — and added_failure_count 0 measured from a base arm at 84b6364f (6 passed) against the reviewed head gate (9 passed).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T195602586443-directory-claim-sees-uncreated-dirs" data-who="reckon-build" data-when="2026-09-30T20:13:02.219Z">
+    <div class="r-comment-body"><p>report(crew): _directory_claim_overlaps gains the contained-in arm — an absent no-suffix write path strictly inside a live claim (the live claim is a prefix of it at a path-component boundary) is now read as a directory, so dispatch warns, names the claim, and requires --accept-directory-claim exactly as for an existing directory, while a suffix-bearing path inside the same claim keeps the plain file refusal; tests/test_directory_claim_asks_first.py gains a dry-run case (live run claiming docs/evidence vs an absent docs/evidence/new-topic: warns and names the claim, and proceeds with the flag) and a classifier case at the suffix boundary, 9 passed at EXIT=0 with the negative control red at EXIT=1.</p></div>
 </div>
 </section>
 </main>
