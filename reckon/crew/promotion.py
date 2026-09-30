@@ -5691,17 +5691,27 @@ def _complete_locked(
     # The six-line clone detector reports each function this run added or
     # modified whose normalised window duplicates another function already in
     # reckon/ or tests/ at the promoted revision. It is a review signal: a
-    # readable revision yields a list, empty or not, and an unreadable one
-    # leaves the key absent rather than failing the promotion.
-    clone_matches = (
-        None
-        if shadow or not (commit_list and promoted_revision)
-        else clones.promotion_clone_matches(
+    # readable revision yields the list of matches (empty when none), and a
+    # case no revision pair can be measured for records the unmeasured marker
+    # rather than the empty list, so the two never read alike. Neither fails
+    # the promotion.
+    if shadow:
+        clone_matches: Any = ledger.unmeasured_clone_report("shadow run lands no code")
+    elif not (commit_list and promoted_revision):
+        clone_matches = ledger.unmeasured_clone_report(
+            "the run asserted no revision pair to compare"
+        )
+    else:
+        measured = clones.promotion_clone_matches(
             tree,
             base_sha=str(record.get("base_sha") or record.get("base") or ""),
             tip=promoted_revision,
         )
-    )
+        clone_matches = (
+            measured
+            if measured is not None
+            else ledger.unmeasured_clone_report("the revision pair could not be read")
+        )
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),

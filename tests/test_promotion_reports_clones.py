@@ -209,3 +209,57 @@ def test_a_function_matching_nothing_reports_an_empty_list(
 
     row = _promoted_row(repository, run_id)
     assert row.get("clone_matches") == []
+
+
+def test_an_unmeasured_run_is_not_recorded_as_an_empty_match_list(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A run with no revision pair to compare carries the unmeasured marker.
+
+    A commitless promotion asserts no revision, so the detector never ran. The
+    row must record that as a marker rather than as the empty list a measured
+    run whose functions copied nothing carries, or a reader cannot tell the two
+    apart.
+    """
+    run_id = "r-clone-unmeasured"
+    head = _git(repository, "rev-parse", "HEAD")
+    delivered = tmp_path / "elsewhere" / "review.json"
+    manifest = tmp_path / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        "node: clone-check\n"
+        "status: complete\n"
+        f"changed_paths: {delivered}\n"
+        "tests: report-only promotion; nothing to run\n",
+        encoding="utf-8",
+    )
+    _write_json(
+        pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(repository),
+            "worktree": str(repository),
+            "base_sha": head,
+            "launch": "in-harness",
+            "role": "review",
+            "backend": "native",
+            "created_at": "2026-09-30T12:00:00Z",
+            "manifest_path": str(manifest),
+            "node": {
+                "id": "clone-check",
+                "plan": "fixture",
+                "section": "guard",
+                "time_budget": "25m",
+                "write_paths": [str(delivered)],
+            },
+        },
+    )
+
+    crew.complete(run_id, gate="passed", root=repository)
+
+    row = _promoted_row(repository, run_id)
+    report = row.get("clone_matches")
+    assert report != []
+    assert isinstance(report, dict) and report["status"] == "unmeasured"
+    assert report["reason"]
