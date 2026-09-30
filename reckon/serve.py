@@ -29,6 +29,7 @@ Routes:
   GET /state/<project>/<doc>    → ~/docs-server/state/<project>/<doc>.json
   POST /state/<project>/<doc>   → write the same path (versioned)
   GET /_discover/<project>      → scan docs dir for HTML plan pages (meta tag opt-in)
+  GET /_index/<project>         → the persisted metadata rows, nothing derived
   GET /<project>/<relpath>      → mount[project]/<relpath>
 
 POST versioned write contract — see reckon/serve.py for full details.
@@ -61,7 +62,15 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 from urllib.request import urlopen
 
-from reckon import _backends, _plan_html, capabilities, crew, fleet_index, ledger
+from reckon import (
+    _backends,
+    _plan_html,
+    capabilities,
+    crew,
+    fleet_index,
+    ledger,
+    metadata_index,
+)
 from reckon._store import (
     _config_home,
     _mounts_path,
@@ -285,6 +294,7 @@ class _FleetChangeWatch:
                 watch.drain(_CHANGE_SETTLE_S)
                 _invalidate_discovery_signatures(watch.root)
                 _invalidate_discovery_tree(watch.root)
+                metadata_index.invalidate_tree(watch.root)
 
     def close(self) -> None:
         """Signal the watch thread to stop and release its descriptors."""
@@ -2759,6 +2769,26 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.OK, state_file.read_bytes(), "application/json")
             except OSError as e:
                 self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(e)})
+            return
+
+        if path.startswith("/_index/"):
+            project = path[len("/_index/") :].strip("/")
+            if not project or not SAFE_NAME.match(project):
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad project name"})
+                return
+            index_mounts = load_mounts()
+            if project not in index_mounts:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
+                return
+            try:
+                rows = metadata_index.index_rows(index_mounts[project], project)
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    {"error": "metadata_index_failed", "detail": str(exc)},
+                )
+                return
+            self._send_json(HTTPStatus.OK, rows)
             return
 
         if path.startswith("/_discover/"):

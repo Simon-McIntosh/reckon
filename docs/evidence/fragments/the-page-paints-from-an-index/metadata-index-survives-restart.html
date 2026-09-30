@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="A metadata index survives a restart">
+  <meta name="plan-summary" content="One row per document and figure is persisted with the stat identity it was built from, so a restart re-parses nothing and /_index/<project> serves the rows alone.">
+  <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
+  <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s3">
+  <meta name="plan-commits" content="1d48ac7d">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="serve,metadata,index,restart">
+  <title>A metadata index survives a restart — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="metadata-index-survives-restart" data-reckon="landed" data-when="2026-09-30">
+  <h2>A metadata index survives a restart</h2>
+
+  <p>Commit <code>1d48ac7d</code> adds <code>reckon/metadata_index.py</code>. It keeps one
+  metadata index per mounted project on disk, under the configuration home's cache
+  directory at <code>cache/metadata-index/&lt;sha256(project, docs_dir)&gt;.json</code>, and
+  builds it by walking the docs tree, stat'ing each file and re-parsing only the files
+  whose stat identity differs from the recorded one. A persisted entry carries the stat
+  identity alongside the row and is validated against the project and docs root before it
+  is used, so an index written for another tree is declined rather than trusted.</p>
+
+  <p>A row carries exactly the declared fields — <code>slug</code>, <code>href</code>,
+  <code>type</code>, <code>title</code>, <code>status</code>, <code>sprint</code>,
+  <code>archived</code>, <code>created</code>, <code>edited</code> and the figure's
+  <code>width</code>/<code>height</code> — and the stat identity is deliberately not one
+  of them. <code>GET /_index/&lt;project&gt;</code> answers with the list of rows and
+  nothing derived: no roadmap, no readiness, no live runs, no stat bookkeeping. The fleet
+  change watch drops a tree's in-process rows when the kernel reports a change to it, so
+  the next read re-stats that tree and rebuilds the rows that moved.</p>
+
+  <h3>Measured</h3>
+  <ul>
+    <li><strong>The declared measure, at <code>1d48ac7d</code>.</strong>
+    <code>tests/test_metadata_index_survives_restart.py</code> builds a temporary project
+    of 140 plan files and 60 evidence files plus one figure over a temporary configuration
+    home. The cold build parses all 200 documents (positive control, one parse each); with
+    every in-process memo cleared the rebuild parses <strong>0</strong>, reuses 201 rows and
+    returns the identical rows. Rewriting one file makes the next build parse exactly that
+    file and return its new title.</li>
+    <li><strong>The gate, at <code>1d48ac7d</code>:</strong>
+    <code>25 passed, 1 skipped</code> across <code>tests/test_metadata_index_survives_restart.py</code>,
+    <code>tests/test_discovery_cache.py</code>,
+    <code>tests/test_discovery_reads_each_file_once.py</code>,
+    <code>tests/test_server_listens_before_it_watches.py</code>,
+    <code>tests/test_serve_figure_rows.py</code> and
+    <code>tests/test_serve_finished_runs.py</code>. The same five pre-existing files at the
+    base revision <code>97e43902</code>, run in a scratch tree, report
+    <code>20 passed, 1 skipped</code>: the head arm adds no failure id.</li>
+    <li><strong>The declared negative control is executed and logged:</strong> with the
+    persisted index ignored (an armed test seam that makes the loader return nothing), the
+    post-restart build parses all <strong>200</strong> files and the zero-parse assertion
+    fails — the log's own text reads <em>Left contains 200 more items</em>. Log:
+    <code>logs/negative-control-red.log</code> in the run directory
+    <code>r-20260930T211542913603-metadata-index-survives-restart</code>.</li>
+    <li><strong>Ruff:</strong> the two new files are clean and the new module's fields are
+    format-stable; <code>reckon/serve.py</code> carries 18 findings at both base and head,
+    so the change adds none.</li>
+  </ul>
+
+  <p><strong>Not done here, by scope.</strong> Discovery still builds its inventory by
+  parsing; nothing in this change reads the index from <code>discover_plans</code>. The
+  endpoint and the index module are the interfaces the page-paints and agent-reader
+  sections consume. <code>_FleetChangeWatch.armed_roots</code>, carried forward from the
+  startup-watch landing, still has no caller: this change consumes the watch through
+  <code>invalidate_tree</code> rather than through that property.</p>
+</article>
+</body>
+</html>
