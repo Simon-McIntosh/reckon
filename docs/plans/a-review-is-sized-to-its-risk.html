@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.7">
@@ -290,6 +290,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T194116283407-review-of-repair-of-dropped-lane-means-a-launched-attempt-334f272bc2c0" data-who="reckon-build" data-when="2026-09-30T19:54:27.414Z">
     <div class="r-comment-body"><p>review of run r-20260930T192113720146-repair-of-dropped-lane-means-a-launched-attempt-334f272bc2c0 stored against reviewed head 7ca9839807143ada4cf4ae62d58d73f2673c909c and base 334f272bc2c07ce102c57865feb2885bae555919, scoring goal_fidelity 20, evidence 16, scope_discipline 19, durability 18, fit 18 (total 91, status parsed, 3 findings).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T195406714880-stored-review-reads-the-recorded-head" data-who="reckon-build" data-when="2026-09-30T20:03:12.578Z">
+    <div class="r-comment-body"><p>recovery._stored_review now resolves the reviewed head through _run_head_for_review, so a reclaimed worktree reads the head the run record carries rather than the main checkout&#x27;s HEAD, and a standing review at that head stays selected; tests/test_rereview_keeps_its_lane.py gained a reclaimed-worktree standing-review case — 10 passed, EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T195034464501-review-of-review-findings-compose-one-repair" data-who="reckon-build" data-when="2026-09-28T20:06:07.166Z">
     <div class="r-comment-body"><p>review of r-20260928T193846170874-review-findings-compose-one-repair stored at ~/.config/reckon/crew/reviews/reckon/r-20260928T193846170874-review-findings-compose-one-repair.json (and its .at-fac12a7e… companion): status parsed, all 5 dimensions scored 0..20, total 86 (goal_fidelity 18, evidence 18, scope_discipline 20, durability 14, fit 16), added_failure_count 0 over the reviewed run's own baseline_suite/after_suite gate logs, 3 findings.</p></div>
