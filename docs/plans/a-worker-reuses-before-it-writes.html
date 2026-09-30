@@ -25,8 +25,8 @@
   <title>A Worker Reuses Before It Writes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="47">
+<meta name="plan-modified" content="2026-09-30">
+<meta name="plan-version" content="48">
 <meta name="plan-impl" content="0.7">
 </head>
 <body>
@@ -166,7 +166,7 @@
     <div class="r-comment-body"><p>recovery-timestamps-reuse-the-parser: the six timestamp readers in reckon/crew/recovery.py (_budget_timing, _worker_launched_after_manifest, _attempt_started_seconds, _manifest_wait, _run_chain_manifest_freshness, _seconds_since_dispatch) now read through reckon._timestamps.parse_utc keeping each reader's str coercion and naive-as-UTC rule; the base-recorded behaviour table's 36 of 36 cells agree between base and head, no fromisoformat call remains, and the head gate adds no failing test id against base.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260929T203125982758-review-of-recovery-timestamps-reuse-the-parser" data-who="reckon-build" data-when="2026-09-29T21:05:55.407Z">
-    <div class="r-comment-body"><p>Independent review of r-20260929T194029480174-recovery-timestamps-reuse-the-parser stored at both granted paths — parsed, five dimensions goal_fidelity 17 / evidence 17 / scope_discipline 20 / durability 18 / fit 18 (total 90, no dimension absent, no read-time cap), added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs, and three findings: the fragment&#x27;s &quot;substitution, not a behaviour change&quot; is falsified by my own probe (11 of 96 cells move on padded and lowercase-z stamps in five readers); _budget_timing:1537 returns budget_overrun True where the base returned its neutral no-measurement verdict; and the head arm&#x27;s log header names the base revision.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20260929T194029480174-recovery-timestamps-reuse-the-parser stored at both granted paths — parsed, five dimensions goal_fidelity 17 / evidence 17 / scope_discipline 20 / durability 18 / fit 18 (total 90, no dimension absent, no read-time cap), added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite and after_suite gate logs, and three findings: the fragment's "substitution, not a behaviour change" is falsified by my own probe (11 of 96 cells move on padded and lowercase-z stamps in five readers); _budget_timing:1537 returns budget_overrun True where the base returned its neutral no-measurement verdict; and the head arm's log header names the base revision.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:04:52.771Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder stored under the crew review store as a parsed record (goal_fidelity 16, evidence 15, scope_discipline 20, durability 16, fit 19; total 86) with three findings</p></div>
@@ -227,6 +227,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T193250144358-review-of-cli-settings-writer-delegates-the-replace" data-who="reckon-build" data-when="2026-09-29T20:14:15.980Z">
     <div class="r-comment-body"><p>review of run r-20260929T141132754558-cli-settings-writer-delegates-the-replace, read at base fdb116e2 and head 6862bd999, is stored at both granted paths and scores goal_fidelity 20, evidence 14, scope_discipline 20, durability 19, fit 19 (total 92, no dimension absent), records added_failure_count 1 with the id tests/test_follower_rearm_shows_nothing_twice.py::test_a_terminal_rearm_shows_the_burst_under_one_frame_line derived by the store's own reader from the reviewed run's baseline_suite and after_suite gate logs, and files two findings: the 117-file arm population excludes the node's own new test file, and the manifest's measurement_module/measurement_cwd name the trees of the earlier arms killed at the node time fence rather than the arms the suite records carry.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260930T065416284783-review-of-stream-enumeration-reuses-metering" data-who="reckon-build" data-when="2026-09-30T07:08:37.187Z">
+    <div class="r-comment-body"><p>An independent review of run r-20260929T204752689333-stream-enumeration-reuses-metering, read at base 24df7b57b and head 1f793ee2b, is stored at both granted paths as a parsed record scoring all five dimensions in 0..20 — goal_fidelity 18, evidence 13, scope_discipline 20, durability 15, fit 19, total 85, no dimension absent, all six checklist items reported, four production call sites verified — carrying added_failure_count null with added_failure_ids [] derived through reckon.crew.review.added_failures_from_gate_logs over the reviewed run&#x27;s own baseline_suite and after_suite, and filing three findings: the head half of the node&#x27;s own done-when is unmeasured because after_suite names no gate log and gate_head_arm.log stops at 153 lines with no summary or EXIT line, both arm logs spell the revision &quot;# rev:&quot; where reckon/crew/review.py:507 reads the word &quot;revision&quot; so neither recorded log revision resolves, and the node&#x27;s test file leaves the reuse it exists to make unguarded.</p></div>
 </div>
 </section>
 </main>
