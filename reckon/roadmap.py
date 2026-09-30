@@ -1110,10 +1110,14 @@ def _open_sprints(
     return result
 
 
-# A sprint carrying one of these stored statuses has closed. It is finished work
-# rather than a container holding work, and it belongs in a summary only while
-# its close is recent enough to sit beside the open sprints.
-CLOSED_SPRINT_STATUSES = frozenset({"done", "shipped"})
+# The stored statuses that make a sprint finished for the summary list. This is
+# deliberately narrower than ``CLOSED_SPRINT_STATUSES``, which also counts
+# ``closed`` and ``archived`` as statuses nothing will schedule from again: the
+# summary lists every sprint whose stored status is not ``done`` or ``shipped``,
+# so a ``closed`` or ``archived`` sprint is still in the open bucket rather than
+# being dropped or filed as recently closed. Its own name, because one module
+# must not bind one name twice and the later binding would silently win.
+SPRINT_FINISHED_STATUSES = frozenset({"done", "shipped"})
 
 
 def _sprint_closed_at(sprint: Mapping[str, Any]) -> datetime | None:
@@ -1218,10 +1222,12 @@ def sprint_summary_rows(
         status = str(sprint.get("status") or "").lower()
         live_row = liveness.get(sprint_id) or liveness.get(sprint_ref) or {}
         live = bool(live_row.get("live"))
-        closed_at = _sprint_closed_at(sprint) if status in CLOSED_SPRINT_STATUSES else None
-        if not live and status not in CLOSED_SPRINT_STATUSES:
+        closed_at = (
+            _sprint_closed_at(sprint) if status in SPRINT_FINISHED_STATUSES else None
+        )
+        if not live and status not in SPRINT_FINISHED_STATUSES:
             include = True
-        elif not live and status in CLOSED_SPRINT_STATUSES:
+        elif not live and status in SPRINT_FINISHED_STATUSES:
             include = (
                 closed_at is not None
                 and moment - closed_at <= timedelta(days=max(0, recent_days))
@@ -1252,7 +1258,7 @@ def sprint_summary_rows(
     def order(row: dict[str, Any]) -> tuple[int, str]:
         if row["live"]:
             bucket = 0
-        elif row["status"] in CLOSED_SPRINT_STATUSES:
+        elif row["status"] in SPRINT_FINISHED_STATUSES:
             bucket = 2
         else:
             bucket = 1

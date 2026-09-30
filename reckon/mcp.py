@@ -2091,7 +2091,7 @@ def _discovery_summary(
         recent_days=recent_days,
     )
     if sprint_rows:
-        summary["sprints"] = sprint_rows
+        summary["summary_sprints"] = sprint_rows
     return summary
 
 
