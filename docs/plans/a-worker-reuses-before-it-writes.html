@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-impl" content="0.75">
 </head>
 <body>
@@ -235,7 +235,10 @@
     <div class="r-comment-body"><p>stream enumeration is one implementation: promotion._run_streams and ledger._run_streams now delegate to metering.run_streams through a function-local import (a module-level import raises a circular import, because reckon.crew is a facade module whose submodule __path__ is set only after it imports ledger), so both helpers now include a run's lane-change streams; the base-revision list each caller produced for a stream-only directory, a resume-beside-stream directory (numeric order resume-2 before resume-10), a path naming a resume file and a missing directory is unchanged, and the lane-change rows are the one intended difference, asserted per caller. A recording-stub row now replaces metering.run_streams and asserts each caller calls it exactly once with the path it should pass and returns its value, so a private re-implementation no longer passes (node test 12 passed at head; the delegation and lane-change rows fail under the base ledger glob).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260930T082308884778-reuse-fragment-ids-name-their-node" data-who="reckon-build" data-when="2026-09-30T08:26:14.112Z">
-    <div class="r-comment-body"><p>reuse-fragment-ids-name-their-node — renamed section id s3 to each fragment&#x27;s own node name in cli-settings-writer-delegates-the-replace.html, runs-pointer-writer-reuses-the-store.html, stream-enumeration-reuses-metering.html and writer-callers-second-wave.html; grep -rnoE &#x27;id=&quot;s[0-9]+&quot;&#x27; over the fragments dir returns nothing (exit 1), each file parses as exactly one section carrying the node-name id, and the docs/ anchor grep for these files followed by #s3 returns nothing (563e02420)</p></div>
+    <div class="r-comment-body"><p>reuse-fragment-ids-name-their-node — renamed section id s3 to each fragment's own node name in cli-settings-writer-delegates-the-replace.html, runs-pointer-writer-reuses-the-store.html, stream-enumeration-reuses-metering.html and writer-callers-second-wave.html; grep -rnoE 'id="s[0-9]+"' over the fragments dir returns nothing (exit 1), each file parses as exactly one section carrying the node-name id, and the docs/ anchor grep for these files followed by #s3 returns nothing (563e02420)</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260930T082735185987-review-of-reuse-fragment-ids-name-their-node" data-who="reckon-build" data-when="2026-09-30T08:29:53.097Z">
+    <div class="r-comment-body"><p>stopped two minutes after dispatch: the review reflex launched it in the same second the reviewed run, a docs-only tier-none id rename, was promoted without a review; no review of a promoted tier-none run is needed</p></div>
 </div>
 </section>
 </main>
