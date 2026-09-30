@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="the-suite-is-green-at-head">
   <meta name="plan-title" content="Two stale skill-contracts expectations met with a narrower scan and a structural anchor">
-  <meta name="plan-summary" content="Two ids in tests/test_skill_contracts.py failed at head. The leak scan flagged the harness env flag the dispatch layer must speak, so the scan now strips that one flag name before matching and still refuses a planted model identifier. The exit-table test bounded each error key to its Exit(code) by a fixed 350-character window a six-line insertion overran, so the pairing is now read from the parsed except handlers that emit the key and raise the exit. 60 passed, no failure id added.">
+  <meta name="plan-summary" content="Two ids in tests/test_skill_contracts.py failed at head. The leak scan flagged the harness env flag the dispatch layer must speak, so the scan now strips that one flag name before matching and still refuses a planted model identifier. The exit-table test bounded each error key to its Exit(code) by a fixed 350-character window a six-line insertion overran, so the pairing is now read from each key's own innermost emitting block and the Exit it raises. 61 passed, no failure id added.">
   <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
   <meta name="plan-recorded-at" content="2026-09-30">
   <meta name="plan-verdict" content="passed">
@@ -38,9 +38,12 @@
           concrete model identifier and a provider name and asserts each is refused, beside the flag
           line that is not.</li>
         <li>The exit table is paired to its CLI branches structurally: the parse locates each
-          <code>except</code> handler, reads the error key it emits and the exit code it raises, and
-          asserts the documented code is one the emitting branch raises. No assertion is deleted and
-          no constant replaces the bound.</li>
+          key's own innermost emitting statement block, reads the first <code>Exit</code> raised in
+          that block after the key, and asserts the documented code is that branch's own. Two keys a
+          single handler emits from two branches therefore stay bound to their own codes, so a swap
+          of the two codes fails. A synthetic control proves the pairing on a two-branch handler and
+          that a swapped pair fails against the documented table. No assertion is deleted and no
+          constant replaces the bound.</li>
       </ol>
     </section>
 
@@ -52,9 +55,11 @@
           <tr><td>Base, whole file</td><td><code>e7eca9f0</code></td>
             <td>2 failed, 57 passed, exit 1 &mdash; the two ids only</td></tr>
           <tr><td>Head, whole file</td><td><code>e7eca9f0</code> plus this change</td>
-            <td>60 passed, exit 0 &mdash; 2 prior failures gone, 1 control test added, no id moved pass to fail</td></tr>
+            <td>61 passed, exit 0 &mdash; 2 prior failures gone, 2 control tests added, no id moved pass to fail</td></tr>
           <tr><td>Declared mutation</td><td>head plus a planted model identifier in a scratch skill copy</td>
             <td>1 failed, exit 1 &mdash; names <code>skills/reckon-build/SKILL.md:1293: backend = "claude-3-5-sonnet-20241022"</code></td></tr>
+          <tr><td>Second mutation</td><td>head plus the <code>not-dispatchable</code> (2) and <code>dispatch-refused</code> (1) exit codes exchanged in a scratch <code>reckon/cli.py</code></td>
+            <td>1 failed, exit 1 &mdash; names <code>not-dispatchable is documented as exit 2 and its branch raises [1]</code></td></tr>
         </tbody>
       </table>
     </section>
@@ -66,7 +71,7 @@
         <tbody>
           <tr><td>Base revision</td><td><code>e7eca9f0361b661cc4a435b3a39015497a795688</code></td></tr>
           <tr><td>Gate logs</td><td><code>base-file.txt</code>, <code>head-file.txt</code>, <code>base-*.txt</code>, <code>head-*.txt</code> in the run directory, each headed by revision, tree and literal command, ending in a bare <code>EXIT=</code> line</td></tr>
-          <tr><td>Control log</td><td><code>negative-control.txt</code>, first line the declared mutation verbatim</td></tr>
+          <tr><td>Control logs</td><td><code>negative-control.txt</code> and <code>negative-control-swap.txt</code>, each first line its mutation stated verbatim, each ending in a bare <code>EXIT=</code></td></tr>
           <tr><td>Basetemps</td><td>under <code>/tmp/s21-1c/</code>, removed before this record was closed</td></tr>
         </tbody>
       </table>
