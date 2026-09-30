@@ -114,9 +114,10 @@
       <p><strong>Negative control.</strong> Classifying every dispatch as fresh in a scratch copy of
       the scanner reddens the gate: <code>positive_control</code> becomes null and
       <code>test_positive_control_is_a_before_window_cross_task_resume</code> fails,
-      <code>1 failed, EXIT=1</code> (<code>negative-control.log</code>). The same scratch copy
-      unmutated runs the gate green first, so the red is the mutation and not the scratch tree
-      (<code>negative-control/clean-gate.log</code>). The scanner's first-record histogram is its own
+      <code>1 failed, EXIT=1</code> (<code>negative-control.log</code> in this node's run directory).
+      The same scratch copy unmutated runs the gate green first, so the red is the mutation and not the
+      scratch tree (<code>negative-control/clean-gate.log</code> beside it). The scanner's
+      first-record histogram is its own
       positive control: 3,695 claude streams and 3,017 codex streams are both present, so the pass
       discriminates rather than returning nothing.</p>
       <p><strong>The motivating death, re-read.</strong>
@@ -169,10 +170,11 @@
     <section id="gate">
       <h2>Gate and evidence</h2>
       <p>Gate: <code>tests/test_local_session_carryover.py</code> and
-      <code>tests/test_resume_burn_after_the_fix.py</code> at
-      <code>f2ba004b8</code>, <code>9 passed</code>, <code>EXIT=0</code>
-      (<code>~/.config/reckon/crew/runs/r-20260930T165623463836-local-session-carryover/gate.log</code>).
-      The census was produced by
+      <code>tests/test_resume_burn_after_the_fix.py</code> at this node's head,
+      <code>9 passed</code>, <code>EXIT=0</code>
+      (<code>~/.config/reckon/crew/runs/r-20260930T165623463836-local-session-carryover/gate.log</code>,
+      whose first line names the revision it ran at and whose last line is the exit code). The census
+      itself was committed at <code>f2ba004b8</code>. It was produced by
       <code>timeout 1200 .venv/bin/python docs/research/scripts/scan_local_session_carryover.py --out docs/research/data/local-session-carryover.json</code>
       in 28.6 seconds on the fleet node (<code>scan.log</code> in the same run directory). The data
       file is 256,957 bytes, under the 300 KB the census is bounded to. Both logs name their revision
