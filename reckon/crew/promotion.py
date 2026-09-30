@@ -2460,12 +2460,10 @@ def _wall_exceeded_budget(wall_seconds: int | None, time_budget: Any) -> bool:
 
 
 def _run_streams(path: Path) -> list[Path]:
-    """Return the original stream followed by resumes in numeric turn order."""
-    original = path.parent / "stream.jsonl" if path.name.startswith("resume-") else path
-    resumes = sorted(
-        path.parent.glob("resume-*.jsonl"), key=ledger._resume_stream_order
-    )
-    return [candidate for candidate in (original, *resumes) if candidate.is_file()]
+    """Return the original stream followed by resumes and lane changes."""
+    from reckon.crew import metering
+
+    return metering.run_streams(path)
 
 
 def _record_stream_paths(record: Mapping[str, Any]) -> list[Path]:

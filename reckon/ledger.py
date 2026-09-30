@@ -2615,10 +2615,9 @@ def _resume_stream_order(path: Path) -> tuple[int, str]:
 def _run_streams(run_id: str, streams_root: Path) -> list[Path]:
     """Return every surviving stream for one run in stable path order."""
 
-    directory = streams_root / run_id
-    resumes = sorted(directory.glob("resume-*.jsonl"), key=_resume_stream_order)
-    candidates = [directory / "stream.jsonl", *resumes]
-    return [path for path in candidates if path.is_file()]
+    from reckon.crew import metering
+
+    return metering.run_streams(streams_root / run_id / "stream.jsonl")
 
 
 _EXPLICIT_ZONE = re.compile(r"(?:Z|[+-]\d{2}:?\d{2}(?::\d{2})?)$")
